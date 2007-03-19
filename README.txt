@@ -18,4 +18,4 @@ Releases may be downloaded at http://drupal.org/project/ubercart.
 
 Kind regards,
 
-Ryan (rszrama)
+The UberDudes
