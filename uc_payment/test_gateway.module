@@ -1,0 +1,52 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * A test module used as an example for a payment gateway.
+ *
+ * Development sponsored by the Ubercart project.  http://www.ubercart.org
+ */
+
+/*******************************************************************************
+ * Hook Functions (Ubercart)
+ ******************************************************************************/
+
+function test_gateway_payment_gateway() {
+  $gateways[] = array(
+    'id' => 'test_gateway',
+    'name' => t('Test Gateway'),
+    'description' => t('Process credit card payments through the Test Gateway.'),
+    'credit' => 'test_gateway_charge',
+  );
+
+  return $gateways;
+}
+
+/*******************************************************************************
+ * Module and Helper Functions
+ ******************************************************************************/
+
+function test_gateway_charge($order_id, $amount, $data) {
+  global $user;
+
+  // Uncomment these lines to see the order object.  The information for the 
+  // payment is in the $order->payment_details array.
+/*
+  $order = uc_order_load($order_id);
+  drupal_set_message('<pre>'. print_r($order->payment_details, true) .'</pre>');
+*/
+
+  $message = t('Credit card charged: !amount', array('!amount' => uc_currency_format($amount)));
+  uc_order_comment_save($order_id, $user->uid, $message, 'admin');
+
+  $result = array(
+    'success' => TRUE,
+    'comment' => t('Card charged, resolution code: 0022548315'),
+    'message' => t('Credit card payment processed successfully.'),
+    'uid' => $user->uid,
+    // 'data' => $data,
+  );
+
+  return $result;
+}

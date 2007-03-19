@@ -1,0 +1,209 @@
+<?php
+// $Id$
+
+/**
+ * Implementation of hook_install().
+ */
+function uc_order_install(){
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {uc_orders} (
+        order_id mediumint(9) NOT NULL auto_increment,
+        uid mediumint(9) NOT NULL,
+        order_status smallint(6) NOT NULL,
+        order_total decimal(10,2) NOT NULL,
+        primary_email varchar(96) NOT NULL,
+        delivery_first_name varchar(32) NOT NULL,
+        delivery_last_name varchar(32) NOT NULL,
+        delivery_phone varchar(32) NOT NULL,
+        delivery_company varchar(64) NOT NULL,
+        delivery_street1 varchar(64) NOT NULL,
+        delivery_street2 varchar(64) NOT NULL,
+        delivery_city varchar(32) NOT NULL,
+        delivery_zone mediumint(9) NOT NULL,
+        delivery_zip varchar(10) NOT NULL,
+        delivery_country mediumint(9) NOT NULL,
+        billing_first_name varchar(32) NOT NULL,
+        billing_last_name varchar(32) NOT NULL,
+        billing_phone varchar(32) NOT NULL,
+        billing_company varchar(64) NOT NULL,
+        billing_street1 varchar(64) NOT NULL,
+        billing_street2 varchar(64) NOT NULL,
+        billing_city varchar(32) NOT NULL,
+        billing_zone mediumint(9) NOT NULL,
+        billing_zip varchar(10) NOT NULL,
+        billing_country mediumint(9) NOT NULL,
+        payment_method varchar(32) NOT NULL,
+        created int(11) NOT NULL,
+        modified int(11) NOT NULL,
+        PRIMARY KEY (order_id),
+        KEY uid (uid),
+        KEY order_status (order_status)
+      );");
+      db_query("CREATE TABLE {uc_order_admin_comments} (
+        comment_id mediumint(9) NOT NULL auto_increment,
+        order_id mediumint(9) NOT NULL,
+        uid mediumint(9) NOT NULL,
+        message text NOT NULL,
+        created int(11) NOT NULL,
+        PRIMARY KEY (comment_id),
+        KEY order_id (order_id)
+      );");
+      db_query("CREATE TABLE {uc_order_comments} (
+        comment_id mediumint(9) NOT NULL auto_increment,
+        order_id mediumint(9) NOT NULL,
+        uid mediumint(9) NOT NULL,
+        order_status tinyint(4) NOT NULL,
+        notified tinyint(4) NOT NULL,
+        message text NOT NULL,
+        created int(11) NOT NULL,
+        PRIMARY KEY (comment_id),
+        KEY order_id (order_id)
+      );");
+      db_query("CREATE TABLE {uc_order_line_items} (
+        line_item_id mediumint(9) NOT NULL auto_increment,
+        order_id mediumint(9) NOT NULL,
+        type varchar(32) NOT NULL,
+        title varchar(128) NOT NULL,
+        amount decimal(10,2) NOT NULL,
+        weight smallint(6) NOT NULL,
+        PRIMARY KEY (line_item_id),
+        KEY order_id (order_id)
+      );");
+      db_query("CREATE TABLE {uc_order_log} (
+        order_log_id mediumint(9) NOT NULL auto_increment,
+        order_id mediumint(9) NOT NULL,
+        uid mediumint(9) NOT NULL,
+        changes text NOT NULL,
+        created int(11) NOT NULL,
+        PRIMARY KEY (order_log_id),
+        KEY order_id (order_id)
+      );");
+      db_query("CREATE TABLE {uc_order_products} (
+        order_product_id int(9) NOT NULL auto_increment,
+        order_id mediumint(9) NOT NULL,
+        nid mediumint(9) NOT NULL,
+        title varchar(128) NOT NULL,
+        manufacturer varchar(32) NOT NULL,
+        model varchar(32) NOT NULL,
+        qty smallint(6) NOT NULL,
+        cost decimal(10,2) NOT NULL,
+        price decimal(10,2) NOT NULL,
+        weight float NOT NULL,
+        data text NOT NULL,
+        PRIMARY KEY (order_product_id),
+        KEY order_id (order_id)
+      );");
+      db_query("CREATE TABLE {uc_order_statuses} (
+        order_status_id mediumint(9) NOT NULL,
+        title varchar(32) NOT NULL,
+        notify tinyint(4) NOT NULL,
+        PRIMARY KEY  (order_status_id)
+      );");
+      db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, "
+              ."notify) VALUES (0, 'In Checkout', 0),(1, 'Pending', 0),"
+              ."(2, 'Processing', 1),(3, 'Shipment Pending', 0),"
+              ."(4, 'Shipped', 1);");
+    break;
+    case 'pgsql':
+      db_query("CREATE TABLE {uc_orders} (
+        order_id mediumint(9) NOT NULL,
+        uid mediumint(9) NOT NULL,
+        order_status smallint(6) NOT NULL,
+        order_total decimal(10,2) NOT NULL,
+        primary_email varchar(96) NOT NULL,
+        delivery_first_name varchar(32) NOT NULL,
+        delivery_last_name varchar(32) NOT NULL,
+        delivery_phone varchar(32) NOT NULL,
+        delivery_company varchar(64) NOT NULL,
+        delivery_street1 varchar(64) NOT NULL,
+        delivery_street2 varchar(64) NOT NULL,
+        delivery_city varchar(32) NOT NULL,
+        delivery_zone mediumint(9) NOT NULL,
+        delivery_zip varchar(10) NOT NULL,
+        delivery_country mediumint(9) NOT NULL,
+        billing_first_name varchar(32) NOT NULL,
+        billing_last_name varchar(32) NOT NULL,
+        billing_phone varchar(32) NOT NULL,
+        billing_company varchar(64) NOT NULL,
+        billing_street1 varchar(64) NOT NULL,
+        billing_street2 varchar(64) NOT NULL,
+        billing_city varchar(32) NOT NULL,
+        billing_zone mediumint(9) NOT NULL,
+        billing_zip varchar(10) NOT NULL,
+        billing_country mediumint(9) NOT NULL,
+        payment_method varchar(32) NOT NULL,
+        created int(11) NOT NULL,
+        modified int(11) NOT NULL,
+        PRIMARY KEY (order_id),
+        KEY uid (uid),
+        KEY order_status (order_status)
+      );");
+      db_query("CREATE TABLE {uc_order_admin_comments} (
+        comment_id mediumint(9) NOT NULL,
+        order_id mediumint(9) NOT NULL,
+        uid mediumint(9) NOT NULL,
+        message text NOT NULL,
+        created int(11) NOT NULL,
+        PRIMARY KEY (comment_id),
+        KEY order_id (order_id)
+      );");
+      db_query("CREATE TABLE {uc_order_comments} (
+        comment_id mediumint(9) NOT NULL,
+        order_id mediumint(9) NOT NULL,
+        uid mediumint(9) NOT NULL,
+        order_status tinyint(4) NOT NULL,
+        notified tinyint(4) NOT NULL,
+        message text NOT NULL,
+        created int(11) NOT NULL,
+        PRIMARY KEY (comment_id),
+        KEY order_id (order_id)
+      );");
+      db_query("CREATE TABLE {uc_order_line_items} (
+        line_item_id mediumint(9) NOT NULL,
+        order_id mediumint(9) NOT NULL,
+        type varchar(32) NOT NULL,
+        title varchar(128) NOT NULL,
+        amount decimal(10,2) NOT NULL,
+        weight smallint(6) NOT NULL,
+        PRIMARY KEY (line_item_id),
+        KEY order_id (order_id)
+      );");
+      db_query("CREATE TABLE {uc_order_log} (
+        order_log_id mediumint(9) NOT NULL,
+        order_id mediumint(9) NOT NULL,
+        uid mediumint(9) NOT NULL,
+        changes text NOT NULL,
+        created int(11) NOT NULL,
+        PRIMARY KEY (order_log_id),
+        KEY order_id (order_id)
+      );");
+      db_query("CREATE TABLE {uc_order_products} (
+        order_product_id int(9) NOT NULL,
+        order_id mediumint(9) NOT NULL,
+        nid mediumint(9) NOT NULL,
+        title varchar(128) NOT NULL,
+        manufacturer varchar(32) NOT NULL,
+        model varchar(32) NOT NULL,
+        qty smallint(6) NOT NULL,
+        cost decimal(10,2) NOT NULL,
+        price decimal(10,2) NOT NULL,
+        weight float NOT NULL,
+        data text NOT NULL,
+        PRIMARY KEY (order_product_id),
+        KEY order_id (order_id)
+      );");
+      db_query("CREATE TABLE {uc_order_statuses} (
+        order_status_id mediumint(9) NOT NULL,
+        title varchar(32) NOT NULL,
+        notify tinyint(4) NOT NULL,
+        PRIMARY KEY (order_status_id)
+      );");
+      db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, "
+              ."notify) VALUES (0, 'In Checkout', 0),(1, 'Pending', 0),"
+              ."(2, 'Processing', 1),(3, 'Shipment Pending', 0),"
+              ."(4, 'Shipped', 1);");
+    break;
+  }
+}

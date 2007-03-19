@@ -1,0 +1,619 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Defines the credit card payment method and hooks in payment gateways.
+ *
+ * Development sponsored by the Ubercart project.  http://www.ubercart.org
+ */
+
+/*******************************************************************************
+ * Hook Functions (Drupal)
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_menu().
+ */
+function uc_credit_menu($may_cache) {
+  if ($may_cache) {
+    $items[] = array(
+      'path' => 'cart/checkout/credit/cvv_info',
+      'title' => t('CVV information'),
+      'callback' => 'uc_credit_cvv_info',
+      'access' => user_access('access content'),
+      'type' => MENU_CALLBACK,
+    );
+  }
+  else {
+    if (is_numeric(arg(3))) {
+      $items[] = array(
+        'path' => 'admin/store/orders/'. arg(3) .'/credit',
+        'title' => t('Credit Card Terminal: Order !order_id', array('!order_id' => arg(3))),
+        'description' => t('Process a credit card payment for order !order_id',
+                           array('!order_id' => arg(3))),
+        'callback' => 'uc_credit_terminal',
+        'callback arguments' => array(arg(3)),
+        'access' => user_access('process credit cards'),
+        'type' => MENU_CALLBACK
+      );
+    }
+  }
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function uc_credit_perm() {
+  return array('view cc details', 'view cc numbers', 'process credit cards');
+}
+
+
+/*******************************************************************************
+ * Hook Functions (Ubercart)
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_order().
+ */
+function uc_credit_order($op, $arg1, $arg2) {
+  switch ($op) {
+    case 'submit':
+      if (variable_get('uc_credit_checkout_process', FALSE)) {
+        $pass = uc_payment_process('credit', $arg1->order_id, $arg1->order_total, NULL, TRUE, NULL, FALSE);
+        if ($pass) {
+          $message = variable_get('uc_credit_fail_message',
+                       t('We were unable to process your credit card payment. '
+                      .'Please verify your card details and try again.  If the '
+                      .'problem persists, contact us to complete your order.'));
+          return array('pass' => FALSE, 'message' => $message);
+        }
+      }
+      break;
+    
+    case 'save':
+      if ($arg1->payment_method == 'credit') {
+          $cc_owner = $arg1->payment_details['cc_owner'];
+          $cc_number = $arg1->payment_details['cc_number'];
+          $cc_exp_month = $arg1->payment_details['cc_exp_month'];
+          $cc_exp_year = $arg1->payment_details['cc_exp_year'];
+          $cc_cvv = $arg1->payment_details['cc_cvv'];
+        db_query("UPDATE {uc_payment_credit} SET cc_owner = '%s', cc_number = '%s', "
+                ."cc_exp_month = %d, cc_exp_year = %d, cc_cvv = '%s' WHERE order_id = %d",
+                $arg1->payment_details['cc_owner'], $arg1->payment_details['cc_number'],
+                $arg1->payment_details['cc_exp_month'], $arg1->payment_details['cc_exp_year'],
+                $arg1->payment_details['cc_cvv'], $arg1->order_id);
+        if (db_affected_rows() == 0) {
+          db_query("INSERT INTO {uc_payment_credit} (order_id, cc_owner, "
+                  ."cc_number, cc_exp_month, cc_exp_year, cc_cvv) VALUES "
+                  ."(%d, '%s', '%s', %d, %d, '%s')", $arg1->order_id,
+                   $arg1->payment_details['cc_owner'], $arg1->payment_details['cc_number'],
+                   $arg1->payment_details['cc_exp_month'], $arg1->payment_details['cc_exp_year'],
+                   $arg1->payment_details['cc_cvv']);
+        }
+      }
+      break;
+    case 'load':
+      if ($arg1->payment_method == 'credit') {
+        $result = db_query("SELECT * FROM {uc_payment_credit} WHERE order_id = %d", $arg1->order_id);
+        if ($data = db_fetch_object($result)) {
+          $arg1->payment_details['cc_owner'] = $data->cc_owner;
+          $arg1->payment_details['cc_number'] = $data->cc_number;
+          $arg1->payment_details['cc_exp_month'] = $data->cc_exp_month;
+          $arg1->payment_details['cc_exp_year'] = $data->cc_exp_year;
+          $arg1->payment_details['cc_cvv'] = $data->cc_cvv;
+        }
+      }
+      break;
+    case 'delete':
+      db_query("DELETE FROM {uc_payment_credit} WHERE order_id = %d", $arg1);
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_payment_method().
+ */
+function uc_credit_payment_method() {
+  $path = base_path() . drupal_get_path('module', 'uc_credit');
+  $title = t('Credit Card:');
+  $cc_types = array('visa', 'mastercard', 'discover', 'amex');
+  foreach ($cc_types as $type) {
+    if (variable_get('uc_credit_'. $type, TRUE)) {
+      $title .= ' <img src="'. $path .'/images/'. $type .'.gif" style="position: relative; top: 5px;">';
+    }
+  }
+  $methods[] = array(
+    'id' => 'credit',
+    'name' => t('Credit Card'),
+    'title' => $title,
+    'desc' => t('Pay by credit card.'),
+    'callback' => 'uc_payment_method_credit',
+    'weight' => 2,
+    'checkout' => TRUE,
+    'backend' => TRUE,
+  );
+
+  return $methods;
+}
+
+
+/*******************************************************************************
+ * Callback Functions, Forms, and Tables
+ ******************************************************************************/
+
+/**
+ * Display the contents of the CVV information popup window.
+ */
+function uc_credit_cvv_info() {
+  $output = '<b>'. t('What is the CVV?') .'</b><p>'. t('CVV stands for the '
+           .'card verification value. This number is used as a security '
+           .'feature to protect you from credit card fraud.  Finding the '
+           .'number on your card is a very simple process.  Just follow the '
+           .'directions below.') .'</p>';
+  $cc_types = array('visa', 'mastercard', 'discover');
+  foreach ($cc_types as $type) {
+    if (variable_get('uc_credit_'. $type, TRUE)) {
+      $valid_types[] = ucfirst($type);
+    }
+  }
+  if (count($valid_types) > 0) {
+    $output .= '<br /><b>'. implode(', ', $valid_types) .':</b><p><img src="'
+             . base_path() . drupal_get_path('module', 'uc_credit')
+              .'/images/visa_cvv.jpg" align="left" />'
+            . t('The CVV for these cards is found on the back side of the '
+               .'card.  It is only the last three digits on the far right of '
+               .'the signature panel box.') .'</p>';
+  }
+
+  if (variable_get('uc_credit_amex', TRUE)) {
+    $output .= '<br /><p><b>'. t('American Express') .':</b><p><img src="'
+             . base_path() . drupal_get_path('module', 'uc_credit')
+              .'/images/amex_cvv.jpg" align="left" />'
+             . t('The CVV on American Express cards is found on the front of '
+                .'the card.  It is a four digit number printed in smaller text '
+                .'on the right side above the credit card number.') .'</p>';
+  }
+
+  $output .= '<p><div align="right"><input type="button" onclick="self.close();" '
+            .'value="'. t('Close this window') .'" /></div></p>';
+
+  print $output;
+  exit();
+}
+
+function uc_payment_method_credit($op, $arg1) {
+  switch ($op) {
+    case 'cart-details':
+      $details = drupal_get_form('uc_payment_method_credit_form', $arg1);
+      return uc_strip_form($details);
+
+    case 'cart-process':
+      $arg1->payment_details['cc_owner'] = check_plain($_POST['cc_owner']);
+      $arg1->payment_details['cc_number'] = check_plain($_POST['cc_number']);
+      $arg1->payment_details['cc_exp_month'] = check_plain($_POST['cc_exp_month']);
+      $arg1->payment_details['cc_exp_year'] = check_plain($_POST['cc_exp_year']);
+      $arg1->payment_details['cc_cvv'] = check_plain($_POST['cc_cvv']);
+
+      $return = TRUE;
+      if (variable_get('uc_credit_owner_enabled', TRUE) && empty($_POST['cc_owner'])) {
+        drupal_set_message(t('Enter the owner name as it appears on the card.'), 'error');
+        $return = FALSE;
+      }
+      if (variable_get('uc_credit_cvv_enabled', TRUE) && !_valid_cvv($_POST['cc_cvv'])) {
+        drupal_set_message(t('You have entered an invalid CVV number.'), 'error');
+        $return = FALSE;
+      }
+      if (variable_get('uc_credit_validate_numbers', TRUE) && !_valid_card_number($_POST['cc_number'])) {
+        drupal_set_message(t('You have entered an invalid credit card number.'), 'error');
+        $return = FALSE;
+      }
+      return $return;
+
+    case 'cart-review':
+      if (variable_get('uc_credit_owner_enabled', TRUE)) {
+        $review[] = array('title' => t('Card Owner'), 'data' => $arg1->payment_details['cc_owner']);
+      }
+      $review[] = array('title' => t('Card Number'), 'data' => $arg1->payment_details['cc_number']);
+      $review[] = array('title' => t('Expiration'), 'data' => $arg1->payment_details['cc_exp_month'] .'/'. $arg1->payment_details['cc_exp_year']);
+      if (variable_get('uc_credit_cvv_enabled', TRUE)) {
+        $review[] = array('title' => t('CVV'), 'data' => $arg1->payment_details['cc_cvv']);
+      }
+      return $review;
+
+    case 'order-view':
+      drupal_add_js(drupal_get_path('module', 'uc_credit') .'/uc_credit.js');
+      $output .= '<span onclick="toggle_card_details();" style="cursor: pointer;">'
+                .'<a id="cc_details_title" href="" onclick="return false;" '
+                .'style="display: none;">View card details.</a>';
+      $output .= '<span id="cc_details"><table>';
+      if (variable_get('uc_credit_owner_enabled', TRUE)) {
+        $output .= '<tr><td>'. t('Card Owner:') .' </td><td>'
+                 . $arg1->payment_details['cc_owner'] .'</td></tr>';
+      }
+      $output .= '<tr><td>'. t('Card Number:') .' </td><td>'
+               . uc_credit_display_number($arg1->payment_details['cc_number']) .'</td></tr>';
+      $output .= '<tr><td>'. t('Expiration:') .' </td><td>'
+               . $arg1->payment_details['cc_exp_month'] .'/'
+               . $arg1->payment_details['cc_exp_year'] .'</td></tr>';
+      if (variable_get('uc_credit_cvv_enabled', TRUE)) {
+        $output .= '<tr><td>'. t('CVV:') .' </td><td>'
+                 . $arg1->payment_details['cc_cvv'] .'</td></tr>';
+      }
+      $output .= '</table></span></span>';
+      if (user_access('process credit cards')) {
+        $output .= drupal_get_form('uc_credit_order_view_form', $arg1->order_id);
+      }
+      return $output;
+
+    case 'customer-view':
+      $output = t('Card Number:') .'<br />'
+              . uc_credit_display_number($arg1->payment_details['cc_number'], TRUE);
+      return $output;
+
+    case 'order-details':
+      $details = drupal_get_form('uc_payment_method_credit_form', $arg1);
+      return uc_strip_form($details);
+
+    case 'edit-process':
+      $changes['payment_details']['cc_owner'] = check_plain($_POST['cc_owner']);
+      $changes['payment_details']['cc_number'] = check_plain($_POST['cc_number']);
+      $changes['payment_details']['cc_exp_month'] = check_plain($_POST['cc_exp_month']);
+      $changes['payment_details']['cc_exp_year'] = check_plain($_POST['cc_exp_year']);
+      $changes['payment_details']['cc_cvv'] = check_plain($_POST['cc_cvv']);
+      return $changes;
+
+    case 'settings':
+      $form['cc_auto_process'] = array(
+        '#value' => '<div>'. t('By default, credit card information is received '
+                   .'and stored in the database for the store owner to review and '
+                   .'process at his or her leisure.  The options in this section '
+                   .'allow you to alter the way this works.') .'</div>',
+      );
+      $form['uc_credit_checkout_process'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Attempt to process credit card payments at checkout.'),
+        '#default_value' => variable_get('uc_credit_checkout_process', FALSE),
+      );
+      $form['uc_credit_fail_message'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Card processing failure message'),
+        '#description' => t('Modify the message displayed to users when their '
+                           .'payment fails at checkout.'),
+        '#default_value' => variable_get('uc_credit_fail_message',
+                       t('We were unable to process your credit card payment. '
+                      .'Please verify your card details and try again.  If the '
+                      .'problem persists, contact us to complete your order.')),
+      );
+      $form['cc_types_info'] = array(
+        '#value' => '<div>'. t('Specify which credit card types you accept for payment. '
+                     .'Make sure your card processor or payment gateway supports '
+                     .'the enabled options.') .'</div>',
+      );
+      $form['uc_credit_visa'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Visa'),
+        '#default_value' => variable_get('uc_credit_visa', TRUE),
+      );
+      $form['uc_credit_mastercard'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Mastercard'),
+        '#default_value' => variable_get('uc_credit_mastercard', TRUE),
+      );
+      $form['uc_credit_discover'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Discover'),
+        '#default_value' => variable_get('uc_credit_discover', TRUE),
+      );
+      $form['uc_credit_amex'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('American Express'),
+        '#default_value' => variable_get('uc_credit_amex', TRUE),
+      );
+      $form['cvv_info'] = array(
+        '#value' => '<div>'. t('The CVV is an added security measure on credit cards. On '
+                     .'Visa, Mastercard, and Discover cards it is a three digit '
+                     .'number, and on AmEx cards it is a four digit number. If '
+                     .'your credit card processor or payment gateway requires '
+                     .'this information, you should enable this feature here.') .'</div>',
+      );
+      $form['uc_credit_cvv_enabled'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Enable CVV on checkout form.'),
+        '#default_value' => variable_get('uc_credit_cvv_enabled', TRUE),
+      );
+      $form['uc_credit_owner_enabled'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Enable card owner field on checkout form.'),
+        '#default_value' => variable_get('uc_credit_owner_enabled', TRUE),
+      );
+      $form['uc_credit_validate_numbers'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Validate credit card numbers at checkout.'),
+        '#default_value' => variable_get('uc_credit_validate_numbers', TRUE),
+      );
+      $form['uc_credit_policy'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Credit card payment policy'),
+        '#description' => t('Instructions for customers on the checkout page.'),
+        '#default_value' => variable_get('uc_credit_policy', t('Your billing information '
+                              .'must match the billing address for the credit card '
+                              .'entered below or we will be unable to process '
+                              .'your payment.')),
+        '#rows' => 3,
+      );
+      $form['uc_credit_masking'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Enable credit card number masking.'),
+        '#default_value' => variable_get('uc_credit_masking', TRUE),
+      );
+      $form['uc_credit_masking_char'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Masking Character'),
+        '#description' => t('The character used to mask a card number.'),
+        '#default_value' => variable_get('uc_credit_masking_char', '-'),
+        '#size' => 10,
+        '#maxlength' => 1,
+      );
+      return $form;
+  }
+}
+
+/**
+ * Credit card details form on the checkout screen.
+ */
+function uc_payment_method_credit_form($order) {
+  $form['cc_policy'] = array('#value' => variable_get('uc_credit_policy', ''));
+  if (variable_get('uc_credit_owner_enabled', TRUE)) {
+    $form['cc_owner'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Card Owner'),
+      '#default_value' => $order->payment_details['cc_owner'],
+      '#size' => 32,
+      '#maxlength' => 64
+    );
+  }
+  $form['cc_number'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Card Number'),
+    '#default_value' => $order->payment_details['cc_number'],
+    '#size' => 20,
+    '#maxlength' => 16,
+  );
+  $form['cc_exp_month'] = uc_select_month(t('Expiration Month'), $order->payment_details['cc_exp_month']);
+  $form['cc_exp_year'] = uc_select_year(t('Expiration Year'), $order->payment_details['cc_exp_year']);
+  if (variable_get('uc_credit_cvv_enabled', TRUE)) {
+    $cvv_length = variable_get('uc_credit_amex', TRUE) ? 4 : 3;
+    $form['cc_cvv'] = array(
+      '#type' => 'textfield',
+      '#title' => t('CVV'),
+      '#default_value' => $order->payment_details['cc_cvv'],
+      '#size' => $cvv_length,
+      '#maxlength' => $cvv_length,
+    );
+  }
+
+  return $form;
+}
+
+function theme_uc_payment_method_credit_form($form) {
+  // Comment out this function to just straight display the form.
+  $form['cc_number']['#title'] = '';
+  $form['cc_exp_month']['#title'] = '';
+  $form['cc_exp_year']['#title'] = '';
+
+  if (arg(1) == 'checkout') {
+    $path = base_path() . drupal_get_path('module', 'uc_credit');
+    $output = '<table class="pane-table display-inline" cellpadding="2">';
+    if (strlen($form['cc_policy']) > 0) {
+      $output .= '<tr><td colspan="2">'. variable_get('uc_credit_policy', '')
+                .'</td></tr>';
+    }
+    if (variable_get('uc_credit_owner_enabled', TRUE)) {
+      $form['cc_owner']['#title'] = '';
+      $output .= '<tr><td class="field-label">'. t('Card Owner') .':</td><td>'
+               . drupal_render($form['cc_owner']) .'</td></tr>';
+    }
+    $output .= '<tr><td class="field-label">'. t('Card Number') .':</td><td>'
+             . drupal_render($form['cc_number']) .'</td></tr>';
+    $output .= '<tr><td class="field-label">'. t('Expiration Date') .':</td><td>'
+             . drupal_render($form['cc_exp_month']) .' '
+             . drupal_render($form['cc_exp_year']) .'</td></tr>';
+    if (variable_get('uc_credit_cvv_enabled', TRUE)) {
+      $form['cc_cvv']['#title'] = '';
+      $output .= '<tr><td class="field-label">'. t('CVV') .':</td><td>'. drupal_render($form['cc_cvv'])
+                .' <img src="'. $path .'/images/info.png" onclick="cvv_info_popup();" style="cursor: pointer; position: relative; top: 3px;"> <a style="cursor: pointer; font-weight: normal;" onclick="cvv_info_popup();">'
+                . t("What's the CVV?") .'</a></td></tr>';
+    }
+    $output .= '</table>';
+  }
+  elseif (arg(2) == 'orders') {
+    $output = '<table class="order-edit-table">';
+    if (variable_get('uc_credit_owner_enabled', TRUE)) {
+      $form['cc_owner']['#title'] = '';
+      $output .= '<tr><td class="oet-label">'. t('Card Owner') .':</td><td>'
+               . drupal_render($form['cc_owner']) .'</td></tr>';
+    }
+    $output .= '<tr><td class="oet-label">'. t('Card Number') .':</td><td>'
+             . drupal_render($form['cc_number']) .'</td></tr>';
+    $output .= '<tr><td class="oet-label">'. t('Expiration Date') .':</td><td>'
+             . drupal_render($form['cc_exp_month']) .' '
+             . drupal_render($form['cc_exp_year']) .'</td></tr>';
+    if (variable_get('uc_credit_cvv_enabled', TRUE)) {
+      $form['cc_cvv']['#title'] = '';
+      $output .= '<tr><td class="oet-label">'. t('CVV') .':</td><td>'
+               . drupal_render($form['cc_cvv']) .'</td></tr>';
+    }
+    $output .= '</td></tr></table>';
+  }
+
+  return $output;
+}
+
+/**
+ * The "Process Card" button on the order view.
+ */
+function uc_credit_order_view_form($order_id) {
+  $form['order_id'] = array(
+    '#type' => 'hidden',
+    '#value' => $order_id,
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Process Card'),
+  );
+  return $form;
+}
+
+function uc_credit_order_view_form_submit($form_id, $form_values) {
+  drupal_goto('admin/store/orders/'. $form_values['order_id'] .'/credit');
+}
+
+/**
+ * View the credit card terminal page.
+ */
+function uc_credit_terminal($order_id) {
+  $order = uc_order_load($order_id);
+
+  if ($order === FALSE) {
+    drupal_set_message(t('Order !order_id does not exist.', array('!order_id' => $order_id)));
+    drupal_goto('admin/store/orders');
+  }
+
+  $output = l(t('Return to order view screen.'), 'admin/store/orders/'. $order_id);
+
+  $balance = uc_payment_balance($order);
+  $output .= '<p>'. t('Use this terminal to process credit card payments:') .'</p>'
+            .'<table><tbody style="border-top: 0px;"><tr><td><strong>'
+           . t('Order total:') .'</strong> </td><td>'
+           . uc_currency_format($order->order_total) .'</td></tr><tr><td>'
+            .'<strong>'. t('Balance:') .'</strong> </td><td>'
+           . uc_currency_format($balance) .'</td></tr></tbody></table>';
+
+  $output .= '<br /><p><strong>'. t('Credit card details:') .'</strong><table>';
+  if (variable_get('uc_credit_owner_enabled', TRUE)) {
+    $output .= '<tbody style="border-top: 0px;"><tr><td>'. t('Card Owner:')
+              .' </td><td>'. $order->payment_details['cc_owner'] .'</td></tr>';
+  }
+  $output .= '<tr><td>'. t('Card Number:') .' </td><td>'
+           . uc_credit_display_number($order->payment_details['cc_number'])
+            .'</td></tr><tr><td>'. t('Expiration:') .' </td><td>'
+           . $order->payment_details['cc_exp_month'] .'/'
+           . $order->payment_details['cc_exp_year'] .'</td></tr>';
+  if (variable_get('uc_credit_cvv_enabled', TRUE)) {
+    $output .= '<tr><td>'. t('CVV:') .' </td><td>'
+             . $order->payment_details['cc_cvv'] .'</td></tr>';
+  }
+  $output .= '</tbody></table></p>';
+
+  $output .= drupal_get_form('uc_credit_terminal_form', $order_id, $balance);
+
+  return $output;
+}
+
+function uc_credit_terminal_form($order_id, $amount = 0) {
+  $form['amount'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Charge Amount'),
+    '#default_value' => $amount,
+    '#size' => 10,
+    '#weight' => 0,
+  );
+  $form['order_id'] = array(
+    '#type' => 'hidden',
+    '#value' => $order_id,
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Charge Card'),
+    '#weight' => 10,
+  );
+
+  return $form;
+}
+
+function uc_credit_terminal_form_validate($form_id, $form_values) {
+  if (!is_numeric($form_values['amount']) || $form_values['amount'] == 0) {
+    form_set_error('amount', t('You must enter a number for the amount.'));
+  }
+
+  $order = uc_order_load($form_values['order_id']);
+  if ($order === FALSE) {
+    form_set_error('', t('Invalid order ID.  Unable to process payment.'));
+  }
+}
+
+function uc_credit_terminal_form_submit($form_id, $form_values) {
+  uc_payment_process('credit', $form_values['order_id'], $form_values['amount']);
+}
+
+/*******************************************************************************
+ * Module and Helper Functions
+ ******************************************************************************/
+
+/**
+ * Return a credit card number with appropriate masking.
+ */
+function uc_credit_display_number($number, $masked = FALSE) {
+  if (user_access('view cc numbers') && !$masked) {
+    return $number;
+  }
+  else {
+    return str_repeat(variable_get('uc_credit_masking_char', '-'), 12)
+         . substr($number, -4);
+  }
+}
+
+/**
+ * Validate a CVV number during checkout.
+ */
+function _valid_cvv($cvv) {
+  if (variable_get('uc_credit_visa', TRUE) ||
+      variable_get('uc_credit_mastercard', TRUE) ||
+      variable_get('uc_credit_discover', TRUE)) {
+    $digits[] = 3;
+  }
+  if (variable_get('uc_credit_amex', TRUE)) {
+    $digits[] = 4;
+  }
+
+  if (!in_array(strlen($cvv), $digits) || !is_numeric($cvv)) {
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+/**
+ * Validate a credit card number during checkout.
+ * See: http://www.merriampark.com/anatomycc.htm
+ */
+function _valid_card_number($number) {
+  $id = substr($number, 0, 1);
+  if (($id == 3 && !variable_get('uc_credit_amex', TRUE)) ||
+      ($id == 4 && !variable_get('uc_credit_visa', TRUE)) ||
+      ($id == 5 && !variable_get('uc_credit_mastercard', TRUE)) ||
+      ($id == 6 && !variable_get('uc_credit_discover', TRUE)) ||
+      !is_numeric($number)) {
+    return FALSE;
+  }
+
+  for ($i = 0; $i < strlen($number); $i++) {
+    $digit = substr($number, $i, 1);
+    if ($i % 2 == 0 && $i != strlen($number) - 1) {
+      $digit *= 2;
+      if ($digit > 9) {
+        $digit -= 9;
+      }
+    }
+    $total += $digit;
+  }
+
+  if ($total % 10 != 0) {
+    return FALSE;
+  }
+
+  return TRUE;
+}

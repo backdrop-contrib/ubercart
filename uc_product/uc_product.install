@@ -1,0 +1,95 @@
+<?php
+// $Id$
+
+/**
+ * Ubercart uc_product.module schema
+ */
+function uc_product_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {uc_class_choices} (
+        `ccid` mediumint(9) unsigned NOT NULL auto_increment,
+        `cfid` mediumint(9) unsigned NOT NULL,
+        `name` varchar(64) NOT NULL,
+        PRIMARY KEY  (`ccid`)
+      );");
+      db_query("CREATE TABLE {uc_class_fields} (
+        `cfid` mediumint(9) unsigned NOT NULL auto_increment,
+        `pcid` mediumint(9) unsigned NOT NULL,
+        `title` varchar(64) NOT NULL,
+        `name` varchar(64) NOT NULL,
+        `type` varchar(15) NOT NULL,
+        PRIMARY KEY  (`cfid`)
+      );");
+      db_query("CREATE TABLE {uc_product_classes} (
+        `pcid` mediumint(9) NOT NULL auto_increment,
+        `name` varchar(25) NOT NULL,
+        PRIMARY KEY  (`pcid`)
+      );");
+      db_query("CREATE TABLE {uc_product_class_choices} (
+        `nid` mediumint(9) unsigned NOT NULL,
+        `cfid` mediumint(9) NOT NULL,
+        `value` varchar(64) NOT NULL
+      );");
+      db_query("CREATE TABLE {uc_products} (
+        `nid` mediumint(9) NOT NULL,
+        `model` varchar(32) NOT NULL,
+        `list_price` decimal(10,2) NOT NULL default '0.00',
+        `cost` decimal(10,2) NOT NULL default '0.00',
+        `sell_price` decimal(10,2) NOT NULL default '0.00',
+        `weight` float NOT NULL default '0',
+        `pcid` mediumint(9) NOT NULL,
+        `unique_hash` varchar(32) NOT NULL,
+        PRIMARY KEY  (`nid`)
+      );");
+    break;
+    case 'pgsql':
+      db_query('CREATE TABLE {uc_class_choices} (
+        "ccid" mediumint(9) unsigned NOT NULL,
+        "cfid" mediumint(9) unsigned NOT NULL,
+        "name" varchar(64) NOT NULL,
+        PRIMARY KEY  ("ccid")
+      );');
+      db_query("CREATE INDEX {uc_class_choices}_ccid ON {uc_class_choices} (ccid)");
+      db_query('CREATE TABLE {uc_class_fields} (
+        "cfid" mediumint(9) unsigned NOT NULL,
+        "pcid" mediumint(9) unsigned NOT NULL,
+        "title" varchar(64) NOT NULL,
+        "name" varchar(64) NOT NULL,
+        "type" varchar(15) NOT NULL,
+        PRIMARY KEY  ("cfid")
+      );');
+      db_query('CREATE TABLE {uc_product_classes} (
+        "pcid" mediumint(9) NOT NULL auto_increment,
+        "name" varchar(25) NOT NULL,
+        PRIMARY KEY  ("pcid")
+      );');
+      db_query("CREATE INDEX {uc_product_classes}_pcid ON {uc_product_classes} (pcid)");
+      db_query('CREATE TABLE "uc_product_class_choices" (
+        "nid" mediumint(9) unsigned NOT NULL,
+        "cfid" mediumint(9) NOT NULL,
+        "value" varchar(64) NOT NULL
+      );');
+      db_query('CREATE TABLE {uc_products} (
+        "nid" mediumint(9) NOT NULL REFERENCES {node} (nid),
+        "model" varchar(32) NOT NULL,
+        "list_price" decimal(10,2) NOT NULL default \'0.00\',
+        "cost" decimal(10,2) NOT NULL default \'0.00\',
+        "sell_price" decimal(10,2) NOT NULL default \'0.00\',
+        "weight" float NOT NULL default \'0\',
+        "pcid" mediumint(9) NOT NULL REFERENCES {uc_product_classes} (pcid),
+        "unique_hash" varchar(32) NOT NULL
+      );');
+    break;
+  }
+  
+  variable_set('uc_product_default_fields', array(
+    'model' => 'model',
+    'list_price' => 'list_price',
+    'cost' => 'cost',
+    'sell_price' => 'sell_price',
+    'weight' => 'weight',
+  ));
+}
+

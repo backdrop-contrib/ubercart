@@ -1,0 +1,206 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Shipping quote module that defines a flat shipping rate for each product.
+ */
+
+/******************************************************************************
+ * Drupal Hooks                                                               *
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_menu().
+ */
+function uc_flatrate_menu($may_cache){
+  $items = array();
+  
+  if ($may_cache){
+    $items[] = array('path' => 'admin/store/settings/quotes/flatrate',
+      'access' => user_access('configure quotes'),
+      'title' => t('Flatrate settings'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('uc_flatrate_admin_settings'),
+      'type' => MENU_NORMAL_ITEM,
+    );
+  }
+  
+  return $items;
+}
+
+/**
+ * Implementation of hook_form_alter().
+ *
+ * Adds a form element for the shipping rate of a product.
+ */
+function uc_flatrate_form_alter($form_id, &$form){
+  if ($form_id == 'product_node_form'){
+    $enabled = variable_get('uc_quote_enabled', array('flatrate' => true));
+    $form['shipping']['flatrate'] = array('#type' => 'fieldset',
+      '#title' => t('Flat Shipping Rate'),
+      '#collapsible' => true,
+      '#collapsed' => ($enabled['flatrate'] == false),
+      '#weight' => 2,
+    );
+    
+    $form['shipping']['flatrate']['flatrate'] = array('#type' => 'textfield',
+      '#title' => t('Flat Shipping Rate'),
+      '#size' => 10,
+      '#default_value' => $form['#node']->flatrate,
+    );
+    
+    $form['#submit']['uc_flatrate_form_submit'] = array();
+  }
+}
+
+/**
+ * Submit function for uc_flatrate_form_alter().
+ */
+function uc_flatrate_form_submit($form_id, $form_values){
+  db_query("DELETE FROM {uc_flatrate_products} WHERE nid = %d", $form_values['nid']);
+  db_query("INSERT INTO {uc_flatrate_products} (nid, rate) VALUES (%d, %f)",
+    $form_values['nid'], $form_values['flatrate']);
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ */
+function uc_flatrate_nodeapi(&$node, $op){
+  switch($op){
+    case 'load':
+      $rate = db_result(db_query("SELECT rate FROM {uc_flatrate_products} WHERE nid = %d", $node->nid));
+      if ($rate === false || $rate == -1){
+        return array('flatrate' => variable_get('uc_flatrate_product_default', 0.00));
+      }
+      else{
+        return array('flatrate' => $rate);
+      }
+    break;
+    case 'delete':
+      db_query("DELETE FROM {uc_flatrate_products} WHERE nid = %d", $node->nid);
+    break;
+  }
+}
+
+/******************************************************************************
+ * Übercart Hooks                                                             *
+ ******************************************************************************/
+
+/**
+ * Implementation of Übercart's hook_shipping_method().
+ */
+function uc_flatrate_shipping_method(){
+  $methods = array();
+  
+  $enabled = variable_get('uc_quote_enabled', array('flatrate' => true, 'order rate' => false));
+  $weight = variable_get('uc_quote_weight', array('flatrate' => 0, 'order rate' => 1));
+  $methods[] = array(
+    'id' => 'flatrate',
+    'title' => t('Flat Rate per Product'),
+    'enabled' => $enabled['flatrate'],
+    'quote' => array(
+      'type' => 'order',
+      'callback' => 'uc_flatrate_quote',
+      'accessorials' => array(
+        t('Shipping'),
+      ),
+    ),
+    'weight' => $weight['flatrate'],
+  );
+  
+  $methods[] = array(
+    'id' => 'order rate',
+    'title' => t('Flat Rate per Order'),
+    'enabled' => $enabled['order rate'],
+    'quote' => array(
+      'type' => 'order',
+      'callback' => 'uc_flatrate_quote_order',
+      'accessorials' => array(
+        t('Shipping'),
+      ),
+    ),
+    'weight' => $weight['order rate'],
+  );
+  
+  return $methods;
+}
+
+/**
+ * Implementation of Übercart's hook_store_status().
+ */
+function uc_flatrate_store_status(){
+  $messages = array();
+
+  return $messages;
+}
+
+/**
+ * Implementation (ha!) of Übercart's hook_order().
+ */
+function uc_flatrate_order($op, $arg1, $arg2 = null){
+  
+}
+
+/******************************************************************************
+ * Menu Callbacks                                                             *
+ ******************************************************************************/
+
+/**
+ * Configures the store default shipping rate.
+ */
+function uc_flatrate_admin_settings(){
+  $form = array();
+  
+  $form['uc_flatrate_product_default'] = array('#type' => 'textfield',
+    '#title' => t('Default Product Shipping Rate'),
+    '#default_value' => variable_get('uc_flatrate_product_default', 0),
+  );
+  $form['uc_flatrate_order_rate'] = array('#type' => 'textfield',
+    '#title' => t('Order Shipping Rate'),
+    '#default_value' => variable_get('uc_flatrate_order_rate', 0),
+  );
+  
+  return system_settings_form($form);
+}
+
+function uc_flatrate_fulfill_order($order){
+  
+}
+
+/******************************************************************************
+ * Module Functions                                                           *
+ ******************************************************************************/
+
+/**
+ * Standard callback to return a shipping rate via the flat rate method.
+ *
+ * @param $products
+ *   The order's products.
+ * @param $details
+ *   Other order details including a shipping address.
+ * @return
+ *   A JSON object containing the shipping quote for the order.
+ */
+function uc_flatrate_quote($products, $details){
+  $rate = 0;
+  foreach ($products as $product){
+    $node = node_load($product->nid);
+    $rate += $node->flatrate * $product->qty;
+  }
+  
+  $method = uc_flatrate_shipping_method();
+  
+  $quotes[] = array('rate' => $rate, 'option_label' => $method[0]['quote']['accessorials'][0]);
+  
+  return drupal_to_js($quotes);
+}
+
+function uc_flatrate_quote_order($products, $details){
+  $method = uc_flatrate_shipping_method();
+  $rate = variable_get('uc_flatrate_order_rate', 0);
+  
+  $quotes[] = array('rate' => $rate, 'option_label' => $method[1]['quote']['accessorials'][0]);
+  
+  return drupal_to_js($quotes);
+}

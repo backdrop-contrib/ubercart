@@ -1,0 +1,59 @@
+<?php
+
+function uc_payment_install(){
+  switch($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {uc_payment_check} (
+        check_id mediumint(9) NOT NULL auto_increment,
+        order_id mediumint(9) NOT NULL,
+        clear_date int(11) NOT NULL,
+        PRIMARY KEY (check_id),
+        KEY order_id (order_id)
+      );");
+      db_query("CREATE TABLE {uc_payment_other} (
+        order_id mediumint(9) NOT NULL,
+        description varchar(64) NOT NULL,
+        PRIMARY KEY order_id (order_id)
+      );");
+      db_query("CREATE TABLE {uc_payment_receipts} (
+        receipt_id mediumint(9) NOT NULL auto_increment,
+        order_id mediumint(9) NOT NULL,
+        method varchar(32) NOT NULL,
+        amount decimal(10,2) NOT NULL,
+        uid mediumint(9) NOT NULL,
+        data text NOT NULL,
+        comment tinytext NOT NULL,
+        received int(11) NOT NULL,
+        PRIMARY KEY (receipt_id),
+        KEY order_id (order_id)
+      );");
+      break;
+    case 'pgsql':
+      db_query("CREATE TABLE {uc_payment_check} (
+        check_id mediumint(9) NOT NULL,
+        order_id mediumint(9) NOT NULL,
+        clear_date int(11) NOT NULL,
+        PRIMARY KEY (check_id),
+        KEY order_id (order_id)
+      );");
+      db_query("CREATE TABLE {uc_payment_other} (
+        order_id mediumint(9) NOT NULL,
+        description varchar(64) NOT NULL,
+        PRIMARY KEY order_id (order_id)
+      );");
+      db_query("CREATE TABLE {uc_payment_receipts} (
+        receipt_id mediumint(9) NOT NULL,
+        order_id mediumint(9) NOT NULL,
+        method varchar(32) NOT NULL,
+        amount decimal(10,2) NOT NULL,
+        uid mediumint(9) NOT NULL,
+        data text NOT NULL,
+        comment tinytext NOT NULL,
+        received int(11) NOT NULL,
+        PRIMARY KEY (receipt_id),
+        KEY order_id (order_id)
+      );");
+      break;
+  }
+}

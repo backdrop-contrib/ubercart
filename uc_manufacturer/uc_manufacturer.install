@@ -1,0 +1,51 @@
+<?php
+// $Id$
+
+/**
+ * Implementation of hook_install().
+ *
+ * Sets up a vocabulary whose terms are Manufacturers. Adds a table to hold 
+ * manufacturer data.
+ */
+function uc_manufacturer_install(){
+  //Find possible Manufacturers vocabulary.
+  $result = db_query("SELECT vid FROM {vocabulary} WHERE name = 'Manufacturers'");
+  if ($vocab = db_fetch_object($result)){
+    $vid = $vocab->vid;
+  }
+  else{ //If none, create one.
+    $vid = db_next_id('{vocabulary}_vid');
+    db_query("INSERT INTO {vocabulary} (vid, name, description, help, relations, hierarchy, multiple, required, tags, module, weight)
+      VALUES (%d, 'Manufacturers', '%s', '', 0, 0, 0, 0, 1, 'uc_manufacturer', 0)", $vid, t('Connects manufacturer information to taxonomy terms.'));
+    db_query("INSERT INTO {vocabulary_node_types} (vid, type) VALUES (%d, 'product')", $vid);
+  }
+  variable_set('uc_manufacturer_vid', $vid);
+  
+  //Create a table, whee!
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {uc_manufacturers} (
+          `tid` int(11) NOT NULL,
+          `url` varchar(60) NOT NULL,
+          `logo` varchar(127) NOT NULL,
+          `phone_no` varchar(12) NOT NULL,
+          `fax_no` varchar(12) NOT NULL,
+          PRIMARY KEY  (`tid`)
+        );"
+      );
+    break;
+    case 'pgsql':
+      db_query("CREATE TABLE {uc_manufacturers} (
+          `tid` int(11) NOT NULL,
+          `url` varchar(60) NOT NULL,
+          `logo` varchar(127) NOT NULL,
+          `phone_no` varchar(12) NOT NULL,
+          `fax_no` varchar(12) NOT NULL,
+          PRIMARY KEY  (`tid`)
+        );"
+      );
+      db_query("CREATE INDEX {uc_manufacturer}_tid ON {uc_manufacturer} (tid)");
+    break;
+  }
+}

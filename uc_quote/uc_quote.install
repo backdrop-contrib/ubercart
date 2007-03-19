@@ -1,0 +1,68 @@
+<?php
+// $Id$
+
+function uc_quote_install(){
+  switch($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {uc_quote_types} (
+        `id_type` varchar(127) NOT NULL,
+        `id` mediumint(9) NOT NULL,
+        `quote_type` varchar(64) NOT NULL,
+        PRIMARY KEY  (`id_type`,`id`)
+      );");
+      db_query("CREATE TABLE {uc_quote_shipping_types} (
+        `id_type` varchar(127) NOT NULL ,
+        `id` mediumint(9) NOT NULL ,
+        `shipping_type` varchar(64) NOT NULL,
+        PRIMARY KEY (`id_type`, `id`)
+      );");
+      db_query("CREATE TABLE {uc_order_quotes} (
+        `oid` mediumint(9) unsigned NOT NULL,
+        `method` varchar(25) NOT NULL,
+        `accessorials` varchar(8) NOT NULL,
+        `rate` decimal(10,2) NOT NULL,
+        `quote_form` text NOT NULL,
+        UNIQUE KEY `oid_quote_method` (`oid`,`method`)
+      );");
+      db_query("CREATE TABLE IF NOT EXISTS {uc_order_fulfillments} (
+        `oid` mediumint(9) unsigned NOT NULL,
+        `type` varchar(25) NOT NULL,
+        `method` varchar(25) NOT NULL,
+        `fulfilled` tinyint(1) unsigned NOT NULL,
+        `completed` int(11) unsigned NOT NULL,
+        UNIQUE KEY `oid_type_method` (`oid`,`type`)
+      );");
+    break;
+    case 'pgsql':
+      db_query('CREATE TABLE {uc_quote_types} (
+        "id_type" varchar(127) NOT NULL,
+        "id" mediumint(9) NOT NULL,
+        "quote_type" varchar(64) NOT NULL,
+        PRIMARY KEY  ("id_type","id")
+      );');
+      db_query('CREATE TABLE {uc_quote_shipping_types} (
+        "id_type" varchar(127) NOT NULL ,
+        "id" mediumint(9) NOT NULL ,
+        "shipping_type" VARCHAR( 64 ) NOT NULL,
+        PRIMARY KEY ("id_type", "id")
+      );');
+      db_query('CREATE TABLE {uc_order_quotes} (
+        "oid" mediumint(9) unsigned NOT NULL,
+        "method" varchar(25) NOT NULL,
+        "accessorials" varchar(8) NOT NULL,
+        "rate" decimal(10,2) NOT NULL,
+        "quote_form" text NOT NULL,
+        UNIQUE KEY "oid_quote_method" ("oid","method")
+      );');
+      db_query('CREATE TABLE IF NOT EXISTS {uc_order_fulfillments} (
+        "oid" mediumint(9) unsigned NOT NULL,
+        "type" varchar(25) NOT NULL,
+        "method" varchar(25) NOT NULL,
+        "fulfilled" tinyint(1) unsigned NOT NULL,
+        "completed" int(11) unsigned NOT NULL,
+        UNIQUE KEY "oid_type_method" ("oid","type")
+      );');
+    break;
+  }
+}

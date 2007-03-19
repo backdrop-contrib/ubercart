@@ -1,0 +1,616 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Manufacturer module.
+ *
+ * Creates and extends a Drupal vocabulary to hold manufacturers of products.
+ */
+
+/******************************************************************************
+ * Drupal Hooks                                                               *
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_help().
+ */
+function uc_manufacturer_help($section){
+  $output = '';
+  
+  switch($section){
+    case 'admin/settings/module#description':
+      $output = 'Information about the companies that sell equipment they make.';
+      break;
+    case 'manufacturer':
+      $output = 'Lists manufacturers associated with taxonomy terms. Make sure all information is current. ';
+      $output .= l(t('Add manufacturers here.'), 'admin/content/taxonomy/'. variable_get('uc_manufacturer_vid', 0) .'/add/term');
+      break;
+  }
+  return $output;
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function uc_manufacturer_perm(){
+  return array('administer manufacturers');
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function uc_manufacturer_menu($may_cache){
+  $items = array();
+  
+  if ($may_cache){
+    $items[] = array('path' => 'manufacturer',
+      'title' => t('Manufacturers'),
+      'access' => user_access('administer manufacturers'),
+      'callback' => 'uc_manufacturer_all',
+      'callback arguments' => array('list'),
+      'type' => MENU_NORMAL_ITEM,
+      );
+    $items[] = array('path' => 'admin/store/settings/manufacturers',
+      'title' => t('Manufacturer settings'),
+      'access' => user_access('administer manufacturers'),
+      'callback' => 'uc_manufacturer_admin_settings',
+      'type' => MENU_NORMAL_ITEM,
+    );
+    $items[] = array('path' => 'admin/store/settings/manufacturers/setup',
+      'title' => t('Setup Manufacturers'),
+      'access' => user_access('administer manufacturers'),
+      'callback' => 'uc_manufacturer_setup',
+      'type' => MENU_CALLBACK_ITEM,
+    );
+  }
+  else{
+    $items[] = array('path' => 'manufacturer/'. arg(1),
+      'title' => t('View Manufacturer'),
+      'access' => user_access('administer manufacturers'),
+      'callback' => 'uc_manufacturer_all',
+      'callback arguments' => array('view', arg(1)),
+      'type' => MENU_CALLBACK_ITEM,
+      );
+     $items[] = array('path' => 'manufacturer/'. arg(1) .'/view',
+      'title' => t('view'),
+      'access' => user_access('administer manufacturers'),
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => -10,
+      );
+    $items[] = array('path' => 'manufacturer/'. arg(1) .'/edit',
+      'title' => t('edit'),
+      'access' => user_access('administer manufacturers'),
+      'callback' => 'uc_manufacturer_edit',
+      'callback arguments' => array(arg(1)),
+      'type' => MENU_LOCAL_TASK,
+      );
+  }
+  return $items;
+}
+
+/**
+ * Implementation of hook_term_path().
+ *
+ * Redirects taxonomy links to the manufacturer page.
+ */
+function uc_manufacturer_term_path($term){
+  return 'manufacturer/'. $term->tid;
+}
+
+/**
+ * Implementation of hook_taxonomy().
+ *
+ * Handles submit functionality of taxonomy forms. Similar to nodeapi for terms.
+ */
+function uc_manufacturer_taxonomy($op, $type, $object = null){
+  switch($type){
+    case 'term':
+      if ($object && $object['vid'] == variable_get('uc_manufacturer_vid', 0)){
+        switch($op){
+          case 'insert':
+            $field_name = 'logo';
+            if ($file = file_check_upload($field_name)) {
+              $file->filepath = str_replace('\\', '/', $file->filepath);
+              $file = file_save_upload($field_name, file_create_path('images') .'/'. $file->filename);
+              if ($file) {
+                if (!image_get_info($file->filepath)) {
+                  form_set_error($field_name, t('Uploaded file is not a valid image'));
+                  $logo = 'File error.';
+                }
+              }
+              $logo = $file->filepath;
+            }
+            else{
+              $logo = 'File not found.';
+            }
+            db_query("INSERT INTO {uc_manufacturers} (tid, url, logo, phone_no, fax_no) VALUES (%d, '%s', '%s', '%s', '%s')",
+              $object['tid'], $object['url'], $logo, $object['phone_no'], $object['fax_no']);
+          break;
+          case 'update':
+            $field_name = 'logo';
+            if ($file = file_check_upload($field_name)) {
+              $file->filepath = str_replace('\\', '/', $file->filepath);
+              $file = file_save_upload($field_name, file_create_path('images') .'/'. $file->filename);
+              if ($file) {
+                if (!image_get_info($file->filepath)) {
+                  form_set_error($field_name, t('Uploaded file is not a valid image'));
+                  $logo = 'File error.';
+                }
+              }
+              $logo = $file->filepath;
+            }
+            else{
+              $logo = 'File not found.';
+            }
+            db_query("UPDATE {uc_manufacturers} SET url = '%s', logo = '%s', phone_no = '%s', fax_no = '%s' WHERE tid = %d",
+              $object['url'], $logo, $object['phone_no'], $object['fax_no'], $object['tid']);
+          break;
+          case 'delete':
+            db_query("DELETE FROM {uc_manufacturers} WHERE tid = %d", $object['tid']);
+          break;
+        }
+      }
+      break;
+    case 'vocabulary':
+      switch($op){
+        case 'delete':
+          if ($object && $object['vid'] == variable_get('uc_manufacturer_vid', 0)){
+            variable_del('uc_manufacturer_vid');
+          }
+        break;
+      }
+    break;
+  }
+}
+
+/**
+ * Implementation of hook_form_alter().
+ *
+ * Inserts manufacturer specific form elements into the taxonomy_form_term form.
+ * Also adds a manufacturer field into the order-edit screen for products generated
+ * for the order.
+ */
+function uc_manufacturer_form_alter($form_id, &$form){
+  if ($form_id == 'taxonomy_form_term' && $form['vid']['#value'] == variable_get('uc_manufacturer_vid', 0)){
+    $manufacturer = uc_manufacturer_load($form['tid']['#value']);
+    $form['#attributes'] = array("enctype" => "multipart/form-data");
+    
+    $form['name']['#weight'] = -1;
+    $form['manufacturer'] = array('#weight' => 0);
+    $form['manufacturer']['logo'] = array('#type' => 'file',
+      '#title' => t('Logo'),
+      //'#default_value' => $node->images['_original'],
+      //'#description' => t('// Put size guidelines here.'),
+      '#weight' => 0,
+    );
+    $form['manufacturer']['url'] = array('#type' => 'textfield',
+      '#title' => t('URL'),
+      '#default_value' => $manufacturer->url,
+      '#description' => t('Absolute path to website.'),
+      '#weight' => 0,
+    );
+    $form['manufacturer']['phone_no'] = array('#type' => 'textfield',
+      '#title' => t('Phone #'),
+      '#default_value' => $manufacturer->phone_no,
+      '#description' => t('Contact phone number'),
+      '#weight' => 2,
+    );
+    $form['manufacturer']['fax_no'] = array('#type' => 'textfield',
+      '#title' => t('Fax #'),
+      '#default_value' => $manufacturer->fax_no,
+      '#description' => t('Fax number'),
+      '#weight' => 3,
+    );
+  }
+  if ($form_id == 'uc_order_edit_products_form'){
+    foreach (element_children($form['products']) as $product){
+      $opid = $form['products'][$product]['order_product_id']['#value'];
+      $result = db_query("SELECT manufacturer FROM {uc_order_products} WHERE order_product_id = %d", $opid);
+      $man = db_result($result);
+      $form['products'][$product]['manufacturer'] = array('#type' => 'textfield',
+        //'#title' => $vocabulary->name,
+        '#description' => $help,
+        //'#required' => $vocabulary->required,
+        '#default_value' => $man,
+        //'#autocomplete_path' => 'taxonomy/autocomplete/'. variable_get('uc_manufacturer_vid', 0),
+        //'#weight' => $vocabulary->weight,
+        '#maxlength' => 255,
+        '#size' => 15,
+      );
+    }
+  }
+}
+
+/**
+ * Implementation of hook_block().
+ *
+ * Displays the manufacturer's logo on the page of a product that manufacturer makes.
+ * The image is a link to the manufacturer's website.
+ */
+function uc_manufacturer_block($op = 'list', $delta = 0, $edit = array()){
+  switch($op){
+    case 'list':
+      return array(array('info' => t('Manufacturer information.')));
+    case 'view':
+      if (arg(0) == 'node'){
+        $manu_ids = taxonomy_node_get_terms_by_vocabulary(arg(1), variable_get('uc_manufacturer_vid', 0));
+        // $content = print_r($manu_ids, true);
+        if (count($manu_ids)){
+          $term = array_shift($manu_ids);
+          $man = uc_manufacturer_load($term->tid);
+          // $content .= '<pre>'. print_r($man, true) .'</pre>';
+          if ($man->logo && $man->logo != 'File not found.'){
+            $content .= l('<img src="'. base_path() . $man->logo .'" alt="'. $man->name .' Logo" />', $man->url, array('target' => '_blank'), null, null, false, true);
+          }
+          else{
+            $content .= l($man->name, $man->url ? $man->url : uc_manufacturer_term_path($man), array('target' => '_blank'));
+          }
+        }
+        $block = array('subject' => t('Manufacturer'), 'content' => $content);
+        return $block;
+      }
+      break;
+  }
+}
+
+/******************************************************************************
+ * TAPIr Hooks                                                                *
+ ******************************************************************************/
+
+/**
+ * Implementation of TAPIr's hook_table_alter().
+ *
+ * Adds a "Manufacturer" column to several product tables.
+ */
+function uc_manufacturer_table_alter($table_id, $op, $args = null){
+  if (arg(0) !== 'manufacturer'){
+    switch ($table_id){
+      case 'uc_product_table':
+        $tid = $args['tid'];
+        switch ($op){
+          case 'fields':
+            $fields[] = array('name' => 'manufacturer',
+              'title' => t('Manufacturer'),
+              'weight' => 2,
+              'enabled' => true,
+            );
+            return $fields;
+          case 'data':
+            $data = array();
+            if (is_null($tid)) {
+              $sql = "SELECT n.*, p.* FROM {node} as n RIGHT JOIN {uc_products} as p ON n.nid = p.nid";
+              $result = db_query($sql);
+            }
+            else{
+              $result = taxonomy_select_nodes(array($tid));
+            }
+            while ($node = db_fetch_object($result)){
+              $node = node_load($node->nid);
+              if ($node->type != 'image'){
+                $man = uc_product_get_manufacturer($node->nid);
+                $data['manufacturer'][] = l($man->name, 'manufacturer/'. $man->tid);
+              }
+            }
+            return $data;
+        }
+      break;
+      case 'op_products_view_table':
+        $products = $args;
+        switch ($op){
+          case 'fields':
+            $fields[] = array('name' => 'manufacturer',
+              'title' => t('Manufacturer'),
+              'weight' => 2,
+              'enabled' => true,
+            );
+            return $fields;
+          case 'data':
+          //drupal_set_message('<pre>'. print_r($args, true) .'</pre>');
+            $data = array();
+            if (is_array($products)){
+              foreach ($products as $product){
+                $data['manufacturer'][] = array('data' => $product->manufacturer, 'align' => 'center', 'nowrap' => 'nowrap');
+              }
+            }
+            return $data;
+        }
+      break;
+      case 'op_products_edit_table':
+        $prod_form = $args;
+        switch ($op){
+          case 'fields':
+            $fields[] = array('name' => 'manufacturer',
+              'title' => t('Manufacturer'),
+              'weight' => 3,
+              'enabled' => true,
+            );
+            return $fields;
+          case 'data':
+            $data = array();
+            if (is_array($prod_form) && isset($prod_form['products'])){
+              foreach (element_children($prod_form['products']) as $product){
+                $data['manufacturer'][] = drupal_render($prod_form['products'][$product]['manufacturer']);
+              }
+            }
+            return $data;
+        }
+      break;
+    }
+  }
+}
+
+/******************************************************************************
+ * Übercart Hooks                                                             *
+ ******************************************************************************/
+
+/**
+ * Implementation of Übercart's hook_store_status().
+ *
+ * Checks that there is a manufacturer vocabulary.
+ */
+function uc_manufacturer_store_status(){
+  $status = array();
+  $vid = variable_get('uc_manufacturer_vid', 0);
+  if ($vid){
+    $catalog = taxonomy_get_vocabulary($vid);
+    $status[] = array('status' => 'ok', 'title' => t('Manufacturer Vocabulary'),
+      'desc' => t('Vocabulary !name is set as the manufacturer list. ', array('!name' => l($catalog->name, 'admin/content/taxonomy/'. $catalog->vid))),
+    );
+  }
+  else{
+    $status[] = array('status' => 'warning', 'title' => t('Manufacturer Vocabulary'),
+      'desc' => t('The Manufacturer vocabulary has not yet been configured. '
+        .'Click <a href="!here">here</a> to start.',
+        array('!here' => url('admin/store/manufacturers/setup'))
+      ),
+    );
+  }
+  
+  return $status;
+}
+
+/******************************************************************************
+ * Menu Callbacks                                                             *
+ ******************************************************************************/
+
+/**
+ * Displays a list of all manufacturers.
+ */
+function uc_manufacturer_all($op, $tid = 0){
+  $breadcrumb = array(l(t('Home'), ''), l(t('Manufacturers'), 'manufacturer'));
+  drupal_set_breadcrumb($breadcrumb);
+  $output = '';
+  if ($op == 'list' || $tid == 0){
+    $result = db_query("SELECT m.*, t.name FROM {uc_manufacturers} m JOIN {term_data} t ON m.tid = t.tid ORDER BY t.name");
+    //$output = '<pre>';
+    while ($manufacturer = db_fetch_object($result)){
+      $output .= theme('uc_manufacturer', $manufacturer);
+    }
+    //$output .= '</pre>';
+  }
+  elseif ($op == 'view' && $tid != 0){
+    $manufacturer = uc_manufacturer_load($tid);
+    $output .= theme('uc_manufacturer', $manufacturer);
+    $table_args = array('tid' => $manufacturer->tid);
+    $output .= tapir_get_table('uc_product_table', $table_args);
+  }
+  return $output;
+  //print "\$op = $op";
+}
+
+/**
+ * Form to change a manufacturer's data.
+ */
+function uc_manufacturer_form($manufacturer){
+  $form['edit']['tid'] = array('#type' => 'value',
+    '#value' => $manufacturer->tid,
+    );
+  $form['edit']['image'] = array('#type' => 'file',
+    '#title' => t('Logo'),
+    //'#default_value' => $node->images['_original'],
+    //'#description' => t('// Put size guidelines here.'),
+    '#weight' => 0,
+  );
+  $form['edit']['url'] = array('#type' => 'textfield',
+    '#title' => t('URL'),
+    '#default_value' => $manufacturer->url,
+    '#description' => t('Absolute path to website.'),
+    '#weight' => 0,
+    );
+  $form['edit']['phone_no'] = array('#type' => 'textfield',
+    '#title' => t('Phone #'),
+    '#default_value' => $manufacturer->phone_no,
+    '#description' => t('Contact phone number'),
+    '#weight' => 2,
+    );
+  $form['edit']['fax_no'] = array('#type' => 'textfield',
+    '#title' => t('Fax #'),
+    '#default_value' => $manufacturer->fax_no,
+    '#description' => t('Fax number'),
+    '#weight' => 3,
+    );
+  $form['submit'] = array('#type' => 'submit',
+    '#value' => t('Submit'),
+    '#weight' => 4,
+    );
+  
+  return $form;
+}
+
+/**
+ * Validate function for uc_manufacturer_form()
+ */
+function uc_manufacturer_form_validate($form_id, $form_values){
+  $pattern = '/^1?\s*(?:\(?\d{3}\)?-?\s*)?\d{3}-?\s*\d{4}\s*/';
+  if (isset($form_values['phone_no']['#value']) && !preg_match($pattern, $form_values['phone_no']['#value'])){
+    form_set_error('phone_no', 'Phone number is not in correct American format.');
+  }
+  if (isset($form_values['fax_no']['#value']) && !preg_match($pattern, $form_values['fax_no']['#value'])){
+    form_set_error('fax_no', 'Fax number is not in correct American format.');
+  }
+}
+
+/**
+ * Submit function for uc_manufacturer_form().
+ */
+function uc_manufacturer_form_submit($form_id, $form_values){
+  $result = db_query("UPDATE {uc_manufacturers} SET url = '%s', phone_no = '%s', fax_no = '%s' WHERE tid = %d",
+    $form_values['url'], $form_values['phone_no'], $form_values['fax_no'],
+    $form_values['tid']);
+  if ($result){
+    drupal_set_message(t('Manufacturer updated.'));
+  }
+  else{
+    drupal_set_message(t('Error updating database'), 'error');
+  }
+  return 'manufacturer';
+}
+
+/**
+ * Checks if a manufacturer vocabulary has been set up and links to it.
+ */
+function uc_manufacturer_admin_settings(){
+  $output = '';
+  $vid = variable_get('uc_manufacturer_vid', 0);
+  if ($vid){
+    $catalog = taxonomy_get_vocabulary($vid);
+    $output .= t('Vocabulary !name is set as the manufacturer list. ', array('!name' => l($catalog->name, 'admin/content/taxonomy/'. $catalog->vid)));
+    //$output .= l(t('Add manufacturers here.'), 'admin/content/taxonomy/'. $vid .'/add/term');
+    drupal_set_message($output);
+    drupal_goto('admin/content/taxonomy/'. $vid);
+  }
+  else{
+    $output .= t('A manufacturer vocabulary has not been set up yet. To start one, click '). l(t('here.'), 'admin/store/manufacturers/setup');
+  }
+  
+  return $output;
+}
+
+/******************************************************************************
+ * Module Functions                                                           *
+ ******************************************************************************/
+
+/**
+ * Wrapper function for the "edit manufacturer" page.
+ */
+function uc_manufacturer_edit($tid){
+  $manufacturer = uc_manufacturer_load($tid);
+  return drupal_get_form('uc_manufacturer_form', $manufacturer);
+}
+
+/**
+ * Loads a manufacturer's data from the database.
+ *
+ * @param $tid
+ *   Taxonomy term id number.
+ * @return
+ *   The manufacturer object.
+ */
+function uc_manufacturer_load($tid){
+  return db_fetch_object(db_query("SELECT m.*, t.name FROM {uc_manufacturers} m JOIN {term_data} t ON m.tid = t.tid WHERE m.tid = %d", $tid));
+}
+
+/**
+ * Formats the manufacturer page.
+ *
+ * @param $manufacturer
+ *   A manufacturer object.
+ * @ingroup themeable
+ */
+function theme_uc_manufacturer($manufacturer){
+  $output = '';
+  if ($manufacturer){
+    $output  = '<div class="manufacturer">';
+    $output .= l($manufacturer->name, 'manufacturer/'. $manufacturer->tid) .'<br />';
+    if ($manufacturer->logo && $manufacturer->logo != 'File not found.'){
+      $output .= l('<img src="'. base_path() . $manufacturer->logo .'" alt="'. $manufacturer->name .' Logo" />', $manufacturer->url, array('target' => '_blank'), null, null, false, true);
+    }
+    //$output .= l(t('Edit'), 'manufacturer/'. $manufacturer->tid .'/edit') .'<br />';
+    $output .= "<ul>\n";
+    if (!empty($manufacturer->url)){
+      $output .= "  <li>". l($manufacturer->url, $manufacturer->url, array('target' => '_blank')) ."</li>\n";
+    }
+    if (!empty($manufacturer->phone_no)){
+      $output .= "  <li>Phone: ". $manufacturer->phone_no ."</li>\n";
+    }
+    if (!empty($manufacturer->fax_no)){
+      $output .= "  <li>Fax: ". $manufacturer->fax_no ."</li>\n";
+    }
+    $output .= "  </ul>\n";
+    $output .= "</div>\n";
+  }
+  return $output;
+}
+
+/**
+ * Copy of implementation of hook_install().
+ *
+ * Sets up a vocabulary whose terms are manufacturers. Adds a table to hold 
+ * manufacturer data. This is used in case taxonomy associations are corrupted or
+ * destroyed.
+ */
+function uc_manufacturer_setup(){
+  //Find possible Manufacturers vocabulary.
+  $result = db_query("SELECT vid FROM {vocabulary} WHERE name = 'Manufacturers'");
+  if ($vocab = db_fetch_object($result)){
+    $vid = $vocab->vid;
+  }
+  else{ //If none, create one.
+    $vid = db_next_id('{vocabulary}_vid');
+    db_query("INSERT INTO {vocabulary} (vid, name, description, help, relations, hierarchy, multiple, required, tags, module, weight)
+      VALUES (%d, 'Manufacturers', '%s', '', 0, 0, 0, 0, 1, 'uc_manufacturer', 0)", $vid, t('Connects manufacturer information to taxonomy terms.'));
+    db_query("INSERT INTO {vocabulary_node_types} (vid, type) VALUES (%d, 'product')", $vid);
+  }
+  variable_set('uc_manufacturer_vid', $vid);
+  
+  if (!db_table_exists('uc_manufacturers')){
+    //Create a table, whee!
+    switch ($GLOBALS['db_type']) {
+      case 'mysql':
+      case 'mysqli':
+        db_query("CREATE TABLE {uc_manufacturers} (
+            `tid` int(11) NOT NULL,
+            `url` varchar(60) NOT NULL,
+            `logo` varchar(127) NOT NULL,
+            `phone_no` varchar(12) NOT NULL,
+            `fax_no` varchar(12) NOT NULL,
+            PRIMARY KEY  (`tid`)
+          );"
+        );
+      break;
+      case 'pgsql':
+        db_query("CREATE TABLE {uc_manufacturers} (
+            `tid` int(11) NOT NULL,
+            `url` varchar(60) NOT NULL,
+            `logo` varchar(127) NOT NULL,
+            `phone_no` varchar(12) NOT NULL,
+            `fax_no` varchar(12) NOT NULL,
+            PRIMARY KEY  (`tid`)
+          );"
+        );
+        db_query("CREATE INDEX {uc_manufacturer}_tid ON {uc_manufacturer} (tid)");
+      break;
+    }
+  }
+  drupal_goto('admin/content/taxonomy/'. $vid);
+}
+
+/**
+ * Finds the manufacturer associated with a product.
+ *
+ * @param $nid
+ *   The node id of a product.
+ * @return
+ *   The manufacturer object or null if unsuccessful.
+ */
+function uc_product_get_manufacturer($nid){
+  $terms = taxonomy_node_get_terms_by_vocabulary($nid, variable_get('uc_manufacturer_vid', 0));
+  if (count($terms)){
+    $man = array_shift($terms);
+    return uc_manufacturer_load($man->tid);
+  }
+  else{
+    return null;
+  }
+}

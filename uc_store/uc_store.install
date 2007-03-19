@@ -1,0 +1,224 @@
+<?php
+
+function uc_store_install(){
+  switch($GLOBALS['db_type']){
+    case 'mysqli':
+    case 'mysql':
+      db_query("CREATE TABLE {uc_address_formats} (
+        address_format_id smallint(11) NOT NULL auto_increment,
+        address_format varchar(128) NOT NULL default '',
+        address_summary varchar(48) NOT NULL default '',
+        PRIMARY KEY (address_format_id)
+      );");
+      db_query("CREATE TABLE {uc_countries} (
+        country_id mediumint(11) NOT NULL auto_increment,
+        country_name varchar(64) NOT NULL,
+        country_iso_code_2 char(2) NOT NULL,
+        country_iso_code_3 char(3) NOT NULL,
+        address_format_id smallint(11) NOT NULL default '0',
+        PRIMARY KEY (country_id),
+        KEY country_name (country_name)
+      );");
+      db_query("INSERT INTO {uc_countries} (country_id, country_name, "
+              ."country_iso_code_2, country_iso_code_3, address_format_id) "
+              ."VALUES (38, 'Canada', 'CA', 'CAN', 2), "
+              ."(223, 'United States', 'US', 'USA', 1);");
+      db_query("CREATE TABLE {uc_zones} (
+        zone_id mediumint(11) NOT NULL auto_increment,
+        zone_country_id mediumint(11) NOT NULL default '0',
+        zone_code varchar(32) NOT NULL default '',
+        zone_name varchar(32) NOT NULL default '',
+        PRIMARY KEY (zone_id),
+        KEY zone_code (zone_code),
+        KEY zone_country_id (zone_country_id)
+      );");
+      db_query("INSERT INTO {uc_zones} (zone_id, zone_country_id, zone_code, "
+              ."zone_name) VALUES (1, 223, 'AL', 'Alabama'),"
+              ."(2, 223, 'AK', 'Alaska'),"
+              ."(3, 223, 'AS', 'American Samoa'),"
+              ."(4, 223, 'AZ', 'Arizona'),"
+              ."(5, 223, 'AR', 'Arkansas'),"
+              ."(6, 223, 'AF', 'Armed Forces Africa'),"
+              ."(7, 223, 'AA', 'Armed Forces Americas'),"
+              ."(8, 223, 'AC', 'Armed Forces Canada'),"
+              ."(9, 223, 'AE', 'Armed Forces Europe'),"
+              ."(10, 223, 'AM', 'Armed Forces Middle East'),"
+              ."(11, 223, 'AP', 'Armed Forces Pacific'),"
+              ."(12, 223, 'CA', 'California'),"
+              ."(13, 223, 'CO', 'Colorado'),"
+              ."(14, 223, 'CT', 'Connecticut'),"
+              ."(15, 223, 'DE', 'Delaware'),"
+              ."(16, 223, 'DC', 'District of Columbia'),"
+              ."(17, 223, 'FM', 'Federated States Of Micronesia'),"
+              ."(18, 223, 'FL', 'Florida'),"
+              ."(19, 223, 'GA', 'Georgia'),"
+              ."(20, 223, 'GU', 'Guam'),"
+              ."(21, 223, 'HI', 'Hawaii'),"
+              ."(22, 223, 'ID', 'Idaho'),"
+              ."(23, 223, 'IL', 'Illinois'),"
+              ."(24, 223, 'IN', 'Indiana'),"
+              ."(25, 223, 'IA', 'Iowa'),"
+              ."(26, 223, 'KS', 'Kansas'),"
+              ."(27, 223, 'KY', 'Kentucky'),"
+              ."(28, 223, 'LA', 'Louisiana'),"
+              ."(29, 223, 'ME', 'Maine'),"
+              ."(30, 223, 'MH', 'Marshall Islands'),"
+              ."(31, 223, 'MD', 'Maryland'),"
+              ."(32, 223, 'MA', 'Massachusetts'),"
+              ."(33, 223, 'MI', 'Michigan'),"
+              ."(34, 223, 'MN', 'Minnesota'),"
+              ."(35, 223, 'MS', 'Mississippi'),"
+              ."(36, 223, 'MO', 'Missouri'),"
+              ."(37, 223, 'MT', 'Montana'),"
+              ."(38, 223, 'NE', 'Nebraska'),"
+              ."(39, 223, 'NV', 'Nevada'),"
+              ."(40, 223, 'NH', 'New Hampshire'),"
+              ."(41, 223, 'NJ', 'New Jersey'),"
+              ."(42, 223, 'NM', 'New Mexico'),"
+              ."(43, 223, 'NY', 'New York'),"
+              ."(44, 223, 'NC', 'North Carolina'),"
+              ."(45, 223, 'ND', 'North Dakota'),"
+              ."(46, 223, 'MP', 'Northern Mariana Islands'),"
+              ."(47, 223, 'OH', 'Ohio'),"
+              ."(48, 223, 'OK', 'Oklahoma'),"
+              ."(49, 223, 'OR', 'Oregon'),"
+              ."(50, 223, 'PW', 'Palau'),"
+              ."(51, 223, 'PA', 'Pennsylvania'),"
+              ."(52, 223, 'PR', 'Puerto Rico'),"
+              ."(53, 223, 'RI', 'Rhode Island'),"
+              ."(54, 223, 'SC', 'South Carolina'),"
+              ."(55, 223, 'SD', 'South Dakota'),"
+              ."(56, 223, 'TN', 'Tennessee'),"
+              ."(57, 223, 'TX', 'Texas'),"
+              ."(58, 223, 'UT', 'Utah'),"
+              ."(59, 223, 'VT', 'Vermont'),"
+              ."(60, 223, 'VI', 'Virgin Islands'),"
+              ."(61, 223, 'VA', 'Virginia'),"
+              ."(62, 223, 'WA', 'Washington'),"
+              ."(63, 223, 'WV', 'West Virginia'),"
+              ."(64, 223, 'WI', 'Wisconsin'),"
+              ."(65, 223, 'WY', 'Wyoming'),"
+              ."(66, 38, 'AB', 'Alberta'),"
+              ."(67, 38, 'BC', 'British Columbia'),"
+              ."(68, 38, 'MB', 'Manitoba'),"
+              ."(69, 38, 'NF', 'Newfoundland'),"
+              ."(70, 38, 'NB', 'New Brunswick'),"
+              ."(71, 38, 'NS', 'Nova Scotia'),"
+              ."(72, 38, 'NT', 'Northwest Territories'),"
+              ."(73, 38, 'NU', 'Nunavut'),"
+              ."(74, 38, 'ON', 'Ontario'),"
+              ."(75, 38, 'PE', 'Prince Edward Island'),"
+              ."(76, 38, 'QC', 'Quebec'),"
+              ."(77, 38, 'SK', 'Saskatchewan'),"
+              ."(78, 38, 'YT', 'Yukon Territory');");
+      break;
+    case 'pgsql':
+      db_query("CREATE TABLE {uc_address_formats} (
+        address_format_id smallint(11) NOT NULL,
+        address_format varchar(128) NOT NULL default '',
+        address_summary varchar(48) NOT NULL default '',
+        PRIMARY KEY (address_format_id)
+      );");
+      db_query("CREATE TABLE {uc_countries} (
+        `country_id` mediumint(11) NOT NULL auto_increment,
+        `country_name` varchar(64) NOT NULL,
+        `country_iso_code_2` char(2) NOT NULL,
+        `country_iso_code_3` char(3) NOT NULL,
+        `address_format_id` smallint(11) NOT NULL default '0',
+        PRIMARY KEY (`country_id`),
+        KEY country_name (`country_name`)
+      );");
+      db_query("CREATE INDEX {uc_countries}_country_id ON {uc_countries} (country_id)");
+      db_query("INSERT INTO {uc_countries} VALUES (38, 'Canada', 'CA', 'CAN', 1);");
+      db_query("INSERT INTO {uc_countries} VALUES (223, 'United States', 'US', 'USA', 2);");
+      db_query("CREATE TABLE {uc_zones} (
+        zone_id mediumint(11) NOT NULL,
+        zone_country_id mediumint(11) NOT NULL default '0',
+        zone_code varchar(32) NOT NULL default '',
+        zone_name varchar(32) NOT NULL default '',
+        PRIMARY KEY (zone_id),
+        KEY zone_code (zone_code),
+        KEY zone_country_id (zone_country_id)
+      );");
+      db_query("INSERT INTO {uc_zones} (zone_id, zone_country_id, zone_code, "
+              ."zone_name) VALUES (1, 223, 'AL', 'Alabama'),"
+              ."(2, 223, 'AK', 'Alaska'),"
+              ."(3, 223, 'AS', 'American Samoa'),"
+              ."(4, 223, 'AZ', 'Arizona'),"
+              ."(5, 223, 'AR', 'Arkansas'),"
+              ."(6, 223, 'AF', 'Armed Forces Africa'),"
+              ."(7, 223, 'AA', 'Armed Forces Americas'),"
+              ."(8, 223, 'AC', 'Armed Forces Canada'),"
+              ."(9, 223, 'AE', 'Armed Forces Europe'),"
+              ."(10, 223, 'AM', 'Armed Forces Middle East'),"
+              ."(11, 223, 'AP', 'Armed Forces Pacific'),"
+              ."(12, 223, 'CA', 'California'),"
+              ."(13, 223, 'CO', 'Colorado'),"
+              ."(14, 223, 'CT', 'Connecticut'),"
+              ."(15, 223, 'DE', 'Delaware'),"
+              ."(16, 223, 'DC', 'District of Columbia'),"
+              ."(17, 223, 'FM', 'Federated States Of Micronesia'),"
+              ."(18, 223, 'FL', 'Florida'),"
+              ."(19, 223, 'GA', 'Georgia'),"
+              ."(20, 223, 'GU', 'Guam'),"
+              ."(21, 223, 'HI', 'Hawaii'),"
+              ."(22, 223, 'ID', 'Idaho'),"
+              ."(23, 223, 'IL', 'Illinois'),"
+              ."(24, 223, 'IN', 'Indiana'),"
+              ."(25, 223, 'IA', 'Iowa'),"
+              ."(26, 223, 'KS', 'Kansas'),"
+              ."(27, 223, 'KY', 'Kentucky'),"
+              ."(28, 223, 'LA', 'Louisiana'),"
+              ."(29, 223, 'ME', 'Maine'),"
+              ."(30, 223, 'MH', 'Marshall Islands'),"
+              ."(31, 223, 'MD', 'Maryland'),"
+              ."(32, 223, 'MA', 'Massachusetts'),"
+              ."(33, 223, 'MI', 'Michigan'),"
+              ."(34, 223, 'MN', 'Minnesota'),"
+              ."(35, 223, 'MS', 'Mississippi'),"
+              ."(36, 223, 'MO', 'Missouri'),"
+              ."(37, 223, 'MT', 'Montana'),"
+              ."(38, 223, 'NE', 'Nebraska'),"
+              ."(39, 223, 'NV', 'Nevada'),"
+              ."(40, 223, 'NH', 'New Hampshire'),"
+              ."(41, 223, 'NJ', 'New Jersey'),"
+              ."(42, 223, 'NM', 'New Mexico'),"
+              ."(43, 223, 'NY', 'New York'),"
+              ."(44, 223, 'NC', 'North Carolina'),"
+              ."(45, 223, 'ND', 'North Dakota'),"
+              ."(46, 223, 'MP', 'Northern Mariana Islands'),"
+              ."(47, 223, 'OH', 'Ohio'),"
+              ."(48, 223, 'OK', 'Oklahoma'),"
+              ."(49, 223, 'OR', 'Oregon'),"
+              ."(50, 223, 'PW', 'Palau'),"
+              ."(51, 223, 'PA', 'Pennsylvania'),"
+              ."(52, 223, 'PR', 'Puerto Rico'),"
+              ."(53, 223, 'RI', 'Rhode Island'),"
+              ."(54, 223, 'SC', 'South Carolina'),"
+              ."(55, 223, 'SD', 'South Dakota'),"
+              ."(56, 223, 'TN', 'Tennessee'),"
+              ."(57, 223, 'TX', 'Texas'),"
+              ."(58, 223, 'UT', 'Utah'),"
+              ."(59, 223, 'VT', 'Vermont'),"
+              ."(60, 223, 'VI', 'Virgin Islands'),"
+              ."(61, 223, 'VA', 'Virginia'),"
+              ."(62, 223, 'WA', 'Washington'),"
+              ."(63, 223, 'WV', 'West Virginia'),"
+              ."(64, 223, 'WI', 'Wisconsin'),"
+              ."(65, 223, 'WY', 'Wyoming'),"
+              ."(66, 38, 'AB', 'Alberta'),"
+              ."(67, 38, 'BC', 'British Columbia'),"
+              ."(68, 38, 'MB', 'Manitoba'),"
+              ."(69, 38, 'NF', 'Newfoundland'),"
+              ."(70, 38, 'NB', 'New Brunswick'),"
+              ."(71, 38, 'NS', 'Nova Scotia'),"
+              ."(72, 38, 'NT', 'Northwest Territories'),"
+              ."(73, 38, 'NU', 'Nunavut'),"
+              ."(74, 38, 'ON', 'Ontario'),"
+              ."(75, 38, 'PE', 'Prince Edward Island'),"
+              ."(76, 38, 'QC', 'Quebec'),"
+              ."(77, 38, 'SK', 'Saskatchewan'),"
+              ."(78, 38, 'YT', 'Yukon Territory');");
+      break;
+  }
+}

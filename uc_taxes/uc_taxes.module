@@ -1,0 +1,443 @@
+<?php
+
+/******************************************************************************
+ * Drupal Hooks                                                               *
+ ******************************************************************************/
+
+function uc_taxes_help($section){
+  switch ($section){
+    case 'admin/store/taxes':
+      return t('Set the default tax rates for various geographic locations. Specify tax rates as a multiplier. Smaller areas override the rates of the larger areas.');
+    break;
+    case 'admin/store/taxes/products':
+      return t('Select a product class to edit it\'s tax rules. These rules are applied only to products of that class.');
+    break;
+  }
+}
+
+function uc_taxes_perm(){
+  return array('configure taxes');
+}
+
+function uc_taxes_menu($may_cache){
+  $items = array();
+  
+  if ($may_cache){
+    $items[] = array('path' => 'admin/store/settings/taxes',
+      'title' => t('Tax settings'),
+      'access' => user_access('configure taxes'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('uc_taxes_form', 'default'),
+      'type' => MENU_NORMAL_ITEM,
+    );
+    $items[] = array('path' => 'admin/store/settings/taxes/locations',
+      'title' => t('default'),
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => -5,
+    );
+    $items[] = array('path' => 'admin/store/settings/taxes/products',
+      'title' => t('alternate'),
+      'access' => user_access('configure taxes'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('uc_taxes_form', 'alternate'),
+      'type' => MENU_LOCAL_TASK,
+    );
+  }
+  else{
+    drupal_add_css(drupal_get_path('module', 'uc_taxes') .'/uc_taxes.css');
+    
+    $items[] = array('path' => 'taxes',
+      'access' => true,
+      'callback' => 'uc_taxes_javascript',
+      'type' => MENU_CALLBACK_ITEM,
+    );
+  }
+  
+  return $items;
+}
+
+/*******************************************************************************
+ * Übercart Hooks
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_line_item().
+ */
+function uc_taxes_line_item() {
+  $items[] = array(
+    'id' => 'tax',
+    'title' => t('Tax'),
+    'weight' => 9,
+    'default' => FALSE,
+    'stored' => FALSE,
+    'calculated' => FALSE,
+    'display_only' => TRUE,
+    'callback' => 'uc_line_item_tax',
+  );
+
+  return $items;
+}
+
+function uc_taxes_order($op, $arg1, $arg2){
+  switch($op){
+    case 'total':
+      return uc_taxes_calculate($arg1);
+  }
+}
+
+function uc_taxes_form($tax_table, $form_values = null){
+  $form = array('#multistep' => true, '#redirect' => false, '#tree' => true);
+  
+  //if ($form_values){
+    //drupal_set_message('Form:<pre>'. print_r($form_values, true) .'</pre>');
+  //}
+  
+  if ($tax_table == 'alternate' && is_null($form_values)){
+    $classes = array();
+    $result = db_query("SELECT pcid, name FROM {uc_product_classes}");
+    while ($class = db_fetch_object($result)){
+      $classes[$class->pcid] = $class->name;
+    }
+    $form['pcid'] = array('#type' => 'select',
+      '#title' => t('Product Class'),
+      '#description' => t('Select a product class that will apply tax rules to its products.'),
+      '#options' => $classes,
+    );
+    $form['continue'] = array('#type' => 'hidden', '#value' => 'true');
+    $form['submit'] = array('#type' => 'submit', '#value' => t('Submit'));
+  }
+  else{
+    if (isset($form_values['pcid']) && $form_values['pcid'] != 0){
+      $pc = uc_product_class_load($form_values['pcid']);
+      $form['class'] = array('#type' => 'markup', '#value' => '<br /><h3><strong>'. $pc->name .'</strong></h3>');
+      $form['standalone'] = array('#type' => 'radios',
+        '#title' => t('Use Default'),
+        '#description' => t('If the customer\'s address does not match any rules for this product class, should the tax rule from the default table be used?'),
+        '#options' => array(0 => t('Yes'), 1 => t('No')), // explicit keys because the question answers a different question than the fieldname indicates
+        '#default_value' => isset($form_values['standalone']) ? $form_values['standalone'] : 0,
+      );
+      $form['pcid'] = array('#type' => 'hidden', '#value' => $form_values['pcid']);
+    }
+    else{
+      $form['class'] = array('#type' => 'markup', '#value' => '<br /><h3><strong>'. t('Default') .'</strong></h3>');
+      $form['pcid'] = array('#type' => 'hidden', '#value' => 0);
+      $form['standalone'] = array('#type' => 'value', '#value' => 1);
+    }
+    $form['continue'] = array('#type' => 'hidden', '#value' => 'false');
+    
+    $stored_rates = db_query("SELECT * FROM {uc_taxes} WHERE type = 'code' AND pcid = %d", $form_values['pcid']);
+    $num_fields = isset($form_values['postal_codes']['fields']) ? $form_values['postal_codes']['fields'] : 1;
+    $num_fields = max($num_fields, db_num_rows($stored_rates));
+    $form['postal_codes'] = array('#type' => 'fieldset',
+      '#collapsible' => true,
+      '#title' => t('Postal Codes'),
+      '#description' => t('Specifiy taxes that are specific to postal code areas.'
+  .' A "*" may be used as a wild card to set a rate for multiple areas.'
+  .' Example: 402* represents all areas from 40200 to 40299.'),
+      '#theme' => 'uc_taxes_form_field',
+    );
+    for ($i = 0; $i < $num_fields; $i++){
+      if (isset($form_values['postal_codes']['rules'][$i])){
+        $area_rate = $form_values['postal_codes']['rules'][$i];
+      }
+      elseif ($area_rate = db_fetch_array($stored_rates)){
+        // Done.
+      }
+      else{
+        $area_rate = array('area' => '', 'rate' => '', 'shipping' => 0);
+      }
+      $form['postal_codes']['rules'][] = array(
+        'area' => array('#type' => 'textfield', '#default_value' => $area_rate['area'], '#size' => 15),
+        'rate' => array('#type' => 'textfield', '#default_value' => $area_rate['rate'], '#size' => 15),
+        'shipping' => array('#type' => 'checkbox', '#default_value' => $area_rate['shipping']),
+      );
+    }
+    $form['postal_codes']['fields'] = array('#type' => 'textfield',
+      '#title' => t('Number of rules'),
+      '#size' => 3,
+      '#default_value' => $num_fields,
+    );
+    $form['postal_codes']['update'] = array('#type' => 'submit', '#value' => t('Update'));
+    
+    $stored_rates = db_query("SELECT * FROM {uc_taxes} WHERE type = 'state' AND pcid = %d", $form_values['pcid']);
+    $num_fields = isset($form_values['states']['fields']) ? $form_values['states']['fields'] : 1;
+    $num_fields = max($num_fields, db_num_rows($stored_rates));
+    $form['states'] = array('#type' => 'fieldset',
+      '#collapsible' => true,
+      '#title' => t('States'),
+      '#description' => t('Set tax rates for states.'),
+      '#theme' => 'uc_taxes_form_field',
+    );
+    for ($i = 0; $i < $num_fields; $i++){
+      if (isset($form_values['states']['rules'][$i])){
+        $area_rate = $form_values['states']['rules'][$i];
+      }
+      elseif ($area_rate = db_fetch_array($stored_rates)){
+        // Done.
+      }
+      else{
+        $area_rate = array('area' => '', 'rate' => '', 'shipping' => 0);
+      }
+      $form['states']['rules'][] = array(
+        'area' => uc_zone_select(null, $area_rate['area']),
+        'rate' => array('#type' => 'textfield', '#default_value' => $area_rate['rate'], '#size' => 15),
+        'shipping' => array('#type' => 'checkbox', '#default_value' => $area_rate['shipping']),
+      );
+    }
+    $form['states']['fields'] = array('#type' => 'textfield',
+      '#title' => t('Number of rules'),
+      '#size' => 3,
+      '#default_value' => $num_fields,
+    );
+    $form['states']['update'] = array('#type' => 'submit', '#value' => t('Update'));
+    
+    $stored_rates = db_query("SELECT * FROM {uc_taxes} WHERE type = 'country' AND pcid = %d", $form_values['pcid']);
+    $form['countries'] = array('#type' => 'fieldset',
+      '#collapsible' => true,
+      '#title' => t('Country Area'),
+      '#description' => t('Set tax rates for very large areas.'),
+      '#theme' => 'uc_taxes_form_field',
+    );
+    if (isset($form_values['countries']['rules'][0])){
+      $area_rate = $form_values['countries']['rules'][0];
+    }
+    elseif ($area_rate = db_fetch_array($stored_rates)){
+      // Done.
+    }
+    else{
+      $area_rate = array('area' => 'CONTINENTAL_48', 'rate' => '', 'shipping' => 0);
+    }
+    $form['countries']['rules'][0]['area'] = array('#type' => 'select',
+      '#options' => array(
+        'CONTINENTAL_48' => t('Continental 48 States'),
+        'FULL_50_STATES' => t('All 50 States'),
+        'ALL' => t('Any US address'),
+      ),
+      '#default_value' => $area_rate['area'],
+    );
+    $form['countries']['rules'][0]['rate'] = array('#type' => 'textfield',
+      '#default_value' => $area_rate['rate'],
+      '#size' => 15,
+    );
+    $form['countries']['rules'][0]['shipping'] = array('#type' => 'checkbox',
+      '#default_value' => $area_rate['shipping'],
+    );
+    $form['submit'] = array('#type' => 'submit', '#value' => t('Submit'));
+    $form['reset'] = array('#type' => 'submit', '#value' => t('Reset'));
+  }
+  
+  return $form;
+}
+
+function theme_uc_taxes_form_field($element){
+  $fields = '<table class="update"><tbody><tr><td>'. drupal_render($element['fields']) .'</td><td>'. drupal_render($element['update']) .'</td></tr></tbody></table>';
+  $header = array(
+    array('data' => t('Area'), 'width' => '45%'),
+    array('data' => t('Rate'), 'width' => '45%'),
+    array('data' => t('Tax Shipping?'), 'width' => '10%'),
+  );
+  $rows = array();
+  foreach(element_children($element['rules']) as $area_rate){
+    if (is_numeric($area_rate)){
+      $rows[] = array(
+        drupal_render($element['rules'][$area_rate]['area']),
+        drupal_render($element['rules'][$area_rate]['rate']),
+        drupal_render($element['rules'][$area_rate]['shipping']),
+      );
+    }
+  }
+  $element['table'] = array('#value' => $fields . theme('table', $header, $rows), '#weight' => 2);
+  return drupal_render($element);
+}
+
+function uc_taxes_form_validate($form_id, $form_values){
+  if ($form_values['op'] == t('Submit') && isset($form_values['postal_codes'])){
+    foreach ($form_values['postal_codes']['rules'] as $i => $area_rate){
+      if (!empty($area_rate['rate']) && !preg_match('/^([0-9]{5}|[0-9]{0,4}\*)$/', $area_rate['area'])){
+        form_set_error("postal_codes][rules][$i][area", t('Must be a US ZIP area or short cut.'));
+        //drupal_set_message('Errors:<pre>'. print_r(form_set_error(), true) .'</pre>', 'error');
+        //drupal_set_message('Validate:<pre>'. print_r($form_values, true) .'</pre>', 'error');
+      }
+    }
+  }
+}
+
+function uc_taxes_form_submit($form_id, $form_values){
+  if ($form_values['op'] == t('Submit') && $form_values['continue'] != 'true'){
+    //drupal_set_message('Post:<pre>'. print_r($_POST, true) .'</pre>');
+    //drupal_set_message('Submit:<pre>'. print_r($form_values, true) .'</pre>');
+    db_query('DELETE FROM {uc_taxes} WHERE pcid = %d', $form_values['pcid']);
+    $symbols = '';
+    $values = array();
+    // Convert each rate into decimal if given as a percentage, then save to database.
+    foreach ($form_values['postal_codes']['rules'] as $i => $area_rate){
+      if ((strpos($area_rate['rate'], '%') && $rate = floatval($area_rate['rate']) / 100)
+      || $rate = floatval($area_rate['rate'])){
+        $symbols .= "(%d, '%s', 'code', %f, %d, %d),";
+        $values[] = $form_values['pcid'];
+        $values[] = $area_rate['area'];
+        $values[] = $rate;
+        $values[] = $area_rate['shipping'];
+        $values[] = $form_values['standalone'];
+      }
+    }
+    foreach ($form_values['states']['rules'] as $i => $area_rate){
+      if ((string)$area_rate['area'] !== '0'
+      && (strpos($area_rate['rate'], '%') && $rate = floatval($area_rate['rate']) / 100)
+      || $rate = floatval($area_rate['rate'])){
+        $symbols .= "(%d, '%s', 'state', %f, %d, %d),";
+        $values[] = $form_values['pcid'];
+        $values[] = $area_rate['area'];
+        $values[] = $rate;
+        $values[] = $area_rate['shipping'];
+        $values[] = $form_values['standalone'];
+      }
+    }
+    if (!empty($form_values['countries']['rules'][0]['rate'])
+    && (strpos($form_values['countries']['rules'][0]['rate'], '%') && $rate = floatval($form_values['countries']['rules'][0]['rate']) / 100)
+    || $rate = floatval($form_values['countries']['rules'][0]['rate']))
+    {
+      $symbols .= "(%d, '%s', 'country', %f, %d, %d)";
+      $values[] = $form_values['pcid'];
+      $values[] = $form_values['countries']['rules'][0]['area'];
+      $values[] = $rate;
+      $values[] = $form_values['countries']['rules'][0]['shipping'];
+      $values[] = $form_values['standalone'];
+    }
+    $symbols = rtrim($symbols, ',');
+    //drupal_set_message(vsprintf('Inserted values: '. $symbols, $values));
+    db_query('INSERT INTO {uc_taxes} (pcid, area, type, rate, shipping, standalone) VALUES '. $symbols, $values);
+  }
+  elseif ($form_values['op'] == t('Reset')){
+    $form_values = null;
+    db_query('DELETE FROM {uc_taxes} WHERE pcid = %d', $form_values['pcid']);
+  }
+}
+
+/**
+ * Handle the tax line item.
+ */
+function uc_line_item_tax($op, $order) {
+  switch ($op) {
+    case 'cart-preview':
+      $order = new stdClass();
+      $order->products = $items;
+      $taxes = uc_taxes_calculate($order);
+      drupal_add_js("\$(document).ready( function() { set_line_item('tax', '". t('Tax') ."', ". $taxes .", 9); } );", 'inline');
+      break;
+
+    case 'display':
+      $lines[] = array(
+        'id' => 'tax',
+        'title' => t('Tax'),
+        'amount' => uc_taxes_calculate($order),
+      );
+      return $lines;
+  }
+}
+
+
+/*******************************************************************************
+ * Module and Helper Functions
+ ******************************************************************************/
+
+function uc_taxes_get_rates($class_id = 0, $type = ''){
+  static $taxes = array();
+  
+  if (empty($taxes[$class_id])){
+    $taxes[$class_id] = array('postal_codes' => array(), 'states' => array(), 'countries' => array());
+    $result = db_query("SELECT * FROM {uc_taxes} WHERE pcid = %d", $class_id);
+    while ($rule = db_fetch_array($result)){
+      switch ($rule['type']){
+        case 'code':
+          $taxes[$class_id]['postal_codes'][] = $rule;
+        break;
+        case 'state':
+          $taxes[$class_id]['states'][] = $rule;
+        break;
+        case 'country':
+          $taxes[$class_id]['countries'][] = $rule;
+        break;
+      }
+    }
+    // Make more specific zip codes apply before less specific.
+    usort($taxes[$class_id]['postal_codes'], create_function('$a,$b', 'return strlen(rtrim($b["code"], "*")) - strlen(rtrim($a["code"], "*"));'));
+    $taxes[$class_id]['standalone'] = db_result(db_query("SELECT standalone FROM {uc_taxes} WHERE pcid = %d LIMIT 1", $class_id));
+  }
+  
+  if (isset($taxes[$class_id][$type])){
+    return $taxes[$class_id][$type];
+  }
+  else{
+    return $taxes[$class_id];
+  }
+}
+
+function uc_taxes_calculate($order){
+  $total_tax = 0;
+  if (is_numeric($order)){
+    $order = uc_order_load($order);
+  }
+  if ($order === FALSE) {
+    return 0;
+  }
+  $default_taxes = uc_taxes_get_rates();
+  $product_taxes = 0;
+  if (is_array($order->products)) {
+    foreach($order->products as $item){
+      $class_id = db_result(db_query("SELECT pcid FROM {uc_products} WHERE nid = %d", $item->nid));
+      $alternate_taxes = uc_taxes_get_rates($class_id);
+      if (!($code_rate = uc_taxes_match_area($alternate_taxes, $order->delivery_zip, $order->delivery_zone, $order->delivery_country)) && $alternate_taxes['standalone'] == 0){
+        $code_rate = uc_taxes_match_area($default_taxes, $order->delivery_zip, $order->delivery_zone, $order->delivery_country);
+      }
+      $product_taxes += ($code_rate['rate'] * $item->price);
+    }
+  }
+  
+  $total_tax += $product_taxes;
+  
+  return $total_tax;
+}
+
+function uc_taxes_match_area($taxes, $zip, $state, $country = '223'){
+  foreach($taxes['postal_codes'] as $code_rate){
+    $code = rtrim($code_rate['area'], '*');
+    if (strpos($zip, $code) === 0){
+      return $code_rate;
+    }
+  }
+  foreach($taxes['states'] as $code_rate){
+    if ($code_rate['area'] == $state){
+      return $code_rate;
+    }
+  }
+  // I would like a better way to identify the non-state zones.
+  $zones = array(3, 6, 7, 8, 9, 10, 11, 17, 20, 30, 46, 50, 52, 60);
+  foreach($taxes['countries'] as $code_rate){
+    if ($country == '223'){
+      switch ($code_rate['area']){
+        case 'CONTINENTAL_48':
+          // Don't allow non-states, nor Alaska and Hawaii
+          if (!in_array($state, array_merge($zones, array(2, 21)))){
+            return $code_rate;
+          }
+        break;
+        case 'FULL_50_STATES':
+          if (!in_array($state, $zones)){ 
+            return $code_rate;
+          }
+        break;
+        case 'ALL':
+          return $code_rate;
+      }
+    }
+  }
+  return array();
+}
+
+function uc_taxes_javascript($order){
+  if ($order = unserialize(rawurldecode($order))){
+    print uc_taxes_calculate($order);
+    exit();
+  }
+}

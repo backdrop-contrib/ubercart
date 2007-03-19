@@ -1,0 +1,76 @@
+<?php
+// $Id$
+
+function uc_attribute_install(){
+  switch($GLOBALS['db_type']){
+    case 'mysqli':
+    case 'mysql':
+      db_query("CREATE TABLE {uc_attributes} (
+        `aid` mediumint(9) NOT NULL auto_increment,
+        `name` varchar(25) NOT NULL,
+        PRIMARY KEY (`aid`)
+      );");
+      db_query("CREATE TABLE {uc_attributes_options} (
+        `aid` mediumint(9) NOT NULL,
+        `oid` mediumint(9) NOT NULL auto_increment,
+        `price` decimal(10,2) NOT NULL,
+        `weight` float NOT NULL,
+        `name` varchar(25) NOT NULL,
+        PRIMARY KEY (`oid`)
+      );");
+      db_query("CREATE TABLE {uc_product_attributes} (
+        `nid` mediumint(9) NOT NULL,
+        `aid` mediumint(9) NOT NULL,
+        `default_option` mediumint(9) NOT NULL default '0',
+        PRIMARY KEY (`nid`, `aid`)
+      );");
+      db_query("CREATE TABLE `uc_product_options` (
+        `nid` mediumint(9) NOT NULL,
+        `oid` mediumint(9) NOT NULL,
+        `price` decimal(10,2) NOT NULL,
+        `weight` float NOT NULL,
+        PRIMARY KEY  (`nid`,`oid`)
+      );");
+      db_query("CREATE TABLE {uc_product_adjustments} (
+        `nid` mediumint(9) NOT NULL,
+        `combination` text NOT NULL,
+        `model` varchar(20) NOT NULL
+      );");
+    break;
+    case 'pgsql':
+      db_query('CREATE TABLE {uc_attributes} (
+        "aid" mediumint(9) NOT NULL,
+        "name" varchar(25) NOT NULL.
+        PRIMARY KEY ("aid")
+      );');
+      db_query('CREATE INDEX {uc_attributes}_aid ON {uc_attributes} (aid)');
+      db_query('CREATE TABLE {uc_attributes_options} (
+        "aid" mediumint(9) NOT NULL,
+        "oid" mediumint(9) NOT NULL,
+        "name" varchar(25) NOT NULL,
+        "price" decimal(10,2) NOT NULL,
+        "weight" float NOT NULL,
+        PRIMARY KEY ("oid")
+      );');
+      db_query('CREATE INDEX {uc_attributes_options}_oid ON {uc_attributes_options} (oid)');
+      db_query('CREATE TABLE {uc_product_attributes} (
+        "nid" mediumint(9) NOT NULL,
+        "aid" mediumint(9) NOT NULL,
+        "default_option" mediumint(9) NOT NULL default \'0\'
+        PRIMARY KEY ("nid", "aid")
+      );');
+      db_query('CREATE TABLE "uc_product_options" (
+        "nid" mediumint(9) NOT NULL,
+        "oid" mediumint(9) NOT NULL,
+        "price" decimal(10,2) NOT NULL,
+        "weight" float NOT NULL,
+        PRIMARY KEY  ("nid","oid")
+      );');
+      db_query('CREATE TABLE {uc_product_adjustments} (
+        "nid" mediumint(9) NOT NULL,
+        "combination" text NOT NULL,
+        "model" varchar(20) NOT NULL
+      );');
+    break;
+  }
+}

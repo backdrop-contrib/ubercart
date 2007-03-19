@@ -1,0 +1,37 @@
+<?php
+// $Id$
+
+/**
+ * Implementation of hook_install().
+ */
+function uc_credit_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {uc_payment_credit} (
+        credit_id mediumint(9) NOT NULL auto_increment,
+        order_id mediumint(9) NOT NULL,
+        cc_owner varchar(64) NOT NULL,
+        cc_number varchar(16) NOT NULL,
+        cc_exp_month tinyint(4) NOT NULL,
+        cc_exp_year smallint(6) NOT NULL,
+        cc_cvv varchar(4) NOT NULL,
+        PRIMARY KEY  (credit_id),
+        KEY order_id (order_id)
+      );");
+      break;
+    case 'pgsql':
+      db_query("CREATE TABLE {uc_payment_credit} (
+        credit_id mediumint(9) NOT NULL,
+        order_id mediumint(9) NOT NULL,
+        cc_owner varchar(64) NOT NULL,
+        cc_number varchar(16) NOT NULL,
+        cc_exp_month tinyint(4) NOT NULL,
+        cc_exp_year smallint(6) NOT NULL,
+        cc_cvv varchar(4) NOT NULL,
+        PRIMARY KEY (credit_id),
+        KEY order_id (order_id)
+      );");
+      break;
+  }
+}

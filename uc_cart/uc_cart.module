@@ -1,0 +1,1511 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Handles all things concerning Ubercart's shopping cart.
+ *
+ * The Ubercart cart system functions much like the e-commerce cart at its base
+ * level... in fact, most carts do.  This module handles the cart display,
+ * adding items to a cart, and checking out.  The module enables the cart,
+ * products, and checkout to be extensible.
+ *
+ * Development sponsored by the Ubercart project.  http://www.ubercart.org
+ */
+
+/*******************************************************************************
+ * Hook Functions (Drupal)
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_menu().
+ */
+function uc_cart_menu($may_cache) {
+  if ($may_cache) {
+    $items[] = array(
+      'path' => 'admin/store/settings/checkout',
+      'title' => t('Checkout settings'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('uc_cart_checkout_settings'),
+      'access' => user_access('administer store'),
+      'description' => t('Configure the checkout settings.'),
+    );
+    $items[] = array(
+      'path' => 'cart',
+      'title' => t('Shopping Cart'),
+      'description' => t('View/modify the contents of your shopping cart or '
+                        .'proceed to checkout.'),
+      'callback' => 'uc_cart_view',
+      'access' => user_access('access content'),
+      'type' => MENU_CALLBACK,
+    );
+    $items[] = array(
+      'path' => 'cart/checkout',
+      'title' => t('Checkout'),
+      'description' => t('Purchase the items in your shopping cart.'),
+      'callback' => 'uc_cart_checkout',
+      'access' => user_access('access content'),
+      'type' => MENU_CALLBACK,
+    );
+    $items[] = array(
+      'path' => 'cart/checkout/review',
+      'title' => t('Review Order'),
+      'description' => t('Review an order before final submission.'),
+      'callback' => 'uc_cart_checkout_review',
+      'access' => user_access('access content'),
+      'type' => MENU_CALLBACK,
+    );
+    $items[] = array(
+      'path' => 'cart/checkout/complete',
+      'title' => t('Order Complete'),
+      'description' => t('Display information upon completion of an order.'),
+      'callback' => 'uc_cart_checkout_complete',
+      'access' => user_access('access content'),
+      'type' => MENU_CALLBACK,
+    );
+  }
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_cron().
+ */
+function uc_cart_cron() {
+  $hours = strtotime(variable_get('uc_cart_product_cron', '4') .' hours ago');
+  db_query("DELETE FROM {uc_cart_products} WHERE changed <= %d AND "
+          ."CHAR_LENGTH(cart_id) > 8", $hours);
+}
+
+/**
+ * Implementation of hook_block().
+ */
+function uc_cart_block($op = 'list', $delta = 0, $edit = array()) {
+  if ($op == 'list') {
+    $blocks[0]['info'] = t('Shopping Cart');
+
+    return $blocks;
+  }
+  elseif ($op == 'view' && arg(0) != 'admin') {
+    drupal_add_js(drupal_get_path('module', 'uc_cart') .'/uc_cart_block.js');
+
+    $item_count = count(uc_cart_get_contents());
+    if (!$item_count && variable_get('uc_cart_empty_hide', '0')) {
+      break;
+    }
+
+    $uc_cart_path = base_path() . drupal_get_path('module', 'uc_cart');
+    $cart_image = $uc_cart_path;
+    $cart_image .= ($item_count) ? '/images/cart_full.png' : '/images/cart_empty.png';
+    $arrow_down_image = $uc_cart_path .'/images/bullet-arrow-down.png';
+    $arrow_up_image = $uc_cart_path .'/images/bullet-arrow-up.png';
+
+    $subject = l('<img src="'. $cart_image .'" align="left" style="padding-right: 5px;" />', 'cart', NULL, NULL, NULL, FALSE, TRUE)
+                .'<div id="block-cart-title-bar" onclick="cart_toggle(\''. $uc_cart_path .'\');" style="cursor: pointer; white-space: nowrap;">'
+                .'<img id="block-cart-title-arrow" src="'. $arrow_down_image .'" alt="[]" title="'. t('Expand cart block.') .'" style="padding-top: 5px; padding-right: 2px;" align="right" />'
+                .'Shopping Cart</div>';
+
+    $block['subject'] = $subject;
+    $block['content'] = theme('uc_cart_display_block');
+
+    return $block;
+  }
+  elseif ($op == 'configure') {
+    $form['cart_empty_hide'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Hide block if cart is empty'),
+      '#default_value' => variable_get('uc_cart_empty_hide', '0')
+    );
+
+    return $form;
+  }
+  elseif ($op == 'save' && isset($edit['cart_empty_hide'])) {
+    variable_set('uc_cart_empty_hide', $edit['cart_empty_hide']);
+  }
+}
+
+/**
+ * Theme the shopping cart block contents.
+ */
+function theme_uc_cart_display_block() {
+  /* The e-commerce cart has a bit here that takes into account page caching
+     for anonymous users.  This would really only affect anonymous users browsing
+     with items in their cart, not just people browsing the site.  If there is
+     a performance issue, this should be a place to look to tweak...  -RS  */
+
+  if (!module_exists('uc_store')) {
+    return '<div id="block-cart-contents"><p>The module uc_store must be enabled for the cart block to function properly.</p></div>';
+  }
+
+  $output = '<div id="block-cart-contents">';
+
+  $items = uc_cart_get_contents();
+
+  $item_count = 0;
+  if (!empty($items)) {
+    $output .= '<table style="border-bottom-width: 2px;" cellpadding="2">'
+              .'<tbody style="border-top: 0px;">';
+
+    foreach ($items as $item) {
+      $output .= '<tr valign="top"><td><div class="cart-block-item-qty">'. $item->qty .'x</div></td>'
+               . '<td width="100%"><div class="cart-block-item-title">'. l($item->title, 'node/'. $item->nid) .'</div></td>'
+               . '<td align="right"><div class="cart-block-item-price">'. uc_currency_format($item->price) .'</div></td></tr>';
+      $total += ($item->price) * $item->qty;
+      $item_count += $item->qty;
+    }
+
+    $output .= '</tbody></table>';
+  }
+  else {
+    $output .= '<p>'. t('There are no products in your shopping cart.') .'</p>';
+  }
+
+  $output .= '</div>';
+
+  $item_word = ($item_count == 1) ? t('Item') : t('Items');
+  $view = '('. l('View cart', 'cart', array('rel' => 'nofollow')) .')';
+  $checkout = '('. l('Checkout', 'cart/checkout', array('rel' => 'nofollow')) .')';
+  $output .= '<table cellpadding="2"><tbody style="border-top: 0px;">'
+            .'<tr valign="top"><td nowrap>'. $item_count
+            .' '. $item_word .'</td><td width="100%" align="right">'
+            .'<strong>Total:</strong> '. uc_currency_format($total) .'</td></tr>';
+  if ($item_count > 0) {
+    $output .= '<tr><td colspan="2" align="right">'. $view .' '. $checkout .'</td></tr>';
+  }
+  $output .= '</tbody></table>';
+  
+  return $output;
+}
+
+/**
+ * Implementation of hook_exit().
+ *
+ * Clear the cart/view page for anonymous users from the cache.  Review. -RS
+ */
+function uc_cart_exit() {
+  global $user;
+
+  if (substr($_GET['q'], -4) == 'cart' && $user->uid == 0 && variable_get('cache', 0)) {
+    cache_clear_all();
+  }
+}
+
+/**
+ * Implementation of hook_user().
+ *
+ * Convert guest cart to a permanent cart on login.
+ */
+function uc_cart_user($op, &$edit, &$user, $category = NULL) {
+  switch ($op) {
+    case 'login':
+      // Something is screwing up here so you end up with products in a cart having 0 qty. -RS
+      $items = uc_cart_get_contents($user->uid);
+      db_query("UPDATE {uc_cart_products} SET cart_id = %d WHERE cart_id = '%s'", $user->uid, session_id());
+      if (count($items) > 0) {
+        $items = uc_cart_get_contents($user->uid, 'rebuild');
+        db_query("DELETE FROM {uc_cart_products} WHERE cart_id = %d", $user->uid);
+        foreach ($items as $item) {
+          uc_cart_add_item($item->nid, $item->qty, $item->data, $user->uid, FALSE);
+        }
+      }
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_form_alter().
+ *
+ * Redirect shopper back to checkout page if they go to login from there.
+ */
+function uc_cart_form_alter($form_id, &$form) {
+  if ($form_id == 'user_login' || $form_id == 'user_edit') {
+    $referer = referer_uri();
+    if (substr($referer, -13, 13) == 'cart/checkout') {
+      $form['#action'] = url($_GET['q'], "destination=cart/checkout");
+    }
+    elseif (substr($referer, -22, 22) == 'cart/checkout/complete') {
+      $form['#action'] = url($_GET['q'], "destination=user");
+    }
+  }
+}
+
+
+/*******************************************************************************
+ * Hook Functions (TAPIr)
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_table_settings().
+ */
+function uc_cart_table_settings() {
+  $tables[] = array(
+    'id' => 'uc_cart_view_table',
+    'description' => t("Display information on products in a customer's cart."),
+    'path' => 'admin/store/settings/tables',
+    'access' => 'administer store',
+    'preview' => FALSE,
+  );
+  
+  return $tables;
+}
+
+
+/*******************************************************************************
+ * Hook Functions (Ubercart)
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_checkout_pane().
+ */
+function uc_cart_checkout_pane() {
+  $panes[] = array(
+    'id' => 'cart',
+    'callback' => 'uc_checkout_pane_cart',
+    'title' => t('Cart Contents'),
+    'desc' => t("Display the contents of a customer's shopping cart."),
+    'weight' => 1,
+    'process' => FALSE,
+    'collapsible' => FALSE,
+  );
+  $panes[] = array(
+    'id' => 'customer',
+    'callback' => 'uc_checkout_pane_customer',
+    'title' => t('Customer Information'),
+    'desc' => t('Get the necessary information to create a customer on the site.'),
+    'weight' => 2,
+  );
+  $panes[] = array(
+    'id' => 'delivery',
+    'callback' => 'uc_checkout_pane_delivery',
+    'title' => t('Delivery Information'),
+    'desc' => t('Get the information for where the order needs to ship.'),
+    'weight' => 3,
+  );
+  $panes[] = array(
+    'id' => 'billing',
+    'callback' => 'uc_checkout_pane_billing',
+    'title' => t('Billing Information'),
+    'desc' => t('Get basic information needed to collect payment.'),
+    'weight' => 4,
+  );
+  $panes[] = array(
+    'id' => 'comments',
+    'callback' => 'uc_checkout_pane_comments',
+    'title' => t('Order Comments'),
+    'desc' => t('Allow a customer to put comments on an order.'),
+    'weight' => 7,
+  );
+
+  return $panes;
+}
+
+/*******************************************************************************
+ * Callback Functions, Forms, and Tables
+ ******************************************************************************/
+
+function uc_cart_checkout_settings() {
+  $form['cart'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Cart settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['cart']['uc_cart_product_cron'] = array(
+    '#type' => 'select',
+    '#title' => t('Anonymous cart duration'),
+    '#description' => t('How many hours should anonymous carts keep their contents?'),
+    '#options' => drupal_map_assoc(range(1, 24)),
+    '#default_value' => variable_get('uc_cart_product_cron', '4'),
+  );
+  $form['checkout'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Checkout settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['checkout']['uc_checkout_next_button'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Next Pane Button Text'),
+    '#description' => t('Change the text on the checkout pane buttons to expand the next pane.'),
+    '#default_value' => variable_get('uc_checkout_next_button', t('Next')),
+  );
+  $form['checkout']['uc_checkout_review_button'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Review Order Button Text'),
+    '#description' => t('Change the text on the review order button at the bottom of the checkout screen.'),
+    '#default_value' => variable_get('uc_checkout_review_button', t('Review Order')),
+  );
+  $form['checkout']['uc_checkout_submit_button'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Submit Order Button Text'),
+    '#description' => t('Change the text on the submit order button at the bottom of the review screen.'),
+    '#default_value' => variable_get('uc_checkout_submit_button', t('Submit Order')),
+  );
+  $form['checkout']['uc_use_next_buttons'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use collapsing checkout panes with next buttons during checkout.'),
+    '#default_value' => variable_get('uc_use_next_buttons', TRUE),
+  );
+  $form['checkout']['uc_new_customer_email'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Send new customers a separate e-mail with their account details.'),
+    '#default_value' => variable_get('uc_new_customer_email', TRUE),
+  );
+
+  $form['messages'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Checkout messages'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['messages']['uc_checkout_instructions'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Checkout Instructions'),
+    '#description' => t('Provide instructions for customers at the top of the checkout screen.'),
+    '#default_value' => variable_get('uc_checkout_instructions', ''),
+    '#rows' => 3,
+  );
+  $form['messages']['uc_checkout_review_instructions'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Checkout Instructions'),
+    '#description' => t('Provide instructions for customers at the top of the checkout review screen.'),
+    '#default_value' => variable_get('uc_checkout_review_instructions',
+                          t('Please review the details of your order and click !submit if all the information is '
+                           .'correct.  You may use the Back button to make changes to your order if necessary.',
+                            array('!submit' => variable_get('uc_checkout_submit_button', t('Submit Order'))))),
+    '#rows' => 3,
+  );
+  $form['messages']['uc_msg_order_submit'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Checkout Message Header'),
+    '#description' => t('Header for message displayed after a user checks out.'),
+    '#default_value' => variable_get('uc_msg_order_submit', t('Your order is complete!')),
+    '#rows' => 3,
+  );
+  $form['messages']['template_help'] = array(
+    '#value' => '<div>'. t('In the following three boxes, you may use !site to '
+               .'print the site name, !new_username for the username of a newly '
+               ."created account, and !new_password for that account\'s password.") .'</div>',
+  );
+  $form['messages']['uc_msg_order_logged_in'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Checkout Completion for Logged-in Users'),
+    '#description' => t('Message displayed upon checkout for a user who has logged in.'),
+    '#default_value' => variable_get('uc_msg_order_logged_in', _get_checkout_message('logged_in')),
+    '#rows' => 3,
+  );
+  $form['messages']['uc_msg_order_existing_user'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Checkout Completion for Existing Users'),
+    '#description' => t("Message displayed upon checkout for a user who has an account but wasn't logged in."),
+    '#default_value' => variable_get('uc_msg_order_existing_user', _get_checkout_message('existing_user')),
+    '#rows' => 3,
+  );
+  $form['messages']['uc_msg_order_new_user'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Checkout Completion for New Users'),
+    '#description' => t('Message displayed upon checkout for a new user whose account was just created.'),
+    '#default_value' => variable_get('uc_msg_order_new_user', _get_checkout_message('new_user')),
+    '#rows' => 3,
+  );
+  $form['messages']['uc_msg_continue_shopping'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Continue Shopping Message'),
+    '#description' => t('Message displayed upon checkout to direct customers to another part of your site.'),
+    '#default_value' => variable_get('uc_msg_continue_shopping',
+                          l(t('Click to return to the front page.'), '<front>')),
+    '#rows' => 3,
+  );
+
+  $form['panes'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Checkout panes'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['panes']['description'] = array(
+    '#value' => '<div>'. t('Use the checkbox to enable/disable a checkout pane.  Use the select box to adjust the order of the panes on the checkout screen.') .'</div>',
+  );
+  $panes = _checkout_pane_list();
+  for ($i = 0; $i < count($panes); $i++) {
+    $form['panes']['uc_pane_'. $panes[$i]['id'] .'_enabled'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable ') . $panes[$i]['title'],
+      '#default_value' => variable_get('uc_pane_'. $panes[$i]['id'] .'_enabled', $panes[$i]['enabled']),
+    );
+    $form['panes']['uc_pane_'. $panes[$i]['id'] .'_weight'] = array(
+      '#type' => 'weight',
+      '#title' => $panes[$i]['title'] . t(' weight'),
+      '#default_value' => variable_get('uc_pane_'. $panes[$i]['id'] .'_weight', $panes[$i]['weight']),
+    );
+  }
+
+  return system_settings_form($form);
+}
+
+/**
+ * The cart view page lets you view/modify the cart contents or procede to checkout.
+ */
+function uc_cart_view() {
+  if (!is_null($_SESSION['cart_order']))
+    $_SESSION['cart_order'] = null;
+
+  $items = uc_cart_get_contents();
+
+  if (empty($items))
+    return '<p>'. t('There are no products in your shopping cart.') . '</p>';
+
+  $output = drupal_get_form('uc_cart_view_form', $items);
+
+  /* Insert here the call to invoke other modules' cart_view hooks. -RS */
+
+  return $output;
+}
+
+/**
+ * Display a page allowing the customer to view the contents of his or her cart.
+ *
+ * Handles simple or complex objects. Some cart items may have a list of products
+ * that they represent. These are displayed but are not able to be changed by the
+ * customer.
+ */
+function uc_cart_view_form($items = NULL) {
+  $form['items'] = array('#tree' => TRUE);
+
+  $i = 0;
+  foreach ($items as $item) {
+    $display_item = module_invoke($item->module, 'cart_display', $item);
+    if (!empty($display_item)){
+      $form['items'][$i] = $display_item;
+      $i++;
+    }
+  }
+
+//  $form['check-all-items'] = array('#type' => 'checkbox_check_all', '#title' => t('Select All'), '#value' => 'items');
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update Cart'),
+  );
+  $form['checkout'] = array(
+    '#type' => 'submit',
+    '#value' => t('Checkout'),
+  );
+
+  return $form;
+}
+
+function theme_uc_cart_view_form($form) {
+  drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
+
+  $output = '<div class="solid-border">'
+          . tapir_get_table('uc_cart_view_table', $form) .'</div>';
+
+  $output .= '<br /><table class="solid-border full-width"><tr><td align="right">'
+           . drupal_render($form) .'</td></tr></table>';
+
+  return $output;
+}
+
+function uc_cart_view_table($op, $form) {
+  switch ($op) {
+    case 'fields':
+      $fields[] = array('name' => 'remove', 'title' => t('Remove'),
+                        'weight' => 0, 'enabled' => TRUE, 'locked' => TRUE);
+      $fields[] = array('name' => 'image', 'title' => t('Products'),
+                        'weight' => 1, 'enabled' => TRUE);
+      $fields[] = array('name' => 'desc', 'title' => '', 'weight' => 2,
+                        'enabled' => TRUE);
+      $fields[] = array('name' => 'qty', 'title' => t('Qty.'), 'weight' => 3,
+                        'enabled' => TRUE);
+      $fields[] = array('name' => 'total', 'title' => t('Total'), 'weight' => 4,
+                        'enabled' => TRUE);
+      return $fields;
+
+    case 'data':
+      foreach (element_children($form['items']) as $i){
+        $nid = $form['items'][$i]['nid']['#value'];
+        $subtotal += $form['items'][$i]['#total'];
+        $desc = drupal_render($form['items'][$i]['title']) .'<br />';
+        $desc .= drupal_render($form['items'][$i]['options']);
+
+        $data['remove'][] = array('data' => drupal_render($form['items'][$i]['remove']), 'align' => 'center');
+        $data['image'][] = array('data' => uc_product_get_picture($nid, 'thumbnail', array('width' => 50)), 'width' => '50');
+        $data['desc'][] = array('data' => $desc, 'width' => '100%');
+        $data['qty'][] = array('data' => $form['items'][$i]['qty'] ? drupal_render($form['items'][$i]['qty']) : '');
+        $data['total'][] = array('data' => uc_currency_format($form['items'][$i]['#total']));
+        $data['#attributes'][] = array('valign' => 'top');
+      }
+      $title = $form['check-all-items']['#title'];
+      $form['check-all-items']['#title'] = NULL;
+      $data['#footer'] = array(
+        array('data' => drupal_render($form['check-all-items']), 'align' => 'center'),
+        array('data' => '<b>'. $title .'</b>'),
+        array('data' => '<strong>'. t('Subtotal:') .'</strong> '. uc_currency_format($subtotal), 'colspan' => 6, 'align' => 'right')
+      );
+      return $data;
+
+    case 'attributes':
+      $attributes = array('width' => '100%');
+      return $attributes;
+  }
+}
+
+function uc_cart_view_form_submit($form_id, $form_values) {
+  switch ($form_values['op']) {
+    case t('Update Cart'):
+      cache_clear_all();
+      uc_cart_update_item_object((object)$form_values);
+      drupal_set_message('Your cart has been updated.');
+      return 'cart';
+
+    case t('Checkout'):
+      return 'cart/checkout';
+  }
+}
+
+/**
+ * Display the cart checkout page built of checkout panes from enabled modules.
+ */
+function uc_cart_checkout() {
+  $items = uc_cart_get_contents();
+
+  if (count($items) == 0) {
+    drupal_goto('cart');
+  }
+
+  uc_add_base_path_js();
+  $list = _line_item_list();
+  foreach ($list as $line_item) {
+    if (function_exists($line_item['callback'])) {
+      $line_item['callback']('cart-preview', $items);
+    }
+  }
+
+  $output = drupal_get_form('uc_cart_checkout_form');
+
+  return $output;
+}
+
+function uc_cart_checkout_form() {
+  if ($_POST['op'] == t('Cancel')) {
+    if (intval($_SESSION['cart_order']) > 0) {
+      unset($_SESSION['cart_order']);
+    }
+    drupal_goto('cart');
+  }
+
+  global $user;
+  $referer = referer_uri();
+  if (substr($referer, -20, 20) == 'cart/checkout/review'
+   || substr($referer, -13, 13) == 'cart/checkout') {
+    if (!($order = uc_order_load($_SESSION['cart_order']))) {
+      unset($_SESSION['cart_order']);
+      $order = NULL;
+    }
+    if ($order->order_status != 0 || ($user->uid && $user->uid != $order->uid)) {
+      $order = NULL;
+    }
+  }
+  else {
+    unset($_SESSION['cart_order']);
+  }
+
+  $form['panes'] = array('#tree' => TRUE);
+  $panes = _checkout_pane_list();
+
+  foreach ($panes as $pane) {
+    if (variable_get('uc_pane_'. $pane['id'] .'_enabled', TRUE)) {
+      $func = $pane['callback'];
+      $return = $func('view', $order, NULL);
+      $form['panes'][$pane['id']] = $return->fields;
+    }
+  }
+  unset($_SESSION['expanded_panes']);
+
+  $form['cart_contents'] = array('#type' => 'hidden', '#value' => serialize(uc_cart_get_contents()));
+  $form['cancel'] = array('#type' => 'submit', '#submit' => FALSE, '#value' => t('Cancel'));
+  $form['continue'] = array('#type' => 'submit', '#value' => variable_get('uc_checkout_review_button', t('Review Order')));
+
+  return $form;
+}
+
+function theme_uc_cart_checkout_form($form) {
+  drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
+
+  $output = variable_get('uc_checkout_instructions', '') .'<p>';
+  foreach (element_children($form['panes']) as $pane_id) {
+    if (function_exists(($func = _checkout_pane_data($pane_id, 'callback')))
+        && $result = $func('theme', &$form, NULL)) {
+      $output .= $result;
+      $form['panes'][$pane_id] = array();
+    }
+    else {
+      $output .= drupal_render($form['panes'][$pane_id]);
+    }
+  }
+
+  $output .= '<p><table width="100%" align="center" cellpadding="5" style="border-style: solid; border-width: 1px; border-color: #bbb;">'
+           . '<tr><td align="right">'. drupal_render($form) .'</td></tr></table></p>';
+
+  return $output;
+}
+
+function uc_cart_checkout_form_submit($form_id, $form_values) {
+  global $user;
+
+  switch ($form_values['op']) {
+    case variable_get('uc_checkout_review_button', t('Review Order')):
+      if (is_null($_SESSION['cart_order']) || $_SESSION['cart_order'] == 0) {
+        $order = uc_order_new($user->uid);
+        $_SESSION['cart_order'] = $order->order_id;
+      }
+      else {
+        $order = new stdClass();
+        $order->order_id = $_SESSION['cart_order'];
+      }
+
+      $valid = TRUE;
+      foreach($form_values['panes'] as $key => $value) {
+        $func = _checkout_pane_data($key, 'callback');
+        if (($isvalid = $func('process', &$order, $value)) === FALSE) {
+          $_SESSION['expanded_panes'][] = $key;
+          $valid = FALSE;
+        }
+      }
+
+      $order->products = unserialize($form_values['cart_contents']);
+
+      uc_order_save($order);
+
+      if ($valid === FALSE) {
+        return 'cart/checkout';
+      }
+
+      $_SESSION['do_review'] = TRUE;
+      return 'cart/checkout/review';
+  }
+}
+
+/**
+ * Allow a customer to review their order before finally submitting it.
+ */
+function uc_cart_checkout_review() {
+  $form_output = drupal_get_form('uc_cart_checkout_review_form');
+
+  if ($_SESSION['do_review'] !== TRUE) {
+    drupal_goto('cart');
+  }
+
+  $_SESSION['do_review'] = FALSE;
+  unset($_SESSION['do_review']);
+
+  $order_id = intval($_SESSION['cart_order']);
+
+  $order = uc_order_load($order_id);
+  if ($order === FALSE) {
+    $_SESSION['cart_order'] = NULL;
+    unset($_SESSION['cart_order']);
+    drupal_goto('cart');
+  }
+
+  drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
+
+  $output = '<p>'. variable_get('uc_checkout_review_instructions',
+            t('Please review the details of your order and click !submit if all the information is '
+             .'correct.  You may use the Back button to make changes to your order if necessary.',
+              array('!submit' => variable_get('uc_checkout_submit_button', t('Submit Order'))))) .'</p>';
+  $output .= '<table class="order-review-table">';
+
+  $panes = _checkout_pane_list();
+  foreach ($panes as $pane) {
+    if (variable_get('uc_pane_'. $pane['id'] .'_enabled', TRUE)) {
+      $func = $pane['callback'];
+      if (function_exists($func)) {
+        $return = $func('review', $order, NULL);
+        if (!is_null($return)) {
+          $output .= '<tr class="pane-title-row"><td colspan="2">'
+                   . $pane['title'] .'</td></tr>';
+          if (is_array($return)) {
+            foreach ($return as $row) {
+              if (is_array($row)) {
+                if (isset($row['border'])) {
+                  $border = ' class="row-border-'. $row['border'] .'"';
+                }
+                else {
+                  $border = '';
+                }
+                $output .= '<tr valign="top"'. $border .'><td class="title-col" '
+                          .'nowrap>'. $row['title'] .':</td><td class="data-col">'
+                         . $row['data'] .'</td></tr>';
+              }
+              else {
+                $output .= '<tr valign="top"><td colspan="2">'. $row .'</td></tr>';
+              }
+            }
+          }
+          else {
+            $output .= '<tr valign="top"><td colspan="2">'. $return .'</td></tr>';
+          }
+        }
+      }
+    }
+  }
+
+  $output .= '<tr class="review-button-row"><td colspan="2">'. $form_output .'</td></tr></table>';
+
+  return $output;
+}
+
+function uc_cart_checkout_review_form() {
+  if ($_POST['op'] == t('Back')) {
+    cache_clear_all();
+    drupal_goto('cart/checkout');
+  }
+
+  $form['back'] = array('#type' => 'button', '#value' => t('Back'));
+  $form['submit'] = array('#type' => 'submit', '#value' => variable_get('uc_checkout_submit_button', t('Submit Order')));
+
+  return $form;
+}
+
+function uc_cart_checkout_review_form_submit($form_id, $form_values) {
+  switch ($form_values['op']) {
+    case t('Submit Order'):
+      // Invoke hook_order($op = 'submit') to test to make sure the order can
+      // be completed... used for auto payment in uc_credit.module.
+      $pass = module_invoke_all('order', 'submit', uc_order_load($_SESSION['cart_order']), NULL);
+      
+      //drupal_set_message('<pre>'. print_r($pass, true) .'</pre>');
+
+      $_SESSION['do_complete'] = TRUE;
+      return 'cart/checkout/complete';
+  }
+}
+
+function uc_cart_checkout_complete() {
+  if (!$_SESSION['do_complete']) {
+    drupal_goto('cart');
+  }
+
+  $order = uc_order_load($_SESSION['cart_order']);
+
+  // Logic to create new user if necessary:
+  if ($order->uid == 0) {
+    $result = db_query("SELECT uid FROM {users} WHERE mail = '%s'", $order->primary_email);
+    if ($user = db_fetch_object($result)) {
+      $order->uid = $user->uid;
+      db_query("UPDATE {uc_orders} SET uid = %d WHERE order_id = %d", $order->uid, $order->order_id);
+      $message_type = 'existing_user';
+    }
+    else {
+      $fields = array(
+        'name' => $order->primary_email,
+        'mail' => $order->primary_email,
+        'init' => $order->primary_email,
+        'pass' => user_password(variable_get('uc_pwd_length', 6)),
+        'roles' => array(),
+        'status' => 1,
+      );
+      $account = user_save('', $fields);
+      if (variable_get('uc_new_customer_email', TRUE)) {
+        $variables = array('!username' => $fields['name'], '!site' => variable_get('site_name', 'Drupal'), '!password' => $fields['pass'], '!uri' => $base_url, '!uri_brief' => substr($base_url, strlen('http://')), '!mailto' => $fields['mail'], '!date' => format_date(time()), '!login_uri' => url('user', NULL, NULL, TRUE), '!edit_uri' => url('user/'. $account->uid .'/edit', NULL, NULL, TRUE), '!login_url' => user_pass_reset_url($account));
+        $from = variable_get('uc_store_email_from', ini_get('sendmail_from'));
+        $subject = _user_mail_text('welcome_subject', $variables);
+        $body = _user_mail_text('welcome_body', $variables);
+        drupal_mail('user-register-welcome', $order->primary_email, $subject, $body, $from);
+      }
+      $order->uid = $account->uid;
+      $_SESSION['new_user'] = array('name' => $fields['name'], 'pass' => $fields['pass']);
+      db_query("UPDATE {uc_orders} SET uid = %d WHERE order_id = %d", $order->uid, $order->order_id);
+      $message_type = 'new_user';
+    }
+  }
+  else {
+    $message_type = 'logged_in';
+  }
+
+  // Move an order's status from "In Checkout" to "Pending"
+  uc_order_update_status($_SESSION['cart_order'], 1);
+
+  // Add a comment to let sales team know this came in through the site.
+  uc_order_comment_save($_SESSION['cart_order'], 0, 'Order created through website.', 'admin');
+
+  // Empty that cart...
+  uc_cart_empty(uc_cart_get_id());
+
+  // Clear our the session variables used to force the cart workflow.
+  $_SESSION['cart_order'] = NULL;
+  $_SESSION['do_complete'] = NULL;
+
+  $output = variable_get('uc_msg_order_submit', t('Your order is complete!'));
+  $show_message = variable_get('uc_msg_order_'. $message_type, _get_checkout_message($message_type));
+  if ($show_message != '') {
+    $variables['!site'] = variable_get('uc_store_name', t('our store'));
+    $variables['!new_username'] = $_SESSION['new_user']['name'];
+    $variables['!new_password'] = $_SESSION['new_user']['pass'];
+    $output .= '<p>'. t($show_message, $variables) .'</p>';
+  }
+  $output .= '<p>'. variable_get('uc_msg_continue_shopping',
+             l(t('Click to return to the front page.'), '<front>')) .'</p>';
+
+  unset($_SESSION['new_user']);
+
+  return $output;
+}
+
+
+/*******************************************************************************
+ * Module and Helper Functions
+ ******************************************************************************/
+
+/**
+ * Display the cart contents for review during checkout.
+ */
+function uc_checkout_pane_cart($op) {
+  switch ($op) {
+    case 'view':
+      $pane = uc_cart_checkout_new_pane('cart', FALSE);
+      $pane->fields['pane']['cart'] = array(
+        '#value' => _cart_review_table(),
+        '#weight' => variable_get('uc_pane_cart_field_cart_weight', 2),
+        '#prefix' => '<div class="cart-table">',
+        '#suffix' => '</div>',
+      );
+      return $pane;
+    case 'review':
+      $items = uc_cart_get_contents();
+      $output = '<table>';
+      foreach ($items as $item) {
+        $output .= '<tr><td>'. $item->qty .'x</td><td width="100%">'. $item->title .'</td><td>'
+                  . uc_currency_format($item->price) .'</td></tr>';
+      }
+      $output .= '</table>';
+      $review[] = $output;
+      return $review;
+  }
+}
+
+/**
+ * Get the user's email address for login.
+ */
+function uc_checkout_pane_customer($op, $arg1, $arg2) {
+  global $user;
+
+  switch ($op) {
+    case 'view':
+      $pane = uc_cart_checkout_new_pane('customer');
+      if ($user->uid) {
+        $pane->fields['pane']['description'] = uc_cart_checkout_pane_description('customer',
+          t('Order information will be sent to your account email listed below.'
+           .'<br />You can edit your account information '. l('here', 'user/'. $user->uid .'/edit') .'.'));
+      }
+      else {
+        $pane->fields['pane']['description'] = uc_cart_checkout_pane_description('customer',
+          t('Enter a valid email address for this order or '. l('click here', 'user/login')
+           .' to login with an existing account and return to checkout.'));
+      }
+      $email = (is_null($arg1) || empty($arg1->primary_email)) ? $user->mail : $arg1->primary_email;
+      $pane->fields['pane']['primary_email'] = uc_textfield(t('E-mail Address'), $email, TRUE, NULL, 64);
+      $pane->fields['pane']['primary_email']['#disabled'] = ($user->uid) ? TRUE : FALSE;
+      $pane->fields['pane']['continue'] = uc_cart_checkout_next_button('customer', $pane->next);
+      return $pane;
+
+    case 'review':
+      $review[] = array('title' => t('E-mail'), 'data' => $arg1->primary_email);
+      return $review;
+
+    case 'process':
+      $arg1->primary_email = $arg2['pane']['primary_email'];
+      return TRUE;
+  }
+}
+
+/**
+ * Get the delivery information.
+ */
+function uc_checkout_pane_delivery($op, $arg1, $arg2) {
+  global $user;
+
+  switch ($op) {
+    case 'view':
+      $pane = uc_cart_checkout_new_pane('delivery');
+      $pane->fields['pane']['description'] = uc_cart_checkout_pane_description('delivery', t('Fill in the appropriate delivery information here:'));
+      if ($user->uid) {
+        $pane->fields['pane']['delivery_address_select'] = uc_select_address($user->uid, 'delivery', 'apply_address(\'delivery\', this.value);', t('Saved addresses'));
+      }
+      $pane->fields['pane']['delivery_first_name'] = uc_textfield(variable_get('uc_field_first_name', t('First Name')), $arg1->delivery_first_name);
+      $pane->fields['pane']['delivery_last_name'] = uc_textfield(variable_get('uc_field_last_name', t('Last Name')), $arg1->delivery_last_name);
+      $pane->fields['pane']['delivery_company'] = uc_textfield(variable_get('uc_field_company', t('Company Name')), $arg1->delivery_company, FALSE, NULL, 64);
+      $pane->fields['pane']['delivery_street1'] = uc_textfield(variable_get('uc_field_street1', t('Street Address 1')), $arg1->delivery_street1, TRUE, NULL, 64);
+      $pane->fields['pane']['delivery_street2'] = uc_textfield(variable_get('uc_field_street2', t('Street Address 2')), $arg1->delivery_street2, FALSE, NULL, 64);
+      $pane->fields['pane']['delivery_city'] = uc_textfield(variable_get('uc_field_city', t('City')), $arg1->delivery_city);
+      $pane->fields['pane']['delivery_zone'] = uc_zone_select(variable_get('uc_field_state', t('State')), $arg1->delivery_zone);
+      $pane->fields['pane']['delivery_zip'] = uc_textfield(variable_get('uc_field_zip', t('Zip Code')), $arg1->delivery_zip, TRUE, NULL, 10, 10);
+      $pane->fields['pane']['delivery_phone'] = uc_textfield(variable_get('uc_field_phone', t('Phone Number')), $arg1->delivery_phone, TRUE, NULL, 32, 16);
+      $pane->fields['pane']['continue'] = uc_cart_checkout_next_button('delivery', $pane->next);
+      return $pane;
+
+    case 'theme':
+      $pane =& $arg1['panes']['delivery']['pane'];
+      $pane['delivery_first_name']['#title'] = '';
+      $pane['delivery_last_name']['#title'] = '';
+      $pane['delivery_company']['#title'] = '';
+      $pane['delivery_street1']['#title'] = '';
+      $pane['delivery_street2']['#title'] = '';
+      $pane['delivery_city']['#title'] = '';
+      $pane['delivery_zone']['#title'] = '';
+      $pane['delivery_zip']['#title'] = '';
+      $pane['delivery_phone']['#title'] = '';
+
+      if ($pane['#collapsed']) {
+        $collapsed = ' collapsed';
+      }
+      $output = '<div class="delivery-pane"><fieldset class=" collapsible'. $collapsed .'">'
+              . '<legend>Delivery Information</legend>'
+              . drupal_render($pane['description']);
+      $req = '<span class="form-required">*</span>';
+      $output .= '<table class="pane-table" cellpadding="2">';
+      if ($user->uid && $pane['delivery_address_select']['#type'] == 'select') {
+        $pane['delivery_address_select']['#title'] = '';
+        $output .= '<tr><td class="field-label">'. variable_get('uc_field_address_book', t('Saved Addresses')) .':</td><td>'. drupal_render($pane['delivery_address_select']) . uc_store_get_icon('file:address_book', FALSE, 'address-book-icon') .'</td></tr>';
+      }
+      $output .= '<tr><td class="field-label">'. $req . variable_get('uc_field_first_name', t('First Name')) .':</td><td>'. drupal_render($pane['delivery_first_name']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . variable_get('uc_field_last_name', t('Last Name')) .':</td><td>'. drupal_render($pane['delivery_last_name']) .'</td></tr>'
+               . '<tr><td class="field-label">'. variable_get('uc_field_company', t('Company')) .':</td><td>'. drupal_render($pane['delivery_company']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . variable_get('uc_field_street', t('Street Address')) .':</td><td>'. drupal_render($pane['delivery_street1']) .'</td></tr>'
+               . '<tr><td class="field-label">&nbsp;</td><td>'. drupal_render($pane['delivery_street2']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . variable_get('uc_field_city', t('City')) .':</td><td>'. drupal_render($pane['delivery_city']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . variable_get('uc_field_state', t('State')) .':</td><td>'. drupal_render($pane['delivery_zone']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . variable_get('uc_field_zip', t('Zip Code')) .':</td><td>'. drupal_render($pane['delivery_zip']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . variable_get('uc_field_phone', t('Phone Number')) .':</td><td>'. drupal_render($pane['delivery_phone']) .'</td></tr>'
+               . '</table>';
+
+      foreach (element_children($arg1['panes']['delivery']['pane']) as $element) {
+        $output .= drupal_render($arg1['panes']['delivery']['pane'][$element]);
+      }
+      $output .= '</fieldset></div>';
+      return $output;
+
+    case 'review':
+      $review[] = array('title' => t('Address'), 'data' => uc_order_address($arg1, 'delivery', FALSE));
+      $review[] = array('title' => t('Phone'), 'data' => $arg1->delivery_phone);
+      return $review;
+
+    case 'process':
+      $arg1->delivery_first_name = $arg2['pane']['delivery_first_name'];
+      $arg1->delivery_last_name = $arg2['pane']['delivery_last_name'];
+      $arg1->delivery_company = $arg2['pane']['delivery_company'];
+      $arg1->delivery_street1 = $arg2['pane']['delivery_street1'];
+      $arg1->delivery_street2 = $arg2['pane']['delivery_street2'];
+      $arg1->delivery_city = $arg2['pane']['delivery_city'];
+      $arg1->delivery_zone = $arg2['pane']['delivery_zone'];
+      $arg1->delivery_zip = $arg2['pane']['delivery_zip'];
+      $arg1->delivery_country = $arg2['pane']['delivery_country'];
+      $arg1->delivery_phone = $arg2['pane']['delivery_phone'];
+      return TRUE;
+  }
+}
+
+/**
+ * Get the billing information.
+ */
+function uc_checkout_pane_billing($op, $arg1, $arg2) {
+  global $user;
+
+  switch ($op) {
+    case 'view':
+      $pane = uc_cart_checkout_new_pane('billing');
+      $pane->fields['pane']['description'] = uc_cart_checkout_pane_description('billing', t('Fill in the appropriate billing information here:'));
+
+      drupal_add_js(drupal_get_path('module', 'uc_cart') .'/uc_cart.js');
+      if ($user->uid) {
+        $pane->fields['pane']['billing_address_select'] = uc_select_address($user->uid, 'billing', 'apply_address(\'billing\', this.value);', t('Saved addresses'));
+      }
+      $pane->fields['pane']['billing_first_name'] = uc_textfield(variable_get('uc_field_first_name', t('First Name')), $arg1->billing_first_name);
+      $pane->fields['pane']['billing_last_name'] = uc_textfield(variable_get('uc_field_last_name', t('Last Name')), $arg1->billing_last_name);
+      $pane->fields['pane']['billing_company'] = uc_textfield(variable_get('uc_field_company', t('Company Name')), $arg1->billing_company, FALSE, NULL, 64);
+      $pane->fields['pane']['billing_street1'] = uc_textfield(variable_get('uc_field_street1', t('Street Address 1')), $arg1->billing_street1, TRUE, NULL, 64);
+      $pane->fields['pane']['billing_street2'] = uc_textfield(variable_get('uc_field_street2', t('Street Address 2')), $arg1->billing_street2, FALSE, NULL, 64);
+      $pane->fields['pane']['billing_city'] = uc_textfield(variable_get('uc_field_city', t('City')), $arg1->billing_city);
+      $pane->fields['pane']['billing_zone'] = uc_zone_select(variable_get('uc_field_state', t('State')), $arg1->billing_zone);
+      $pane->fields['pane']['billing_zip'] = uc_textfield(variable_get('uc_field_zip', t('Zip Code')), $arg1->billing_zip, TRUE, NULL, 10, 10);
+      $pane->fields['pane']['billing_phone'] = uc_textfield(variable_get('uc_field_phone', t('Phone Number')), $arg1->billing_phone, TRUE, NULL, 32, 16);
+      $pane->fields['pane']['continue'] = uc_cart_checkout_next_button('billing', $pane->next);
+      return $pane;
+
+    case 'theme':
+      $pane =& $arg1['panes']['billing']['pane'];
+      $pane['billing_first_name']['#title'] = '';
+      $pane['billing_last_name']['#title'] = '';
+      $pane['billing_company']['#title'] = '';
+      $pane['billing_street1']['#title'] = '';
+      $pane['billing_street2']['#title'] = '';
+      $pane['billing_city']['#title'] = '';
+      $pane['billing_zone']['#title'] = '';
+      $pane['billing_zip']['#title'] = '';
+      $pane['billing_phone']['#title'] = '';
+
+      if ($pane['#collapsed']) {
+        $collapsed = ' collapsed';
+      }
+      $output = '<div class="billing-pane"><fieldset class=" collapsible'. $collapsed .'">'
+              . '<legend>Billing Information</legend>'
+              . drupal_render($pane['description'])
+              .'<span onclick="uc_cart_copy_delivery_to_billing(true);" '
+              .'style="cursor: pointer; font-weight: bold; color: rgb(0, 0, 125);"><img src="'. base_path()
+             . drupal_get_path('module', 'uc_store') .'/images/copy.gif" '
+              .'style="position: relative; top: 2px; margin-right: 2px;" /> '
+             . t('Click to copy your delivery information.') .'</span>';
+
+      $req = '<span class="form-required">*</span>';
+      $output .= '<div id="billing-fields"><table class="pane-table" cellpadding="2">';
+      if ($user->uid && $pane['billing_address_select']['#type'] == 'select') {
+        $pane['billing_address_select']['#title'] = '';
+        $output .= '<tr><td class="field-label">'. variable_get('uc_field_address_book', t('Saved Addresses')) .':</td><td>'. drupal_render($pane['billing_address_select']) . uc_store_get_icon('file:address_book', FALSE, 'address-book-icon') .'</td></tr>';
+      }
+      $output .= '<tr><td class="field-label">'. $req . variable_get('uc_field_first_name', t('First Name')) .':</td><td>'. drupal_render($pane['billing_first_name']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . variable_get('uc_field_last_name', t('Last Name')) .':</td><td>'. drupal_render($pane['billing_last_name']) .'</td></tr>'
+               . '<tr><td class="field-label">'. variable_get('uc_field_company', t('Company Name')) .':</td><td>'. drupal_render($pane['billing_company']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . variable_get('uc_field_street', t('Street Address')) .':</td><td>'. drupal_render($pane['billing_street1']) .'</td></tr>'
+               . '<tr><td class="field-label">&nbsp;</td><td>'. drupal_render($pane['billing_street2']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . variable_get('uc_field_city', t('City')) .':</td><td>'. drupal_render($pane['billing_city']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . variable_get('uc_field_state', t('State')) .':</td><td>'. drupal_render($pane['billing_zone']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . variable_get('uc_field_zip', t('Zip Code')) .':</td><td>'. drupal_render($pane['billing_zip']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . variable_get('uc_field_phone', t('Phone Number')) .':</td><td>'. drupal_render($pane['billing_phone']) .'</td></tr>'
+               . '</table></div>';
+    
+      foreach (element_children($arg1['panes']['billing']['pane']) as $element) {
+        $output .= drupal_render($arg1['panes']['billing']['pane'][$element]);
+      }
+      $output .= '</fieldset></div>';
+      return $output;
+
+    case 'review':
+      $review[] = array('title' => t('Address'), 'data' => uc_order_address($arg1, 'billing', FALSE));
+      $review[] = array('title' => t('Phone'), 'data' => $arg1->billing_phone);
+      return $review;
+
+    case 'process':
+      $arg1->billing_first_name = $arg2['pane']['billing_first_name'];
+      $arg1->billing_last_name = $arg2['pane']['billing_last_name'];
+      $arg1->billing_company = $arg2['pane']['billing_company'];
+      $arg1->billing_street1 = $arg2['pane']['billing_street1'];
+      $arg1->billing_street2 = $arg2['pane']['billing_street2'];
+      $arg1->billing_city = $arg2['pane']['billing_city'];
+      $arg1->billing_zone = $arg2['pane']['billing_zone'];
+      $arg1->billing_zip = $arg2['pane']['billing_zip'];
+      $arg1->billing_country = $arg2['pane']['billing_country'];
+      $arg1->billing_phone = $arg2['pane']['billing_phone'];
+      return TRUE;
+  }
+}
+
+/**
+ * Allow a customer to make comments on the order.
+ */
+function uc_checkout_pane_comments($op, $arg1, $arg2) {
+  switch ($op) {
+    case 'view':
+      $pane = uc_cart_checkout_new_pane('comments');
+      $pane->fields['pane']['description'] = uc_cart_checkout_pane_description('comments', t('Use this area for special instructions or questions regarding your order:'));
+      $result = db_query("SELECT message FROM {uc_order_comments} WHERE "
+                        ."order_id = %d", $arg1->order_id);
+      if ($comment = db_fetch_object($result)) {
+        $default = $comment->message;
+      }
+      $pane->fields['pane']['comments'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Order Comments'),
+        '#default_value' => $default,
+      );
+      $pane->fields['pane']['continue'] = uc_cart_checkout_next_button('delivery', $pane->next);
+      return $pane;
+
+    case 'review':
+      $result = db_query("SELECT message FROM {uc_order_comments} WHERE "
+                        ."order_id = %d", $arg1->order_id);
+      if ($comment = db_fetch_object($result)) {
+        $review[] = array('title' => t('Comment'), 'data' => $comment->message);
+      }
+      return $review;
+
+    case 'process':
+      if (strlen($arg2['pane']['comments']) > 0) {
+        db_query("DELETE FROM {uc_order_comments} WHERE order_id = %d", $arg1->order_id);
+        uc_order_comment_save($arg1->order_id, 0, $arg2['pane']['comments'], 'order', 1, TRUE);
+      }
+      return TRUE;
+  }
+}
+
+/**
+ * Pseudo OOP constructor - create a new pane object...
+ */
+function uc_cart_checkout_new_pane($pane_id, $collapsed = NULL) {
+  $pane->prev = _uc_cart_checkout_prev_pane($pane_id);
+  $pane->next = _uc_cart_checkout_next_pane($pane_id);
+
+  if (is_null($collapsed)) {
+    $collapsed = ($pane->prev === FALSE) ? FALSE : TRUE;
+  }
+  if (isset($_SESSION['expanded_panes'])) {
+    if (is_array($_SESSION['expanded_panes']) &&
+        in_array($pane_id, $_SESSION['expanded_panes'])) {
+      $collapsed = FALSE;
+    }
+  }
+
+  $pane->fields['pane'] = array(
+    '#type' => 'fieldset',
+    '#title' => _checkout_pane_data($pane_id, 'title'),
+    '#collapsible' => _checkout_pane_data($pane_id, 'collapsible'),
+    '#collapsed' => (variable_get('uc_use_next_buttons', TRUE) ? $collapsed : FALSE),
+    '#prefix' => '<div class="'. $pane_id .'-pane">',
+    '#suffix' => '</div>'
+  );
+
+  return $pane;
+}
+
+/**
+ * Add a description to a pane.
+ */
+function uc_cart_checkout_pane_description($pane_id, $desc) {
+  $element = array(
+    '#value' => variable_get('uc_pane_'. $pane_id .'_field_description', $desc),
+    '#weight' => 0,
+    '#prefix' => '<div class="pane-description">',
+    '#suffix' => '</div>'
+  );
+
+  return $element;
+}
+
+/**
+ * Adds a continue button to a pane.
+ */
+function uc_cart_checkout_next_button($pane_id, $next) {
+  if ($next === FALSE || variable_get('uc_use_next_buttons', TRUE) == FALSE) {
+    return NULL;
+  }
+
+  $element = array(
+    '#type' => 'button',
+    '#value' => variable_get('uc_checkout_next_button', t('Next')),
+    '#weight' => variable_get("uc_pane_{$pane_id}_field_button_weight", 20),
+    '#attributes' => array('onclick' => "return uc_cart_continue_click(this, '$next');"),
+    '#prefix' => '<div class="continue-button show-onload">',
+    '#suffix' => '</div>'
+  );
+
+  return $element;
+}
+
+/**
+ * Find the pane that displays above the pane with an ID of $pane_id.
+ */
+function _uc_cart_checkout_prev_pane($pane_id = NULL) {
+  if (is_null($pane_id)) {
+    return FALSE;
+  }
+
+  $panes = _checkout_pane_list();
+
+  $prev = FALSE;
+  foreach ($panes as $target) {
+    if ($target['id'] == $pane_id) {
+      return $prev;
+    }
+    if ($target['collapsible'] && variable_get('uc_pane_'. $target['id'] .'_enabled', TRUE)) {
+      $prev = $target['id'];
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Find the pane that displays below the pane with an ID of $pane_id.
+ */
+function _uc_cart_checkout_next_pane($pane_id = NULL) {
+  if (is_null($pane_id)) {
+    return FALSE;
+  }
+
+  $panes = _checkout_pane_list();
+
+  $next = FALSE;
+  foreach ($panes as $target) {
+    if ($next) {
+      if ($target['collapsible'] && variable_get('uc_pane_'. $target['id'] .'_enabled', TRUE)) {
+        return $target['id'];
+      }
+    }
+    if ($target['id'] == $pane_id) {
+      $next = TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Sort the checkout panes by weight using this function with usort().
+ */
+function _checkout_pane_sort($a, $b) {
+  if ($a['weight'] == $b['weight']) {
+    return 0;
+  }
+
+  return ($a['weight'] > $b['weight']) ? 1 : -1;
+}
+
+/**
+ * Build a list of checkout panes defined in the enabled modules.
+ */
+function _checkout_pane_list($action = NULL) {
+  static $panes;
+
+  if (count($panes) > 0 && $action !== 'rebuild') {
+    return $panes;
+  }
+
+  $panes = module_invoke_all('checkout_pane', NULL);
+  for ($i = 0; $i < count($panes); $i++) {
+    $panes[$i]['enabled'] = variable_get('uc_pane_'. $panes[$i]['id'] .'_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
+    $panes[$i]['weight'] = variable_get('uc_pane_'. $panes[$i]['id'] .'_weight', (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));
+    $panes[$i]['review'] = !isset($panes[$i]['review']) ? TRUE : $panes[$i]['review'];
+    $panes[$i]['process'] = !isset($panes[$i]['process']) ? TRUE : $panes[$i]['process'];
+    $panes[$i]['collapsible'] = !isset($panes[$i]['collapsible']) ? TRUE : $panes[$i]['collapsible'];
+  }
+  usort($panes, '_checkout_pane_sort');
+
+  return $panes;
+}
+
+/**
+ * Return data from a checkout pane by pane ID and the array key.
+ */
+function _checkout_pane_data($pane_id, $key) {
+  $panes = _checkout_pane_list();
+  foreach ($panes as $pane) {
+    if ($pane['id'] == $pane_id) {
+      return $pane[$key];
+    }
+  }
+}
+
+function _cart_review_table() {
+  $items = uc_cart_get_contents();
+
+  $subtotal = 0;
+  $output = '<table align="center" cellpadding="3">'
+           .'<tr class="header">'
+           .'<td align="center">'. t('Qty.') .'</td>'
+           .'<td>'. t('Products') .'</td>'
+           .'<td align="right">'. t('Price') .'</td></tr>';
+
+  foreach ($items as $item) {
+    $rows = array();
+    foreach($item->options as $option){
+      $rows[] = $option['attribute'] .': '. $option['name'];
+    }
+
+    $desc = $item->title . theme('item_list', $rows, NULL, 'ul', array('class' => 'cart-options'));
+    $total = ($item->qty) ? $item->qty * $item->price : $item->price;
+    $subtotal += $total;
+    $qty = ($item->qty) ? $item->qty : '';
+
+    $output .= '<tr valign="top"><td align="center">'. $qty .'x</td>'
+              .'<td width="100%">'. $desc .'</td><td align="right">'
+             . uc_currency_format($total) .'</td></tr>';
+  }
+  $output .= '<tr><td align="right" colspan="4"><strong>'. t('Subtotal:')
+            .'</strong> '. uc_currency_format($subtotal) .'</td></tr></table>';
+
+  return $output;
+}
+
+/**
+ * Return the unique cart_id of the user, sid for anonymous and uid for logged in users.
+ */
+function uc_cart_get_id() {
+  global $user;
+  if ($user->uid) {
+    return $user->uid;
+  }
+  elseif ($sid = session_id()) {
+    return $sid;
+  }
+  // What to do if neither of these work? -RS
+}
+
+/**
+ * Grab the items in a shopping cart for a user.
+ *
+ * If $cid is not passed in, this function uses the uid of the person currently
+ * accessing this function.
+ */
+function uc_cart_get_contents($cid = NULL, $action = NULL) {
+  static $items = array();
+  $cid = $cid ? $cid : uc_cart_get_id();
+
+  if (!module_exists('uc_product'))
+    return array();
+
+  if ($action == 'rebuild') {
+    $items = array();
+  }
+
+  if ($items[$cid] === NULL) {
+    $result = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c ON n.nid = c.nid WHERE c.cart_id = '%s'", $cid);
+
+    while ($item = db_fetch_object($result)) {
+      for ($i = 0; $i < count($items[$cid]); $i++) {
+        if ($items[$cid][$i]->nid == $item->nid && $items[$cid][$i]->data == $item->data) {
+          $items[$cid][$i]->qty += $item->qty;
+          continue 2;
+        }
+      }
+      $product = node_load($item->nid);
+      $item->cost = $product->cost;
+      $item->price = $product->sell_price;
+      $item->weight = $product->weight;
+      $item->data = unserialize($item->data);
+      if (module_exists('uc_attribute')){
+        $item->options = _uc_cart_product_get_options($item);
+        $op_costs = 0;
+        $op_prices = 0;
+        $op_weight = 0;
+        foreach ($item->options as $option){
+          $op_costs += $option['cost'];
+          $op_prices += $option['price'];
+          $op_weight += $option['weight'];
+        }
+        $item->cost += $op_costs;
+        $item->price += $op_prices;
+        $item->weight += $op_weight;
+        $item->module = $item->data['module'];
+        if ($item->data['model']){
+          $item->model = $item->data['model'];
+        }
+        else{
+          $item->model = $product->model;
+        }
+      }
+      if (module_exists('uc_manufacturer')){
+        $term = array_shift(taxonomy_node_get_terms_by_vocabulary($item->nid, variable_get('uc_manufacturer_vid', 0)));
+        $item->manufacturer = $term->name;
+      }
+      
+      $items[$cid][] = $item;
+    }
+  }
+
+  return $items[$cid];
+}
+
+/**
+ * Adds an item to a user's cart.
+ */
+function uc_cart_add_item($nid, $qty = 1, $data = array('module' => 'uc_product'), $cid = NULL, $msg = TRUE) {
+  $cid = $cid ? $cid : uc_cart_get_id();
+  $node = node_load($nid);
+
+  if (!in_array($node->type, uc_catalog_node_types())) {
+    drupal_set_message(t('!title is not a product. Unable to add to cart.', array('!title' => $node->title)), 'error');
+    return;
+  }
+
+  $item = db_fetch_object(db_query("SELECT * FROM {uc_cart_products} WHERE cart_id = '%s' AND nid = %d AND data = '%s'", $cid, $node->nid, serialize($data)));
+
+  /* If the item isn't in the cart yet, add it. */
+  if (is_null($item) || $item === false) {
+    db_query("INSERT INTO {uc_cart_products} (cart_id, nid, qty, changed, data) VALUES ('%s', %d, %d, %d, '%s')", $cid, $node->nid, $qty, time(), serialize($data));
+    if ($msg) {
+      drupal_set_message(t('<strong>!product-title</strong> added to !cart_view.', array('!cart_view' => l(t('your shopping cart'), 'cart'), '!product-title' => $node->title)));
+    }
+  }
+  else {
+    /* Update the item instead. */
+    if ($msg) {
+      drupal_set_message(t('Your item(s) have been updated.'));
+    }
+    module_invoke($data['module'], 'update_cart_item', $node->nid, $data, $item->qty + $qty, $cid);
+  }
+
+  if (variable_get('uc_cart_add_item_redirect', TRUE))
+    return 'cart';
+
+/*  cache_clear_all();
+
+  if (isset($_GET['destination'])) {
+    drupal_goto();
+  }*/
+}
+
+/**
+ * Remove an item from the cart
+ */
+function uc_cart_remove_item($nid, $cid = NULL, $data = array()) {
+  if (empty($nid)) return;
+  $cart_id = !(is_null($cid) || empty($cid)) ? $cid : uc_cart_get_id();
+  db_query("DELETE FROM {uc_cart_products} WHERE cart_id = '%s' AND nid = %d AND data = '%s'", $cart_id, $nid, serialize($data));
+  cache_clear_all();
+}
+
+/**
+ * Updates the quantity of all the items in a cart object
+ */
+function uc_cart_update_item_object($cart) {
+  if (is_object($cart)) {
+    foreach ($cart->items as $item){
+      if ($item['remove'])
+        module_invoke($item['module'], 'update_cart_item', $item['nid'], unserialize($item['data']), 0);
+      else
+        module_invoke($item['module'], 'update_cart_item', $item['nid'], unserialize($item['data']), $item['qty']);
+    }
+  }
+}
+
+/**
+ * Empties a cart of its contents.
+ */
+function uc_cart_empty($cart_id) {
+  if (is_null($cart_id) || empty($cart_id))
+    return;
+
+  db_query("DELETE FROM {uc_cart_products} WHERE cart_id = '%s'", $cart_id);
+}
+
+/**
+ * Returns the appropriate checkout message per user status.
+ */
+function _get_checkout_message($type) {
+  switch ($type) {
+    case 'logged_in':
+      $output = t('Thank you for shopping at !site. While logged in, you may '
+                 .'continue shopping or '. l('click here', 'user') .' to view '
+                 .'your current order status and order history.');
+      break;
+    case 'existing_user':
+      $output = t('Thank you for shopping at !site. Your current order has '
+                 .'been attached to the account we found matching your email '
+                 .'address.<p>'. l('Click here', 'user') .' to login and view '
+                 .'your current order status and order history. Remember to '
+                 .'login when you make your next purchase for a faster '
+                 .'checkout experience!');
+      break;
+    case 'new_user':
+      $output = t('Thank you for shopping at !site. A new account has been '
+                 .'created for you here that you may use to view your current '
+                 .'order status.<p>'. l('Click here', 'user') .' to login to '
+                 .'your new account using the following information:<p><b>'
+                 .'Username:</b> !new_username <br /><b>Password:</b> '
+                 .'!new_password');
+      break;
+  }
+
+  return $output;
+}
