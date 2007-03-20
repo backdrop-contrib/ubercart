@@ -4,6 +4,10 @@ Ubercart is a set of modules designed to allow you to run a store on your Drupal
 
 Ubercart is being sponsored and developed by the team at http://www.ubercart.org.  Sign up for site access to join the Ubercart community and take advantage of our forums and issue tracking.
 
+Features overview: http://www.ubercart.org/what_is_ubercart
+
+Screenshots: http://www.ubercart.org/ubercart_screenshots
+
 User's and Developer's Guides: http://www.ubercart.org/book
 
 Installation Manual (with module descriptions): http://www.ubercart.org/ubercart_users_guide/installing_ubercart
