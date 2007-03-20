@@ -12,8 +12,6 @@
  * Development sponsored by the Ubercart project.  http://www.ubercart.org
  */
 
-define('UBERCART_VERSION', '5.x-0.5');
-
 /*******************************************************************************
  * Hook Functions (Drupal)
  ******************************************************************************/
@@ -44,14 +42,18 @@ function uc_store_cron(){
   //if (time() > $week_later){ // Run updates once a week.
     $vars = array();
     $vars['site_id'] = variable_get('uc_store_site_id', null);
+    $vars['server_name'] = $_SERVER['SERVER_NAME'];
     $vars['php_version'] = PHP_VERSION;
-    $vars['ubercart_version'] = UBERCART_VERSION;
+    //$vars['ubercart_version'] = UBERCART_VERSION;
     $result = db_query("SELECT name, filename FROM {system} WHERE type = 'module' AND status = 1 ORDER BY filename ASC");
     while ($module = db_fetch_object($result)){
       $info = _module_parse_info_file(dirname($module->filename) .'/'. $module->name .'.info');
       $return = array('name' => $module->name);
       if (isset($info['version'])){
         $return['version'] = $info['version'];
+        if ($module->name == 'uc_store'){
+          $vars['ubercart_version'] = $info['version'];
+        }
       }
       else if (defined(strtoupper($module) .'_VERSION')){
         $return['version'] = constant(strtoupper($module) .'_VERSION');
@@ -764,7 +766,7 @@ function uc_store_census_settings(){
   $form['uc_store_opt_in'] = array('#type' => 'radios',
     '#title' => t('Optional Information'),
     '#options' => array(1 => t('Yes'), 0 => t('No')),
-    '#default_value' => variable_get('uc_store_opt_out', 1),
+    '#default_value' => variable_get('uc_store_opt_in', 1),
     '#description' => t('&Uuml;bercart reports to www.ubercart.org every so '
       .'often to scan for module updates and news alerts. While this option '
       .'is set to Yes, some anonymous e-commerce data is also reported for '
