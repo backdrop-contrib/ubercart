@@ -282,6 +282,13 @@ function uc_order_table_settings() {
     'preview' => FALSE,
   );
   $tables[] = array(
+    'id' => 'op_products_customer_table',
+    'description' => t('The products table on the customer order screen.'),
+    'path' => 'admin/store/settings/tables',
+    'access' => 'administer store',
+    'preview' => FALSE,
+  );
+  $tables[] = array(
     'id' => 'op_products_edit_table',
     'description' => t('The products table on the order edit screen.'),
     'path' => 'admin/store/settings/tables',
@@ -480,10 +487,13 @@ function uc_order_settings() {
     '#collapsible' => TRUE,
     '#collapsed' => TRUE
   );
+  for ($i = 10; $i <= 100; $i += 10) {
+    $options[$i] = $i;
+  }
   $form['general']['uc_order_number_displayed'] = array(
     '#type' => 'select',
     '#title' => t('Number of orders on overview screen'),
-    '#options' => drupal_map_assoc(range(10, 100, 10)),
+    '#options' => $options,
     '#default_value' => variable_get('uc_order_number_displayed', 30),
   );
   $form['general']['uc_order_logging'] = array(
@@ -564,10 +574,10 @@ function uc_order_admin($sql = NULL, $search = FALSE) {
     $order_name = $order->billing_first_name .' '. $order->billing_last_name;    
     $rows[] = array(
       'data' => array(
-        array('data' => _uc_order_admin_icons($order), 'class' => 'nowrap'),
+        array('data' => _uc_order_admin_icons($order), 'nowrap' => 'true'),
         array('data' => $order->order_id),
         array('data' => (trim($order_name) == '') ? t('-No Name-') : $order_name, 'class' => 'nowrap'),
-        array('data' => uc_currency_format($order->order_total, TRUE), 'align' => 'right'),
+        array('data' => uc_currency_format($order->order_total, TRUE), 'align' => 'right', 'nowrap' => 'true'),
         array('data' => date('m/d/Y', $order->created), 'align' => 'center'),
         array('data' => $order->title)),
       'id' => 'order-'. $order->order_id,
@@ -1222,8 +1232,10 @@ function uc_order_edit_products($order_id) {
       $product = node_load(intval($_POST['nid']));
       $product->qty = intval($_POST['qty']);
       $product->price = uc_product_get_price($product->nid);
-      $product->manufacturer = uc_product_get_manufacturer($product->nid);
-      $product->manufacturer = $product->manufacturer->name;
+      if (module_exists('uc_manufacturer')) {
+        $product->manufacturer = uc_product_get_manufacturer($product->nid);
+        $product->manufacturer = $product->manufacturer->name;
+      }
       if (module_exists('uc_attribute')){
         $form_values = array(
           'nid' => intval($_POST['nid']),
@@ -1904,8 +1916,10 @@ function uc_order_pane_products($op, $arg1) {
   uc_add_base_path_js();
   switch ($op) {
     case 'view':
-    case 'customer':
       return tapir_get_table('op_products_view_table', $arg1->products);
+
+    case 'customer':
+      return tapir_get_table('op_products_customer_table', $arg1->products);
 
     case 'edit-theme':
       drupal_add_js('uc_order_load_product_edit_div('. $arg1['order_id']['#value'] .');', 'inline');
@@ -2203,6 +2217,53 @@ function op_products_view_table($op, $products) {
                         'enabled' => TRUE, 'attributes' => array('class' => 'text-center', 'nowrap' => 'nowrap'));
       $fields[] = array('name' => 'cost', 'title' => t('Cost'), 'weight' => 3,
                         'enabled' => TRUE, 'attributes' => array('class' => 'text-right'));
+      $fields[] = array('name' => 'price', 'title' => t('Price'), 'weight' => 4,
+                        'enabled' => TRUE, 'attributes' => array('class' => 'text-right'));
+      $fields[] = array('name' => 'total', 'title' => t('Total'), 'weight' => 5,
+                        'enabled' => TRUE, 'attributes' => array('class' => 'text-right'));
+      return $fields;
+
+    case 'data':
+      if (is_array($products)) {
+        foreach ($products as $product) {
+          $data['qty'][] = array('data' => $product->qty .'x', 'align' => 'right');
+          $options = $product->data['attributes'];
+          $option_rows = array();
+          if (module_exists('uc_attribute') && is_array($options)){
+            foreach($options as $attribute => $option){
+              $option_rows[] = $attribute .': '. $option;
+            }
+          }
+          $data['product'][] = $product->title . theme('item_list', $option_rows, NULL, 'ul', array('class' => 'product-options'));
+          $data['model'][] = array('data' => $product->model, 'align' => 'center', 'nowrap' => 'nowrap');
+          $data['cost'][] = array('data' => uc_currency_format($product->cost), 'align' => 'right');
+          $data['price'][] = array('data' => uc_currency_format($product->price), 'align' => 'right');
+          $data['total'][] = array('data' => uc_currency_format($product->qty * $product->price), 'align' => 'right');
+          $data['#attributes'][] = array('valign' => 'top');
+        }
+      }
+      else {
+        $data['product'][] = array('data' => t('This order contains no products.'), 'colspan' => 10);
+      }
+      return $data;
+
+    case 'attributes':
+      $attributes = array('class' => 'order-pane-table');
+      return $attributes;
+  }
+}
+
+function op_products_customer_table($op, $products) {
+  switch ($op) {
+    case 'fields':
+      $fields[] = array('name' => 'qty', 'title' => t('Qty'), 'weight' => 0,
+                        'enabled' => TRUE, 'attributes' => array('class' => 'text-right'));
+      $fields[] = array('name' => 'product', 'title' => t('Product'), 'weight' => 1, 
+                        'enabled' => TRUE, 'attributes' => array('width' => '80%'));
+      $fields[] = array('name' => 'model', 'title' => t('Model'), 'weight' => 2,
+                        'enabled' => TRUE, 'attributes' => array('class' => 'text-center', 'nowrap' => 'nowrap'));
+      $fields[] = array('name' => 'cost', 'title' => t('Cost'), 'weight' => 3,
+                        'enabled' => FALSE, 'attributes' => array('class' => 'text-right'));
       $fields[] = array('name' => 'price', 'title' => t('Price'), 'weight' => 4,
                         'enabled' => TRUE, 'attributes' => array('class' => 'text-right'));
       $fields[] = array('name' => 'total', 'title' => t('Total'), 'weight' => 5,
@@ -2555,12 +2616,14 @@ function uc_order_save($order) {
   db_query("DELETE FROM {uc_order_products} WHERE order_id = %d", $order->order_id);
   if (is_array($order->products)) {
     foreach ($order->products as $product) {
-      $attributes = array();
-      $options = _uc_cart_product_get_options($product);
-      foreach ($options as $aid => $option){
-        $attributes[$option['attribute']] = $option['name'];
+      if (module_exists('uc_attribute')){
+        $attributes = array();
+        $options = _uc_cart_product_get_options($product);
+        foreach ($options as $aid => $option){
+          $attributes[$option['attribute']] = $option['name'];
+        }
+        $product->data['attributes'] = $attributes;
       }
-      $product->data['attributes'] = $attributes;
       uc_order_product_save($order->order_id, $product);
     }
   }
@@ -2844,8 +2907,10 @@ function uc_order_can_edit($order) {
  * Return TRUE if an order can be deleted.
  */
 function uc_order_can_delete($order) {
-  if (uc_payment_load_payments($order->order_id) !== FALSE) {
-    return FALSE;
+  if (module_exists('uc_payment')) {
+    if (uc_payment_load_payments($order->order_id) !== FALSE) {
+      return FALSE;
+    }
   }
 
   $actions = uc_order_get_actions($order->order_status);

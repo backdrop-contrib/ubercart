@@ -4,7 +4,9 @@
  * Collapse the shopping cart block at page load.
  */
 $(document).ready(function(){
-  $('#block-cart-contents').hide(0);
+  if (expanded_block == false) {
+    $('#block-cart-contents').hide(0);
+  }
 });
 
 /**

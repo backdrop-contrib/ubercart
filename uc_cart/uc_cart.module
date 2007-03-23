@@ -23,6 +23,14 @@
 function uc_cart_menu($may_cache) {
   if ($may_cache) {
     $items[] = array(
+      'path' => 'admin/store/settings/cart',
+      'title' => t('Cart settings'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('uc_cart_cart_settings'),
+      'access' => user_access('administer store'),
+      'description' => t('Configure the cart settings.'),
+    );
+    $items[] = array(
       'path' => 'admin/store/settings/checkout',
       'title' => t('Checkout settings'),
       'callback' => 'drupal_get_form',
@@ -87,7 +95,15 @@ function uc_cart_block($op = 'list', $delta = 0, $edit = array()) {
     return $blocks;
   }
   elseif ($op == 'view' && arg(0) != 'admin') {
+    if (variable_get('uc_cart_expanded', FALSE)) {
+      drupal_add_js('var expanded_block = true;', 'inline');
+    }
+    else {
+      drupal_add_js('var expanded_block = false;', 'inline');
+    }
+
     drupal_add_js(drupal_get_path('module', 'uc_cart') .'/uc_cart_block.js');
+    drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart_block.css');
 
     $item_count = count(uc_cart_get_contents());
     if (!$item_count && variable_get('uc_cart_empty_hide', '0')) {
@@ -111,16 +127,36 @@ function uc_cart_block($op = 'list', $delta = 0, $edit = array()) {
     return $block;
   }
   elseif ($op == 'configure') {
-    $form['cart_empty_hide'] = array(
+    $form['uc_cart_empty_hide'] = array(
       '#type' => 'checkbox',
-      '#title' => t('Hide block if cart is empty'),
-      '#default_value' => variable_get('uc_cart_empty_hide', '0')
+      '#title' => t('Hide block if cart is empty.'),
+      '#default_value' => variable_get('uc_cart_empty_hide', FALSE),
+    );
+    $form['uc_cart_expanded'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Display the shopping cart expanded by default.'),
+      '#default_value' => variable_get('uc_cart_expanded', FALSE),
+    );
+    $form['uc_cart_show_help_text'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Display small help text in the shopping cart block.'),
+      '#default_value' => variable_get('uc_cart_show_help_text', FALSE),
+    );
+    $form['uc_cart_help_text'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Cart help text'),
+      '#description' => t('Displayed if the above box is checked.'),
+      '#size' => 32,
+      '#default_value' => variable_get('uc_cart_help_text', t('Click title to display cart contents.')),
     );
 
     return $form;
   }
-  elseif ($op == 'save' && isset($edit['cart_empty_hide'])) {
-    variable_set('uc_cart_empty_hide', $edit['cart_empty_hide']);
+  elseif ($op == 'save' && isset($edit['uc_cart_empty_hide'])) {
+    variable_set('uc_cart_empty_hide', $edit['uc_cart_empty_hide']);
+    variable_set('uc_cart_expanded', $edit['uc_cart_expanded']);
+    variable_set('uc_cart_show_help_text', $edit['uc_cart_show_help_text']);
+    variable_set('uc_cart_help_text', check_plain($edit['uc_cart_help_text']));
   }
 }
 
@@ -137,7 +173,14 @@ function theme_uc_cart_display_block() {
     return '<div id="block-cart-contents"><p>The module uc_store must be enabled for the cart block to function properly.</p></div>';
   }
 
-  $output = '<div id="block-cart-contents">';
+  if (variable_get('uc_cart_show_help_text', FALSE)) {
+    $output = '<span class="cart-help-text">'
+            . variable_get('uc_cart_help_text', t('Click title to display cart contents.'))
+             .'</span>';
+  }
+
+  
+  $output .= '<div id="block-cart-contents">';
 
   $items = uc_cart_get_contents();
 
@@ -303,20 +346,28 @@ function uc_cart_checkout_pane() {
  * Callback Functions, Forms, and Tables
  ******************************************************************************/
 
-function uc_cart_checkout_settings() {
-  $form['cart'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Cart settings'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
+function uc_cart_cart_settings() {
+  $form['link_out'] = array(
+    '#value' => '<div>'. l(t('Click here'), 'admin/build/block/configure/uc_cart/0')
+              . t(' to goto the shopping cart block configuration page.') .'</div>',
   );
-  $form['cart']['uc_cart_product_cron'] = array(
+  $form['uc_cart_product_cron'] = array(
     '#type' => 'select',
     '#title' => t('Anonymous cart duration'),
     '#description' => t('How many hours should anonymous carts keep their contents?'),
     '#options' => drupal_map_assoc(range(1, 24)),
     '#default_value' => variable_get('uc_cart_product_cron', '4'),
   );
+  $form['uc_cart_add_item_redirect'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Redirect customers to cart page when they add items to their cart.'),
+    '#default_value' => variable_get('uc_cart_add_item_redirect', TRUE),
+  );
+
+  return system_settings_form($form);
+}
+
+function uc_cart_checkout_settings() {
   $form['checkout'] = array(
     '#type' => 'fieldset',
     '#title' => t('Checkout settings'),
@@ -1373,6 +1424,7 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
       $item->price = $product->sell_price;
       $item->weight = $product->weight;
       $item->data = unserialize($item->data);
+      $item->module = $item->data['module'];
       if (module_exists('uc_attribute')){
         $item->options = _uc_cart_product_get_options($item);
         $op_costs = 0;
@@ -1386,13 +1438,16 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
         $item->cost += $op_costs;
         $item->price += $op_prices;
         $item->weight += $op_weight;
-        $item->module = $item->data['module'];
         if ($item->data['model']){
           $item->model = $item->data['model'];
         }
         else{
           $item->model = $product->model;
         }
+      }
+      else{
+        $item->options = array();
+        $item->model = $product->model;
       }
       if (module_exists('uc_manufacturer')){
         $term = array_shift(taxonomy_node_get_terms_by_vocabulary($item->nid, variable_get('uc_manufacturer_vid', 0)));
@@ -1413,9 +1468,17 @@ function uc_cart_add_item($nid, $qty = 1, $data = array('module' => 'uc_product'
   $cid = $cid ? $cid : uc_cart_get_id();
   $node = node_load($nid);
 
-  if (!in_array($node->type, uc_catalog_node_types())) {
-    drupal_set_message(t('!title is not a product. Unable to add to cart.', array('!title' => $node->title)), 'error');
-    return;
+  if (module_exists('uc_catalog')) {
+    if (!in_array($node->type, uc_catalog_node_types())) {
+      drupal_set_message(t('!title is not a product. Unable to add to cart.', array('!title' => $node->title)), 'error');
+      return;
+    }
+  }
+  else {
+    if (!in_array($node->type, array('product', 'kit'))) {
+      drupal_set_message(t('!title is not a product. Unable to add to cart.', array('!title' => $node->title)), 'error');
+      return;
+    }
   }
 
   $item = db_fetch_object(db_query("SELECT * FROM {uc_cart_products} WHERE cart_id = '%s' AND nid = %d AND data = '%s'", $cid, $node->nid, serialize($data)));
@@ -1492,17 +1555,17 @@ function _get_checkout_message($type) {
     case 'existing_user':
       $output = t('Thank you for shopping at !site. Your current order has '
                  .'been attached to the account we found matching your email '
-                 .'address.<p>'. l('Click here', 'user') .' to login and view '
-                 .'your current order status and order history. Remember to '
-                 .'login when you make your next purchase for a faster '
-                 .'checkout experience!');
+                 .'address.<p>'. l('Click here', 'user') .' to login '
+                 .'and view your current order status and order history. '
+                 .'Remember to login when you make your next purchase for a '
+                 .'faster checkout experience!');
       break;
     case 'new_user':
       $output = t('Thank you for shopping at !site. A new account has been '
                  .'created for you here that you may use to view your current '
-                 .'order status.<p>'. l('Click here', 'user') .' to login to '
-                 .'your new account using the following information:<p><b>'
-                 .'Username:</b> !new_username <br /><b>Password:</b> '
+                 .'order status.<p>'. l('Click here', 'user') .' to '
+                 .'login to your new account using the following information:'
+                 .'<p><b>Username:</b> !new_username <br /><b>Password:</b> '
                  .'!new_password');
       break;
   }

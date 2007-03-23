@@ -18,7 +18,11 @@
 
 function uc_store_help($section){
   switch ($section){
-    case '':
+    case 'admin/store/settings/store/census':
+      return t('&Uuml;bercart reports to www.ubercart.org once a day to provide
+update reminders and security alerts. It is neccessary to provide at least module versions
+in order to prevent monetary losses from security vulnerabilites. Additional optional
+information may also be sent to calculate statistical data.');
   }
 }
  
@@ -38,29 +42,32 @@ function uc_store_cron(){
   variable_set('uc_store_updates', $updates); */
 
   $prev_time = variable_get('uc_store_prev_time', 0);
-  $week_later = strtotime("next week", $prev_time);
-  //if (time() > $week_later){ // Run updates once a week.
+  $later = strtotime("tomorrow", $prev_time);
+  if (time() > $later){ // Run updates once a week.
     $vars = array();
     $vars['site_id'] = variable_get('uc_store_site_id', null);
     $vars['server_name'] = $_SERVER['SERVER_NAME'];
     $vars['php_version'] = PHP_VERSION;
-    //$vars['ubercart_version'] = UBERCART_VERSION;
-    $result = db_query("SELECT name, filename FROM {system} WHERE type = 'module' AND status = 1 ORDER BY filename ASC");
-    while ($module = db_fetch_object($result)){
-      $info = _module_parse_info_file(dirname($module->filename) .'/'. $module->name .'.info');
-      $return = array('name' => $module->name);
-      if (isset($info['version'])){
-        $return['version'] = $info['version'];
-        if ($module->name == 'uc_store'){
-          $vars['ubercart_version'] = $info['version'];
-        }
-      }
-      else if (defined(strtoupper($module) .'_VERSION')){
-        $return['version'] = constant(strtoupper($module) .'_VERSION');
-      }
-      $vars['modules'][] = $return;
-    }
+    $vars['drupal_version'] = VERSION;
+    $vars['db_type'] = $GLOBALS['db_type'];
+    $vars['db_version'] = db_version();
     if (variable_get('uc_store_opt_in', 1)){
+      $result = db_query("SELECT name, filename FROM {system} WHERE type = 'module' AND status = 1 ORDER BY filename ASC");
+      while ($module = db_fetch_object($result)){
+        $info = _module_parse_info_file(dirname($module->filename) .'/'. $module->name .'.info');
+        $return = array('name' => $module->name);
+        if (isset($info['version'])){
+          $return['version'] = $info['version'];
+          if ($module->name == 'uc_store'){
+            $vars['ubercart_version'] = $info['version'];
+          }
+        }
+        else if (defined(strtoupper($module) .'_VERSION')){
+          $return['version'] = constant(strtoupper($module) .'_VERSION');
+        }
+        $vars['modules'][] = $return;
+      }
+      
       $result = db_query("SELECT COUNT(DISTINCT o.order_id) AS orders, SUM(o.order_total) AS sales FROM {uc_orders} AS o WHERE o.order_status = 4 GROUP BY o.order_status");
       if ($stats = db_fetch_array($result)){
         $vars['orders'] = $stats['orders'];
@@ -71,11 +78,11 @@ function uc_store_cron(){
         $vars['products'] = $stats['products'];
       }
     }
-    variable_set('uc_store_prev_time', $week_later - 10);
-    $response = drupal_http_request('http://www.ubercart.org/statistics/gather', array('Content-Type' => 'application/x-www-form-urlencoded'), 'POST', http_build_query($vars, '', '&'));
+    variable_set('uc_store_prev_time', $later - 10);
+    $response = drupal_http_request('http://www.ubercart.org/statistics/gather', array('Content-Type' => 'application/x-www-form-urlencoded'), 'POST', drupal_query_string_encode($vars));
     $sid = $response->data;
     variable_set('uc_store_site_id', $sid);
-  //}
+  }
 }
 
 /**
@@ -681,6 +688,11 @@ function uc_store_settings() {
     '#size' => 10,
   );
   $form['currency']['uc_currency_sign'] = uc_textfield(t('Currency Sign'), variable_get('uc_currency_sign', '$'), TRUE, NULL, 10, 10);
+  $form['currency']['uc_sign_after_amount'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Display currency sign after amount.'),
+    '#default_value' => variable_get('uc_sign_after_amount', FALSE),
+  );
   $form['currency']['uc_currency_thou'] = uc_textfield(t('Thousands Marker'), variable_get('uc_currency_thou', ','), TRUE, NULL, 10, 10);
   $form['currency']['uc_currency_dec'] = uc_textfield(t('Decimal Marker'), variable_get('uc_currency_dec', '.'), TRUE, NULL, 10, 10);
 
@@ -767,11 +779,7 @@ function uc_store_census_settings(){
     '#title' => t('Optional Information'),
     '#options' => array(1 => t('Yes'), 0 => t('No')),
     '#default_value' => variable_get('uc_store_opt_in', 1),
-    '#description' => t('&Uuml;bercart reports to www.ubercart.org every so '
-      .'often to scan for module updates and news alerts. While this option '
-      .'is set to Yes, some anonymous e-commerce data is also reported for '
-      .'fun statistical purposes. No personal identifiable information will '
-      .'ever be published.'),
+    '#description' => t('While this option is set to Yes, some anonymous e-commerce data is also reported for fun statistical purposes. We collect the number of  orders that have been fulfilled, the total number of products sold, and the total sales of those orders. No personal identifiable information will ever be published.'),
   );
   
   return system_settings_form($form);
@@ -784,7 +792,7 @@ function uc_store_tables() {
   $output = '<p>'. t('The following tables are used to display various parts '
              .'of your store to your administrators and customers. Click on a '
              .'table id to configure the display of that table.');
-  $output .= '<p>'. tapir_table_list('admin/store/tables') .'</p>';
+  $output .= '<p>'. tapir_table_list('admin/store/settings/tables') .'</p>';
 
   return $output;
 }
@@ -899,11 +907,15 @@ function uc_currency_format($value, $sign = TRUE) {
     $format = '-';
   }
 
-  if ($sign) {
+  if ($sign && !variable_get('uc_sign_after_amount', FALSE)) {
     $format .= variable_get('uc_currency_sign', '$');
   }
 
   $format .= number_format($value, variable_get('uc_currency_prec', 2), variable_get('uc_currency_dec', '.'), variable_get('uc_currency_thou', ','));
+
+  if ($sign && variable_get('uc_sign_after_amount', FALSE)) {
+    $format .= variable_get('uc_currency_sign', '$');
+  }
 
   return $format;
 }
