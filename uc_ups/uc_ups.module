@@ -3,8 +3,7 @@
 
 /**
  * @file
- * Shipping quote module that interfaces with www.ups.com to get rates for 
- * small package shipments.
+ * Shipping quote module that interfaces with www.ups.com to get rates for small package shipments.
  */
 
 include_once(drupal_get_path('module', 'uc_store') .'/includes/XML2Array.php');
@@ -22,9 +21,9 @@ function uc_ups_menu($may_cache){
   if ($may_cache){
     $items[] = array('path' => 'admin/store/settings/quotes/ups',
       'access' => user_access('configure quotes'),
-      'title' => t('UPS settings'),
+      'title' => t('UPS Online Tools Settings'),
       'callback' => 'drupal_get_form',
-      'callback arguments' => array('uc_ups_admin_settings'),
+      'callback arguments' => 'uc_ups_admin_settings',
       'type' => MENU_NORMAL_ITEM,
     );
   }
@@ -116,11 +115,11 @@ function uc_ups_nodeapi(&$node, $op){
 }
 
 /******************************************************************************
- * Übercart Hooks                                                             *
+ * Ãœbercart Hooks                                                             *
  ******************************************************************************/
 
 /**
- * Implementation of Übercart's hook_shipping_type().
+ * Implementation of Ãœbercart's hook_shipping_type().
  */
 function uc_ups_shipping_type(){
   $types = array();
@@ -134,7 +133,7 @@ function uc_ups_shipping_type(){
 }
 
 /**
- * Implementation of Übercart's hook_shipping_method().
+ * Implementation of Ãœbercart's hook_shipping_method().
  */
 function uc_ups_shipping_method(){
   $methods = array();
@@ -161,7 +160,7 @@ function uc_ups_shipping_method(){
 }
 
 /**
- * Implementation of Übercart's hook_store_status().
+ * Implementation of Ãœbercart's hook_store_status().
  *
  * Let's the administrator know that the UPS account information has not been
  * filled out.
@@ -555,7 +554,9 @@ function uc_ups_quote($products, $details){
       }
       $rate = $charge['children'][1]['tagData'];
       if ($rate){
-        $quote['rate'] = uc_ups_markup($rate);
+        $rate = uc_ups_markup($rate);
+        $quote['rate'] = $rate;
+        $quote['format'] = uc_currency_format($rate);
         $quote['option_label'] = $method[0]['quote']['accessorials'][$ups_service];
       }
       //$quote['debug'] = htmlentities($request) .' <br /><br /> '. htmlentities($resp->data);

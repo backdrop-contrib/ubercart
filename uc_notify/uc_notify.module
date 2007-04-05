@@ -73,9 +73,9 @@ function uc_notify_order($op, $arg1, $status){
         if (isset($_SESSION['new_user']) && is_array($_SESSION['new_user'])) {
           $variables['!new_name'] = $_SESSION['new_user']['name'];
           $variables['!new_pass'] = $_SESSION['new_user']['pass'];
-          $variables['!new_user'] = t("An account has been created for you at "
-                                    ."@site.\n\nUsername: !new_name\nPassword: "
-                                    ."!new_pass\n\n", $variables);
+          $variables['!new_user'] = t("An account has been created for you at 
+                                    @site.\n\nUsername: !new_name\nPassword: 
+                                    !new_pass\n\n", $variables);
         }
         else {
           $variables['!new_user'] = '';
@@ -107,9 +107,9 @@ function uc_notify_order($op, $arg1, $status){
         $variables['!invoice'] = $order->invoice;
         $body = variable_get('uc_notify_checkout_body', _checkout_email());
         $sent = drupal_mail('checkout', $order->primary_email, 
-                            t(variable_get('uc_notify_checkout_subject',
+                            strtr(variable_get('uc_notify_checkout_subject',
                               'Your Order at @site'), $variables),
-                            check_markup(t($body, $variables),
+                            check_markup(strtr($body, $variables),
                               variable_get('uc_notify_checkout_format', 3), false),
                             variable_get('uc_store_email_from',  ini_get('sendmail_from')),
                             uc_notify_headers());
@@ -119,8 +119,8 @@ function uc_notify_order($op, $arg1, $status){
           uc_order_log_changes($order->order_id, $changes);
         }
         else {
-          $changes[] = t("Couldn't send email notification to @email for "
-                        ."checkout.", array('@email' => $order->primary_email));
+          $changes[] = t("Couldn't send email notification to @email for checkout.",
+            array('@email' => $order->primary_email));
           uc_order_log_changes($order->order_id, $changes);
         }
       }
@@ -139,11 +139,11 @@ function uc_notify_admin_settings(){
   $form['checkout'] = array(
     '#type' => 'fieldset',
     '#title' => t('Checkout notification settings'),
-    '#description' => t('This is the template used to format the notification '
-                       .'email for new orders. The available variables are '
-                       .'@site, @login_url, @sales_email, @phone, '
-                       .'@customer_first_name, @customer_last_name, !new_user, '
-                       .'!order_id, and !invoice.'),
+    '#description' => t('This is the template used to format the notification 
+                         email for new orders. The available variables are 
+                         @site, @login_url, @sales_email, @phone, 
+                         @customer_first_name, @customer_last_name, !new_user, 
+                         !order_id, and !invoice.'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
     '#weight' => -1,
@@ -163,7 +163,11 @@ function uc_notify_admin_settings(){
   
   $form['status'] = array('#type' => 'fieldset',
     '#title' => t('Order status notification settings'),
-    '#description' => t('This is the template used to format the notification email for order status changes. The available variables are @site, @login_url, @sales_email, @phone, @customer_first_name, @customer_last_name, !order_id, !comment, and !status.'),
+    '#description' => t('This is the template used to format the notification 
+                         email for order status changes. The available variables
+                         are @site, @login_url, @sales_email, @phone, 
+                         @customer_first_name, @customer_last_name, !order_id, 
+                         !comment, and !status.'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
     '#weight' => 0,
@@ -224,9 +228,9 @@ function uc_notify_order_comment($form_id, $form_values){
     $variables['!status'] = uc_order_get_status_name($form_values['status']);
     $body = variable_get('uc_notify_status_body', _comment_email());
     $sent = drupal_mail('order_comment', $order->primary_email,
-                        t(variable_get('uc_notify_status_subject',
+                        strtr(variable_get('uc_notify_status_subject',
                           'Order #!order_id Update'), $variables),
-                        check_markup(t($body, $variables),
+                        check_markup(strtr($body, $variables),
                           variable_get('uc_checkout_status_format', 3), false),
                         variable_get('uc_store_email_from', ini_get('sendmail_from')),
                         uc_notify_headers());
@@ -235,8 +239,8 @@ function uc_notify_order_comment($form_id, $form_values){
       uc_order_log_changes($order->order_id, $changes);
     }
     else {
-      $changes[] = t("Couldn't send email notification to @email for order "
-                    ."comments.", array('@email' => $order->primary_email));
+      $changes[] = t("Couldn't send email notification to @email for order comments.",
+        array('@email' => $order->primary_email));
       uc_order_log_changes($order->order_id, $changes);
     }
   }

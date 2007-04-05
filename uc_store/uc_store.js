@@ -47,7 +47,7 @@ $(document).ready(
       function() {
         $(this).dblclick(
           function() {
-            var url = base_path + 'admin/store/customers/orders/' + this.id.substring(9);
+            var url = base_path + '?q=admin/store/customers/orders/' + this.id.substring(9);
             window.location = url;
           }
         );
@@ -63,7 +63,7 @@ $(document).ready(
       function() {
         $(this).dblclick(
           function() {
-            var url = base_path + 'admin/store/orders/' + this.id.substring(6);
+            var url = base_path + '?q=admin/store/orders/' + this.id.substring(6);
             window.location = url;
           }
         );

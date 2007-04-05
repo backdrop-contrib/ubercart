@@ -92,7 +92,7 @@ function uc_order_menu($may_cache) {
 
     $items[] = array(
       'path' => 'user/'. arg(1) .'/order/'. arg(3),
-      'title' => t('Order ') . arg(3),
+      'title' => t('Order !order_id', array('!order_id' => arg(3))),
       'description' => t('View order') . arg(3),
       'callback' => 'uc_order_view',
       'callback arguments' => array(arg(3), 'customer'),
@@ -119,7 +119,7 @@ function uc_order_menu($may_cache) {
 
       $items[] = array(
         'path' => 'admin/store/orders/'. arg(3),
-        'title' => t('Order ') . arg(3),
+        'title' => t('Order !order_id', array('!order_id' => arg(3))),
         'description' => t('View order') . arg(3),
         'callback' => 'uc_order_view',
         'callback arguments' => array(arg(3), 'view'),
@@ -189,8 +189,8 @@ function uc_order_menu($may_cache) {
       }
       $items[] = array(
         'path' => 'admin/store/orders/'. arg(3) .'/delete',
-        'title' => t('Delete Order ') . arg(3) .'?',
-        'description' => t('Delete order ') . arg(3),
+        'title' => t('Delete Order !order_id?', array('!order_id' => arg(3))),
+        'description' => t('Delete order !order_id.', array('!order_id' => arg(3))),
         'callback' => 'uc_order_delete_confirm',
         'callback arguments' => array(arg(3)),
         'access' => user_access('delete orders'),
@@ -412,7 +412,7 @@ function uc_order_order_actions() {
     'weight' => 1,
     'url' => 'admin/store/orders/%order_id',
     'icon' => '<img src="'. base_path() . drupal_get_path('module', 'uc_store') .'/images/order_view.gif" alt="View order." />',
-    'title' => t('View order') .' %order_id.',
+    'title' => t('View order %order_id.'),
   );
 
   $actions[] = array(
@@ -420,7 +420,7 @@ function uc_order_order_actions() {
     'weight' => 2,
     'url' => 'admin/store/orders/%order_id/edit',
     'icon' => '<img src="'. base_path() . drupal_get_path('module', 'uc_store') .'/images/order_edit.gif" alt="Edit order." />',
-    'title' => t('Edit order') .' %order_id.',
+    'title' => t('Edit order %order_id.'),
     'disable' => array(0),
     'callback' => 'uc_order_can_edit',
   );
@@ -430,7 +430,7 @@ function uc_order_order_actions() {
     'weight' => 10,
     'url' => 'admin/store/orders/%order_id/delete',
     'icon' => '<img src="'. base_path() . drupal_get_path('module', 'uc_store') .'/images/order_delete.gif" alt="Delete order." />',
-    'title' => t('Delete order') .' %order_id.',
+    'title' => t('Delete order %order_id.'),
     'enable' => array(0, 1),
     'callback' => 'uc_order_can_delete',
   );
@@ -501,6 +501,11 @@ function uc_order_settings() {
     '#title' => t('Enable order logging'),
     '#default_value' => variable_get('uc_order_logging', FALSE)
   );
+  $form['general']['uc_order_capitalize_addresses'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Capitalize address on order screens'),
+    '#default_value' => variable_get('uc_order_capitalize_addresses', TRUE)
+  );
 
   $form['panes'] = array(
     '#type' => 'fieldset',
@@ -513,7 +518,7 @@ function uc_order_settings() {
   foreach ($panes as $pane) {
     $form['panes'][$pane['id']] = array(
       '#type' => 'fieldset',
-      '#title' => $pane['id'] . t(' settings'),
+      '#title' => t('!pane_id settings', array('!pane_id' => $pane['id'])),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
     );
@@ -630,7 +635,7 @@ function uc_order_select_form_submit($form_id, $form_values) {
  */
 function uc_order_admin_sort_form() {
   $options = array('-1' => t('All Orders'));
-  $result = db_query("SELECT * FROM uc_order_statuses");
+  $result = db_query("SELECT * FROM {uc_order_statuses}");
   while ($status = db_fetch_object($result)) {
     $options[$status->order_status_id] = $status->title;
   }
@@ -800,11 +805,7 @@ function uc_order_search_form() {
   $form['search']['table1'] = array('#value' => '<table><tr><td colspan="4">');
 
   $form['search']['desc'] = array(
-    '#value' => '<div>'. t('Search for customers based on any of the following '
-               .'fields.  Use * as a wildcard to match any character.') .'<br/>'
-              . t("For example, searching by last name for 's*' will return "
-               .'all customers whose last name starts with an s.') .'<br/>(<em>'
-              . t('Leave a field empty to ignore it in the search.') .'</em>)</div>',
+    '#value' => '<div>'. t("Search for customers based on any of the following fields.  Use * as a wildcard to match any character.<br/>For example, searching by last name for 's*' will return all customers whose last name starts with an s.<br/>(<em>Leave a field empty to ignore it in the search.</em>)") .'</div>',
   );
 
   $form['search']['table2'] = array('#value' => '</td></tr><tr><td>');
@@ -1537,8 +1538,7 @@ function uc_order_address_book_form($uid = 0, $type = 'billing', $func = '') {
   $select = uc_select_address($uid, $type, $func);
 
   if ($uid == 0) {
-    $form['desc'] = array('#value' => t('You must select a customer before '
-                                       .'address information is available.'));
+    $form['desc'] = array('#value' => t('You must select a customer before address information is available.'));
   }
   elseif (is_null($select)) {
     $form['desc'] = array('#value' => t('No addresses found for customer.'));
@@ -1604,8 +1604,8 @@ function uc_order_select_customer($email = NULL) {
     }
     $result = db_query("SELECT uid, mail FROM {users} WHERE mail = '%s'", $email);
     if ($user = db_fetch_object($result)) {
-      $output .= '<b>'. t('Use this account?') .'</b><br />User '
-               . $user->uid .' - '. $user->mail .' <input type="button" '
+      $output .= '<b>'. t('Use this account?') .'</b><br />'
+               . t('User !uid - !mail', array('!uid' => $user->uid, '!mail' => $user->mail)) .' <input type="button" '
                 .'onclick="select_existing_customer('. $user->uid .', \''
                . $user->mail .'\');" value="'. t('Apply') .'" /><br /><br />';
     }
@@ -1735,15 +1735,15 @@ function uc_order_pane_ship_to($op, $arg1) {
         '#collapsible' => TRUE,
         '#collapsed' => FALSE,
       );
-      $form['ship_to']['delivery_first_name'] = uc_textfield(variable_get('uc_field_first_name', t('First Name')), $arg1->delivery_first_name, FALSE);
-      $form['ship_to']['delivery_last_name'] = uc_textfield(variable_get('uc_field_last_name', t('Last Name')), $arg1->delivery_last_name, FALSE);
-      $form['ship_to']['delivery_phone'] = uc_textfield(variable_get('uc_field_phone', t('Phone Number')), $arg1->delivery_phone, FALSE, NULL, 32, 16);
-      $form['ship_to']['delivery_company'] = uc_textfield(variable_get('uc_field_company', t('Company Name')), $arg1->delivery_company, FALSE, NULL, 64);
-      $form['ship_to']['delivery_street1'] = uc_textfield(variable_get('uc_field_street1', t('Street Address 1')), $arg1->delivery_street1, FALSE, NULL, 64);
-      $form['ship_to']['delivery_street2'] = uc_textfield(variable_get('uc_field_street2', t('Street Address 2')), $arg1->delivery_street2, FALSE, NULL, 64);
-      $form['ship_to']['delivery_city'] = uc_textfield(variable_get('uc_field_city', t('City')), $arg1->delivery_city, FALSE);
-      $form['ship_to']['delivery_zone'] = uc_zone_select(variable_get('uc_field_state', t('State')), $arg1->delivery_zone);
-      $form['ship_to']['delivery_zip'] = uc_textfield(variable_get('uc_field_zip', t('Zip Code')), $arg1->delivery_zip, FALSE, NULL, 10, 10);
+      $form['ship_to']['delivery_first_name'] = uc_textfield(uc_get_field_name('first_name'), $arg1->delivery_first_name, FALSE);
+      $form['ship_to']['delivery_last_name'] = uc_textfield(uc_get_field_name('last_name'), $arg1->delivery_last_name, FALSE);
+      $form['ship_to']['delivery_phone'] = uc_textfield(uc_get_field_name('phone'), $arg1->delivery_phone, FALSE, NULL, 32, 16);
+      $form['ship_to']['delivery_company'] = uc_textfield(uc_get_field_name('company'), $arg1->delivery_company, FALSE, NULL, 64);
+      $form['ship_to']['delivery_street1'] = uc_textfield(uc_get_field_name('street1'), $arg1->delivery_street1, FALSE, NULL, 64);
+      $form['ship_to']['delivery_street2'] = uc_textfield(uc_get_field_name('street2'), $arg1->delivery_street2, FALSE, NULL, 64);
+      $form['ship_to']['delivery_city'] = uc_textfield(uc_get_field_name('city'), $arg1->delivery_city, FALSE);
+      $form['ship_to']['delivery_zone'] = uc_zone_select(uc_get_field_name('zone'), $arg1->delivery_zone);
+      $form['ship_to']['delivery_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $arg1->delivery_postal_code, FALSE, NULL, 10, 10);
       return $form;
 
     case 'edit-title':
@@ -1774,7 +1774,7 @@ function uc_order_pane_ship_to($op, $arg1) {
       $changes['delivery_street2'] = $arg1['delivery_street2'];
       $changes['delivery_city'] = $arg1['delivery_city'];
       $changes['delivery_zone'] = $arg1['delivery_zone'];
-      $changes['delivery_zip'] = $arg1['delivery_zip'];
+      $changes['delivery_postal_code'] = $arg1['delivery_postal_code'];
       return $changes;
   }
 }
@@ -1796,15 +1796,15 @@ function uc_order_pane_bill_to($op, $arg1) {
         '#collapsible' => TRUE,
         '#collapsed' => FALSE,
       );
-      $form['bill_to']['billing_first_name'] = uc_textfield(variable_get('uc_field_first_name', t('First Name')), $arg1->billing_first_name, FALSE);
-      $form['bill_to']['billing_last_name'] = uc_textfield(variable_get('uc_field_last_name', t('Last Name')), $arg1->billing_last_name, FALSE);
-      $form['bill_to']['billing_phone'] = uc_textfield(variable_get('uc_field_phone', t('Phone Number')), $arg1->billing_phone, FALSE, NULL, 32, 16);
-      $form['bill_to']['billing_company'] = uc_textfield(variable_get('uc_field_company', t('Company Name')), $arg1->billing_company, FALSE, NULL, 64);
-      $form['bill_to']['billing_street1'] = uc_textfield(variable_get('uc_field_street1', t('Street Address 1')), $arg1->billing_street1, FALSE, NULL, 64);
-      $form['bill_to']['billing_street2'] = uc_textfield(variable_get('uc_field_street2', t('Street Address 2')), $arg1->billing_street2, FALSE, NULL, 64);
-      $form['bill_to']['billing_city'] = uc_textfield(variable_get('uc_field_city', t('City')), $arg1->billing_city, FALSE);
-      $form['bill_to']['billing_zone'] = uc_zone_select(variable_get('uc_field_state', t('State')), $arg1->billing_zone);
-      $form['bill_to']['billing_zip'] = uc_textfield(variable_get('uc_field_zip', t('Zip Code')), $arg1->billing_zip, FALSE, NULL, 10, 10);
+      $form['bill_to']['billing_first_name'] = uc_textfield(uc_get_field_name('first_name'), $arg1->billing_first_name, FALSE);
+      $form['bill_to']['billing_last_name'] = uc_textfield(uc_get_field_name('last_name'), $arg1->billing_last_name, FALSE);
+      $form['bill_to']['billing_phone'] = uc_textfield(uc_get_field_name('phone'), $arg1->billing_phone, FALSE, NULL, 32, 16);
+      $form['bill_to']['billing_company'] = uc_textfield(uc_get_field_name('company'), $arg1->billing_company, FALSE, NULL, 64);
+      $form['bill_to']['billing_street1'] = uc_textfield(uc_get_field_name('street1'), $arg1->billing_street1, FALSE, NULL, 64);
+      $form['bill_to']['billing_street2'] = uc_textfield(uc_get_field_name('street2'), $arg1->billing_street2, FALSE, NULL, 64);
+      $form['bill_to']['billing_city'] = uc_textfield(uc_get_field_name('city'), $arg1->billing_city, FALSE);
+      $form['bill_to']['billing_zone'] = uc_zone_select(uc_get_field_name('zone'), $arg1->billing_zone);
+      $form['bill_to']['billing_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $arg1->billing_postal_code, FALSE, NULL, 10, 10);
       return $form;
 
     case 'edit-title':
@@ -1839,7 +1839,7 @@ function uc_order_pane_bill_to($op, $arg1) {
       $changes['billing_street2'] = $arg1['billing_street2'];
       $changes['billing_city'] = $arg1['billing_city'];
       $changes['billing_zone'] = $arg1['billing_zone'];
-      $changes['billing_zip'] = $arg1['billing_zip'];
+      $changes['billing_postal_code'] = $arg1['billing_postal_code'];
       return $changes;
   }
 }
@@ -2577,11 +2577,11 @@ function uc_order_new($uid = 0, $order_status = 0) {
     $user = user_load(array('uid' => $uid));
     $email = $user->mail;
   }
+  
+  $order->order_id = db_next_id('{uc_orders}_order_id');
 
-  db_query("INSERT INTO uc_orders (uid, order_status, primary_email, created) "
-          ."VALUES (%d, %d, '%s', %d)", $uid, $order_status, $email, time());
-
-  $order->order_id = mysql_insert_id();
+  db_query("INSERT INTO {uc_orders} (order_id, uid, order_status, primary_email, created) "
+          ."VALUES (%d, %d, %d, '%s', %d)", $order->order_id, $uid, $order_status, $email, time());
 
   module_invoke_all('order', 'new', &$order, NULL);
 
@@ -2598,18 +2598,18 @@ function uc_order_save($order) {
   db_query("UPDATE {uc_orders} SET order_status = %d, order_total = %f, primary_email = '%s', "
           ."delivery_first_name = '%s', delivery_last_name = '%s', delivery_phone = '%s', "
           ."delivery_company = '%s', delivery_street1 = '%s', delivery_street2 = '%s', "
-          ."delivery_city = '%s', delivery_zone = %d, delivery_zip = '%s', delivery_country = %d, "
+          ."delivery_city = '%s', delivery_zone = %d, delivery_postal_code = '%s', delivery_country = %d, "
           ."billing_first_name = '%s', billing_last_name = '%s', billing_phone = '%s', "
           ."billing_company = '%s', billing_street1 = '%s', billing_street2 = '%s', "
-          ."billing_city = '%s', billing_zone = %d, billing_zip = '%s', billing_country = %d, "
+          ."billing_city = '%s', billing_zone = %d, billing_postal_code = '%s', billing_country = %d, "
           ."payment_method = '%s', modified = %d WHERE order_id = %d", $order->order_status, uc_order_get_total($order),
            $order->primary_email, $order->delivery_first_name, $order->delivery_last_name, $order->delivery_phone,
            $order->delivery_company, $order->delivery_street1, $order->delivery_street2,
-           $order->delivery_city, $order->delivery_zone, $order->delivery_zip,
+           $order->delivery_city, $order->delivery_zone, $order->delivery_postal_code,
            ((is_null($order->delivery_country) || $order->delivery_country == 0) ? variable_get('uc_store_country', 223) : $order->delivery_country),
            $order->billing_first_name, $order->billing_last_name, $order->billing_phone,
            $order->billing_company, $order->billing_street1, $order->billing_street2,
-           $order->billing_city, $order->billing_zone, $order->billing_zip,
+           $order->billing_city, $order->billing_zone, $order->billing_postal_code,
            ((is_null($order->billing_country) || $order->billing_country == 0) ? variable_get('uc_store_country', 223) : $order->billing_country),
            $order->payment_method, time(), $order->order_id);
 
@@ -2854,18 +2854,23 @@ function uc_order_log_changes($order_id, $changes) {
  *
  * $type = delivery | billing
  */
-function uc_order_address($order, $type, $caps = TRUE) {
+function uc_order_address($order, $type) {
   $name = $order->{$type .'_first_name'} .' '. $order->{$type .'_last_name'};
-  $address = uc_address_format($name,
-                            $order->{$type .'_company'},
-                            $order->{$type .'_street1'},
-                            $order->{$type .'_street2'},
-                            $order->{$type .'_city'},
-                            $order->{$type .'_zone'},
-                            $order->{$type .'_zip'},
-                            $order->{$type .'_country'});
+  $address = uc_address_format(
+    $order->{$type .'_first_name'},
+    $order->{$type .'_last_name'},
+    $order->{$type .'_company'},
+    $order->{$type .'_street1'},
+    $order->{$type .'_street2'},
+    $order->{$type .'_city'},
+    $order->{$type .'_zone'},
+    $order->{$type .'_postal_code'},
+    $order->{$type .'_country'}
+  );
 
-  if ($caps) $address = strtoupper($address);
+  if (variable_get('uc_order_capitalize_addresses', TRUE)) {
+    $address = strtoupper($address);
+  }
   
   return $address;
 }

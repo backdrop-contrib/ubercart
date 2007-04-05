@@ -53,6 +53,6 @@ function apply_address(type, address_str) {
   $('#edit-panes-' + type + '-pane-' + type + '-street2').val(address['street2']).trigger('change');
   $('#edit-panes-' + type + '-pane-' + type + '-city').val(address['city']).trigger('change');
   $('#edit-panes-' + type + '-pane-' + type + '-zone').val(address['zone']).trigger('change');
-  $('#edit-panes-' + type + '-pane-' + type + '-zip').val(address['zip']).trigger('change');
+  $('#edit-panes-' + type + '-pane-' + type + '-postal-code').val(address['postal_code']).trigger('change');
   $('#edit-panes-' + type + '-pane-' + type + '-country').val(address['country']).trigger('change');
 }

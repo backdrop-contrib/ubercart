@@ -36,7 +36,7 @@ function uc_quote_menu($may_cache){
     );
   }
   else{
-    $items[] = array('path' => 'shipping/quote',
+    $items[] = array('path' => 'cart/checkout/shipping/quote',
       'access' => user_access('access content'),
       'callback' => 'uc_quote_request_quotes',
       'type' => MENU_CALLBACK_ITEM,
@@ -124,14 +124,14 @@ function uc_quote_form_alter($form_id, &$form){
       '#collapsible' => true,
       '#collapsed' => true,
     );
-    $form['shipping']['default_address']['first_name'] = uc_textfield(t('First Name'), $address->first_name, FALSE);
-    $form['shipping']['default_address']['last_name'] = uc_textfield(t('Last Name'), $address->last_name, FALSE);
-    $form['shipping']['default_address']['street1'] = uc_textfield(t('Street Address 1'), $address->street1, FALSE, NULL, 64);
-    $form['shipping']['default_address']['street2'] = uc_textfield(t('Street Address 2'), $address->street2, FALSE, NULL, 64);
-    $form['shipping']['default_address']['city'] = uc_textfield(t('City'), $address->city, FALSE);
-    $form['shipping']['default_address']['zone'] = uc_zone_select(t('State'), $address->zone);
-    $form['shipping']['default_address']['zip'] = uc_textfield(t('Zip Code'), $address->zip, FALSE, NULL, 10, 10);
-
+    $form['shipping']['default_address']['first_name'] = uc_textfield(uc_get_field_name('first_name'), $address->first_name, FALSE);
+    $form['shipping']['default_address']['last_name'] = uc_textfield(uc_get_field_name('last_name'), $address->last_name, FALSE);
+    $form['shipping']['default_address']['street1'] = uc_textfield(uc_get_field_name('street1'), $address->street1, FALSE, NULL, 64);
+    $form['shipping']['default_address']['street2'] = uc_textfield(uc_get_field_name('street2'), $address->street2, FALSE, NULL, 64);
+    $form['shipping']['default_address']['city'] = uc_textfield(uc_get_field_name('city'), $address->city, FALSE);
+    $form['shipping']['default_address']['zone'] = uc_zone_select(uc_get_field_name('zone'), $address->zone);
+    $form['shipping']['default_address']['postal_code'] = uc_textfield(t('Postal Code'), $address->postal_code, FALSE, NULL, 10, 10);
+    $form['shipping']['default_address']['country'] = uc_country_select(uc_get_field_name('country'), $address->country);
     
     $types = uc_quote_type_options();
     if (is_array($types)) {
@@ -183,7 +183,7 @@ function uc_quote_form_alter_submit($form_id, $form_values, $type){
 }
 
 /******************************************************************************
- * Übercart Hooks                                                             *
+ * Ãœbercart Hooks                                                             *
  ******************************************************************************/
 
 /**
@@ -219,7 +219,7 @@ function uc_quote_order_pane(){
 }
 
 /**
- * Implementation of Übercart's hook_order().
+ * Implementation of Ãœbercart's hook_order().
  */
 function uc_quote_order($op, $arg1, $arg2){
   switch ($op){
@@ -310,18 +310,25 @@ function uc_quote_admin_settings(){
     '#collapsible' => true,
     '#collapsed' => false,
   );
-  $form['default_address']['first_name'] = uc_textfield(t('First Name'), $address->first_name, FALSE);
-  $form['default_address']['last_name'] = uc_textfield(t('Last Name'), $address->last_name, FALSE);
-  $form['default_address']['company'] = uc_textfield(t('Company Name'), $address->company, FALSE);
-  $form['default_address']['phone'] = uc_textfield(t('Phone Number'), $address->phone, FALSE, NULL, 32, 16);
-  $form['default_address']['street1'] = uc_textfield(t('Street Address 1'), $address->street1, FALSE, NULL, 64);
-  $form['default_address']['street2'] = uc_textfield(t('Street Address 2'), $address->street2, FALSE, NULL, 64);
-  $form['default_address']['city'] = uc_textfield(t('City'), $address->city, FALSE);
-  $form['default_address']['zone'] = uc_zone_select(t('State'), $address->zone);
-  $form['default_address']['zip'] = uc_textfield(t('Zip Code'), $address->zip, FALSE, NULL, 10, 10);
+  $form['default_address']['first_name'] = uc_textfield(uc_get_field_name('first_name'), $address->first_name, FALSE);
+  $form['default_address']['last_name'] = uc_textfield(uc_get_field_name('last_name'), $address->last_name, FALSE);
+  $form['default_address']['company'] = uc_textfield(uc_get_field_name('company'), $address->company, FALSE);
+  $form['default_address']['phone'] = uc_textfield(uc_get_field_name('phone'), $address->phone, FALSE, NULL, 32, 16);
+  $form['default_address']['street1'] = uc_textfield(uc_get_field_name('street1'), $address->street1, FALSE, NULL, 64);
+  $form['default_address']['street2'] = uc_textfield(uc_get_field_name('street2'), $address->street2, FALSE, NULL, 64);
+  $form['default_address']['city'] = uc_textfield(uc_get_field_name('city'), $address->city, FALSE);
+  $form['default_address']['zone'] = uc_zone_select(uc_get_field_name('zone'), $address->zone);
+  $form['default_address']['postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $address->postal_code, FALSE, NULL, 10, 10);
+  $form['default_address']['country'] = uc_country_select(uc_get_field_name('country'), $address->country);
 
   $form['submit'] = array('#type' => 'submit', '#value' => t('Submit'));
   return $form;
+}
+
+function uc_quote_admin_settings_validate($form_id, $form_values){
+  if ($form_values['uc_quote_enabled'][0]){
+    form_set_error('uc_quote_enabled', t('At least one shipping quote method must be enabled.'));
+  }
 }
 
 /**
@@ -337,7 +344,7 @@ function uc_quote_admin_settings_submit($form_id, $form_values){
   $address->street2 = $form_values['street2'];
   $address->city = $form_values['city'];
   $address->zone = $form_values['zone'];
-  $address->zip = $form_values['zip'];
+  $address->postal_code = $form_values['postal_code'];
   
   variable_set('uc_quote_enabled', $form_values['uc_quote_enabled']);
   variable_set('uc_quote_weight', $form_values['uc_quote_weight']);
@@ -523,7 +530,7 @@ function uc_checkout_pane_quotes($op, $arg1, $arg2){
       }
       
       drupal_add_js('misc/progress.js');
-      drupal_add_js('modules/ubercart/uc_quote/uc_quote.js');
+      drupal_add_js(drupal_get_path('module', 'uc_quote') .'/uc_quote.js');
       $default = ($arg1->quote['accessorials'] ? $arg1->quote['accessorials'] : 0);
       $prod_string = '';
       foreach (uc_cart_get_contents() as $item){
@@ -535,7 +542,7 @@ function uc_checkout_pane_quotes($op, $arg1, $arg2){
         $prod_string .= ','. $item->cost;
         $prod_string .= ','. $item->price;
         $prod_string .= ','. $item->weight;
-        $prod_string .= ','. $item->data;
+        $prod_string .= ','. serialize($item->data);
       }
       $prod_string = substr($prod_string, 1);
       // If a previous quote gets loaded, make sure it gets saved again.
@@ -574,7 +581,7 @@ function uc_checkout_pane_quotes($op, $arg1, $arg2){
       $arg1->quote['quote_form'] = rawurldecode($_POST['quote-form']);
       $methods = module_invoke_all('shipping_method');
       foreach($methods as $method){
-        if ($method['id'] == $arg1->quote['method']){
+        if ($method['id'] == $_POST['method-quoted']){
           break;
         }
       }
@@ -637,7 +644,7 @@ function uc_order_pane_quotes($op, $arg1){
         '#value' => 'order-edit',
       );
       $form['quotes']['get_quote'] = array('#type' => 'markup',
-        '#value' => '<input class="form-submit" id="quote-button" type="button" value="'. t('Get Quote') .'"/>&nbsp;',
+        '#value' => '<input class="form-submit" id="get-quote-button" type="button" value="'. t('Get Quote') .'"/>&nbsp;',
       );
       $form['quotes']['add_quote'] = array('#type' => 'submit',
         '#value' => t('Apply to Order'),
@@ -648,7 +655,7 @@ function uc_order_pane_quotes($op, $arg1){
       );
       
       drupal_add_js('misc/progress.js');
-      drupal_add_js('modules/ubercart/uc_quote/uc_quote.js');
+      drupal_add_js(drupal_get_path('module', 'uc_quote') .'/uc_quote.js');
       $default = ($arg1->quote['accessorials'] ? $arg1->quote['accessorials'] : 0);
       // If a previous quote gets loaded, make sure it gets saved again.
       // Also, make sure the previously checked option is checked by default.

@@ -267,17 +267,13 @@ function uc_payment_settings() {
   if (is_array($gateways) && count($gateways) > 0) {
     $form['gateways_info'] = array(
       '#value' => '<div><strong>'. t('Payment Gateways') .'</strong><br />'
-                . t('Payment gateways are web services that allow you to '
-                 .'process various types of payments remotely.  The settings '
-                 .'forms below are for the payment gateways you have '
-                 .'installed.  Click a name to expand its options and adjust '
-                 .'the settings accordingly.') .'</div>',
+                . t('Payment gateways are web services that allow you to process various types of payments remotely.  The settings forms below are for the payment gateways you have installed.  Click a name to expand its options and adjust the settings accordingly.') .'</div>',
     );
     foreach ($gateways as $gateway) {
       $prefix = 'uc_pg_'. $gateway['id'];
       $form[$prefix] = array(
         '#type' => 'fieldset',
-        '#title' => $gateway['name'] .' '. t('settings'),
+        '#title' => t('!gateway_name settings', array('!gateway_name' => $gateway['name'])),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
       );
@@ -308,11 +304,7 @@ function uc_payment_settings() {
   if (is_array($methods) && count($methods) > 0) {
     $form['methods_info'] = array(
       '#value' => '<div><strong>'. t('Payment Methods') .'</strong><br />'
-                . t('The settings forms below are for the payment methods '
-                 .'defined by enabled modules. Click a name to expand its options '
-                 .'and adjust the settings accordingly. Methods are listed in '
-                 .'order of appearance on the checkout screen, determined by the '
-                 .'weight setting (current value shown in parentheses).') .'</div>',
+                . t('The settings forms below are for the payment methods defined by enabled modules. Click a name to expand its options and adjust the settings accordingly. Methods are listed in order of appearance on the checkout screen, determined by the weight setting (current value shown in parentheses).') .'</div>',
     );
     foreach ($methods as $method) {
       $gateways = _payment_gateway_list($method['id'], TRUE);
@@ -337,7 +329,7 @@ function uc_payment_settings() {
       );
       $form['method_'. $method['id']] = array(
         '#type' => 'fieldset',
-        '#title' => $method['name'] .' '. t('settings') .' ('. $method['weight'] .')',
+        '#title' => t('!method settings (!weight)', array('!method' => $method['name'], '!weight' => $method['weight'])),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
       );
@@ -396,7 +388,7 @@ function uc_payment_get_totals() {
   }
   usort($totals, '_total_sort');
 
-  $output = t('Order total preview') .':<table>';
+  $output = t('Order total preview:') .'<table>';
   $grand_total = 0;
 
   foreach($totals as $line) {
@@ -405,7 +397,7 @@ function uc_payment_get_totals() {
     $grand_total += $line[1];
   }
 
-  $output .= '<tr><td align="right"><b>'. t('Order total') .':</b></td>'
+  $output .= '<tr><td align="right"><b>'. t('Order total:') .'</b></td>'
             .'<td align="right">'. uc_currency_format($grand_total)
             .'</td></tr></table>';
 
@@ -426,7 +418,6 @@ function uc_checkout_pane_payment($op, $arg1, $arg2) {
     case 'view':
       drupal_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
       drupal_add_js(drupal_get_path('module', 'uc_taxes') .'/uc_taxes.js');
-      drupal_add_js('tax_label = "'. t('Tax') .'"', 'inline');
       $pane = uc_cart_checkout_new_pane('payment');
       $pane->fields['pane']['current_total'] = array(
         '#type' => 'hidden',
@@ -451,9 +442,9 @@ function uc_checkout_pane_payment($op, $arg1, $arg2) {
         '#options' => $options,
         '#default_value' => $arg1->payment_method,
         '#required' => TRUE,
-        '#attributes' => array('onclick' => "get_payment_details('". base_path() ."cart/checkout/payment_details/' + this.value);"),
+        '#attributes' => array('onclick' => "get_payment_details('". base_path() ."?q=cart/checkout/payment_details/' + this.value);"),
       );
-      drupal_add_js("\$(document).ready( function () { show_default_payment_details('". base_path() ."cart/checkout/payment_details/'); } );", 'inline');
+      drupal_add_js("\$(document).ready( function () { show_default_payment_details('". base_path() ."?q=cart/checkout/payment_details/'); } );", 'inline');
       $pane->fields['pane']['details'] = array(
         '#value' => '<div id="payment_details" class="solid-border display-none"></div>',
       );
@@ -507,7 +498,7 @@ function uc_order_pane_payment($op, $arg1) {
   switch ($op) {
     case 'view':
       if (variable_get('uc_payment_tracking', TRUE)) {
-        $output = t('Balance') .': '. uc_currency_format(uc_payment_balance($arg1));
+        $output = t('Balance:') .' '. uc_currency_format(uc_payment_balance($arg1));
         $output .= ' ('. l(t('View'), 'admin/store/orders/'. $arg1->order_id .'/payments') .')<br />';
       }
       $output .= t('Method:') . _payment_method_data($arg1->payment_method, 'name');
@@ -521,7 +512,7 @@ function uc_order_pane_payment($op, $arg1) {
       return $output;
 
     case 'customer':
-      $output = t('Method') .': '. _payment_method_data($arg1->payment_method, 'name');
+      $output = t('Method:') .' '. _payment_method_data($arg1->payment_method, 'name');
       $func = _payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
         $method_output = $func('customer-view', $arg1);
@@ -549,7 +540,7 @@ function uc_order_pane_payment($op, $arg1) {
         '#title' => t('Payment method'),
         '#default_value' => $arg1->payment_method,
         '#options' => $options,
-        '#attributes' => array('onchange' => "get_payment_details('". base_path() ."admin/store/orders/". $arg1->order_id ."/payment_details/' + this.value);"),
+        '#attributes' => array('onchange' => "get_payment_details('". base_path() ."?q=admin/store/orders/". $arg1->order_id ."/payment_details/' + this.value);"),
       );
       return $form;
 
@@ -564,7 +555,7 @@ function uc_order_pane_payment($op, $arg1) {
       }
       $js = rtrim($js, ' ,') .'};';
       drupal_add_js($js, 'inline');
-      drupal_add_js("\$(document).ready( function () { get_payment_details('". base_path() ."admin/store/orders/' + \$('#edit-order-id').val() + '/payment_details/' + \$('#edit-payment-method').val()); } );", 'inline');
+      drupal_add_js("\$(document).ready( function () { get_payment_details('". base_path() ."?q=admin/store/orders/' + \$('#edit-order-id').val() + '/payment_details/' + \$('#edit-payment-method').val()); } );", 'inline');
       $output = '<table class="order-edit-table">';
       foreach (element_children($arg1['payment']) as $field) {
         $title = $arg1['payment'][$field]['#title'];
@@ -592,10 +583,10 @@ function uc_payment_method_other($op, $arg1) {
       $result = db_query("SELECT description FROM {uc_payment_other} WHERE "
                         ."order_id = %d", $arg1->order_id);
       if ($row = db_fetch_object($result)) {
-        $output = t('Type') .': '. $row->description;
+        $output = t('Type:') .' '. $row->description;
       }
       else {
-        $output = t('Type') .': '. t('Unknown');
+        $output = t('Type:') .' '. t('Unknown');
       }
       return $output;
 
@@ -639,7 +630,7 @@ function uc_payment_method_other_form($order) {
 
 function theme_uc_payment_method_other_form($form) {
   $output = '<table class="order-edit-table"><tr><td class="oet-label">'
-          . t('Description') .':</td><td>'
+          . t('Description:') .'</td><td>'
           . drupal_render($form['pm_other_description']) 
           .'</td></tr></table>';
   return $output;
@@ -651,24 +642,26 @@ function uc_payment_method_check($op, $arg1) {
       if (!variable_get('uc_check_mailing_street1', FALSE)) {
         $details = t('Checks should be made out to:') .'<p>'
                  . uc_address_format(variable_get('uc_store_name', ''),
+                                     NULL,
                                      variable_get('uc_store_company', ''),
                                      variable_get('uc_store_street1', ''),
                                      variable_get('uc_store_street2', ''),
                                      variable_get('uc_store_city', ''),
                                      variable_get('uc_store_zone', ''),
-                                     variable_get('uc_store_zip', ''),
+                                     variable_get('uc_store_postal_code', ''),
                                      variable_get('uc_store_country', 223))
                   .'</p><p>'. variable_get('uc_check_policy', '') .'</p>';
       }
       else {
         $details = t('Checks should be made out to:') .'<p>'
                  . uc_address_format(variable_get('uc_check_mailing_name', ''),
+                                     NULL,
                                      variable_get('uc_check_mailing_company', ''),
                                      variable_get('uc_check_mailing_street1', ''),
                                      variable_get('uc_check_mailing_street2', ''),
                                      variable_get('uc_check_mailing_city', ''),
                                      variable_get('uc_check_mailing_zone', ''),
-                                     variable_get('uc_check_mailing_zip', ''),
+                                     variable_get('uc_check_mailing_postal_code', ''),
                                      variable_get('uc_store_country', 223))
                   .'</p><p>'. variable_get('uc_check_policy', '') .'</p>';
       }
@@ -678,23 +671,25 @@ function uc_payment_method_check($op, $arg1) {
       if (!variable_get('uc_check_mailing_street1', FALSE)) {
         $review[] = array('title' => t('Mail to'), 'data' =>
                    uc_address_format(variable_get('uc_store_name', ''),
+                                     NULL,
                                      variable_get('uc_store_company', ''),
                                      variable_get('uc_store_street1', ''),
                                      variable_get('uc_store_street2', ''),
                                      variable_get('uc_store_city', ''),
                                      variable_get('uc_store_zone', ''),
-                                     variable_get('uc_store_zip', ''),
+                                     variable_get('uc_store_postal_code', ''),
                                      variable_get('uc_store_country', 223)));
       }
       else {
         $review[] = array('title' => t('Mail to'), 'data' =>
                    uc_address_format(variable_get('uc_check_mailing_name', ''),
+                                     NULL,
                                      variable_get('uc_check_mailing_company', ''),
                                      variable_get('uc_check_mailing_street1', ''),
                                      variable_get('uc_check_mailing_street2', ''),
                                      variable_get('uc_check_mailing_city', ''),
                                      variable_get('uc_check_mailing_zone', ''),
-                                     variable_get('uc_check_mailing_zip', ''),
+                                     variable_get('uc_check_mailing_postal_code', ''),
                                      variable_get('uc_store_country', 223)));
       }
       return $review;
@@ -706,7 +701,7 @@ function uc_payment_method_check($op, $arg1) {
       $result = db_query("SELECT clear_date FROM {uc_payment_check} WHERE "
                         ."order_id = %d ", $arg1->order_id);
       if ($check = db_fetch_object($result)) {
-        $output = t('Clear Date') .': '. date('m/d/Y', $check->clear_date);
+        $output = t('Clear Date:') .' '. date('m/d/Y', $check->clear_date);
       }
       else {
         $output = l(t('Receive Check'), 'admin/store/orders/'. $arg1->order_id .'/receive_check');
@@ -728,23 +723,20 @@ function uc_payment_method_check($op, $arg1) {
 
     case 'settings':
       $form['check_address_info'] = array(
-        '#value' => '<div>'. t('Set the mailing address to display to customers who '
-                   .'choose this payment method during checkout.') .'</div>',
+        '#value' => '<div>'. t('Set the mailing address to display to customers who choose this payment method during checkout.') .'</div>',
       );
-      $form['uc_check_mailing_company'] = uc_textfield(t('Company Name'), variable_get('uc_check_mailing_company', ''), FALSE, NULL, 128);
+      $form['uc_check_mailing_company'] = uc_textfield(uc_get_field_name('company'), variable_get('uc_check_mailing_company', ''), FALSE, NULL, 128);
       $form['uc_check_mailing_name'] = uc_textfield(t('Contact'), variable_get('uc_check_mailing_name', ''), FALSE, t('Direct checks to a person or department.'), 128);
-      $form['uc_check_mailing_street1'] = uc_textfield(t('Street Address 1'), variable_get('uc_check_mailing_street1', ''), FALSE, NULL, 128);
-      $form['uc_check_mailing_street2'] = uc_textfield(t('Street Address 2'), variable_get('uc_check_mailing_street2', ''), FALSE, NULL, 128);
-      $form['uc_check_mailing_city'] = uc_textfield(t('City'), variable_get('uc_check_mailing_city', ''), FALSE);
-      $form['uc_check_mailing_zone'] = uc_zone_select(t('State'), variable_get('uc_check_mailing_zone', ''), FALSE);
-      $form['uc_check_mailing_zip'] = uc_textfield(t('Zip Code'), variable_get('uc_check_mailing_zip', ''), FALSE, NULL, 10, 10);
+      $form['uc_check_mailing_street1'] = uc_textfield(uc_get_field_name('street1'), variable_get('uc_check_mailing_street1', ''), FALSE, NULL, 128);
+      $form['uc_check_mailing_street2'] = uc_textfield(uc_get_field_name('street2'), variable_get('uc_check_mailing_street2', ''), FALSE, NULL, 128);
+      $form['uc_check_mailing_city'] = uc_textfield(uc_get_field_name('city'), variable_get('uc_check_mailing_city', ''), FALSE);
+      $form['uc_check_mailing_zone'] = uc_zone_select(uc_get_field_name('zone'), variable_get('uc_check_mailing_zone', ''), FALSE);
+      $form['uc_check_mailing_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), variable_get('uc_check_mailing_postal_code', ''), FALSE, NULL, 10, 10);
       $form['uc_check_policy'] = array(
         '#type' => 'textarea',
         '#title' => t('Check Payment Policy'),
         '#description' => t('Instructions for customers on the checkout page.'),
-        '#default_value' => variable_get('uc_check_policy', t('Personal and business '
-                              .'checks will be held for up to 10 business days to '
-                              .'ensure payment clears before an order is shipped.')),
+        '#default_value' => variable_get('uc_check_policy', t('Personal and business checks will be held for up to 10 business days to ensure payment clears before an order is shipped.')),
         '#rows' => 3,
       );
       return $form;
@@ -800,8 +792,7 @@ function uc_payment_receive_check_form($order_id) {
 function theme_uc_payment_receive_check_form($form) {
   drupal_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
 
-  $output = '<p>'. t('Use the form to enter the check into the payments system '
-           .'and set the expected clear date.') .'</p>';
+  $output = '<p>'. t('Use the form to enter the check into the payments system and set the expected clear date.') .'</p>';
   $output .= '<p><strong>'. t('Order Balance:') .'</strong> '
            . drupal_render($form['balance']) .'</p>';
 
@@ -809,8 +800,8 @@ function theme_uc_payment_receive_check_form($form) {
            . drupal_render($form['amount'])
            . drupal_render($form['comment']);
 
-  $output .= '<table><tr><td colspan="3"><strong>'. t('Expected clear date')
-            .':</strong></td></tr><tr><td>'. drupal_render($form['clear_month'])
+  $output .= '<table><tr><td colspan="3"><strong>'. t('Expected clear date:')
+            .'</strong></td></tr><tr><td>'. drupal_render($form['clear_month'])
             .'</td><td>'. drupal_render($form['clear_day']) . '</td><td>'
            . drupal_render($form['clear_year']) .'</td></tr></table>';
 
@@ -957,8 +948,8 @@ function uc_payment_by_order_form_submit($form_id, $form_values) {
 }
 
 function theme_uc_payment_by_order_form($form) {
-  $output = '<p><strong>'. t('Order total') .':</strong> '. drupal_render($form['order_total'])
-           .'<br /><strong>'. t('Current Balance') .':</strong> '
+  $output = '<p><strong>'. t('Order total:') .'</strong> '. drupal_render($form['order_total'])
+           .'<br /><strong>'. t('Current Balance:') .'</strong> '
           . drupal_render($form['balance']) .'</p>';
   $output .= '<p>'. tapir_get_table('uc_payments_table', $form) .'</p>'
            . '<p>'. drupal_render($form) .'</p>';
@@ -1001,10 +992,11 @@ function uc_payment_delete_confirm($order_id, $receipt_id) {
     drupal_goto('admin/store/orders/'. $order_id .'/payments');
   }
 
-  $output = '<p><strong>'. t('Payment information') .':</strong><br />'
-          . $payment->method .' '. t('payment of') .' '
-          . uc_currency_format($payment->amount) .' '. t('received on') .' '
-          . date('m/d/Y', $payment->received) .'.</p>';
+  $output = '<p><strong>'. t('Payment information:') .'</strong><br />'
+          . t('!method payment of !amount received on !date.',
+              array('!method' => $payment->method,
+                    '!amount' => uc_currency_format($payment->amount),
+                    '!date' => date('m/d/Y', $payment->received))) .'</p>';
   $output .= t('Are you sure you want to delete this payment?') .'<p>'
            . drupal_get_form('uc_payment_delete_confirm_form', $order_id, $receipt_id);
 
@@ -1120,7 +1112,14 @@ function uc_payment_process($method, $order_id, $amount, $data = NULL, $default 
     return FALSE;
   }
   if (count($gateways) == 1) {
-    $result = $gateways[0][$method]($order_id, $amount, $data);
+    if (function_exists($gateways[0][$method])) {
+      $result = $gateways[0][$method]($order_id, $amount, $data);
+    }
+    else {
+      if (user_access('administer store')) {
+        drupal_set_message(t("Attempted to process payment but the gateway's function was not found."));
+      }
+    }
   }
   else {
     $func = FALSE;

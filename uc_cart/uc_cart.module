@@ -41,8 +41,7 @@ function uc_cart_menu($may_cache) {
     $items[] = array(
       'path' => 'cart',
       'title' => t('Shopping Cart'),
-      'description' => t('View/modify the contents of your shopping cart or '
-                        .'proceed to checkout.'),
+      'description' => t('View/modify the contents of your shopping cart or proceed to checkout.'),
       'callback' => 'uc_cart_view',
       'access' => user_access('access content'),
       'type' => MENU_CALLBACK,
@@ -107,14 +106,14 @@ function uc_cart_block($op = 'list', $delta = 0, $edit = array()) {
 
     $item_count = count(uc_cart_get_contents());
     if (!$item_count && variable_get('uc_cart_empty_hide', '0')) {
-      break;
+      return;
     }
 
     $uc_cart_path = base_path() . drupal_get_path('module', 'uc_cart');
     $cart_image = $uc_cart_path;
-    $cart_image .= ($item_count) ? '/images/cart_full.png' : '/images/cart_empty.png';
-    $arrow_down_image = $uc_cart_path .'/images/bullet-arrow-down.png';
-    $arrow_up_image = $uc_cart_path .'/images/bullet-arrow-up.png';
+    $cart_image .= ($item_count) ? '/images/cart_full.gif' : '/images/cart_empty.gif';
+    $arrow_down_image = $uc_cart_path .'/images/bullet-arrow-down.gif';
+    $arrow_up_image = $uc_cart_path .'/images/bullet-arrow-up.gif';
 
     $subject = l('<img src="'. $cart_image .'" align="left" style="padding-right: 5px;" />', 'cart', NULL, NULL, NULL, FALSE, TRUE)
                 .'<div id="block-cart-title-bar" onclick="cart_toggle(\''. $uc_cart_path .'\');" style="cursor: pointer; white-space: nowrap;">'
@@ -348,8 +347,8 @@ function uc_cart_checkout_pane() {
 
 function uc_cart_cart_settings() {
   $form['link_out'] = array(
-    '#value' => '<div>'. l(t('Click here'), 'admin/build/block/configure/uc_cart/0')
-              . t(' to goto the shopping cart block configuration page.') .'</div>',
+    '#value' => '<div>'. t('<a href="!url">Click here</a> to goto the shopping cart block configuration page.',
+                           array('!url' => url('admin/build/block/configure/uc_cart/0'))) .'</div>',
   );
   $form['uc_cart_product_cron'] = array(
     '#type' => 'select',
@@ -421,8 +420,7 @@ function uc_cart_checkout_settings() {
     '#title' => t('Checkout Instructions'),
     '#description' => t('Provide instructions for customers at the top of the checkout review screen.'),
     '#default_value' => variable_get('uc_checkout_review_instructions',
-                          t('Please review the details of your order and click !submit if all the information is '
-                           .'correct.  You may use the Back button to make changes to your order if necessary.',
+                          t('Please review the details of your order and click !submit if all the information is correct.  You may use the Back button to make changes to your order if necessary.',
                             array('!submit' => variable_get('uc_checkout_submit_button', t('Submit Order'))))),
     '#rows' => 3,
   );
@@ -434,9 +432,7 @@ function uc_cart_checkout_settings() {
     '#rows' => 3,
   );
   $form['messages']['template_help'] = array(
-    '#value' => '<div>'. t('In the following three boxes, you may use !site to '
-               .'print the site name, !new_username for the username of a newly '
-               ."created account, and !new_password for that account\'s password.") .'</div>',
+    '#value' => '<div>'. t("In the following three boxes, you may use !site to print the site name, !new_username for the username of a newly created account, and !new_password for that account's password.") .'</div>',
   );
   $form['messages']['uc_msg_order_logged_in'] = array(
     '#type' => 'textarea',
@@ -481,12 +477,12 @@ function uc_cart_checkout_settings() {
   for ($i = 0; $i < count($panes); $i++) {
     $form['panes']['uc_pane_'. $panes[$i]['id'] .'_enabled'] = array(
       '#type' => 'checkbox',
-      '#title' => t('Enable ') . $panes[$i]['title'],
+      '#title' => t('Enable !title', array('!title' => $panes[$i]['title'])),
       '#default_value' => variable_get('uc_pane_'. $panes[$i]['id'] .'_enabled', $panes[$i]['enabled']),
     );
     $form['panes']['uc_pane_'. $panes[$i]['id'] .'_weight'] = array(
       '#type' => 'weight',
-      '#title' => $panes[$i]['title'] . t(' weight'),
+      '#title' => t('!title weight', array('!title' => $panes[$i]['title'])),
       '#default_value' => variable_get('uc_pane_'. $panes[$i]['id'] .'_weight', $panes[$i]['weight']),
     );
   }
@@ -581,7 +577,7 @@ function uc_cart_view_table($op, $form) {
         $desc .= drupal_render($form['items'][$i]['options']);
 
         $data['remove'][] = array('data' => drupal_render($form['items'][$i]['remove']), 'align' => 'center');
-        $data['image'][] = array('data' => uc_product_get_picture($nid, 'thumbnail', array('width' => 50)), 'width' => '50');
+        $data['image'][] = array('data' => uc_product_get_picture($nid, 'cart'));
         $data['desc'][] = array('data' => $desc, 'width' => '100%');
         $data['qty'][] = array('data' => $form['items'][$i]['qty'] ? drupal_render($form['items'][$i]['qty']) : '');
         $data['total'][] = array('data' => uc_currency_format($form['items'][$i]['#total']));
@@ -763,8 +759,7 @@ function uc_cart_checkout_review() {
   drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
 
   $output = '<p>'. variable_get('uc_checkout_review_instructions',
-            t('Please review the details of your order and click !submit if all the information is '
-             .'correct.  You may use the Back button to make changes to your order if necessary.',
+            t('Please review the details of your order and click !submit if all the information is correct.  You may use the Back button to make changes to your order if necessary.',
               array('!submit' => variable_get('uc_checkout_submit_button', t('Submit Order'))))) .'</p>';
   $output .= '<table class="order-review-table">';
 
@@ -893,9 +888,9 @@ function uc_cart_checkout_complete() {
   $show_message = variable_get('uc_msg_order_'. $message_type, _get_checkout_message($message_type));
   if ($show_message != '') {
     $variables['!site'] = variable_get('uc_store_name', t('our store'));
-    $variables['!new_username'] = $_SESSION['new_user']['name'];
-    $variables['!new_password'] = $_SESSION['new_user']['pass'];
-    $output .= '<p>'. t($show_message, $variables) .'</p>';
+    $variables['!new_username'] = check_plain($_SESSION['new_user']['name']);
+    $variables['!new_password'] = check_plain($_SESSION['new_user']['pass']);
+    $output .= '<p>'. strtr($show_message, $variables) .'</p>';
   }
   $output .= '<p>'. variable_get('uc_msg_continue_shopping',
              l(t('Click to return to the front page.'), '<front>')) .'</p>';
@@ -948,13 +943,13 @@ function uc_checkout_pane_customer($op, $arg1, $arg2) {
       $pane = uc_cart_checkout_new_pane('customer');
       if ($user->uid) {
         $pane->fields['pane']['description'] = uc_cart_checkout_pane_description('customer',
-          t('Order information will be sent to your account email listed below.'
-           .'<br />You can edit your account information '. l('here', 'user/'. $user->uid .'/edit') .'.'));
+          t('Order information will be sent to your account email listed below.')
+         .'<br />'. t('You can edit your account information <a href="!url">here</a>.', array('!url' => url('user/'. $user->uid .'/edit'))));
       }
       else {
         $pane->fields['pane']['description'] = uc_cart_checkout_pane_description('customer',
-          t('Enter a valid email address for this order or '. l('click here', 'user/login')
-           .' to login with an existing account and return to checkout.'));
+          t('Enter a valid email address for this order or <a href="!url">click here</a> to login with an existing account and return to checkout.',
+            array('!url' => url('user/login'))));
       }
       $email = (is_null($arg1) || empty($arg1->primary_email)) ? $user->mail : $arg1->primary_email;
       $pane->fields['pane']['primary_email'] = uc_textfield(t('E-mail Address'), $email, TRUE, NULL, 64);
@@ -985,15 +980,15 @@ function uc_checkout_pane_delivery($op, $arg1, $arg2) {
       if ($user->uid) {
         $pane->fields['pane']['delivery_address_select'] = uc_select_address($user->uid, 'delivery', 'apply_address(\'delivery\', this.value);', t('Saved addresses'));
       }
-      $pane->fields['pane']['delivery_first_name'] = uc_textfield(variable_get('uc_field_first_name', t('First Name')), $arg1->delivery_first_name);
-      $pane->fields['pane']['delivery_last_name'] = uc_textfield(variable_get('uc_field_last_name', t('Last Name')), $arg1->delivery_last_name);
-      $pane->fields['pane']['delivery_company'] = uc_textfield(variable_get('uc_field_company', t('Company Name')), $arg1->delivery_company, FALSE, NULL, 64);
-      $pane->fields['pane']['delivery_street1'] = uc_textfield(variable_get('uc_field_street1', t('Street Address 1')), $arg1->delivery_street1, TRUE, NULL, 64);
-      $pane->fields['pane']['delivery_street2'] = uc_textfield(variable_get('uc_field_street2', t('Street Address 2')), $arg1->delivery_street2, FALSE, NULL, 64);
-      $pane->fields['pane']['delivery_city'] = uc_textfield(variable_get('uc_field_city', t('City')), $arg1->delivery_city);
-      $pane->fields['pane']['delivery_zone'] = uc_zone_select(variable_get('uc_field_state', t('State')), $arg1->delivery_zone);
-      $pane->fields['pane']['delivery_zip'] = uc_textfield(variable_get('uc_field_zip', t('Zip Code')), $arg1->delivery_zip, TRUE, NULL, 10, 10);
-      $pane->fields['pane']['delivery_phone'] = uc_textfield(variable_get('uc_field_phone', t('Phone Number')), $arg1->delivery_phone, TRUE, NULL, 32, 16);
+      $pane->fields['pane']['delivery_first_name'] = uc_textfield(uc_get_field_name('first_name'), $arg1->delivery_first_name);
+      $pane->fields['pane']['delivery_last_name'] = uc_textfield(uc_get_field_name('last_name'), $arg1->delivery_last_name);
+      $pane->fields['pane']['delivery_company'] = uc_textfield(uc_get_field_name('company'), $arg1->delivery_company, FALSE, NULL, 64);
+      $pane->fields['pane']['delivery_street1'] = uc_textfield(uc_get_field_name('street1'), $arg1->delivery_street1, TRUE, NULL, 64);
+      $pane->fields['pane']['delivery_street2'] = uc_textfield(uc_get_field_name('street2'), $arg1->delivery_street2, FALSE, NULL, 64);
+      $pane->fields['pane']['delivery_city'] = uc_textfield(uc_get_field_name('city'), $arg1->delivery_city);
+      $pane->fields['pane']['delivery_zone'] = uc_zone_select(uc_get_field_name('zone'), $arg1->delivery_zone);
+      $pane->fields['pane']['delivery_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $arg1->delivery_postal_code, TRUE, NULL, 10, 10);
+      $pane->fields['pane']['delivery_phone'] = uc_textfield(uc_get_field_name('phone'), $arg1->delivery_phone, TRUE, NULL, 32, 16);
       $pane->fields['pane']['continue'] = uc_cart_checkout_next_button('delivery', $pane->next);
       return $pane;
 
@@ -1006,7 +1001,7 @@ function uc_checkout_pane_delivery($op, $arg1, $arg2) {
       $pane['delivery_street2']['#title'] = '';
       $pane['delivery_city']['#title'] = '';
       $pane['delivery_zone']['#title'] = '';
-      $pane['delivery_zip']['#title'] = '';
+      $pane['delivery_postal_code']['#title'] = '';
       $pane['delivery_phone']['#title'] = '';
 
       if ($pane['#collapsed']) {
@@ -1021,15 +1016,15 @@ function uc_checkout_pane_delivery($op, $arg1, $arg2) {
         $pane['delivery_address_select']['#title'] = '';
         $output .= '<tr><td class="field-label">'. variable_get('uc_field_address_book', t('Saved Addresses')) .':</td><td>'. drupal_render($pane['delivery_address_select']) . uc_store_get_icon('file:address_book', FALSE, 'address-book-icon') .'</td></tr>';
       }
-      $output .= '<tr><td class="field-label">'. $req . variable_get('uc_field_first_name', t('First Name')) .':</td><td>'. drupal_render($pane['delivery_first_name']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . variable_get('uc_field_last_name', t('Last Name')) .':</td><td>'. drupal_render($pane['delivery_last_name']) .'</td></tr>'
-               . '<tr><td class="field-label">'. variable_get('uc_field_company', t('Company')) .':</td><td>'. drupal_render($pane['delivery_company']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . variable_get('uc_field_street', t('Street Address')) .':</td><td>'. drupal_render($pane['delivery_street1']) .'</td></tr>'
+      $output .= '<tr><td class="field-label">'. $req . uc_get_field_name('first_name') .':</td><td>'. drupal_render($pane['delivery_first_name']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . uc_get_field_name('last_name') .':</td><td>'. drupal_render($pane['delivery_last_name']) .'</td></tr>'
+               . '<tr><td class="field-label">'. uc_get_field_name('company') .':</td><td>'. drupal_render($pane['delivery_company']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . uc_get_field_name('street') .':</td><td>'. drupal_render($pane['delivery_street1']) .'</td></tr>'
                . '<tr><td class="field-label">&nbsp;</td><td>'. drupal_render($pane['delivery_street2']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . variable_get('uc_field_city', t('City')) .':</td><td>'. drupal_render($pane['delivery_city']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . variable_get('uc_field_state', t('State')) .':</td><td>'. drupal_render($pane['delivery_zone']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . variable_get('uc_field_zip', t('Zip Code')) .':</td><td>'. drupal_render($pane['delivery_zip']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . variable_get('uc_field_phone', t('Phone Number')) .':</td><td>'. drupal_render($pane['delivery_phone']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . uc_get_field_name('city') .':</td><td>'. drupal_render($pane['delivery_city']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . uc_get_field_name('zone') .':</td><td>'. drupal_render($pane['delivery_zone']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . uc_get_field_name('postal_code') .':</td><td>'. drupal_render($pane['delivery_postal_code']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . uc_get_field_name('phone') .':</td><td>'. drupal_render($pane['delivery_phone']) .'</td></tr>'
                . '</table>';
 
       foreach (element_children($arg1['panes']['delivery']['pane']) as $element) {
@@ -1051,7 +1046,7 @@ function uc_checkout_pane_delivery($op, $arg1, $arg2) {
       $arg1->delivery_street2 = $arg2['pane']['delivery_street2'];
       $arg1->delivery_city = $arg2['pane']['delivery_city'];
       $arg1->delivery_zone = $arg2['pane']['delivery_zone'];
-      $arg1->delivery_zip = $arg2['pane']['delivery_zip'];
+      $arg1->delivery_postal_code = $arg2['pane']['delivery_postal_code'];
       $arg1->delivery_country = $arg2['pane']['delivery_country'];
       $arg1->delivery_phone = $arg2['pane']['delivery_phone'];
       return TRUE;
@@ -1073,15 +1068,15 @@ function uc_checkout_pane_billing($op, $arg1, $arg2) {
       if ($user->uid) {
         $pane->fields['pane']['billing_address_select'] = uc_select_address($user->uid, 'billing', 'apply_address(\'billing\', this.value);', t('Saved addresses'));
       }
-      $pane->fields['pane']['billing_first_name'] = uc_textfield(variable_get('uc_field_first_name', t('First Name')), $arg1->billing_first_name);
-      $pane->fields['pane']['billing_last_name'] = uc_textfield(variable_get('uc_field_last_name', t('Last Name')), $arg1->billing_last_name);
-      $pane->fields['pane']['billing_company'] = uc_textfield(variable_get('uc_field_company', t('Company Name')), $arg1->billing_company, FALSE, NULL, 64);
-      $pane->fields['pane']['billing_street1'] = uc_textfield(variable_get('uc_field_street1', t('Street Address 1')), $arg1->billing_street1, TRUE, NULL, 64);
-      $pane->fields['pane']['billing_street2'] = uc_textfield(variable_get('uc_field_street2', t('Street Address 2')), $arg1->billing_street2, FALSE, NULL, 64);
-      $pane->fields['pane']['billing_city'] = uc_textfield(variable_get('uc_field_city', t('City')), $arg1->billing_city);
-      $pane->fields['pane']['billing_zone'] = uc_zone_select(variable_get('uc_field_state', t('State')), $arg1->billing_zone);
-      $pane->fields['pane']['billing_zip'] = uc_textfield(variable_get('uc_field_zip', t('Zip Code')), $arg1->billing_zip, TRUE, NULL, 10, 10);
-      $pane->fields['pane']['billing_phone'] = uc_textfield(variable_get('uc_field_phone', t('Phone Number')), $arg1->billing_phone, TRUE, NULL, 32, 16);
+      $pane->fields['pane']['billing_first_name'] = uc_textfield(uc_get_field_name('first_name'), $arg1->billing_first_name);
+      $pane->fields['pane']['billing_last_name'] = uc_textfield(uc_get_field_name('last_name'), $arg1->billing_last_name);
+      $pane->fields['pane']['billing_company'] = uc_textfield(uc_get_field_name('company'), $arg1->billing_company, FALSE, NULL, 64);
+      $pane->fields['pane']['billing_street1'] = uc_textfield(uc_get_field_name('street1'), $arg1->billing_street1, TRUE, NULL, 64);
+      $pane->fields['pane']['billing_street2'] = uc_textfield(uc_get_field_name('street2'), $arg1->billing_street2, FALSE, NULL, 64);
+      $pane->fields['pane']['billing_city'] = uc_textfield(uc_get_field_name('city'), $arg1->billing_city);
+      $pane->fields['pane']['billing_zone'] = uc_zone_select(uc_get_field_name('zone'), $arg1->billing_zone);
+      $pane->fields['pane']['billing_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $arg1->billing_postal_code, TRUE, NULL, 10, 10);
+      $pane->fields['pane']['billing_phone'] = uc_textfield(uc_get_field_name('phone'), $arg1->billing_phone, TRUE, NULL, 32, 16);
       $pane->fields['pane']['continue'] = uc_cart_checkout_next_button('billing', $pane->next);
       return $pane;
 
@@ -1094,20 +1089,23 @@ function uc_checkout_pane_billing($op, $arg1, $arg2) {
       $pane['billing_street2']['#title'] = '';
       $pane['billing_city']['#title'] = '';
       $pane['billing_zone']['#title'] = '';
-      $pane['billing_zip']['#title'] = '';
+      $pane['billing_postal_code']['#title'] = '';
       $pane['billing_phone']['#title'] = '';
 
       if ($pane['#collapsed']) {
         $collapsed = ' collapsed';
       }
-      $output = '<div class="billing-pane"><fieldset class=" collapsible'. $collapsed .'">'
-              . '<legend>Billing Information</legend>'
-              . drupal_render($pane['description'])
-              .'<span onclick="uc_cart_copy_delivery_to_billing(true);" '
-              .'style="cursor: pointer; font-weight: bold; color: rgb(0, 0, 125);"><img src="'. base_path()
-             . drupal_get_path('module', 'uc_store') .'/images/copy.gif" '
-              .'style="position: relative; top: 2px; margin-right: 2px;" /> '
-             . t('Click to copy your delivery information.') .'</span>';
+      $output = '<div class="billing-pane"><fieldset class=" collapsible'
+              . $collapsed .'"><legend>Billing Information</legend>'
+              . drupal_render($pane['description']);
+      if (variable_get('uc_pane_delivery_enabled', TRUE)) {
+        $output .= '<span onclick="uc_cart_copy_delivery_to_billing(true);" '
+                  .'style="cursor: pointer; font-weight: bold; color: '
+                  .'rgb(0, 0, 125);"><img src="'. base_path()
+                 . drupal_get_path('module', 'uc_store') .'/images/copy.gif" '
+                  .'style="position: relative; top: 2px; margin-right: 2px;" /> '
+                 . t('Click to copy your delivery information.') .'</span>';
+      }
 
       $req = '<span class="form-required">*</span>';
       $output .= '<div id="billing-fields"><table class="pane-table" cellpadding="2">';
@@ -1115,15 +1113,15 @@ function uc_checkout_pane_billing($op, $arg1, $arg2) {
         $pane['billing_address_select']['#title'] = '';
         $output .= '<tr><td class="field-label">'. variable_get('uc_field_address_book', t('Saved Addresses')) .':</td><td>'. drupal_render($pane['billing_address_select']) . uc_store_get_icon('file:address_book', FALSE, 'address-book-icon') .'</td></tr>';
       }
-      $output .= '<tr><td class="field-label">'. $req . variable_get('uc_field_first_name', t('First Name')) .':</td><td>'. drupal_render($pane['billing_first_name']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . variable_get('uc_field_last_name', t('Last Name')) .':</td><td>'. drupal_render($pane['billing_last_name']) .'</td></tr>'
-               . '<tr><td class="field-label">'. variable_get('uc_field_company', t('Company Name')) .':</td><td>'. drupal_render($pane['billing_company']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . variable_get('uc_field_street', t('Street Address')) .':</td><td>'. drupal_render($pane['billing_street1']) .'</td></tr>'
+      $output .= '<tr><td class="field-label">'. $req . uc_get_field_name('first_name') .':</td><td>'. drupal_render($pane['billing_first_name']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . uc_get_field_name('last_name') .':</td><td>'. drupal_render($pane['billing_last_name']) .'</td></tr>'
+               . '<tr><td class="field-label">'. uc_get_field_name('company') .':</td><td>'. drupal_render($pane['billing_company']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . uc_get_field_name('street') .':</td><td>'. drupal_render($pane['billing_street1']) .'</td></tr>'
                . '<tr><td class="field-label">&nbsp;</td><td>'. drupal_render($pane['billing_street2']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . variable_get('uc_field_city', t('City')) .':</td><td>'. drupal_render($pane['billing_city']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . variable_get('uc_field_state', t('State')) .':</td><td>'. drupal_render($pane['billing_zone']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . variable_get('uc_field_zip', t('Zip Code')) .':</td><td>'. drupal_render($pane['billing_zip']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . variable_get('uc_field_phone', t('Phone Number')) .':</td><td>'. drupal_render($pane['billing_phone']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . uc_get_field_name('city') .':</td><td>'. drupal_render($pane['billing_city']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . uc_get_field_name('zone') .':</td><td>'. drupal_render($pane['billing_zone']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . uc_get_field_name('postal_code') .':</td><td>'. drupal_render($pane['billing_postal_code']) .'</td></tr>'
+               . '<tr><td class="field-label">'. $req . uc_get_field_name('phone') .':</td><td>'. drupal_render($pane['billing_phone']) .'</td></tr>'
                . '</table></div>';
     
       foreach (element_children($arg1['panes']['billing']['pane']) as $element) {
@@ -1145,7 +1143,7 @@ function uc_checkout_pane_billing($op, $arg1, $arg2) {
       $arg1->billing_street2 = $arg2['pane']['billing_street2'];
       $arg1->billing_city = $arg2['pane']['billing_city'];
       $arg1->billing_zone = $arg2['pane']['billing_zone'];
-      $arg1->billing_zip = $arg2['pane']['billing_zip'];
+      $arg1->billing_postal_code = $arg2['pane']['billing_postal_code'];
       $arg1->billing_country = $arg2['pane']['billing_country'];
       $arg1->billing_phone = $arg2['pane']['billing_phone'];
       return TRUE;
@@ -1548,25 +1546,16 @@ function uc_cart_empty($cart_id) {
 function _get_checkout_message($type) {
   switch ($type) {
     case 'logged_in':
-      $output = t('Thank you for shopping at !site. While logged in, you may '
-                 .'continue shopping or '. l('click here', 'user') .' to view '
-                 .'your current order status and order history.');
+      $output = t('Thank you for shopping at !site. While logged in, you may continue shopping or <a href="!url">click here</a> to view your current order status and order history.', array('!url' => url('user')));
       break;
     case 'existing_user':
-      $output = t('Thank you for shopping at !site. Your current order has '
-                 .'been attached to the account we found matching your email '
-                 .'address.<p>'. l('Click here', 'user') .' to login '
-                 .'and view your current order status and order history. '
-                 .'Remember to login when you make your next purchase for a '
-                 .'faster checkout experience!');
+      $output = t('Thank you for shopping at !site. Your current order has been attached to the account we found matching your e-mail address.')
+               .'<p>'. t('<a href="!url">Click here</a> to login and view your current order status and order history. Remember to login when you make your next purchase for a faster checkout experience!', array('!url' => url('user')));
       break;
     case 'new_user':
-      $output = t('Thank you for shopping at !site. A new account has been '
-                 .'created for you here that you may use to view your current '
-                 .'order status.<p>'. l('Click here', 'user') .' to '
-                 .'login to your new account using the following information:'
-                 .'<p><b>Username:</b> !new_username <br /><b>Password:</b> '
-                 .'!new_password');
+      $output = t('Thank you for shopping at !site. A new account has been created for you here that you may use to view your current order status.')
+              . t('<p><a href="!url">Click here</a> to login to your new account using the following information:', array('!url' => url('user')))
+              . t('<p><b>Username:</b> !new_username<br /><b>Password:</b> !new_password');
       break;
   }
 

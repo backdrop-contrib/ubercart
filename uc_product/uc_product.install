@@ -11,30 +11,30 @@ function uc_product_install() {
       db_query("CREATE TABLE {uc_class_choices} (
         `ccid` mediumint(9) unsigned NOT NULL auto_increment,
         `cfid` mediumint(9) unsigned NOT NULL,
-        `name` varchar(64) NOT NULL,
+        `name` varchar(255) NOT NULL,
         PRIMARY KEY  (`ccid`)
-      );");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
       db_query("CREATE TABLE {uc_class_fields} (
         `cfid` mediumint(9) unsigned NOT NULL auto_increment,
         `pcid` mediumint(9) unsigned NOT NULL,
-        `title` varchar(64) NOT NULL,
-        `name` varchar(64) NOT NULL,
+        `name` varchar(255) NOT NULL,
         `type` varchar(15) NOT NULL,
         PRIMARY KEY  (`cfid`)
-      );");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
       db_query("CREATE TABLE {uc_product_classes} (
         `pcid` mediumint(9) NOT NULL auto_increment,
-        `name` varchar(25) NOT NULL,
+        `name` varchar(255) NOT NULL,
         PRIMARY KEY  (`pcid`)
-      );");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
       db_query("CREATE TABLE {uc_product_class_choices} (
         `nid` mediumint(9) unsigned NOT NULL,
         `cfid` mediumint(9) NOT NULL,
-        `value` varchar(64) NOT NULL
-      );");
+        `value` varchar(255) NOT NULL,
+        PRIMARY KEY  (`nid`, `cfid`)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
       db_query("CREATE TABLE {uc_products} (
         `nid` mediumint(9) NOT NULL,
-        `model` varchar(32) NOT NULL,
+        `model` varchar(255) NOT NULL,
         `list_price` decimal(10,2) NOT NULL default '0.00',
         `cost` decimal(10,2) NOT NULL default '0.00',
         `sell_price` decimal(10,2) NOT NULL default '0.00',
@@ -42,38 +42,38 @@ function uc_product_install() {
         `pcid` mediumint(9) NOT NULL,
         `unique_hash` varchar(32) NOT NULL,
         PRIMARY KEY  (`nid`)
-      );");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
     break;
     case 'pgsql':
       db_query('CREATE TABLE {uc_class_choices} (
         "ccid" mediumint(9) unsigned NOT NULL,
         "cfid" mediumint(9) unsigned NOT NULL,
-        "name" varchar(64) NOT NULL,
+        "name" varchar(255) NOT NULL,
         PRIMARY KEY  ("ccid")
       );');
       db_query("CREATE INDEX {uc_class_choices}_ccid ON {uc_class_choices} (ccid)");
       db_query('CREATE TABLE {uc_class_fields} (
         "cfid" mediumint(9) unsigned NOT NULL,
         "pcid" mediumint(9) unsigned NOT NULL,
-        "title" varchar(64) NOT NULL,
-        "name" varchar(64) NOT NULL,
+        "name" varchar(255) NOT NULL,
         "type" varchar(15) NOT NULL,
         PRIMARY KEY  ("cfid")
       );');
       db_query('CREATE TABLE {uc_product_classes} (
         "pcid" mediumint(9) NOT NULL auto_increment,
-        "name" varchar(25) NOT NULL,
+        "name" varchar(255) NOT NULL,
         PRIMARY KEY  ("pcid")
       );');
       db_query("CREATE INDEX {uc_product_classes}_pcid ON {uc_product_classes} (pcid)");
       db_query('CREATE TABLE {uc_product_class_choices} (
         "nid" mediumint(9) unsigned NOT NULL,
         "cfid" mediumint(9) NOT NULL,
-        "value" varchar(64) NOT NULL
+        "value" varchar(255) NOT NULL,
+        PRIMARY KEY  ("nid", "cfid")
       );');
       db_query('CREATE TABLE {uc_products} (
         "nid" mediumint(9) NOT NULL REFERENCES {node} (nid),
-        "model" varchar(32) NOT NULL,
+        "model" varchar(255) NOT NULL,
         "list_price" decimal(10,2) NOT NULL default \'0.00\',
         "cost" decimal(10,2) NOT NULL default \'0.00\',
         "sell_price" decimal(10,2) NOT NULL default \'0.00\',
@@ -93,3 +93,40 @@ function uc_product_install() {
   ));
 }
 
+function uc_product_uninstall(){
+  db_query("DROP TABLE IF EXISTS {uc_class_choices}");
+  db_query("DROP TABLE IF EXISTS {uc_class_fields}");
+  db_query("DROP TABLE IF EXISTS {uc_product_classes}");
+  db_query("DROP TABLE IF EXISTS {uc_product_class_choices}");
+  db_query("DROP TABLE IF EXISTS {uc_products}");
+  variable_del('uc_product_default_fields');
+}
+
+function uc_product_update_1(){
+  $ret = array();
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_class_choices} CHANGE name name varchar(255) NOT NULL");
+      $ret[] = update_sql("ALTER TABLE {uc_class_fields} CHANGE name name varchar(255) NOT NULL, DROP COLUMN title");
+      $ret[] = update_sql("ALTER TABLE {uc_product_classes} CHANGE name name varchar(255) NOT NULL");
+      $ret[] = update_sql("ALTER TABLE {uc_product_class_choices} CHANGE value value varchar(255) NOT NULL, ADD PRIMARY KEY (nid, cfid, value)");
+      $ret[] = update_sql("ALTER TABLE {uc_products} CHANGE model model varchar(255) NOT NULL");
+    break;
+    case 'pgsql':
+      db_change_column($ret, 'uc_class_choices', 'name', 'name', 'varchar(255)', array('not null' => true));
+      db_change_column($ret, 'uc_class_fields', 'name', 'name', 'varchar(255)', array('not null' => true));
+      $ret[] = update_sql("ALTER TABLE {uc_class_fields} DROP title");
+      db_change_column($ret, 'uc_product_classes', 'name', 'name', 'varchar(255)', array('not null' => true));
+      db_change_column($ret, 'uc_product_class_choices', 'value', 'value', 'varchar(255)', array('not null' => true));
+      $ret[] = update_sql("ALTER TABLE {uc_product_class_choices} ADD PRIMARY KEY (nid, cfid, value)");
+      db_change_column($ret, 'uc_products', 'model', 'model', 'varchar(255)', array('not null' => true));
+    break;
+  }
+
+  if ($max_id = db_result(db_query("SELECT cfid FROM {uc_class_fields} ORDER BY cfid DESC LIMIT 1"))){
+    $ret[] = update_sql("INSERT INTO {sequences} (name, id) VALUES ('{uc_class_fields}_cfid', %d)", $max_id);
+  }
+
+  return $ret;
+}

@@ -3,7 +3,7 @@
 
 /**
  * @file
- * Übercart Catalog module.
+ * Ãœbercart Catalog module.
  * 
  * Provides classification and navigation product nodes using taxonomy. When 
  * installed, this module creates a vocabulary named "Product Catalog" and stores
@@ -120,11 +120,64 @@ function uc_catalog_taxonomy($op, $type, $object = null){
       switch($op){
         case 'delete':
           if ($object->vid == variable_get('uc_catalog_vid', 0)){
-            varaiable_del('uc_catalog_vid');
+            variable_del('uc_catalog_vid');
           }
         break;
       }
     break;
+    case 'term':
+      switch($op){
+        case 'insert':
+          $field_name = 'image';
+          if ($file = file_check_upload($field_name)) {
+            $file->filepath = str_replace('\\', '/', $file->filepath);
+            $file = file_save_upload($field_name, file_create_path('images') .'/'. $file->filename);
+            if ($file) {
+              if (image_get_info($file->filepath)) {
+                db_query("INSERT INTO {uc_catalog_images} (fid, tid, filename, filepath, filemime, filesize) VALUES (%d, %d, '%s', '%s', '%s', %d)",
+                  db_next_id('{files}_fid'), $object['tid'], $file->filename, $file->filepath, $file->filemime, $file->filesize
+                );
+              }
+              else{
+                form_set_error($field_name, t('Uploaded file is not a valid image'));
+                file_delete($file->filepath);
+              }
+            }
+          }
+        break;
+        case 'update':
+          $field_name = 'image';
+          if ($file = file_check_upload($field_name)) {
+            $file->filepath = str_replace('\\', '/', $file->filepath);
+            $file = file_save_upload($field_name, file_create_path('images') .'/'. $file->filename);
+            if ($file) {
+              if (image_get_info($file->filepath)) {
+                db_query("DELETE FROM {uc_catalog_images} WHERE tid = %d", $object['tid']);
+                db_query("INSERT INTO {uc_catalog_images} (fid, tid, filename, filepath, filemime, filesize) VALUES (%d, %d, '%s', '%s', '%s', %d)",
+                  db_next_id('{files}_fid'), $object['tid'], $file->filename, $file->filepath, $file->filemime, $file->filesize
+                );
+              }
+              else{
+                form_set_error($field_name, t('Uploaded file is not a valid image'));
+                file_delete($file->filepath);
+              }
+            }
+          }
+        break;
+      }
+    break;
+  }
+}
+
+function uc_catalog_form_alter($form_id, &$form){
+  if ($form_id == 'taxonomy_form_term' && $form['vid']['#value'] == variable_get('uc_catalog_vid', 0)){
+    $form['#attributes'] = array("enctype" => "multipart/form-data");
+    
+    $form['name']['#weight'] = -1;
+    $form['image'] = array('#type' => 'file',
+      '#title' => t('Image'),
+      '#weight' => 0,
+    );
   }
 }
 
@@ -206,11 +259,11 @@ function uc_catalog_block($op = 'list', $delta = 0, $edit = array()){
 }
 
 /******************************************************************************
- * Übercart Hooks                                                             *
+ * Ãœbercart Hooks                                                             *
  ******************************************************************************/
 
 /**
- * Implementation of Übercart's hook_store_status().
+ * Implementation of Ãœbercart's hook_store_status().
  * 
  * Provides status information about the "Product Catalog" and products not listed in the catalog.
  */
@@ -224,19 +277,19 @@ function uc_catalog_store_status(){
     );
 
     $excluded = 0;
-    $result = db_query("SELECT * FROM {node} WHERE nid NOT IN 
+    $result = db_query("SELECT DISTINCT * FROM {node} AS n LEFT JOIN {term_node} AS tn ON n.nid = tn.nid LEFT JOIN {vocabulary_node_types} AS vnt ON n.type = vnt.type WHERE n.type != 'image' AND tn.tid IS NULL AND vnt.vid = %d", $cat_id);
+    
+    /* db_query("SELECT * FROM {node} WHERE nid NOT IN 
         (SELECT nid FROM {term_node} AS tn LEFT JOIN {term_data} AS td ON tn.tid = td.tid WHERE td.vid = %d)
       AND type != 'image' AND type IN 
         (SELECT type FROM {vocabulary_node_types} WHERE vid = %d)",
-      $cat_id, $cat_id);
-    while (db_fetch_object($result)){
-      $excluded++;
-    }
+      $cat_id, $cat_id); */
+    $excluded = db_num_rows($result);
     if ($excluded){
       $statuses[] = array('status' => 'warning', 'title' => t('Unlisted Products'),
-        'desc' => format_plural($excluded, t('There is 1 product not listed in the catalog.'), t('There are !some products not listed in the catalog.', array('!some' => $excluded)))
+        'desc' => format_plural($excluded, 'There is 1 product not listed in the catalog.', 'There are @count products not listed in the catalog.')
           . t(' Products are listed by assigning a category from the Product Catalog vocabulary to them. ')
-          . l(t('Find orphaned products here.'), 'admin/store/catalog/orphans'),
+          . l(t('Find orphaned products here.'), 'admin/store/products/orphans'),
       );
     }
     else{
@@ -273,7 +326,7 @@ function uc_catalog_admin_settings(){
     $output .= l(t('View the catalog here.'), 'admin/content/taxonomy/'. $vid);
   }
   else{
-    $output .= t('A catalog vocabulary has not been set up yet. To start one, click '). l(t('here.'), 'admin/store/catalog/setup');
+    $output .= t('A catalog vocabulary has not been set up yet. To start one, click <a href="admin/store/catalog/setup">here.</a>');
   }
   
   $output .= drupal_get_form('uc_catalog_admin_form');
@@ -291,7 +344,7 @@ function uc_catalog_set_category_form(){
   );
   drupal_add_js('
     $(document).ready(function(){  
-        $.post("'. base_path() .'ubrowser/main",
+        $.post("'. base_path() .'?q=ubrowser/main",
           { vid: "'. variable_get('uc_catalog_vid', 0) .'",
             nids: "true",
             search: "true",
@@ -421,7 +474,17 @@ function uc_catalog_browse(){
       );
     }
     // Display child category's image.
-    if (module_exists('image')){
+    if (module_exists('imagecache') && $file = uc_catalog_image_load($child->tid)){
+      $imagecache_path =  file_create_url(file_directory_path() .'/imagecache/catalog/'. $file->filepath);
+      $info = image_get_info($imagecache_path);
+      $image = '<div style="height: '. $info['height'] .'px; width: '. $info['width'] .'px;">';
+      $image .= l(theme('imagecache', 'catalog', $file->filepath), uc_catalog_term_path($child), array(), null, null, false, true);
+      $image .= '</div>';
+    }
+    else{
+      $image = '';
+    }
+    /* if (module_exists('image')){
       $images = image_get_random(1, $child->tid);
       $size = _image_get_dimensions('thumbnail');
       $image = '<div style="height: '. $size['height'] .'px; width: '. $size['width'] .'px;">';
@@ -432,7 +495,7 @@ function uc_catalog_browse(){
     }
     else{
       $image = '';
-    }
+    } */
     // Display list of child category's children categories.
     // If more than $max_gc_display, show "More..." link to child.
     $grandchildren_list = taxonomy_get_children($child->tid, $vid);
@@ -462,8 +525,7 @@ function uc_catalog_browse(){
         . implode(', ', $grandchildren) ."</span>\n";
     }
   }
-  // Display category's image.
-  if (module_exists('image') && $tid){
+  /* if (module_exists('image') && $tid){
     $images = image_get_random(1, $tid);
     if (count($images)){
       $output .= image_display($images[0], 'category', array('alt' => check_plain($image->title), 'title' => check_plain($image->title)));
@@ -474,7 +536,7 @@ function uc_catalog_browse(){
       $output .= l('Add an image', 'category/add/image/'. $tid);
       $output .= "</div>\n";
     }
-  }
+  } */
   //$node_resource = taxonomy_select_nodes(array($tid));
   $table_args = array('tid' => $tid, 'attributes' => array('class' => 'category-products'));
   $product_table = tapir_get_table('uc_product_table', $table_args);
@@ -483,6 +545,7 @@ function uc_catalog_browse(){
       $output .= '>> ' . theme('links', $links, array('class' => 'links inline'));
     }
     $output .= $product_table;
+    $output .= theme('pager');
   }
   else{
     // Display table of child categories similar to an osCommerce site's front page.
@@ -586,17 +649,14 @@ function uc_catalog_set_breadcrumb($tid, $is_node = false){
  * Displays links to all products that have not been categorized.
  */
 function uc_catalog_orphaned_products() {
-  $output = '<p>'. t('Orphaned products are products that you have created but '
-           .'not yet assigned to a category in your product catalog. All such '
-           .'products will appear as links below that you can follow to edit '
-           .'the product listings to assign them to categories.') .'</p>';
+  $output = '<p>'. t('Orphaned products are products that you have created but 
+     not yet assigned to a category in your product catalog. All such 
+     products will appear as links below that you can follow to edit 
+     the product listings to assign them to categories.') .'</p>';
 
-  $query = "SELECT nid, title FROM {node} WHERE nid NOT IN (SELECT nid FROM "
-          ."{term_node} AS tn LEFT JOIN {term_data} AS td ON tn.tid = td.tid "
-          ."WHERE td.vid = %d) AND type != 'image' AND type IN (SELECT type "
-          ."FROM {vocabulary_node_types} WHERE vid = %d)";
+  $query = "SELECT DISTINCT n.nid, n.title FROM {node} AS n LEFT JOIN {term_node} AS tn ON n.nid = tn.nid LEFT JOIN {vocabulary_node_types} AS vnt ON n.type = vnt.type WHERE n.type != 'image' AND tn.tid IS NULL AND vnt.vid = %d";
   $vid = variable_get('uc_catalog_vid', 0);
-  $result = db_query($query, $vid, $vid);
+  $result = db_query($query, $vid);
 
   $rows = array();
   while ($node = db_fetch_object($result)) {
@@ -702,4 +762,20 @@ function _uc_catalog_navigation($branch){
   }
   // Tell parent category your status, and pass on output.
   return array($inpath, $output);
+}
+
+function uc_catalog_image_load($term){
+  if (is_object($term)){
+    $tid = $term->tid;
+  }
+  else if (is_array($term)){
+    $tid = $term['tid'];
+  }
+  else{
+    $tid = $term;
+  }
+  
+  $file = db_fetch_object(db_query("SELECT * FROM {uc_catalog_images} WHERE tid = %d", $tid));
+  
+  return $file;
 }

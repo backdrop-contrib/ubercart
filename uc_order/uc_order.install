@@ -22,7 +22,7 @@ function uc_order_install(){
         delivery_street2 varchar(64) NOT NULL,
         delivery_city varchar(32) NOT NULL,
         delivery_zone mediumint(9) NOT NULL,
-        delivery_zip varchar(10) NOT NULL,
+        delivery_postal_code varchar(10) NOT NULL,
         delivery_country mediumint(9) NOT NULL,
         billing_first_name varchar(32) NOT NULL,
         billing_last_name varchar(32) NOT NULL,
@@ -32,7 +32,7 @@ function uc_order_install(){
         billing_street2 varchar(64) NOT NULL,
         billing_city varchar(32) NOT NULL,
         billing_zone mediumint(9) NOT NULL,
-        billing_zip varchar(10) NOT NULL,
+        billing_postal_code varchar(10) NOT NULL,
         billing_country mediumint(9) NOT NULL,
         payment_method varchar(32) NOT NULL,
         created int(11) NOT NULL,
@@ -40,7 +40,7 @@ function uc_order_install(){
         PRIMARY KEY (order_id),
         KEY uid (uid),
         KEY order_status (order_status)
-      );");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
       db_query("CREATE TABLE {uc_order_admin_comments} (
         comment_id mediumint(9) NOT NULL auto_increment,
         order_id mediumint(9) NOT NULL,
@@ -49,7 +49,7 @@ function uc_order_install(){
         created int(11) NOT NULL,
         PRIMARY KEY (comment_id),
         KEY order_id (order_id)
-      );");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
       db_query("CREATE TABLE {uc_order_comments} (
         comment_id mediumint(9) NOT NULL auto_increment,
         order_id mediumint(9) NOT NULL,
@@ -60,7 +60,7 @@ function uc_order_install(){
         created int(11) NOT NULL,
         PRIMARY KEY (comment_id),
         KEY order_id (order_id)
-      );");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
       db_query("CREATE TABLE {uc_order_line_items} (
         line_item_id mediumint(9) NOT NULL auto_increment,
         order_id mediumint(9) NOT NULL,
@@ -70,7 +70,7 @@ function uc_order_install(){
         weight smallint(6) NOT NULL,
         PRIMARY KEY (line_item_id),
         KEY order_id (order_id)
-      );");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
       db_query("CREATE TABLE {uc_order_log} (
         order_log_id mediumint(9) NOT NULL auto_increment,
         order_id mediumint(9) NOT NULL,
@@ -79,7 +79,7 @@ function uc_order_install(){
         created int(11) NOT NULL,
         PRIMARY KEY (order_log_id),
         KEY order_id (order_id)
-      );");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
       db_query("CREATE TABLE {uc_order_products} (
         order_product_id int(9) NOT NULL auto_increment,
         order_id mediumint(9) NOT NULL,
@@ -94,17 +94,17 @@ function uc_order_install(){
         data text NOT NULL,
         PRIMARY KEY (order_product_id),
         KEY order_id (order_id)
-      );");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
       db_query("CREATE TABLE {uc_order_statuses} (
         order_status_id mediumint(9) NOT NULL,
         title varchar(32) NOT NULL,
         notify tinyint(4) NOT NULL,
         PRIMARY KEY  (order_status_id)
-      );");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
       db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, "
               ."notify) VALUES (0, 'In Checkout', 0),(1, 'Pending', 0),"
               ."(2, 'Processing', 1),(3, 'Shipment Pending', 0),"
-              ."(4, 'Shipped', 1);");
+              ."(4, 'Shipped', 1)");
     break;
     case 'pgsql':
       db_query("CREATE TABLE {uc_orders} (
@@ -121,7 +121,7 @@ function uc_order_install(){
         delivery_street2 varchar(64) NOT NULL,
         delivery_city varchar(32) NOT NULL,
         delivery_zone mediumint(9) NOT NULL,
-        delivery_zip varchar(10) NOT NULL,
+        delivery_postal_code varchar(10) NOT NULL,
         delivery_country mediumint(9) NOT NULL,
         billing_first_name varchar(32) NOT NULL,
         billing_last_name varchar(32) NOT NULL,
@@ -131,7 +131,7 @@ function uc_order_install(){
         billing_street2 varchar(64) NOT NULL,
         billing_city varchar(32) NOT NULL,
         billing_zone mediumint(9) NOT NULL,
-        billing_zip varchar(10) NOT NULL,
+        billing_postal_code varchar(10) NOT NULL,
         billing_country mediumint(9) NOT NULL,
         payment_method varchar(32) NOT NULL,
         created int(11) NOT NULL,
@@ -206,4 +206,25 @@ function uc_order_install(){
               ."(4, 'Shipped', 1);");
     break;
   }
+}
+
+function uc_order_update_1(){
+  $ret = array();
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_orders} CHANGE delivery_zip delivery_postal_code VARCHAR(10) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL");
+      $ret[] = update_sql("ALTER TABLE {uc_orders} CHANGE billing_zip billing_postal_code VARCHAR(10) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL");
+      break;
+    case 'pgsql':
+      $ret[] = update_sql("ALTER TABLE {uc_orders} CHANGE delivery_zip delivery_postal_code VARCHAR(10) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL");
+      $ret[] = update_sql("ALTER TABLE {uc_orders} CHANGE billing_zip billing_postal_code VARCHAR(10) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL");
+      break;
+  }
+  $result = db_query("SELECT order_id FROM {uc_orders} ORDER BY order_id DESC LIMIT 1");
+  if ($data = db_fetch_object($result)) {
+    $ret[] = update_sql("INSERT INTO {sequences} (name, id) VALUES "
+                       ."('{uc_orders}_order_id', %d)", $data->order_id);
+  }
+  return $ret;
 }

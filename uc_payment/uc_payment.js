@@ -29,7 +29,7 @@ function set_line_item(key, title, value, weight) {
            }
     );
 
-    $.post(base_path + 'cart/checkout/line_items', li_info,
+    $.post(base_path + '?q=cart/checkout/line_items', li_info,
            function(contents) {
              $('#line-items-div').empty().append(contents);
            }
@@ -70,8 +70,7 @@ function show_default_payment_details(path) {
  * Pop-up an info box for the credit card CVV.
  */
 function cvv_info_popup() {
-  //alert('Gotta add this later...');
-  var popup = window.open(base_path + 'cart/checkout/credit/cvv_info', 'CVV Info', 'toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=1,width=480,height=460,left = 282,top = 122');
+  var popup = window.open(base_path + '?q=cart/checkout/credit/cvv_info', 'CVV Info', 'toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=1,width=480,height=460,left = 282,top = 122');
 }
 
 /**

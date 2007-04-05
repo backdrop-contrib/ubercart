@@ -1,4 +1,4 @@
-// -*- js-var: set_line_item, basePath; -*-
+// -*- js-var: set_line_item, basePath, getTax; -*-
 // $Id$
 
 var page;
@@ -6,14 +6,14 @@ var details;
 var methods;
 
 function setQuoteCallbacks(products){
-  $("input[@name*=delivery_zip]").blur(function(){
+  $("input[@name*=delivery_postal_code]").blur(function(){
     quoteCallback(products);
   });
   $("#quote-button").click(function(){
     quoteCallback(products);
   });
   $("select[@name*=delivery_address_select]").change(function(){
-    $("input[@name*=delivery_zip]").trigger('blur');
+    $("input[@name*=delivery_postal_code]").trigger('blur');
   });
 }
 
@@ -71,7 +71,7 @@ function quoteCallback(products){
   // progress.startMonitoring(basePath + "shipping/quote", 0);
   $.ajax({
     type: "POST",
-    url: basePath + "shipping/quote",
+    url: basePath + "?q=cart/checkout/shipping/quote",
     data: details,
     dataType: "json",
     success: displayQuote
@@ -101,7 +101,7 @@ function displayQuote(data){
             + "<input type=\"hidden\" name=\"rate[" + i + "]\" value=\"" + Number(data[i].rate).toFixed(2) + "\" />\n"
             + "<label class=\"option\">"
             + "<input type=\"radio\" class=\"form-radio\" name=\"quote-option\" value=\"" + i + "\" />\n"
-            + label + " Rate: $" + Number(data[i].rate).toFixed(2) + "</label>\n</div>\n"
+            + label + " Rate: " + data[i].format + "</label>\n</div>\n"
           );
           if (page == "checkout"){
             quoteDiv.find("input:radio[@value=" + i +"]").click(function(){
@@ -114,7 +114,7 @@ function displayQuote(data){
           quoteDiv.append("<div>\n"
             + "<input type=\"hidden\" name=\"quote-option\" value=\"" + i + "\" />\n"
             + "<input type=\"hidden\" name=\"rate[" + i + "]\" value=\"" + Number(data[i].rate).toFixed(2) + "\" />\n"
-            + "<label class=\"option\">" + label + " Rate: $" + Number(data[i].rate).toFixed(2) + "</label>\n</div>\n"
+            + "<label class=\"option\">" + label + " Rate: " + data[i].format + "</label>\n</div>\n"
           );
           if (page == "checkout"){
             if (label != ""){
@@ -139,7 +139,7 @@ function displayQuote(data){
       $("#quote").empty().append(progress.element);
       $.ajax({
         type: "POST",
-        url: basePath + "shipping/quote",
+        url: basePath + "?q=cart/checkout/shipping/quote",
         data: details,
         dataType: "json",
         success: displayQuote
@@ -153,5 +153,8 @@ function displayQuote(data){
     quoteDiv.find("input:radio").eq(0).click().end().end();
     var quoteForm = quoteDiv.html();
     quoteDiv.append("<input type=\"hidden\" name=\"quote-form\" value=\"" + encodeURIComponent(quoteForm) + "\" />");
+  }
+  if (getTax != undefined){
+    getTax();
   }
 }

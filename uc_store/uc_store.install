@@ -4,25 +4,19 @@ function uc_store_install(){
   switch($GLOBALS['db_type']){
     case 'mysqli':
     case 'mysql':
-      db_query("CREATE TABLE {uc_address_formats} (
-        address_format_id smallint(11) NOT NULL auto_increment,
-        address_format varchar(128) NOT NULL default '',
-        address_summary varchar(48) NOT NULL default '',
-        PRIMARY KEY (address_format_id)
-      );");
       db_query("CREATE TABLE {uc_countries} (
         country_id mediumint(11) NOT NULL auto_increment,
         country_name varchar(64) NOT NULL,
         country_iso_code_2 char(2) NOT NULL,
         country_iso_code_3 char(3) NOT NULL,
-        address_format_id smallint(11) NOT NULL default '0',
+        version smallint(11) NOT NULL default '0',
         PRIMARY KEY (country_id),
         KEY country_name (country_name)
-      );");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
       db_query("INSERT INTO {uc_countries} (country_id, country_name, "
               ."country_iso_code_2, country_iso_code_3, address_format_id) "
               ."VALUES (38, 'Canada', 'CA', 'CAN', 2), "
-              ."(223, 'United States', 'US', 'USA', 1);");
+              ."(223, 'United States', 'US', 'USA', 1)");
       db_query("CREATE TABLE {uc_zones} (
         zone_id mediumint(11) NOT NULL auto_increment,
         zone_country_id mediumint(11) NOT NULL default '0',
@@ -31,7 +25,7 @@ function uc_store_install(){
         PRIMARY KEY (zone_id),
         KEY zone_code (zone_code),
         KEY zone_country_id (zone_country_id)
-      );");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
       db_query("INSERT INTO {uc_zones} (zone_id, zone_country_id, zone_code, "
               ."zone_name) VALUES (1, 223, 'AL', 'Alabama'),"
               ."(2, 223, 'AK', 'Alaska'),"
@@ -110,27 +104,21 @@ function uc_store_install(){
               ."(75, 38, 'PE', 'Prince Edward Island'),"
               ."(76, 38, 'QC', 'Quebec'),"
               ."(77, 38, 'SK', 'Saskatchewan'),"
-              ."(78, 38, 'YT', 'Yukon Territory');");
+              ."(78, 38, 'YT', 'Yukon Territory')");
       break;
     case 'pgsql':
-      db_query("CREATE TABLE {uc_address_formats} (
-        address_format_id smallint(11) NOT NULL,
-        address_format varchar(128) NOT NULL default '',
-        address_summary varchar(48) NOT NULL default '',
-        PRIMARY KEY (address_format_id)
-      );");
       db_query("CREATE TABLE {uc_countries} (
         `country_id` mediumint(11) NOT NULL auto_increment,
         `country_name` varchar(64) NOT NULL,
         `country_iso_code_2` char(2) NOT NULL,
         `country_iso_code_3` char(3) NOT NULL,
-        `address_format_id` smallint(11) NOT NULL default '0',
+        `version` smallint(11) NOT NULL default '0',
         PRIMARY KEY (`country_id`),
         KEY country_name (`country_name`)
-      );");
+      )");
       db_query("CREATE INDEX {uc_countries}_country_id ON {uc_countries} (country_id)");
-      db_query("INSERT INTO {uc_countries} VALUES (38, 'Canada', 'CA', 'CAN', 1);");
-      db_query("INSERT INTO {uc_countries} VALUES (223, 'United States', 'US', 'USA', 2);");
+      db_query("INSERT INTO {uc_countries} VALUES (38, 'Canada', 'CA', 'CAN', 1)");
+      db_query("INSERT INTO {uc_countries} VALUES (223, 'United States', 'US', 'USA', 2)");
       db_query("CREATE TABLE {uc_zones} (
         zone_id mediumint(11) NOT NULL,
         zone_country_id mediumint(11) NOT NULL default '0',
@@ -139,7 +127,7 @@ function uc_store_install(){
         PRIMARY KEY (zone_id),
         KEY zone_code (zone_code),
         KEY zone_country_id (zone_country_id)
-      );");
+      )");
       db_query("INSERT INTO {uc_zones} (zone_id, zone_country_id, zone_code, "
               ."zone_name) VALUES (1, 223, 'AL', 'Alabama'),"
               ."(2, 223, 'AK', 'Alaska'),"
@@ -218,7 +206,25 @@ function uc_store_install(){
               ."(75, 38, 'PE', 'Prince Edward Island'),"
               ."(76, 38, 'QC', 'Quebec'),"
               ."(77, 38, 'SK', 'Saskatchewan'),"
-              ."(78, 38, 'YT', 'Yukon Territory');");
+              ."(78, 38, 'YT', 'Yukon Territory')");
       break;
   }
+}
+
+function uc_store_update_1(){
+  $ret = array();
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("DROP TABLE IF EXISTS {uc_address_formats}");
+      $ret[] = update_sql("ALTER TABLE {uc_countries} CHANGE address_format_id version SMALLINT(11) NOT NULL DEFAULT '0'");
+      $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_name zone_name VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL");
+      break;
+    case 'pgsql':
+      $ret[] = update_sql("DROP TABLE IF EXISTS {uc_address_formats}");
+      $ret[] = update_sql("ALTER TABLE {uc_countries} CHANGE address_format_id version SMALLINT(11) NOT NULL DEFAULT '0'");
+      $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_name zone_name VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL");
+      break;
+  }
+  return $ret;
 }

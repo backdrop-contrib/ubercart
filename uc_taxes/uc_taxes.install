@@ -6,24 +6,65 @@ function uc_taxes_install(){
     case 'mysql':
     case 'mysqli':
       db_query("CREATE TABLE {uc_taxes} (
-        `pcid` mediumint(9) unsigned NOT NULL default '0',
-        `area` varchar(15) NOT NULL,
-        `type` enum('code','state','country') NOT NULL,
+        `id` mediumint(9) NOT NULL,
+        `name` varchar(255) NOT NULL,
+        `area` varchar(255) NOT NULL,
+        `type` enum('code','zone','country') NOT NULL,
         `rate` float unsigned NOT NULL default '0',
         `shipping` tinyint(1) NOT NULL default '0',
-        `standalone` tinyint(1) NOT NULL default '1',
-        UNIQUE KEY `taxes` (`pcid`,`area`)
-      );");
+        `cumulative` tinyint(1) NOT NULL default '0',
+        `weight` tinyint(2) NOT NULL default '0',
+        PRIMARY KEY  (`id`)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
     break;
     case 'pgsql':
       db_query('CREATE TABLE {uc_taxes} (
-        "pcid" mediumint(9) unsigned NOT NULL default \'0\',
-        "area" varchar(15) NOT NULL,
-        "type" enum(\'code\',\'state\',\'country\') NOT NULL,
+        "id" mediumint(9) NOT NULL,
+        "name" varchar(255) NOT NULL default,
+        "area" varchar(255) NOT NULL,
+        "type" enum(\'code\',\'zone\',\'country\') NOT NULL,
         "rate" float unsigned NOT NULL default \'0\',
-        "shipping" tinyint(1) NOT NULL default \'0\',
-        "standalone" tinyint(1) NOT NULL default \'1\',
-        UNIQUE KEY "taxes" ("pcid","area")
+        "shipping" smallint NOT NULL default \'0\',
+        "cumulative" smallint NOT NULL default \'0\',
+        "weight" smallint NOT NULL default \'0\',
+        PRIMARY KEY  ("id")
       );');
+      db_query("CREATE INDEX {uc_taxes}_id ON {uc_taxes} (id)");
+    break;
   }
+}
+
+function uc_taxes_uninstall(){
+  db_query("DROP TABLE IF EXISTS {uc_taxes}");
+}
+
+function uc_taxes_update_1(){
+  $ret = array();
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_taxes} DROP INDEX taxes");
+      $ret[] = update_sql("ALTER TABLE {uc_taxes} DROP pcid");
+      $ret[] = update_sql("ALTER TABLE {uc_taxes} ADD COLUMN id mediumint(9) NOT NULL FIRST");
+      $ret[] = update_sql("ALTER TABLE {uc_taxes} ADD PRIMARY KEY id (id)");
+      $ret[] = update_sql("ALTER TABLE {uc_taxes} ADD COLUMN name varchar(255) NOT NULL AFTER id");
+      $ret[] = update_sql("ALTER TABLE {uc_taxes} CHANGE COLUMN area area varchar(255) NOT NULL");
+      $ret[] = update_sql("ALTER TABLE {uc_taxes} CHANGE COLUMN type type enum('code','zone','country') NOT NULL");
+      $ret[] = update_sql("ALTER TABLE {uc_taxes} CHANGE COLUMN standalone cumulative tinyint(1) NOT NULL default '0'");
+      $ret[] = update_sql("ALTER TABLE {uc_taxes} ADD COLUMN weight tinyint(2) NOT NULL default '0'");
+    break;
+    case 'pgsql':
+      $ret[] = update_sql("ALTER TABLE {uc_taxes} DROP CONSTRAINT {uc_taxes}_pcid_area_key");
+      $ret[] = update_sql("ALTER TABLE {uc_taxes} DROP pcid");
+      db_add_column($ret, 'uc_taxes', 'id', 'mediumint(9)', array('not null' => true));
+      $ret[] = update_sql("ALTER TABLE {uc_taxes} ADD PRIMARY KEY (id)");
+      $ret[] = update_sql("CREATE INDEX {uc_taxes}_id ON {uc_taxes} (id)");
+      db_add_column($ret, 'uc_taxes', 'name', 'varchar(255)', array('not null' => true));
+      db_change_column($ret, 'uc_taxes', 'area', 'area', 'varchar(255)', array('not null' => true));
+      db_change_column($ret, 'uc_taxes', 'type', 'type', "enum('code','zone','country')", array('not null' => true));
+      db_change_column($ret, 'uc_taxes', 'standalone', 'cumulative', 'smallint', array('not null' => true, 'default' => 0));
+      db_add_column($ret, 'uc_taxes', 'weight', 'smallint', array('not null' => true, 'default' => 0));
+    break;
+  }
+  return $ret;
 }

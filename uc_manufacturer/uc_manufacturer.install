@@ -26,26 +26,33 @@ function uc_manufacturer_install(){
     case 'mysql':
     case 'mysqli':
       db_query("CREATE TABLE {uc_manufacturers} (
-          `tid` int(11) NOT NULL,
-          `url` varchar(60) NOT NULL,
-          `logo` varchar(127) NOT NULL,
-          `phone_no` varchar(12) NOT NULL,
-          `fax_no` varchar(12) NOT NULL,
-          PRIMARY KEY  (`tid`)
-        );"
-      );
+        `tid` int(11) NOT NULL,
+        `url` varchar(60) NOT NULL,
+        `logo` varchar(127) NOT NULL,
+        `phone_no` varchar(12) NOT NULL,
+        `fax_no` varchar(12) NOT NULL,
+        PRIMARY KEY  (`tid`)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
     break;
     case 'pgsql':
       db_query("CREATE TABLE {uc_manufacturers} (
-          `tid` int(11) NOT NULL,
-          `url` varchar(60) NOT NULL,
-          `logo` varchar(127) NOT NULL,
-          `phone_no` varchar(12) NOT NULL,
-          `fax_no` varchar(12) NOT NULL,
-          PRIMARY KEY  (`tid`)
-        );"
-      );
+        `tid` int(11) NOT NULL,
+        `url` varchar(60) NOT NULL,
+        `logo` varchar(127) NOT NULL,
+        `phone_no` varchar(12) NOT NULL,
+        `fax_no` varchar(12) NOT NULL,
+        PRIMARY KEY  (`tid`)
+      );");
       db_query("CREATE INDEX {uc_manufacturer}_tid ON {uc_manufacturer} (tid)");
     break;
   }
+}
+
+function uc_manufacturer_uninstall(){
+  if ($vid = variable_get('uc_manufacturer_vid', $vid)){
+    taxonomy_del_vocabulary($vid);
+  }
+  variable_del('uc_manufacturer_vid');
+  
+  db_query("DROP TABLE IF EXISTS {uc_manufacturers}");
 }
