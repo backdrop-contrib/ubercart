@@ -17,9 +17,9 @@ function cart_toggle(uc_cart_path) {
 
   isrc = $('#block-cart-title-arrow').attr('src');
   if (isrc.toLowerCase().match("up") != null) {
-    $('#block-cart-title-arrow').attr('src', uc_cart_path + '/images/bullet-arrow-down.png');
+    $('#block-cart-title-arrow').attr('src', uc_cart_path + '/images/bullet-arrow-down.gif');
   }
   else {
-    $('#block-cart-title-arrow').attr('src', uc_cart_path + '/images/bullet-arrow-up.png');
+    $('#block-cart-title-arrow').attr('src', uc_cart_path + '/images/bullet-arrow-up.gif');
   }
 }                                                                             
