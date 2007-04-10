@@ -717,7 +717,7 @@ function uc_product_store_status(){
     $field_check = (bool)db_num_rows($result);
     $result = db_query("SELECT field_name, type_name FROM {node_field_instance} WHERE field_name = 'field_image_cache' AND type_name = 'product'");
     $product_field_check = (bool)db_num_rows($result);
-    $presets = array('product', 'thumbnail', 'catalog', 'cart');
+    $presets = array('product', 'product_list', 'thumbnail', 'catalog', 'cart', 'manufacturer');
     $result = db_query("SELECT presetid FROM {imagecache_preset} WHERE presetname IN ('". implode("','", $presets) ."')");
     $preset_check = (db_num_rows($result) == count($presets));
     $actions = array();
@@ -741,7 +741,7 @@ function uc_product_store_status(){
         $description .= "<li>". t("The Image field has not been attached to Product nodes.") ."</li>\n";
       }
       if (!$preset_check){
-        $description .= "<li>". t('The expected Imagecache presets ("product", "thumbnail", "catalog", and "cart") have not been created.') ."</li>\n";
+        $description .= "<li>". t('The expected Imagecache presets ("product", "product_list", "thumbnail", "catalog", "cart", "manufacturer") have not been created.') ."</li>\n";
       }
       if (!$action_check){
         $description .= "<li>". t('The Imagecache presets do not contain actions to perform on images. Images may be displayed in their original formats.') ."</li>\n";
@@ -850,7 +850,7 @@ function uc_product_image_defaults($checks){
     content_clear_type_cache();
   }
   if (!$product_field_check){
-    db_query("INSERT INTO {node_field_instance} VALUES ('field_image_cache', 'product', -2, 'Image', 'image', '%s', '%s', '')", 'a:6:{s:14:"max_resolution";s:1:"0";s:10:"image_path";s:6:"images";s:10:"custom_alt";i:1;s:12:"custom_title";i:1;s:13:"teaser_preset";N;s:11:"body_preset";N;}', 'a:3:{s:5:"label";a:1:{s:6:"format";s:6:"hidden";}s:6:"teaser";a:1:{s:6:"format";s:6:"hidden";}s:4:"full";a:1:{s:6:"format";s:6:"hidden";}}');
+    db_query("INSERT INTO {node_field_instance} VALUES ('field_image_cache', 'product', -2, 'Image', 'image', '%s', '%s', '')", 'a:6:{s:14:"max_resolution";s:1:"0";s:10:"image_path";s:6:"ubercart_images";s:10:"custom_alt";i:1;s:12:"custom_title";i:1;s:13:"teaser_preset";N;s:11:"body_preset";N;}', 'a:3:{s:5:"label";a:1:{s:6:"format";s:6:"hidden";}s:6:"teaser";a:1:{s:6:"format";s:6:"hidden";}s:4:"full";a:1:{s:6:"format";s:6:"hidden";}}');
     switch ($GLOBALS['db_type']){
       case 'mysql':
       case 'mysqli':
@@ -873,14 +873,14 @@ function uc_product_image_defaults($checks){
           "field_image_cache_title" varchar(255) NOT NULL,
           "field_image_cache_alt" varchar(255) NOT NULL,
           PRIMARY KEY  ("vid","delta")
-        ) /*!40100 DEFAULT CHARACTER SET utf8 */;');
+        );');
       break;
     }
     content_clear_type_cache();
   }
   if (!$preset_check){
-    $result = db_query("SELECT * FROM {imagecache_preset} WHERE presetname IN ('product', 'thumbnail', 'catalog', 'cart')");
-    $presets = array('product' => 0, 'thumbnail' => 0, 'catalog' => 0, 'cart' => 0);
+    $result = db_query("SELECT * FROM {imagecache_preset} WHERE presetname IN ('product', 'product_list', 'thumbnail', 'catalog', 'cart', 'manufacturer')");
+    $presets = array('product' => 0, 'product_list' => 0, 'thumbnail' => 0, 'catalog' => 0, 'cart' => 0, 'manufacturer' => 0);
     while ($preset = db_fetch_array($result)){
       $presets[$preset['presetname']] = $preset['presetid'];
     }
@@ -892,12 +892,15 @@ function uc_product_image_defaults($checks){
     }
   }
   if (!$action_check){
-    $result = db_query("SELECT ia.actionid, ip.presetid, ip.presetname FROM {imagecache_preset} AS ip LEFT JOIN {imagecache_action} AS ia ON ip.presetid = ia.presetid WHERE ip.presetname IN ('product', 'catalog', 'thumbnail', 'cart')");
+    $result = db_query("SELECT ia.actionid, ip.presetid, ip.presetname FROM {imagecache_preset} AS ip LEFT JOIN {imagecache_action} AS ia ON ip.presetid = ia.presetid WHERE ip.presetname IN ('product', 'product_list', 'catalog', 'thumbnail', 'cart')");
     $presets = array();
     while ($preset = db_fetch_array($result)){
       if (is_null($preset['actionid'])){
         switch ($preset['presetname']){
           case 'product':
+            db_query("INSERT INTO {imagecache_action} (actionid, presetid, weight, data) VALUES (%d, %d, 0, '%s')", db_next_id('{imagecache_action}_actionid'), $preset['presetid'], 'a:4:{s:8:"function";s:5:"scale";s:3:"fit";s:6:"inside";s:5:"width";s:3:"100";s:6:"height";s:3:"100";}');
+          break;
+          case 'product_list':
             db_query("INSERT INTO {imagecache_action} (actionid, presetid, weight, data) VALUES (%d, %d, 0, '%s')", db_next_id('{imagecache_action}_actionid'), $preset['presetid'], 'a:4:{s:8:"function";s:5:"scale";s:3:"fit";s:6:"inside";s:5:"width";s:3:"100";s:6:"height";s:3:"100";}');
           break;
           case 'thumbnail':
@@ -909,11 +912,15 @@ function uc_product_image_defaults($checks){
           case 'cart':
             db_query("INSERT INTO {imagecache_action} (actionid, presetid, weight, data) VALUES (%d, %d, 0, '%s')", db_next_id('{imagecache_action}_actionid'), $preset['presetid'], 'a:4:{s:8:"function";s:5:"scale";s:3:"fit";s:6:"inside";s:5:"width";s:2:"50";s:6:"height";s:2:"50";}');
           break;
+          case 'manufacturer':
+            db_query("INSERT INTO {imagecache_action} (actionid, presetid, weight, data) VALUES (%d, %d, 0, '%s')", db_next_id('{imagecache_action}_actionid'), $preset['presetid'], 'a:4:{s:8:"function";s:5:"scale";s:3:"fit";s:6:"inside";s:5:"width";s:2:"80";s:6:"height";s:2:"80";}');
+          break;
         }
       }
     }
   }
-  cache_clear_all(null, 'cache');
+  file_check_directory(file_create_path('ubercart_images'), FILE_CREATE_DIRECTORY);
+  cache_clear_all('imagecache:presets', 'cache');
   drupal_goto('admin/store');
 }
 
@@ -1316,7 +1323,7 @@ function uc_product_add_to_cart_form_submit($form_id, $form_values){
  * @ingroup themeable
  */
 function theme_uc_product_price($price, $class){
-  $label = preg_replace(array('/_/', '/\b(\w)/e'), array(' ', 'strtoupper($1)'), $class);
+  $label = preg_replace(array('/_/', '/\b(\w)/e'), array(' ', 'drupal_strtoupper($1)'), $class);
   $output = '<div class="'. $class .'">';
   $output .= t('@label: !price', array('@label' => $label, '!price' => uc_currency_format($price)));
   $output .= '</div>';
@@ -1353,7 +1360,7 @@ function theme_uc_product_sell_price($price, $teaser){
  */
 function theme_uc_product_weight($weight){
   $output = '<div class="weight">';
-  $output .= t('Weight: %weight', array('%weight' => $weight));
+  $output .= t('Weight: !weight', array('!weight' => uc_weight_format($weight)));
   $output .= '</div>';
   return $output;
 }

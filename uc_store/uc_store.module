@@ -230,8 +230,8 @@ function uc_store_cron(){
               $vars['ubercart_version'] = $info['version'];
             }
           }
-          else if (defined(strtoupper($module) .'_VERSION')){
-            $return['version'] = constant(strtoupper($module) .'_VERSION');
+          else if (defined(drupal_strtoupper($module) .'_VERSION')){
+            $return['version'] = constant(drupal_strtoupper($module) .'_VERSION');
           }
           $vars['modules'][] = $return;
         }
@@ -363,28 +363,30 @@ function uc_store_admin() {
   $output = '<table class="uc-store-admin-table" align="center"><tr valign="top">';
 
   $panels = 0;
-  foreach ($submenu as $menu) {
-    $panel++;
-    if ($panel % 4 == 0) {
-      $output .= '</tr><tr valign="top">';
+  if (is_array($submenu)) {
+    foreach ($submenu as $menu) {
+      $panel++;
+      if ($panel % 4 == 0) {
+        $output .= '</tr><tr valign="top">';
+      }
+      $panel_title = $menu['title'];
+      $panel_links = theme('admin_block_content', system_admin_menu_block($menu));
+      $panel_table = '<table width="100%"><tr>'
+                    .'<td>'. l(uc_store_get_icon($menu['path']), $menu['path'],
+                               array(), NULL, NULL, FALSE, TRUE) .'</td>'
+                    .'<td class="panel-title">'. l($menu['title'], $menu['path'])
+                    .'</td></tr>';
+      if (strlen($panel_links) > 0) {
+        $panel_table .= '<tr><td nowrap colspan="2" class="panel-links" style="display: none;">'
+                     . $panel_links .'</td></tr><tr>'
+                      .'<td align="center" colspan="2" class="panel-show-link" '
+                      .'id="show-links-'. $panel .'"><a>'. t('- Show links -')
+                      .'</a></td></tr>';
+      }
+      $panel_table .= '</table>';
+      $output .= '<td class="uc-store-admin-panel" id="panel-'. $panel .'">'
+               . $panel_table .'</td>';
     }
-    $panel_title = $menu['title'];
-    $panel_links = theme('admin_block_content', system_admin_menu_block($menu));
-    $panel_table = '<table width="100%"><tr>'
-                  .'<td>'. l(uc_store_get_icon($menu['path']), $menu['path'],
-                             array(), NULL, NULL, FALSE, TRUE) .'</td>'
-                  .'<td class="panel-title">'. l($menu['title'], $menu['path'])
-                  .'</td></tr>';
-    if (strlen($panel_links) > 0) {
-      $panel_table .= '<tr><td nowrap colspan="2" class="panel-links" style="display: none;">'
-                   . $panel_links .'</td></tr><tr>'
-                    .'<td align="center" colspan="2" class="panel-show-link" '
-                    .'id="show-links-'. $panel .'"><a>'. t('- Show links -')
-                    .'</a></td></tr>';
-    }
-    $panel_table .= '</table>';
-    $output .= '<td class="uc-store-admin-panel" id="panel-'. $panel .'">'
-             . $panel_table .'</td>';
   }
   $output .= '</tr></table>';
 
@@ -701,28 +703,30 @@ function uc_country_settings() {
   $files = _country_import_list();
 
   $header = array(t('Country'), t('Code'), t('Version'), t('Operations'));
-  foreach ($countries as $country) {
-    $row = array(
-      $country->country_name,
-      $country->country_iso_code_3,
-      array('data' => $country->version, 'align' => 'center')
-    );
-
-    $ops = array();
-    if ($country->version < 0) {
-      $ops[] = l(t('enable'), 'admin/store/settings/countries/'. $country->country_id .'/enable');
+  if (is_array($countries)) {
+    foreach ($countries as $country) {
+      $row = array(
+        $country->country_name,
+        $country->country_iso_code_3,
+        array('data' => $country->version, 'align' => 'center')
+      );
+  
+      $ops = array();
+      if ($country->version < 0) {
+        $ops[] = l(t('enable'), 'admin/store/settings/countries/'. $country->country_id .'/enable');
+      }
+      else {
+        $ops[] = l(t('disable'), 'admin/store/settings/countries/'. $country->country_id .'/disable');
+      }
+      if ($country->version < $files[$country->country_id]['version'] && $country->version > 0) {
+        $ops[] = l(t('update'), 'admin/store/settings/countries/'. $country->country_id .'/update/'. $files[$country->country_id]['version']);
+      }
+      $ops[] = l(t('remove'), 'admin/store/settings/countries/'. $country->country_id .'/remove');
+      $row[] = implode(' ', $ops);
+  
+      $rows[] = $row;
+      unset($files[$country->country_id]);
     }
-    else {
-      $ops[] = l(t('disable'), 'admin/store/settings/countries/'. $country->country_id .'/disable');
-    }
-    if ($country->version < $files[$country->country_id]['version'] && $country->version > 0) {
-      $ops[] = l(t('update'), 'admin/store/settings/countries/'. $country->country_id .'/update/'. $files[$country->country_id]['version']);
-    }
-    $ops[] = l(t('remove'), 'admin/store/settings/countries/'. $country->country_id .'/remove');
-    $row[] = implode(' ', $ops);
-
-    $rows[] = $row;
-    unset($files[$country->country_id]);
   }
 
   foreach ($files as $file) {
@@ -778,23 +782,25 @@ function uc_country_settings() {
               . theme('table', $header, $rows) .'</p><p>'. t('*Adding _if to any country variable will make it only display for addresses<br>whose country is different than the default store country.') .'</div>',
   );
 
-  $form['countries'] = array(
-    '#tree' => TRUE,
-  );
-  foreach ($countries as $country) {
-    $form['countries'][$country->country_id] = array(
-      '#type' => 'fieldset',
-      '#title' => $country->country_name,
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
+  if (is_array($countries)) {
+    $form['countries'] = array(
+      '#tree' => TRUE,
     );
-    $form['countries'][$country->country_id]['address_format'] = array(
-      '#type' => 'textarea',
-      '#title' => t('Address format'),
-      '#default_value' => variable_get('uc_address_format_'. $country->country_id, ''),
-      '#description' => t('Uses the variables mentioned in the instructions to format an address for this country.'),
-      '#rows' => 6,
-    );
+    foreach ($countries as $country) {
+      $form['countries'][$country->country_id] = array(
+        '#type' => 'fieldset',
+        '#title' => $country->country_name,
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+      $form['countries'][$country->country_id]['address_format'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Address format'),
+        '#default_value' => variable_get('uc_address_format_'. $country->country_id, ''),
+        '#description' => t('Uses the variables mentioned in the instructions to format an address for this country.'),
+        '#rows' => 6,
+      );
+    }
   }
 
   $form['submit'] = array(
@@ -885,12 +891,14 @@ function uc_country_remove_form($country_id) {
     drupal_goto('admin/store/settings/countries');
   }
 
-  $result = db_query("SELECT COUNT(order_id) AS orders FROM {uc_orders} WHERE "
-                    ."delivery_country = %d OR billing_country = %d",
-                     $country_id, $country_id);
-  if (($data = db_fetch_object($result))) {
-    if ($data->orders > 0) {
-      drupal_set_message(t('Warning: !number orders were found with addresses in this country. Removing this country now will cause errors to show on those order pages. You might consider simply disabling this country instead.', array('!number' => $data->orders)), 'error');
+  if ($_POST['op'] != t('Remove')) {
+    $result = db_query("SELECT COUNT(order_id) AS orders FROM {uc_orders} WHERE "
+                      ."delivery_country = %d OR billing_country = %d",
+                       $country_id, $country_id);
+    if (($data = db_fetch_object($result))) {
+      if ($data->orders > 0) {
+        drupal_set_message(t('Warning: !number orders were found with addresses in this country. Removing this country now will cause errors to show on those order pages. You might consider simply disabling this country instead.', array('!number' => $data->orders)), 'error');
+      }
     }
   }
 
@@ -993,7 +1001,7 @@ function uc_store_settings() {
   $form['general']['uc_store_city'] = uc_textfield(t('City'), variable_get('uc_store_city', NULL), FALSE);
   $form['general']['uc_store_zone'] = uc_zone_select(t('Zone'), variable_get('uc_store_zone', NULL), FALSE);
   $form['general']['uc_store_postal_code'] = uc_textfield(t('Postal Code'), variable_get('uc_store_postal_code', NULL), FALSE, NULL, 10);
-  $form['general']['uc_store_country'] = uc_country_select(t('Country'), variable_get('uc_store_country', 223));
+  $form['general']['uc_store_country'] = uc_country_select(t('Country'), variable_get('uc_store_country', 840));
 
   $form['currency'] = array(
     '#type' => 'fieldset',
@@ -1186,7 +1194,7 @@ function uc_store_js_util($func) {
       $output = uc_currency_format($amount);
       break;
     case 'zone_select':
-      $country_id = is_numeric($_POST['country_id']) ? $_POST['country_id'] : variable_get('uc_store_country', 223);
+      $country_id = is_numeric($_POST['country_id']) ? $_POST['country_id'] : variable_get('uc_store_country', 840);
       $title = isset($_POST['title']) ? check_plain($_POST['title']) : NULL;
       $select = uc_zone_select($title, NULL, NULL, $country_id);
       $select['#parents'] = array();
@@ -1328,6 +1336,7 @@ function uc_weight_format($value) {
  * Save the address format for a country.
  */
 function uc_set_address_format($country_id, $format) {
+  $country = intval($country_id);
   variable_set('uc_address_format_'. $country_id, $format);
 }
 
@@ -1364,7 +1373,7 @@ function uc_address_format($first_name, $last_name, $company, $street1, $street2
     '!country_code3' => $country_data['country_iso_code_3'],
   );
 
-  if (variable_get('uc_store_country', 223) != $country) {
+  if (variable_get('uc_store_country', 840) != $country) {
     $variables['!country_name_if'] = $country_data['country_name'];
     $variables['!country_code2_if'] = $country_data['country_iso_code_2'];
     $variables['!country_code3_if'] = $country_data['country_iso_code_3'];
@@ -1521,13 +1530,18 @@ function uc_textfield($title, $default = NULL, $required = TRUE, $description = 
  */
 function uc_zone_select($title, $default = NULL, $description = NULL, $country = NULL, $display = 'name') {
   if ($country == NULL) {
-    $country = variable_get('uc_store_country', 223);
+    $country = variable_get('uc_store_country', 840);
   }
-  //$result = db_query("SELECT * FROM {uc_zones} WHERE zone_country_id = %d ORDER BY %s", $country, ($display == 'code') ? 'zone_code' : 'zone_name');
-  $result = db_query("SELECT * FROM {uc_zones} WHERE zone_country_id = %d", $country);
-  $options[] = t('Please Select');
-  while ($zone = db_fetch_object($result))
+  $result = db_query("SELECT * FROM {uc_zones} WHERE zone_country_id = %d ORDER BY %s", $country, ($display == 'code') ? 'zone_code' : 'zone_name');
+  if (db_num_rows($result) == 0) {
+    $options[] = t('Not applicable');
+  }
+  else {
+    $options[] = t('Please Select');
+  }
+  while ($zone = db_fetch_object($result)) {
     $options[$zone->zone_id] = ($display == 'code') ? $zone->zone_code : $zone->zone_name;
+  }
 
   $select = array(
     '#type' => 'select',
@@ -1719,7 +1733,7 @@ function _country_import_list() {
           case 'file':
             if (substr($file, -4, 4) == '.cif') {
               $pieces = explode('_', substr($file, 0, strlen($file) - 4));
-              $country_id = $pieces[count($pieces) - 2];
+              $country_id = intval($pieces[count($pieces) - 2]);
               $version = $pieces[count($pieces) - 1];
               
               if (!isset($countries[$country_id])) {
@@ -1771,3 +1785,12 @@ function _country_import_include($country_id, $version) {
   return FALSE;
 }
 
+/**
+ * Return an array of IDs to use for country file zone INSERTs!
+ */
+function uc_get_zone_ids($num) {
+  for ($i = 0; $i < $num; $i++) {
+    $ids[] = db_next_id('{uc_zones}_zone_id');
+  }
+  return $ids;
+}

@@ -245,7 +245,7 @@ function uc_order_user($op, &$edit, &$account, $category = null){
 
 /**
  * Implementation of hook_forms().
- */
+ *
 function uc_order_forms() {
   $args = func_get_args();
   $forms['uc_order_action_form_'. $args[0][1]] = array(
@@ -254,7 +254,7 @@ function uc_order_forms() {
   );
 
   return $forms;
-}
+}*/
 
 function uc_order_product_forms() {
   return array('uc_order_add_product_form');
@@ -679,7 +679,7 @@ function uc_order_admin_sort_form_submit($form_id, $form_values) {
 
 /**
  * Create the action select box on the order overview screen.
- */
+ *
 function uc_order_admin_action_form($order_id, $order_status) {
   $form['order_id'] = array(
     '#type' => 'hidden',
@@ -727,7 +727,7 @@ function uc_order_admin_action_form_submit($form_id, $form_values) {
       drupal_goto(str_replace('%order_id', $form_values['order_id'], $action['url']));
     }
   }
-}
+}*/
 
 /**
  * Create a new order and redirect to its edit screen.
@@ -1135,7 +1135,7 @@ function theme_uc_order_edit_form($form) {
     if (in_array('edit', $pane['show']) &&
         variable_get('uc_order_pane_'. $pane['id'] .'_show_edit', TRUE)) {
       $func = $pane['callback'];
-      if (function_exists($func) && ($contents = $func('edit-theme', &$form)) != NULL) {
+      if (function_exists($func) && ($contents = _call_order_pane_byref($func, 'edit-theme', $form)) != NULL) {
         if (is_array($pane['theme_all']) && in_array('edit', $pane['theme_all'])) {
           $output .= $contents;
         }
@@ -1943,8 +1943,10 @@ function uc_order_pane_products($op, $arg1) {
         'select' => 'add_product_form();',
       );
 
-      $output = ubrowser_button(t('Add Product'), $settings, NULL, 'add-product-button')
-               .' <input type="button" value="'. t('Add Blank Line')
+      if (module_exists('uc_catalog')) {
+        $output = ubrowser_button(t('Add Product'), $settings, NULL, 'add-product-button') .' ';
+      }
+      $output .= '<input type="button" value="'. t('Add Blank Line')
                .'" onclick="add_blank_line_button('. $arg1['order_id']['#value']
                .');" />';
       return $output;
@@ -2583,7 +2585,7 @@ function uc_order_new($uid = 0, $order_status = 0) {
   db_query("INSERT INTO {uc_orders} (order_id, uid, order_status, primary_email, created) "
           ."VALUES (%d, %d, %d, '%s', %d)", $order->order_id, $uid, $order_status, $email, time());
 
-  module_invoke_all('order', 'new', &$order, NULL);
+  uc_order_invoke_all('new', $order, NULL);
 
   return $order;
 }
@@ -2606,11 +2608,11 @@ function uc_order_save($order) {
            $order->primary_email, $order->delivery_first_name, $order->delivery_last_name, $order->delivery_phone,
            $order->delivery_company, $order->delivery_street1, $order->delivery_street2,
            $order->delivery_city, $order->delivery_zone, $order->delivery_postal_code,
-           ((is_null($order->delivery_country) || $order->delivery_country == 0) ? variable_get('uc_store_country', 223) : $order->delivery_country),
+           ((is_null($order->delivery_country) || $order->delivery_country == 0) ? variable_get('uc_store_country', 840) : $order->delivery_country),
            $order->billing_first_name, $order->billing_last_name, $order->billing_phone,
            $order->billing_company, $order->billing_street1, $order->billing_street2,
            $order->billing_city, $order->billing_zone, $order->billing_postal_code,
-           ((is_null($order->billing_country) || $order->billing_country == 0) ? variable_get('uc_store_country', 223) : $order->billing_country),
+           ((is_null($order->billing_country) || $order->billing_country == 0) ? variable_get('uc_store_country', 840) : $order->billing_country),
            $order->payment_method, time(), $order->order_id);
 
   db_query("DELETE FROM {uc_order_products} WHERE order_id = %d", $order->order_id);
@@ -2660,7 +2662,7 @@ function uc_order_load($order_id) {
     $order->products[] = $product;
   }
 
-  module_invoke_all('order', 'load', &$order, NULL);
+  uc_order_invoke_all('load', $order, NULL);
 
   // Load line items... has to be last after everything has been loaded.
   $stored_items = uc_order_load_line_items($order->order_id, TRUE);
@@ -2869,7 +2871,7 @@ function uc_order_address($order, $type) {
   );
 
   if (variable_get('uc_order_capitalize_addresses', TRUE)) {
-    $address = strtoupper($address);
+    $address = drupal_strtoupper($address);
   }
   
   return $address;
@@ -3062,4 +3064,18 @@ function uc_order_line_item_add($order_id, $type, $title, $amount, $weight = NUL
          $order_id, $type, $title, $amount, $weight);
 
   return TRUE;
+}
+
+/**
+ * Call an order pane function with the argument passed by reference.
+ */
+function _call_order_pane_byref($func, $op, &$form) {
+  return $func($op, $form);
+}
+
+/**
+ * Invoke hook_order in cases where the argument must be passed by reference.
+ */
+function uc_order_invoke_all($op, &$order, $arg2) {
+  module_invoke_all('order', $op, $order, $arg2);
 }

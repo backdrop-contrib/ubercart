@@ -93,7 +93,7 @@ function uc_cart_block($op = 'list', $delta = 0, $edit = array()) {
 
     return $blocks;
   }
-  elseif ($op == 'view' && arg(0) != 'admin') {
+  elseif ($op == 'view') {
     if (variable_get('uc_cart_expanded', FALSE)) {
       drupal_add_js('var expanded_block = true;', 'inline');
     }
@@ -530,7 +530,7 @@ function uc_cart_view_form($items = NULL) {
 
 //  $form['check-all-items'] = array('#type' => 'checkbox_check_all', '#title' => t('Select All'), '#value' => 'items');
 
-  $form['submit'] = array(
+  $form['update'] = array(
     '#type' => 'submit',
     '#value' => t('Update Cart'),
   );
@@ -549,12 +549,14 @@ function theme_uc_cart_view_form($form) {
           . tapir_get_table('uc_cart_view_table', $form) .'</div>';
 
   $output .= '<br /><table class="solid-border full-width"><tr><td align="right">'
-           . drupal_render($form) .'</td></tr></table>';
+           . drupal_render($form['order_id']) . drupal_render($form['form_id'])
+           . drupal_render($form['form_token']) . drupal_render($form['update'])
+           . drupal_render($form['checkout']) .'</td></tr></table>';
 
   return $output;
 }
 
-function uc_cart_view_table($op, $form) {
+function uc_cart_view_table($op, &$form) {
   switch ($op) {
     case 'fields':
       $fields[] = array('name' => 'remove', 'title' => t('Remove'),
@@ -817,7 +819,7 @@ function uc_cart_checkout_review_form() {
 
 function uc_cart_checkout_review_form_submit($form_id, $form_values) {
   switch ($form_values['op']) {
-    case t('Submit Order'):
+    case variable_get('uc_checkout_submit_button', t('Submit Order')):
       // Invoke hook_order($op = 'submit') to test to make sure the order can
       // be completed... used for auto payment in uc_credit.module.
       $pass = module_invoke_all('order', 'submit', uc_order_load($_SESSION['cart_order']), NULL);

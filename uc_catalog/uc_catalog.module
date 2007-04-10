@@ -131,7 +131,7 @@ function uc_catalog_taxonomy($op, $type, $object = null){
           $field_name = 'image';
           if ($file = file_check_upload($field_name)) {
             $file->filepath = str_replace('\\', '/', $file->filepath);
-            $file = file_save_upload($field_name, file_create_path('images') .'/'. $file->filename);
+            $file = file_save_upload($field_name, file_create_path('ubercart_images') .'/'. $file->filename);
             if ($file) {
               if (image_get_info($file->filepath)) {
                 db_query("INSERT INTO {uc_catalog_images} (fid, tid, filename, filepath, filemime, filesize) VALUES (%d, %d, '%s', '%s', '%s', %d)",
@@ -149,7 +149,7 @@ function uc_catalog_taxonomy($op, $type, $object = null){
           $field_name = 'image';
           if ($file = file_check_upload($field_name)) {
             $file->filepath = str_replace('\\', '/', $file->filepath);
-            $file = file_save_upload($field_name, file_create_path('images') .'/'. $file->filename);
+            $file = file_save_upload($field_name, file_create_path('ubercart_images') .'/'. $file->filename);
             if ($file) {
               if (image_get_info($file->filepath)) {
                 db_query("DELETE FROM {uc_catalog_images} WHERE tid = %d", $object['tid']);
@@ -253,7 +253,7 @@ function uc_catalog_block($op = 'list', $delta = 0, $edit = array()){
         $content .= $html;
       }
       $content .= "</ul>";
-      $block = array('subject' => t('Catalog'), 'content' => $content);
+      $block = array('subject' => l(t('Catalog'), 'catalog'), 'content' => $content);
       return $block;
   }
 }
@@ -455,7 +455,7 @@ function uc_catalog_browse(){
     $name = t('Catalog');
   }
   drupal_set_title($name);
-  uc_catalog_set_breadcrumb($tid);
+  drupal_set_breadcrumb(uc_catalog_set_breadcrumb($tid));
   $children = taxonomy_get_children($tid, $vid);
   $output = '';
   //$output .= '<pre>'. print_r($parents, true) .'</pre>';
@@ -638,10 +638,10 @@ function uc_catalog_set_breadcrumb($tid, $is_node = false){
       }
     }
     //print '<pre>'. print_r($breadcrumbs, true) .'</pre>';
-    drupal_set_breadcrumb($breadcrumbs);
+    return $breadcrumbs;
   }
   else{
-    // is this a do nothing? or display nothing?
+    return null;
   }
 }
 

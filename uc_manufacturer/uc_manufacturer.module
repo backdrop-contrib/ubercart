@@ -21,11 +21,11 @@ function uc_manufacturer_help($section){
   switch($section){
     case 'admin/settings/module#description':
       $output = 'Information about the companies that sell equipment they make.';
-      break;
-    case 'manufacturer':
+    break;
+/*     case 'manufacturer':
       $output = 'Lists manufacturers associated with taxonomy terms. Make sure all information is current. ';
       $output .= l(t('Add manufacturers here.'), 'admin/content/taxonomy/'. variable_get('uc_manufacturer_vid', 0) .'/add/term');
-      break;
+    break; */
   }
   return $output;
 }
@@ -66,7 +66,7 @@ function uc_manufacturer_menu($may_cache){
   }
   else{
     $items[] = array('path' => 'manufacturer/'. arg(1),
-      'title' => t('View Manufacturer'),
+      'title' => t('Manufacturer'),
       'access' => user_access('administer manufacturers'),
       'callback' => 'uc_manufacturer_all',
       'callback arguments' => array('view', arg(1)),
@@ -112,20 +112,20 @@ function uc_manufacturer_taxonomy($op, $type, $object = null){
             $field_name = 'logo';
             if ($file = file_check_upload($field_name)) {
               $file->filepath = str_replace('\\', '/', $file->filepath);
-              $file = file_save_upload($field_name, file_create_path('images') .'/'. $file->filename);
+              $file = file_save_upload($field_name, file_create_path('ubercart_images') .'/'. $file->filename);
               if ($file) {
-                if (!image_get_info($file->filepath)) {
+                if (image_get_info($file->filepath)) {
+                  $filepath = $file->filepath;
+                }
+                else{
                   form_set_error($field_name, t('Uploaded file is not a valid image'));
-                  $logo = 'File error.';
+                  file_delete($file->filepath);
+                  $filepath = '';
                 }
               }
-              $logo = $file->filepath;
             }
-            /* else{
-              $logo = 'File not found.';
-            } */
             db_query("INSERT INTO {uc_manufacturers} (tid, url, logo, phone_no, fax_no) VALUES (%d, '%s', '%s', '%s', '%s')",
-              $object['tid'], $object['url'], $logo, $object['phone_no'], $object['fax_no']);
+              $object['tid'], $object['url'], $filepath, $object['phone_no'], $object['fax_no']);
           break;
           case 'update':
             $field_name = 'logo';
@@ -202,6 +202,9 @@ function uc_manufacturer_form_alter($form_id, &$form){
       '#description' => t('Fax number'),
       '#weight' => 3,
     );
+    if (arg(0) == 'manufacturer'){
+      $form['#redirect'] = 'manufacturer';
+    }
   }
   if ($form_id == 'uc_order_edit_products_form'){
     foreach (element_children($form['products']) as $product){
@@ -377,7 +380,7 @@ function uc_manufacturer_store_status(){
 /**
  * Displays a list of all manufacturers.
  */
-function uc_manufacturer_all($op, $tid = 0){
+function uc_manufacturer_all($op = 'list', $tid = 0){
   $breadcrumb = array(l(t('Home'), ''), l(t('Manufacturers'), 'manufacturer'));
   drupal_set_breadcrumb($breadcrumb);
   $output = '';
@@ -406,6 +409,14 @@ function uc_manufacturer_form($manufacturer){
   $form['edit']['tid'] = array('#type' => 'value',
     '#value' => $manufacturer->tid,
     );
+  $form['edit']['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Manufacturer name'),
+    '#default_value' => $edit['name'],
+    '#description' => t('The name of this manufacturer.'),
+    '#weight' => -2,
+    '#required' => TRUE
+  );
   $form['edit']['image'] = array('#type' => 'file',
     '#title' => t('Logo'),
     //'#default_value' => $node->images['_original'],
@@ -439,19 +450,6 @@ function uc_manufacturer_form($manufacturer){
 }
 
 /**
- * Validate function for uc_manufacturer_form()
- */
-function uc_manufacturer_form_validate($form_id, $form_values){
-  $pattern = '/^1?\s*(?:\(?\d{3}\)?-?\s*)?\d{3}-?\s*\d{4}\s*/';
-  if (isset($form_values['phone_no']['#value']) && !preg_match($pattern, $form_values['phone_no']['#value'])){
-    form_set_error('phone_no', 'Phone number is not in correct American format.');
-  }
-  if (isset($form_values['fax_no']['#value']) && !preg_match($pattern, $form_values['fax_no']['#value'])){
-    form_set_error('fax_no', 'Fax number is not in correct American format.');
-  }
-}
-
-/**
  * Submit function for uc_manufacturer_form().
  */
 function uc_manufacturer_form_submit($form_id, $form_values){
@@ -476,9 +474,8 @@ function uc_manufacturer_admin_settings(){
   if ($vid){
     $catalog = taxonomy_get_vocabulary($vid);
     $output .= t('Vocabulary !name is set as the manufacturer list. ', array('!name' => l($catalog->name, 'admin/content/taxonomy/'. $catalog->vid)));
-    //$output .= l(t('Add manufacturers here.'), 'admin/content/taxonomy/'. $vid .'/add/term');
-    drupal_set_message($output);
-    drupal_goto('admin/content/taxonomy/'. $vid);
+    $output .= l(t('Add manufacturers here.'), 'admin/content/taxonomy/'. $vid .'/add/term');
+    $output .= uc_manufacturer_all();
   }
   else{
     $output .= t('A manufacturer vocabulary has not been set up yet. To start one, click <a href="admin/store/manufacturers/setup">here.</a>');
@@ -496,7 +493,7 @@ function uc_manufacturer_admin_settings(){
  */
 function uc_manufacturer_edit($tid){
   $manufacturer = uc_manufacturer_load($tid);
-  return drupal_get_form('uc_manufacturer_form', $manufacturer);
+  return drupal_get_form('taxonomy_form_term', variable_get('uc_manufacturer_vid', 0), (array)$manufacturer);
 }
 
 /**
@@ -508,7 +505,7 @@ function uc_manufacturer_edit($tid){
  *   The manufacturer object.
  */
 function uc_manufacturer_load($tid){
-  return db_fetch_object(db_query("SELECT m.*, t.name FROM {uc_manufacturers} m JOIN {term_data} t ON m.tid = t.tid WHERE m.tid = %d", $tid));
+  return db_fetch_object(db_query("SELECT m.*, t.* FROM {uc_manufacturers} m JOIN {term_data} t ON m.tid = t.tid WHERE m.tid = %d", $tid));
 }
 
 /**
@@ -523,8 +520,9 @@ function theme_uc_manufacturer($manufacturer){
   if ($manufacturer){
     $output  = '<div class="manufacturer">';
     $output .= l($manufacturer->name, 'manufacturer/'. $manufacturer->tid) .'<br />';
-    if ($manufacturer->logo && $manufacturer->logo != 'File not found.'){
-      $output .= l('<img src="'. base_path() . $manufacturer->logo .'" alt="'. $manufacturer->name .' Logo" />', $manufacturer->url, array('target' => '_blank'), null, null, false, true);
+    if ($manufacturer->logo){
+      $output .= l(theme('imagecache', 'manufacturer', $manufacturer->logo), $manufacturer->url, array('target' => '_blank'), null, null, false, true);
+      //$output .= l('<img src="'. base_path() . $manufacturer->logo .'" alt="'. $manufacturer->name .' Logo" />', $manufacturer->url, array('target' => '_blank'), null, null, false, true);
     }
     //$output .= l(t('Edit'), 'manufacturer/'. $manufacturer->tid .'/edit') .'<br />';
     $output .= "<ul>\n";

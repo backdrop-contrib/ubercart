@@ -1,0 +1,31 @@
+<?php
+// $Id$
+
+function canada_install() {
+  // VALUES = Country ID, Country Name, 2-digit Code, 3-digit Code, File Version
+  db_query("INSERT INTO {uc_countries} VALUES (124, 'Canada', 'CA', 'CAN', 1)");
+
+  // VALUES = %d for ID, Parent Country ID, Zone Abbreviation, Zone Name
+  $ids = array();
+  for ($i = 0; $i < 13; $i++) {
+      $ids[] = db_next_id('{uc_zones}_zone_id');
+  }
+  db_query("INSERT INTO {uc_zones} VALUES "
+          ."(%d, 124, 'AB', 'Alberta'),"
+          ."(%d, 124, 'BC', 'British Columbia'),"
+          ."(%d, 124, 'MB', 'Manitoba'),"
+          ."(%d, 124, 'NF', 'Newfoundland'),"
+          ."(%d, 124, 'NB', 'New Brunswick'),"
+          ."(%d, 124, 'NS', 'Nova Scotia'),"
+          ."(%d, 124, 'NT', 'Northwest Territories'),"
+          ."(%d, 124, 'NU', 'Nunavut'),"
+          ."(%d, 124, 'ON', 'Ontario'),"
+          ."(%d, 124, 'PE', 'Prince Edward Island'),"
+          ."(%d, 124, 'QC', 'Quebec'),"
+          ."(%d, 124, 'SK', 'Saskatchewan'),"
+          ."(%d, 124, 'YT', 'Yukon Territory')", $ids);
+
+  variable_set('uc_address_format_124',
+               "!company\r\n!first_name !last_name\r\n!street1\r\n!street2"
+              ."\r\n!city, !postal_code\r\n!zone_name, !country_name");
+}
