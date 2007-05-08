@@ -65,8 +65,14 @@ function uc_notify_order($op, $arg1, $status){
       $order = uc_order_load($arg1);
       if ($order->order_status == 0 && $status == 1) {
         $variables = uc_notify_variables();
-        $variables['@customer_first_name'] = $order->billing_first_name;
-        $variables['@customer_last_name'] = $order->billing_last_name;
+        if (variable_get('uc_customer_list_address', 'billing') == 'shipping') {
+          $variables['@customer_first_name'] = $order->delivery_first_name;
+          $variables['@customer_last_name'] = $order->delivery_last_name;
+        }
+        else {
+          $variables['@customer_first_name'] = $order->billing_first_name;
+          $variables['@customer_last_name'] = $order->billing_last_name;
+        }
         $variables['@order_url'] = url('user/'. $order->uid .'/order/'
                                      . $order->order_id, null, null, true);
         $variables['!order_id'] = $order->order_id;
@@ -106,6 +112,17 @@ function uc_notify_order($op, $arg1, $status){
         // TODO: get the real HTML invoice when it's written.
         $variables['!invoice'] = $order->invoice;
         $body = variable_get('uc_notify_checkout_body', _checkout_email());
+        if (variable_get('uc_notify_admin_checkout_enable', false)){
+          $admin = user_load(array('uid' => 1));
+          $admin_body = variable_get('uc_notify_admin_checkout_body', _admin_checkout_email());
+          drupal_mail('admin_checkout', $admin->mail,
+                      strtr(variable_get('uc_notify_admin_checkout_subject',
+                        'An Order at @site'), $variables),
+                      check_markup(strtr($admin_body, $variables),
+                        variable_get('uc_notify_admin_checkout_format', 3), false),
+                      variable_get('uc_store_email_from',  ini_get('sendmail_from')),
+                      uc_notify_headers());
+        }
         $sent = drupal_mail('checkout', $order->primary_email, 
                             strtr(variable_get('uc_notify_checkout_subject',
                               'Your Order at @site'), $variables),
@@ -146,7 +163,7 @@ function uc_notify_admin_settings(){
                          !order_id, and !invoice.'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
-    '#weight' => -1,
+    '#weight' => -5,
   );
   $form['checkout']['uc_notify_checkout_subject'] = array(
     '#type' => 'textfield',
@@ -161,6 +178,35 @@ function uc_notify_admin_settings(){
   );
   $form['checkout']['uc_notify_checkout_format'] = filter_form(variable_get('uc_notify_checkout_format', 3), 1, array('checkout', 'uc_notify_checkout_format'));
   
+  $form['admin_checkout'] = array('#type' => 'fieldset',
+    '#title' => t('New order notification for admiinistrator'),
+    '#description' => t('This is the template used to format the notification 
+                         email for new orders to administrators. The available
+                         variables are @site, @login_url, @sales_email, @phone, 
+                         @customer_first_name, @customer_last_name, !new_user, 
+                         !order_id, and !invoice.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#weight' => 0,
+  );
+  $form['admin_checkout']['uc_notify_admin_checkout_enable'] = array('#type' => 'radios',
+    '#title' => t('Enable notification'),
+    '#options' => array(1 => t('Yes'), 0 => t('No')),
+    '#default_value' => variable_get('uc_notify_admin_checkout_enable', 0),
+  );
+  $form['admin_checkout']['uc_notify_admin_checkout_subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Subject'),
+    '#default_value' => variable_get('uc_notify_admin_checkout_subject', 
+                                     t('New Order Notification')),
+  );
+  $form['admin_checkout']['uc_notify_admin_checkout_body'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Body'),
+    '#default_value' => variable_get('uc_notify_admin_checkout_body', _admin_checkout_email()),
+  );
+  $form['admin_checkout']['uc_notify_admin_checkout_format'] = filter_form(variable_get('uc_notify_admin_checkout_format', 3), 1, array('admin_checkout', 'uc_notify_admin_checkout_format'));
+  
   $form['status'] = array('#type' => 'fieldset',
     '#title' => t('Order status notification settings'),
     '#description' => t('This is the template used to format the notification 
@@ -170,7 +216,7 @@ function uc_notify_admin_settings(){
                          !comment, and !status.'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
-    '#weight' => 0,
+    '#weight' => 5,
   );
   $form['status']['uc_notify_status_subject'] = array('#type' => 'textfield',
     '#title' => t('Subject'),
@@ -185,6 +231,7 @@ function uc_notify_admin_settings(){
   
   $form['#submit']['uc_notify_save_formats'] = array();
   
+  $form['buttons'] = array('#weight' => 10);
   $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
   $form['buttons']['reset'] = array('#type' => 'submit', '#value' => t('Reset to defaults') );
 
@@ -201,6 +248,10 @@ function uc_notify_save_formats($form_id, $form_values){
     variable_del('uc_notify_checkout_subject');
     variable_del('uc_notify_checkout_body');
     variable_del('uc_notify_checkout_format');
+    variable_del('uc_notify_admin_checkout_enable');
+    variable_del('uc_notify_admin_checkout_subject');
+    variable_del('uc_notify_admin_checkout_body');
+    variable_del('uc_notify_admin_checkout_format');
     variable_del('uc_notify_status_subject');
     variable_del('uc_notify_status_body');
     variable_del('uc_notify_status_format');
@@ -209,6 +260,10 @@ function uc_notify_save_formats($form_id, $form_values){
     variable_set('uc_notify_checkout_subject', $form_values['uc_notify_checkout_subject']);
     variable_set('uc_notify_checkout_body', $form_values['uc_notify_checkout_body']);
     variable_set('uc_notify_checkout_format', $form_values['checkout']['uc_notify_checkout_format']);
+    variable_set('uc_notify_admin_checkout_enable', $form_values['uc_notify_admin_checkout_enable']);
+    variable_set('uc_notify_admin_checkout_subject', $form_values['uc_notify_admin_checkout_subject']);
+    variable_set('uc_notify_admin_checkout_body', $form_values['uc_notify_admin_checkout_body']);
+    variable_set('uc_notify_admin_checkout_format', $form_values['admin_checkout']['uc_notify_admin_checkout_format']);
     variable_set('uc_notify_status_subject', $form_values['uc_notify_status_subject']);
     variable_set('uc_notify_status_body', $form_values['uc_notify_status_body']);
     variable_set('uc_notify_status_format', $form_values['status']['uc_notify_status_format']);
@@ -219,8 +274,14 @@ function uc_notify_order_comment($form_id, $form_values){
   $order = uc_order_load($form_values['order_id']);
   if ($form_values['notify']) {
     $variables = uc_notify_variables();
-    $variables['@customer_first_name'] = $order->billing_first_name;
-    $variables['@customer_last_name'] = $order->billing_last_name;
+    if (variable_get('uc_customer_list_address', 'billing') == 'shipping') {
+      $variables['@customer_first_name'] = $order->delivery_first_name;
+      $variables['@customer_last_name'] = $order->delivery_last_name;
+    }
+    else {
+      $variables['@customer_first_name'] = $order->billing_first_name;
+      $variables['@customer_last_name'] = $order->billing_last_name;
+    }
     $variables['!order_id'] = $order->order_id;
     $variables['@order_url'] = url('user/'. $order->uid .'/order/'
                                  . $order->order_id, null, null, true);
@@ -252,7 +313,7 @@ function uc_notify_order_comment($form_id, $form_values){
 function uc_notify_variables() {
   return array(
     '@site' => variable_get('uc_store_name', t('our store')),
-    '@login_url' => url('user/login/', null, null, true),
+    '@login_url' => url('user', null, null, true),
     '@sales_email' => variable_get('uc_store_email_from', ''),
     '@phone' => variable_get('uc_store_phone', '')
   );
@@ -261,10 +322,18 @@ function uc_notify_variables() {
 /**
  * Return the headers for the notification emails.
  */
-function uc_notify_headers() {
-  return array(
+function uc_notify_headers($extras = array()) {
+  $extras += array(
     'Content-Type' => 'text/html; charset=UTF-8; format=flowed',
   );
+  return $extras;
+}
+
+function _admin_checkout_email(){
+  $output = "@customer_first_name @customer_last_name has made a purchase at @site.\n\n"
+           ."The order number is !order_id.\n\n"
+           ."The order invoice is:\n!invoice";
+  return $output;
 }
 
 /**

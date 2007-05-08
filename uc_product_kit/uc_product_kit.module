@@ -25,7 +25,7 @@ function uc_product_kit_menu($may_cache){
       'access' => user_access('administer products'),
       'callback' => 'drupal_get_form',
       'callback arguments' => 'uc_product_kit_admin_settings',
-    );*/
+    );
     $items[] = array('path' => 'admin/store/products/create_kit',
       'title' => t('Create product kit'),
       'access' => user_access('administer products'),
@@ -33,7 +33,7 @@ function uc_product_kit_menu($may_cache){
       'callback arguments' => array('kit'),
       'type' => MENU_NORMAL_ITEM,
       'weight' => -8,
-    );
+    );*/
   }
   return $items;
 }
@@ -42,11 +42,15 @@ function uc_product_kit_menu($may_cache){
  * Implementation of hook_node_info().
  */
 function uc_product_kit_node_info(){
-  return array('kit' => array('name' => t('Product kit'), 'module' => 'uc_product_kit', 'description' => 
-    'This node represents two or more products that have been listed together. This presents a logical and'
-    . ' convenient grouping of items to the customer.'),
-    'title_label' => t('Name'),
-    'body_label' => t('Description'),
+  return array(
+    'kit' => array(
+      'name' => t('Product kit'),
+      'module' => 'uc_product_kit',
+      'description' => t('This node represents two or more products that have been listed together. This presents a logical and'
+      . ' convenient grouping of items to the customer.'),
+      'title_label' => t('Name'),
+      'body_label' => t('Description'),
+    ),
   );
 }
 
@@ -64,12 +68,7 @@ function uc_product_kit_insert(&$node){
   }
   $placeholders = rtrim($placeholders, ', ');
   db_query("INSERT INTO {uc_product_kits} (nid, product_id, qty) VALUES $placeholders", $values);
-  if(function_exists('image_prepare') && function_exists('image_insert')){
-    image_prepare($node, 'image');
-    if ($node->images['_original'] != ''){
-      image_insert($node);
-    }
-  }
+  db_query("INSERT INTO {uc_products} (nid, unique_hash) VALUES (%d, '%s')", $node->nid, md5($node->nid . implode('', $values) . time()));
   //drupal_set_message($placeholders . print_r($values, true));
 }
 
@@ -102,6 +101,7 @@ function uc_product_kit_update(&$node){
  */
 function uc_product_kit_delete(&$node) {
   db_query("DELETE from {uc_product_kits} WHERE nid = %d", $node->nid);
+  uc_product_delete($node);
 }
 
 /**
@@ -139,11 +139,21 @@ function uc_product_kit_load(&$node){
     $obj->sell_price += $product->sell_price * $product->qty;
     $obj->weight += $product->weight * $product->qty;
   }
-  $obj->model = rtrim($obj->model, '/ ');
-  if (function_exists('image_load')){
-    image_load($node);
-  }
+  $obj->model = rtrim($obj->model, ' / ');
+  db_query("UPDATE {uc_products} SET model = '%s', list_price = %f, cost = %f, sell_price = %f, weight = %f, pcid = %d WHERE nid = %d",
+    $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->product_class, $node->nid);
   return $obj;
+}
+
+function uc_product_kit_forms(){
+  $products = db_query("SELECT nid FROM {uc_product_kits}");
+
+  while ($prodrow = db_fetch_object($products))
+  {
+    $forms['uc_product_kit_add_to_cart_form_'. $prodrow->nid] = array('callback' => 'uc_product_kit_add_to_cart_form');
+  }
+
+  return $forms;
 }
 
 /**
@@ -165,9 +175,6 @@ function uc_product_kit_form(&$node){
     'sell_price' => t('Sell Price'),
     'weight' => t('Weight'),
   );
-  if (module_exists('image')){
-    $options['image'] = t('Image');
-  }
   $defaults = variable_get('uc_product_default_fields', array_keys($options));
   
   $form['title'] = array('#type' => 'textfield',
@@ -201,14 +208,6 @@ function uc_product_kit_form(&$node){
       );
     }
   }
-  if ($defaults['image']){
-    $form['image'] = array('#type' => 'file',
-      '#title' => t('Image file'),
-      //'#default_value' => $node->images['_original'],
-      '#description' => t('// Put size guidelines here.'),
-      '#weight' => 5,
-    );
-  }
   
   return $form;
 }
@@ -219,9 +218,66 @@ function uc_product_kit_form(&$node){
 function uc_product_kit_view($node, $teaser = 0, $page = 0){
   drupal_set_breadcrumb(array(l(t('Catalog'), 'catalog')));
   $content = theme('uc_product_kit', $node, $teaser);
-  $node->content['body'] = array('#value' => $content);
-  if ($teaser){
+  //$node->content['body'] = array('#value' => $content);
+    $defaults = variable_get('uc_product_default_fields', array(
+    'model' => 'model',
+    'list_price' => 'list_price',
+    'cost' => 'cost',
+    'sell_price' => 'sell_price',
+    'weight' => 'weight',
+  ));
+  if ($defaults['image'] && module_exists('imagecache')){
+    if (isset($node->field_image_cache) && file_exists($node->field_image_cache[0]['filepath'])){
+      $node->content['image'] = array('#value' => theme('uc_product_image', $node->field_image_cache),
+        '#weight' => -2,
+      );
+    }
+  }
+  if ($defaults['display_price']){
+    $node->content['display_price'] = array('#value' => theme('uc_product_display_price', $node->sell_price),
+      '#weight' => -1,
+    );
+  }
+  if (!$teaser){
+    if ($defaults['model']){
+      $node->content['model'] = array('#value' => theme('uc_product_model', $node->model),
+        '#weight' => 0,
+      );
+    }
+    $node->content['body']['#weight'] = 1;
+    if ($defaults['list_price']){
+      $node->content['list_price'] = array('#value' => theme('uc_product_price', $node->list_price, 'list_price'),
+        '#weight' => 2,
+      );
+    }
+    if ($defaults['cost'] && user_access('administer products')){
+      $node->content['cost'] = array('#value' => theme('uc_product_price', $node->cost, 'cost'),
+        '#weight' => 3,
+      );
+    }
+  }
+  else {
     $node->content['#attributes'] = array('style' => 'display: inline');
+  }
+  if ($defaults['sell_price']){
+    $node->content['sell_price'] = array('#value' => theme('uc_product_sell_price', $node->sell_price, $teaser),
+      '#weight' => 4,
+    );
+  }
+  if (!$teaser){
+    if ($defaults['weight']){
+      $node->content['weight'] = array('#value' => theme('uc_product_weight', $node->weight),
+        '#weight' => 5,
+      );
+    }
+    $node->content['products'] = array('#weight' => 6);
+    foreach ($node->products as $product){
+      $node->content['products'][$product->nid]['qty'] = array('#value' => $product->qty .' x '. l($product->title, 'node/'. $product->nid));
+      $node->content['products'][$product->nid]['class'] = array('#value' => theme('uc_product_class', $product));
+    }
+    $node->content['add_to_cart'] = array('#value' => theme('uc_product_kit_add_to_cart', $node),
+      '#weight' => 10,
+    );
   }
   //print '<pre>'. print_r($node, true) .'</pre>';
   return $node;
@@ -279,6 +335,15 @@ function theme_uc_product_kit($node, $teaser){
   return $output;
 }
 
+function uc_product_kit_product_info(){
+  return array(
+    'kit' => array(
+      'module' => 'uc_product_kit',
+      'table' => 'uc_product_kits',
+    )
+  );
+}
+
 /**
  * Wrap the "Add to Cart" form in a <div>.
  *
@@ -303,7 +368,7 @@ function uc_product_kit_add_to_cart_form($node){
   $form['nid'] = array('#type' => 'value', '#value' => $node->nid, );
   $form['products'] = array('#tree' => true);
   foreach ($node->products as $i => $product){
-    $form['products'][$i] = array('#type' => 'fieldset', '#title' => $product->title);
+    $form['products'][$i] = array(/* '#type' => 'fieldset',  */'#title' => $product->title);
     $form['products'][$i]['nid'] = array('#type' => 'hidden', '#value' => $product->nid);
     $form['products'][$i]['qty'] = array('#type' => 'hidden', '#value' => $product->qty);
   }

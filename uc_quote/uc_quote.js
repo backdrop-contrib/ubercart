@@ -52,13 +52,13 @@ function quoteCallback(products){
     var product = $("input[@name^='products[" + i + "]']")
     while (product.length){
       products += "|" + product.filter("[@name$='[nid]']").val();
-      products += "," + product.end().filter("[@name$='[title]']").val();
-      products += "," + product.end().filter("[@name$='[model]']").val();
-      products += "," + product.end().filter("[@name$='[manufacturer]']").val();
-      products += "," + product.end().filter("[@name$='[qty]']").val();
-      products += "," + product.end().filter("[@name$='[cost]']").val();
-      products += "," + product.end().filter("[@name$='[price]']").val();
-      products += "," + product.end().filter("[@name$='[weight]']").val();
+      products += ";" + product.end().filter("[@name$='[title]']").val();
+      products += ";" + product.end().filter("[@name$='[model]']").val();
+      products += ";" + product.end().filter("[@name$='[manufacturer]']").val();
+      products += ";" + product.end().filter("[@name$='[qty]']").val();
+      products += ";" + product.end().filter("[@name$='[cost]']").val();
+      products += ";" + product.end().filter("[@name$='[price]']").val();
+      products += ";" + product.end().filter("[@name$='[weight]']").val();
       i++;
       product = $("input[@name^='products[" + i + "]']")
     }
@@ -106,7 +106,9 @@ function displayQuote(data){
           if (page == "checkout"){
             quoteDiv.find("input:radio[@value=" + i +"]").click(function(){
               var i = $(this).val();
-              set_line_item("shipping", data[i].option_label, Number(data[i].rate).toFixed(2), 1);
+              if (set_line_item != undefined){
+                set_line_item("shipping", data[i].option_label, Number(data[i].rate).toFixed(2), 1);
+              }
             }).end();
           }
         }
@@ -117,7 +119,7 @@ function displayQuote(data){
             + "<label class=\"option\">" + label + " Rate: " + data[i].format + "</label>\n</div>\n"
           );
           if (page == "checkout"){
-            if (label != ""){
+            if (label != "" && set_line_item != undefined){
               set_line_item("shipping", label, Number(data[i].rate).toFixed(2), 1);
             }
           }

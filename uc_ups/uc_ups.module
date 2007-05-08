@@ -50,28 +50,35 @@ function uc_ups_form_alter($form_id, &$form){
     $ups['pkg_type'] = array('#type' => 'select',
       '#title' => t('Package Type'),
       '#options' => _uc_ups_pkg_types(),
-      '#default_value' => $node->pkg_type ? $node->pkg_type : '02',
+      '#default_value' => $node->ups['pkg_type'] ? $node->ups['pkg_type'] : '02',
     );
     $ups['dimensions'] = array('#type' => 'fieldset',
       '#title' => t('Dimensions'),
       '#description' => t('All meausrements in inches.'),
       '#theme' => 'uc_ups_dimensions',
     );
+    $ups['dimensions']['units'] = array('#type' => 'select',
+      '#title' => t('Units of measurement'),
+      '#options' => array(
+        'IN' => t('Inches'),
+        'CM' => t('Centimeters'),
+      ),
+      '#default_value' => $node->ups ? $node->ups['units'] : variable_get('uc_fedex_length_unit', 'IN'),
+    );
     $ups['dimensions']['length'] = array('#type' => 'textfield',
       '#title' => t('Length'),
-      '#default_value' => $node->length,
+      '#default_value' => $node->ups['length'],
     );
     $ups['dimensions']['width'] = array('#type' => 'textfield',
       '#title' => t('Width'),
-      '#default_value' => $node->width,
+      '#default_value' => $node->ups['width'],
     );
     $ups['dimensions']['height'] = array('#type' => 'textfield',
       '#title' => t('Height'),
-      '#default_value' => $node->height,
+      '#default_value' => $node->ups['height'],
     );
     
     $form['shipping']['ups'] = $ups;
-    $form['#submit']['uc_ups_product_alter_submit'] = array();
   }
 }
 
@@ -89,23 +96,22 @@ function theme_uc_ups_dimensions($form){
 }
 
 /**
- * Submit function fo uc_ups_form_alter().
- */
-function uc_ups_product_alter_submit($form_id, $form_values){
-  $ups_values = $form_values['ups'];
-  db_query("DELETE FROM {uc_ups_products} WHERE nid = %d", $form_values['nid']);
-  db_query("INSERT INTO {uc_ups_products} (nid, pkg_type, length, width, height) VALUES (%d, '%s', %f, %f, %f)",
-    $form_values['nid'], $ups_values['pkg_type'], $ups_values['dimensions']['length'], $ups_values['dimensions']['width'], $ups_values['dimensions']['height']);
-}
-
-/**
  * Implementation of hook_nodeapi().
  */
 function uc_ups_nodeapi(&$node, $op){
   switch ($op){
+    case 'insert':
+    case 'update':
+      if (isset($node->ups)){
+        $ups_values = $node->ups;
+        db_query("DELETE FROM {uc_ups_products} WHERE nid = %d", $node->nid);
+        db_query("INSERT INTO {uc_ups_products} (nid, pkg_type, length, width, height, units) VALUES (%d, '%s', %f, %f, %f, '%s')",
+          $node->nid, $ups_values['pkg_type'], $ups_values['dimensions']['length'], $ups_values['dimensions']['width'], $ups_values['dimensions']['height'], $ups_values['dimensions']['units']);
+      }
+    break;
     case 'load':
       if (uc_product_get_shipping_type($node) == 'small package'){
-        return db_fetch_array(db_query("SELECT * FROM {uc_ups_products} WHERE nid = %d", $node->nid));
+        return array('ups' => db_fetch_array(db_query("SELECT * FROM {uc_ups_products} WHERE nid = %d", $node->nid)));
       }
     break;
     case 'delete':
@@ -178,7 +184,7 @@ function uc_ups_store_status(){
   }
   else{
     $messages[] = array('status' => 'error', 'title' => t('UPS Online Tools'),
-      'desc' => t('More information is needed to acces UPS Online Tools. Please enter it ') .
+      'desc' => t('More information is needed to access UPS Online Tools. Please enter it ') .
         l('here', 'admin/store/settings/quotes/ups') .'.',
     );
   }
@@ -305,10 +311,11 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service){
   $store['email_from'] = variable_get('uc_store_email_from', NULL);
   $store['phone'] = variable_get('uc_store_phone', NULL);
   $store['fax'] = variable_get('uc_store_fax', NULL);
-  $store['address'] = variable_get('uc_store_address', NULL);
+  $store['address1'] = variable_get('uc_store_street1', NULL);
+  $store['address2'] = variable_get('uc_store_street2', NULL);
   $store['city'] = variable_get('uc_store_city', NULL);
   $store['zone'] = uc_get_zone_code(variable_get('uc_store_zone', NULL));
-  $store['zip'] = variable_get('uc_store_postal_code', NULL); 
+  $store['postal_code'] = variable_get('uc_store_postal_code', NULL); 
   $store['country'] = variable_get('uc_store_default_country', 840);
   
   $account = variable_get('uc_ups_shipper_number', '');
@@ -326,9 +333,48 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service){
     $box->model = $store['name'] .' products';
     $box->weight = 0;
     $box->price = 0;
+    $box->units = 'LBS';
     foreach ($packages as $package){
-      $box->weight += $package->weight * $package->qty;
+      switch ($package->units){
+        case 'GMS':
+          $weight = $package->weight * 2200;
+        break;
+        case 'KGS':
+          $weight = $package->weight * 2.2;
+        break;
+        case 'OZS':
+          $weight = $package->weight / 16;
+        break;
+        case 'LBS':
+        default:
+          $weight = $package->weight;
+        break;
+      }
+      $box->weight += $weight * $package->qty;
+      if ($package->ups['units'] == 'CM'){
+        $length = $package->ups['length'] / 2.54;
+        $width = $package->ups['width'] / 2.54;
+        $height = $package->ups['height'] / 2.54;
+      }
+      else{
+        $length = $package->ups['length'];
+        $width = $package->ups['width'];
+        $height = $package->ups['height'];
+      }
+      $box->ups['length'] += $length;
+      $box->ups['width'] = max($box->ups['width'], $width);
+      $box->ups['height'] = max($box->ups['height'], $height);
       $box->price += $package->price * $package->qty;
+    }
+    $box->ups['pkg_type'] = $package->ups['pkg_type'];
+    // Construct a guess at what the total package dimensions might be.
+    if ($box->ups['length'] > 2 * $box->ups['width']){
+      $box->ups['length'] /= 2;
+      $box->ups['width'] *= 2;
+    }
+    if ($box->ups['length'] > 2 * $box->ups['height']){
+      $box->ups['length'] /= 2;
+      $box->ups['height'] *= 2;
     }
     $packages = array($box);
   }
@@ -360,11 +406,15 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service){
         $schema .= "<EMailAddress>". $store['email'] ."</EMailAddress>";
       }
       $schema .= "<Address>";
-        $schema .= "<AddressLine1>". $store['address'] ."</AddressLine1>";
+        $schema .= "<AddressLine1>". $store['address1'] ."</AddressLine1>";
+        if ($store['address2']){
+          $schema .= "<AddressLine2>". $store['address2'] ."</AddressLine2>";
+        }
         $schema .= "<City>". $store['city'] ."</City>";
         $schema .= "<StateProvinceCode>". $store['zone']."</StateProvinceCode>";
-        $schema .= "<PostalCode>". $store['zip'] ."</PostalCode>";
-        $schema .= "<CountryCode>US</CountryCode>";
+        $schema .= "<PostalCode>". $store['postal_code'] ."</PostalCode>";
+        $country = uc_get_country_data(array('country_id' => $store['country']));
+        $schema .= "<CountryCode>". $country['country_iso_code_2'] ."</CountryCode>";
       $schema .= "</Address>";
     $schema .= "</Shipper>";
     $schema .= "<ShipTo>";
@@ -387,8 +437,9 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service){
         }
         $schema .= "<City>". $destination->city ."</City>";
         $schema .= "<StateProvinceCode>". $destination->zone ."</StateProvinceCode>";
-        $schema .= "<PostalCode>". $destination->zip ."</PostalCode>";
-        $schema .= "<CountryCode>US</CountryCode>";
+        $schema .= "<PostalCode>". $destination->postal_code ."</PostalCode>";
+        $country = uc_get_country_data(array('country_id' => $destination->country));
+        $schema .= "<CountryCode>". $country['country_iso_code_2'] ."</CountryCode>";
         if ($destination->residence){
           $schema .= "<ResidentialAddress/>";
         }
@@ -414,8 +465,9 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service){
         }
         $schema .= "<City>". $origin->city ."</City>";
         $schema .= "<StateProvinceCode>". $origin->zone ."</StateProvinceCode>";
-        $schema .= "<PostalCode>". $origin->zip ."</PostalCode>";
-        $schema .= "<CountryCode>US</CountryCode>";
+        $schema .= "<PostalCode>". $origin->postal_code ."</PostalCode>";
+        $country = uc_get_country_data(array('country_id' => $origin->country));
+        $schema .= "<CountryCode>". $country['country_iso_code_2'] ."</CountryCode>";
       $schema .= "</Address>";
     $schema .= "</ShipFrom>";
     $schema .= "<PaymentInformation>";
@@ -437,41 +489,49 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service){
     foreach ($packages as $package){
       $qty = $package->qty;
       for ($i = 0; $i < $qty; $i++){
-        if ($node = node_load($package->nid)){
-          $size = $node->length + 2 * ($node->width + $node->height);
-          $package_type = array('code' => $node->pkg_type, 'description' => $pkg_types[$node->pkg_type]);
-        }
-        else{
-          $node = new stdClass();
-          $size = 0;
-          $package_type = array('code' => '02', 'description' => t('Customer Supplied Package'));
-        }
+        $size = $package->ups['length'] + 2 * ($package->ups['width'] + $package->ups['height']);
+        $package_type = array('code' => $package->ups['pkg_type'], 'description' => $pkg_types[$package->ups['pkg_type']]);
         $schema .= "<Package>";
           $schema .= "<Description>". $package->model ."</Description>";
           $schema .= "<PackagingType>";
             $schema .= "<Code>". $package_type['code'] ."</Code>";
             $schema .= "<Description>". $package_type['description'] ."</Description>";
           $schema .= "</PackagingType>";
-          if ($node->length && $node->width && $node->height){
-            if ($node->length < $node->width){
-              list($node->length, $node->width) = array($node->width, $node->length);
+          if ($package->ups['pkg_type'] == '02' && $package->ups['length'] && $package->ups['width'] && $package->ups['height']){
+            if ($package->ups['length'] < $package->ups['width']){
+              list($package->ups['length'], $package->ups['width']) = array($package->ups['width'], $package->ups['length']);
             }
             $schema .= "<Dimensions>";
               $schema .= "<UnitOfMeasurement>";
                 $schema .= "<Code>IN</Code>";
                 $schema .= "<Description>Inches</Description>";
               $schema .= "</UnitOfMeasurement>";
-              $schema .= "<Length>". $node->length ."</Length>";
-              $schema .= "<Width>". $node->width ."</Width>";
-              $schema .= "<Height>". $node->height ."</Height>";
+              $schema .= "<Length>". $package->ups['length'] ."</Length>";
+              $schema .= "<Width>". $package->ups['width'] ."</Width>";
+              $schema .= "<Height>". $package->ups['height'] ."</Height>";
             $schema .= "</Dimensions>";
+          }
+          $weight = $package->weight;
+          switch ($package->units){
+            case 'OZS':
+              $weight = $package->weight / 16;
+            case 'LBS':
+              $units = 'LBS';
+              $unit_name = 'Pounds';
+            break;
+            case 'GMS':
+              $package->weight = $package->weight / 1000;
+            case 'KGS':
+              $units = 'KGS';
+              $unit_name = 'Kilograms';
+            break;
           }
           $schema .= "<PackageWeight>";
             $schema .= "<UnitOfMeasurement>";
-              $schema .= "<Code>LBS</Code>";
-              $schema .= "<Description>Pounds</Description>";
+              $schema .= "<Code>$units</Code>";
+              //$schema .= "<Description>Pounds</Description>";
             $schema .= "</UnitOfMeasurement>";
-            $schema .= "<Weight>". $package->weight ."</Weight>";
+            $schema .= "<Weight>". $weight ."</Weight>";
           $schema .= "</PackageWeight>";
           if ($size > 130 && $size <= 165){
             $schema .= "<LargePackageIndicator/>";
@@ -520,6 +580,11 @@ function uc_ups_quote($products, $details){
   
   $method = uc_ups_shipping_method();
   
+  $packages = array();
+  foreach ($products as $product){
+    $packages[$product->ups['pkg_type']][] = $product;
+  }
+
   $dest = (object)$details;
   $dest->zone = uc_get_zone_code($dest->zone);
   
@@ -527,16 +592,20 @@ function uc_ups_quote($products, $details){
   $orig->email = variable_get('uc_store_email', '');
   $orig->zone = uc_get_zone_code($orig->zone);
   foreach (array_keys(array_filter(variable_get('uc_ups_services', array()))) as $ups_service){
-    //foreach (array(false, true) as $residence){
-      $quote = array();
-      $dest->residence = false;
-      $request = uc_ups_shipping_quote($products, $orig, $dest, $ups_service);
+    $quote = array();
+    $dest->residence = false;
+    foreach ($packages as $pkg_type){
+      $request = uc_ups_shipping_quote($pkg_type, $orig, $dest, $ups_service);
       $resp = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') .'ShipConfirm', array(), 'POST', $request);
       $xmlObj = new xml2array();
       $response = $xmlObj->parse($resp->data);
       $error = $response[0]['children'][0]['children'][3]['children'];
       if (isset($error)){
         $quote['error'][] = $error[0]['tagData'] .' '. $error[1]['tagData'] .': '. $error[2]['tagData'];
+        if ($error[0]['tagData'] == 'Hard'){
+          $quotes[$ups_service] = $quote;
+          break;
+        }
       }
       $charges = $response[0]['children'][1]['children'];
       $charge = array();
@@ -554,14 +623,14 @@ function uc_ups_quote($products, $details){
       }
       $rate = $charge['children'][1]['tagData'];
       if ($rate){
-        $rate = uc_ups_markup($rate);
+        $rate = uc_ups_markup($rate) + (isset($quotes[$ups_service]) ? $quotes[$ups_service]['rate'] : 0);
         $quote['rate'] = $rate;
         $quote['format'] = uc_currency_format($rate);
         $quote['option_label'] = $method[0]['quote']['accessorials'][$ups_service];
       }
       //$quote['debug'] = htmlentities($request) .' <br /><br /> '. htmlentities($resp->data);
       $quotes[$ups_service] = $quote;
-    //}
+    }
   }
   
   uasort($quotes, '_uc_ups_sort_quotes');

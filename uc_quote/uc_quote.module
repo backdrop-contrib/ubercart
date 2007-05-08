@@ -46,6 +46,20 @@ function uc_quote_menu($may_cache){
   return $items;
 }
 
+function uc_quote_taxonomy($op, $type, $object = null){
+  switch ($type){
+    case 'term':
+      switch ($op){
+        case 'insert':
+        case 'update':
+          // TODO: Save to {uc_quote_manufacturer_locations}.
+          uc_quote_set_shipping_type('manufacturer', $object['tid'], $object['shipping_type']);
+        break;
+      }
+    break;
+  }
+}
+
 /**
  * Implementation of hook_nodeapi().
  *
@@ -53,18 +67,13 @@ function uc_quote_menu($may_cache){
  */
 function uc_quote_nodeapi(&$node, $op, $arg3 = null, $arg4 = null){
   switch($op){
-    case 'load':
-      $quote_type = db_result(db_query("SELECT quote_type FROM {uc_quote_types} WHERE id_type = 'product' AND id = %d", $node->nid));
-      if (!$quote_type){
-        if (module_exists('uc_manufacturer')){
-          $manufacturer = uc_product_get_manufacturer($node->nid);
-          $quote_type = db_result(db_query("SELECT quote_type FROM {uc_quote_types} WHERE id_type = 'manufacturer' AND id = %d", $manufacturer->tid));
-        }
-        if (!$quote_type){
-          $quote_type = variable_get('uc_store_shipping_quote_type', 'free');
-        }
+    case 'submit':
+      if (isset($node->quote_type)){
+        // TODO: Save to {uc_quote_product_locations}.
+        uc_quote_set_shipping_type('product', $node->nid, $node->shipping_type);
       }
-
+    break;
+    case 'load':
       $shipping_type = db_result(db_query("SELECT shipping_type FROM {uc_quote_shipping_types} WHERE id_type = 'product' AND id = %d", $node->nid));
       if (!$shipping_type){
         if (module_exists('uc_manufacturer')){
@@ -112,6 +121,13 @@ function uc_quote_form_alter($form_id, &$form){
     );
     $form['shipping']['default_address'] = array('#type' => 'fieldset',
       '#title' => t('Default Product Pickup Address'),
+      '#description' => t("When delivering products to customers, the original
+ location of the product must be known in order to accurately quote the shipping
+ cost and set up a delivery. This form provides the default location for products,
+ either individually or an entire manufacturer's line. If a product's individual
+ pickup address is blank, &Uuml;bercart looks for the manufacturer's. If that is
+ also blank, it uses the store's default pickup address, which can be set !here.",
+         array('!here' => l(t('here'), 'admin/store/settings/quotes'))),
       '#collapsible' => true,
       '#collapsed' => true,
     );
@@ -123,20 +139,6 @@ function uc_quote_form_alter($form_id, &$form){
     $form['shipping']['default_address']['zone'] = uc_zone_select(uc_get_field_name('zone'), $address->zone);
     $form['shipping']['default_address']['postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $address->postal_code, FALSE, NULL, 10, 10);
     $form['shipping']['default_address']['country'] = uc_country_select(uc_get_field_name('country'), $address->country);
-    
-    $types = uc_quote_type_options();
-    if (is_array($types)) {
-      $types = array_merge(array('' => t('<Store Default>')), $types);
-    }
-    else {
-      $types = array('' => t('<Store Default>'));
-    }
-    $form['shipping']['quote_type'] = array('#type' => 'select',
-      '#title' => t('Default Shipping Quote Type'),
-      '#default_value' => uc_quote_get_shipping_quote_type($type, $id),
-      '#options' => $types,
-      '#weight' => -2,
-    );
     
     $types = uc_quote_shipping_type_options();
     if (is_array($types)) {
@@ -152,7 +154,7 @@ function uc_quote_form_alter($form_id, &$form){
       '#weight' => -1,
     );
     
-    $form['#submit']['uc_quote_form_alter_submit'] = array($type);
+    //$form['#submit']['uc_quote_form_alter_submit'] = array($type);
   }
 }
 
@@ -162,14 +164,6 @@ function uc_quote_form_alter($form_id, &$form){
  */
 function uc_quote_form_alter_submit($form_id, $form_values, $type){
   if ($type == 'manufacturer'){
-    // TODO: Save to {uc_quote_manufacturer_locations}.
-    uc_quote_set_shipping_quote_type('manufacturer', $form_values['tid'], $form_values['quote_type']);
-    uc_quote_set_shipping_type('manufacturer', $form_values['tid'], $form_values['shipping_type']);
-  }
-  else if ($type == 'product'){
-    // TODO: Save to {uc_quote_product_locations}.
-    uc_quote_set_shipping_quote_type('product', $form_values['nid'], $form_values['quote_type']);
-    uc_quote_set_shipping_type('product', $form_values['nid'], $form_values['shipping_type']);
   }
 }
 
@@ -226,7 +220,6 @@ function uc_quote_order($op, $arg1, $arg2){
     break;
     case 'delete':
       db_query("DELETE FROM {uc_order_quotes} WHERE oid = %d", $arg1);
-      db_query("DELETE FROM {uc_order_fulfillments} WHERE oid = %d", $arg1);
     break;
   }
 }
@@ -284,20 +277,21 @@ function uc_quote_admin_settings(){
       '#default_value' => $weight[$method['id']],
     );
   }
-  
-  $form['uc_store_shipping_quote_type'] = array('#type' => 'select',
-    '#title' => t('Default shipping quote type'),
-    '#options' => uc_quote_type_options(),
-    '#default_value' => variable_get('uc_store_shipping_quote_type', 'pickup'),
-  );
+  $shipping_types = uc_quote_shipping_type_options();
   $form['uc_store_shipping_type'] = array('#type' => 'select',
     '#title' => t('Default order fulfillment type'),
-    '#options' => uc_quote_shipping_type_options(),
+    '#options' => is_array($shipping_types) ? $shipping_types : array(t('No shipping types available.')),
     '#default_value' => variable_get('uc_store_shipping_type', 'pickup'),
   );
   
   $form['default_address'] = array('#type' => 'fieldset',
     '#title' => t('Default Shipping Address'),
+    '#description' => t("When delivering products to customers, the original
+ location of the product must be known in order to accurately quote the shipping
+ cost and set up a delivery. This form provides the default location for products
+ across the entire store. If a product's individual pickup address is blank,
+ &Uuml;bercart looks for the manufacturer's. If that is also blank, it uses the
+ store's default pickup address"),
     '#collapsible' => true,
     '#collapsed' => false,
   );
@@ -336,39 +330,17 @@ function uc_quote_admin_settings_submit($form_id, $form_values){
   $address->city = $form_values['city'];
   $address->zone = $form_values['zone'];
   $address->postal_code = $form_values['postal_code'];
+  $address->country = $form_values['country'];
   
   variable_set('uc_quote_enabled', $form_values['uc_quote_enabled']);
   variable_set('uc_quote_weight', $form_values['uc_quote_weight']);
   variable_set('uc_quote_store_default_address', $address);
-  variable_set('uc_store_shipping_quote_type', $form_values['uc_store_shipping_quote_type']);
   variable_set('uc_store_shipping_type', $form_values['uc_store_shipping_type']);
 }
 
 /******************************************************************************
  * Module Functions                                                           *
  ******************************************************************************/
-
-/**
- * Stores the shipping quote type of products and manufacturers.
- *
- * Quoting modules are invoked for products that match their quote type.
- * This function stores the quote type of a product or a manufacturer.
- *
- * @param $id_type
- *   product | manufacturer
- * @param $id
- *   Either the node id or term id of the object receiving the quote type.
- * @param $quote_type
- *   The type of product that is fulfilled by various quoting modules.
- */
-
-function uc_quote_set_shipping_quote_type($id_type, $id, $quote_type){
-  db_query("DELETE FROM {uc_quote_types} WHERE id_type = '%s' AND id = %d", $id_type, $id);
-  if ($quote_type !== ''){
-    db_query("INSERT INTO {uc_quote_types} (id_type, id, quote_type) VALUES ('%s', %d, '%s')",
-      $id_type, $id, $quote_type);
-  }
-}
 
 /**
  * Stores the shipping type of products and manufacturers.
@@ -392,19 +364,6 @@ function uc_quote_set_shipping_type($id_type, $id, $shipping_type){
 }
 
 /**
- * Retrieve's a product's or manufacturer's shipping quote type from the database.
- *
- * @param $id_type
- *   product | manufacturer
- * @param $id
- *   Either the node id or term id of the object that was assigned the quote type.
- * @return The shipping quote type.
- */
-function uc_quote_get_shipping_quote_type($id_type, $id){
-  return db_result(db_query("SELECT quote_type FROM {uc_quote_types} WHERE id_type = '%s' AND id = %d", $id_type, $id));
-}
-
-/**
  * Retrieve's a product's or manufacturer's shipping type from the database.
  *
  * @param $id_type
@@ -415,27 +374,6 @@ function uc_quote_get_shipping_quote_type($id_type, $id){
  */
 function uc_quote_get_shipping_type($id_type, $id){
   return db_result(db_query("SELECT shipping_type FROM {uc_quote_shipping_types} WHERE id_type = '%s' AND id = %d", $id_type, $id));
-}
-
-/**
- * Get a product's shipping quote type, defaulting to its manufacturer's or the store's if it doesn't exist.
- *
- * @param $product
- *   The product object.
- * @return The quote type.
- */
-function uc_product_get_shipping_quote_type($product){
-  $quote_type = variable_get('uc_store_shipping_quote_type', 'free');
-  if (module_exists('uc_manufacturer')){
-    $m = taxonomy_get_term_by_name($product->manufacturer);
-    if ($type = uc_quote_get_shipping_quote_type('manufacturer', $m->tid)){
-      $quote_type = $type;
-    }
-  }
-  if ($type = uc_quote_get_shipping_quote_type('product', $product->nid)){
-    $quote_type = $type;
-  }
-  return $quote_type;
 }
 
 /**
@@ -495,8 +433,8 @@ function uc_checkout_pane_quotes($op, $arg1, $arg2){
         '#value' => 'checkout',
       );
       $pane->fields['pane']['get_quote'] = array('#type' => 'markup',
-        '#value' => '<div id="quote-button"><img class="icon" src="'. base_path() . drupal_get_path('module', 'uc_store') .'/images/calculator.gif' .'" />
-        Click to calculate shipping cost.</div>',
+        '#value' => '<div id="quote-button" class="quote-button"><img class="icon" src="'. base_path() . drupal_get_path('module', 'uc_store') .'/images/calculator.gif' .'" /> '
+                  . t('Click to calculate shipping cost.') .'</div>',
       );
       
       // display previous quote, if any
@@ -511,7 +449,9 @@ function uc_checkout_pane_quotes($op, $arg1, $arg2){
           }
         }
         drupal_add_js('$(document).ready(function(){
-          set_line_item("shipping", "'. $method['quote']['accessorials'][$arg1->quote['accessorials']] .'", '. $arg1->quote['rate'] .', 1);
+          if (set_line_item != undefined){
+            set_line_item("shipping", "'. $method['quote']['accessorials'][$arg1->quote['accessorials']] .'", '. $arg1->quote['rate'] .', 1);
+          }
         })', 'inline');
       }
       else{
@@ -526,14 +466,14 @@ function uc_checkout_pane_quotes($op, $arg1, $arg2){
       $prod_string = '';
       foreach (uc_cart_get_contents() as $item){
         $prod_string .= '|'. $item->nid;
-        $prod_string .= ','. $item->title;
-        $prod_string .= ','. $item->model;
-        $prod_string .= ','. $item->manufacturer;
-        $prod_string .= ','. $item->qty;
-        $prod_string .= ','. $item->cost;
-        $prod_string .= ','. $item->price;
-        $prod_string .= ','. $item->weight;
-        $prod_string .= ','. serialize($item->data);
+        $prod_string .= ';'. $item->title;
+        $prod_string .= ';'. $item->model;
+        $prod_string .= ';'. $item->manufacturer;
+        $prod_string .= ';'. $item->qty;
+        $prod_string .= ';'. $item->cost;
+        $prod_string .= ';'. $item->price;
+        $prod_string .= ';'. $item->weight;
+        $prod_string .= ';'. serialize($item->data);
       }
       $prod_string = substr($prod_string, 1);
       // If a previous quote gets loaded, make sure it gets saved again.
@@ -566,7 +506,7 @@ function uc_checkout_pane_quotes($op, $arg1, $arg2){
         drupal_set_message(t('You must request a quote before continuing.'), 'error');
         return false;
       } */
-      $arg1->quote['method'] = $arg2['pane']['method'];
+      $arg1->quote['method'] = $_POST['method-quoted'];
       $arg1->quote['accessorials'] = isset($_POST['quote-option']) ? strval($_POST['quote-option']) : 0;
       $arg1->quote['rate'] = $_POST['rate'][$arg1->quote['accessorials']];
       $arg1->quote['quote_form'] = rawurldecode($_POST['quote-form']);
@@ -713,7 +653,7 @@ function uc_quote_request_quotes(){
   $details = $_POST['details'];
   $products = array();
   foreach (explode('|', urldecode($_POST['products'])) as $item){
-    $props = explode(',', $item);
+    $props = explode(';', $item);
     $product = new stdClass();
     $product->nid = $props[0];
     $product->title = $props[1];
@@ -724,6 +664,12 @@ function uc_quote_request_quotes(){
     $product->price = $props[6];
     $product->weight = $props[7];
     $product->data = $props[8];
+    $node = (array)node_load($product->nid);
+    foreach ($node as $key => $value){
+      if (!isset($product->$key)){
+        $product->$key = $value;
+      }
+    }
     $products[] = $product;
   }
   //drupal_set_message('<pre>'. print_r($products, true) .'</pre>');

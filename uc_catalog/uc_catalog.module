@@ -29,7 +29,8 @@ function uc_catalog_menu($may_cache){
       'path' => 'catalog',
       'access' => TRUE,
       'title' => t('Catalog'),
-      'callback' => 'uc_catalog_browse',
+      'callback' => 'theme',
+      'callback arguments' => 'uc_catalog_browse',
       'type' => MENU_NORMAL_ITEM,
     );
     $items[] = array('path' => 'admin/store/settings/catalog',
@@ -37,11 +38,6 @@ function uc_catalog_menu($may_cache){
       'title' => t('Catalog settings'),
       'callback' => 'uc_catalog_admin_settings',
       'type' => MENU_NORMAL_ITEM,
-    );
-    $items[] = array('path' => 'admin/store/settings/catalog/setup',
-      'access' => user_access('administer catalog'),
-      'callback' => 'uc_catalog_install',
-      'type' => MENU_CALLBACK_ITEM,
     );
     $items[] = array('path' => 'admin/store/products/orphans',
       'title' => t('Find orphaned products'),
@@ -59,24 +55,6 @@ function uc_catalog_menu($may_cache){
         'callback arguments' => 'uc_catalog_set_category_form',
         'type' => MENU_NORMAL_ITEM,
         'weight' => -6,
-      );
-    }
-  }
-  else{
-    // shortcut node creation to get images for categories more easily
-    if (module_exists('image') && arg(0) == 'category' && is_numeric(arg(3))){
-      $tid = intval(arg(3));
-      $term = taxonomy_get_term($tid);
-      $node = array('uid' => $user->uid, 'name' => $user->name, 'type' => 'image',
-        'taxonomy' => array($tid => $term),
-        'title' => $term->name,
-      );
-      $items[] = array('path' => 'category/add/image/'. arg(3),
-        'access' => node_access('create image'),
-        'title' => t('Submit image'),
-        'callback' => 'drupal_get_form',
-        'callback arguments' => array('image_node_form', $node),
-        'type' => MENU_CALLBACK_ITEM,
       );
     }
   }
@@ -187,7 +165,17 @@ function uc_catalog_form_alter($form_id, &$form){
  * This hook rewrites taxonomy term links to point to the return value.
  */
 function uc_catalog_term_path($term){
-  return 'catalog/'. str_replace(array(' ', '/'), '_', strtolower($term->name));
+  static $parents = array();
+  
+  if (!isset($parents[$term->tid])){
+    $parents[$term->tid] = taxonomy_get_parents_all($term->tid);
+  }
+  $path = '';
+  //drupal_set_message('<pre>'. print_r($parents[$term->tid], true) .'</pre>');
+  foreach (array_reverse($parents[$term->tid]) as $parent){
+    $path .= '/'. urlencode(str_replace(' ', '_', strtolower($parent->name)));
+  }
+  return 'catalog'. $path /* . urlencode(str_replace(' ', '_', strtolower($term->name))) */;
 }
 
 /**
@@ -258,6 +246,59 @@ function uc_catalog_block($op = 'list', $delta = 0, $edit = array()){
   }
 }
 
+function uc_catalog_forms(){
+  $products = db_query("SELECT nid FROM {uc_products}");
+
+  while ($prodrow = db_fetch_object($products))
+  {
+    $forms['uc_catalog_buy_it_now_form_'. $prodrow->nid] = array('callback' => 'uc_catalog_buy_it_now_form');
+  }
+
+  return $forms;
+}
+
+/******************************************************************************
+ * TAPIr Hooks                                                                *
+ ******************************************************************************/
+/* function uc_catalog_table_alter($table_id, $op, $args = null){
+  if (isset($args['tid']) || $_GET['q'] == 'admin/store/settings/tables/uc_product_table' || $_GET['q'] == 'products'){
+    switch ($table_id){
+      case 'uc_product_table':
+        switch ($op){
+          case 'fields':
+            $fields[] = array(
+              'name' => 'add_to_cart',
+              'title' => t('Add to cart'),
+              'weight' => 10,
+              'enabled' => false,
+              'attributes' => array('nowrap' => 'nowrap'),
+            );
+          return $fields;
+          case 'data':
+            if ($tid = $args['tid']){
+              $header = tapir_get_header('uc_product_table', $args);
+              $order = substr(tablesort_sql($header), 10);
+              if (empty($order)){
+                $order = 'n.title';
+              }
+              $data = array();
+              $sql = 'SELECT DISTINCT(n.nid), n.sticky, n.title, n.created FROM {node} n INNER JOIN {term_node} tn ON n.nid = tn.nid RIGHT JOIN {uc_products} AS p ON n.nid = p.nid WHERE tn.tid = %d AND n.status = 1 ORDER BY '. $order;
+              $sql_count = 'SELECT COUNT(DISTINCT(n.nid)) FROM {node} n INNER JOIN {term_node} tn ON n.nid = tn.nid RIGHT JOIN {uc_products} AS p ON n.nid = p.nid WHERE tn.tid = %d AND n.status = 1';
+              $sql = db_rewrite_sql($sql);
+              $sql_count = db_rewrite_sql($sql_count);
+              $result = pager_query($sql, variable_get('uc_product_default_nodes', 10), 0, $sql_count, $tid);
+              while ($node = db_fetch_object($result)){
+                $node = node_load($node->nid);
+                $data['add_to_cart'][] = drupal_get_form('uc_catalog_buy_it_now_form_'. $node->nid, $node);
+              }
+            }
+          return $data;
+        }
+      break;
+    }
+    }
+} */
+
 /******************************************************************************
  * Übercart Hooks                                                             *
  ******************************************************************************/
@@ -270,20 +311,14 @@ function uc_catalog_block($op = 'list', $delta = 0, $edit = array()){
 function uc_catalog_store_status(){
   $statuses = array();
   $cat_id = variable_get('uc_catalog_vid', 0);
-  if ($cat_id){
-    $catalog = taxonomy_get_vocabulary($cat_id);
+  $catalog = taxonomy_get_vocabulary($cat_id);
+  if ($catalog){
     $statuses[] = array('status' => 'ok', 'title' => t('Catalog vocabulary'),
       'desc' => t('Vocabulary !name has been identified as the !uber catalog.', array('!name' => l($catalog->name, 'admin/content/taxonomy/'. $catalog->vid), '!uber' => '&Uuml;bercart'))
     );
 
     $excluded = 0;
     $result = db_query("SELECT DISTINCT * FROM {node} AS n LEFT JOIN {term_node} AS tn ON n.nid = tn.nid LEFT JOIN {vocabulary_node_types} AS vnt ON n.type = vnt.type WHERE n.type != 'image' AND tn.tid IS NULL AND vnt.vid = %d", $cat_id);
-    
-    /* db_query("SELECT * FROM {node} WHERE nid NOT IN 
-        (SELECT nid FROM {term_node} AS tn LEFT JOIN {term_data} AS td ON tn.tid = td.tid WHERE td.vid = %d)
-      AND type != 'image' AND type IN 
-        (SELECT type FROM {vocabulary_node_types} WHERE vid = %d)",
-      $cat_id, $cat_id); */
     $excluded = db_num_rows($result);
     if ($excluded){
       $statuses[] = array('status' => 'warning', 'title' => t('Unlisted Products'),
@@ -338,53 +373,29 @@ function uc_catalog_admin_settings(){
  * Form to change the category of many nodes at once.
  */
 function uc_catalog_set_category_form(){
-  $form['selector'] = array('#type' => 'markup',
-    '#value' => '<input type="button" value="'. t('Select Products') .'" id="edit-selector" />',
-    '#suffix' => '<div id="category-selector"></div><div id="selected-nodes"></div>',
+  drupal_add_css(drupal_get_path('module', 'uc_catalog') .'/uc_catalog.css');
+  drupal_add_css(drupal_get_path('module', 'uc_product') .'/uc_product.css');
+  $settings = array(
+    'div' => '#category-selector',
+    'vid' => variable_get('uc_catalog_vid', 0),
+    'filter' => implode(',', uc_product_get_product_types()),
+    'search' => 'true',
+    'nids' => 'true',
+    'nodesg' => 'product',
+    'nodepl' => 'products',
+    'multi' => 'true',
+    'close' => 'false',
+    'select' => 'buffer_products("'. base_path() .'","'. file_create_url('') .'")',
   );
-  drupal_add_js('
-    $(document).ready(function(){  
-        $.post("'. base_path() .'?q=ubrowser/main",
-          { vid: "'. variable_get('uc_catalog_vid', 0) .'",
-            nids: "true",
-            search: "true",
-            close: "true",
-            div: "category-selector",
-            select: "set_category",
-            multi: "true",
-          },
-          function(contents){
-            $("#category-selector").empty().append(contents);
-          }
-        )
-      $("#edit-selector").click(function(){
-        $("#category-selector").show()
-      })
-    })
-    
-    var sel_nids
-    var sel_titles
-      
-    function set_category(){
-      $("#uc_catalog_set_category_form > div > input[@name^=nids]").remove()
-      $("#selected-nodes").empty()
-      sel_nids = new Array()
-      sel_titles = new Array()
-      $("#edit-unid option").each(function(){
-        if($(this).val() != 0 && $(this).get(0).selected){
-          sel_nids.push($(this).val())
-          sel_titles.push($(this).text())
-          $("#uc_catalog_set_category_form > div").append(\'<input type="hidden" name="nids[]" value="\' + $(this).val() + \'" />\')
-        }
-      })
-      $("#selected-nodes").append("<ul>\n")
-      for (val in sel_titles){
-        $("#selected-nodes").append("<li>" + sel_titles[val] + "</li>\n")
-      }
-      $("#selected-nodes").append("</ul>\n")
-      $("#category-selector").hide()
-    }
-  ', 'inline');
+  $form['selector'] = array('#type' => 'markup',
+    '#value' => ubrowser($settings, 'category-selector'),
+  );
+  $form['buffer'] = uc_product_buffer_form(func_get_args());
+  $form['buffer']['#prefix'] = '<div class="product-buffer">';
+  $form['buffer']['#suffix'] = '</div>';
+  unset($form['buffer']['submit']);
+  
+  drupal_add_js(drupal_get_path('module', 'uc_product') .'/uc_product.js', 'module');
 
   $form['categories'] = taxonomy_form(variable_get('uc_catalog_vid', 0));
   $form['categories']['#title'] = t('New Category');
@@ -403,14 +414,14 @@ function uc_catalog_set_category_form(){
  * Submit function for uc_catalog_set_category_form().
  */
 function uc_catalog_set_category_form_submit($form_id, $form_values){
-  $categories = $_POST['categories'];
+  $categories = $form_values['categories'];
   $catalog_vid = variable_get('uc_catalog_vid', 0);
-  foreach($_POST['nids'] as $nid){
+  foreach(array_filter(explode('/', $form_values['products'])) as $nid){
     // Preserve terms already associated with this product.
     $terms = taxonomy_node_get_terms($nid);
     foreach ($terms as $term){
       // Don't preserve those from the catalog if products are being moved.
-      if ($_POST['op'] == t('Move') && $term->vid == $catalog_vid){
+      if ($form_values['op'] == t('Move') && $term->vid == $catalog_vid){
         continue;
       }
       $categories[] = $term->tid;
@@ -431,78 +442,106 @@ function uc_catalog_set_category_form_submit($form_id, $form_values){
  * @return
  *   A Drupal page providing links to products in this category, and nearby categories.
  */
-function uc_catalog_browse(){
-  drupal_add_css(drupal_get_path('module', 'uc_catalog') .'/uc_catalog.css');
-    
-  $args = func_get_args();
+function uc_catalog_get_page($path_terms){
+  $catalog = new stdClass();
+  $vid = variable_get('uc_catalog_vid', 0);
+  $parent = 0;
   $term = null;
-  $tree = null;
-  $terms = taxonomy_get_term_by_name(str_replace('_', ' ', $args[0]));
-  $catalog_id = variable_get('uc_catalog_vid', 0);
-  foreach ($terms as $test){
-    if ($catalog_id == $test->vid){
-      $term = $test;
+  foreach ($path_terms as $path){
+    $terms = taxonomy_get_term_by_name(str_replace('_', ' ', urldecode($path)));
+    $test = null;
+    foreach ($terms as $test){
+      if ($vid == $test->vid){
+        $parents = taxonomy_get_parents($test->tid);
+        //drupal_set_message('Parent: '. $parent);
+        //drupal_set_message('<pre>'. print_r($parents, true) .'</pre>');
+        if (is_null($term) || ($parent == 0 && empty($parents)) || in_array($parent, array_keys($parents))){
+          $term = $test;
+          break;
+        }
+      }
+    }
+    if ($term){
+      $parent = $term->tid;
     }
   }
   if ($term){
     $tid = $term->tid;
-    $vid = $term->vid;
     $name = $term->name;
   }
   else{
     $tid = 0;
-    $vid = $catalog_id;
     $name = t('Catalog');
   }
-  drupal_set_title($name);
-  drupal_set_breadcrumb(uc_catalog_set_breadcrumb($tid));
-  $children = taxonomy_get_children($tid, $vid);
-  $output = '';
-  //$output .= '<pre>'. print_r($parents, true) .'</pre>';
-  //$output .= '<pre>'. print_r($children, true) .'</pre>';
+  $catalog->tid = $tid;
+  $catalog->vid = $vid;
+  $catalog->name = $name;
+  $catalog->children = array();
+  if (module_exists('imagecache') && $file = uc_catalog_image_load($catalog->tid)){
+    $imagecache_path =  file_create_url(file_directory_path() .'/imagecache/category/'. $file->filepath);
+    $info = image_get_info($imagecache_path);
+    $catalog->image = $info;
+    $catalog->image['filepath'] = $file->filepath;
+  }
   $types = uc_catalog_node_types();
   $links = array();
   $child_list = array();
+  $children = taxonomy_get_children($tid, $vid);
   foreach ($children as $child){
     $n = 0;
     foreach ($types as $type){
       $n += taxonomy_term_count_nodes($child->tid, $type);
     }
-    if ($n){
-      $links[] = array('title' => $child->name .' ('. $n .')', 'href' => 'catalog/'. str_replace(' ', '_', strtolower($child->name)),
-        'attributes' => array('rel' => 'tag'),
-      );
-    }
+    $child->nodes = $n;
     // Display child category's image.
     if (module_exists('imagecache') && $file = uc_catalog_image_load($child->tid)){
-      $imagecache_path =  file_create_url(file_directory_path() .'/imagecache/catalog/'. $file->filepath);
+      $imagecache_path =  file_create_url(file_directory_path() .'/imagecache/category/'. $file->filepath);
       $info = image_get_info($imagecache_path);
-      $image = '<div style="height: '. $info['height'] .'px; width: '. $info['width'] .'px;">';
-      $image .= l(theme('imagecache', 'catalog', $file->filepath), uc_catalog_term_path($child), array(), null, null, false, true);
-      $image .= '</div>';
+      $child->image = $info;
+      $child->image['filepath'] = $file->filepath;
     }
-    else{
-      $image = '';
-    }
-    /* if (module_exists('image')){
-      $images = image_get_random(1, $child->tid);
-      $size = _image_get_dimensions('thumbnail');
-      $image = '<div style="height: '. $size['height'] .'px; width: '. $size['width'] .'px;">';
-      if (count($images)){
-        $image .= l(image_display($images[0], 'thumbnail', array('alt' => check_plain($images[0]->title), 'title' => check_plain($images[0]->title))), uc_catalog_term_path($child), array(), null, null, false, true);
-      }
-      $image .= '</div>';
-    }
-    else{
-      $image = '';
-    } */
     // Display list of child category's children categories.
     // If more than $max_gc_display, show "More..." link to child.
     $grandchildren_list = taxonomy_get_children($child->tid, $vid);
+    $child->children = $grandchildren_list;
+    $catalog->children[] = $child;
+  }
+  //$node_resource = taxonomy_select_nodes(array($tid));
+  return $catalog;
+}
+
+function theme_uc_catalog_browse(){
+  drupal_add_css(drupal_get_path('module', 'uc_catalog') .'/uc_catalog.css');
+  
+  $args = func_get_args();
+  //drupal_set_message('<pre>'. print_r($args, true) .'</pre>');
+  $output = '';
+  $catalog = uc_catalog_get_page($args);
+  if ($catalog->name != t('Catalog')) {
+    drupal_set_title($catalog->name);
+  }
+  drupal_set_breadcrumb(uc_catalog_set_breadcrumb($catalog->tid));
+  $types = uc_catalog_node_types();
+  $links = array();
+  $child_list = array();
+  foreach ($catalog->children as $child){
+    if ($child->nodes){
+      $links[] = array('title' => $child->name .' ('. $child->nodes .')', 'href' => uc_catalog_term_path($child),
+        'attributes' => array('rel' => 'tag'),
+      );
+    }
+    if ($child->image){
+      $image = '<div>';
+      $image .= l(theme('imagecache', 'category', $child->image['filepath']), uc_catalog_term_path($child), array(), null, null, false, true);
+      $image .= '</div>';
+    }
+    else{
+      $image = '<div></div>';
+    }
     $grandchildren = array();
     $j = 0;
     $max_gc_display = 3;
-    foreach ($grandchildren_list as $i => $grandchild){
+    foreach ($child->children as $i => $grandchild){
       if ($j >= $max_gc_display){
         break;
       }
@@ -519,32 +558,25 @@ function uc_catalog_browse(){
     if ($j > $max_gc_display){
       array_push($grandchildren, l('More...', uc_catalog_term_path($child)));
     }
-    if ($n){
+    if ($child->nodes){
       $child_list[] = $image .'<br/><strong>'. l($child->name, uc_catalog_term_path($child)) .'</strong>'
         ."<br/><span>"
         . implode(', ', $grandchildren) ."</span>\n";
     }
   }
-  /* if (module_exists('image') && $tid){
-    $images = image_get_random(1, $tid);
-    if (count($images)){
-      $output .= image_display($images[0], 'category', array('alt' => check_plain($image->title), 'title' => check_plain($image->title)));
-    }
-    elseif (user_access('create images')){
-      $size = _image_get_dimensions('category');
-      $output .= '<div style="height: '. $size['height'] .'px; width: '. $size['width'] .'px; float: right;">';
-      $output .= l('Add an image', 'category/add/image/'. $tid);
-      $output .= "</div>\n";
-    }
-  } */
-  //$node_resource = taxonomy_select_nodes(array($tid));
-  $table_args = array('tid' => $tid, 'attributes' => array('class' => 'category-products'));
+  if ($catalog->image){
+    $output .= theme('imagecache', 'thumbnail', $catalog->image['filepath'], $catalog->name, $catalog->name, array('class' => 'category'));
+  }
+  $table_args = array('tid' => $catalog->tid, 'attributes' => array('id' => 'category-products'));
   $product_table = tapir_get_table('uc_product_table', $table_args);
   if (strpos($product_table, "<tbody>\n</tbody>") === false){ // If product table is not empty.
+    $catalog->products = $product_table;
+  }
+  if ($catalog->products){
     if (count($links)){
       $output .= '>> ' . theme('links', $links, array('class' => 'links inline'));
     }
-    $output .= $product_table;
+    $output .= $catalog->products;
     $output .= theme('pager');
   }
   else{
@@ -569,6 +601,7 @@ function uc_catalog_browse(){
     }
     $output .= theme('table', array(), $cat_rows, array('class' => 'category'));
   }
+  
   return $output;
 }
 
@@ -603,12 +636,51 @@ function uc_catalog_node_types(){
 function uc_catalog_admin_form(){
   $form = array();
   
+  $vocabularies = taxonomy_get_vocabularies('product');
+  foreach ($vocabularies as $vid => $vocabulary){
+    $vocabs[$vid] = $vocabulary->name;
+  }
+  
+  $form['uc_catalog_vid'] = array('#type' => 'select',
+    '#title' => t('Catalog Vocabulary'),
+    '#description' => t("The taxonomy vocabulary that will be considered the product catalog."),
+    '#default_value' => variable_get('uc_catalog_vid', 0),
+    '#options' => $vocabs,
+  );
+  
   $form['uc_catalog_breadcrumb'] = array('#type' => 'checkbox',
     '#title' => t('Display catalog breadcrumb'),
     '#default_value' => variable_get('uc_catalog_breadcrumb', true),
   );
   
   return system_settings_form($form);
+}
+
+function uc_catalog_buy_it_now_form($node){
+  $form = array();
+  $form['#base'] = 'uc_catalog_buy_it_now_form';
+  $form['nid'] = array('#type' => 'hidden', '#value' => $node->nid);
+  $form['submit'] = array('#type' => 'submit', '#value' =>  t('Add to cart'), );
+  return $form;
+}
+
+function uc_catalog_buy_it_now_form_submit($form_id, $form_values){
+  $node = node_load($form_values['nid']);
+  $attributes = uc_product_get_attributes($node->nid);
+  if (!empty($attributes)){
+    drupal_set_message('This product has options that need to be selected before purchase. Please select them in the form below.');
+    return drupal_get_path_alias('node/'. $form_values['nid']);
+  }
+  if (is_array($node->products)){
+    foreach($node->products as $nid => $product){
+      $attributes = uc_product_get_attributes($nid);
+      if (!empty($attributes)){
+        drupal_set_message('This product has options that need to be selected before purchase. Please select them in the form below.');
+        return drupal_get_path_alias('node/'. $form_values['nid']);
+      }
+    }
+  }
+  return uc_cart_add_item($form_values['nid'], 1,  module_invoke_all('add_to_cart_data', $form_values));
 }
 
 /**
@@ -693,7 +765,7 @@ function _uc_catalog_navigation($branch){
   static $terms;
   
   $vid = variable_get('uc_catalog_vid', 0);
-  if (arg(0) .'/'. arg(1) == uc_catalog_term_path($branch)){
+  if ($_GET['q'] ==  urldecode(uc_catalog_term_path($branch))){
     // The URL points to this term. Don't display as a link.
     $here = true;
   }

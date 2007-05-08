@@ -79,9 +79,17 @@ function uc_cart_menu($may_cache) {
  * Implementation of hook_cron().
  */
 function uc_cart_cron() {
-  $hours = strtotime(variable_get('uc_cart_product_cron', '4') .' hours ago');
+  // Empty anonymous carts.
+  $time = strtotime(variable_get('uc_cart_anon_duration', '4') .' '
+                  . variable_get('uc_cart_anon_unit', 'hours') .' ago');
   db_query("DELETE FROM {uc_cart_products} WHERE changed <= %d AND "
-          ."CHAR_LENGTH(cart_id) > 8", $hours);
+          ."CHAR_LENGTH(cart_id) > 8", $time);
+
+  // Empty authenticated carts.
+  $time = strtotime(variable_get('uc_cart_auth_duration', '1') .' '
+                  . variable_get('uc_cart_auth_unit', 'years') .' ago');
+  db_query("DELETE FROM {uc_cart_products} WHERE changed <= %d AND "
+          ."CHAR_LENGTH(cart_id) <= 8", $time);
 }
 
 /**
@@ -205,12 +213,12 @@ function theme_uc_cart_display_block() {
   $output .= '</div>';
 
   $item_word = ($item_count == 1) ? t('Item') : t('Items');
-  $view = '('. l('View cart', 'cart', array('rel' => 'nofollow')) .')';
-  $checkout = '('. l('Checkout', 'cart/checkout', array('rel' => 'nofollow')) .')';
+  $view = '('. l(t('View cart'), 'cart', array('rel' => 'nofollow')) .')';
+  $checkout = '('. l(t('Checkout'), 'cart/checkout', array('rel' => 'nofollow')) .')';
   $output .= '<table cellpadding="2"><tbody style="border-top: 0px;">'
             .'<tr valign="top"><td nowrap>'. $item_count
             .' '. $item_word .'</td><td width="100%" align="right">'
-            .'<strong>Total:</strong> '. uc_currency_format($total) .'</td></tr>';
+            .'<strong>'. t('Total:') .'</strong> '. uc_currency_format($total) .'</td></tr>';
   if ($item_count > 0) {
     $output .= '<tr><td colspan="2" align="right">'. $view .' '. $checkout .'</td></tr>';
   }
@@ -297,6 +305,20 @@ function uc_cart_table_settings() {
  ******************************************************************************/
 
 /**
+ * Implementation of hook_cart_pane().
+ */
+function uc_cart_cart_pane($items) {
+  $panes[] = array(
+    'id' => 'cart_form',
+    'title' => t('Default cart form'),
+    'weight' => variable_get('uc_cap_cart_form_weight', 0),
+    'body' => drupal_get_form('uc_cart_view_form', $items),
+  );
+
+  return $panes;
+}
+
+/**
  * Implementation of hook_checkout_pane().
  */
 function uc_cart_checkout_pane() {
@@ -348,19 +370,70 @@ function uc_cart_checkout_pane() {
 function uc_cart_cart_settings() {
   $form['link_out'] = array(
     '#value' => '<div>'. t('<a href="!url">Click here</a> to goto the shopping cart block configuration page.',
-                           array('!url' => url('admin/build/block/configure/uc_cart/0'))) .'</div>',
+                           array('!url' => url('admin/build/block/configure/uc_cart/0'))) .'</div><p>',
   );
-  $form['uc_cart_product_cron'] = array(
+  $form['anonymous'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Anonymous cart settings'),
+    '#collapsible' => FALSE,
+  );
+  $form['anonymous']['instructions'] = array(
+    '#value' => '<div>'. t('Set the length of time products remain in the cart for customers who <b>have not</b> logged in.') .'</div>',
+  );
+  $form['anonymous']['table1'] = array('#value' => '<table><tbody style="border: 0px;"><tr><td>');
+  $form['anonymous']['uc_cart_anon_duration'] = array(
     '#type' => 'select',
-    '#title' => t('Anonymous cart duration'),
-    '#description' => t('How many hours should anonymous carts keep their contents?'),
+    '#title' => t('Duration'),
     '#options' => drupal_map_assoc(range(1, 24)),
-    '#default_value' => variable_get('uc_cart_product_cron', '4'),
+    '#default_value' => variable_get('uc_cart_anon_duration', '4'),
   );
-  $form['uc_cart_add_item_redirect'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Redirect customers to cart page when they add items to their cart.'),
-    '#default_value' => variable_get('uc_cart_add_item_redirect', TRUE),
+  $form['anonymous']['table2'] = array('#value' => '</td><td style="padding-left: 1em;">');
+  $form['anonymous']['uc_cart_anon_unit'] = array(
+    '#type' => 'select',
+    '#title' => t('Unit of time'),
+    '#options' => array(
+      'hours' => t('hour(s)'),
+      'days' => t('day(s)'),
+      'weeks' => t('week(s)'),
+      'years' => t('year(s)'),
+    ),
+    '#default_value' => variable_get('uc_cart_anon_unit', 'hours'),
+  );
+  $form['anonymous']['table3'] = array('#value' => '</td></tr></tbody></table>');
+  $form['authenticated'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Authenticated cart settings'),
+    '#collapsible' => FALSE,
+  );  
+  $form['authenticated']['instructions'] = array(
+    '#value' => '<div>'. t('Set the length of time products remain in the cart for customers who <b>have</b> logged in.') .'</div>',
+  );
+  $form['authenticated']['table1'] = array('#value' => '<table><tbody style="border: 0px;"><tr><td>');
+  $form['authenticated']['uc_cart_auth_duration'] = array(
+    '#type' => 'select',
+    '#title' => t('Duration'),
+    '#options' => drupal_map_assoc(range(1, 24)),
+    '#default_value' => variable_get('uc_cart_auth_duration', '1'),
+  );
+  $form['authenticated']['table2'] = array('#value' => '</td><td style="padding-left: 1em;">');
+  $form['authenticated']['uc_cart_auth_unit'] = array(
+    '#type' => 'select',
+    '#title' => t('Unit of time'),
+    '#options' => array(
+      'hours' => t('hour(s)'),
+      'days' => t('day(s)'),
+      'weeks' => t('week(s)'),
+      'years' => t('year(s)'),
+    ),
+    '#default_value' => variable_get('uc_cart_auth_unit', 'years'),
+  );
+  $form['authenticated']['table3'] = array('#value' => '</td></tr></tbody></table>');
+
+  $form['uc_add_item_redirect'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Add to cart redirect'),
+    '#description' => t('Enter a Drupal URL to redirect to when a customer adds an item to their cart.  Leave blank or enter <none> for no redirect.'),
+    '#default_value' => variable_get('uc_add_item_redirect', 'cart'),
   );
 
   return system_settings_form($form);
@@ -494,17 +567,21 @@ function uc_cart_checkout_settings() {
  * The cart view page lets you view/modify the cart contents or procede to checkout.
  */
 function uc_cart_view() {
-  if (!is_null($_SESSION['cart_order']))
-    $_SESSION['cart_order'] = null;
+  if (!is_null($_SESSION['cart_order'])) {
+    unset($_SESSION['cart_order']);
+  }
 
   $items = uc_cart_get_contents();
 
-  if (empty($items))
+  if (empty($items)) {
     return '<p>'. t('There are no products in your shopping cart.') . '</p>';
+  }
 
-  $output = drupal_get_form('uc_cart_view_form', $items);
-
-  /* Insert here the call to invoke other modules' cart_view hooks. -RS */
+  $panes = module_invoke_all('cart_pane', $items);
+  usort($panes, '_checkout_pane_sort');
+  foreach ($panes as $pane) {
+    $output .= $pane['body'];
+  }
 
   return $output;
 }
@@ -684,10 +761,20 @@ function theme_uc_cart_checkout_form($form) {
 
   $output = variable_get('uc_checkout_instructions', '') .'<p>';
   foreach (element_children($form['panes']) as $pane_id) {
-    if (function_exists(($func = _checkout_pane_data($pane_id, 'callback')))
-        && $result = $func('theme', &$form, NULL)) {
-      $output .= $result;
-      $form['panes'][$pane_id] = array();
+    if (function_exists(($func = _checkout_pane_data($pane_id, 'callback')))) {
+      if (substr(PHP_VERSION, 0, 1) == 4) {
+        $result = $func('theme', &$form, NULL);
+      }
+      else {
+        $result = uc_func_call($func, 'theme', $form, NULL);
+      }
+      if (!empty($result)) {
+        $output .= $result;
+        $form['panes'][$pane_id] = array();
+      }
+      else {
+        $output .= drupal_render($form['panes'][$pane_id]);
+      }
     }
     else {
       $output .= drupal_render($form['panes'][$pane_id]);
@@ -717,7 +804,13 @@ function uc_cart_checkout_form_submit($form_id, $form_values) {
       $valid = TRUE;
       foreach($form_values['panes'] as $key => $value) {
         $func = _checkout_pane_data($key, 'callback');
-        if (($isvalid = $func('process', &$order, $value)) === FALSE) {
+        if (substr(PHP_VERSION, 0, 1) == 4) {
+          $isvalid = $func('theme', &$order, $value);
+        }
+        else {
+          $isvalid = uc_func_call($func, 'process', $order, $value);
+        }
+        if ($isvalid === FALSE) {
           $_SESSION['expanded_panes'][] = $key;
           $valid = FALSE;
         }
@@ -823,11 +916,26 @@ function uc_cart_checkout_review_form_submit($form_id, $form_values) {
       // Invoke hook_order($op = 'submit') to test to make sure the order can
       // be completed... used for auto payment in uc_credit.module.
       $pass = module_invoke_all('order', 'submit', uc_order_load($_SESSION['cart_order']), NULL);
-      
-      //drupal_set_message('<pre>'. print_r($pass, true) .'</pre>');
 
-      $_SESSION['do_complete'] = TRUE;
-      return 'cart/checkout/complete';
+      foreach ($pass as $result) {
+        $msg_type = 'status';
+        if ($result['pass'] === FALSE) {
+          $error = TRUE;
+          $msg_type = 'error';
+        }
+        if (!empty($result['message'])) {
+          drupal_set_message($result['message'], $msg_type);
+        }
+      }
+
+      if ($error === TRUE) {
+        $_SESSION['do_review'] = TRUE;
+        return 'cart/checkout/review';
+      }
+      else {
+        $_SESSION['do_complete'] = TRUE;
+        return 'cart/checkout/complete';
+      }
   }
 }
 
@@ -965,6 +1073,9 @@ function uc_checkout_pane_customer($op, $arg1, $arg2) {
 
     case 'process':
       $arg1->primary_email = $arg2['pane']['primary_email'];
+      if ($user->uid) {
+        $arg1->uid = $user->uid;
+      }
       return TRUE;
   }
 }
@@ -980,54 +1091,77 @@ function uc_checkout_pane_delivery($op, $arg1, $arg2) {
       $pane = uc_cart_checkout_new_pane('delivery');
       $pane->fields['pane']['description'] = uc_cart_checkout_pane_description('delivery', t('Fill in the appropriate delivery information here:'));
       if ($user->uid) {
-        $pane->fields['pane']['delivery_address_select'] = uc_select_address($user->uid, 'delivery', 'apply_address(\'delivery\', this.value);', t('Saved addresses'));
+        $pane->fields['pane']['delivery_address_select'] = uc_select_address($user->uid, 'delivery', 'apply_address(\'delivery\', this.value);', t('Saved addresses'), TRUE);
       }
-      $pane->fields['pane']['delivery_first_name'] = uc_textfield(uc_get_field_name('first_name'), $arg1->delivery_first_name);
-      $pane->fields['pane']['delivery_last_name'] = uc_textfield(uc_get_field_name('last_name'), $arg1->delivery_last_name);
-      $pane->fields['pane']['delivery_company'] = uc_textfield(uc_get_field_name('company'), $arg1->delivery_company, FALSE, NULL, 64);
-      $pane->fields['pane']['delivery_street1'] = uc_textfield(uc_get_field_name('street1'), $arg1->delivery_street1, TRUE, NULL, 64);
-      $pane->fields['pane']['delivery_street2'] = uc_textfield(uc_get_field_name('street2'), $arg1->delivery_street2, FALSE, NULL, 64);
-      $pane->fields['pane']['delivery_city'] = uc_textfield(uc_get_field_name('city'), $arg1->delivery_city);
-      $pane->fields['pane']['delivery_zone'] = uc_zone_select(uc_get_field_name('zone'), $arg1->delivery_zone);
-      $pane->fields['pane']['delivery_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $arg1->delivery_postal_code, TRUE, NULL, 10, 10);
-      $pane->fields['pane']['delivery_phone'] = uc_textfield(uc_get_field_name('phone'), $arg1->delivery_phone, TRUE, NULL, 32, 16);
+      if (uc_address_field_enabled('first_name')) {
+        $pane->fields['pane']['delivery_first_name'] = uc_textfield(uc_get_field_name('first_name'), $arg1->delivery_first_name);
+      }
+      if (uc_address_field_enabled('last_name')) {
+        $pane->fields['pane']['delivery_last_name'] = uc_textfield(uc_get_field_name('last_name'), $arg1->delivery_last_name);
+      }
+      if (uc_address_field_enabled('company')) {
+        $pane->fields['pane']['delivery_company'] = uc_textfield(uc_get_field_name('company'), $arg1->delivery_company, FALSE, NULL, 64);
+      }
+      if (uc_address_field_enabled('street1')) {
+        $pane->fields['pane']['delivery_street1'] = uc_textfield(uc_get_field_name('street1'), $arg1->delivery_street1, TRUE, NULL, 64);
+      }
+      if (uc_address_field_enabled('street2')) {
+        $pane->fields['pane']['delivery_street2'] = uc_textfield(uc_get_field_name('street2'), $arg1->delivery_street2, FALSE, NULL, 64);
+      }
+      if (uc_address_field_enabled('city')) {
+        $pane->fields['pane']['delivery_city'] = uc_textfield(uc_get_field_name('city'), $arg1->delivery_city);
+      }
+      if (uc_address_field_enabled('zone')) {
+        if (isset($_POST['panes']['delivery']['pane']['delivery_country'])) {
+          $country_id = intval($_POST['panes']['delivery']['pane']['delivery_country']);
+        }
+        else {
+          $country_id = $arg1->delivery_country;
+        }
+        $pane->fields['pane']['delivery_zone'] = uc_zone_select(uc_get_field_name('zone'), $arg1->delivery_zone, NULL, $country_id);
+      }
+      if (uc_address_field_enabled('country')) {
+        $pane->fields['pane']['delivery_country'] = uc_country_select(uc_get_field_name('country'), $arg1->delivery_country);
+      }
+      if (uc_address_field_enabled('postal_code')) {
+        $pane->fields['pane']['delivery_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $arg1->delivery_postal_code, TRUE, NULL, 10, 10);
+      }
+      if (uc_address_field_enabled('phone')) {
+        $pane->fields['pane']['delivery_phone'] = uc_textfield(uc_get_field_name('phone'), $arg1->delivery_phone, TRUE, NULL, 32, 16);
+      }
       $pane->fields['pane']['continue'] = uc_cart_checkout_next_button('delivery', $pane->next);
       return $pane;
 
     case 'theme':
       $pane =& $arg1['panes']['delivery']['pane'];
-      $pane['delivery_first_name']['#title'] = '';
-      $pane['delivery_last_name']['#title'] = '';
-      $pane['delivery_company']['#title'] = '';
-      $pane['delivery_street1']['#title'] = '';
-      $pane['delivery_street2']['#title'] = '';
-      $pane['delivery_city']['#title'] = '';
-      $pane['delivery_zone']['#title'] = '';
-      $pane['delivery_postal_code']['#title'] = '';
-      $pane['delivery_phone']['#title'] = '';
-
       if ($pane['#collapsed']) {
         $collapsed = ' collapsed';
       }
       $output = '<div class="delivery-pane"><fieldset class=" collapsible'. $collapsed .'">'
-              . '<legend>Delivery Information</legend>'
-              . drupal_render($pane['description']);
+              . '<legend>'. t('Delivery Information') .'</legend>'
+              . drupal_render($pane['description'])
+              .'<table class="pane-table" cellpadding="2">';
       $req = '<span class="form-required">*</span>';
-      $output .= '<table class="pane-table" cellpadding="2">';
-      if ($user->uid && $pane['delivery_address_select']['#type'] == 'select') {
-        $pane['delivery_address_select']['#title'] = '';
-        $output .= '<tr><td class="field-label">'. variable_get('uc_field_address_book', t('Saved Addresses')) .':</td><td>'. drupal_render($pane['delivery_address_select']) . uc_store_get_icon('file:address_book', FALSE, 'address-book-icon') .'</td></tr>';
+
+      foreach (element_children($pane) as $field) {
+        if (substr($field, 0, 9) == 'delivery_') {
+          $title = $pane[$field]['#title'] .':';
+          unset($pane[$field]['#title']);
+          if (substr($field, 9) == 'street1') {
+            $title = uc_get_field_name('street') .':';
+          }
+          elseif (substr($field, 9) == 'street2') {
+            $title = ' ';
+          }
+          $output .= '<tr><td class="field-label">';
+          if ($pane[$field]['#required']) {
+            $output .= $req;
+          }
+          $output .= $title .'</td><td>'
+                   . drupal_render($pane[$field]) .'</td></tr>';
+        }
       }
-      $output .= '<tr><td class="field-label">'. $req . uc_get_field_name('first_name') .':</td><td>'. drupal_render($pane['delivery_first_name']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . uc_get_field_name('last_name') .':</td><td>'. drupal_render($pane['delivery_last_name']) .'</td></tr>'
-               . '<tr><td class="field-label">'. uc_get_field_name('company') .':</td><td>'. drupal_render($pane['delivery_company']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . uc_get_field_name('street') .':</td><td>'. drupal_render($pane['delivery_street1']) .'</td></tr>'
-               . '<tr><td class="field-label">&nbsp;</td><td>'. drupal_render($pane['delivery_street2']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . uc_get_field_name('city') .':</td><td>'. drupal_render($pane['delivery_city']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . uc_get_field_name('zone') .':</td><td>'. drupal_render($pane['delivery_zone']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . uc_get_field_name('postal_code') .':</td><td>'. drupal_render($pane['delivery_postal_code']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . uc_get_field_name('phone') .':</td><td>'. drupal_render($pane['delivery_phone']) .'</td></tr>'
-               . '</table>';
+      $output .= '</table>';
 
       foreach (element_children($arg1['panes']['delivery']['pane']) as $element) {
         $output .= drupal_render($arg1['panes']['delivery']['pane'][$element]);
@@ -1068,37 +1202,51 @@ function uc_checkout_pane_billing($op, $arg1, $arg2) {
 
       drupal_add_js(drupal_get_path('module', 'uc_cart') .'/uc_cart.js');
       if ($user->uid) {
-        $pane->fields['pane']['billing_address_select'] = uc_select_address($user->uid, 'billing', 'apply_address(\'billing\', this.value);', t('Saved addresses'));
+        $pane->fields['pane']['billing_address_select'] = uc_select_address($user->uid, 'billing', 'apply_address(\'billing\', this.value);', t('Saved addresses'), TRUE);
       }
-      $pane->fields['pane']['billing_first_name'] = uc_textfield(uc_get_field_name('first_name'), $arg1->billing_first_name);
-      $pane->fields['pane']['billing_last_name'] = uc_textfield(uc_get_field_name('last_name'), $arg1->billing_last_name);
-      $pane->fields['pane']['billing_company'] = uc_textfield(uc_get_field_name('company'), $arg1->billing_company, FALSE, NULL, 64);
-      $pane->fields['pane']['billing_street1'] = uc_textfield(uc_get_field_name('street1'), $arg1->billing_street1, TRUE, NULL, 64);
-      $pane->fields['pane']['billing_street2'] = uc_textfield(uc_get_field_name('street2'), $arg1->billing_street2, FALSE, NULL, 64);
-      $pane->fields['pane']['billing_city'] = uc_textfield(uc_get_field_name('city'), $arg1->billing_city);
-      $pane->fields['pane']['billing_zone'] = uc_zone_select(uc_get_field_name('zone'), $arg1->billing_zone);
-      $pane->fields['pane']['billing_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $arg1->billing_postal_code, TRUE, NULL, 10, 10);
-      $pane->fields['pane']['billing_phone'] = uc_textfield(uc_get_field_name('phone'), $arg1->billing_phone, TRUE, NULL, 32, 16);
+      if (uc_address_field_enabled('first_name')) {
+        $pane->fields['pane']['billing_first_name'] = uc_textfield(uc_get_field_name('first_name'), $arg1->billing_first_name);
+      }
+      if (uc_address_field_enabled('last_name')) {
+        $pane->fields['pane']['billing_last_name'] = uc_textfield(uc_get_field_name('last_name'), $arg1->billing_last_name);
+      }
+      if (uc_address_field_enabled('company')) {
+        $pane->fields['pane']['billing_company'] = uc_textfield(uc_get_field_name('company'), $arg1->billing_company, FALSE, NULL, 64);
+      }
+      if (uc_address_field_enabled('street1')) {
+        $pane->fields['pane']['billing_street1'] = uc_textfield(uc_get_field_name('street1'), $arg1->billing_street1, TRUE, NULL, 64);
+      }
+      if (uc_address_field_enabled('street2')) {
+        $pane->fields['pane']['billing_street2'] = uc_textfield(uc_get_field_name('street2'), $arg1->billing_street2, FALSE, NULL, 64);
+      }
+      if (uc_address_field_enabled('city')) {
+        $pane->fields['pane']['billing_city'] = uc_textfield(uc_get_field_name('city'), $arg1->billing_city);
+      }
+      if (uc_address_field_enabled('zone')) {
+        if (isset($_POST['panes']['billing']['pane']['billing_country'])) {
+          $country_id = intval($_POST['panes']['billing']['pane']['billing_country']);
+        }
+        else {
+          $country_id = $arg1->billing_country;
+        }
+        $pane->fields['pane']['billing_zone'] = uc_zone_select(uc_get_field_name('zone'), $arg1->billing_zone, NULL, $country_id);
+      }
+      if (uc_address_field_enabled('country')) {
+        $pane->fields['pane']['billing_country'] = uc_country_select(uc_get_field_name('country'), $arg1->billing_country);      $pane->fields['pane']['billing_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $arg1->billing_postal_code, TRUE, NULL, 10, 10);
+      }
+      if (uc_address_field_enabled('phone')) {
+        $pane->fields['pane']['billing_phone'] = uc_textfield(uc_get_field_name('phone'), $arg1->billing_phone, TRUE, NULL, 32, 16);
+      }
       $pane->fields['pane']['continue'] = uc_cart_checkout_next_button('billing', $pane->next);
       return $pane;
 
     case 'theme':
       $pane =& $arg1['panes']['billing']['pane'];
-      $pane['billing_first_name']['#title'] = '';
-      $pane['billing_last_name']['#title'] = '';
-      $pane['billing_company']['#title'] = '';
-      $pane['billing_street1']['#title'] = '';
-      $pane['billing_street2']['#title'] = '';
-      $pane['billing_city']['#title'] = '';
-      $pane['billing_zone']['#title'] = '';
-      $pane['billing_postal_code']['#title'] = '';
-      $pane['billing_phone']['#title'] = '';
-
       if ($pane['#collapsed']) {
         $collapsed = ' collapsed';
       }
-      $output = '<div class="billing-pane"><fieldset class=" collapsible'
-              . $collapsed .'"><legend>Billing Information</legend>'
+      $output = '<div class="billing-pane"><fieldset class=" collapsible'. $collapsed .'">'
+              . '<legend>'. t('Billing Information') .'</legend>'
               . drupal_render($pane['description']);
       if (variable_get('uc_pane_delivery_enabled', TRUE)) {
         $output .= '<span onclick="uc_cart_copy_delivery_to_billing(true);" '
@@ -1108,29 +1256,36 @@ function uc_checkout_pane_billing($op, $arg1, $arg2) {
                   .'style="position: relative; top: 2px; margin-right: 2px;" /> '
                  . t('Click to copy your delivery information.') .'</span>';
       }
-
+      $output .= '<table class="pane-table" cellpadding="2">';
       $req = '<span class="form-required">*</span>';
-      $output .= '<div id="billing-fields"><table class="pane-table" cellpadding="2">';
-      if ($user->uid && $pane['billing_address_select']['#type'] == 'select') {
-        $pane['billing_address_select']['#title'] = '';
-        $output .= '<tr><td class="field-label">'. variable_get('uc_field_address_book', t('Saved Addresses')) .':</td><td>'. drupal_render($pane['billing_address_select']) . uc_store_get_icon('file:address_book', FALSE, 'address-book-icon') .'</td></tr>';
+
+      foreach (element_children($pane) as $field) {
+        if (substr($field, 0, 8) == 'billing_') {
+          $title = $pane[$field]['#title'] .':';
+          unset($pane[$field]['#title']);
+          if (substr($field, 8) == 'street1') {
+            $title = uc_get_field_name('street') .':';
+          }
+          elseif (substr($field, 8) == 'street2') {
+            $title = ' ';
+          }
+          $output .= '<tr><td class="field-label">';
+          if ($pane[$field]['#required']) {
+            $output .= $req;
+          }
+          $output .= $title .'</td><td>'
+                   . drupal_render($pane[$field]) .'</td></tr>';
+        }
       }
-      $output .= '<tr><td class="field-label">'. $req . uc_get_field_name('first_name') .':</td><td>'. drupal_render($pane['billing_first_name']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . uc_get_field_name('last_name') .':</td><td>'. drupal_render($pane['billing_last_name']) .'</td></tr>'
-               . '<tr><td class="field-label">'. uc_get_field_name('company') .':</td><td>'. drupal_render($pane['billing_company']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . uc_get_field_name('street') .':</td><td>'. drupal_render($pane['billing_street1']) .'</td></tr>'
-               . '<tr><td class="field-label">&nbsp;</td><td>'. drupal_render($pane['billing_street2']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . uc_get_field_name('city') .':</td><td>'. drupal_render($pane['billing_city']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . uc_get_field_name('zone') .':</td><td>'. drupal_render($pane['billing_zone']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . uc_get_field_name('postal_code') .':</td><td>'. drupal_render($pane['billing_postal_code']) .'</td></tr>'
-               . '<tr><td class="field-label">'. $req . uc_get_field_name('phone') .':</td><td>'. drupal_render($pane['billing_phone']) .'</td></tr>'
-               . '</table></div>';
-    
+      $output .= '</table>';
+
       foreach (element_children($arg1['panes']['billing']['pane']) as $element) {
         $output .= drupal_render($arg1['panes']['billing']['pane'][$element]);
       }
+
       $output .= '</fieldset></div>';
       return $output;
+
 
     case 'review':
       $review[] = array('title' => t('Address'), 'data' => uc_order_address($arg1, 'billing', FALSE));
@@ -1498,14 +1653,16 @@ function uc_cart_add_item($nid, $qty = 1, $data = array('module' => 'uc_product'
     module_invoke($data['module'], 'update_cart_item', $node->nid, $data, $item->qty + $qty, $cid);
   }
 
-  if (variable_get('uc_cart_add_item_redirect', TRUE))
-    return 'cart';
-
-/*  cache_clear_all();
+  cache_clear_all();
 
   if (isset($_GET['destination'])) {
     drupal_goto();
-  }*/
+  }
+
+  $redirect = variable_get('uc_add_item_redirect', 'cart');
+  if ($redirect != '' && $redirect != '<none>') {
+    return $redirect;
+  }
 }
 
 /**

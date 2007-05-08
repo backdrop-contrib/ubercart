@@ -24,10 +24,15 @@ $(document).ready(
  * fields if they exist.
  */
 function uc_order_copy_shipping_to_billing() {
+  if ($('#edit-delivery-zone').html() != $('#edit-billing-zone').html()) {
+    $('#edit-billing-zone').empty().append($('#edit-delivery-zone').children().clone());
+  }
+
   $('#uc-order-edit-form input, select, textarea').each(
     function() {
-      if (this.id.substring(0, 13) == 'edit-delivery')
+      if (this.id.substring(0, 13) == 'edit-delivery') {
         $('#edit-billing' + this.id.substring(13)).val($(this).val());
+      }
     }
   );
 }
@@ -61,9 +66,17 @@ function apply_address(type, address_str) {
   $('#edit-' + type + '-street1').val(address['street1']);
   $('#edit-' + type + '-street2').val(address['street2']);
   $('#edit-' + type + '-city').val(address['city']);
-  $('#edit-' + type + '-zone').val(address['zone']);
   $('#edit-' + type + '-postal-code').val(address['postal_code']);
-  $('#edit-' + type + '-country').val(address['country']);
+
+  if ($('#edit-' + type + '-country').val() != address['country']) {
+    $('#edit-' + type + '-country').val(address['country']);
+    try {
+      uc_update_zone_select('edit-' + type + '-country', address['zone']);
+    }
+    catch (err) {}
+  }
+
+  $('#edit-' + type + '-zone').val(address['zone']);
 }
 
 /**
@@ -120,8 +133,11 @@ function load_customer_search_results() {
 
 function select_customer_search() {
   var data = $('#edit-cust-select').val();
-  $('#customer-select #edit-uid').val(data.substr(0, data.indexOf(':')));
-  $('#customer-select #edit-primary-email').val(data.substr(data.indexOf(':') + 1));
+  $('#edit-uid').val(data.substr(0, data.indexOf(':')));
+  $('#edit-uid-text').val(data.substr(0, data.indexOf(':')));
+  $('#edit-primary-email').val(data.substr(data.indexOf(':') + 1));
+  $('#edit-primary-email-text').val(data.substr(data.indexOf(':') + 1));
+  $('#edit-submit-changes').click();
   return close_customer_select();
 }
 
@@ -152,8 +168,11 @@ function check_new_customer_address() {
 }
 
 function select_existing_customer(uid, email) {
-  $('#customer-select #edit-uid').val(uid);
-  $('#customer-select #edit-primary-email').val(email);
+  $('#edit-uid').val(uid);
+  $('#edit-uid-text').val(uid);
+  $('#edit-primary-email').val(email);
+  $('#edit-primary-email-text').val(email);
+  $('#edit-submit-changes').click();
   return close_customer_select();
 }
 
@@ -180,6 +199,33 @@ function uc_order_load_product_edit_div(order_id) {
   );
 }
 
+function load_product_select(order_id, search) {
+  if (search == true) {
+    options = {'search' : $('#edit-product-search').val()};
+  }
+  else {
+    options = { };
+  }
+
+  $.post(base_path + '?q=admin/store/orders/' + order_id + '/product_select', options,
+         function (contents) {
+           $('#products-selector').empty().addClass('product-select-box2').append(contents);
+         }
+  );
+
+  return false;
+}
+
+function select_product() {
+  add_product_form();
+  return false;
+}
+
+function close_product_select() {
+  $('#products-selector').empty().removeClass('product-select-box2');
+  return false;
+}
+
 function add_product_form() {
   add_product_browser = $('#products-selector').html();
 
@@ -195,7 +241,7 @@ function add_product_to_order(order_id, node_id) {
   var post_vars = {
     'action' : 'add',
     'nid'    : node_id,
-    'qty'    : $('#edit-add-qty').val(),
+    'qty'    : $('#edit-add-qty').val()
   };
   $('#uc-order-add-product-form :input').each(
     function() {

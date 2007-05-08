@@ -23,27 +23,40 @@ function test_gateway_payment_gateway() {
   return $gateways;
 }
 
+
 /*******************************************************************************
  * Module and Helper Functions
  ******************************************************************************/
 
 function test_gateway_charge($order_id, $amount, $data) {
   global $user;
-
-  // Uncomment these lines to see the order object.  The information for the 
-  // payment is in the $order->payment_details array.
-/*
   $order = uc_order_load($order_id);
-  drupal_set_message('<pre>'. print_r($order->payment_details, true) .'</pre>');
-*/
 
-  $message = t('Credit card charged: !amount', array('!amount' => uc_currency_format($amount)));
-  uc_order_comment_save($order_id, $user->uid, $message, 'admin');
+  // Use 0000000000000000 to test a failed payment, anything else for a good one.
+  if ($order->payment_details['cc_number'] == '0000000000000000') {
+    $success = FALSE;
+  }
+  else {
+    $success = TRUE;
+  }
+
+  // Uncomment this lines to see the order object.  The information for the 
+  // payment is in the $order->payment_details array.
+  // drupal_set_message('<pre>'. print_r($order->payment_details, true) .'</pre>');
+
+  if ($success) {
+    $message = t('Credit card charged: !amount', array('!amount' => uc_currency_format($amount)));
+    uc_order_comment_save($order_id, $user->uid, $message, 'admin');
+  }
+  else {
+    $message = t('Credit card charge failed.');
+    uc_order_comment_save($order_id, $user->uid, $message, 'admin');
+  }
 
   $result = array(
-    'success' => TRUE,
+    'success' => $success,
     'comment' => t('Card charged, resolution code: 0022548315'),
-    'message' => t('Credit card payment processed successfully.'),
+    'message' => $success ? t('Credit card payment processed successfully.') : t('Credit card charge failed.'),
     'uid' => $user->uid,
     // 'data' => $data,
   );

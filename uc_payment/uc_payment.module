@@ -145,31 +145,54 @@ function uc_payment_table_settings() {
 /**
  * Implementation of hook_order().
  */
-function uc_payment_order($op, $arg1) {
+function uc_payment_order($op, &$arg1) {
   switch ($op) {
     case 'submit':
       $func = _payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
-        $func('order-submit', &$arg1);
+        if (substr(PHP_VERSION, 0, 1) == 4) {
+          return $func('order-submit', &$arg1);
+        }
+        else {
+          return uc_func_call($func, 'order-submit', $arg1);
+        }
       }
       break;
 
     case 'load':
       $func = _payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
-        $func('order-load', &$arg1);
+        if (substr(PHP_VERSION, 0, 1) == 4) {
+          $func('order-load', &$arg1);
+        }
+        else {
+          uc_func_call($func, 'order-load', $arg1);
+        }
       }
       break;
 
     case 'save':
       $func = _payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
-        $func('order-save', &$arg1);
+        if (substr(PHP_VERSION, 0, 1) == 4) {
+          $func('order-save', &$arg1);
+        }
+        else {
+          uc_func_call($func, 'order-save', $arg1);
+        }
       }
       break;
 
     case 'delete':
       db_query("DELETE FROM {uc_payment_receipts} WHERE order_id = %d", $arg1);
+      // Call each payment method to delete method specific data from the database.
+      $methods = _payment_method_list();
+      foreach ($methods as $method) {
+        $func = $method['callback'];
+        if (function_exists($func)) {
+          $func('order-delete', $arg1);
+        }
+      }
       break;
   }
 }
@@ -218,6 +241,16 @@ function uc_payment_payment_method() {
     'callback' => 'uc_payment_method_check',
     'weight' => 1,
     'checkout' => TRUE,
+    'backend' => TRUE,
+  );
+  $methods[] = array(
+    'id' => 'cod',
+    'name' => t('COD'),
+    'title' => t('Cash on Delivery'),
+    'desc' => t('Pay cash on delivery on pick-up.'),
+    'callback' => 'uc_payment_method_cod',
+    'weight' => 1,
+    'checkout' => FALSE,
     'backend' => TRUE,
   );
   $methods[] = array(
@@ -458,8 +491,16 @@ function uc_checkout_pane_payment($op, $arg1, $arg2) {
       $method = $arg2['pane']['payment_method'];
       $arg1->payment_method = $method;
       $func = _payment_method_data($method, 'callback');
-      if (function_exists($func) && ($result = $func('cart-process', &$arg1)) === FALSE) {
-        return FALSE;
+      if (function_exists($func)) {
+        if (substr(PHP_VERSION, 0, 1) == 4) {
+          $result = $func('cart-process', &$arg1);
+        }
+        else {
+          $result = uc_func_call($func, 'cart-process', $arg1);
+        }
+        if ($result === FALSE) {
+          return FALSE;
+        }
       }
       return TRUE;
 
@@ -487,7 +528,10 @@ function uc_checkout_pane_payment($op, $arg1, $arg2) {
       $review[] = array('border' => 'top', 'title' => t('Paying by'), 'data' => _payment_method_data($arg1->payment_method, 'name'));
       $func = _payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
-        $review = array_merge($review, $func('cart-review', $arg1));
+        $result = $func('cart-review', $arg1);
+        if (is_array($result)) {
+          $review = array_merge($review, $result);
+        }
       }
       return $review;
   }
@@ -571,7 +615,7 @@ function uc_order_pane_payment($op, $arg1) {
     case 'edit-process':
       $changes['payment_method'] = $arg1['payment_method'];
       $func = _payment_method_data($arg1['payment_method'], 'callback');
-      if (function_exists($func) && ($return = $func('edit-process', $arg1)) != NULL) {
+      if (function_exists($func) && ($return = $func('edit-process', $arg1)) != NULL && is_array($return)) {
          $changes = array_merge($changes, $return);
       }
       return $changes;
@@ -636,6 +680,113 @@ function theme_uc_payment_method_other_form($form) {
           . drupal_render($form['pm_other_description']) 
           .'</td></tr></table>';
   return $output;
+}
+
+function uc_payment_method_cod($op, $arg1) {
+  switch ($op) {
+    case 'cart-details':
+      $details = variable_get('uc_cod_policy', t('Full payment is expected upon delivery or prior to pick-up.'));
+      if (($max = variable_get('uc_cod_max_order', 0)) > 0 && is_numeric($max)) {
+        $details .= '<p>'. t('Orders totalling more than !number are <b>not eligible</b> for COD.', array('!number' => uc_currency_format($max))) .'</p>';
+      }
+      if (variable_get('uc_cod_delivery_date', FALSE)) {
+        $details .= uc_strip_form(drupal_get_form('uc_payment_method_cod_form', $arg1));
+      }
+      return $details;
+
+    case 'cart-process':
+      if (variable_get('uc_cod_delivery_date', FALSE)) {
+        $arg1->payment_details['delivery_month'] = intval($_POST['cod_delivery_month']);
+        $arg1->payment_details['delivery_day'] = intval($_POST['cod_delivery_day']);
+        $arg1->payment_details['delivery_year'] = intval($_POST['cod_delivery_year']);
+      }
+      return TRUE;
+
+    case 'cart-review':
+      if (variable_get('uc_cod_delivery_date', FALSE)) {
+        $date = uc_date_format($arg1->payment_details['delivery_month'],
+                               $arg1->payment_details['delivery_day'],
+                               $arg1->payment_details['delivery_year']);
+        $review[] = array('title' => t('Delivery Date'), 'data' => $date);
+      }
+      return $review;
+
+    case 'order-view':
+      if (variable_get('uc_cod_delivery_date', FALSE)) {
+        $output = t('Desired delivery date:') .'<br />'
+                . uc_date_format($arg1->payment_details['delivery_month'],
+                                 $arg1->payment_details['delivery_day'],
+                                 $arg1->payment_details['delivery_year']);
+      }
+      return $output;
+
+    case 'order-details':
+      if (variable_get('uc_cod_delivery_date', FALSE)) {
+        $details .= uc_strip_form(drupal_get_form('uc_payment_method_cod_form', $arg1));
+      }
+      return $details;
+
+    case 'order-load':
+      $result = db_query("SELECT * FROM {uc_payment_cod} WHERE order_id = %d", $arg1->order_id);
+      if ($row = db_fetch_object($result)) {
+        $arg1->payment_details['delivery_month'] = $row->delivery_month;
+        $arg1->payment_details['delivery_day'] = $row->delivery_day;
+        $arg1->payment_details['delivery_year'] = $row->delivery_year;
+      }
+      break;
+
+    case 'order-submit':
+      if ($arg1->payment_method == 'cod' &&
+          ($max = variable_get('uc_cod_max_order', 0)) > 0 &&
+          is_numeric($max) &&
+          $arg1->order_total > $max) {
+          $result[] = array(
+            'pass' => FALSE,
+            'message' => t('Your final order total exceeds the maximum for COD payment.  Please go back and select a different method of payment.')
+          );
+          $_SESSION['expanded_panes'][] = 'payment';
+          return $result;
+      }
+    case 'order-save':
+      db_query("DELETE FROM {uc_payment_cod} WHERE order_id = %d", $arg1->order_id);
+      db_query("INSERT INTO {uc_payment_cod} VALUES (%d, %d, %d, %d)",
+               $arg1->order_id, $arg1->payment_details['delivery_month'],
+               $arg1->payment_details['delivery_day'], $arg1->payment_details['delivery_year']);
+      break;
+
+    case 'order-delete':
+      db_query("DELETE FROM {uc_payment_cod} WHERE order_id = %d", $arg1);
+      break;
+
+    case 'settings':
+      $form['uc_cod_max_order'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Maximum order total eligible for COD'),
+        '#default_value' => variable_get('uc_cod_max_order', 0),
+        '#description' => t('Set to 0 for no maximum order limit.'),
+      );
+      $form['uc_cod_delivery_date'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Let customers enter a desired delivery date.'),
+        '#default_value' => variable_get('uc_cod_delivery_date', FALSE),
+      );
+      return $form;
+  }
+}
+
+function uc_payment_method_cod_form($order) {
+  $form['table1'] = array('#value' => '<style>.cod-table div, .cod-table { display: inline; }</style><table class="cod-table"><tr><td class="form-item" colspan="3"><label>'. t('Enter a desired delivery date:') .'</label></td></tr><tr><td>');
+  $month = (!empty($order->payment_details['delivery_month'])) ? $order->payment_details['delivery_month'] : date('n');
+  $form['cod_delivery_month'] = uc_select_month(NULL, $month);
+  $form['table2'] = array('#value' => '</td><td>');
+  $day = (!empty($order->payment_details['delivery_day'])) ? $order->payment_details['delivery_day'] : date('j');
+  $form['cod_delivery_day'] = uc_select_day(NULL, $day);
+  $form['table3'] = array('#value' => '</td><td>');
+  $year = (!empty($order->payment_details['delivery_year'])) ? $order->payment_details['delivery_year'] : date('Y');
+  $form['cod_delivery_year'] = uc_select_year(NULL, $year, date('Y'), date('Y') + 1);
+  $form['table4'] = array('#value' => '</td></tr></table>');
+
+  return $form;
 }
 
 function uc_payment_method_check($op, $arg1) {
@@ -734,6 +885,7 @@ function uc_payment_method_check($op, $arg1) {
       $form['uc_check_mailing_city'] = uc_textfield(uc_get_field_name('city'), variable_get('uc_check_mailing_city', ''), FALSE);
       $form['uc_check_mailing_zone'] = uc_zone_select(uc_get_field_name('zone'), variable_get('uc_check_mailing_zone', ''), FALSE);
       $form['uc_check_mailing_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), variable_get('uc_check_mailing_postal_code', ''), FALSE, NULL, 10, 10);
+      $form['uc_check_country'] = uc_country_select(uc_get_field_name('country'), variable_get('uc_check_country', 840));
       $form['uc_check_policy'] = array(
         '#type' => 'textarea',
         '#title' => t('Check Payment Policy'),
@@ -770,7 +922,7 @@ function uc_payment_receive_check_form($order_id) {
     '#type' => 'textfield',
     '#title' => t('Amount'),
     '#description' => t('Do not include currency sign.'),
-    '#default_value' => $balance,
+    '#default_value' => uc_currency_format($balance, FALSE, FALSE),
     '#size' => 10,
   );  
   $form['comment'] = array(
@@ -824,10 +976,9 @@ function uc_payment_receive_check_form_submit($form_id, $form_values) {
   uc_payment_enter($form_values['order_id'], _payment_method_data('check', 'name'),
                    $form_values['amount'], $user->uid, '', $form_values['comment']);
 
-  db_query("INSERT INTO {uc_payment_check} (order_id, clear_date) VALUES "
-          ."(%d, %d)", $form_values['order_id'],
-           mktime(12, 0, 0, $form_values['clear_month'],
-                  $form_values['clear_day'], $form_values['clear_year']));
+  db_query("INSERT INTO {uc_payment_check} (check_id, order_id, clear_date) "
+          ."VALUES (%d, %d, %d)", db_next_id('{uc_payment_check}_check_id'),
+           $form_values['order_id'], mktime(12, 0, 0, $form_values['clear_month'], $form_values['clear_day'], $form_values['clear_year']));
 
   drupal_set_message(t('Check received, expected clear date of !date.',
                      array('!date' => $form_values['clear_month'] .'/'
@@ -907,7 +1058,6 @@ function uc_payment_by_order_form($order_id) {
   foreach ($methods as $method) {
     $options[$method['id']] = $method['name'];
   }
-  $options[] = t('Other');
   $form['payments']['new']['method'] = array(
     '#type' => 'select',
     '#options' => $options,
@@ -954,7 +1104,8 @@ function theme_uc_payment_by_order_form($form) {
            .'<br /><strong>'. t('Current Balance:') .'</strong> '
           . drupal_render($form['balance']) .'</p>';
   $output .= '<p>'. tapir_get_table('uc_payments_table', $form) .'</p>'
-           . '<p>'. drupal_render($form) .'</p>';
+           . '<p>'. drupal_render($form['form_id'])
+           . drupal_render($form['form_token']) .'</p>';
   return $output;
 }
 
@@ -1146,14 +1297,14 @@ function uc_payment_process($method, $order_id, $amount, $data = NULL, $default 
     }
   }
 
-  if (isset($result['success']) && $result['success'] == TRUE) {
-    if (!isset($result['uid']) || is_null($result['uid'])) {
+  if ($result['success'] === TRUE) {
+    if (!empty($result['uid'])) {
       $result['uid'] = 0;
     }
     uc_payment_enter($order_id, $method, $amount, $result['uid'], 
                      $result['data'], $result['comment']);
   }
-  if (isset($result['message']) && !is_null($result['message']) && !$default) {
+  if (!empty($result['message']) && !$default) {
     drupal_set_message($result['message']);
   }
 
@@ -1185,9 +1336,10 @@ function uc_payment_enter($order_id, $method, $amount, $uid, $data, $comment) {
     uc_order_log_changes($order_id, array($log_message));
   }
 
-  db_query("INSERT INTO {uc_payment_receipts} (order_id, method, amount, uid, "
-          ."data, comment, received) VALUES (%d, '%s', %f, %d, '%s', '%s', %d)",
-           $order_id, $method_name, $amount, $uid, $data, $comment, time());
+  db_query("INSERT INTO {uc_payment_receipts} (receipt_id, order_id, method, "
+          ."amount, uid, data, comment, received) VALUES (%d, %d, '%s', %f, "
+          ."%d, '%s', '%s', %d)", db_next_id('{uc_payment_receipts}_receipt_id'),
+          $order_id, $method_name, $amount, $uid, $data, $comment, time());
 }
 
 /**

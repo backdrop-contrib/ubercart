@@ -50,6 +50,26 @@ function uc_credit_perm() {
   return array('view cc details', 'view cc numbers', 'process credit cards');
 }
 
+/**
+ * Implementation of hook_cron().
+ */
+function uc_credit_cron() {
+  // Empty anonymous carts.
+  $time = strtotime(variable_get('uc_cart_anon_duration', '4') .' '
+                  . variable_get('uc_cart_anon_unit', 'hours') .' ago');
+  db_query("DELETE upc.* FROM {uc_orders} AS uo LEFT JOIN {uc_payment_credit} "
+          ."AS upc ON uo.order_id = upc.order_id WHERE uo.modified <= %d AND "
+          ."uo.order_status = 0", $time);
+
+  // Mask old stored credit card numbers.
+  $time = strtotime(variable_get('uc_credit_number_duration', '1') .' '
+                  . variable_get('uc_credit_number_unit', 'years') .' ago');
+  db_query("UPDATE {uc_orders} AS uo LEFT JOIN {uc_payment_credit} AS upc "
+          ."ON uo.order_id = upc.order_id SET upc.cc_number = "
+          ."RIGHT(upc.cc_number, 4), upc.cc_cvv = '000' WHERE uo.modified "
+          ."<= %d AND uo.order_status = %d AND CHAR_LENGTH(upc.cc_number) > 4",
+           $time, variable_get('uc_credit_clear_status', 4));
+}
 
 /*******************************************************************************
  * Hook Functions (Ubercart)
@@ -58,38 +78,49 @@ function uc_credit_perm() {
 /**
  * Implementation of hook_order().
  */
-function uc_credit_order($op, $arg1, $arg2) {
+function uc_credit_order($op, &$arg1, $arg2) {
   switch ($op) {
     case 'submit':
       if ($arg1->payment_method == 'credit'
        && variable_get('uc_credit_checkout_process', FALSE)) {
         $pass = uc_payment_process('credit', $arg1->order_id, $arg1->order_total, NULL, TRUE, NULL, FALSE);
-        if ($pass) {
+        if (!$pass) {
           $message = variable_get('uc_credit_fail_message', t('We were unable to process your credit card payment. Please verify your card details and try again.  If the problem persists, contact us to complete your order.'));
-          return array('pass' => FALSE, 'message' => $message);
+          return array(array('pass' => FALSE, 'message' => $message));
+        }
+        if (variable_get('uc_credit_checkout_no_store', FALSE)) {
+          db_query("UPDATE {uc_payment_credit} SET cc_number = RIGHT(cc_number, 4), "
+                  ."cc_cvv = '000' WHERE order_id = %d", $arg1->order_id);
         }
       }
       break;
     
     case 'save':
       if ($arg1->payment_method == 'credit') {
-          $cc_owner = $arg1->payment_details['cc_owner'];
+        $cc_owner = $arg1->payment_details['cc_owner'];
+        if (substr($arg1->payment_details['cc_number'], 0, strlen(t('(Last 4) '))) == t('(Last 4) ')) {
+          $result = db_query("SELECT cc_number FROM {uc_payment_credit} WHERE order_id = %d", $arg1->order_id);
+          if ($number = db_result($result)) {
+            $cc_number = $number;
+          }
+          else {
+            $cc_number = '';
+          }
+        }
+        else {
           $cc_number = $arg1->payment_details['cc_number'];
-          $cc_exp_month = $arg1->payment_details['cc_exp_month'];
-          $cc_exp_year = $arg1->payment_details['cc_exp_year'];
-          $cc_cvv = $arg1->payment_details['cc_cvv'];
+        }
+        $cc_exp_month = $arg1->payment_details['cc_exp_month'];
+        $cc_exp_year = $arg1->payment_details['cc_exp_year'];
+        $cc_cvv = $arg1->payment_details['cc_cvv'];
         db_query("UPDATE {uc_payment_credit} SET cc_owner = '%s', cc_number = '%s', "
                 ."cc_exp_month = %d, cc_exp_year = %d, cc_cvv = '%s' WHERE order_id = %d",
-                $arg1->payment_details['cc_owner'], $arg1->payment_details['cc_number'],
-                $arg1->payment_details['cc_exp_month'], $arg1->payment_details['cc_exp_year'],
-                $arg1->payment_details['cc_cvv'], $arg1->order_id);
+                 $cc_owner, $cc_number, $cc_exp_month, $cc_exp_year, $cc_cvv, $arg1->order_id);
         if (db_affected_rows() == 0) {
           db_query("INSERT INTO {uc_payment_credit} (order_id, cc_owner, "
                   ."cc_number, cc_exp_month, cc_exp_year, cc_cvv) VALUES "
                   ."(%d, '%s', '%s', %d, %d, '%s')", $arg1->order_id,
-                   $arg1->payment_details['cc_owner'], $arg1->payment_details['cc_number'],
-                   $arg1->payment_details['cc_exp_month'], $arg1->payment_details['cc_exp_year'],
-                   $arg1->payment_details['cc_cvv']);
+                   $cc_owner, $cc_number, $cc_exp_month, $cc_exp_year, $cc_cvv);
         }
       }
       break;
@@ -182,7 +213,18 @@ function uc_payment_method_credit($op, $arg1) {
 
     case 'cart-process':
       $arg1->payment_details['cc_owner'] = check_plain($_POST['cc_owner']);
-      $arg1->payment_details['cc_number'] = check_plain($_POST['cc_number']);
+      if (substr($_POST['cc_number'], 0, strlen(t('(Last 4) '))) == t('(Last 4) ')) {
+        $result = db_query("SELECT cc_number FROM {uc_payment_credit} WHERE order_id = %d", $arg1->order_id);
+        if ($number = db_result($result)) {
+          $arg1->payment_details['cc_number'] = $number;
+        }
+        else {
+          $arg1->payment_details['cc_number'] = '';
+        }
+      }
+      else {
+        $arg1->payment_details['cc_number'] = check_plain($_POST['cc_number']);
+      }
       $arg1->payment_details['cc_exp_month'] = check_plain($_POST['cc_exp_month']);
       $arg1->payment_details['cc_exp_year'] = check_plain($_POST['cc_exp_year']);
       $arg1->payment_details['cc_cvv'] = check_plain($_POST['cc_cvv']);
@@ -196,7 +238,7 @@ function uc_payment_method_credit($op, $arg1) {
         drupal_set_message(t('You have entered an invalid CVV number.'), 'error');
         $return = FALSE;
       }
-      if (variable_get('uc_credit_validate_numbers', TRUE) && !_valid_card_number($_POST['cc_number'])) {
+      if (variable_get('uc_credit_validate_numbers', TRUE) && !_valid_card_number($arg1->payment_details['cc_number'])) {
         drupal_set_message(t('You have entered an invalid credit card number.'), 'error');
         $return = FALSE;
       }
@@ -206,7 +248,7 @@ function uc_payment_method_credit($op, $arg1) {
       if (variable_get('uc_credit_owner_enabled', TRUE)) {
         $review[] = array('title' => t('Card Owner'), 'data' => $arg1->payment_details['cc_owner']);
       }
-      $review[] = array('title' => t('Card Number'), 'data' => $arg1->payment_details['cc_number']);
+      $review[] = array('title' => t('Card Number'), 'data' => uc_credit_display_number($arg1->payment_details['cc_number']));
       $review[] = array('title' => t('Expiration'), 'data' => $arg1->payment_details['cc_exp_month'] .'/'. $arg1->payment_details['cc_exp_year']);
       if (variable_get('uc_credit_cvv_enabled', TRUE)) {
         $review[] = array('title' => t('CVV'), 'data' => $arg1->payment_details['cc_cvv']);
@@ -233,7 +275,9 @@ function uc_payment_method_credit($op, $arg1) {
                  . $arg1->payment_details['cc_cvv'] .'</td></tr>';
       }
       $output .= '</table></span></span>';
-      if (user_access('process credit cards')) {
+      if (user_access('process credit cards') &&
+          is_numeric($arg1->payment_details['cc_number']) &&
+          strlen($arg1->payment_details['cc_number']) > 10) {
         $output .= drupal_get_form('uc_credit_order_view_form', $arg1->order_id);
       }
       return $output;
@@ -249,7 +293,9 @@ function uc_payment_method_credit($op, $arg1) {
 
     case 'edit-process':
       $changes['payment_details']['cc_owner'] = check_plain($_POST['cc_owner']);
-      $changes['payment_details']['cc_number'] = check_plain($_POST['cc_number']);
+      if (substr($_POST['cc_number'], 0, 10) !== t('(Last 4) ')) {
+        $changes['payment_details']['cc_number'] = check_plain($_POST['cc_number']);
+      }
       $changes['payment_details']['cc_exp_month'] = check_plain($_POST['cc_exp_month']);
       $changes['payment_details']['cc_exp_year'] = check_plain($_POST['cc_exp_year']);
       $changes['payment_details']['cc_cvv'] = check_plain($_POST['cc_cvv']);
@@ -264,12 +310,17 @@ function uc_payment_method_credit($op, $arg1) {
         '#title' => t('Attempt to process credit card payments at checkout.'),
         '#default_value' => variable_get('uc_credit_checkout_process', FALSE),
       );
+      $form['uc_credit_checkout_no_store'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Do not store the full credit card number even at checkout.'),
+        '#default_value' => variable_get('uc_credit_checkout_no_store', FALSE),
+      );
       $form['uc_credit_fail_message'] = array(
         '#type' => 'textarea',
         '#title' => t('Card processing failure message'),
         '#description' => t('Modify the message displayed to users when their payment fails at checkout.'),
         '#default_value' => variable_get('uc_credit_fail_message',
-                       t('We were unable to process your credit card payment. Please verify your card details and try again.  If the problem persists, contact us to complete your order.')),
+           t('We were unable to process your credit card payment. Please verify your card details and try again.  If the problem persists, contact us to complete your order.')),
       );
       $form['cc_types_info'] = array(
         '#value' => '<div>'. t('Specify which credit card types you accept for payment. Make sure your card processor or payment gateway supports the enabled options.') .'</div>',
@@ -326,12 +377,45 @@ function uc_payment_method_credit($op, $arg1) {
       );
       $form['uc_credit_masking_char'] = array(
         '#type' => 'textfield',
-        '#title' => t('Masking Character'),
+        '#title' => t('Masking character'),
         '#description' => t('The character used to mask a card number.'),
         '#default_value' => variable_get('uc_credit_masking_char', '-'),
         '#size' => 10,
         '#maxlength' => 1,
       );
+      $form['number_clearing_instr'] = array(
+        '#value' => '<div>'. t('Specify below the status and age of orders whose credit card information will be cleaned from the database.') .'</div>',
+      );
+      $statuses = uc_order_get_status_name(0, FALSE, TRUE);
+      foreach ($statuses as $key => $value) {
+        $options[$key] = $value['title'];
+      }
+      $form['uc_credit_clear_status'] = array(
+        '#type' => 'select',
+        '#title' => t('Order status'),
+        '#options' => $options,
+        '#default_value' => variable_get('uc_credit_clear_status', 4),
+      );
+      $form['table1'] = array('#value' => '<table><tbody style="border: 0px;"><tr><td>');
+      $form['uc_credit_number_duration'] = array(
+        '#type' => 'select',
+        '#title' => t('Age'),
+        '#options' => drupal_map_assoc(range(1, 24)),
+        '#default_value' => variable_get('uc_credit_number_duration', '1'),
+      );
+      $form['table2'] = array('#value' => '</td><td style="padding-left: 1em;">');
+      $form['uc_credit_number_unit'] = array(
+        '#type' => 'select',
+        '#title' => t('Unit of time'),
+        '#options' => array(
+          'hours' => t('hour(s)'),
+          'days' => t('day(s)'),
+          'weeks' => t('week(s)'),
+          'years' => t('year(s)'),
+        ),
+        '#default_value' => variable_get('uc_credit_number_unit', 'years'),
+      );
+      $form['table3'] = array('#value' => '</td></tr></tbody></table>');
       return $form;
   }
 }
@@ -347,13 +431,26 @@ function uc_payment_method_credit_form($order) {
       '#title' => t('Card Owner'),
       '#default_value' => $order->payment_details['cc_owner'],
       '#size' => 32,
-      '#maxlength' => 64
+      '#maxlength' => 64,
     );
+  }
+  if (variable_get('uc_credit_validate_numbers', TRUE) &&
+      (strlen($order->payment_details['cc_number']) > 4 &&
+       !_valid_card_number($order->payment_details['cc_number']))) {
+    $default_num = $order->payment_details['cc_number'];
+  }
+  elseif (!empty($order->payment_details['cc_number'])) {
+    if (user_access('view cc numbers')) {
+      $default_num = $order->payment_details['cc_number'];
+    }
+    else {
+      $default_num = t('(Last 4) ') . substr($order->payment_details['cc_number'], -4);
+    }
   }
   $form['cc_number'] = array(
     '#type' => 'textfield',
     '#title' => t('Card Number'),
-    '#default_value' => $order->payment_details['cc_number'],
+    '#default_value' => $default_num,
     '#size' => 20,
     '#maxlength' => 16,
   );
@@ -492,7 +589,7 @@ function uc_credit_terminal_form($order_id, $amount = 0) {
   $form['amount'] = array(
     '#type' => 'textfield',
     '#title' => t('Charge Amount'),
-    '#default_value' => $amount,
+    '#default_value' => uc_currency_format($amount, FALSE, FALSE),
     '#size' => 10,
     '#weight' => 0,
   );
@@ -532,6 +629,10 @@ function uc_credit_terminal_form_submit($form_id, $form_values) {
  * Return a credit card number with appropriate masking.
  */
 function uc_credit_display_number($number, $masked = FALSE) {
+  if (strlen($number) == 4) {
+    return t('(Last 4) '). $number;
+  }
+
   if (user_access('view cc numbers') && !$masked) {
     return $number;
   }
