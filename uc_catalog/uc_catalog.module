@@ -30,7 +30,7 @@ function uc_catalog_menu($may_cache){
       'access' => TRUE,
       'title' => t('Catalog'),
       'callback' => 'theme',
-      'callback arguments' => 'uc_catalog_browse',
+      'callback arguments' => array('uc_catalog_browse'),
       'type' => MENU_NORMAL_ITEM,
     );
     $items[] = array('path' => 'admin/store/settings/catalog',
@@ -73,14 +73,26 @@ function uc_catalog_perm(){
  * Implementation of hook_nodeapi().
  */
 function uc_catalog_nodeapi(&$node, $op, $a3 = null, $a4 = null){
+  static $parents = array();
+  
   if (in_array($node->type, uc_catalog_node_types())){
     switch($op){
       case 'view':
         $terms = taxonomy_node_get_terms_by_vocabulary($node->nid, variable_get('uc_catalog_vid', 0));
         if (count($terms)){
           $crumbs = array(l(t('Catalog'), 'catalog'));
+          $used_tids = array();
           foreach ($terms as $term){
-            $crumbs[] = l($term->name, uc_catalog_term_path($term));
+            if (!isset($parents[$term->tid])){
+              $parents[$term->tid] = taxonomy_get_parents_all($term->tid);
+            }
+            //drupal_set_message('<pre>'. print_r($parents[$term->tid], true) .'</pre>');
+            foreach (array_reverse($parents[$term->tid]) as $parent){
+              if (!in_array($parent->tid, $used_tids)){
+                $crumbs[] = l($parent->name, uc_catalog_term_path($parent));
+                $used_tids[] = $parent->tid;
+              }
+            }
           }
         }
         drupal_set_breadcrumb($crumbs);
@@ -171,9 +183,13 @@ function uc_catalog_term_path($term){
     $parents[$term->tid] = taxonomy_get_parents_all($term->tid);
   }
   $path = '';
+  $used_tids = array();
   //drupal_set_message('<pre>'. print_r($parents[$term->tid], true) .'</pre>');
   foreach (array_reverse($parents[$term->tid]) as $parent){
-    $path .= '/'. urlencode(str_replace(' ', '_', strtolower($parent->name)));
+    if (!in_array($parent->tid, $used_tids)){
+      $path .= '/'. urlencode(str_replace(' ', '_', strtolower($parent->name)));
+      $used_tids[] = $parent->tid;
+    }
   }
   return 'catalog'. $path /* . urlencode(str_replace(' ', '_', strtolower($term->name))) */;
 }
@@ -550,18 +566,20 @@ function theme_uc_catalog_browse(){
         $g_child_nodes += taxonomy_term_count_nodes($grandchild->tid, $type);
       }
       if ($g_child_nodes){
-        $grandchildren[$i] = l($grandchild->name, uc_catalog_term_path($grandchild));
+        $grandchildren[$i] = l($grandchild->name, uc_catalog_term_path($grandchild), array('class' => 'subcategory'));
         $j++;
       }
     }
     //$grandchildren = array_slice($grandchildren, 0, intval(count($grandchildren) / 2) + 1, true);
     if ($j > $max_gc_display){
-      array_push($grandchildren, l('More...', uc_catalog_term_path($child)));
+      array_push($grandchildren, l('More...', uc_catalog_term_path($child), array('class' => 'subcategory')));
     }
     if ($child->nodes){
-      $child_list[] = $image .'<br/><strong>'. l($child->name, uc_catalog_term_path($child)) .'</strong>'
-        ."<br/><span>"
-        . implode(', ', $grandchildren) ."</span>\n";
+      $cell_link = $image .'<br/><strong>'. l($child->name, uc_catalog_term_path($child)) .'</strong>';
+      if (variable_get('uc_catalog_show_subcategories', true)){
+        $cell_link .= "<br/><span>". implode(', ', $grandchildren) ."</span>\n";
+      }
+      $child_list[] = $cell_link;
     }
   }
   if ($catalog->image){
@@ -651,6 +669,16 @@ function uc_catalog_admin_form(){
   $form['uc_catalog_breadcrumb'] = array('#type' => 'checkbox',
     '#title' => t('Display catalog breadcrumb'),
     '#default_value' => variable_get('uc_catalog_breadcrumb', true),
+  );
+  
+  $form['uc_catalog_block_nodecount'] = array('#type' => 'checkbox',
+    '#title' => t('Display node counts in Catalog Block'),
+    '#default_value' => variable_get('uc_catalog_block_nodecount', true),
+  );
+  
+  $form['uc_catalog_show_subcategories'] = array('#type' => 'checkbox',
+    '#title' => t('Display subcategories in catalog view'),
+    '#default_value' => variable_get('uc_catalog_show_subcategories', true),
   );
   
   return system_settings_form($form);
@@ -792,13 +820,23 @@ function _uc_catalog_navigation($branch){
   //$result = db_query("SELECT type FROM {vocabulary_node_types} WHERE vid = %d", $vid);
   $types = uc_catalog_node_types();
   $num = 0;
+
+
   foreach ($types as $type){
     $num += taxonomy_term_count_nodes($branch->tid, $type);
   }
+
+  // Checks to see if node counts are desired in navigation
+  $num_text = '';
+  if(variable_get('uc_catalog_block_nodecount',TRUE)) {
+    $num_text = ' ('.$num.')';
+  }
+
   if (!$num){ // No nodes in category or descendants. Not in path and display nothing.
     return array(false, '');
   }
-  $link = l($branch->name .' ('. $num .')', uc_catalog_term_path($branch));
+
+  $link = l($branch->name . $num_text, uc_catalog_term_path($branch));
   if (count($branch->children)){
     $lis = array();
     foreach($branch->children as $twig){
@@ -808,9 +846,9 @@ function _uc_catalog_navigation($branch){
         $inpath = $child_in_path;
       }
     }
-    
+
     if ($here){
-      $output = '<li class="expanded"><strong>'. $branch->name .' ('. $num .')' ."</strong>\n";
+      $output = '<li class="expanded"><strong>'. $branch->name . $num_text ."</strong>\n";
       $output .= '<ul class="menu">';
       foreach ($lis as $li){
         $output .= $li ."\n";
@@ -830,7 +868,7 @@ function _uc_catalog_navigation($branch){
     }
   }
   else{
-    $output = '<li class="leaf">'. ($inpath ? '<strong>' : '') . ($here ? $branch->name .' ('. $num .')' : $link) . ($inpath ? '</strong>' : '') .'</li>'. "\n";
+    $output = '<li class="leaf">'. ($inpath ? '<strong>' : '') . ($here ? $branch->name .$num_text : $link) . ($inpath ? '</strong>' : '') .'</li>'. "\n";
   }
   // Tell parent category your status, and pass on output.
   return array($inpath, $output);

@@ -125,7 +125,7 @@ function uc_cart_block($op = 'list', $delta = 0, $edit = array()) {
 
     $subject = l('<img src="'. $cart_image .'" align="left" style="padding-right: 5px;" />', 'cart', NULL, NULL, NULL, FALSE, TRUE)
                 .'<div id="block-cart-title-bar" onclick="cart_toggle(\''. $uc_cart_path .'\');" style="cursor: pointer; white-space: nowrap;">'
-                .'<img id="block-cart-title-arrow" src="'. $arrow_down_image .'" alt="[]" title="'. t('Expand cart block.') .'" style="padding-top: 5px; padding-right: 2px;" align="right" />'
+                .'<img id="block-cart-title-arrow" src="'. $arrow_up_image .'" alt="[]" title="'. t('Expand cart block.') .'" style="padding-top: 5px; padding-right: 2px;" align="right" />'
                 .'Shopping Cart</div>';
 
     $block['subject'] = $subject;
@@ -1133,20 +1133,19 @@ function uc_checkout_pane_delivery($op, $arg1, $arg2) {
       return $pane;
 
     case 'theme':
-      $pane =& $arg1['panes']['delivery']['pane'];
-      if ($pane['#collapsed']) {
+      if ($arg1['panes']['delivery']['pane']['#collapsed']) {
         $collapsed = ' collapsed';
       }
-      $output = '<div class="delivery-pane"><fieldset class=" collapsible'. $collapsed .'">'
-              . '<legend>'. t('Delivery Information') .'</legend>'
-              . drupal_render($pane['description'])
+      $output = '<div class="delivery-pane"><fieldset class=" collapsible'
+              . $collapsed .'"><legend>'. t('Delivery Information') .'</legend>'
+              . drupal_render($arg1['panes']['delivery']['pane']['description'])
               .'<table class="pane-table" cellpadding="2">';
       $req = '<span class="form-required">*</span>';
 
-      foreach (element_children($pane) as $field) {
+      foreach (element_children($arg1['panes']['delivery']['pane']) as $field) {
         if (substr($field, 0, 9) == 'delivery_') {
-          $title = $pane[$field]['#title'] .':';
-          unset($pane[$field]['#title']);
+          $title = $arg1['panes']['delivery']['pane'][$field]['#title'] .':';
+          unset($arg1['panes']['delivery']['pane'][$field]['#title']);
           if (substr($field, 9) == 'street1') {
             $title = uc_get_field_name('street') .':';
           }
@@ -1154,11 +1153,12 @@ function uc_checkout_pane_delivery($op, $arg1, $arg2) {
             $title = ' ';
           }
           $output .= '<tr><td class="field-label">';
-          if ($pane[$field]['#required']) {
+          if ($arg1['panes']['delivery']['pane'][$field]['#required']) {
             $output .= $req;
           }
           $output .= $title .'</td><td>'
-                   . drupal_render($pane[$field]) .'</td></tr>';
+                   . drupal_render($arg1['panes']['delivery']['pane'][$field])
+                    .'</td></tr>';
         }
       }
       $output .= '</table>';
@@ -1241,13 +1241,12 @@ function uc_checkout_pane_billing($op, $arg1, $arg2) {
       return $pane;
 
     case 'theme':
-      $pane =& $arg1['panes']['billing']['pane'];
-      if ($pane['#collapsed']) {
+      if ($arg1['panes']['billing']['pane']['#collapsed']) {
         $collapsed = ' collapsed';
       }
-      $output = '<div class="billing-pane"><fieldset class=" collapsible'. $collapsed .'">'
-              . '<legend>'. t('Billing Information') .'</legend>'
-              . drupal_render($pane['description']);
+      $output = '<div class="billing-pane"><fieldset class=" collapsible'
+              . $collapsed .'"><legend>'. t('Billing Information') .'</legend>'
+              . drupal_render($arg1['panes']['billing']['pane']['description']);
       if (variable_get('uc_pane_delivery_enabled', TRUE)) {
         $output .= '<span onclick="uc_cart_copy_delivery_to_billing(true);" '
                   .'style="cursor: pointer; font-weight: bold; color: '
@@ -1259,10 +1258,10 @@ function uc_checkout_pane_billing($op, $arg1, $arg2) {
       $output .= '<table class="pane-table" cellpadding="2">';
       $req = '<span class="form-required">*</span>';
 
-      foreach (element_children($pane) as $field) {
+      foreach (element_children($arg1['panes']['billing']['pane']) as $field) {
         if (substr($field, 0, 8) == 'billing_') {
-          $title = $pane[$field]['#title'] .':';
-          unset($pane[$field]['#title']);
+          $title = $arg1['panes']['billing']['pane'][$field]['#title'] .':';
+          unset($arg1['panes']['billing']['pane'][$field]['#title']);
           if (substr($field, 8) == 'street1') {
             $title = uc_get_field_name('street') .':';
           }
@@ -1270,11 +1269,12 @@ function uc_checkout_pane_billing($op, $arg1, $arg2) {
             $title = ' ';
           }
           $output .= '<tr><td class="field-label">';
-          if ($pane[$field]['#required']) {
+          if ($arg1['panes']['billing']['pane'][$field]['#required']) {
             $output .= $req;
           }
           $output .= $title .'</td><td>'
-                   . drupal_render($pane[$field]) .'</td></tr>';
+                   . drupal_render($arg1['panes']['billing']['pane'][$field])
+                    .'</td></tr>';
         }
       }
       $output .= '</table>';

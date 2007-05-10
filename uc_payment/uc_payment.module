@@ -88,7 +88,7 @@ function uc_payment_menu($may_cache) {
           'title' => t('payments'),
           'callback' => 'uc_payment_by_order',
           'callback arguments' => array(arg(3)),
-          'access' => user_access('view all orders'),
+          'access' => user_access('view payments'),
           'weight' => 5,
           'type' => MENU_LOCAL_TASK
         );
@@ -114,7 +114,7 @@ function uc_payment_menu($may_cache) {
  * Implementation of hook_perm().
  */
 function uc_payment_perm() {
-  return array('delete payments');
+  return array('view payments', 'manual payments', 'delete payments');
 }
 
 
@@ -585,8 +585,9 @@ function uc_order_pane_payment($op, $arg1) {
         '#type' => 'select',
         '#title' => t('Payment method'),
         '#default_value' => $arg1->payment_method,
-        '#options' => $options,
+        '#options' => (is_array($options)) ? $options : array(t('None available')),
         '#attributes' => array('onchange' => "get_payment_details('". base_path() ."?q=admin/store/orders/". $arg1->order_id ."/payment_details/' + this.value);"),
+        '#disabled' => (is_array($options)) ? FALSE : TRUE,
       );
       return $form;
 
@@ -1048,36 +1049,38 @@ function uc_payment_by_order_form($order_id) {
     '#value' => $order_id,
   );
 
-  $form['payments']['new']['received'] = array(
-    '#value' => '-',
-  );
-  $form['payments']['new']['user'] = array(
-    '#value' => '-',
-  );
-  $methods = _payment_method_list();
-  foreach ($methods as $method) {
-    $options[$method['id']] = $method['name'];
+  if (user_access('manual payments')) {
+    $form['payments']['new']['received'] = array(
+      '#value' => '-',
+    );
+    $form['payments']['new']['user'] = array(
+      '#value' => '-',
+    );
+    $methods = _payment_method_list();
+    foreach ($methods as $method) {
+      $options[$method['id']] = $method['name'];
+    }
+    $form['payments']['new']['method'] = array(
+      '#type' => 'select',
+      '#options' => $options,
+    );
+    $form['payments']['new']['amount'] = array(
+      '#type' => 'textfield',
+      '#size' => 6,
+    );
+    $form['payments']['new']['balance'] = array(
+      '#value' => '-',
+    );
+    $form['payments']['new']['comment'] = array(
+      '#type' => 'textfield',
+      '#size' => 32,
+      '#maxlength' => 256,
+    );
+    $form['payments']['new']['action'] = array(
+      '#type' => 'submit',
+      '#value' => t('Enter'),
+    );
   }
-  $form['payments']['new']['method'] = array(
-    '#type' => 'select',
-    '#options' => $options,
-  );
-  $form['payments']['new']['amount'] = array(
-    '#type' => 'textfield',
-    '#size' => 6,
-  );
-  $form['payments']['new']['balance'] = array(
-    '#value' => '-',
-  );
-  $form['payments']['new']['comment'] = array(
-    '#type' => 'textfield',
-    '#size' => 32,
-    '#maxlength' => 256,
-  );
-  $form['payments']['new']['action'] = array(
-    '#type' => 'submit',
-    '#value' => t('Enter'),
-  );
 
   return $form;
 }
