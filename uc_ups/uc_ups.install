@@ -8,23 +8,25 @@ function uc_ups_install(){
       db_query("CREATE TABLE {uc_ups_products} (
         `nid` mediumint(9) unsigned NOT NULL,
         `pkg_type` varchar(2) NOT NULL,
+        `qty` smallint unsigned NOT NULL default '1',
         `length` float unsigned NOT NULL,
         `width` float unsigned NOT NULL,
         `height` float unsigned NOT NULL,
-        `units` varchar(255) NOT NULL default 'IN',
+        `units` varchar(255) NOT NULL default 'in',
         UNIQUE KEY `nid` (`nid`)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
     break;
     case 'pgsql':
-    db_query('CREATE TABLE {uc_ups_products} (
-      "nid" mediumint(9) unsigned NOT NULL,
-      "pkg_type" varchar(2) NOT NULL,
-      "length" float unsigned NOT NULL,
-      "width" float unsigned NOT NULL,
-      "height" float unsigned NOT NULL,
-      "units" varchar (255) NOT NULL default \'IN\',
-      UNIQUE KEY "nid" ("nid")
-    );');
+      db_query('CREATE TABLE {uc_ups_products} (
+        "nid" mediumint(9) unsigned NOT NULL,
+        "pkg_type" varchar(2) NOT NULL,
+        "qty" smallint unsigned NOT NULL default \'1\',
+        "length" float unsigned NOT NULL,
+        "width" float unsigned NOT NULL,
+        "height" float unsigned NOT NULL,
+        "units" varchar (255) NOT NULL default \'in\',
+        UNIQUE KEY "nid" ("nid")
+      );');
     break;
   }
 }
@@ -42,6 +44,20 @@ function uc_ups_update_1(){
     break;
     case 'pgsql':
       db_add_column($ret, 'uc_ups_products', 'units', 'varchar(255)', array('not null' => true, 'default' => 'IN'));
+    break;
+  }
+  return $ret;
+}
+
+function uc_ups_update_2(){
+  $ret = array();
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_ups_products} ADD COLUMN qty smallint unsigned NOT NULL default '1' AFTER pkg_type");
+    break;
+    case 'pgsql':
+      db_add_column($ret, 'uc_ups_products', 'qty', 'smallint unsigned', array('not null' => true, 'default' => '1'));
     break;
   }
   return $ret;

@@ -93,8 +93,9 @@ function uc_flatrate_shipping_method(){
   
   $enabled = variable_get('uc_quote_enabled', array('flatrate' => true, 'order rate' => false));
   $weight = variable_get('uc_quote_weight', array('flatrate' => 0, 'order rate' => 1));
-  $methods[] = array(
+  $methods['flatrate'] = array(
     'id' => 'flatrate',
+    'module' => 'uc_flatrate',
     'title' => t('Flat Rate per Product'),
     'enabled' => $enabled['flatrate'],
     'quote' => array(
@@ -107,8 +108,9 @@ function uc_flatrate_shipping_method(){
     'weight' => $weight['flatrate'],
   );
   
-  $methods[] = array(
+  $methods['order rate'] = array(
     'id' => 'order rate',
+    'module' => 'uc_flatrate',
     'title' => t('Flat Rate per Order'),
     'enabled' => $enabled['order rate'],
     'quote' => array(
@@ -189,7 +191,7 @@ function uc_flatrate_quote($products, $details){
   
   $method = uc_flatrate_shipping_method();
   
-  $quotes[] = array('rate' => $rate, 'format' => uc_currency_format($rate), 'option_label' => $method[0]['quote']['accessorials'][0]);
+  $quotes[] = array('rate' => $rate, 'format' => uc_currency_format($rate), 'option_label' => $method['flatrate']['quote']['accessorials'][0]);
   
   return drupal_to_js($quotes);
 }
@@ -198,7 +200,7 @@ function uc_flatrate_quote_order($products, $details){
   $method = uc_flatrate_shipping_method();
   $rate = variable_get('uc_flatrate_order_rate', 0);
   
-  $quotes[] = array('rate' => $rate, 'format' => uc_currency_format($rate), 'option_label' => $method[1]['quote']['accessorials'][0]);
+  $quotes[] = array('rate' => $rate, 'format' => uc_currency_format($rate), 'option_label' => $method['order rate']['quote']['accessorials'][0]);
   
   return drupal_to_js($quotes);
 }

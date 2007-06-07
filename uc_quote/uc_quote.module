@@ -52,8 +52,15 @@ function uc_quote_taxonomy($op, $type, $object = null){
       switch ($op){
         case 'insert':
         case 'update':
-          // TODO: Save to {uc_quote_manufacturer_locations}.
+          db_query("DELETE FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $object['tid']);
+          db_query("INSERT INTO {uc_quote_manufacturer_locations} (tid, first_name, last_name, company, address1, address2, city, zone, postal_code, country) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', %d)",
+            $object['tid'], $object['first_name'], $object['last_name'], $object['company'], $object['address1'], $object['address2'], $object['city'], $object['zone'], $object['postal_code'], $object['country']
+          );
           uc_quote_set_shipping_type('manufacturer', $object['tid'], $object['shipping_type']);
+        break;
+        case 'delete':
+          db_query("DELETE FROM {uc_quote_shipping_types} WHERE id_type = 'manufacturer' AND id = %d", $object['tid']);
+          db_query("DELETE FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $object['tid']);
         break;
       }
     break;
@@ -68,27 +75,45 @@ function uc_quote_taxonomy($op, $type, $object = null){
 function uc_quote_nodeapi(&$node, $op, $arg3 = null, $arg4 = null){
   switch($op){
     case 'submit':
-      if (isset($node->quote_type)){
-        // TODO: Save to {uc_quote_product_locations}.
+      if (isset($node->shipping_type)){
         uc_quote_set_shipping_type('product', $node->nid, $node->shipping_type);
       }
     break;
+    case 'insert':
+    case 'update':
+      db_query("DELETE FROM {uc_quote_product_locations} WHERE nid = %d", $node->nid);
+      db_query("INSERT INTO {uc_quote_product_locations} (nid, first_name, last_name, company, address1, address2, city, zone, postal_code, country) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', %d)",
+        $node->nid, $node->first_name, $node->last_name, $node->company, $node->address1, $node->address2, $node->city, $node->zone, $node->postal_code, $node->country
+      );
+    break;
     case 'load':
+      // Can't just use uc_product_get_shipping_type() because $node->manufacturer doesn't necessarily exist yet.
+      if (module_exists('uc_manufacturer')){
+        $manufacturer = uc_product_get_manufacturer($node->nid);
+      }
       $shipping_type = db_result(db_query("SELECT shipping_type FROM {uc_quote_shipping_types} WHERE id_type = 'product' AND id = %d", $node->nid));
       if (!$shipping_type){
         if (module_exists('uc_manufacturer')){
-          $manufacturer = uc_product_get_manufacturer($node->nid);
           $shipping_type = db_result(db_query("SELECT shipping_type FROM {uc_quote_shipping_types} WHERE id_type = 'manufacturer' AND id = %d", $manufacturer->tid));
         }
         if (!$shipping_type){
           $shipping_type = variable_get('uc_store_shipping_type', 'freight');
         }
       }
-      return array('quote_type' => $quote_type, 'shipping_type' => $shipping_type);
+      $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1, address2, city, zone, postal_code, country FROM {uc_quote_product_locations} WHERE nid = %d", $node->nid));
+      if (!$address){
+        if (module_exists('uc_manufacturer')){
+          $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1, address2, city, zone, postal_code, country FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $manufacturer->tid));
+        }
+        if (!$address){
+          $address = variable_get('uc_quote_store_default_address', new stdClass());
+        }
+      }
+      return array('shipping_type' => $shipping_type, 'shipping_address' => $address);
     break;
     case 'delete':
-      db_query("DELETE FROM {uc_quote_types} WHERE id_type = 'product' AND id = %d", $node->nid);
       db_query("DELETE FROM {uc_quote_shipping_types} WHERE id_type = 'product' AND id = %d", $node->nid);
+      db_query("DELETE FROM {uc_quote_product_locations} WHERE nid = %d", $node->nid);
     break;
   }
 }
@@ -105,11 +130,18 @@ function uc_quote_form_alter($form_id, &$form){
       $type = 'product';
       $id = $form['nid']['#value'];
       $weight = 1;
+      $address = $form['#node']->shipping_address;
     }
     else{
       $type = 'manufacturer';
       $id = $form['tid']['#value'];
       $weight = 0;
+      if (module_exists('uc_manufacturer')){
+        $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1, address2, city, zone, postal_code, country FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $id));
+      }
+    }
+    if (!$address){
+      $address = variable_get('uc_quote_store_default_address', new stdClass());
     }
     if (!isset($form['shipping'])){
       $form['shipping'] = array();
@@ -126,15 +158,16 @@ function uc_quote_form_alter($form_id, &$form){
  cost and set up a delivery. This form provides the default location for products,
  either individually or an entire manufacturer's line. If a product's individual
  pickup address is blank, &Uuml;bercart looks for the manufacturer's. If that is
- also blank, it uses the store's default pickup address, which can be set !here.",
-         array('!here' => l(t('here'), 'admin/store/settings/quotes'))),
+ also blank, it uses the store's default pickup address, which can be set <a href=\"!here\">here</a>.",
+         array('!here' => url('admin/store/settings/quotes'))),
       '#collapsible' => true,
       '#collapsed' => true,
     );
     $form['shipping']['default_address']['first_name'] = uc_textfield(uc_get_field_name('first_name'), $address->first_name, FALSE);
     $form['shipping']['default_address']['last_name'] = uc_textfield(uc_get_field_name('last_name'), $address->last_name, FALSE);
-    $form['shipping']['default_address']['street1'] = uc_textfield(uc_get_field_name('street1'), $address->street1, FALSE, NULL, 64);
-    $form['shipping']['default_address']['street2'] = uc_textfield(uc_get_field_name('street2'), $address->street2, FALSE, NULL, 64);
+    $form['shipping']['default_address']['company'] = uc_textfield(uc_get_field_name('company'), $address->company, FALSE);
+    $form['shipping']['default_address']['address1'] = uc_textfield(uc_get_field_name('street1'), $address->address1, FALSE, NULL, 64);
+    $form['shipping']['default_address']['address2'] = uc_textfield(uc_get_field_name('street2'), $address->address2, FALSE, NULL, 64);
     $form['shipping']['default_address']['city'] = uc_textfield(uc_get_field_name('city'), $address->city, FALSE);
     if (isset($_POST['country'])){
       $country = $_POST['country'];
@@ -164,17 +197,8 @@ function uc_quote_form_alter($form_id, &$form){
   }
 }
 
-// TODO: Decide if we should use one table for all shipping locations
-/**
- * Submit function for uc_quote_form_alter().
- */
-function uc_quote_form_alter_submit($form_id, $form_values, $type){
-  if ($type == 'manufacturer'){
-  }
-}
-
 /******************************************************************************
- * Übercart Hooks                                                             *
+ * Ubercart Hooks                                                             *
  ******************************************************************************/
 
 /**
@@ -203,30 +227,30 @@ function uc_quote_order_pane(){
     'desc' => t('Get a shipping quote for the order from a quoting module.'),
     'class' => 'abs-left',
     'weight' => 7,
-    'show' => array('edit', 'fulfillment'),
+    'show' => array('edit'),
   );
   
   return $panes;
 }
 
 /**
- * Implementation of Übercart's hook_order().
+ * Implementation of hook_order().
  */
-function uc_quote_order($op, $arg1, $arg2){
+function uc_quote_order($op, &$arg1, $arg2){
   switch ($op){
     case 'save':
       db_query("DELETE FROM {uc_order_quotes} WHERE oid = %d", $arg1->order_id);
       db_query("INSERT INTO {uc_order_quotes} (oid, method, accessorials, rate, quote_form) VALUES (%d, '%s', '%s', %f, '%s')",
         $arg1->order_id, $arg1->quote['method'], $arg1->quote['accessorials'], $arg1->quote['rate'], $arg1->quote['quote_form']);
-    break;
+      break;
     case 'load':
       $quote = db_fetch_array(db_query("SELECT method, accessorials, rate, quote_form FROM {uc_order_quotes} WHERE oid = %d", $arg1->order_id));
       $arg1->quote = $quote;
       $arg1->quote['accessorials'] = strval($quote['accessorials']);
-    break;
+      break;
     case 'delete':
       db_query("DELETE FROM {uc_order_quotes} WHERE oid = %d", $arg1);
-    break;
+      break;
   }
 }
 
@@ -290,6 +314,12 @@ function uc_quote_admin_settings(){
     '#default_value' => variable_get('uc_store_shipping_type', 'pickup'),
   );
   
+  $form['uc_quote_log_errors'] = array('#type' => 'radios',
+    '#title' => t('Log errors during checkout to watchdog.'),
+    '#options' => array(1 => t('Yes'), 0 => t('No')),
+    '#default_value' => variable_get('uc_quote_log_errors', false),
+  );
+  
   $form['default_address'] = array('#type' => 'fieldset',
     '#title' => t('Default Shipping Address'),
     '#description' => t("When delivering products to customers, the original
@@ -348,6 +378,7 @@ function uc_quote_admin_settings_submit($form_id, $form_values){
   variable_set('uc_quote_weight', $form_values['uc_quote_weight']);
   variable_set('uc_quote_store_default_address', $address);
   variable_set('uc_store_shipping_type', $form_values['uc_store_shipping_type']);
+  variable_set('uc_quote_log_errors', $form_values['uc_quote_log_errors']);
 }
 
 /******************************************************************************
@@ -418,7 +449,7 @@ function uc_product_get_shipping_type($product){
  *
  * Adds a line item to the order that records the chosen shipping quote.
  */
-function uc_checkout_pane_quotes($op, $arg1, $arg2){
+function uc_checkout_pane_quotes($op, &$arg1, $arg2){
   switch ($op){
     case 'view':
       $pane = uc_cart_checkout_new_pane('quotes', t('Calculate Shipping Cost'));
@@ -661,6 +692,7 @@ function uc_quote_request_quotes(){
   /* print '<pre>';
   print_r($_POST);
   print '</pre>'; */
+  ob_start();
   
   $details = $_POST['details'];
   $products = array();
@@ -695,6 +727,11 @@ function uc_quote_request_quotes(){
   }
   if ($found_method){
     $quote_data = call_user_func($method['quote']['callback'], $products, $details);
+  }
+  $messages = ob_get_contents();
+  ob_end_clean();
+  if ($messages && variable_get('uc_quote_log_errors', false)){
+    watchdog('quote', $messages, WATCHDOG_WARNING);
   }
   print $quote_data;
 }

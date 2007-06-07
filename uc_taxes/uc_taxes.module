@@ -10,7 +10,7 @@ function uc_taxes_help($section){
       return t('Set the default tax rates for various geographic locations. Specify tax rates as a multiplier. Smaller areas override the rates of the larger areas.');
     break;
     case 'admin/store/taxes/products':
-      return t('Select a product class to edit it\'s tax rules. These rules are applied only to products of that class.');
+      return t("Select a product class to edit it's tax rules. These rules are applied only to products of that class.");
     break;
   }
 }
@@ -245,7 +245,7 @@ function theme_uc_taxes_form($form){
           $country = uc_get_country_data(array('country_id' => $rule->area));
           $area = $country[0]['country_iso_code_3'];
       }
-      $rule->taxed_line_items = unserialize($rule->taxed_line_items);
+      $rule->taxed_line_items = (array)unserialize($rule->taxed_line_items);
       $rows[] = array($rule->name, $area, $rule->rate * 100 .'%', implode(', ', $rule->taxed_line_items), ($rule->cumulative ? t('Yes') : t('No')), $rule->weight, l(t('edit'), 'admin/store/settings/taxes/edit/'. $rule->id), l(t('copy'), 'admin/store/settings/taxes/copy/'. $rule->id), l(t('delete'), 'admin/store/settings/taxes/delete/'. $rule->id));
     }
     $output = theme('table', $header, $rows);
@@ -273,7 +273,7 @@ function uc_taxes_form_submit($form_id, $form_values){
       );
     }
     else{
-      db_query("INSERT INTO {uc_taxes} (id, name, area, type, rate, taxed_line_items, cumulative, weight) VALUES (%d, '%s', '%s', '%s', %f, %d, %d, %d)",
+      db_query("INSERT INTO {uc_taxes} (id, name, area, type, rate, taxed_line_items, cumulative, weight) VALUES (%d, '%s', '%s', '%s', %f, '%s', %d, %d)",
         db_next_id('{uc_taxes}_id'), $form_values['name'], $form_values['area'], $form_values['type'], $rate, $form_values['taxed_line_items'], $form_values['cumulative'], $form_values['weight']
       );
     }
@@ -284,8 +284,8 @@ function uc_taxes_form_submit($form_id, $form_values){
 
 function uc_taxes_copy($tax_id){
   $rule = db_fetch_array(db_query("SELECT * FROM {uc_taxes} WHERE id = %d", $tax_id));
-
-  db_query("INSERT INTO {uc_taxes} (id, name, area, type, rate, taxed_line_items, cumulative, weight) VALUES (%d, '%s', '%s', '%s', %f, %d, %d, %d)",
+  
+  db_query("INSERT INTO {uc_taxes} (id, name, area, type, rate, taxed_line_items, cumulative, weight) VALUES (%d, '%s', '%s', '%s', %f, '%s', %d, %d)",
     db_next_id('{uc_taxes}_id'), $rule['name'], $rule['area'], $rule['type'], $rule['rate'], $rule['taxed_line_items'], $rule['cumulative'], $rule['weight']
   );
   

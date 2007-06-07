@@ -1,21 +1,18 @@
 // $Id$
 
 // Add the mouseover and mouseout functions for the store links block.
-$(document).ready(
-  function() {
-    $('#store-links li').mouseover(
+sfHover = function() {
+    $('#store-links li, #store-links li li, #store-links li li li, #store-links li li li li').mouseover(
       function(){
         $(this).addClass('sfhover');
       }
-    );
-
-    $('#store-links li').mouseout(
+    ).mouseout(
       function(){
         $(this).removeClass('sfhover');
       }
     );
   }
-);
+if (window.attachEvent) window.attachEvent("onload", sfHover); 
 
 // Add the show more link on the store admin display.
 $(document).ready(
@@ -65,6 +62,21 @@ $(document).ready(
           function() {
             var url = base_path + '?q=admin/store/orders/' + this.id.substring(6);
             window.location = url;
+          }
+        );
+      }
+    );
+  }
+);
+
+// Add the onclick to overview section table rows.
+$(document).ready(
+  function() {
+    $('tr.section').each(
+      function() {
+        $(this).click(
+          function() {
+            window.location = base_path + this.id;
           }
         );
       }

@@ -34,7 +34,7 @@ function uc_manufacturer_help($section){
  * Implementation of hook_perm().
  */
 function uc_manufacturer_perm(){
-  return array('administer manufacturers');
+  return array('administer manufacturers, access manufacturers');
 }
 
 /**
@@ -46,7 +46,7 @@ function uc_manufacturer_menu($may_cache){
   if ($may_cache){
     $items[] = array('path' => 'manufacturer',
       'title' => t('Manufacturers'),
-      'access' => user_access('administer manufacturers'),
+      'access' => user_access('access manufacturers'),
       'callback' => 'uc_manufacturer_all',
       'callback arguments' => array('list'),
       'type' => MENU_NORMAL_ITEM,
@@ -67,14 +67,13 @@ function uc_manufacturer_menu($may_cache){
   else{
     $items[] = array('path' => 'manufacturer/'. arg(1),
       'title' => t('Manufacturer'),
-      'access' => user_access('administer manufacturers'),
+      'access' => user_access('access manufacturers'),
       'callback' => 'uc_manufacturer_all',
       'callback arguments' => array('view', arg(1)),
       'type' => MENU_CALLBACK_ITEM,
       );
      $items[] = array('path' => 'manufacturer/'. arg(1) .'/view',
       'title' => t('view'),
-      'access' => user_access('administer manufacturers'),
       'type' => MENU_DEFAULT_LOCAL_TASK,
       'weight' => -10,
       );
@@ -406,7 +405,8 @@ function uc_manufacturer_all($op = 'list', $tid = 0){
   }
   elseif ($op == 'view' && $tid != 0){
     $manufacturer = uc_manufacturer_load($tid);
-    $output .= theme('uc_manufacturer', $manufacturer);
+    drupal_set_title($manufacturer->name);
+    $output .= theme('uc_manufacturer', $manufacturer, true);
     $table_args = array('tid' => $manufacturer->tid);
     $output .= tapir_get_table('uc_product_table', $table_args);
   }
@@ -527,11 +527,13 @@ function uc_manufacturer_load($tid){
  *   A manufacturer object.
  * @ingroup themeable
  */
-function theme_uc_manufacturer($manufacturer){
+function theme_uc_manufacturer($manufacturer, $page = false){
   $output = '';
   if ($manufacturer){
     $output  = '<div class="manufacturer">';
-    $output .= l($manufacturer->name, 'manufacturer/'. $manufacturer->tid) .'<br />';
+    if (!$page){
+      $output .= l($manufacturer->name, 'manufacturer/'. $manufacturer->tid) .'<br />';
+    }
     if ($manufacturer->logo){
       $output .= l(theme('imagecache', 'manufacturer', $manufacturer->logo), $manufacturer->url, array('target' => '_blank'), null, null, false, true);
       //$output .= l('<img src="'. base_path() . $manufacturer->logo .'" alt="'. $manufacturer->name .' Logo" />', $manufacturer->url, array('target' => '_blank'), null, null, false, true);

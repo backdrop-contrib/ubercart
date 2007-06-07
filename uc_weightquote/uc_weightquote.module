@@ -1,0 +1,176 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Shipping quote module that defines a flat shipping rate for each product.
+ */
+
+/******************************************************************************
+ * Drupal Hooks                                                               *
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_menu().
+ */
+function uc_weightquote_menu($may_cache){
+  $items = array();
+  
+  if ($may_cache){
+    $items[] = array('path' => 'admin/store/settings/quotes/weightquote',
+      'access' => user_access('configure quotes'),
+      'title' => t('Weight quote settings'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('uc_weightquote_admin_settings'),
+      'type' => MENU_NORMAL_ITEM,
+    );
+  }
+  
+  return $items;
+}
+
+/**
+ * Implementation of hook_form_alter().
+ *
+ * Adds a form element for the shipping rate of a product.
+ */
+function uc_weightquote_form_alter($form_id, &$form){
+  if ($form_id == 'product_node_form'){
+    $enabled = variable_get('uc_quote_enabled', array('weightquote' => true));
+    $form['shipping']['weightquote'] = array('#type' => 'fieldset',
+      '#title' => t('Shipping Rate by Weight'),
+      '#collapsible' => true,
+      '#collapsed' => ($enabled['weightquote'] == false),
+      '#weight' => 2,
+    );
+
+    $form['shipping']['weightquote']['weightquote'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Default cost adjustment per weight unit'),
+      '#description' => t('The amount per weight unit to add to the shipping cost for an item.<br />Example: to add $5 per pound, put 5 in here.'),
+      '#default_value' => $form['#node']->weightquote,
+      '#size' => 16,
+    );
+  }
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ */
+function uc_weightquote_nodeapi(&$node, $op){
+  switch($op){
+    case 'insert':
+    case 'update':
+      if (isset($node->weightquote)){
+        db_query("DELETE FROM {uc_weightquote_products} WHERE nid = %d", $node->nid);
+        db_query("INSERT INTO {uc_weightquote_products} (nid, rate) VALUES (%d, %f)",
+          $node->nid, $node->weightquote);
+      }
+    break;
+    case 'load':
+      $rate = db_result(db_query("SELECT rate FROM {uc_weightquote_products} WHERE nid = %d", $node->nid));
+      if ($rate === false || $rate == -1){
+        return array('weightquote' => variable_get('uc_weightquote_product_default', 0.00));
+      }
+      else{
+        return array('weightquote' => $rate);
+      }
+    break;
+    case 'delete':
+      db_query("DELETE FROM {uc_weightquote_products} WHERE nid = %d", $node->nid);
+    break;
+  }
+}
+
+/******************************************************************************
+ * Übercart Hooks                                                             *
+ ******************************************************************************/
+
+/**
+ * Implementation of Übercart's hook_shipping_method().
+ */
+function uc_weightquote_shipping_method(){
+  $methods = array();
+  
+  $enabled = variable_get('uc_quote_enabled', array('weightquote' => true, 'order rate' => false));
+  $weight = variable_get('uc_quote_weight', array('weightquote' => 0, 'order rate' => 1));
+  $methods['weightquote'] = array(
+    'id' => 'weightquote',
+    'module' => 'uc_weightquote',
+    'title' => t('Flat Rate per Product'),
+    'enabled' => $enabled['weightquote'],
+    'quote' => array(
+      'type' => 'order',
+      'callback' => 'uc_weightquote_quote',
+      'accessorials' => array(
+        t('Shipping'),
+      ),
+    ),
+    'weight' => $weight['weightquote'],
+  );
+  
+  return $methods;
+}
+
+
+/******************************************************************************
+ * Menu Callbacks                                                             *
+ ******************************************************************************/
+
+/**
+ * Configures the store default shipping rate.
+ */
+function uc_weightquote_admin_settings(){
+  $form['uc_weightquote_base_rate'] = array('#type' => 'textfield',
+    '#title' => t('Base cost'),
+    '#description' => t('The base price of weight based shipping costs.'),
+    '#default_value' => variable_get('uc_weightquote_base_rate', 0),
+    '#size' => 16,
+    '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
+    '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
+  );
+  $form['uc_weightquote_product_default'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default cost adjustment per weight unit'),
+    '#description' => t('The amount per weight unit to add to the shipping cost for an item.<br />Example: to add $5 per pound, put 5 in here.'),
+    '#default_value' => variable_get('uc_weightquote_product_default', 0),
+    '#size' => 16,
+    '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
+    '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
+  );
+
+  return system_settings_form($form);
+}
+
+function uc_weightquote_fulfill_order($order){
+  
+}
+
+/******************************************************************************
+ * Module Functions                                                           *
+ ******************************************************************************/
+
+/**
+ * Standard callback to return a shipping rate via the flat rate method.
+ *
+ * @param $products
+ *   The order's products.
+ * @param $details
+ *   Other order details including a shipping address.
+ * @return
+ *   A JSON object containing the shipping quote for the order.
+ */
+function uc_weightquote_quote($products, $details){
+  $rate = 0;
+  foreach ($products as $product){
+    $node = node_load($product->nid);
+    $rate += $node->weightquote * $product->qty * $product->weight;
+  }
+  $rate += variable_get('uc_weightquote_base_rate', 0);
+  
+  $method = uc_weightquote_shipping_method();
+  
+  $quotes[] = array('rate' => $rate, 'format' => uc_currency_format($rate), 'option_label' => $method['weightquote']['quote']['accessorials'][0]);
+  
+  return drupal_to_js($quotes);
+}

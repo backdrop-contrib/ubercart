@@ -8,29 +8,11 @@ function uc_product_install() {
   switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
-      db_query("CREATE TABLE {uc_class_choices} (
-        `ccid` mediumint(9) unsigned NOT NULL auto_increment,
-        `cfid` mediumint(9) unsigned NOT NULL,
-        `name` varchar(255) NOT NULL,
-        PRIMARY KEY  (`ccid`)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-      db_query("CREATE TABLE {uc_class_fields} (
-        `cfid` mediumint(9) unsigned NOT NULL auto_increment,
-        `pcid` mediumint(9) unsigned NOT NULL,
-        `name` varchar(255) NOT NULL,
-        `type` varchar(15) NOT NULL,
-        PRIMARY KEY  (`cfid`)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
       db_query("CREATE TABLE {uc_product_classes} (
-        `pcid` mediumint(9) NOT NULL auto_increment,
+        `pcid` varchar(32) NOT NULL,
         `name` varchar(255) NOT NULL,
+        `description` text,
         PRIMARY KEY  (`pcid`)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-      db_query("CREATE TABLE {uc_product_class_choices} (
-        `nid` mediumint(9) unsigned NOT NULL,
-        `cfid` mediumint(9) NOT NULL,
-        `value` varchar(255) NOT NULL,
-        PRIMARY KEY  (nid, cfid, value (3))
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
       db_query("CREATE TABLE {uc_products} (
         `nid` mediumint(9) NOT NULL,
@@ -39,38 +21,17 @@ function uc_product_install() {
         `cost` decimal(10,2) NOT NULL default '0.00',
         `sell_price` decimal(10,2) NOT NULL default '0.00',
         `weight` float NOT NULL default '0',
-        `units` varchar(255) NOT NULL default 'LBS',
-        `pcid` mediumint(9) NOT NULL,
+        `units` varchar(255) NOT NULL default 'lbs',
         `unique_hash` varchar(32) NOT NULL,
         PRIMARY KEY  (`nid`)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
     break;
     case 'pgsql':
-      db_query('CREATE TABLE {uc_class_choices} (
-        "ccid" mediumint(9) unsigned NOT NULL,
-        "cfid" mediumint(9) unsigned NOT NULL,
-        "name" varchar(255) NOT NULL,
-        PRIMARY KEY  ("ccid")
-      );');
-      db_query("CREATE INDEX {uc_class_choices}_ccid ON {uc_class_choices} (ccid)");
-      db_query('CREATE TABLE {uc_class_fields} (
-        "cfid" mediumint(9) unsigned NOT NULL,
-        "pcid" mediumint(9) unsigned NOT NULL,
-        "name" varchar(255) NOT NULL,
-        "type" varchar(15) NOT NULL,
-        PRIMARY KEY  ("cfid")
-      );');
       db_query('CREATE TABLE {uc_product_classes} (
-        "pcid" mediumint(9) NOT NULL auto_increment,
+        "pcid" varchar(32) NOT NULL,
         "name" varchar(255) NOT NULL,
+        "description" text,
         PRIMARY KEY  ("pcid")
-      );');
-      db_query("CREATE INDEX {uc_product_classes}_pcid ON {uc_product_classes} (pcid)");
-      db_query('CREATE TABLE {uc_product_class_choices} (
-        "nid" mediumint(9) unsigned NOT NULL,
-        "cfid" mediumint(9) NOT NULL,
-        "value" varchar(255) NOT NULL,
-        PRIMARY KEY  (nid, cfid, value (3))
       );');
       db_query('CREATE TABLE {uc_products} (
         "nid" mediumint(9) NOT NULL REFERENCES {node} (nid),
@@ -79,8 +40,7 @@ function uc_product_install() {
         "cost" decimal(10,2) NOT NULL default \'0.00\',
         "sell_price" decimal(10,2) NOT NULL default \'0.00\',
         "weight" float NOT NULL default \'0\',
-        "units" varchar NOT NULL default \'LBS\',
-        "pcid" mediumint(9) NOT NULL REFERENCES {uc_product_classes} (pcid),
+        "units" varchar NOT NULL default \'lbs\',
         "unique_hash" varchar(32) NOT NULL
       );');
     break;
@@ -98,11 +58,8 @@ function uc_product_install() {
 }
 
 function uc_product_uninstall(){
-  db_query("DROP TABLE IF EXISTS {uc_class_choices}");
-  db_query("DROP TABLE IF EXISTS {uc_class_fields}");
-  db_query("DROP TABLE IF EXISTS {uc_product_classes}");
-  db_query("DROP TABLE IF EXISTS {uc_product_class_choices}");
-  db_query("DROP TABLE IF EXISTS {uc_products}");
+  db_query("DROP TABLE {uc_product_classes}");
+  db_query("DROP TABLE {uc_products}");
   variable_del('uc_product_default_fields');
 }
 
@@ -158,11 +115,52 @@ function uc_product_update_3(){
   switch ($GLOBALS['db_type']){
     case 'mysql':
     case 'mysqli':
-      $ret[] = update_sql("ALTER TABLE {uc_products} ADD COLUMN units varchar(255) NOT NULL default 'LBS' AFTER weight");
+      $ret[] = update_sql("ALTER TABLE {uc_products} ADD COLUMN units varchar(255) NOT NULL default 'lbs' AFTER weight");
     break;
     case 'pgsql':
-      db_add_column($ret, 'uc_products', 'units', 'varchar(255)', array('not null' => true, 'default' => 'LBS'));
+      db_add_column($ret, 'uc_products', 'units', 'varchar(255)', array('not null' => true, 'default' => 'lbs'));
     break;
   }
+  return $ret;
+}
+
+function uc_product_update_4(){
+  $ret = array();
+  
+  $ret[] = update_sql("UPDATE {node} AS n, {uc_products} AS p, {uc_product_classes} AS pc SET n.type = REPLACE(LOWER(pc.name), ' ', '_') WHERE n.nid = p.nid AND p.pcid = pc.pcid");
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("DROP TABLE {uc_class_choices}");
+      $ret[] = update_sql("DROP TABLE {uc_class_fields}");
+      $ret[] = update_sql("DROP TABLE {uc_product_class_choices}");
+      $ret[] = update_sql("ALTER TABLE {uc_product_classes} CHANGE pcid pcid varchar(32) NOT NULL");
+      $ret[] = update_sql("ALTER TABLE {uc_product_classes} ADD COLUMN description text");
+      $ret[] = update_sql("ALTER TABLE {uc_products} DROP COLUMN pcid");
+    break;
+    case 'pgsql':
+      $ret[] = update_sql("DROP TABLE {uc_class_choices}");
+      $ret[] = update_sql("DROP TABLE {uc_class_fields}");
+      $ret[] = update_sql("DROP TABLE {uc_product_class_choices}");
+      $ret[] = update_sql("DROP INDEX {uc_product_classes}_pcid_idx");
+      db_change_column($ret, 'uc_product_classes', 'pcid', 'pcid', 'varchar(32)', array('not null' => true));
+      db_add_column($ret, 'uc_product_classes', 'description', 'text');
+      $ret[] = update_sql("ALTER TABLE {uc_products} DROP COLUMN pcid");
+    break;
+  }
+  $ret[] = update_sql("UPDATE {uc_product_classes} SET pcid = REPLACE(LOWER(name), ' ', '_')");
+  if ($vid = variable_get('uc_catalog_vid', 0)){
+    $types = array_keys(uc_product_node_info());
+    unset($types['product']);
+    foreach ($types as $type){
+      $placeholders[] = "(%d, '%s')";
+      $values[] = $vid;
+      $values[] = $type;
+    }
+    $ret[] = update_sql("INSERT INTO {vocabulary_node_types} (vid, type) VALUES ". implode(',', $placeholders), $values);
+  }
+  
+  node_types_rebuild();
+  
   return $ret;
 }

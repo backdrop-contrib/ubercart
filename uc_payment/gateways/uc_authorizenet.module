@@ -1,0 +1,213 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * A module used for Authorize.net payment gateway - AIM only.
+ *
+ * Developed by Bobby Alcorn (http://www.bobbyalcorn.com | bobbyalcorn@gmail.com)
+ * Development Sponsored by NetSuccess (http://www.netsuccess.com)
+ *
+ * Revision and further integration by Ryan.
+ */
+
+/*******************************************************************************
+ * Hook Functions (Ubercart)
+ ******************************************************************************/
+
+function uc_authorizenet_payment_gateway() {
+  $gateways[] = array(
+    'id' => 'authorizenet',
+    'title' => t('Authorize.net'),
+    'description' => t('Process credit card payments using the AIM service of Authorize.net.'),
+    'settings' => 'uc_authorizenet_settings_form',
+    'credit' => 'uc_authorizenet_charge',
+  );
+
+  return $gateways;
+}
+
+
+/*******************************************************************************
+ * Callback Functions, Forms, and Tables
+ ******************************************************************************/
+
+/**
+ * Callback for payment gateway settings.
+ */
+function uc_authorizenet_settings_form() {
+  $form['authnet_aim_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('AIM settings'),
+  );
+  $form['authnet_aim_settings']['authnet_aim_login_id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Login ID'),
+    '#default_value' => variable_get('authnet_aim_login_id', ''),
+    '#description' => t('The login username used for the Authorize.net service.'),
+  );
+  $form['authnet_aim_settings']['authnet_aim_transaction_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Transaction key'),
+    '#default_value' => variable_get('authnet_aim_transaction_key', ''),
+    '#description' => t('Your API transaction key for sending encrypting data.'),
+  );
+  $form['authnet_aim_settings']['authnet_aim_transaction_mode'] = array(
+    '#type' => 'select',
+    '#title' => t('Transaction mode'),
+    '#description' => t('Transaction mode used for processing orders.'),
+    '#options' => array(
+      'production' => t('Production'),
+      'test' => t('Test'),
+    ),
+    '#default_value' => variable_get('authnet_aim_transaction_mode', 'test'),
+  );
+/*$form['authnet_aim_settings']['authnet_aim_transaction_method'] = array(
+    '#type' => 'select',
+    '#title' => t('Transaction Method'),
+    '#description' => t('Transaction method used for processing orders.'),
+    '#options' => array(
+      'Credit Card' => t('Credit Card'),
+      'eCheck' => t('eCheck'),
+    ),
+    '#default_value' => variable_get('authnet_aim_transaction_method', 'Credit Card'),
+  );*/
+  $form['authnet_aim_settings']['authnet_aim_customer_notification'] = array(
+    '#type' => 'select',
+    '#title' => t('Customer Notifications'),
+    '#description' => t('Should Authorize.Net e-mail a receipt to the customer?'),
+    '#options' => array(
+      'TRUE' => t('Enabled'),
+      'FALSE' => t('Disabled'),
+    ),
+    '#default_value' => variable_get('authnet_aim_customer_notification', 'False'),
+  );
+  $form['authnet_aim_settings']['authnet_aim_merchant_notification'] = array(
+    '#type' => 'select',
+    '#title' => t('Merchant Notifications'),
+    '#description' => t('Should Authorize.Net e-mail a receipt to the merchant?'),
+    '#options' => array(
+      'TRUE' => t('Enabled'),
+      'FALSE' => t('Disabled'),
+    ),
+    '#default_value' => variable_get('authnet_aim_merchant_notification', 'False'),
+  );
+
+  return $form;
+}
+
+function uc_authorizenet_charge($order_id, $amount, $data) {
+  if (!function_exists('curl_init')) {
+    drupal_set_message(t('The Authorize.net AIM service requires curl.  Please talk to your system administrator to get this configured.'));
+    return array('success' => FALSE);
+  }
+
+  global $user, $response;
+  $order = uc_order_load($order_id);
+
+  $description = '';
+  if (is_array($order->products)) {
+    foreach ($order->products as $product) {
+      if (!empty($description)) {
+        $description .= ' / ';
+      }
+      $description .= $product->title .' x'. $product->qty;
+      foreach ($product->data['attributes'] as $key => $value) {
+        $description .= ', '. $key .': '. $value;
+      }
+    }
+  }
+  $description = substr($description, 0, 255);
+
+  $submit_data = array(
+    'x_version' => '3.1',
+    'x_delim_data' => 'TRUE',
+	  'x_relay_response' => 'FALSE',
+    'x_login' => variable_get('authnet_aim_login_id', ''),
+	  'x_tran_key' => variable_get('authnet_aim_transaction_key', ''),
+    'x_amount' => $amount,
+    'x_card_num' => $order->payment_details['cc_number'],
+    'x_exp_date' => $order->payment_details['cc_exp_month'] .'/'. $order->payment_details['cc_exp_year'],
+    'x_type' => 'AUTH_CAPTURE',
+    'x_method' => 'CC',
+    'x_card_code' => $order->payment_details['cc_cvv'],
+    'x_email_customer' => variable_get('authnet_aim_customer_notification', 'FALSE'),
+    'x_email_merchant' => variable_get('authnet_aim_merchant_notification', 'FALSE'),
+    'x_cust_id' => $order->uid,
+    'x_invoice_num' => $order_id,
+    'x_first_name' => $order->billing_first_name,
+    'x_last_name' => $order->billing_last_name,
+    'x_company' => $order->billing_company,
+    'x_address' => $order->billing_street1,
+    'x_city' => $order->billing_city,
+    'x_state' => $order->billing_zone,
+    'x_zip' => $order->billing_postal_code,
+    'x_country' => $order->billing_country,
+    'x_phone' => $order->billing_phone,
+    'x_email' => $order->primary_email,
+    'x_ship_to_first_name' => $order->delivery_first_name,
+    'x_ship_to_last_name' => $order->delivery_last_name,
+    'x_ship_to_address' => $order->delivery_street1,
+    'x_ship_to_city' => $order->delivery_city,
+    'x_ship_to_state' => $order->delivery_zone,
+    'x_ship_to_zip' => $order->delivery_postal_code,
+    'x_ship_to_country' => $order->delivery_country,
+    'x_description' => $description,
+    'created' => $order->created,
+	  'modified' => $order->modified,
+  );
+
+  if (variable_get('authnet_aim_transaction_mode', 'test') == 'test') {
+	  $submit_data['x_test_request'] = 'TRUE';
+	  $url = 'https://test.authorize.net/gateway/transact.dll';
+  }
+  else {
+	  $submit_data['x_test_request'] = 'FALSE';
+	  $url = 'https://secure.authorize.net/gateway/transact.dll';
+  }
+
+  while (list($key, $value) = each($submit_data)) {
+	  $data .= $key .'='. urlencode(ereg_replace(',', '', $value)) .'&';
+  }
+
+  $data = substr($data, 0, -1);
+
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, $url);
+  curl_setopt($ch, CURLOPT_VERBOSE, 0);
+  curl_setopt($ch, CURLOPT_POST, 1);
+  curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+  $authorize = curl_exec($ch);
+  curl_close($ch);
+
+  $response = split('\,', $authorize);
+  $response_code = explode(',', $response[0]);
+  $response_text = explode(',', $response[3]);
+  $approval_code = explode(',', $response[4]);
+  $x_response_code = $response_code[0];
+  $x_response_text = $response_text[0];
+  $x_approval_code = $approval_code[0];
+
+  if ($x_response_code != '1') {
+	  $message = t('Credit card declined: !amount', array('!amount' => uc_currency_format($amount)));
+    $result = array(
+      'success' => FALSE,
+      'comment' => t('Credit card payment declined: !text', array('!text' => $x_response_text)),
+      'message' => t('Credit card payment declined: !text', array('!text' => $x_response_text)),
+      'uid' => $user->uid,
+    );
+  }
+  else {
+    $message = t('Credit card charged: !amount', array('!amount' => uc_currency_format($amount)));
+    $result = array(
+      'success' => TRUE,
+      'comment' => t('Credit card payment processed successfully. Approval code: !code', array('!code' => $x_approval_code)),
+      'message' => t('Credit card payment processed successfully. Approval code: !code', array('!code' => $x_approval_code)),
+      'uid' => $user->uid,
+    );
+  }
+  uc_order_comment_save($order_id, $user->uid, $message, 'admin');
+
+  return $result;
+}
