@@ -142,6 +142,7 @@ function uc_taxes_form($tax_id = 0, $form_values = null){
       $form['rate'] = array('#type' => 'hidden', '#value' => $form_values['rate']);
       $form['cumulative'] = array('#type' => 'hidden', '#value' => $form_values['cumulative']);
       $form['weight'] = array('#type' => 'hidden', '#value' => $form_values['weight']);
+      $form['conditions'] = array('#type' => 'hidden', '#value' => $form_values['conditions']);
       $form['cancel'] = array('#type' => 'submit', '#value' => t('Cancel'));
       $form['next'] = array('#type' => 'submit', '#value' => t('Next'));
     break;
@@ -174,6 +175,7 @@ function uc_taxes_form($tax_id = 0, $form_values = null){
       $form['rate'] = array('#type' => 'hidden', '#value' => $form_values['rate']);
       $form['cumulative'] = array('#type' => 'hidden', '#value' => $form_values['cumulative']);
       $form['weight'] = array('#type' => 'hidden', '#value' => $form_values['weight']);
+      $form['conditions'] = array('#type' => 'hidden', '#value' => $form_values['conditions']);
       $form['back'] = array('#type' => 'submit', '#value' => t('Back'));
       $form['next'] = array('#type' => 'submit', '#value' => t('Next'));
     break;
@@ -212,6 +214,11 @@ function uc_taxes_form($tax_id = 0, $form_values = null){
       $form['weight'] = array('#type' => 'weight',
         '#default_value' => isset($form_values['weight']) ? $form_values['weight'] : 0,
         '#description' => t('Lighter taxes are applied to an order first. This value is unimportant if there are no cumulative taxes.'),
+      );
+      $form['conditions'] = array('#type' => 'textarea',
+        '#title' => t('Custom conditions'),
+        '#default_value' => isset($form_values['conditions']) ? $form_values['conditions'] : '',
+        '#description' => t("For experts only. Enter PHP code that returns true or false, which indicates that this rule applies to an order. Do not include &lt;?php ?&gt; tags. This code is evaluated after the rule matches the customer's address.<br />\nMisusing this field can really mess up your site. <b>DO NOT BE STUPID.</b>"),
       );
       $form['back'] = array('#type' => 'submit', '#value' => t('Back'));
       $form['finish'] = array('#type' => 'submit', '#value' => t('Submit'));
@@ -268,13 +275,13 @@ function uc_taxes_form_submit($form_id, $form_values){
       $rate = floatval($form_values['rate']);
     }
     if (($form_values['id']) != ''){
-      db_query("UPDATE {uc_taxes} SET name = '%s', area = '%s', type = '%s', rate = %f, taxed_line_items = '%s', cumulative = %d, weight = %d WHERE id = %d",
-        $form_values['name'], $form_values['area'], $form_values['type'], $rate, serialize(array_filter($form_values['taxed_line_items'])), $form_values['cumulative'], $form_values['weight'], $form_values['id']
+      db_query("UPDATE {uc_taxes} SET name = '%s', area = '%s', type = '%s', rate = %f, taxed_line_items = '%s', cumulative = %d, weight = %d, conditions = '%s' WHERE id = %d",
+        $form_values['name'], $form_values['area'], $form_values['type'], $rate, serialize(array_filter($form_values['taxed_line_items'])), $form_values['cumulative'], $form_values['weight'], $form_values['conditions'], $form_values['id']
       );
     }
     else{
-      db_query("INSERT INTO {uc_taxes} (id, name, area, type, rate, taxed_line_items, cumulative, weight) VALUES (%d, '%s', '%s', '%s', %f, '%s', %d, %d)",
-        db_next_id('{uc_taxes}_id'), $form_values['name'], $form_values['area'], $form_values['type'], $rate, $form_values['taxed_line_items'], $form_values['cumulative'], $form_values['weight']
+      db_query("INSERT INTO {uc_taxes} (id, name, area, type, rate, taxed_line_items, cumulative, weight, conditions) VALUES (%d, '%s', '%s', '%s', %f, '%s', %d, %d, '%s')",
+        db_next_id('{uc_taxes}_id'), $form_values['name'], $form_values['area'], $form_values['type'], $rate, serialize(array_filter($form_values['taxed_line_items'])), $form_values['cumulative'], $form_values['weight'], $form_values['conditions']
       );
     }
     
@@ -396,12 +403,19 @@ function uc_taxes_calculate($order){
     }
   }
   foreach ($tax_rules as $rule){
-    if ($rate = uc_taxes_match_area($rule, $order->delivery_postal_code, $order->delivery_zone, $order->delivery_country)){
+    $conditions = $rule->conditions;
+    if (!$conditions){
+      $conditions = 'return true;';
+    }
+    else{
+      //watchdog('taxes', drupal_eval($conditions));
+    }
+    if (($rate = uc_taxes_match_area($rule, $order->delivery_postal_code, $order->delivery_zone, $order->delivery_country)) && eval($conditions)){
       if ($rule->cumulative){
         $amount = $new_total * $rate;
       }
       else{
-        $taxed_line_items = unserialize($rule->taxed_line_items);
+        $taxed_line_items = $rule->taxed_line_items;
         $amount = $subtotal * $rate;
         if (is_array($order->line_items) && is_array($taxed_line_items)){
           foreach ($order->line_items as $line_item){

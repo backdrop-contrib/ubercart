@@ -112,8 +112,10 @@ function uc_authorizenet_charge($order_id, $amount, $data) {
         $description .= ' / ';
       }
       $description .= $product->title .' x'. $product->qty;
-      foreach ($product->data['attributes'] as $key => $value) {
-        $description .= ', '. $key .': '. $value;
+      if (is_array($product->data['attributes'])) {
+        foreach ($product->data['attributes'] as $key => $value) {
+          $description .= ', '. $key .': '. $value;
+        }
       }
     }
   }
@@ -140,22 +142,25 @@ function uc_authorizenet_charge($order_id, $amount, $data) {
     'x_company' => $order->billing_company,
     'x_address' => $order->billing_street1,
     'x_city' => $order->billing_city,
-    'x_state' => $order->billing_zone,
+    'x_state' => uc_get_zone_code($order->billing_zone),
     'x_zip' => $order->billing_postal_code,
-    'x_country' => $order->billing_country,
+    'x_country' => uc_get_country_data(array('country_id' => $order->billing_country)),
     'x_phone' => $order->billing_phone,
     'x_email' => $order->primary_email,
     'x_ship_to_first_name' => $order->delivery_first_name,
     'x_ship_to_last_name' => $order->delivery_last_name,
     'x_ship_to_address' => $order->delivery_street1,
     'x_ship_to_city' => $order->delivery_city,
-    'x_ship_to_state' => $order->delivery_zone,
+    'x_ship_to_state' => uc_get_zone_code($order->delivery_zone),
     'x_ship_to_zip' => $order->delivery_postal_code,
-    'x_ship_to_country' => $order->delivery_country,
+    'x_ship_to_country' => uc_get_country_data(array('country_id' => $order->delivery_country)),
     'x_description' => $description,
     'created' => $order->created,
 	  'modified' => $order->modified,
   );
+
+  $submit_data['x_country'] = $submit_data['x_country'][0]['country_iso_code_2'];
+  $submit_data['x_ship_to_country'] = $submit_data['x_ship_to_country'][0]['country_iso_code_2'];
 
   if (variable_get('authnet_aim_transaction_mode', 'test') == 'test') {
 	  $submit_data['x_test_request'] = 'TRUE';
@@ -178,6 +183,9 @@ function uc_authorizenet_charge($order_id, $amount, $data) {
   curl_setopt($ch, CURLOPT_POST, 1);
   curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+  curl_setopt($ch, CURLOPT_NOPROGRESS, 1);
+  curl_setopt($ch, CURLOPT_FOLLOWLOCATION,0);
   $authorize = curl_exec($ch);
   curl_close($ch);
 

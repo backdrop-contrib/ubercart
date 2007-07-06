@@ -112,12 +112,11 @@ function uc_notify_uc_message() {
  * Implementation of hook_order().
  */
 function uc_notify_order($op, $arg1, $status){
-  global $new_user;
-
   switch ($op){
     case 'update':
       $order = uc_order_load($arg1);
-      if ($order->order_status == 0 && $status == 1) {
+      if ($order->order_status == uc_get_order_status_id('in_checkout') &&
+          $status == uc_get_order_status_id('post_checkout')) {
         uc_notify_checkout($order);
       }
       break;
@@ -203,7 +202,7 @@ function uc_notify_checkout_form() {
   $form['cust']['uc_notify_cust_checkout_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send order confirmation e-mails to customers after checkout.'),
-    '#default_value' => variable_get('uc_notify_cust_checkout_enable', TRUE),
+    '#default_value' => variable_get('uc_notify_cust_checkout_enabled', TRUE),
   );
   $form['cust']['uc_notify_cust_checkout_subject'] = array(
     '#type' => 'textfield',

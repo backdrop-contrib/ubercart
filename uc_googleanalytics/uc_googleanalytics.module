@@ -1,0 +1,116 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Google Analytics e-commerce tracking
+ *
+ * by Erlend Stromsvik : erlend@nymedia.no / Quaoar at ubercart.org
+ *
+ * Adds the required HTML and Javascript to the checkout complete page to allow
+ * e-commerce tracking through Google Analytics.
+ *
+ * E-commerce tracking works by hooking onto the hook_order and for $op == "new"
+ * setting a session variable "uc_googleanalytics_order_id" with the order id.
+ * The implementation of hook_footer will check for the path
+ * "cart/checkout/complete".  When that path is requested the registered order
+ * will be loaded from the sessions variable and necessary data will be output
+ * for Google Analytics.
+ */
+
+/*******************************************************************************
+ * Hook Functions
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_footer() to insert the required HTML and Javascript.
+ */
+function uc_googleanalytics_footer($main = 0) {
+  $script = '';
+  // check to see if we are at the order complete page
+  if(arg(0) == 'cart' && arg(1) == 'checkout' && arg(2) == 'complete') {
+    // uc_googleanalytics_order_id will only be set if e-commerce tracking is enabled
+    if($order = uc_order_load($_SESSION['uc_googleanalytics_order_id'])) {
+      $script .= _uc_googleanalytics_ecommerce_form(&$order);
+      $_SESSION['uc_googleanalytics_order_id'] = NULL;
+      unset($_SESSION['uc_googleanalytics_order_id']);
+      drupal_add_js('$(document).ready(function() { __utmSetTrans(); });', 'inline');
+    }
+  }
+  return $script;
+}
+
+
+/*******************************************************************************
+ * Hook Functions (Ubercart)
+ ******************************************************************************/
+
+function uc_googleanalytics_order($op, &$arg1, $arg2) {
+  switch ($op) {    
+    case 'new':
+      if (variable_get('uc_googleanalytics_commercetracking', TRUE)) {
+        // store the order id for later use. We won't be able to pick up the order id at cart/checkout/complete
+        $_SESSION['uc_googleanalytics_order_id'] = $arg1->order_id;
+      }
+      break;  
+  }
+}
+
+
+/*******************************************************************************
+ * Helper Functions
+ ******************************************************************************/
+
+function _uc_googleanalytics_ecommerce_form($order) {
+  $script = '';
+  $UTM_T  = ''; 
+  $UTM_I  = '';
+  $tax    = 0;
+  $shipping_cost = 0;
+  
+  // Finding name of country, if not use the country code from ubercart
+  if($country_data = uc_get_country_data(array("country_id" => $order->billing_country))) {
+    $country = $country_data[0]['country_name'];
+  } else {
+    $country = $order->billing_country;
+  }
+
+  foreach($order->products as $product) {
+    // Try to find a category (term) for the product
+    // Since products most often only have one category, the first one returned (based on tid) is chosen
+    $terms = taxonomy_node_get_terms($product->nid);
+    if(count($terms)) {
+      $term = array_shift($terms);
+      $category = $term->name;
+    }
+    else {
+      $category = t('No category');
+    }
+    // using the model field as SKU
+    $UTM_I .= 'UTM:I|' . $product->order_id
+             .'|' . $product->model
+             .'|' . $product->title
+             .'|' . $category
+             .'|' . $product->price
+             .'|' . $product->qty . " \n";
+  }
+
+  // postal code is more interesting than state/region (at least in Norway)
+  $UTM_T = 'UTM:T|' . $order->order_id
+          .'|' . variable_get('uc_store_name', 'Ubercart')
+          .'|' . $order->order_total
+          .'|' . $tax
+          .'|' . $shipping_cost
+          .'|' . $order->billing_city
+          .'|' . $order->billing_postal_code
+          .'|' . $country . " \n";
+  
+  $script .= "<form style=\"display:none;\" name=\"utmform\">\n";
+  $script .= "<textarea id=\"utmtrans\">\n";
+  $script .= $UTM_T;
+  $script .= $UTM_I;
+  $script .= "</textarea>\n";
+  $script .= "</form>\n";
+
+  return $script;
+}

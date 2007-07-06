@@ -194,14 +194,14 @@ function uc_store_menu($may_cache) {
       'weight' => 0,
     );
     $items[] = array(
-      'path' => 'admin/store/settings/store/edit/fields',
-      'title' => t('Address fields'),
-      'access' => user_access('administer store'),
+      'path' => 'admin/store/settings/store/edit/census',
+      'title' => t('Census settings'),
       'callback' => 'drupal_get_form',
-      'callback arguments' => array('uc_store_address_fields_form'),
-      'description' => t('Edit the address field settings.'),
+      'callback arguments' => array('uc_store_census_settings'),
+      'access' => user_access('administer store'),
+      'description' => t('Control information reported to www.ubercart.org.'),
       'type' => MENU_LOCAL_TASK,
-      'weight' => 5,
+      'weight' => 10,
     );
 
     $items[] = array(
@@ -211,15 +211,6 @@ function uc_store_menu($may_cache) {
       'callback arguments' => array('uc_store_initials'),
       'access' => user_access('administer store'),
       'description' => t('Assign initials to user accounts.'),
-      'type' => MENU_NORMAL_ITEM,
-    );
-    $items[] = array(
-      'path' => 'admin/store/settings/store/census',
-      'title' => t('Census settings'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('uc_store_census_settings'),
-      'access' => user_access('administer store'),
-      'description' => t('Control information reported to www.ubercart.org.'),
       'type' => MENU_NORMAL_ITEM,
     );
     $items[] = array(
@@ -305,7 +296,21 @@ function uc_store_token_values($type, $object = NULL) {
     case 'global':
       $login_link = url('user', NULL, NULL, TRUE);
       $values['site-login'] = l($login_link, $login_link);
-      $values['site-logo'] = '<img src="'. url(theme_get_setting('logo'), NULL, NULL, TRUE) .'" />';
+
+      $theme_key = variable_get('theme_default', 'garland');
+      $settings = theme_get_settings($theme_key);
+      $themes = list_themes();
+      $theme_object = $themes[$theme_key];
+      if ($settings['toggle_logo']) {
+        if ($settings['default_logo']) {
+          $settings['logo'] = dirname($theme_object->filename) .'/logo.png';
+        }
+        elseif ($settings['logo_path']) {
+          $settings['logo'] = $settings['logo_path'];
+        }
+      }
+      $values['site-logo'] = '<img src="'. url($settings['logo'], NULL, NULL, TRUE) .'" />';
+
       $values['store-name'] = variable_get('uc_store_name', t('our store'));
       $values['store-url'] = variable_get('uc_store_url', $base_url);
       $values['store-link'] = l(variable_get('uc_store_name', t('our store')), variable_get('uc_store_url', $base_url));
@@ -340,30 +345,29 @@ function uc_store_token_list($type = 'all') {
 
 function uc_store_help($section){
   switch ($section){
-    case 'admin/store/settings/store/census':
-      $output = t('Ubercart reports to www.ubercart.org once a day to provide update reminders and security alerts. It is neccessary to provide at least module versions in order to prevent monetary losses from security vulnerabilites. Additional optional information may also be sent to calculate statistical data.');
+    case 'admin/store/settings/store/edit/census':
+      return t('Ubercart contacts Ubercart.org once a day to retrieve update reminders and security alerts that may prevent monetary losses from security vulnerabilites. Additional information may be sent to generate anonymous, community-wide statistical data for display on the site.');
   }
-  return $output;
 }
  
 /**
  * Implementation of hook_cron().
  */
 function uc_store_cron(){
-  if (variable_get('uc_store_opt_in', 1)){
+  if (variable_get('uc_store_opt_in', TRUE)){
     $prev_time = variable_get('uc_store_prev_time', 0);
     $later = strtotime("tomorrow", $prev_time);
     if (time() > $later){ // Run updates once a day.
       $vars = array();
       $vars['site_id'] = variable_get('uc_store_site_id', null);
-      if (variable_get('uc_store_opt_in_hostname', 1)){
+      if (variable_get('uc_store_opt_in_hostname', TRUE)){
         $vars['server_name'] = $_SERVER['SERVER_NAME'];
       }
       $vars['php_version'] = PHP_VERSION;
       $vars['drupal_version'] = VERSION;
       $vars['db_type'] = $GLOBALS['db_type'];
       $vars['db_version'] = db_version();
-      if (variable_get('uc_store_opt_in_modules', 1)){
+      if (variable_get('uc_store_opt_in_modules', TRUE)){
         $result = db_query("SELECT name, filename FROM {system} WHERE type = 'module' AND status = 1 ORDER BY filename ASC");
         while ($module = db_fetch_object($result)){
           $info = _module_parse_info_file(dirname($module->filename) .'/'. $module->name .'.info');
@@ -383,16 +387,16 @@ function uc_store_cron(){
         
       $result = db_query("SELECT COUNT(DISTINCT o.order_id) AS orders, SUM(o.order_total) AS sales FROM {uc_orders} AS o WHERE o.order_status = 4 GROUP BY o.order_status");
       if ($stats = db_fetch_array($result)){
-        if (variable_get('uc_store_opt_in_orders', 1)){
+        if (variable_get('uc_store_opt_in_orders', TRUE)){
           $vars['orders'] = $stats['orders'];
         }
-        if (variable_get('uc_store_opt_in_sales', 1)){
+        if (variable_get('uc_store_opt_in_sales', TRUE)){
           $vars['sales'] = $stats['sales'];
         }
       }
       $result = db_query("SELECT SUM(op.qty) AS products FROM {uc_order_products} AS op LEFT JOIN {uc_orders} AS o ON op.order_id = o.order_id WHERE o.order_status = 4 GROUP BY o.order_status");
       if ($stats = db_fetch_array($result)){
-        if (variable_get('uc_store_opt_in_products', 1)){
+        if (variable_get('uc_store_opt_in_products', TRUE)){
           $vars['products'] = $stats['products'];
         }
       }
@@ -492,54 +496,24 @@ function uc_store_footer($main = 0){
  ******************************************************************************/
 
 function uc_store_admin() {
-  drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_store.js', 'module');
-  drupal_add_js("var text_show = '". t('- Show links -') ."';\nvar text_hide = '". t('- Hide links -') ."';\n", 'inline');
-
   $main_menu = menu_get_item(NULL, 'admin/store');
   usort($main_menu['children'], '_menu_sort');
-  foreach ($main_menu['children'] as $mid) {
-    if ($mid > 0) {
-      $submenu[] = menu_get_item($mid);
-    }
-  }
 
-  $output = '<table class="uc-store-admin-table" align="center"><tr valign="top">';
+  if (($type = variable_get('uc_store_admin_page_display', 1)) == 4) {
+    $main_menu = menu_get_item(NULL, 'admin/store');
+    $content = system_admin_menu_block($main_menu);
 
-  $panels = 0;
-  if (is_array($submenu)) {
-    if (variable_get('uc_store_display_links', TRUE)) {
-      $disp = '';
-      $title = t('- Hide links -');
-    }
-    else {
-      $disp = 'display: none;';
-      $title = t('- Show links -');
-    }
-    foreach ($submenu as $menu) {
-      $panel++;
-      if ($panel % 4 == 0) {
-        $output .= '</tr><tr valign="top">';
-      }
-      $panel_title = $menu['title'];
-      $panel_links = theme('admin_block_content', system_admin_menu_block($menu));
-      $panel_table = '<table width="100%"><tr>'
-                    .'<td>'. l(uc_store_get_icon($menu['path']), $menu['path'],
-                               array(), NULL, NULL, FALSE, TRUE) .'</td>'
-                    .'<td class="panel-title">'. l($menu['title'], $menu['path'])
-                    .'</td></tr>';
-      if (strlen($panel_links) > 0) {
-        $panel_table .= '<tr><td nowrap colspan="2" class="panel-links" style="'. $disp .'">'
-                     . $panel_links .'</td></tr><tr>'
-                      .'<td align="center" colspan="2" class="panel-show-link" '
-                      .'id="show-links-'. $panel .'"><a>'. $title
-                      .'</a></td></tr>';
-      }
-      $panel_table .= '</table>';
-      $output .= '<td class="uc-store-admin-panel" id="panel-'. $panel .'">'
-               . $panel_table .'</td>';
-    }
+    $output = theme('admin_block_content', $content);
   }
-  $output .= '</tr></table>';
+  else {
+    foreach ($main_menu['children'] as $mid) {
+      if ($mid > 0) {
+        $menus[] = menu_get_item($mid);
+      }
+    }
+
+    $output = theme('uc_admin_dashboard', $type, $menus);
+  }
 
   $results = module_invoke_all('store_status');
 
@@ -565,7 +539,58 @@ function uc_store_admin() {
   $header = array('&nbsp;', t('Title'), t('Description'));
 
   $output .= '<div style="clear: both;"><h2>'. t('Status messages:') .'</h2>'
-           . theme_table($header, $rows) .'</div>';
+           . theme('table', $header, $rows) .'</div>';
+
+  return $output;
+}
+
+// Themes the dashboard on the admin/store page.
+function theme_uc_admin_dashboard($type, $menus) {
+  if ($type == 1) {
+    drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_store.js', 'module');
+    drupal_add_js("var text_show = '". t('- Show links -') ."';\nvar text_hide = '". t('- Hide links -') ."';\n", 'inline');
+  }
+
+  $output = '<table class="uc-store-admin-table" align="center"><tr valign="top">';
+
+  $panels = 0;
+  if (is_array($menus)) {
+    foreach ($menus as $menu) {
+      $panel++;
+      if ($panel % 4 == 0) {
+        $output .= '</tr><tr valign="top">';
+      }
+      $panel_title = $menu['title'];
+      if ($type == 3) {
+        $panel_links = '';
+      }
+      else {
+        $panel_links = theme('admin_block_content', system_admin_menu_block($menu));
+      }
+      $panel_table = '<table width="100%"><tr>'
+                    .'<td>'. l(uc_store_get_icon($menu['path']), $menu['path'],
+                               array(), NULL, NULL, FALSE, TRUE) .'</td>'
+                    .'<td class="panel-title">'. l($menu['title'], $menu['path'])
+                    .'</td></tr>';
+      if (strlen($panel_links) > 0) {
+        if ($type == 1) {
+          $disp = 'display: none;';
+        }
+        $panel_table .= '<tr><td nowrap colspan="2" class="panel-links" '
+                       .'style="'. $disp .'">'. $panel_links .'</td></tr>';
+        if ($type == 1) {
+          $panel_table .= '<tr><td align="center" colspan="2" '
+                         .'class="panel-show-link" id="show-links-'. $panel
+                         .'"><a>'. t('- Show links -') .'</a></td></tr>';
+        }
+      }
+      $panel_table .= '</table>';
+      $output .= '<td class="uc-store-admin-panel" id="panel-'. $panel .'">'
+               . $panel_table .'</td>';
+    }
+  }
+
+  $output .= '</tr></table>';
 
   return $output;
 }
@@ -633,7 +658,7 @@ function uc_store_customers($message = NULL, $query = NULL, $count_query = NULL,
   drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_store.js');
   uc_add_base_path_js();
   $output = '<p>'. $message .'</p>'
-          . theme_table($header, $rows, array('width' => '100%', 'class' => 'uc-customer-table'))
+          . theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-customer-table'))
            .'<br />'. theme_pager(NULL, $page_length);
 
   return $output;
@@ -699,7 +724,7 @@ function uc_store_customer_orders($uid) {
                      array('!totals_orders' => $totals['orders'],
                            '!totals_items' => $totals['items'],
                            '!totals_total' => uc_currency_format($totals['total']))) .'</p>'
-           . theme_table($header, $rows, array('width' => '100%', 'class' => 'uc-cust-orders-table'))
+           . theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-cust-orders-table'))
             .'<br />'. theme_pager(NULL, 50);
 
   return $output;
@@ -1204,11 +1229,25 @@ function uc_store_store_settings_overview() {
     ),
   );
 
+  switch (variable_get('uc_store_admin_page_display', 1)) {
+    case 1:
+      $type = t('Dashboard with collapsed submenu links');
+      break;
+    case 2:
+      $type = t('Dashboard with expanded submenu links');
+      break;
+    case 3:
+      $type = t('Dashboard with no submenu links');
+      break;
+    case 4:
+      $type = t('Normal Drupal submenu listing');
+      break;
+  }
   $sections[] = array(
     'edit' => 'admin/store/settings/store/edit/display',
     'title' => t('Display settings'),
     'items' => array(
-      t('Store links on main admin page are !state by default.', array('!state' => variable_get('uc_store_display_links', TRUE) ? t('visible') : t('hidden'))),
+      t('Store admin page display type:<br>!type', array('!type' => $type)),
       t('Customer !type address used in lists.', array('!type' => variable_get('uc_customer_list_address', 'billing') == 'billing' ? t('billing') : t('shipping'))),
     ),
   );
@@ -1217,31 +1256,40 @@ function uc_store_store_settings_overview() {
     'edit' => 'admin/store/settings/store/edit/format',
     'title' => t('Format settings'),
     'items' => array(
+      t('Default currency: !code', array('!code' => variable_get('uc_currency_code', 'USD'))),
       t('Currency format: !value', array('!value' => uc_currency_format(1234.56))),
       t('Weight format: !value', array('!value' => uc_weight_format(36))),
       t('Date format: !value', array('!value' => uc_date_format(8, 18, 2007))),
     ),
   );
 
-  $fields = array(
-    'first_name' => uc_get_field_name('first_name'),
-    'last_name' => uc_get_field_name('last_name'),
-    'phone' => uc_get_field_name('phone'),
-    'company' => uc_get_field_name('company'),
-    'street1' => uc_get_field_name('street1'),
-    'street2' => uc_get_field_name('street2'),
-    'city' => uc_get_field_name('city'),
-    'zone' => uc_get_field_name('zone'),
-    'country' => uc_get_field_name('country'),
-    'postal_code' => uc_get_field_name('postal_code'),
-  );
-  $current = variable_get('uc_address_fields', drupal_map_assoc(array('first_name', 'last_name', 'phone', 'company', 'street1', 'street2', 'city', 'zone', 'postal_code', 'country')));
-  foreach ($fields as $field => $title) {
-    $items[] = t('!field is !status.', array('!field' => $title, '!status' => isset($current[$field]) ? t('enabled') : t('disabled')));
+  $items = array();
+  if (variable_get('uc_store_opt_in', TRUE)) {
+    $opt_in[] = t('Basic version information');
+    if (variable_get('uc_store_opt_in_hostname', TRUE)) {
+      $opt_in[] = t('Host name');
+    }
+    if (variable_get('uc_store_opt_in_modules', TRUE)) {
+      $opt_in[] = t('List of enabled modules');
+    }
+    if (variable_get('uc_store_opt_in_orders', TRUE)) {
+      $opt_in[] = t('Number of fulfilled orders');
+    }
+    if (variable_get('uc_store_opt_in_products', TRUE)) {
+      $opt_in[] = t('Number of products sold');
+    }
+    if (variable_get('uc_store_opt_in_sales', TRUE)) {
+      $opt_in[] = t('Total sales');
+    }
+    $items[] = t('You are reporting the following to Ubercart.org:')
+              .'<br />'. theme('item_list', $opt_in);
+  }
+  else {
+    $items[] = t('You are not reporting any data to Ubercart.org.');
   }
   $sections[] = array(
-    'edit' => 'admin/store/settings/store/edit/fields',
-    'title' => t('Address fields'),
+    'edit' => 'admin/store/settings/store/edit/census',
+    'title' => t('Census settings'),
     'items' => $items,
   );
 
@@ -1263,6 +1311,7 @@ function uc_store_store_settings_form() {
   $form['uc_store_street1'] = uc_textfield(t('Street Address 1'), variable_get('uc_store_street1', NULL), FALSE, NULL, 128);
   $form['uc_store_street2'] = uc_textfield(t('Street Address 2'), variable_get('uc_store_street2', NULL), FALSE, NULL, 128);
   $form['uc_store_city'] = uc_textfield(t('City'), variable_get('uc_store_city', NULL), FALSE);
+  $form['uc_store_country'] = uc_country_select(t('Country'), variable_get('uc_store_country', 840));
   if (isset($_POST['uc_store_country'])) {
     $country_id = intval($_POST['uc_store_country']);
   }
@@ -1271,17 +1320,31 @@ function uc_store_store_settings_form() {
   }
   $form['uc_store_zone'] = uc_zone_select(t('Zone'), variable_get('uc_store_zone', NULL), NULL, $country_id);
   $form['uc_store_postal_code'] = uc_textfield(t('Postal Code'), variable_get('uc_store_postal_code', NULL), FALSE, NULL, 10);
-  $form['uc_store_country'] = uc_country_select(t('Country'), variable_get('uc_store_country', 840));
 
   return system_settings_form($form);
 }
 
 function uc_store_display_settings_form() {
+  $form['uc_store_admin_page_display'] = array(
+    '#type' => 'radios',
+    '#title' => t('Display type for the main store admininstration page'),
+    '#description' => t('Some options are better suited for different themes, so feel free to try them all out!'),
+    '#options' => array(
+      1 => t('Dashboard with collapsed submenu links'),
+      2 => t('Dashboard with expanded submenu links'),
+      3 => t('Dashboard with no submenu links'),
+      4 => t('Normal Drupal submenu listing'),
+    ),
+    '#default_value' => variable_get('uc_store_admin_page_display', 1),
+  );
+
+/*
   $form['uc_store_display_links'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display store links on administration page by default.'),
     '#default_value' => variable_get('uc_store_display_links', TRUE),
   );
+*/
 
   $desc = t('Select the address to be used on customer lists and summaries.');
   if (module_exists('uc_notify')) {
@@ -1308,6 +1371,12 @@ function uc_store_format_settings_form() {
     '#title' => t('Currency format'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
+  );
+  $form['currency']['uc_currency_code'] = array(
+    '#type' => 'select',
+    '#title' => t('ISO 3-letter currency code'),
+    '#options' => currency_api_get_list(),
+    '#default_value' => variable_get('uc_currency_code', 'USD'),
   );
   $form['currency']['example'] = array(
     '#type' => 'textfield',
@@ -1542,34 +1611,45 @@ function uc_store_initials_submit($form_id, $form_values) {
   }
 }
 
-function uc_store_census_settings(){
-  $form['uc_store_opt_in'] = array('#type' => 'radios',
-    '#title' => t('Send Information to &Uuml;bercart'),
-    '#options' => array(1 => t('Yes'), 0 => t('No')),
-    '#default_value' => variable_get('uc_store_opt_in', 1),
-    '#description' => t('While this option is set to Yes, anonymous data about your site is reported for fun statistical purposes. We collect your PHP, Drupal, and database versions, plus any additional information you select below.'),
+function uc_store_census_settings() {
+  $form['uc_store_opt_in'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Send anonymous statistical data to Ubercart.org as specified below.'),
+    '#default_value' => variable_get('uc_store_opt_in', TRUE),
   );
-  $form['uc_store_opt_in_hostname'] = array('#type' => 'checkbox',
-    '#title' => t('Host Name'),
-    '#default_value' => variable_get('uc_store_opt_in_hostname', 1),
+
+  $form['data'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Opt-in data'),
+    '#description' => t('In addition to PHP, MySQL, and Drupal version information, the following types of data will also be reported:'),
+    '#collapsible' => FALSE,
   );
-  $form['uc_store_opt_in_modules'] = array('#type' => 'checkbox',
+  $form['data']['uc_store_opt_in_hostname'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Host name'),
+    '#default_value' => variable_get('uc_store_opt_in_hostname', TRUE),
+  );
+  $form['data']['uc_store_opt_in_modules'] = array(
+    '#type' => 'checkbox',
     '#title' => t('List of enabled modules'),
-    '#default_value' => variable_get('uc_store_opt_in_modules', 1),
+    '#default_value' => variable_get('uc_store_opt_in_modules', TRUE),
   );
-  $form['uc_store_opt_in_orders'] = array('#type' => 'checkbox',
-    '#title' => t('Total fulfilled orders'),
-    '#default_value' => variable_get('uc_store_opt_in_orders', 1),
+  $form['data']['uc_store_opt_in_orders'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Number of fulfilled orders'),
+    '#default_value' => variable_get('uc_store_opt_in_orders', TRUE),
   );
-  $form['uc_store_opt_in_sales'] = array('#type' => 'checkbox',
+  $form['data']['uc_store_opt_in_products'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Number of products sold'),
+    '#default_value' => variable_get('uc_store_opt_in_products', TRUE),
+  );
+  $form['data']['uc_store_opt_in_sales'] = array(
+    '#type' => 'checkbox',
     '#title' => t('Total sales'),
-    '#default_value' => variable_get('uc_store_opt_in_sales', 1),
+    '#default_value' => variable_get('uc_store_opt_in_sales', TRUE),
   );
-  $form['uc_store_opt_in_products'] = array('#type' => 'checkbox',
-    '#title' => t('Total products sold'),
-    '#default_value' => variable_get('uc_store_opt_in_products', 1),
-  );
-  
+
   return system_settings_form($form);
 }
 
@@ -1815,8 +1895,8 @@ function uc_address_format($first_name, $last_name, $company, $street1, $street2
   $address = strtr($format, $variables);
   $address = strtr($address, array("\n" => '<br>'));
 
-  $match = array('/^<br>/', '/<br>$/', '/<br>(\s*|[\s*<br>\s*]+)<br>/');
-  $replace = array('', '', '<br>');
+  $match = array('/^<br>/', '/<br>$/', '/<br>(\s*|[\s*<br>\s*]+)<br>/', '/<br><br>/', '`<br>, N/A`');
+  $replace = array('', '', '<br>', '<br>', '', '');
   $address = preg_replace($match, $replace, $address);
 
   return $address;
@@ -2279,6 +2359,13 @@ function uc_invoke_all($hook, $op, &$arg1) {
 }
 
 /**
+ * Remove elements from an array if 'enabled' is FALSE or NULL.
+ */
+function uc_enabled_filter($a){
+  return $a['enabled'];
+}
+
+/**
  * Sort an array of arrays having a weight key to determine their order.
  */
 function uc_weight_sort($a, $b) {
@@ -2408,3 +2495,170 @@ function uc_store_address() {
 
   return $store_address;
 }
+
+if (!function_exists('currency_api_get_list')){
+  function currency_api_get_list() {
+    $currency = array(
+      'AFA' => t('Afghanistan Afghani (AFA)'),
+      'ALL' => t('Albanian Lek (ALL)'),
+      'DZD' => t('Algerian Dinar (DZD)'),
+      'ARS' => t('Argentine Peso (ARS)'),
+      'AWG' => t('Aruba Florin (AWG)'),
+      'AUD' => t('Australian Dollar (AUD)'),
+      'BSD' => t('Bahamian Dollar (BSD)'),
+      'BHD' => t('Bahraini Dinar (BHD)'),
+      'BDT' => t('Bangladesh Taka (BDT)'),
+      'BBD' => t('Barbados Dollar (BBD)'),
+      'BYR' => t('Belarus Ruble (BYR)'),
+      'BZD' => t('Belize Dollar (BZD)'),
+      'BMD' => t('Bermuda Dollar (BMD)'),
+      'BTN' => t('Bhutan Ngultrum (BTN)'),
+      'BOB' => t('Bolivian Boliviano (BOB)'),
+      'BWP' => t('Botswana Pula (BWP)'),
+      'BRL' => t('Brazilian Real (BRL)'),
+      'GBP' => t('British Pound (GBP)'),
+      'BND' => t('Brunei Dollar (BND)'),
+      'BGN' => t('Bulgarian Lev (BGN)'),
+      'BIF' => t('Burundi Franc (BIF)'),
+      'KHR' => t('Cambodia Riel (KHR)'),
+      'CAD' => t('Canadian Dollar (CAD)'),
+      'CVE' => t('Cape Verde Escudo (CVE)'),
+      'KYD' => t('Cayman Islands Dollar (KYD)'),
+      'XOF' => t('CFA Franc (BCEAO) (XOF)'),
+      'XAF' => t('CFA Franc (BEAC) (XAF)'),
+      'CLP' => t('Chilean Peso (CLP)'),
+      'CNY' => t('Chinese Yuan (CNY)'),
+      'COP' => t('Colombian Peso (COP)'),
+      'KMF' => t('Comoros Franc (KMF)'),
+      'CRC' => t('Costa Rica Colon (CRC)'),
+      'HRK' => t('Croatian Kuna (HRK)'),
+      'CUP' => t('Cuban Peso (CUP)'),
+      'CYP' => t('Cyprus Pound (CYP)'),
+      'CZK' => t('Czech Koruna (CZK)'),
+      'DKK' => t('Danish Krone (DKK)'),
+      'DJF' => t('Dijibouti Franc (DJF)'),
+      'DOP' => t('Dominican Peso (DOP)'),
+      'XCD' => t('East Caribbean Dollar (XCD)'),
+      'ECS' => t('Ecuador Sucre (ECS)'),
+      'EGP' => t('Egyptian Pound (EGP)'),
+      'SVC' => t('El Salvador Colon (SVC)'),
+      'ERN' => t('Eritrea Nakfa (ERN)'),
+      'EEK' => t('Estonian Kroon (EEK)'),
+      'ETB' => t('Ethiopian Birr (ETB)'),
+      'EUR' => t('Euro (EUR)'),
+      'FKP' => t('Falkland Islands Pound (FKP)'),
+      'FJD' => t('Fiji Dollar (FJD)'),
+      'GMD' => t('Gambian Dalasi (GMD)'),
+      'GHC' => t('Ghanian Cedi (GHC)'),
+      'GIP' => t('Gibraltar Pound (GIP)'),
+      'XAU' => t('Gold Ounces (XAU)'),
+      'GTQ' => t('Guatemala Quetzal (GTQ)'),
+      'GNF' => t('Guinea Franc (GNF)'),
+      'GYD' => t('Guyana Dollar (GYD)'),
+      'HTG' => t('Haiti Gourde (HTG)'),
+      'HNL' => t('Honduras Lempira (HNL)'),
+      'HKD' => t('Hong Kong Dollar (HKD)'),
+      'HUF' => t('Hungarian Forint (HUF)'),
+      'ISK' => t('Iceland Krona (ISK)'),
+      'INR' => t('Indian Rupee (INR)'),
+      'IDR' => t('Indonesian Rupiah (IDR)'),
+      'IRR' => t('Iran Rial (IRR)'),
+      'IQD' => t('Iraqi Dinar (IQD)'),
+      'ILS' => t('Israeli Shekel (ILS)'),
+      'JMD' => t('Jamaican Dollar (JMD)'),
+      'JPY' => t('Japanese Yen (JPY)'),
+      'JOD' => t('Jordanian Dinar (JOD)'),
+      'KZT' => t('Kazakhstan Tenge (KZT)'),
+      'KES' => t('Kenyan Shilling (KES)'),
+      'KRW' => t('Korean Won (KRW)'),
+      'KWD' => t('Kuwaiti Dinar (KWD)'),
+      'LAK' => t('Lao Kip (LAK)'),
+      'LVL' => t('Latvian Lat (LVL)'),
+      'LBP' => t('Lebanese Pound (LBP)'),
+      'LSL' => t('Lesotho Loti (LSL)'),
+      'LRD' => t('Liberian Dollar (LRD)'),
+      'LYD' => t('Libyan Dinar (LYD)'),
+      'LTL' => t('Lithuanian Lita (LTL)'),
+      'MOP' => t('Macau Pataca (MOP)'),
+      'MKD' => t('Macedonian Denar (MKD)'),
+      'MGF' => t('Malagasy Franc (MGF)'),
+      'MWK' => t('Malawi Kwacha (MWK)'),
+      'MYR' => t('Malaysian Ringgit (MYR)'),
+      'MVR' => t('Maldives Rufiyaa (MVR)'),
+      'MTL' => t('Maltese Lira (MTL)'),
+      'MRO' => t('Mauritania Ougulya (MRO)'),
+      'MUR' => t('Mauritius Rupee (MUR)'),
+      'MXN' => t('Mexican Peso (MXN)'),
+      'MDL' => t('Moldovan Leu (MDL)'),
+      'MNT' => t('Mongolian Tugrik (MNT)'),
+      'MAD' => t('Moroccan Dirham (MAD)'),
+      'MZM' => t('Mozambique Metical (MZM)'),
+      'MMK' => t('Myanmar Kyat (MMK)'),
+      'NAD' => t('Namibian Dollar (NAD)'),
+      'NPR' => t('Nepalese Rupee (NPR)'),
+      'ANG' => t('Neth Antilles Guilder (ANG)'),
+      'NZD' => t('New Zealand Dollar (NZD)'),
+      'NIO' => t('Nicaragua Cordoba (NIO)'),
+      'NGN' => t('Nigerian Naira (NGN)'),
+      'KPW' => t('North Korean Won (KPW)'),
+      'NOK' => t('Norwegian Krone (NOK)'),
+      'OMR' => t('Omani Rial (OMR)'),
+      'XPF' => t('Pacific Franc (XPF)'),
+      'PKR' => t('Pakistani Rupee (PKR)'),
+      'XPD' => t('Palladium Ounces (XPD)'),
+      'PAB' => t('Panama Balboa (PAB)'),
+      'PGK' => t('Papua New Guinea Kina (PGK)'),
+      'PYG' => t('Paraguayan Guarani (PYG)'),
+      'PEN' => t('Peruvian Nuevo Sol (PEN)'),
+      'PHP' => t('Philippine Peso (PHP)'),
+      'XPT' => t('Platinum Ounces (XPT)'),
+      'PLN' => t('Polish Zloty (PLN)'),
+      'QAR' => t('Qatar Rial (QAR)'),
+      'ROL' => t('Romanian Leu (ROL)'),
+      'RUB' => t('Russian Rouble (RUB)'),
+      'RWF' => t('Rwanda Franc (RWF)'),
+      'WST' => t('Samoa Tala (WST)'),
+      'STD' => t('Sao Tome Dobra (STD)'),
+      'SAR' => t('Saudi Arabian Riyal (SAR)'),
+      'SCR' => t('Seychelles Rupee (SCR)'),
+      'SLL' => t('Sierra Leone Leone (SLL)'),
+      'XAG' => t('Silver Ounces (XAG)'),
+      'SGD' => t('Singapore Dollar (SGD)'),
+      'SKK' => t('Slovak Koruna (SKK)'),
+      'SIT' => t('Slovenian Tolar (SIT)'),
+      'SBD' => t('Solomon Islands Dollar (SBD)'),
+      'SOS' => t('Somali Shilling (SOS)'),
+      'ZAR' => t('South African Rand (ZAR)'),
+      'LKR' => t('Sri Lanka Rupee (LKR)'),
+      'SHP' => t('St Helena Pound (SHP)'),
+      'SDD' => t('Sudanese Dinar (SDD)'),
+      'SRG' => t('Surinam Guilder (SRG)'),
+      'SZL' => t('Swaziland Lilageni (SZL)'),
+      'SEK' => t('Swedish Krona (SEK)'),
+      'CHF' => t('Swiss Franc (CHF)'),
+      'SYP' => t('Syrian Pound (SYP)'),
+      'TWD' => t('Taiwan Dollar (TWD)'),
+      'TZS' => t('Tanzanian Shilling (TZS)'),
+      'THB' => t('Thai Baht (THB)'),
+      'TOP' => t('Tonga Pa\'anga (TOP)'),
+      'TTD' => t('Trinidad & Tobago Dollar (TTD)'),
+      'TND' => t('Tunisian Dinar (TND)'),
+      'TRL' => t('Turkish Lira (TRL)'),
+      'USD' => t('U.S. Dollar (USD)'),
+      'AED' => t('UAE Dirham (AED)'),
+      'UGX' => t('Ugandan Shilling (UGX)'),
+      'UAH' => t('Ukraine Hryvnia (UAH)'),
+      'UYU' => t('Uruguayan New Peso (UYU)'),
+      'VUV' => t('Vanuatu Vatu (VUV)'),
+      'VEB' => t('Venezuelan Bolivar (VEB)'),
+      'VND' => t('Vietnam Dong (VND)'),
+      'YER' => t('Yemen Riyal (YER)'),
+      'YUM' => t('Yugoslav Dinar (YUM)'),
+      'ZMK' => t('Zambian Kwacha (ZMK)'),
+      'ZWD' => t('Zimbabwe Dollar (ZWD)'),
+    );
+  
+    return $currency;
+  }
+}
+

@@ -1,0 +1,36 @@
+<?php
+// $Id$
+
+function uc_usps_install(){
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {uc_usps_products} (
+        `nid` mediumint(9) unsigned NOT NULL,
+        `container` varchar(2) NOT NULL,
+        `qty` smallint unsigned NOT NULL default '1',
+        `length` float unsigned NOT NULL,
+        `width` float unsigned NOT NULL,
+        `height` float unsigned NOT NULL,
+        `units` varchar(255) NOT NULL default 'in',
+        UNIQUE KEY `nid` (`nid`)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
+    break;
+    case 'pgsql':
+      db_query('CREATE TABLE {uc_usps_products} (
+        "nid" mediumint(9) unsigned NOT NULL,
+        "container" varchar(2) NOT NULL,
+        "qty" smallint unsigned NOT NULL default \'1\',
+        "length" float unsigned NOT NULL,
+        "width" float unsigned NOT NULL,
+        "height" float unsigned NOT NULL,
+        "units" varchar (255) NOT NULL default \'in\',
+        UNIQUE KEY "nid" ("nid")
+      );');
+    break;
+  }
+}
+
+function uc_usps_uninstall(){
+  db_query("DROP TABLE IF EXISTS {uc_usps_products}");
+}

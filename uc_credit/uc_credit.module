@@ -213,7 +213,7 @@ function uc_credit_cvv_info() {
   exit();
 }
 
-function uc_payment_method_credit($op, &$arg1) {
+function uc_payment_method_credit($op, $arg1) {
   switch ($op) {
     case 'cart-details':
       $details = drupal_get_form('uc_payment_method_credit_form', $arg1);
@@ -685,6 +685,8 @@ function uc_credit_terminal_form($order_id, $amount = 0) {
     '#default_value' => uc_currency_format($amount, FALSE, FALSE),
     '#size' => 10,
     '#weight' => 0,
+    '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
+    '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
   );
   $form['order_id'] = array(
     '#type' => 'hidden',
@@ -771,7 +773,7 @@ function _valid_card_number($number) {
 
   for ($i = 0; $i < strlen($number); $i++) {
     $digit = substr($number, $i, 1);
-    if ($i % 2 == 0 && $i != strlen($number) - 1) {
+    if ((strlen($number) - $i - 1) % 2) {
       $digit *= 2;
       if ($digit > 9) {
         $digit -= 9;

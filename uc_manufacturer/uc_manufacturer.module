@@ -34,7 +34,7 @@ function uc_manufacturer_help($section){
  * Implementation of hook_perm().
  */
 function uc_manufacturer_perm(){
-  return array('administer manufacturers, access manufacturers');
+  return array('administer manufacturers', 'access manufacturers');
 }
 
 /**
@@ -127,23 +127,26 @@ function uc_manufacturer_taxonomy($op, $type, $object = null){
               $object['tid'], $object['url'], $filepath, $object['phone_no'], $object['fax_no']);
           break;
           case 'update':
+            $logo = '';
             $field_name = 'logo';
             if ($file = file_check_upload($field_name)) {
               $file->filepath = str_replace('\\', '/', $file->filepath);
-              $file = file_save_upload($field_name, file_create_path('images') .'/'. $file->filename);
+              $file = file_save_upload($field_name, file_create_path('ubercart_images') .'/'. $file->filename);
               if ($file) {
                 if (!image_get_info($file->filepath)) {
                   form_set_error($field_name, t('Uploaded file is not a valid image'));
-                  $logo = 'File error.';
                 }
               }
               $logo = $file->filepath;
             }
-            else{
-              $logo = 'File not found.';
+            if ($logo || $object['remove_logo']){
+              db_query("UPDATE {uc_manufacturers} SET url = '%s', logo = '%s', phone_no = '%s', fax_no = '%s' WHERE tid = %d",
+                $object['url'], $logo, $object['phone_no'], $object['fax_no'], $object['tid']);
             }
-            db_query("UPDATE {uc_manufacturers} SET url = '%s', logo = '%s', phone_no = '%s', fax_no = '%s' WHERE tid = %d",
-              $object['url'], $logo, $object['phone_no'], $object['fax_no'], $object['tid']);
+            else{
+              db_query("UPDATE {uc_manufacturers} SET url = '%s', phone_no = '%s', fax_no = '%s' WHERE tid = %d",
+                $object['url'], $object['phone_no'], $object['fax_no'], $object['tid']);
+            }
           break;
           case 'delete':
             db_query("DELETE FROM {uc_manufacturers} WHERE tid = %d", $object['tid']);
@@ -177,10 +180,15 @@ function uc_manufacturer_form_alter($form_id, &$form){
     
     $form['name']['#weight'] = -1;
     $form['manufacturer'] = array('#weight' => 0);
+    if ($manufacturer->logo){
+      $form['manufacturer']['remove_logo'] = array('#type' => 'checkbox',
+        '#title' => t('Remove') .' '. theme('imagecache', 'manufacturer', $manufacturer->logo, '', '', array('style' => 'vertical-align: middle')),
+        '#weight' => 0,
+      );
+    }
     $form['manufacturer']['logo'] = array('#type' => 'file',
       '#title' => t('Logo'),
-      //'#default_value' => $node->images['_original'],
-      //'#description' => t('// Put size guidelines here.'),
+      '#description' => t('Uploading a new image replaces the current one.'),
       '#weight' => 0,
     );
     $form['manufacturer']['url'] = array('#type' => 'textfield',
@@ -242,7 +250,7 @@ function uc_manufacturer_block($op = 'list', $delta = 0, $edit = array()){
           $term = array_shift($manu_ids);
           $man = uc_manufacturer_load($term->tid);
           // $content .= '<pre>'. print_r($man, true) .'</pre>';
-          if ($man->logo && $man->logo != 'File not found.'){
+          if ($man->logo){
             $content .= l('<img src="'. base_path() . $man->logo .'" alt="'. $man->name .' Logo" />', $man->url, array('target' => '_blank'), null, null, false, true);
           }
           else{
@@ -279,31 +287,8 @@ function uc_manufacturer_table_alter($table_id, $op, $args = null){
             );
           return $fields;
           case 'data':
-            $header = tapir_get_header('uc_product_table', $args);
-            $order = substr(tablesort_sql($header), 10);
-            if (empty($order)){
-              $order = 'n.title';
-            }
-            $data = array();
-            if (!isset($tid)){
-              $nids = $args['nids'];
-              if (empty($nids)){
-                $result = pager_query(db_rewrite_sql("SELECT n.nid FROM {node} AS n RIGHT JOIN {uc_products} AS p ON n.nid = p.nid ORDER BY ". $order), variable_get('uc_product_default_nodes', 10), 0, null);
-              }
-              else{
-                $result = pager_query(db_rewrite_sql("SELECT n.nid FROM {node} AS n RIGHT JOIN {uc_products} AS p ON n.nid = p.nid WHERE n.nid IN (%s) ORDER BY ". $order), variable_get('uc_product_default_nodes', 10), 0, null, implode(',', $nids));
-              }
-            }
-            else{
-              $sql = 'SELECT DISTINCT(n.nid), n.sticky, n.title, n.created FROM {node} n INNER JOIN {term_node} tn ON n.nid = tn.nid RIGHT JOIN {uc_products} AS p ON n.nid = p.nid WHERE tn.tid = %d AND n.status = 1 ORDER BY '. $order;
-              $sql_count = 'SELECT COUNT(DISTINCT(n.nid)) FROM {node} n INNER JOIN {term_node} tn ON n.nid = tn.nid RIGHT JOIN {uc_products} AS p ON n.nid = p.nid WHERE tn.tid = %d AND n.status = 1';
-              $sql = db_rewrite_sql($sql);
-              $sql_count = db_rewrite_sql($sql_count);
-              $result = pager_query($sql, variable_get('uc_product_default_nodes', 10), 0, $sql_count, $tid);
-            }
-            while ($node = db_fetch_object($result)){
-              $node = node_load($node->nid);
-              $man = uc_product_get_manufacturer($node->nid);
+            foreach ($args['nids'] as $nid){
+              $man = uc_product_get_manufacturer($nid);
               $data['manufacturer'][] = l($man->name, 'manufacturer/'. $man->tid);
             }
           return $data;
@@ -355,11 +340,11 @@ function uc_manufacturer_table_alter($table_id, $op, $args = null){
 }
 
 /******************************************************************************
- * Übercart Hooks                                                             *
+ * Ubercart Hooks                                                             *
  ******************************************************************************/
 
 /**
- * Implementation of Übercart's hook_store_status().
+ * Implementation of hook_store_status().
  *
  * Checks that there is a manufacturer vocabulary.
  */
@@ -382,6 +367,34 @@ function uc_manufacturer_store_status(){
   }
   
   return $status;
+}
+
+function uc_manufacturer_product_class($type, $op){
+  $vid = variable_get('uc_manufacturer_vid', 0);
+  switch($op){
+    case 'insert':
+      if ($vid){
+        db_query("INSERT INTO {vocabulary_node_types} (vid, type) VALUES (%d, '%s')", $vid, $type);
+      }
+    break;
+    case 'delete':
+      if ($vid){
+        db_query("DELETE FROM {vocabulary_node_types} WHERE vid = %d AND type = '%s'", $vid, $type);
+      }
+    break;
+  }
+}
+
+/**
+ * Implementation of hook_cart_item().
+ */
+function uc_manufacturer_cart_item($op, &$item) {
+  switch ($op) {
+    case 'load':
+      $term = array_shift(taxonomy_node_get_terms_by_vocabulary($item->nid, variable_get('uc_manufacturer_vid', 0)));
+      $item->manufacturer = $term->name;
+      break;
+  }
 }
 
 /******************************************************************************
@@ -407,8 +420,22 @@ function uc_manufacturer_all($op = 'list', $tid = 0){
     $manufacturer = uc_manufacturer_load($tid);
     drupal_set_title($manufacturer->name);
     $output .= theme('uc_manufacturer', $manufacturer, true);
-    $table_args = array('tid' => $manufacturer->tid);
+    $header = tapir_get_header('uc_product_table', array());
+    $order = substr(tablesort_sql($header), 10);
+    if (empty($order)){
+      $order = 'n.title';
+    }
+    $sql = 'SELECT DISTINCT(n.nid), n.sticky, n.title, n.created FROM {node} n INNER JOIN {term_node} tn ON n.nid = tn.nid RIGHT JOIN {uc_products} AS p ON n.nid = p.nid WHERE tn.tid = %d AND n.status = 1 ORDER BY '. $order;
+    $sql_count = 'SELECT COUNT(DISTINCT(n.nid)) FROM {node} n INNER JOIN {term_node} tn ON n.nid = tn.nid RIGHT JOIN {uc_products} AS p ON n.nid = p.nid WHERE tn.tid = %d AND n.status = 1';
+    $sql = db_rewrite_sql($sql);
+    $sql_count = db_rewrite_sql($sql_count);
+    $result = pager_query($sql, variable_get('uc_product_nodes_per_page', 10), 0, $sql_count, $tid);
+    while ($node = db_fetch_object($result)){
+      $table_nids[] = $node->nid;
+    }
+    $table_args = array('nids' => $table_nids);
     $output .= tapir_get_table('uc_product_table', $table_args);
+    $output .= theme('pager');
   }
   return $output;
   //print "\$op = $op";

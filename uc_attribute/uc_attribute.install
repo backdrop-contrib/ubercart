@@ -52,8 +52,9 @@ function uc_attribute_install(){
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
       db_query("CREATE TABLE {uc_product_adjustments} (
         `nid` mediumint(9) NOT NULL,
-        `combination` text NOT NULL,
-        `model` varchar(255) NOT NULL
+        `combination` varchar(255) NOT NULL,
+        `model` varchar(255) NOT NULL,
+        PRIMARY KEY  (`nid`, `combination`)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
     break;
     case 'pgsql':
@@ -106,7 +107,7 @@ function uc_attribute_install(){
       );');
       db_query('CREATE TABLE {uc_product_adjustments} (
         "nid" mediumint(9) NOT NULL,
-        "combination" text NOT NULL,
+        "combination" varchar(255) NOT NULL,
         "model" varchar(255) NOT NULL
       );');
     break;
@@ -205,6 +206,21 @@ function uc_attribute_update_3(){
       db_change_column($ret, 'uc_class_attributes', 'pcid', 'pcid', 'varchar(32)', array('not null' => true));
       db_change_column($ret, 'uc_class_attribute_options', 'pcid', 'pcid', 'varchar(32)', array('not null' => true));
     break;
+  }
+  return $ret;
+}
+
+function uc_attribute_update_4(){
+  $ret = array();
+  switch($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_product_adjustments} CHANGE combination combination varchar(255) NOT NULL");
+      $ret[] = update_sql("ALTER TABLE {uc_product_adjustments} ADD PRIMARY KEY  (`nid`, `combination`)");
+    break;
+    case 'pgsql':
+      db_change_column($ret, 'uc_product_adjustments', 'combination', 'combination', 'varchar(255)', array('not null' => true, 'default' => ''));
+      $ret[] = update_sql("ALTER TABLE {uc_product_adjustments} ADD PRIMARY KEY  ('nid', 'combiination')");
   }
   return $ret;
 }

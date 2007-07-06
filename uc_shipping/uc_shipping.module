@@ -1,0 +1,1026 @@
+<?php
+
+// $Id$
+
+/******************************************************************************
+ * Drupal hooks                                                               *
+ ******************************************************************************/
+function uc_shipping_menu($may_cache){
+  $items = array();
+  
+  if ($may_cache){
+    $items[] = array('path' => 'admin/store/settings/shipping',
+      'access' => user_access('fufill orders'),
+      'title' => t('Shipping settings'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('uc_shipping_settings'),
+      'type' => MENU_NORMAL_ITEM,
+    );
+  }
+  else{
+    if (is_numeric(arg(3))){
+      $items[] = array('path' => 'admin/store/orders/'. arg(3) .'/packages',
+        'access' => user_access('fulfill orders'),
+        'title' => t('packages'),
+        'callback' => 'uc_shipping_order_packages',
+        'callback arguments' => array(arg(3)),
+        'weight' => 6,
+        'type' => MENU_LOCAL_TASK,
+      );
+      $items[] = array('path' => 'admin/store/orders/'. arg(3) .'/packages/new',
+        'access' => user_access('fulfill orders'),
+        'title' => t('New packages'),
+        'callback' => 'drupal_get_form',
+        'callback arguments' => array('uc_shipping_new_package', arg(3)),
+        'type' => MENU_CALLBACK_ITEM,
+      );
+      $items[] = array('path' => 'admin/store/orders/'. arg(3) .'/packages/edit/'. arg(6),
+        'access' => user_access('fulfill orders'),
+        'title' => t('Edit package'),
+        'callback' => 'drupal_get_form',
+        'callback arguments' => array('uc_shipping_package_edit', arg(3), arg(6)),
+        'type' => MENU_CALLBACK_ITEM,
+      );
+      $items[] = array('path' => 'admin/store/orders/'. arg(3) .'/packages/delete/'. arg(6),
+        'access' => user_access('fulfill orders'),
+        'title' => t('Delete package'),
+        'callback' => 'drupal_get_form',
+        'callback arguments' => array('uc_shipping_package_delete_confirm', arg(3), arg(6)),
+        'type' => MENU_CALLBACK_ITEM,
+      );
+      $items[] = array('path' => 'admin/store/orders/'. arg(3) .'/shipments',
+        'access' => user_access('fulfill orders'),
+        'title' => t('shipments'),
+        'callback' => 'uc_shipping_order_shipments',
+        'callback arguments' => array(arg(3)),
+        'weight' => 7,
+        'type' => MENU_LOCAL_TASK,
+      );
+      $items[] = array('path' => 'admin/store/orders/'. arg(3) .'/shipments/view/'. arg(6),
+        'title' => t('Shipment !id', array('!id' => arg(6))),
+        'callback' => 'uc_shipping_shipment_view',
+        'callback arguments' => array(arg(3), arg(6)),
+        'type' => MENU_CALLBACK_ITEM,
+      );
+      $items[] = array('path' => 'admin/store/orders/'. arg(3) .'/shipments/new',
+        'access' => user_access('fulfill orders'),
+        'title' => t('New shipment'),
+        'callback' => 'drupal_get_form',
+        'callback arguments' => array('uc_shipping_new_shipment', arg(3)),
+        'type' => MENU_CALLBACK_ITEM,
+      );
+      $items[] = array('path' => 'admin/store/orders/'. arg(3) .'/shipments/edit/'. arg(6),
+        'access' => user_access('fulfill orders'),
+        'title' => t('Edit shipment'),
+        'callback' => 'drupal_get_form',
+        'callback arguments' => array('uc_shipping_shipment_edit', arg(3), arg(6)),
+        'type' => MENU_CALLBACK_ITEM,
+      );
+      $items[] = array('path' => 'admin/store/orders/'. arg(3) .'/shipments/delete/'. arg(6),
+        'access' => user_access('fulfill orders'),
+        'title' => t('Delete shipment'),
+        'callback' => 'drupal_get_form',
+        'callback arguments' => array('uc_shipping_shipment_delete_confirm', arg(3), arg(6)),
+        'type' => MENU_CALLBACK_ITEM,
+      );
+      $items[] = array('path' => 'admin/store/orders/'. arg(3) .'/ship',
+        'access' => user_access('fulfill orders'),
+        'title' => t('Ship packages'),
+        'callback' => 'uc_shipping_make_shipment',
+        'callback arguments' => array(arg(3)),
+        'type' => MENU_CALLBACK_ITEM,
+      );
+    }
+  }
+  
+  return $items;
+}
+
+function uc_shipping_perm(){
+  return array('fulfill orders');
+}
+
+/******************************************************************************
+ * Menu callbacks                                                             *
+ ******************************************************************************/
+function uc_shipping_settings(){
+  $form = array();
+  
+  $form['n/a'] = array('#type' => 'markup', '#value' => t('Nothing to see here.'));
+  
+  return system_settings_form($form);
+}
+
+function uc_shipping_order_packages($order_id){
+  $header = array(t('Package ID'), t('Products'), t('Shipping Type'), t('Package Type'), t('Shipment ID'), t('Tracking Number'), t('Labels'), array('data' => t('Actions'), 'colspan' => 2));
+  $rows = array();
+  $result = db_query("SELECT * FROM {uc_packages} WHERE order_id = %d", $order_id);
+  while ($package = db_fetch_object($result)){
+    $row = array();
+    $row[] = $package->package_id;
+    $product_list = array();
+    $result2 = db_query("SELECT pp.order_product_id, pp.qty, op.title, op.model FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON pp.order_product_id = op.order_product_id WHERE pp.package_id = %d", $package->package_id);
+    while ($product = db_fetch_object($result2)){
+      $product_list[] = $product->qty .' x '. $product->model;
+    }
+    $row[] = '<ul><li>'. implode('</li><li>', $product_list) .'</li></ul>';
+    $row[] = strtr($package->shipping_type, '_', ' ');
+    $row[] = $package->pkg_type;
+    $row[] = isset($package->sid) ? l($package->sid, 'admin/store/orders/'. $order_id .'/shipments/view/'. $package->sid) : '';
+    $row[] = isset($package->tracking_number) ? $package->tracking_number : '';
+    if ($package->sid && $package->label_image){
+      $method = db_result(db_query("SELECT shipping_method FROM {uc_shipments} WHERE sid = %d", $package->sid));
+    }
+    $row[] = isset($package->label_image) ? l(theme('imagecache', 'thumbnail', $package->label_image), 'admin/store/orders/'. $order_id .'/shipments/label/'. $method .'/'. $package->label_image, array(), null, null, false, true) : '';
+    $row[] = l(t('edit'), 'admin/store/orders/'. $order_id .'/packages/edit/'. $package->package_id);
+    $row[] = l(t('delete'), 'admin/store/orders/'. $order_id .'/packages/delete/'. $package->package_id);
+    
+    $rows[] = $row;
+  }
+  if (empty($rows)){
+    $rows[][] = array('data' => t("This order's products have not been organized into packages."), 'colspan' => 9);
+  }
+  $output = theme('table', $header, $rows);
+  $result = db_query("SELECT op.order_product_id, SUM(op.qty) AS total, SUM(pp.qty) AS packaged FROM uc_order_products AS op LEFT JOIN uc_packaged_products AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = %d GROUP BY op.order_product_id HAVING packaged IS NULL OR total > packaged", $order_id);
+  if (db_num_rows($result)){
+    $output .= l(t('Create packages.'), 'admin/store/orders/'. $order_id .'/packages/new');
+  }
+  return $output;
+}
+
+function uc_shipping_new_package($order_id){
+  $breadcrumb = drupal_get_breadcrumb();
+  $breadcrumb[] = l(t('Order !number', array('!number' => $order_id)), 'admin/store/orders/'. $order_id);
+  drupal_set_breadcrumb($breadcrumb);
+  
+  $form = array('#tree' => true);
+  $form['instructions'] = array('#value' => t('Organize products into packages.
+ Package numbers only apply to the shipping type they appear in. All
+ packages are given a unique ID when they saved. Choose the default package "Sep." to
+ automatically create a package for the selected quantity of products in that row.'));
+  $order = uc_order_load($order_id);
+  $shipping_types_products = array();
+  foreach ($order->products as $product){
+    $product->shipping_type = uc_product_get_shipping_type($product);
+    $shipping_types_products[$product->shipping_type][] = $product;
+  }
+  
+  $packaged_products = array();
+  $result = db_query("SELECT order_product_id, SUM(qty) AS quantity FROM {uc_packaged_products} AS pp LEFT JOIN {uc_packages} AS p ON pp.package_id = p.package_id WHERE p.order_id = %d GROUP BY order_product_id", $order_id);
+  while ($shipped_product = db_fetch_object($result)){
+    $packaged_products[$shipped_product->order_product_id] = $shipped_product->quantity;
+  }
+  $form['shipping_types'] = array();
+  foreach ($shipping_types_products as $shipping_type => $products){
+    $form['shipping_types'][$shipping_type] = array('#type' => 'fieldset',
+      '#title' => ucwords(str_replace('_', ' ', $shipping_type)),
+      '#collapsible' => true,
+      '#collapsed' => false,
+    );
+    foreach ($products as $product){
+      if ($product->qty > $packaged_products[$product->order_product_id]){
+        $product_row = array();
+        $product_row['checked'] = array('#type' => 'checkbox', '#default_value' => 0);
+        $product_row['model'] = array('#type' => 'markup', '#value' => $product->model);
+        $product_row['name'] = array('#type' => 'markup', '#value' => $product->title);
+        $product_row['qty'] = array('#type' => 'select',
+          '#options' => drupal_map_assoc(uc_range(1, $product->qty - $packaged_products[$product->order_product_id])),
+          '#default_value' => $product->qty - $packaged_products[$product->order_product_id],
+        );
+        $options = drupal_map_assoc(uc_range(0, count($products)));
+        $options[0] = t('Sep.');
+        $product_row['package'] = array('#type' => 'select',
+          '#options' => $options,
+          '#default_value' => 0,
+        );
+        
+        $form['shipping_types'][$shipping_type][$product->order_product_id] = $product_row;
+      }
+    }
+    $form['shipping_types'][$shipping_type]['#theme'] = 'uc_shipping_new_package_fieldset';
+  }
+  $form['order_id'] = array('#type' => 'hidden', '#value' => $order_id);
+  $form['create'] = array('#type' => 'submit', '#value' => t('Make Packages'));
+  $form['cancel'] = array('#type' => 'submit', '#value' => t('Cancel'));
+  
+  return $form;
+}
+
+function theme_uc_shipping_new_package_fieldset($fieldset){
+  $output = '';
+  $header = array(theme('table_select_header_cell'), t('Model'), t('Title'), t('Qty'), t('Package'));
+  $rows = array();
+  foreach (element_children($fieldset) as $op_id){
+    $row = array();
+    $row[] = drupal_render($fieldset[$op_id]['checked']);
+    $row[] = drupal_render($fieldset[$op_id]['model']);
+    $row[] = drupal_render($fieldset[$op_id]['name']);
+    $row[] = drupal_render($fieldset[$op_id]['qty']);
+    $row[] = drupal_render($fieldset[$op_id]['package']);
+    $rows[] = $row;
+  }
+  $output .= theme('table', $header, $rows);
+  $output .= drupal_render($fieldset);
+  return $output;
+}
+
+function uc_shipping_new_package_validate($form_id, $form_values){
+  if ($form_values['op'] != t('Cancel')){
+    $empty = true;
+    foreach ($form_values['shipping_types'] as $shipping_type => $products){
+      foreach ($products as $product){
+        if ($product['checked'] != 0){
+          $empty = false;
+          break 2;
+        }
+      }
+    }
+    if ($empty){
+      form_set_error($shipping_type, t('Packages should have at least one product in them.'));
+    }
+  }
+}
+
+function uc_shipping_new_package_submit($form_id, $form_values){
+  if ($form_values['op'] != t('Cancel')){
+    $packages = array();
+    foreach ($form_values['shipping_types'] as $shipping_type => $products){
+      $packages[$shipping_type] = array(0 => array());
+      foreach ($products as $id => $product){
+        if ($product['checked']){
+          $packages[$shipping_type][$product['package']]['products'][$id] = $product;
+        }
+      }
+      if (is_array($packages[$shipping_type][0]['products'])){
+        foreach ($packages[$shipping_type][0]['products'] as $id => $product){
+          $qty = $product['qty'];
+          $product['qty'] = 1;
+          for ($i = 0; $i < $qty; $i++){
+            $packages[$shipping_type][]['products'] = array($id => $product);
+          }
+        }
+      }
+      unset($packages[$shipping_type][0]);
+      foreach ($packages[$shipping_type] as $package){
+        $package['order_id'] = $form_values['order_id'];
+        $package['shipping_type'] = $shipping_type;
+        uc_shipping_package_save($package);
+      }
+    }
+  }
+  return 'admin/store/orders/'. $form_values['order_id'] .'/packages';
+}
+
+function uc_shipping_package_edit($order_id, $package_id){
+  $package = uc_shipping_package_load($package_id);
+  $products = array();
+  $order = uc_order_load($order_id);
+  $shipping_types_products = array();
+  foreach ($order->products as $product){
+    $product->shipping_type = uc_product_get_shipping_type($product);
+    $shipping_types_products[$product->shipping_type][$product->order_product_id] = $product;
+  }
+  $products = $shipping_types_products[$package->shipping_type];
+
+  $result = db_query("SELECT order_product_id, SUM(qty) AS quantity FROM {uc_packaged_products} AS pp LEFT JOIN {uc_packages} AS p ON pp.package_id = p.package_id WHERE p.order_id = %d GROUP BY order_product_id", $order_id);
+  while ($shipped_product = db_fetch_object($result)){
+    //Make already packaged products unavailable, except those in this package.
+    $products[$shipped_product->order_product_id]->qty = $products[$shipped_product->order_product_id]->qty - $shipped_product->quantity + $package->products[$shipped_product->order_product_id]->qty;
+  }
+
+  $form = array();
+  $form['#tree'] = true;
+  $form['package_id'] = array('#type' => 'hidden', '#value' => $package_id);
+  $form['products'] = array();
+  foreach ($products as $product){
+    if ($product->qty > 0){
+      $product_row = array();
+      $product_row['checked'] = array('#type' => 'checkbox', '#default_value' => isset($package->products[$product->order_product_id]));
+      $product_row['model'] = array('#type' => 'markup', '#value' => $product->model);
+      $product_row['name'] = array('#type' => 'markup', '#value' => $product->title);
+      $product_row['qty'] = array('#type' => 'select',
+        '#options' => drupal_map_assoc(range(1, $product->qty)),
+        '#default_value' => $package->products[$product->order_product_id]->qty,
+      );
+      
+      $form['products'][$product->order_product_id] = $product_row;
+    }
+  }
+  $form['products']['#theme'] = 'uc_shipping_edit_package_fieldset';
+  $form['submit'] = array('#type' => 'submit', '#value' => t('Submit'));
+  $form['cancel'] = array('#type' => 'submit', '#value' => t('Cancel'));
+  
+  return $form;
+}
+
+function theme_uc_shipping_edit_package_fieldset($fieldset){
+  $output = '';
+  $header = array(theme('table_select_header_cell'), t('Model'), t('Title'), t('Qty'));
+  $rows = array();
+  foreach (element_children($fieldset) as $op_id){
+    $row = array();
+    $row[] = drupal_render($fieldset[$op_id]['checked']);
+    $row[] = drupal_render($fieldset[$op_id]['model']);
+    $row[] = drupal_render($fieldset[$op_id]['name']);
+    $row[] = drupal_render($fieldset[$op_id]['qty']);
+    $rows[] = $row;
+  }
+  $output .= theme('table', $header, $rows);
+  $output .= drupal_render($fieldset);
+  return $output;
+}
+
+function uc_shipping_package_edit_submit($form_id, $form_values){
+  if ($form_values['op'] == t('Cancel')){
+    $package = uc_shipping_package_load($form_values['package_id']);
+    foreach ($form_values['products'] as $id => $product){
+      if ($product['checked']){
+        $package->products[$id] = $product;
+      }
+      else{
+        unset($package->products[$id]);
+      }
+    }
+    uc_shipping_package_save($package);
+  }
+  return 'admin/store/orders/'. $package->order_id .'/packages';
+}
+
+function uc_shipping_package_delete_confirm($order_id, $package_id){
+  $form = array();
+  $form['order_id'] = array('#type' => 'value', '#value' => $order_id);
+  $form['package_id'] = array('#type' => 'value', '#value' => $package_id);
+  $output = confirm_form($form, t('Are you sure you want to delete this package?'), 'admin/store/orders/'. $order_id .'/packages',
+    t('The products it contains will be available for repackaging.'), t('Delete'), t('Cancel'));
+  return $output;
+}
+
+function uc_shipping_package_delete_confirm_submit($form_id, $form_values){
+  uc_shipping_package_delete($form_values['package_id']);
+  return 'admin/store/orders/'. $form_values['order_id'] .'/packages';
+}
+
+function uc_shipping_order_shipments($order_id){
+  $result = db_query("SELECT * FROM {uc_shipments} WHERE order_id = %d", $order_id);
+  $header = array(t('Shipment ID'), t('Name'), t('Company'), t('Destination'), t('Ship date'), t('Estimated Delivery'), t('Tracking Number'),array('data' => t('Actions'), 'colspan' => 3));
+  $rows = array();
+  while ($shipment = db_fetch_object($result)){
+    $row = array();
+    $row[] = $shipment->sid;
+    $row[] = $shipment->d_first_name .' '. $shipment->d_last_name;
+    $row[] = $shipment->d_company;
+    $row[] = $shipment->d_city .', '. uc_get_zone_code($shipment->d_zone) .' '. $shipment->d_postal_code;
+    $row[] = format_date($shipment->ship_date, 'custom', 'Y/n/j');
+    $row[] = format_date($shipment->expected_delivery, 'custom', 'Y/n/j');
+    $row[] = is_null($shipment->tracking_number) ? t('n/a') : $shipment->tracking_number;
+    $row[] = l(t('view'), 'admin/store/orders/'. $order_id .'/shipments/view/'. $shipment->sid);
+    $row[] = l(t('edit'), 'admin/store/orders/'. $order_id .'/shipments/edit/'. $shipment->sid);
+    $row[] = l(t('delete'), 'admin/store/orders/'. $order_id .'/shipments/delete/'. $shipment->sid);
+    $rows[] = $row;
+  }
+  if (empty($rows)){
+    $rows[] = array(array('data' => t('No shipments have been made for this order.'), 'colspan' => 10));
+  }
+  $output = theme('table', $header, $rows);
+  $packages = db_num_rows(db_query("SELECT * FROM {uc_packages} WHERE order_id = %d AND sid IS NULL", $order_id));
+  if ($packages){
+    $output .= l(t('Make a new shipment'), 'admin/store/orders/'. $order_id .'/shipments/new');
+  }
+  else{
+    $result = db_query("SELECT op.order_product_id, SUM(op.qty) AS total, SUM(pp.qty) AS packaged FROM uc_order_products AS op LEFT JOIN uc_packaged_products AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = %d GROUP BY op.order_product_id HAVING packaged IS NULL OR total > packaged", $order_id);
+    if (db_num_rows($result)){
+      $output .= l(t('Put products into packages to make shipments.'), 'admin/store/orders/'. $order_id .'/packages/new');
+    }
+  }
+  return $output;
+}
+
+function uc_shipping_new_shipment($order_id){
+  $breadcrumb = drupal_get_breadcrumb();
+  $breadcrumb[] = l(t('Order !number', array('!number' => $order_id)), 'admin/store/orders/'. $order_id);
+  drupal_set_breadcrumb($breadcrumb);
+  
+  $form = array('#tree' => true);
+  $form['order_id'] = array('#type' => 'hidden', '#value' => $order_id);
+  
+  $packages_by_type = array();
+  $result = db_query("SELECT * FROM {uc_packages} WHERE order_id = %d AND sid IS NULL", $order_id);
+  while ($package = db_fetch_object($result)){
+    $products = array();
+    $weight = 0;
+    $result2 = db_query("SELECT pp.order_product_id, pp.qty, pp.qty * op.weight AS weight, op.title, op.model FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON pp.order_product_id = op.order_product_id WHERE pp.package_id = %d", $package->package_id);
+    while ($product = db_fetch_object($result2)){
+      $weight += $product->weight;
+      $products[$product->order_product_id] = $product;
+    }
+    $package->weight = $weight;
+    $package->products = $products;
+    $packages_by_type[$package->shipping_type][$package->package_id] = $package;
+  }
+  $shipping_types = module_invoke_all('shipping_type');
+  $shipping_methods = module_invoke_all('shipping_method');
+  $shipping_methods_by_type = array();
+  foreach ($shipping_methods as $method){
+    if (isset($method['ship'])){
+      $shipping_methods_by_type[$method['ship']['type']][] = $method;
+    }
+  }
+  foreach ($packages_by_type as $shipping_type => $packages){
+    $form[$shipping_type] = array('#type' => 'fieldset',
+      '#title' => $shipping_types[$shipping_type]['title'],
+    );
+    $form[$shipping_type]['packages'] = array();
+    foreach ($packages as $package){
+      $pkgs_exist = true;
+      $package_row = array();
+      $package_row['checked'] = array('#type' => 'checkbox', '#default_value' => 0);
+      $package_row['package_id'] = array('#value' => $package->package_id);
+      $product_list = array();
+      foreach ($package->products as $product){
+        $product_list[] = $product->qty .' x '. $product->model;
+      }
+      $package_row['products'] = array('#value' => '<ul><li>'. implode('</li><li>', $product_list) .'</li></ul>');
+      $package_row['weight'] = array('#value' => $package->weight);
+      $form[$shipping_type]['packages'][$package->package_id] = $package_row;
+    }
+    $form[$shipping_type]['methods'] = array();
+    if (is_array($shipping_methods_by_type[$shipping_type])){
+      foreach ($shipping_methods_by_type[$shipping_type] as $method){
+        $form[$shipping_type]['methods'][$method['id']] = array('#type' => 'submit',
+          '#value' => t('Ship by !method', array('!method' => $method['title'])),
+        );
+      }
+    }
+  }
+  if ($pkgs_exist){
+    $form['all']['methods']['manual'] = array('#type' => 'submit',
+      '#value' => t('Ship all manually'),
+    );
+  }
+  //drupal_set_message('<pre>'. print_r($form, true) .'</pre>');
+  return $form;
+}
+
+function theme_uc_shipping_new_shipment($form){
+  $manual_button = drupal_render($form['all']);
+  $output = '';
+  $header = array(theme('table_select_header_cell'), t('Package'), t('Products'), t('Weight'));
+  foreach (element_children($form) as $shipping_type){
+    $rows = array();
+    foreach (element_children($form[$shipping_type]['packages']) as $package_id){
+      $row = array();
+      $row[] = drupal_render($form[$shipping_type]['packages'][$package_id]['checked']);
+      $row[] = drupal_render($form[$shipping_type]['packages'][$package_id]['package_id']);
+      $row[] = drupal_render($form[$shipping_type]['packages'][$package_id]['products']);
+      $row[] = drupal_render($form[$shipping_type]['packages'][$package_id]['weight']);
+      $rows[] = $row;
+    }
+    if (count($rows)){
+      $form[$shipping_type]['packages']['table'] = array('#value' => theme('table', $header, $rows));
+      $output .= drupal_render($form[$shipping_type]);
+    }
+//    $output .= drupal_render($form[$shipping_type]['methods']);
+  }
+  $output .= $manual_button;
+  $output .= drupal_render($form);
+  return $output;
+}
+
+function uc_shipping_new_shipment_submit($form_id, $form_values){
+  if ($form_values['op'] == t('Ship all manually')){
+    $packages = array();
+    foreach ($form_values as $shipping_type){
+      if (is_array($shipping_type['packages'])){
+        foreach ($shipping_type['packages'] as $id => $input){
+          if ($input['checked']){
+            $packages[] = $id;
+          }
+        }
+      }
+    }
+    return 'admin/store/orders/'. $form_values['order_id'] .'/ship/all/'. implode('/', $packages);
+  }
+  else{
+    //drupal_set_message('POST: <pre>'. print_r($_POST, true) .'</pre>');
+    //drupal_set_message('Form values: <pre>'. print_r($form_values, true) .'</pre>');
+    $shipping_methods = module_invoke_all('shipping_method');
+    foreach ($shipping_methods as $method){
+      //drupal_set_message('Op: '. $form_values['op'] .' Method: '. $method['title']);
+      //drupal_set_message(strpos($form_values['op'], $method['title'], 5));
+      if (strpos($form_values['op'], $method['title'], 8)){
+        $packages = array();
+        //drupal_set_message('Shipping type: '. $method['ship']['type']);
+        foreach ($form_values[$method['ship']['type']]['packages'] as $id => $input){
+          if ($input['checked']){
+            $packages[] = $id;
+          }
+        }
+        return 'admin/store/orders/'. $form_values['order_id'] .'/ship/'. $method['id'] .'/'. implode('/', $packages);
+      }
+    }
+  }
+}
+
+function uc_shipping_make_shipment(){
+  $args = func_get_args();
+  //print_r($args, true));
+  if (count($args) > 2){
+    $order_id = array_shift($args);
+    $method_id = array_shift($args);
+    $package_ids = $args;
+    $methods = module_invoke_all('shipping_method');
+    $method = $methods[$method_id];
+    if (isset($method)){
+      return drupal_get_form($method['ship']['callback'], $order_id, $package_ids);
+    }
+    else{
+      $shipment = new stdClass();
+      $shipment->order_id = $order_id;
+      $shipment->packages = array();
+      foreach ($package_ids as $id){
+        $package = uc_shipping_package_load($id);
+        $shipment->packages[$id] = $package;
+      }
+      return drupal_get_form('uc_shipping_shipment_edit', $order_id, $shipment);
+    }
+  }
+  else{
+    drupal_set_message(t('There is no sense in making a shipment with no packages on it, right?'));
+    drupal_goto('admin/store/orders/'. $args[0]);
+  }
+}
+
+function uc_shipping_shipment_view($order_id, $sid){
+  $shipment = uc_shipping_shipment_load($sid);
+  
+  return '<pre>'. print_r($shipment, true) .'</pre>';
+}
+
+function uc_shipping_shipment_edit($order_id, $shipment){
+  drupal_add_js(drupal_get_path('module', 'uc_shipping') .'/uc_shipping.js');
+  $order = uc_order_load($order_id);
+  if (is_numeric($shipment)){
+    $shipment = uc_shipping_shipment_load($shipment);
+  }
+  $form = array();
+  
+  $form['order_id'] = array('#type' => 'value', '#value' => $order_id);
+  if (isset($shipment->sid)){
+    $form['sid'] = array('#type' => 'value', '#value' => $shipment->sid);
+  }
+  $addresses = array();
+  $form['packages'] = array(
+    '#tree' => true,
+    '#weight' => 1,
+  );
+  foreach ($shipment->packages as $id => $package){
+    foreach ($package->addresses as $address){
+      if (!in_array($address, $addresses)){
+        $addresses[] = $address;
+      }
+    }
+    $declared_value = 0;
+    $product_list = array();
+    foreach ($package->products as $product){
+      $product_list[] = $product->qty .' x '. $product->model;
+      $declared_value += $product->qty * $product->price;
+    }
+    $form['packages'][$id] = array('#type' => 'fieldset',
+      '#title' => t('Package @id', array('@id' => $id)),
+      '#collapsible' => true,
+    );
+    $form['packages'][$id]['products'] = array('#value' => theme('item_list', $product_list));
+    $form['packages'][$id]['pkg_type'] = array('#type' => 'textfield',
+      '#title' => t('Package Type'),
+      '#default_value' => $package->pkg_type,
+    );
+    $form['packages'][$id]['dimensions'] = array('#type' => 'fieldset',
+      '#title' => t('Dimensions'),
+      '#description' => t('Physical dimensions of the packaged product.'),
+      '#theme' => 'uc_shipping_package_dimensions',
+    );
+    $form['packages'][$id]['dimensions']['units'] = array('#type' => 'select',
+      '#title' => t('Units of measurement'),
+      '#options' => array(
+        'in' => t('Inches'),
+        'cm' => t('Centimeters'),
+      ),
+      '#default_value' => $package->units ? $package->units : variable_get('uc_store_length_unit', 'in'),
+    );
+    $form['packages'][$id]['dimensions']['length'] = array('#type' => 'textfield',
+      '#title' => t('Length'),
+      '#default_value' => $package->length,
+      '#size' => 8,
+    );
+    $form['packages'][$id]['dimensions']['width'] = array('#type' => 'textfield',
+      '#title' => t('Width'),
+      '#default_value' => $package->width,
+      '#size' => 8,
+    );
+    $form['packages'][$id]['dimensions']['height'] = array('#type' => 'textfield',
+      '#title' => t('Height'),
+      '#default_value' => $package->height,
+      '#size' => 8,
+    );
+    $form['packages'][$id]['declared_value'] = array('#type' => 'textfield',
+      '#title' => t('Declared Value'),
+      '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
+      '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
+      '#default_value' => isset($package->value) ? $package->value : $declared_value,
+    );
+    $form['packages'][$id]['tracking_number'] = array('#type' => 'textfield',
+      '#title' => t('Tracking Number'),
+      '#default_value' => $package->tracking_number,
+    );
+  }
+
+  $form['origin'] = array('#type' => 'fieldset',
+    '#title' => t('Origin Address'),
+    '#collapsible' => true,
+    '#collapsed' => false,
+    '#weight' => -2,
+    '#theme' => 'uc_shipping_address',
+  );
+  $form['origin']['pickup_address_select'] = uc_shipping_select_address($addresses, 'apply_address(\'pickup\', this.value);', t('Saved Addresses'), TRUE);
+  $form['origin']['pickup_address_select']['#weight'] = -2;
+  $form['origin']['pickup_email'] = uc_textfield(uc_get_field_name('email'), variable_get('uc_store_email', null), FALSE);
+  $form['origin']['pickup_email']['#weight'] = -1;
+  $form['origin']['pickup_first_name'] = uc_textfield(uc_get_field_name('first_name'), $address->first_name, FALSE);
+  $form['origin']['pickup_last_name'] = uc_textfield(uc_get_field_name('last_name'), $address->last_name, FALSE);
+  $form['origin']['pickup_company'] = uc_textfield(uc_get_field_name('company'), $address->company, FALSE);
+  $form['origin']['pickup_street1'] = uc_textfield(uc_get_field_name('street1'), $address->street1, FALSE, NULL, 64);
+  $form['origin']['pickup_street2'] = uc_textfield(uc_get_field_name('street2'), $address->street2, FALSE, NULL, 64);
+  $form['origin']['pickup_city'] = uc_textfield(uc_get_field_name('city'), $address->city, FALSE);
+  if (isset($_POST['pickup_country'])){
+    $country = $_POST['pickup_country'];
+  }
+  else{
+    $country = $address->country;
+  }
+  $form['origin']['pickup_zone'] = uc_zone_select(uc_get_field_name('zone'), $address->zone, null, $country);
+  $form['origin']['pickup_country'] = uc_country_select(uc_get_field_name('country'), $address->country);
+  $form['origin']['pickup_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $address->postal_code, FALSE, NULL, 10, 10);
+
+  $order_form = uc_order_pane_ship_to('edit-form', $order);
+  $form['destination'] = $order_form['ship_to'];
+  $form['destination']['delivery_email'] = uc_textfield(uc_get_field_name('email'), $order->primary_email, FALSE);
+  $form['destination']['delivery_email']['#weight'] = -1;
+  $form['destination']['#title'] = t('Destination Address');
+  $form['destination']['#collapsible'] = true;
+  $form['destination']['#weight'] = -1;
+  $form['destination']['#theme'] = 'uc_shipping_address';
+  
+  $form['shipment'] = array('#type' => 'fieldset',
+    '#title' => t('Shipment data'),
+    '#collapsible' => true,
+    '#weight' => 0,
+  );
+  $form['shipment']['shipping_method'] = array('#type' => 'hidden',
+    '#value' => isset($shipment->shipping_method) ? $shipment->shipping_method : 'manual',
+  );
+  $form['shipment']['carrier'] = array('#type' => 'textfield',
+    '#title' => t('Carrier'),
+    '#default_value' => $shipment->carrier,
+  );
+  $form['shipment']['accessorials'] = array('#type' => 'textfield',
+    '#title' => t('Shipment options'),
+    '#default_value' => $shipment->accessorials,
+    '#description' => t('Short notes about the shipment, e.g. residentail, overnight, etc.'),
+  );
+  $form['shipment']['transaction_id'] = array('#type' => 'textfield',
+    '#title' => t('Transaction ID'),
+    '#default_value' => $shipment->default_value,
+  );
+  $form['shipment']['tracking_number'] = array('#type' => 'textfield',
+    '#title' => t('Tracking number'),
+    '#default_value' => $shipment->tracking_number,
+  );
+
+  if (isset($shipment->ship_date)){
+    $ship_date = getdate($shipment->ship_date);
+  }
+  else{
+    $ship_date = getdate();
+  }
+  if (isset($shipment->expected_delivery)){
+    $exp_delivery = getdate($shipment->expected_delivery);
+  }
+  else{
+    $exp_delivery = getdate();
+  }
+  $form['shipment']['ship_date'] = array('#type' => 'date',
+    '#title' => t('Ship date'),
+    '#default_value' => array('year' => $ship_date['year'], 'month' => $ship_date['mon'], 'day' => $ship_date['mday']),
+  );
+  $form['shipment']['expected_delivery'] = array('#type' => 'date',
+    '#title' => t('Expected delivery'),
+    '#default_value' => array('year' => $exp_delivery['year'], 'month' => $exp_delivery['mon'], 'day' => $exp_delivery['mday']),
+  );
+  $form['shipment']['cost'] = array('#type' => 'textfield',
+    '#title' => t('Shipping cost'),
+    '#default_value' => $shipment->cost,
+    '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
+    '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
+  );
+  
+  $form['submit'] = array('#type' => 'submit', '#value' => t('Save shipment'), '#weight' => 10);
+  
+  return $form;
+}
+
+function theme_uc_shipping_package_dimensions($form){
+  $output = '';
+  $row = array();
+  foreach (element_children($form) as $dimension){
+    $row[] = drupal_render($form[$dimension]);
+  }
+  $output .= theme('table', array(), array($row));
+  return $output;
+}
+
+function theme_uc_shipping_address($address){
+  drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
+  if ($address['#collapsed']) {
+    $collapsed = ' collapsed';
+  }
+  $output = '<table class="pane-table" cellpadding="2">';
+  $req = '<span class="form-required">*</span>';
+
+  foreach (element_children($address) as $field) {
+    list($type, $name) = explode('_', $field, 2);
+    if ($address !== NULL) {
+      $title = $address[$field]['#title'] .':';
+      unset($address[$field]['#title']);
+      if ($name == 'street1') {
+        $title = uc_get_field_name('street') .':';
+      }
+      elseif ($name == 'street2') {
+        $title = ' ';
+      }
+      $output .= '<tr><td class="field-label">';
+      if ($address[$field]['#required']) {
+        $output .= $req;
+      }
+      $output .= $title .'</td><td>'
+        . drupal_render($address[$field])
+        .'</td></tr>';
+    }
+  }
+  $output .= '</table>';
+
+  foreach (element_children($address) as $element) {
+    $output .= drupal_render($address[$element]);
+  }
+  return $output;
+}
+
+function uc_shipping_shipment_edit_submit($form_id, $form_values){
+  $shipment = new stdClass();
+  $shipment->order_id = $form_values['order_id'];
+  if (isset($form_values['sid'])){
+    $shipment->sid = $form_values['sid'];
+  }
+  $shipment->origin = new stdClass();
+  $shipment->destination = new stdClass();
+  foreach ($form_values as $key => $value){
+    if (substr($key, 0, 7) == 'pickup_'){
+      $field = 'o_'. substr($key, 7);
+      $shipment->origin->$field = $value;
+    }
+    else if (substr($key, 0, 9) == 'delivery_'){
+      $field = 'd_'. substr($key, 9);
+      $shipment->destination->$field = $value;
+    }
+  }
+  $shipment->packages = array();
+  foreach ($form_values['packages'] as $id => $pkg_form){
+    $package = uc_shipping_package_load($id);
+    $package->pkg_type = $pkg_form['pkg_type'];
+    $package->value = $pkg_form['declared_value'];
+    $package->length = $pkg_form['dimensions']['length'];
+    $package->width = $pkg_form['dimensions']['width'];
+    $package->height = $pkg_form['dimensions']['height'];
+    $package->units = $pkg_form['dimensions']['units'];
+    $package->tracking_number = $pkg_form['tracking_number'];
+    $package->qty = 1;
+    $shipment->packages[$id] = $package;
+  }
+  
+  $shipment->shipping_method = $form_values['shipping_method'];
+  $shipment->accessorials = $form_values['accessorials'];
+  $shipment->carrier = $form_values['carrier'];
+  $shipment->transaction_id = $form_values['transaction_id'];
+  $shipment->tracking_number = $form_values['tracking_number'];
+  $shipment->ship_date = gmmktime(12, 0, 0, $form_values['ship_date']['month'], $form_values['ship_date']['day'], $form_values['ship_date']['year']);
+  $shipment->expected_delivery = gmmktime(12, 0, 0, $form_values['expected_delivery']['month'], $form_values['expected_delivery']['day'], $form_values['expected_delivery']['year']);
+  $shipment->cost = $form_values['cost'];
+  
+  uc_shipping_shipment_save($shipment);
+  
+  return 'admin/store/orders/'. $form_values['order_id'] .'/shipments';
+}
+
+function uc_shipping_shipment_delete_confirm($order_id, $sid){
+  $form = array();
+  $form['order_id'] = array('#type' => 'value', '#value' => $order_id);
+  $form['sid'] = array('#type' => 'value', '#value' => $sid);
+  $output = confirm_form($form, t('Are you sure you want to delete this shipment?'), 'admin/store/orders/'. $order_id .'/shipments',
+    t('The packages it contains will be available for reshipment.'), t('Delete'), t('Cancel'));
+  return $output;
+}
+
+function uc_shipping_shipment_delete_confirm_submit($form_id, $form_values){
+  uc_shipping_shipment_delete($form_values['sid']);
+  return 'admin/store/orders/'. $form_values['order_id'] .'/shipments';
+}
+
+/******************************************************************************
+ * Module and helper functions                                                *
+ ******************************************************************************/
+function uc_shipping_package_load($package_id){
+  static $packages = array();
+  
+  if (!isset($packages[$package_id])){
+    $products = array();
+    $descripion = '';
+    $weight = 0;
+    $addresses = array();
+    $result = db_query("SELECT pp.order_product_id, pp.qty, pp.qty * op.weight AS weight, p.units, op.nid, op.title, op.model, op.price FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON pp.order_product_id = op.order_product_id LEFT JOIN {uc_products} AS p ON op.nid = p.nid WHERE pp.package_id = %d", $package_id);
+    while ($product = db_fetch_object($result)){
+      $address = uc_quote_get_default_shipping_address($product->nid);
+      // TODO: Lodge complaint that array_unique() compares as strings.
+      if (!in_array($address, $addresses)){
+        $addresses[] = $address;
+      }
+      $description .= ', '. $product->qty .' x '. $product->model;
+      // Normalize all weights to pounds.
+      switch ($product->units){
+        case 'oz':
+          $weight += $product->weight / 16;
+        break;
+        case 'lb':
+          $weight += $product->weight;
+        break;
+        case 'g':
+          $weight += $product->weight / 1000 * 2.2;
+        break;
+        case 'kg':
+          $weight += $product->weight * 2.2;
+        break;
+      }
+      $products[$product->order_product_id] = $product;
+    }
+    $result = db_query("SELECT * FROM {uc_packages} WHERE package_id = %d", $package_id);
+    $packages[$package_id] = db_fetch_object($result);
+    $packages[$package_id]->addresses = $addresses;
+    $packages[$package_id]->description = substr($description, 2);
+    $units = variable_get('uc_weight_unit', 'lb');
+    // Convert normalized weight to default units.
+    switch ($units){
+      case 'oz':
+        $weight *= $weight * 16;
+      break;
+      case 'lb':
+        // $weight = $weight;
+      break;
+      case 'g':
+        $weight *= 1000 / 2.2;
+      break;
+      case 'kg':
+        $weight /= 2.2;
+      break;
+    }
+    $packages[$package_id]->weight = $weight;
+    $packages[$package_id]->weight_units = $units;
+    $packages[$package_id]->products = $products;
+  }
+  
+  return $packages[$package_id];
+}
+
+function uc_shipping_package_save($package){
+  $package = (object)$package;
+  if (!isset($package->package_id)){
+    $package->package_id = db_next_id('{uc_packages}_package_id');
+    db_query("INSERT INTO {uc_packages} (package_id, order_id, shipping_type) VALUES (%d, %d, '%s')", $package->package_id, $package->order_id, $package->shipping_type);
+  }
+  if (count($package->products)){
+    $types = array();
+    $values = array();
+    foreach ($package->products as $id => $product){
+      $types[] = '(%d, %d, %d)';
+      $values[] = $package->package_id;
+      $values[] = $id;
+      $values[] = $product['qty'];
+    }
+    db_query("DELETE FROM {uc_packaged_products} WHERE package_id = %d", $package->package_id);
+    db_query("INSERT INTO {uc_packaged_products} (package_id, order_product_id, qty) VALUES ". implode(',', $types), $values);
+  }
+  $types = array();
+  $values = array();
+  if (isset($package->pkg_type)){
+    $types[] = "pkg_type = '%s'";
+    $values[] = $package->pkg_type;
+  }
+  if (isset($package->length) && isset($package->width) && isset($package->height) && isset($package->units)){
+    array_push($types, 'length = %f', 'width = %f', 'height = %f', "units = '%s'");
+    array_push($values, $package->length, $package->width, $package->height, $package->units);
+  }
+  if (isset($package->value)){
+    $types[] = 'value = %f';
+    $values[] = $package->value;
+  }
+  if (isset($package->sid)){
+    $types[] = 'sid = %d';
+    $values[] = $package->sid;
+  }
+  if (isset($package->tracking_number)){
+    $types[] = "tracking_number = '%s'";
+    $values[] = $package->tracking_number;
+  }
+  if (isset($package->label_image)){
+    $types[] = "label_image = '%s'";
+    $values[] = $package->label_image;
+  }
+  $values[] = $package->package_id;
+  if (count($types)){
+    // Let it be known that I think it's ridiculous that Drupal doesn't put NULL into its database. --JLM
+    db_query("UPDATE {uc_packages} SET ". implode(',', $types) ." WHERE package_id = %d", $values);
+  }
+}
+
+function uc_shipping_package_delete($package_id){
+  db_query("DELETE FROM {uc_packages} WHERE package_id = %d", $package_id);
+  db_query("DELETE FROM {uc_packaged_products} WHERE package_id = %d", $package_id);
+  drupal_set_message(t('Package @id has been deleted.', array('@id' => $package_id)));
+}
+
+function uc_shipping_shipment_load($shipment_id){
+  $shipment = db_fetch_object(db_query("SELECT * FROM {uc_shipments} WHERE sid = %d", $shipment_id));
+  if ($shipment){
+    $result = db_query("SELECT package_id FROM {uc_packages} WHERE sid = %d", $shipment_id);
+    $packages = array();
+    while ($package = db_fetch_object($result)){
+      $packages[$package->package_id] = uc_shipping_package_load($package->package_id);
+    }
+    $shipment->packages = $packages;
+  }
+  return $shipment;
+}
+
+function uc_shipping_shipment_save($shipment){
+  if (!$shipment->sid){
+    $shipment->sid = db_next_id('{uc_shipments}_sid');
+    db_query("INSERT INTO {uc_shipments} (sid, order_id) VALUES (%d, %d)", $shipment->sid, $shipment->order_id);
+  }
+  if (is_array($shipment->packages)){
+    foreach ($shipment->packages as $package){
+      $package->sid = $shipment->sid;
+      // Since the products haven't changed, we take them out of the object so that they are not deleted and re-inserted.
+      unset($package->products);
+      uc_shipping_package_save($package);
+    }
+  }
+  foreach ($shipment->origin as $field => $value){
+    $shipment->$field = $value;
+  }
+  foreach ($shipment->destination as $field => $value){
+    $shipment->$field = $value;
+  }
+  db_query("UPDATE {uc_shipments} SET order_id = %d, o_first_name = '%s', o_last_name = '%s', o_company = '%s', o_street1 = '%s', o_street2 = '%s', o_city = '%s', o_zone = %d, o_postal_code = '%s', o_country = %d, d_first_name = '%s', d_last_name = '%s', d_company = '%s', d_street1 = '%s', d_street2 = '%s', d_city = '%s', d_zone = %d, d_postal_code = '%s', d_country = %d, shipping_method = '%s', accessorials = '%s', carrier = '%s', transaction_id = '%s', tracking_number = '%s', ship_date = %d, expected_delivery = %d, cost = %f WHERE sid = %d",
+    $shipment->order_id, $shipment->o_first_name, $shipment->o_last_name, $shipment->o_company, $shipment->o_street1, $shipment->o_street2, $shipment->o_city, $shipment->o_zone, $shipment->o_postal_code, $shipment->o_country, $shipment->d_first_name, $shipment->d_last_name, $shipment->d_company, $shipment->d_street1, $shipment->d_street2, $shipment->d_city, $shipment->d_zone, $shipment->d_postal_code, $shipment->d_country, $shipment->shipping_method, $shipment->accessorials, $shipment->carrier, $shipment->transaction_id, $shipment->tracking_number, $shipment->ship_date, $shipment->expected_delivery, $shipment->cost, $shipment->sid
+  );
+}
+
+function uc_shipping_shipment_delete($shipment_id){
+  $result = db_query("SELECT label_image FROM {uc_packages} WHERE sid = %d", $shipment_id);
+  while ($path = db_fetch_object($result)){
+    if (file_exists($path->label_image)){
+      file_delete($path->label_image);
+    }
+  }
+  db_query("UPDATE {uc_packages} SET sid = NULL, tracking_number = NULL, label_image = NULL WHERE sid = %d", $shipment_id);
+  db_query("DELETE FROM {uc_shipments} WHERE sid = %d", $shipment_id);
+}
+
+function uc_shipping_select_address($addresses, $onchange = '', $title = NULL, $icon_suffix = FALSE){
+  if (!is_array($addresses) || count($addresses) == 0) {
+    return NULL;
+  }
+
+  $options = array('0' => t('Select one...'));
+  foreach ($addresses as $address) {
+    $options[drupal_to_js($address)] = $address->street1;
+  }
+
+  $select = array(
+    '#type' => 'select',
+    '#title' => is_null($title) ? t('Address book') : $title,
+    '#options' => $options,
+    '#attributes' => array('onchange' => $onchange),
+    '#suffix' => $icon_suffix ? uc_store_get_icon('file:address_book', FALSE, 'address-book-icon') : NULL,
+  );
+
+  return $select;
+}
+

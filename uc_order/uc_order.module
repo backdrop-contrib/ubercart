@@ -814,7 +814,7 @@ function uc_order_admin($sql = NULL, $search = FALSE) {
     $order_name = $order->billing_first_name .' '. $order->billing_last_name;    
     $rows[] = array(
       'data' => array(
-        array('data' => _uc_order_admin_icons($order), 'nowrap' => 'true'),
+        array('data' => _uc_order_admin_icons($order), 'nowrap' => 'nowrap'),
         array('data' => $order->order_id),
         array('data' => (trim($order_name) == '') ? t('-No Name-') : $order_name, 'class' => 'nowrap'),
         array('data' => uc_currency_format($order->order_total, TRUE), 'align' => 'right', 'nowrap' => 'true'),
@@ -1364,7 +1364,7 @@ function uc_order_edit($order_id) {
   }
 
   if (!uc_order_can_edit($order)) {
-    drupal_set_message('It is not possible to edit order '. $order->order_id .'.');
+    drupal_set_message(t('It is not possible to edit order %id.', array('%id' => $order->order_id)));
     drupal_goto('admin/store/orders');
   }
 
@@ -1907,7 +1907,7 @@ function uc_order_delete_confirm($order_id) {
   }
 
   if (!uc_order_can_delete($order)) {
-    drupal_set_message('It is not possible to delete order '. $order->order_id .'.');
+    drupal_set_message(t('It is not possible to delete order %id.', array('%id' => $order->order_id)));
     drupal_goto('admin/store/orders');
   }
 
@@ -2178,6 +2178,9 @@ function uc_order_pane_ship_to($op, $arg1) {
       if (uc_address_field_enabled('city')) {
         $form['ship_to']['delivery_city'] = uc_textfield(uc_get_field_name('city'), $arg1->delivery_city, FALSE);
       }
+      if (uc_address_field_enabled('country')) {
+        $form['ship_to']['delivery_country'] = uc_country_select(uc_get_field_name('country'), $arg1->delivery_country);
+      }
       if (uc_address_field_enabled('zone')) {
         if (isset($_POST['delivery_country'])) {
           $country_id = intval($_POST['delivery_country']);
@@ -2186,9 +2189,6 @@ function uc_order_pane_ship_to($op, $arg1) {
           $country_id = $arg1->delivery_country;
         }
         $form['ship_to']['delivery_zone'] = uc_zone_select(uc_get_field_name('zone'), $arg1->delivery_zone, NULL, $country_id);
-      }
-      if (uc_address_field_enabled('country')) {
-        $form['ship_to']['delivery_country'] = uc_country_select(uc_get_field_name('country'), $arg1->delivery_country);
       }
       if (uc_address_field_enabled('postal_code')) {
         $form['ship_to']['delivery_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $arg1->delivery_postal_code, FALSE, NULL, 10, 10);
@@ -2264,6 +2264,9 @@ function uc_order_pane_bill_to($op, $arg1) {
       if (uc_address_field_enabled('city')) {
         $form['bill_to']['billing_city'] = uc_textfield(uc_get_field_name('city'), $arg1->billing_city, FALSE);
       }
+      if (uc_address_field_enabled('country')) {
+        $form['bill_to']['billing_country'] = uc_country_select(uc_get_field_name('country'), $arg1->billing_country);
+      }
       if (uc_address_field_enabled('zone')) {
         if (isset($_POST['billing_country'])) {
           $country_id = intval($_POST['billing_country']);
@@ -2272,9 +2275,6 @@ function uc_order_pane_bill_to($op, $arg1) {
           $country_id = $arg1->billing_country;
         }
         $form['bill_to']['billing_zone'] = uc_zone_select(uc_get_field_name('zone'), $arg1->billing_zone, NULL, $country_id);
-      }
-      if (uc_address_field_enabled('country')) {
-        $form['bill_to']['billing_country'] = uc_country_select(uc_get_field_name('country'), $arg1->billing_country);
       }
       if (uc_address_field_enabled('postal_code')) {
         $form['bill_to']['billing_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $arg1->billing_postal_code, FALSE, NULL, 10, 10);
@@ -2323,7 +2323,8 @@ function uc_order_pane_customer($op, $arg1) {
   switch ($op) {
     case 'view':
       $output = t('Customer number: ') . l($arg1->uid, 'user/'. $arg1->uid)
-               .'<br />'. t('Primary e-mail:') .'<br />'. $arg1->primary_email;
+               .'<br />'. t('Primary e-mail:') .'<br />'
+              . check_plain($arg1->primary_email);
       return $output;
 
     case 'edit-form':
@@ -3065,6 +3066,8 @@ function uc_order_new($uid = 0, $status = 0) {
   }
 
   $order->order_id = db_next_id('{uc_orders}_order_id');
+  $order->uid = $uid;
+  $order->primary_email = $email;
 
   db_query("INSERT INTO {uc_orders} VALUES (%d, %d, %d, 0, '%s', '', '', '', "
           ."'', '', '', '', 0, '', 0, '', '', '', '', '', '', '', 0, 0, 0, '', "
@@ -3079,8 +3082,9 @@ function uc_order_new($uid = 0, $status = 0) {
  * Save an order to the database.
  */
 function uc_order_save($order) {
-  if (is_null($order->order_id) || intval($order->order_id) == 0)
+  if (is_null($order->order_id) || intval($order->order_id) == 0) {
     return FALSE;
+  }
 
   db_query("UPDATE {uc_orders} SET uid = %d, order_status = %d, order_total = %f, primary_email = '%s', "
           ."delivery_first_name = '%s', delivery_last_name = '%s', delivery_phone = '%s', "
@@ -3115,7 +3119,11 @@ function uc_order_save($order) {
     }
   }
 
-  module_invoke_all('order', 'save', $order, NULL);
+  // Invoke hook_order() in enabled modules.
+  foreach (module_implements('order') as $module) {
+    $func = $module .'_order';
+    $func('save', $order, NULL);
+  }
 }
 
 /**
@@ -3131,8 +3139,9 @@ function uc_order_product_save($order_id, $product) {
  * Load an order from the database.
  */
 function uc_order_load($order_id) {
-  if (is_null($order_id) || $order_id == 0)
+  if (is_null($order_id) || $order_id < 1) {
     return FALSE;
+  }
 
   $result = db_query("SELECT * FROM {uc_orders} WHERE order_id = %d", $order_id);
 
@@ -3147,7 +3156,11 @@ function uc_order_load($order_id) {
     $order->products[] = $product;
   }
 
-  module_invoke_all('order', 'load', $order, NULL);
+  // Invoke hook_order() in enabled modules.
+  foreach (module_implements('order') as $module) {
+    $func = $module .'_order';
+    $func('load', $order, NULL);
+  }
 
   // Load line items... has to be last after everything has been loaded.
   $stored_items = uc_order_load_line_items($order->order_id, TRUE);
@@ -3171,7 +3184,11 @@ function uc_order_delete($order_id) {
   if (is_null($order_id) || $order_id == 0)
     return;
 
-  module_invoke_all('order', 'delete', $order_id, NULL);
+  // Invoke hook_order() in enabled modules.
+  foreach (module_implements('order') as $module) {
+    $func = $module .'_order';
+    $func('delete', $order_id, NULL);
+  }
 
   db_query("DELETE FROM {uc_orders} WHERE order_id = %d", $order_id);
   db_query("DELETE FROM {uc_order_products} WHERE order_id = %d", $order_id);
@@ -3656,4 +3673,20 @@ function uc_invoice_template_list() {
   }
 
   return $templates;
+}
+
+/**
+ * Return the ID for a particular order status.
+ */
+function uc_get_order_status_id($key) {
+  switch ($key) {
+    case 'in_checkout':
+      return variable_get('uc_order_status_in_checkout', 0);
+    case 'post_checkout':
+      return variable_get('uc_order_status_post_checkout', 1);
+    case 'awaiting_payment':
+      return variable_get('uc_order_status_awaiting_payment', 1);
+    case 'post_payment':
+      return variable_get('uc_order_status_post_payment', 2);
+  }
 }

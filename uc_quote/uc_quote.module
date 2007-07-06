@@ -30,9 +30,36 @@ function uc_quote_menu($may_cache){
     $items[] = array('path' => 'admin/store/settings/quotes',
       'access' => user_access('configure quotes'),
       'title' => t('Shipping quote settings'),
+      'callback' => 'uc_quote_overview',
+      'type' => MENU_NORMAL_ITEM,
+    );
+    $items[] = array('path' => 'admin/store/settings/quotes/overview',
+      'access' => user_access('configure quotes'),
+      'title' => t('Overview'),
+      'description' => t('View general shipping quote settings.'),
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => -10,
+    );
+    $items[] = array('path' => 'admin/store/settings/quotes/edit',
+      'access' => user_access('configure quotes'),
+      'title' => t('Edit'),
       'callback' => 'drupal_get_form',
       'callback arguments' => 'uc_quote_admin_settings',
-      'type' => MENU_NORMAL_ITEM,
+      'type' => MENU_LOCAL_TASK,
+      'weight' => -8,
+    );
+    $items[] = array('path' => 'admin/store/settings/quotes/methods',
+      'access' => user_access('configure quotes'),
+      'title' => t('Quote methods'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('uc_quote_method_settings'),
+      'type' => MENU_LOCAL_TASK,
+      'weight' => -5,
+    );
+    $items[] = array('path' => 'admin/store/settings/quotes/methods/general',
+      'title' => t('General settings'),
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => -10,
     );
   }
   else{
@@ -97,15 +124,15 @@ function uc_quote_nodeapi(&$node, $op, $arg3 = null, $arg4 = null){
           $shipping_type = db_result(db_query("SELECT shipping_type FROM {uc_quote_shipping_types} WHERE id_type = 'manufacturer' AND id = %d", $manufacturer->tid));
         }
         if (!$shipping_type){
-          $shipping_type = variable_get('uc_store_shipping_type', 'freight');
+          $shipping_type = variable_get('uc_store_shipping_type', 'box');
         }
       }
-      $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1, address2, city, zone, postal_code, country FROM {uc_quote_product_locations} WHERE nid = %d", $node->nid));
-      if (!$address){
+      $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1 AS street1, address2 AS street2, city, zone, postal_code, country FROM {uc_quote_product_locations} WHERE nid = %d", $node->nid));
+      if (empty($address)){
         if (module_exists('uc_manufacturer')){
-          $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1, address2, city, zone, postal_code, country FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $manufacturer->tid));
+          $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1 AS street1, address2 AS street2, city, zone, postal_code, country FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $manufacturer->tid));
         }
-        if (!$address){
+        if (empty($address)){
           $address = variable_get('uc_quote_store_default_address', new stdClass());
         }
       }
@@ -125,12 +152,14 @@ function uc_quote_nodeapi(&$node, $op, $arg3 = null, $arg4 = null){
  * blank, products default to their manufacturers', which default to the store's.
  */
 function uc_quote_form_alter($form_id, &$form){
-  if (($form_id == 'taxonomy_form_term' && $form['vid']['#value'] == variable_get('uc_manufacturer_vid', 0)) || $form_id == 'uc_manufacturer_form' || $form_id == 'product_node_form'){
-    if ($form_id == 'product_node_form'){
+  $node = $form['#node'];
+  $product_types = uc_product_node_info();
+  if (($form_id == 'taxonomy_form_term' && $form['vid']['#value'] == variable_get('uc_manufacturer_vid', 0)) || $form_id == 'uc_manufacturer_form' || ($form_id == $node->type .'_node_form' && isset($product_types[$node->type]))){
+    if (strpos($form_id, 'node_form')){
       $type = 'product';
       $id = $form['nid']['#value'];
       $weight = 1;
-      $address = $form['#node']->shipping_address;
+      $address = $node->shipping_address;
     }
     else{
       $type = 'manufacturer';
@@ -140,7 +169,7 @@ function uc_quote_form_alter($form_id, &$form){
         $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1, address2, city, zone, postal_code, country FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $id));
       }
     }
-    if (!$address){
+    if (empty($address)){
       $address = variable_get('uc_quote_store_default_address', new stdClass());
     }
     if (!isset($form['shipping'])){
@@ -200,6 +229,17 @@ function uc_quote_form_alter($form_id, &$form){
 /******************************************************************************
  * Ubercart Hooks                                                             *
  ******************************************************************************/
+
+function uc_quote_cart_pane($items){
+  $panes[] = array('id' => 'quotes',
+    'title' => t('Shipping quotes'),
+    'enabled' => variable_get('uc_quote_cart_pane_enabled', true),
+    'weight' => 5,
+    'body' => is_null($items) ? '' : drupal_get_form('uc_cart_pane_quotes', $items),
+  );
+  
+  return $panes;
+}
 
 /**
  * Defines the shipping quote checkout pane.
@@ -271,9 +311,72 @@ function uc_quote_line_item(){
   return $items;
 }
 
+function uc_quote_shipping_type(){
+  $weight = variable_get('uc_quote_type_weight', array('box' => 0));
+  
+  $types = array();
+  $types['box'] = array(
+    'id' => 'box',
+    'title' => t('Box'),
+    'weight' => $weight['box'],
+  );
+  
+  return $types;
+}
+
 /******************************************************************************
  * Menu Callbacks                                                             *
  ******************************************************************************/
+
+function uc_quote_overview(){
+  $sections = array();
+  $address = variable_get('uc_quote_store_default_address', new stdClass());
+  
+  $sections[] = array(
+    'edit' => 'admin/store/settings/quotes/edit',
+    'title' => t('Quote settings'),
+    'items' => array(
+      variable_get('uc_quote_log_errors', false) ?
+        t('Quote errors are submitted to watchdog.') :
+        t('Quote errors are not submitted to watchdog.'),
+      t('The default store shipping address is:<br />!address', array('!address' => uc_address_format(
+        $address->first_name,
+        $address->last_name,
+        $address->company,
+        $address->street1,
+        $address->street2,
+        $address->city,
+        $address->zone,
+        $address->postal_code,
+        $address->country)))
+    ),
+  );
+  
+  $items = array();
+  
+  $methods = array_filter(module_invoke_all('shipping_method'), '_uc_quote_method_enabled');
+  uasort($methods, '_uc_quote_type_sort');
+  foreach ($methods as $method){
+    $items[] = l(t('@method is enabled.', array('@method' => $method['title'])), 'admin/store/settings/quotes/methods/'. $method['id']);
+  }
+  
+  $sections[] = array(
+    'edit' => 'admin/store/settings/quotes/methods',
+    'title' => t('Shipping methods'),
+    'items' => $items,
+  );
+  
+  $types = uc_quote_shipping_type_options();
+  $default = variable_get('uc_store_shipping_type', 'box');
+  $types[$default] .= theme('item_list', array(t('Default')));
+  $sections[] = array(
+    'edit' => 'admin/store/settings/quotes/methods',
+    'title' => t('Shipping types'),
+    'items' => $types,
+  );
+  
+  return theme('uc_settings_overview', $sections);
+}
 
 /**
  * Default shipping settings.
@@ -287,35 +390,8 @@ function uc_quote_admin_settings(){
   $address = variable_get('uc_quote_store_default_address', new stdClass());
   $form = array();
   
-  
-  $form['uc_quote_enabled'] = array('#type' => 'checkboxes',
-    '#title' => t('Enabled Shipping Methods'),
-    '#options' => uc_quote_shipping_method_options(),
-    '#default_value' => variable_get('uc_quote_enabled', array()),
-  );
-  $form['uc_quote_weight'] = array('#type' => 'fieldset',
-    '#title' => t('Weight'),
-    '#description' => t('Lighter shipping methods take precendence over heavier ones.'),
-    '#collapsible' => true,
-    '#tree' => true,
-  );
-  $weight = variable_get('uc_quote_weight', array());
-  foreach (module_invoke_all('shipping_method') as $method){
-    $form['uc_quote_weight'][$method['id']] = array('#type' => 'weight',
-      '#title' => $method['title'],
-      '#delta' => 5,
-      '#default_value' => $weight[$method['id']],
-    );
-  }
-  $shipping_types = uc_quote_shipping_type_options();
-  $form['uc_store_shipping_type'] = array('#type' => 'select',
-    '#title' => t('Default order fulfillment type'),
-    '#options' => is_array($shipping_types) ? $shipping_types : array(t('No shipping types available.')),
-    '#default_value' => variable_get('uc_store_shipping_type', 'pickup'),
-  );
-  
   $form['uc_quote_log_errors'] = array('#type' => 'radios',
-    '#title' => t('Log errors during checkout to watchdog.'),
+    '#title' => t('Log errors during checkout to watchdog'),
     '#options' => array(1 => t('Yes'), 0 => t('No')),
     '#default_value' => variable_get('uc_quote_log_errors', false),
   );
@@ -352,12 +428,6 @@ function uc_quote_admin_settings(){
   return $form;
 }
 
-function uc_quote_admin_settings_validate($form_id, $form_values){
-  if ($form_values['uc_quote_enabled'][0]){
-    form_set_error('uc_quote_enabled', t('At least one shipping quote method must be enabled.'));
-  }
-}
-
 /**
  * Submit function for uc_quote_admin_settings() in lieu of system_settings_form().
  */
@@ -374,11 +444,111 @@ function uc_quote_admin_settings_submit($form_id, $form_values){
   $address->postal_code = $form_values['postal_code'];
   $address->country = $form_values['country'];
   
-  variable_set('uc_quote_enabled', $form_values['uc_quote_enabled']);
-  variable_set('uc_quote_weight', $form_values['uc_quote_weight']);
   variable_set('uc_quote_store_default_address', $address);
-  variable_set('uc_store_shipping_type', $form_values['uc_store_shipping_type']);
   variable_set('uc_quote_log_errors', $form_values['uc_quote_log_errors']);
+}
+
+function uc_quote_method_settings(){
+  $form = array();
+  
+  $form['methods'] = array(
+    '#tree' => true
+  );
+  
+  $enabled = variable_get('uc_quote_enabled', array());
+  $weight = variable_get('uc_quote_method_weight', array());
+  $methods = uc_quote_shipping_method_options();
+  if (is_array($methods)){
+    foreach ($methods as $id => $title){
+      $form['methods'][$id]['uc_quote_enabled'] = array('#type' => 'checkbox',
+        '#default_value' => $enabled[$id],
+      );
+      $form['methods'][$id]['uc_quote_method_weight'] = array('#type' => 'weight',
+        '#delta' => 5,
+        '#default_value' => $weight[$id],
+      );
+    }
+  }
+  
+  $shipping_types = uc_quote_shipping_type_options();
+  if (is_array($shipping_types)){
+    $form['uc_quote_type_weight'] = array('#type' => 'fieldset',
+      '#title' => t('Type Ordering'),
+      '#description' => t('Determines which shipping methods are quoted at checkout when products of different shipping types are ordered. Lighter weights are chosen first.'),
+      '#collapsible' => true,
+      '#tree' => true,
+    );
+    $weight = variable_get('uc_quote_type_weight', array());
+    $shipping_methods = module_invoke_all('shipping_method');
+    $method_types = array();
+    foreach ($shipping_methods as $method){
+      $method_types[$method['quote']['type']][] = $method['title'];
+    }
+    if (is_array($method_types['order'])){
+      $form['uc_quote_type_weight']['#description'] .= t('<br />The %list methods are compatible with any shipping type.', array('%list' => implode(', ', $method_types['order'])));
+    }
+    foreach ($shipping_types as $id => $title){
+      $form['uc_quote_type_weight'][$id] = array('#type' => 'weight',
+        '#title' => $title . (is_array($method_types[$id]) ? ' ('. implode(', ', $method_types[$id]) .')' : ''),
+        '#delta' => 5,
+        '#default_value' => $weight[$id],
+      );
+    }
+  }
+  $form['uc_store_shipping_type'] = array('#type' => 'select',
+    '#title' => t('Default order fulfillment type for products'),
+    '#options' => $shipping_types,
+    '#default_value' => variable_get('uc_store_shipping_type', 'box'),
+  );
+  
+  $form['submit'] = array('#type' => 'submit', '#value' => t('Save configuration'));
+  
+  return $form;
+}
+
+function theme_uc_quote_method_settings($form){
+  $methods = uc_quote_shipping_method_options();
+  $output = '';
+  
+  $header = array(t('Enable'), t('Shipping Method'), t('Weight'));
+  $rows = array();
+  foreach (element_children($form['methods']) as $method){
+    $row = array();
+    $row[] = drupal_render($form['methods'][$method]['uc_quote_enabled']);
+    $row[] = $methods[$method];
+    $row[] = drupal_render($form['methods'][$method]['uc_quote_method_weight']);
+    $rows[] = $row;
+  }
+  $output .= theme('table', $header, $rows);
+  
+  $output .= drupal_render($form);
+  return $output;
+}
+
+function uc_quote_method_settings_validate($form_id, $form_values){
+  $none_enabled = true;
+  foreach ($form_values['methods'] as $method){
+    if ($method['uc_quote_enabled']){
+      $none_enabled = false;
+    }
+  }
+  if ($none_enabled){
+    form_set_error('uc_quote_enabled', t('At least one shipping quote method must be enabled.'));
+  }
+}
+
+function uc_quote_method_settings_submit($form_id, $form_values){
+  $enabled = array();
+  $method_weight = array();
+  foreach ($form_values['methods'] as $id => $method){
+    $enabled[$id] = $method['uc_quote_enabled'];
+    $method_weight[$id] = $method['uc_quote_method_weight'];
+  }
+
+  variable_set('uc_quote_enabled', $enabled);
+  variable_set('uc_quote_method_weight', $method_weight);
+  variable_set('uc_quote_type_weight', $form_values['uc_quote_type_weight']);
+  variable_set('uc_store_shipping_type', $form_values['uc_store_shipping_type']);
 }
 
 /******************************************************************************
@@ -427,7 +597,7 @@ function uc_quote_get_shipping_type($id_type, $id){
  * @return The shipping type.
  */
 function uc_product_get_shipping_type($product){
-  $shipping_type = variable_get('uc_store_shipping_type', 'pickup');
+  $shipping_type = variable_get('uc_store_shipping_type', 'box');
   if (module_exists('uc_manufacturer')){
     $m = taxonomy_get_term_by_name($product->manufacturer);
     if ($type = uc_quote_get_shipping_type('manufacturer', $m->tid)){
@@ -440,6 +610,98 @@ function uc_product_get_shipping_type($product){
   return $shipping_type;
 }
 
+function uc_quote_get_default_shipping_address($nid){
+  $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1 AS street1, address2 AS street2, city, zone, postal_code, country FROM {uc_quote_product_locations} WHERE nid = %d", $nid));
+  if (empty($address)){
+    if (module_exists('uc_manufacturer')){
+      $manufacturer = uc_product_get_manufacturer($nid);
+      $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1 AS street1, address2 AS street2, city, zone, postal_code, country FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $manufacturer->tid));
+    }
+    if (empty($address)){
+      $address = variable_get('uc_quote_store_default_address', new stdClass());
+    }
+  }
+  return $address;
+}
+
+function uc_cart_pane_quotes($items){
+  // Get all quote types neccessary to fulfill order.
+  $shipping_types = array();
+  foreach ($items as $product){
+    $shipping_types[] =  uc_product_get_shipping_type($product);
+  }
+  $shipping_types = array_unique($shipping_types);
+  $all_types = module_invoke_all('shipping_type');
+  $shipping_type = '';
+  $type_weight = 1000; // arbitrary large number
+  foreach ($shipping_types as $type){
+    if ($all_types[$type]['weight'] < $type_weight){
+      $shipping_type = $all_types[$type]['id'];
+      $type_weight = $all_types[$type]['weight'];
+    }
+  }
+  $methods = array_filter(module_invoke_all('shipping_method'), '_uc_quote_method_enabled');
+  uasort($methods, '_uc_quote_type_sort');
+  $method_choices = array();
+  foreach ($methods as $method){
+    if ($method['quote']['type'] == 'order' || $method['quote']['type'] == $shipping_type){
+      $method_choices[$method['id']] = $method['title'];
+    }
+  }
+  $form['delivery_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), '', TRUE, NULL, 10, 10);
+  $form['quote_method'] = array('#type' => 'hidden',
+    '#value' => key($method_choices),
+  );
+  $form['get_quote'] = array('#type' => 'button',
+    //'#prefix' => '<img class="icon" src="'. base_path() . drupal_get_path('module', 'uc_store') .'/images/calculator.gif' .'" />',
+    '#value' => t('Calculate'),
+  );
+  $form['page'] = array('#type' => 'hidden',
+    '#value' => 'cart',
+  );
+  $form['quote'] = array('#type' => 'markup',
+    '#value' => '<div id="quote"></div>',
+  );
+  
+  drupal_add_js('misc/progress.js');
+  drupal_add_js(drupal_get_path('module', 'uc_quote') .'/uc_quote.js');
+  $prod_string = '';
+  foreach (uc_cart_get_contents() as $item){
+    $prod_string .= '|'. $item->nid;
+    $prod_string .= '^'. $item->title;
+    $prod_string .= '^'. $item->model;
+    $prod_string .= '^'. $item->manufacturer;
+    $prod_string .= '^'. $item->qty;
+    $prod_string .= '^'. $item->cost;
+    $prod_string .= '^'. $item->price;
+    $prod_string .= '^'. $item->weight;
+    $prod_string .= '^'. serialize($item->data);
+  }
+  $prod_string = substr($prod_string, 1);
+  // If a previous quote gets loaded, make sure it gets saved again.
+  // Also, make sure the previously checked option is checked by default.
+  drupal_add_js('$(function(){
+    basePath = "'. base_path() .'";
+    setQuoteCallbacks("'. urlencode($prod_string) .'");
+    $("#uc-cart-pane-quotes").submit(function(){
+      quoteCallback("'. urlencode($prod_string) .'");
+      return false;
+    });
+  })', 'inline');
+  
+  return $form;
+}
+
+function theme_uc_cart_pane_quotes($form){
+  $output = '<div class="solid-border">';
+  $output .= '<strong>'. t('Estimated shipping cost:') .'</strong>';
+  $output .= drupal_render($form['delivery_postal_code']) . drupal_render($form['get_quote']);
+  $output .= drupal_render($form);
+  $output .= '</div>';
+  
+  return $output;
+}
+
 /**
  * Shipping quote checkout pane callback.
  *
@@ -450,27 +712,48 @@ function uc_product_get_shipping_type($product){
  * Adds a line item to the order that records the chosen shipping quote.
  */
 function uc_checkout_pane_quotes($op, &$arg1, $arg2){
+  if (!uc_cart_is_shippable() && variable_get('uc_cart_delivery_not_shippable', TRUE)) {
+    return;
+  }
+
   switch ($op){
     case 'view':
-      $pane = uc_cart_checkout_new_pane('quotes', t('Calculate Shipping Cost'));
+      $pane = uc_cart_checkout_new_pane('quotes');
       // Get all quote types neccessary to fulfill order.
       $shipping_types = array();
       foreach (uc_cart_get_contents() as $product){
         $shipping_types[] =  uc_product_get_shipping_type($product);
       }
       $shipping_types = array_unique($shipping_types);
+      $all_types = module_invoke_all('shipping_type');
+      $shipping_type = '';
+      $type_weight = 1000; // arbitrary large number
+      foreach ($shipping_types as $type){
+        if ($all_types[$type]['weight'] < $type_weight){
+          $shipping_type = $all_types[$type]['id'];
+          $type_weight = $all_types[$type]['weight'];
+        }
+      }
       $methods = array_filter(module_invoke_all('shipping_method'), '_uc_quote_method_enabled');
-      usort($methods, '_uc_quote_method_sort');
+      uasort($methods, '_uc_quote_type_sort');
       $method_choices = array();
       foreach ($methods as $method){
-        if ($method['quote']['type'] == 'order' || in_array($method['quote']['type'], $shipping_types)){
+        if ($method['quote']['type'] == 'order' || $method['quote']['type'] == $shipping_type){
           $method_choices[$method['id']] = $method['title'];
         }
       }
-      $pane->fields['pane']['method'] = array('#type' => 'hidden',
-        // TODO: Devise some way to configure which method is chosen, rather than the lightest-weighted one.
-        '#value' => implode(',', array_keys($method_choices)),
-      );
+      if (count($method_choices) > 1){
+        $pane->fields['pane']['quote_method'] = array('#type' => 'radios',
+          '#title' => t('Select delivery method'),
+          '#options' => $method_choices,
+          '#default_value' => isset($arg1->quote['method']) ? $arg1->quote['method'] : key($method_choices),
+        );
+      }
+      else{
+        $pane->fields['pane']['quote_method'] = array('#type' => 'hidden',
+          '#value' => key($method_choices),
+        );
+      }
       // Let Javascript know where we are.
       $pane->fields['pane']['page'] = array('#type' => 'hidden',
         '#value' => 'checkout',
@@ -483,14 +766,10 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2){
       // display previous quote, if any
       if (isset($arg1->quote['quote_form'])){
         $pane->fields['pane']['quote'] = array('#type' => 'markup',
-          '#value' => '<div id="quote">'. $arg1->quote['quote_form'] .'</div>',
+          '#value' => '<div id="quote" class="solid-border" style="margin-top: 1em;">'. $arg1->quote['quote_form'] .'</div>',
         );
         $methods = module_invoke_all('shipping_method');
-        foreach($methods as $method){
-          if ($method['id'] == $arg1->quote['method']){
-            break;
-          }
-        }
+        $method = $methods[$arg1->quote['method']];
         drupal_add_js('$(document).ready(function(){
           if (set_line_item != undefined){
             set_line_item("shipping", "'. $method['quote']['accessorials'][$arg1->quote['accessorials']] .'", '. $arg1->quote['rate'] .', 1);
@@ -509,14 +788,14 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2){
       $prod_string = '';
       foreach (uc_cart_get_contents() as $item){
         $prod_string .= '|'. $item->nid;
-        $prod_string .= ';'. $item->title;
-        $prod_string .= ';'. $item->model;
-        $prod_string .= ';'. $item->manufacturer;
-        $prod_string .= ';'. $item->qty;
-        $prod_string .= ';'. $item->cost;
-        $prod_string .= ';'. $item->price;
-        $prod_string .= ';'. $item->weight;
-        $prod_string .= ';'. serialize($item->data);
+        $prod_string .= '^'. $item->title;
+        $prod_string .= '^'. $item->model;
+        $prod_string .= '^'. $item->manufacturer;
+        $prod_string .= '^'. $item->qty;
+        $prod_string .= '^'. $item->cost;
+        $prod_string .= '^'. $item->price;
+        $prod_string .= '^'. $item->weight;
+        $prod_string .= '^'. serialize($item->data);
       }
       $prod_string = substr($prod_string, 1);
       // If a previous quote gets loaded, make sure it gets saved again.
@@ -549,16 +828,13 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2){
         drupal_set_message(t('You must request a quote before continuing.'), 'error');
         return false;
       } */
-      $arg1->quote['method'] = $_POST['method-quoted'];
+      $arg1->quote['method'] = $arg2['pane']['quote_method'];
       $arg1->quote['accessorials'] = isset($_POST['quote-option']) ? strval($_POST['quote-option']) : 0;
       $arg1->quote['rate'] = $_POST['rate'][$arg1->quote['accessorials']];
       $arg1->quote['quote_form'] = rawurldecode($_POST['quote-form']);
       $methods = module_invoke_all('shipping_method');
-      foreach($methods as $method){
-        if ($method['id'] == $_POST['method-quoted']){
-          break;
-        }
-      }
+      $method = $methods[$arg2['pane']['quote_method']];
+      //drupal_set_message('<pre>'. print_r($methods, true) ."\n". $arg2['pane']['quote_method'] .'</pre>');
       $label = is_null($_POST['quote-option']) ? t('Error calculating shipping') : $method['quote']['accessorials'][$arg1->quote['accessorials']];
       $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = %d AND type = 'shipping'", $arg1->order_id);
       if ($lid = db_result($result)){
@@ -593,7 +869,7 @@ function uc_order_pane_quotes($op, $arg1){
       }
       $shipping_types = array_unique($shipping_types);
       $methods = array_filter(module_invoke_all('shipping_method'), '_uc_quote_method_enabled');
-      usort($methods, '_uc_quote_method_sort');
+      uasort($methods, '_uc_quote_type_sort');
       //drupal_set_message('<pre>'. print_r($methods, true) .'</pre>');
       $method_choices = array();
       foreach ($methods as $method){
@@ -602,14 +878,14 @@ function uc_order_pane_quotes($op, $arg1){
         }
       }
       if (count($method_choices) > 1){
-        $form['quotes']['method'] = array('#type' => 'radios',
+        $form['quotes']['quote_method'] = array('#type' => 'radios',
           '#title' => t('Quote Method'),
           '#default_value' => key($method_choices),
           '#options' => $method_choices,
         );
       }
       else{
-        $form['quotes']['method'] = array('#type' => 'hidden',
+        $form['quotes']['quote_method'] = array('#type' => 'hidden',
           // TODO: Devise some way to configure which method is chosen, rather than the lightest-weighted one.
           '#value' => key($method_choices),
         );
@@ -697,7 +973,7 @@ function uc_quote_request_quotes(){
   $details = $_POST['details'];
   $products = array();
   foreach (explode('|', urldecode($_POST['products'])) as $item){
-    $props = explode(';', $item);
+    $props = explode('^', $item);
     $product = new stdClass();
     $product->nid = $props[0];
     $product->title = $props[1];
@@ -718,14 +994,7 @@ function uc_quote_request_quotes(){
   }
   //drupal_set_message('<pre>'. print_r($products, true) .'</pre>');
   $methods = module_invoke_all('shipping_method');
-  $found_method = false;
-  foreach($methods as $method){
-    if ($method['id'] == $_POST['method']){
-      $found_method = true;
-      break;
-    }
-  }
-  if ($found_method){
+  if ($method = $methods[$_POST['method']]){
     $quote_data = call_user_func($method['quote']['callback'], $products, $details);
   }
   $messages = ob_get_contents();
@@ -744,13 +1013,13 @@ function _uc_quote_method_enabled($method){
 }
 
 /**
- * Callback for usort().
+ * Callback for uasort().
  */
-function _uc_quote_method_sort($a, $b){
+function _uc_quote_type_sort($a, $b){
   $aw = $a['weight'];
   $bw = $b['weight'];
   if ($aw == $bw){
-    return 0;
+    return strcasecmp($a['id'], $b['id']);
   }
   else{
     return ($aw < $bw) ? -1 : 1;
@@ -775,9 +1044,13 @@ function uc_quote_type_options(){
  */
 function uc_quote_shipping_type_options(){
   $ship_types = module_invoke_all('shipping_type');
+  uasort ($ship_types, '_uc_quote_type_sort');
   $types = array();
   foreach ($ship_types as $ship_type){
     $types[$ship_type['id']] = $ship_type['title'];
+  }
+  if (!count($types)){
+    $types['box'] = t('Box');
   }
   return $types;
 }
@@ -787,6 +1060,7 @@ function uc_quote_shipping_type_options(){
  */
 function uc_quote_shipping_method_options(){
   $methods = module_invoke_all('shipping_method');
+  uasort($methods, '_uc_quote_type_sort');
   $types = array();
   foreach ($methods as $method){
     $types[$method['id']] = $method['title'];

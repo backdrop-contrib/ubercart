@@ -17,12 +17,12 @@ function uc_flatrate_menu($may_cache){
   $items = array();
   
   if ($may_cache){
-    $items[] = array('path' => 'admin/store/settings/quotes/flatrate',
+    $items[] = array('path' => 'admin/store/settings/quotes/methods/flatrate',
       'access' => user_access('configure quotes'),
-      'title' => t('Flatrate settings'),
+      'title' => t('Flatrate'),
       'callback' => 'drupal_get_form',
       'callback arguments' => array('uc_flatrate_admin_settings'),
-      'type' => MENU_NORMAL_ITEM,
+      'type' => MENU_LOCAL_TASK,
     );
   }
   
@@ -35,7 +35,9 @@ function uc_flatrate_menu($may_cache){
  * Adds a form element for the shipping rate of a product.
  */
 function uc_flatrate_form_alter($form_id, &$form){
-  if ($form_id == 'product_node_form'){
+  $node = $form['#node'];
+  $product_types = uc_product_node_info();
+  if ($form_id == $node->type .'_node_form' && isset($product_types[$node->type])){
     $enabled = variable_get('uc_quote_enabled', array('flatrate' => true));
     $form['shipping']['flatrate'] = array('#type' => 'fieldset',
       '#title' => t('Flat Shipping Rate'),
@@ -91,8 +93,8 @@ function uc_flatrate_nodeapi(&$node, $op){
 function uc_flatrate_shipping_method(){
   $methods = array();
   
-  $enabled = variable_get('uc_quote_enabled', array('flatrate' => true, 'order rate' => false));
-  $weight = variable_get('uc_quote_weight', array('flatrate' => 0, 'order rate' => 1));
+  $enabled = variable_get('uc_quote_enabled', array('flatrate' => true, 'order_rate' => false));
+  $weight = variable_get('uc_quote_method_weight', array('flatrate' => 0, 'order_rate' => 1));
   $methods['flatrate'] = array(
     'id' => 'flatrate',
     'module' => 'uc_flatrate',
@@ -102,25 +104,25 @@ function uc_flatrate_shipping_method(){
       'type' => 'order',
       'callback' => 'uc_flatrate_quote',
       'accessorials' => array(
-        t('Shipping'),
+        t('Shipping Rate'),
       ),
     ),
     'weight' => $weight['flatrate'],
   );
   
-  $methods['order rate'] = array(
-    'id' => 'order rate',
+  $methods['order_rate'] = array(
+    'id' => 'order_rate',
     'module' => 'uc_flatrate',
     'title' => t('Flat Rate per Order'),
-    'enabled' => $enabled['order rate'],
+    'enabled' => $enabled['order_rate'],
     'quote' => array(
       'type' => 'order',
       'callback' => 'uc_flatrate_quote_order',
       'accessorials' => array(
-        t('Shipping'),
+        t('Shipping Rate'),
       ),
     ),
-    'weight' => $weight['order rate'],
+    'weight' => $weight['order_rate'],
   );
   
   return $methods;
@@ -133,13 +135,6 @@ function uc_flatrate_store_status(){
   $messages = array();
 
   return $messages;
-}
-
-/**
- * Implementation (ha!) of Übercart's hook_order().
- */
-function uc_flatrate_order($op, $arg1, $arg2 = null){
-  
 }
 
 /******************************************************************************
@@ -155,10 +150,16 @@ function uc_flatrate_admin_settings(){
   $form['uc_flatrate_product_default'] = array('#type' => 'textfield',
     '#title' => t('Default Product Shipping Rate'),
     '#default_value' => variable_get('uc_flatrate_product_default', 0),
+    '#size' => 16,
+    '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
+    '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
   );
   $form['uc_flatrate_order_rate'] = array('#type' => 'textfield',
     '#title' => t('Order Shipping Rate'),
     '#default_value' => variable_get('uc_flatrate_order_rate', 0),
+    '#size' => 16,
+    '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
+    '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
   );
   
   return system_settings_form($form);
@@ -200,7 +201,7 @@ function uc_flatrate_quote_order($products, $details){
   $method = uc_flatrate_shipping_method();
   $rate = variable_get('uc_flatrate_order_rate', 0);
   
-  $quotes[] = array('rate' => $rate, 'format' => uc_currency_format($rate), 'option_label' => $method['order rate']['quote']['accessorials'][0]);
+  $quotes[] = array('rate' => $rate, 'format' => uc_currency_format($rate), 'option_label' => $method['order_rate']['quote']['accessorials'][0]);
   
   return drupal_to_js($quotes);
 }

@@ -1,0 +1,122 @@
+<?php
+// $Id$
+
+function uc_shipping_install(){
+  switch($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {uc_shipments} (
+        `sid` mediumint(9) UNSIGNED NOT NULL,
+        `order_id` mediumint(9) UNSIGNED NOT NULL,
+        `o_first_name` varchar(255) NOT NULL,
+        `o_last_name` varchar(255) NOT NULL,
+        `o_company` varchar(255) NOT NULL,
+        `o_street1` varchar(255) NOT NULL,
+        `o_street2` varchar(255) NOT NULL,
+        `o_city` varchar(255) NOT NULL,
+        `o_zone` mediumint(11) UNSIGNED NOT NULL,
+        `o_postal_code` varchar(255) NOT NULL,
+        `o_country` mediumint(11) UNSIGNED NOT NULL,
+        `d_first_name` varchar(255) NOT NULL,
+        `d_last_name` varchar(255) NOT NULL,
+        `d_company` varchar(255) NOT NULL,
+        `d_street1` varchar(255) NOT NULL,
+        `d_street2` varchar(255) NOT NULL,
+        `d_city` varchar(255) NOT NULL,
+        `d_zone` mediumint(11) UNSIGNED NOT NULL,
+        `d_postal_code` varchar(255) NOT NULL,
+        `d_country` mediumint(11) UNSIGNED NOT NULL,
+        `shipping_method` varchar(255) NOT NULL,
+        `accessorials` varchar(255) NOT NULL default '',
+        `carrier` varchar(255) NOT NULL,
+        `transaction_id` varchar(255) NOT NULL,
+        `tracking_number` varchar(255) NOT NULL,
+        `ship_date` int(11) NOT NULL,
+        `expected_delivery` int(11) NOT NULL,
+        `cost` decimal(10,2) NOT NULL,
+        PRIMARY KEY (sid)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
+      db_query("CREATE TABLE {uc_packages} (
+        `package_id` mediumint(11) UNSIGNED NOT NULL,
+        `order_id` mediumint(11)UNSIGNED NOT NULL,
+        `shipping_type` varchar(255) NOT NULL default '',
+        `pkg_type` varchar(255) NOT NULL default '',
+        `length` float UNSIGNED NULL,
+        `width` float UNSIGNED NULL,
+        `height` float UNSIGNED NULL,
+        `units` varchar(255) NULL,
+        `value` decimal(10,2) UNSIGNED NULL,
+        `sid` mediumint(11) UNSIGNED NULL,
+        `tracking_number` varchar(255) NULL,
+        `label_image` varchar(255) NULL,
+        PRIMARY KEY (package_id)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
+      db_query("CREATE TABLE {uc_packaged_products} (
+        `package_id` mediumint(11) UNSIGNED NOT NULL,
+        `order_product_id` mediumint(11) UNSIGNED NOT NULL,
+        `qty` int UNSIGNED NOT NULL default '0',
+        PRIMARY KEY (package_id, order_product_id)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
+    break;
+    case 'pgsql':
+      db_query('CREATE TABLE {uc_shipments} (
+        "sid" mediumint(11) UNSIGNED NOT NULL,
+        "order_id" mediumint(11) UNSIGNED NOT NULL,
+        "o_first_name" varchar(255) NOT NULL,
+        "o_last_name" varchar(255) NOT NULL,
+        "o_company" varchar(255) NOT NULL,
+        "o_street1" varchar(255) NOT NULL,
+        "o_street2" varchar(255) NOT NULL,
+        "o_city" varchar(255) NOT NULL,
+        "o_zone" mediumint(11) UNSIGNED NOT NULL,
+        "o_postal_code" varchar(255) NOT NULL,
+        "o_country" mediumint(11) UNSIGNED NOT NULL,
+        "d_first_name" varchar(255) NOT NULL,
+        "d_last_name" varchar(255) NOT NULL,
+        "d_company" varchar(255) NOT NULL,
+        "d_street1" varchar(255) NOT NULL,
+        "d_street2" varchar(255) NOT NULL,
+        "d_city" varchar(255) NOT NULL,
+        "d_zone" mediumint(11) UNSIGNED NOT NULL,
+        "d_postal_code" varchar(255) NOT NULL,
+        "d_country" mediumint(11) UNSIGNED NOT NULL,
+        "shipping_method" varchar(255) NOT NULL,
+        "accessorials" varchar(255) NOT NULL default \'\',
+        "carrier" varchar(255) NOT NULL,
+        "transaction_id" varchar(255) NOT NULL,
+        "tracking_number" varchar(255) NOT NULL,
+        "ship_date" int(11) NOT NULL,
+        "expected_delivery" int(11) NOT NULL,
+        "cost" decimal(10,2) NOT NULL,
+        PRIMARY KEY (sid)
+      );');
+      db_query('CREATE TABLE {uc_packages} (
+        "package_id" mediumint(11) UNSIGNED NOT NULL,
+        "order_id" mediumint(11) UNSIGNED NOT NULL,
+        "shipping_type" varchar(255) NOT NULL default \'\',
+        "pkg_type" varchar(255) NOT NULL default \'\',
+        "length" float UNSIGNED NULL,
+        "width" float UNSIGNED NULL,
+        "height" float UNSIGNED NULL,
+        "units" varchar(255) NULL,
+        "value" decimal(10,2) UNSIGNED NULL,
+        "sid" mediumint(11) UNSIGNED NULL,
+        "tracking_number" varchar(255) NULL,
+        "label_image" varchar(255) NULL,
+        PRIMARY KEY (package_id)
+      );');
+      db_query('CREATE TABLE {uc_packaged_products} (
+        "package_id" mediumint(11) UNSIGNED NOT NULL,
+        "order_product_id" mediumint(11) UNSIGNED NOT NULL,
+        "qty" int UNSIGNED NOT NULL default \'0\',
+        PRIMARY KEY (package_id, order_product_id)
+      );');
+    break;
+  }
+}
+
+function uc_shipping_uninstall(){
+  db_query("DROP TABLE IF EXISTS {uc_shipments}");
+  db_query("DROP TABLE IF EXISTS {uc_packages}");
+  db_query("DROP TABLE IF EXISTS {uc_packaged_products}");
+}

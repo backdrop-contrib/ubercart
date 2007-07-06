@@ -157,13 +157,16 @@ function uc_payment_menu($may_cache) {
 }
 
 /**
- * Implementation of hook_token_values(). (token.module)
+ * Implementation of hook_token_values().
  */
 function uc_payment_token_values($type, $object = NULL) {
   switch ($type) {
     case 'uc_order':
       $order = $object;
-      $values['order-payment-method'] = _payment_method_data($order->payment_method, 'name');
+      $values['order-payment-method'] = _payment_method_data($order->payment_method, 'review');
+      if (empty($values['order-payment-method'])) {
+        $values['order-payment-method'] = _payment_method_data($order->payment_method, 'name');
+      }
       break;
   }
 
@@ -221,12 +224,6 @@ function uc_payment_order($op, &$arg1) {
     case 'submit':
       $func = _payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
-        /*if (substr(PHP_VERSION, 0, 1) == 4) {
-          return $func('order-submit', &$arg1);
-        }
-        else {
-          return uc_func_call($func, 'order-submit', $arg1);
-        }*/
         return $func('order-submit', $arg1);
       }
       break;
@@ -234,12 +231,6 @@ function uc_payment_order($op, &$arg1) {
     case 'load':
       $func = _payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
-        /*if (substr(PHP_VERSION, 0, 1) == 4) {
-          $func('order-load', &$arg1);
-        }
-        else {
-          uc_func_call($func, 'order-load', $arg1);
-        }*/
         $func('order-load', $arg1);
       }
       break;
@@ -247,12 +238,6 @@ function uc_payment_order($op, &$arg1) {
     case 'save':
       $func = _payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
-        /*if (substr(PHP_VERSION, 0, 1) == 4) {
-          $func('order-save', &$arg1);
-        }
-        else {
-          uc_func_call($func, 'order-save', $arg1);
-        }*/
         $func('order-save', $arg1);
       }
       break;
@@ -595,11 +580,11 @@ function _total_sort($a, $b) {
 function uc_checkout_pane_payment($op, &$arg1, $arg2) {
   switch ($op) {
     case 'view':
+      $pane = uc_cart_checkout_new_pane('payment');
       drupal_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
       if (module_exists('uc_taxes')){
         drupal_add_js(drupal_get_path('module', 'uc_taxes') .'/uc_taxes.js');
       }
-      $pane = uc_cart_checkout_new_pane('payment');
       $pane->fields['pane']['current_total'] = array(
         '#type' => 'hidden',
         '#value' => $arg1->order_total > 0 ? $arg1->order_total : NULL,
@@ -638,12 +623,6 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
       $arg1->payment_method = $method;
       $func = _payment_method_data($method, 'callback');
       if (function_exists($func)) {
-        /*if (substr(PHP_VERSION, 0, 1) == 4) {
-          $result = $func('cart-process', &$arg1);
-        }
-        else {
-          $result = uc_func_call($func, 'cart-process', $arg1);
-        }*/
         $result = $func('cart-process', $arg1);
         if ($result === FALSE) {
           return FALSE;
@@ -672,7 +651,11 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
       foreach ($line_items as $line_item) {
         $review[] = array('title' => $line_item['title'], 'data' => uc_currency_format($line_item['amount']));
       }
-      $review[] = array('border' => 'top', 'title' => t('Paying by'), 'data' => _payment_method_data($arg1->payment_method, 'name'));
+      $review_data = _payment_method_data($arg1->payment_method, 'review');
+      if (empty($review_data)) {
+        $review_data = _payment_method_data($arg1->payment_method, 'name');
+      }
+      $review[] = array('border' => 'top', 'title' => t('Paying by'), 'data' => $review_data);
       $func = _payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
         $result = $func('cart-review', $arg1);
@@ -694,7 +677,11 @@ function uc_order_pane_payment($op, $arg1) {
         $output = t('Balance:') .' '. uc_currency_format(uc_payment_balance($arg1));
         $output .= ' ('. l(t('View'), 'admin/store/orders/'. $arg1->order_id .'/payments') .')<br />';
       }
-      $output .= t('Method:') . _payment_method_data($arg1->payment_method, 'name');
+      $method_name = _payment_method_data($arg1->payment_method, 'review');
+      if (empty($method_name)) {
+        $method_name = _payment_method_data($arg1->payment_method, 'name');
+      }
+      $output .= t('Method:') .' '. $method_name;
       $func = _payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
         $method_output = $func('order-view', $arg1);
@@ -705,7 +692,11 @@ function uc_order_pane_payment($op, $arg1) {
       return $output;
 
     case 'customer':
-      $output = t('Method:') .' '. _payment_method_data($arg1->payment_method, 'name');
+      $method_name = _payment_method_data($arg1->payment_method, 'review');
+      if (empty($method_name)) {
+        $method_name = _payment_method_data($arg1->payment_method, 'name');
+      }
+      $output = t('Method:') .' '. $method_name;
       $func = _payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
         $method_output = $func('customer-view', $arg1);
@@ -1148,7 +1139,7 @@ function uc_payment_by_order_form($order_id) {
   $order = uc_order_load($order_id);
 
   if ($order === FALSE) {
-    drupal_set_message('Order '. $order_id .' does not exist.');
+    drupal_set_message(t('Order %id does not exist.', array('%id' => $order_id)));
     drupal_goto('admin/store/orders');
   }
 
@@ -1475,7 +1466,10 @@ function uc_payment_process($method, $order_id, $amount, $data = NULL, $default 
  * Enter a payment for an order.
  */
 function uc_payment_enter($order_id, $method, $amount, $uid, $data, $comment) {
-  $method_name = _payment_method_data($method, 'name');
+  $method_name = _payment_method_data($method, 'review');
+  if (empty($method_name)) {
+    $method_name = _payment_method_data($method, 'name');
+  }
   if (is_null($method_name)) {
     $method_name = t('Other');
   }

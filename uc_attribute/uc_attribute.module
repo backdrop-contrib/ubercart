@@ -105,7 +105,8 @@ function uc_attribute_menu($may_cache){
     // Insert subitems into the edit node page for product types.
     if (arg(0) == 'node' && is_numeric(arg(1))){
       $node = node_load(arg(1));
-      if ($node->nid && $node->type == 'product'){
+      $types = uc_product_node_info();
+      if ($node->nid && in_array($node->type, array_keys($types))){
         $items[] = array('path' => 'node/'. arg(1) .'/edit/product',
           'title' => t('product'),
           'weight' => -10,
@@ -161,9 +162,6 @@ function uc_attribute_form_alter($form_id, &$form){
       $form = _uc_attribute_alter_form($form);
     }
   }
-  if ($form_id == 'uc_product_class_delete_confirm'){
-    $form['#submit']['uc_class_attribute_delete_submit'] = array();
-  }
 }
 
 /**
@@ -186,7 +184,7 @@ function uc_attribute_nodeapi(&$node, $op, $arg3 = null, $arg4 = null){
 }
 
 /******************************************************************************
- * Übercart Hooks                                                             *
+ * Ubercart Hooks                                                             *
  ******************************************************************************/
 
 /**
@@ -215,6 +213,31 @@ function uc_attribute_product_class($type, $op){
       db_query("DELETE FROM {uc_class_attributes} WHERE pcid = '%s'", $type);
       db_query("DELETE FROM {uc_class_attribute_options} WHERE pcid = '%s'", $type);
     break;
+  }
+}
+
+/**
+ * Implementation of hook_cart_item().
+ */
+function uc_attribute_cart_item($op, &$item) {
+  switch ($op) {
+    case 'load':
+      $item->options = _uc_cart_product_get_options($item);
+      $op_costs = 0;
+      $op_prices = 0;
+      $op_weight = 0;
+      foreach ($item->options as $option){
+        $op_costs += $option['cost'];
+        $op_prices += $option['price'];
+        $op_weight += $option['weight'];
+      }
+      $item->cost += $op_costs;
+      $item->price += $op_prices;
+      $item->weight += $op_weight;
+      if (!empty($item->data['model'])) {
+        $item->model = $item->data['model'];
+      }
+      break;
   }
 }
 
@@ -383,7 +406,7 @@ function uc_attribute_option_form($attr_id, $opt_id = null){
   $form['weight'] = array('#type' => 'textfield',
     '#title' => t('Default Weight'),
     '#default_value' => $option->weight,
-    '#description' => t('Adjusts the produt weight by this value in pounds.'),
+    '#description' => t('Adjusts the product weight by this value in pounds.'),
     '#weight' => 2,
   );
   $form['ordering'] = array('#type' => 'weight',
@@ -396,7 +419,7 @@ function uc_attribute_option_form($attr_id, $opt_id = null){
     $form['oid'] = array('#type' => 'hidden', '#value' => $opt_id);
   }
   $form['submit'] = array('#type' => 'submit', '#value' => t('Submit'),
-    '#weight' => 4,
+    '#weight' => 10,
   );
   return $form;
 }
@@ -458,6 +481,18 @@ function uc_attribute_option_delete_confirm_submit($form_id, $form_values){
  * Form builder to associate attributes with products.
  */
 function uc_object_attributes_form($id, $type){
+  $location = array();
+  $location[] = menu_get_item(null, 'admin');
+  $location[] = menu_get_item(null, 'admin/store');
+  $location[] = menu_get_item(null, 'admin/store/products');
+  $location[] = menu_get_item(null, 'admin/store/products/attributes');
+  $breadcrumb = drupal_get_breadcrumb();
+  foreach ($location as $item){
+    $breadcrumb[] = l($item['title'], $item['path']);
+  }
+  drupal_set_breadcrumb($breadcrumb);
+  
+  $form['admin_link'] = array('#value' => l(t('Attributes administration'), 'admin/store/products/attributes'));
   if ($type == 'product'){
     $product = node_load($id);
     drupal_set_title(check_plain($product->title));
@@ -522,6 +557,7 @@ function uc_object_attributes_form($id, $type){
 }
 
 function theme_uc_object_attributes_form($form){
+  $output = drupal_render($form['admin_link']);
   $header = array(t('Remove'), t('Name'), t('Default Option'), t('Order'));
   if (count(element_children($form['chosen_attr']))){
     foreach (element_children($form['chosen_attr']) as $attr){
@@ -531,7 +567,7 @@ function theme_uc_object_attributes_form($form){
   else{
     $rows[] = array(array('data' => t('No attributes have been selected. Add some below.'), 'colspan' => 4));
   }
-  $output = theme('table', $header, $rows);
+  $output .= theme('table', $header, $rows);
   
   $output .= drupal_render($form);
   return $output;
@@ -580,6 +616,18 @@ function uc_object_attributes_form_submit($form_id, $form_values){
 }
 
 function uc_object_options_form($obj_id, $type){
+  $location = array();
+  $location[] = menu_get_item(null, 'admin');
+  $location[] = menu_get_item(null, 'admin/store');
+  $location[] = menu_get_item(null, 'admin/store/products');
+  $location[] = menu_get_item(null, 'admin/store/products/attributes');
+  $breadcrumb = drupal_get_breadcrumb();
+  foreach ($location as $item){
+    $breadcrumb[] = l($item['title'], $item['path']);
+  }
+  drupal_set_breadcrumb($breadcrumb);
+  
+  $form['admin_link'] = array('#value' => l(t('Attributes administration'), 'admin/store/products/attributes'));
   if ($type == 'product'){
     $product = node_load($obj_id);
     drupal_set_title(check_plain($product->title));
@@ -661,6 +709,7 @@ function uc_object_options_form($obj_id, $type){
 }
 
 function theme_uc_object_options_form($form){
+  $output = drupal_render($form['admin_link']);
   $header = array(t('Attribute'), t('Default Option'), array('colspan' => 5, 'data' => t('Options')));
   $rows = array();
   foreach (element_children($form['prod_attr']) as $key){
@@ -695,7 +744,7 @@ function theme_uc_object_options_form($form){
     }
     $rows[] = array(array('data' => '<hr />', 'colspan' => 7));
   }
-  $output = theme('table', $header, $rows, array('class' => 'product_attributes'));
+  $output .= theme('table', $header, $rows, array('class' => 'product_attributes'));
   $output .= drupal_render($form);
   return $output;
 }
@@ -760,6 +809,18 @@ function uc_object_options_form_submit($form_id, $form_values){
  * Form builder to associate option combinations with mutations of a product's model number.
  */
 function uc_product_adjustments_form($nid){
+  $location = array();
+  $location[] = menu_get_item(null, 'admin');
+  $location[] = menu_get_item(null, 'admin/store');
+  $location[] = menu_get_item(null, 'admin/store/products');
+  $location[] = menu_get_item(null, 'admin/store/products/attributes');
+  $breadcrumb = drupal_get_breadcrumb();
+  foreach ($location as $item){
+    $breadcrumb[] = l($item['title'], $item['path']);
+  }
+  drupal_set_breadcrumb($breadcrumb);
+  
+  $form['admin_link'] = array('#value' => l(t('Attributes administration'), 'admin/store/products/attributes'));
   $node = node_load($nid);
   drupal_set_title(check_plain($node->title));
   //$model = db_result(db_query("SELECT model FROM {uc_products} WHERE nid = %d", $nid));
@@ -768,6 +829,7 @@ function uc_product_adjustments_form($nid){
   $query_select = "SELECT DISTINCT";
   $query_from = " FROM";
   $query_where = " WHERE";
+  $query_order = " ORDER BY";
   $result = db_query("SELECT * FROM {uc_product_attributes} AS pa LEFT JOIN {uc_attributes} AS a ON pa.aid = a.aid WHERE nid = %d", $nid);
   $num_prod_attr = db_num_rows($result);
   $i = 1;
@@ -779,6 +841,7 @@ function uc_product_adjustments_form($nid){
     $query_from .= " ({uc_product_options} AS po$i LEFT JOIN {uc_attribute_options} AS ao$i ON po$i.oid = ao$i.oid AND po$i.nid = %d),";
     $values[] = $nid;
     $query_where .= " ao$i.aid = ". $prod_attr->aid ." AND";
+    $query_order .= " po$i.ordering, ao$i.name,";
     ++$i;
     $attribute_names .= '<th>'. $prod_attr->name .'</th>';
     $attribute_ids[] = $prod_attr->aid;
@@ -787,6 +850,7 @@ function uc_product_adjustments_form($nid){
   $query_select = rtrim($query_select, ',');
   $query_from = rtrim($query_from, ',');
   $query_where = substr($query_where, 0, strlen($query_where) - 4);
+  $query_order = rtrim($query_order, ',');
   // $query_where .= " po1.nid = %d";
   if ($num_prod_attr){
     //Get previous values
@@ -796,14 +860,14 @@ function uc_product_adjustments_form($nid){
       $old_vals[] = $obj;
     }
 
-    $result = db_query($query_select . $query_from . $query_where, $values);
+    $result = db_query($query_select . $query_from . $query_where . $query_order, $values);
     
     $form['original'] = array('#value' => $model,
       '#prefix' => '<br /><h2>',
       '#suffix' => '</h2>',
     );
     $form['default'] = array('#type' => 'value', '#value' => $model);
-    $form['attributes'] = array('#value' => theme('uc_attribute', 'attributes', $attribute_ids, $nid));
+    //$form['attributes'] = array('#value' => theme('uc_attribute', 'attributes', $attribute_ids, $nid));
     //$form['query'] = array('#value' => '<pre>'. print_r($old_vals, true) .'</pre>');
     $form['table'] = array('#prefix' => '<table class="combinations">', '#suffix' => '</table>');
     $form['table']['head'] = array('#prefix' => '<thead><tr>',
@@ -816,22 +880,23 @@ function uc_product_adjustments_form($nid){
       '#tree' => true,
     );
     $i = 0;
-    $old_index = 0;
     while ($combo = db_fetch_object($result)){
       $cells = '';
       $row_title = '';
       $comb_array = array();
       for ($j = 1; $j <= $num_prod_attr; ++$j){
-        $cells .= '<td>'. $combo->{'oid'.$j} .'</td>';
-        $row_title .= $combo->{'name'.$j} .' -- ';
+        $cells .= '<td>'. $combo->{'name'.$j} .'</td>';
+        $row_title .= $combo->{'name'.$j} .', ';
         $comb_array[$combo->{'aid'.$j}] = $combo->{'oid'.$j};
       }
-      $row_title = substr($row_title, 0, strlen($row_title) - 4);
+      $row_title = substr($row_title, 0, strlen($row_title) - 2);
       $serial_array = serialize($comb_array);
       $default_model = $model;
-      if ($old_vals[$old_index]->combination == $serial_array){
-        $default_model = $old_vals[$old_index]->model;
-        $old_index++;
+      foreach ($old_vals as $ov){
+        if ($ov->combination == $serial_array){
+          $default_model = $ov->model;
+          break;
+        }
       }
       $form['table']['body'][$i] = array('#prefix' => '<tr title="'. $row_title .'">', '#suffix' => '</tr>');
       $form['table']['body'][$i]['combo'] = array('#type' => 'markup',
@@ -1076,11 +1141,4 @@ function _uc_attribute_sort($a, $b){
   else{
     return ($a->ordering < $b->ordering) ? -1 : 1;
   }
-}
-
-function uc_class_attribute_delete_submit($form_id, $form_values){
-  if ($form_values['confirm']){
-    db_query("DELETE FROM {uc_class_attributes} WHERE pcid = '%s'", $form_values['pcid']);
-    db_query("DELETE FROM {uc_class_attribute_options} WHERE pcid = '%s'", $form_values['pcid']);
-  }  
 }

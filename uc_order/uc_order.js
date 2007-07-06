@@ -71,7 +71,7 @@ function apply_address(type, address_str) {
   if ($('#edit-' + type + '-country').val() != address['country']) {
     $('#edit-' + type + '-country').val(address['country']);
     try {
-      uc_update_zone_select('edit-' + type + '-country', address['zone']);
+      uc_update_zone_select('#edit-' + type + '-country', address['zone']);
     }
     catch (err) {}
   }

@@ -17,12 +17,12 @@ function uc_weightquote_menu($may_cache){
   $items = array();
   
   if ($may_cache){
-    $items[] = array('path' => 'admin/store/settings/quotes/weightquote',
+    $items[] = array('path' => 'admin/store/settings/quotes/methods/weightquote',
       'access' => user_access('configure quotes'),
-      'title' => t('Weight quote settings'),
+      'title' => t('Weight quote'),
       'callback' => 'drupal_get_form',
       'callback arguments' => array('uc_weightquote_admin_settings'),
-      'type' => MENU_NORMAL_ITEM,
+      'type' => MENU_LOCAL_TASK,
     );
   }
   
@@ -35,7 +35,9 @@ function uc_weightquote_menu($may_cache){
  * Adds a form element for the shipping rate of a product.
  */
 function uc_weightquote_form_alter($form_id, &$form){
-  if ($form_id == 'product_node_form'){
+  $node = $form['#node'];
+  $product_types = uc_product_node_info();
+  if ($form_id == $node->type .'_node_form' && isset($product_types[$node->type])){
     $enabled = variable_get('uc_quote_enabled', array('weightquote' => true));
     $form['shipping']['weightquote'] = array('#type' => 'fieldset',
       '#title' => t('Shipping Rate by Weight'),
@@ -93,11 +95,11 @@ function uc_weightquote_shipping_method(){
   $methods = array();
   
   $enabled = variable_get('uc_quote_enabled', array('weightquote' => true, 'order rate' => false));
-  $weight = variable_get('uc_quote_weight', array('weightquote' => 0, 'order rate' => 1));
+  $weight = variable_get('uc_quote_method_weight', array('weightquote' => 0, 'order rate' => 1));
   $methods['weightquote'] = array(
     'id' => 'weightquote',
     'module' => 'uc_weightquote',
-    'title' => t('Flat Rate per Product'),
+    'title' => t('Weight Rate per Product'),
     'enabled' => $enabled['weightquote'],
     'quote' => array(
       'type' => 'order',
@@ -122,8 +124,8 @@ function uc_weightquote_shipping_method(){
  */
 function uc_weightquote_admin_settings(){
   $form['uc_weightquote_base_rate'] = array('#type' => 'textfield',
-    '#title' => t('Base cost'),
-    '#description' => t('The base price of weight based shipping costs.'),
+    '#title' => t('Base price'),
+    '#description' => t('The starting price of weight based shipping costs.'),
     '#default_value' => variable_get('uc_weightquote_base_rate', 0),
     '#size' => 16,
     '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
@@ -140,10 +142,6 @@ function uc_weightquote_admin_settings(){
   );
 
   return system_settings_form($form);
-}
-
-function uc_weightquote_fulfill_order($order){
-  
 }
 
 /******************************************************************************
