@@ -359,8 +359,11 @@ function uc_catalog_settings_overview(){
         t('The catalog breadcrumb will be shown.') :
         t('The catalog breadcrumb will not be shown.'),
       variable_get('uc_catalog_block_nodecount', true) ?
-        t('The number of nodes in a category tree will be shown in the catalog block.') :
-        t('The number of nodes in a category tree will not be shown in the catalog block.'),
+        t('The number of nodes in a category will be shown in the catalog block.') :
+        t('The number of nodes in a category will not be shown in the catalog block.'),
+      variable_get('uc_catalog_breadcrumb_nodecount', true) ?
+        t('The number of nodes in a category will be shown in the catalog breadcrumb.') :
+        t('The number of nodes in a category will not be shown in the catalog breadcrumb.'),
       variable_get('uc_catalog_show_subcategories', true) ?
         t('Subcategories with no products to display will be shown on category pages.') :
         t('Subcategories with no products to display will not be shown on category pages.'),
@@ -553,7 +556,7 @@ function theme_uc_catalog_browse(){
   $child_list = array();
   foreach ($catalog->children as $child){
     if ($child->nodes){
-      $links[] = array('title' => $child->name .' ('. $child->nodes .')', 'href' => uc_catalog_term_path($child),
+      $links[] = array('title' => $child->name . (variable_get('uc_catalog_breadcrumb_nodecount', true) ? ' ('. $child->nodes .')' : ''), 'href' => uc_catalog_term_path($child),
         'attributes' => array('rel' => 'tag'),
       );
     }
@@ -613,7 +616,7 @@ function theme_uc_catalog_browse(){
   }
   if (count($catalog->products)){
     if (count($links)){
-      $output .= '>> ' . theme('links', $links, array('class' => 'links inline')) ."<br />\n";
+      $output .= theme('links', $links, array('class' => 'links inline')) ."<br />\n";
     }
     $output .= $catalog->description;
     $output .= theme('uc_catalog_products', $catalog->products);
@@ -692,13 +695,18 @@ function uc_catalog_admin_form(){
     '#default_value' => variable_get('uc_catalog_block_nodecount', true),
   );
   
+  $form['uc_catalog_breadcrumb_nodecount'] = array('#type' => 'checkbox',
+    '#title' => t('Display node counts in Catalog Breadcrumb'),
+    '#default_value' => variable_get('uc_catalog_breadcrumb_nodecount', true),
+  );
+  
   $form['uc_catalog_show_subcategories'] = array('#type' => 'checkbox',
     '#title' => t('Display subcategories in catalog view'),
     '#default_value' => variable_get('uc_catalog_show_subcategories', true),
   );
   $form['uc_catalog_expand_categories'] = array('#type' => 'checkbox',
     '#title' => t('Always expand categories in catalog block'),
-    '#default_value' => variable_get('uc_catalog_expand_categoires', false),
+    '#default_value' => variable_get('uc_catalog_expand_categories', false),
   );
   
   return system_settings_form($form);
@@ -825,6 +833,7 @@ function _uc_catalog_navigation($branch){
 
   $expand = variable_get('uc_catalog_expand_categories', false);
   $link = l($branch->name . $num_text, uc_catalog_term_path($branch));
+  $active_link = l($branch->name .$num_text, uc_catalog_term_path($branch), array('class' => 'active'));
   if ($expand || count($branch->children)){
     $lis = array();
     foreach($branch->children as $twig){
@@ -836,27 +845,33 @@ function _uc_catalog_navigation($branch){
     }
 
     if ($here){
-      $output = '<li class="expanded"><strong>'. $branch->name . $num_text ."</strong>\n";
-      $output .= '<ul class="menu">';
-      foreach ($lis as $li){
-        $output .= $li ."\n";
+      $output = '<li class="expanded"><strong>'. $active_link ."</strong>\n";
+      if (count($lis)){
+        $output .= '<ul class="menu">';
+        foreach ($lis as $li){
+          $output .= $li ."\n";
+        }
+        $output .= "</ul>\n";
       }
-      $output .= "</ul>\n</li>";
+      $output .= "</li>";
     }
     elseif ($expand || $inpath){
       $output = '<li class="expanded">'. $link ."\n";
-      $output .= '<ul class="menu">';
-      foreach ($lis as $li){
-        $output .= $li;
+      if (count($lis)){
+        $output .= '<ul class="menu">';
+        foreach ($lis as $li){
+          $output .= $li;
+        }
+        $output .= "</ul>\n";
       }
-      $output .= "</ul>\n</li>";
+      $output .= "</li>";
     }
     else{
       $output = '<li class="collapsed">'. $link ."</li>\n";
     }
   }
   else{
-    $output = '<li class="leaf">'. ($inpath ? '<strong>' : '') . ($here ? $branch->name .$num_text : $link) . ($inpath ? '</strong>' : '') .'</li>'. "\n";
+    $output = '<li class="leaf">'. ($inpath ? '<strong>' : '') . ($here ? $active_link : $link) . ($inpath ? '</strong>' : '') .'</li>'. "\n";
   }
   // Tell parent category your status, and pass on output.
   return array($inpath, $output);

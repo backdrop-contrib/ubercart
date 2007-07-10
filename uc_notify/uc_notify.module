@@ -300,39 +300,6 @@ function uc_notify_headers($extras = array()) {
   return $extras;
 }
 
-/**
- * Return the standard variables for the email filter.
- */
-function uc_notify_variables($order = NULL) {
-  $vars = array(
-    '@site' => variable_get('uc_store_name', t('our store')),
-    '@site_url' => l(variable_get('uc_store_name', t('our store')), uc_baseurl('cart/checkout/complete')),
-    '@site_slogan' => variable_get('site_slogan', ''),
-    '@login_url' => url('user', NULL, NULL, TRUE),
-    '@sales_email' => variable_get('uc_store_email_from', ''),
-    '@phone' => variable_get('uc_store_phone', '')
-  );
-
-  if (!is_null($order)) {
-    if (variable_get('uc_customer_list_address', 'billing') == 'shipping') {
-      $vars['@customer_first_name'] = $order->delivery_first_name;
-      $vars['@customer_last_name'] = $order->delivery_last_name;
-    }
-    else {
-      $vars['@customer_first_name'] = $order->billing_first_name;
-      $vars['@customer_last_name'] = $order->billing_last_name;
-    }
-    $vars['@customer_shipping_address'] = uc_order_address($order, 'delivery');
-    $vars['@customer_billing_address'] = uc_order_address($order, 'billing');
-    $vars['@customer_email'] = $order->primary_email;
-    $vars['@order_url'] = url('user/'. $order->uid .'/order/'. $order->order_id, NULL, NULL, TRUE);
-    $vars['!order_id'] = $order->order_id;
-    $vars['!order_total'] = uc_currency_format($order->order_total);
-  }
-
-  return $vars;
-}
-
 function uc_notify_template_options() {
   $templates = uc_invoice_template_list();
   $templates = drupal_map_assoc(uc_invoice_template_list());

@@ -130,13 +130,15 @@ function uc_taxes_form($tax_id = 0, $form_values = null){
       $form['name'] = array('#type' => 'textfield',
         '#title' => t('Name'),
         '#default_value' => isset($form_values['name']) ? $form_values['name'] : '',
-        '#required' => true,
+        '#validate' => array('uc_taxes_element_validate' => array()),
+        //'#required' => true,
       );
       $form['type'] = array('#type' => 'select',
         '#title' => t('Scope'),
         '#options' => array('code' => uc_get_field_name('postal_code'), 'zone' => uc_get_field_name('zone'), 'country' => uc_get_field_name('country')),
         '#default_value' => isset($form_values['type']) ? $form_values['type'] : 'code',
-        '#required' => true,
+        '#validate' => array('uc_taxes_element_validate' => array()),
+        //'#required' => true,
       );
       $form['area'] = array('#type' => 'hidden', '#value' => $form_values['area']);
       $form['rate'] = array('#type' => 'hidden', '#value' => $form_values['rate']);
@@ -159,7 +161,8 @@ function uc_taxes_form($tax_id = 0, $form_values = null){
               A "*" may be used as a wild card to set a rate for multiple areas.
               Example: In the US, 402* represents all areas from 40200 to 40299.'),
             '#size' => 15,
-            '#required' => true,
+            '#validate' => array('uc_taxes_element_validate' => array()),
+            //'#required' => true,
           );
         break;
         case 'zone':
@@ -189,7 +192,8 @@ function uc_taxes_form($tax_id = 0, $form_values = null){
         '#description' => t('The tax rate as a percent or decimal. Examples: 6%, .06'),
         '#default_value' => isset($form_values['rate']) ? $form_values['rate'] : '',
         '#size' => 15,
-        '#required' => true,
+        '#validate' => array('uc_taxes_element_validate' => array()),
+        //'#required' => true,
       );
       $options = array();
       foreach(_line_item_list() as $line_item){
@@ -260,6 +264,14 @@ function theme_uc_taxes_form($form){
   $output .= drupal_render($form);
   
   return $output;
+}
+
+function uc_taxes_element_validate($elements){
+  if ($GLOBALS['form_values']['op'] == t('Submit') || $GLOBALS['form_values']['op'] == t('Next')){
+    if (empty($elements['#value']) && $elements['#value'] !== '0') {
+      form_error($elements, t('!name field is required.', array('!name' => $elements['#title'])));
+    }
+  }
 }
 
 function uc_taxes_form_submit($form_id, $form_values){

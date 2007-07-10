@@ -356,6 +356,9 @@ function uc_store_help($section){
 function uc_store_cron(){
   if (variable_get('uc_store_opt_in', TRUE)){
     $prev_time = variable_get('uc_store_prev_time', 0);
+    if ($prev_time < time() - 86390){
+      $prev_time = time() - 86390;
+    }
     $later = strtotime("tomorrow", $prev_time);
     if (time() > $later){ // Run updates once a day.
       $vars = array();
@@ -385,6 +388,7 @@ function uc_store_cron(){
         }
       }
         
+      $vars['currency'] = variable_get('uc_currency_code', 'USD');
       $result = db_query("SELECT COUNT(DISTINCT o.order_id) AS orders, SUM(o.order_total) AS sales FROM {uc_orders} AS o WHERE o.order_status = 4 GROUP BY o.order_status");
       if ($stats = db_fetch_array($result)){
         if (variable_get('uc_store_opt_in_orders', TRUE)){
@@ -2475,16 +2479,6 @@ function uc_range($low, $high, $step = 1) {
   }
 
   return $arr;
-}
-
-function uc_baseurl($file = 'install.php') {
-  $proto = $_SERVER['HTTPS'] ? 'https://' : 'http://';
-  $host = $_SERVER['SERVER_NAME'];
-  $port = ($_SERVER['SERVER_PORT'] == 80 ? '' : ':'. $_SERVER['SERVER_PORT']);
-  $uri = preg_replace("/\?.*/", '', $_SERVER['REQUEST_URI']);
-  $dir = str_replace("/$file", '', $uri);
-
-  return "$proto$host$port$dir";
 }
 
 function uc_store_address() {
