@@ -1,0 +1,184 @@
+<?php
+
+/**
+ * @file
+ * Allows a multisite setup to share changes to the catalog.
+ */
+
+function uc_repeater_menu($may_cache){
+  $items = array();
+  
+  if ($may_cache){
+    $items[] = array('path' => 'admin/store/settings/repeater',
+      'title' => t('Repeater settings'),
+      'access' => user_access('administer catalog repeater'),
+      'callback' => 'uc_repeater_settings_overview',
+      'type' => MENU_NORMAL_ITEM,
+    );
+    $items[] = array('path' => 'admin/store/settings/repeater/overview',
+      'title' => t('Overview'),
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => -10,
+    );
+    $items[] = array('path' => 'admin/store/settings/repeater/edit',
+      'title' => t('Edit'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('uc_repeater_admin_settings'),
+      'type' => MENU_LOCAL_TASK,
+    );
+  }
+  else{
+    $items[] = array('path' => 'repeater/import',
+      'access' => TRUE,
+      'callback' => 'uc_repeater_import',
+      'type' => MENU_CALLBACK,
+    );
+  }
+  
+  return $items;
+}
+
+function uc_repeater_perm(){
+  return array('administer catalog repeater');
+}
+
+function uc_repeater_form_alter($form_id, &$form){
+  $node = $form['#node'];
+  $product_types = uc_product_node_info();
+  if (is_object($node) && $form_id == $node->type .'_node_form' && isset($product_types[$node->type])){
+    $form['uc_repeater_export'] = array('#type' => 'checkbox',
+      '#title' => t('Export to other sites'),
+      '#default_value' => 0,
+    );
+  }
+}
+
+function uc_repeater_nodeapi(&$node, $op, $arg3 = null, $arg4 = null){
+  switch ($op){
+    case 'insert':
+    case 'update':
+      if ($node->uc_repeater_export){
+        // Reset cached nodes to send the new node content.
+        node_load(0, null, true);
+        uc_repeater_export($node->nid);
+      }
+    break;
+  }
+}
+
+function uc_repeater_settings_overview(){
+  $slaves = variable_get('uc_repeater_slaves', array());
+  $masters = variable_get('uc_repeater_masters', array());
+  $sections = array(
+    array(
+      'edit' => 'admin/store/settings/repeater/edit',
+      'title' => t('Slave sites'),
+      'items' => (count($slaves) ? $slaves : array(t('None'))),
+    ),
+    array(
+      'edit' => 'admin/store/settings/repeater/edit',
+      'title' => t('Master sites'),
+      'items' => (count($masters) ? $masters : array(t('None'))),
+    ),
+  );
+  return theme('uc_settings_overview', $sections);
+}
+
+function uc_repeater_admin_settings(){
+  $form = array(
+    '#description' => t('In each field enter the host name and path to the Drupal installation of the sites that interact with this site. Do not include a trailing slash. E.g.: www.othersite.com<br />copy.yoursite.net/store<br />etc.'),
+  );
+  
+  $form['uc_repeater_slaves'] = array('#type' => 'textarea',
+    '#title' => t('Slave sites'),
+    '#default_value' => implode("\n", variable_get('uc_repeater_slaves', array())),
+    '#description' => t('These sites will receive catalog changes from this site. They must recognize this site as a master (see below).'),
+  );
+  $form['uc_repeater_masters'] = array('#type' => 'textarea',
+    '#title' => t('Master sites'),
+    '#default_value' => implode("\n", variable_get('uc_repeater_masters', array())),
+    '#description' => t('These sites send catalog changes to this site.'),
+  );
+  
+  $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
+  $form['buttons']['reset'] = array('#type' => 'submit', '#value' => t('Reset to defaults') );
+
+  if (!empty($_POST) && form_get_errors()) {
+    drupal_set_message(t('The settings have not been saved because of the errors.'), 'error');
+  }
+  
+  return $form;
+}
+
+function uc_repeater_admin_settings_submit($form_id, $form_values){
+  if ($form_values['op'] == t('Reset to defaults')) {
+    variable_del('uc_repeater_slaves');
+    variable_del('uc_repeater_masters');
+    drupal_set_message(t('The configuration options have been reset to their default values.'));
+  }
+  else {
+    foreach (array('uc_repeater_slaves', 'uc_repeater_masters') as $var){
+      $values = array_filter(explode("\n", trim($form_values[$var])));
+      foreach ($values as $key => $input){
+        $url = explode(' ', trim($input), 2);
+        if ($url[0]){
+          $site = parse_url($url[0]);
+          $values[$key] = $site['host'] . (isset($site['port']) ? ':'. $site['port'] : '') . $site['path'];
+        }
+      }
+      variable_set($var, $values);
+    }
+    drupal_set_message(t('The configuration options have been saved.'));
+  }
+}
+
+/**
+ * Pushes new products to other sites.
+ */
+function uc_repeater_export($nids = array()){
+  if (count($nids)){
+    if (count($nids) == 1){
+      // Most awesome use of casting ever: wrap in an array if not an array.
+      $nids = (array)$nids;
+    }
+    //drupal_set_message('<pre>'. print_r($nids, true) .'</pre>');
+    $xml = uc_importer_export($nids);
+    //drupal_set_message('<pre>'. htmlentities($xml) .'</pre>');
+    if ($xml){
+      $responses = array();
+      foreach (variable_get('uc_repeater_slaves', array()) as $site){
+        $responses[$site] = drupal_http_request('http://'. $site .'/repeater/import/'. md5($_SERVER['SERVER_NAME'] . substr(base_path(), 0, -1)) .'/'. md5($xml), array('Content-Type' => 'text/xml'), 'POST', $xml);
+        //watchdog('uc_repeater', htmlentities($xml) ."<br/>$site:<pre>". print_r($responses[$site], true) ."</pre>", WATCHDOG_NOTICE);
+      }
+    }
+  }
+}
+
+function uc_repeater_import($site_hash = null, $xml_hash = null){
+  $valid_site = false;
+  foreach (variable_get('uc_repeater_masters', array()) as $site){
+    if (md5($site) == $site_hash){
+      $valid_site = true;
+    }
+  }
+  
+  if ($valid_site){
+    $xml = file_get_contents('php://input');
+  }
+  else{
+    die("Yeah, that's not a good way to get me to do things.");
+  }
+  if (!$xml){
+    die('Needs must have POST data. And as a hint, it should be XML.');
+  }
+  else if (md5($xml) != $xml_hash){
+    die("You really don't know how this site works, do you?");
+  }
+/*   $dom = new DOMDocument();
+  $dom->loadXML($xml);
+  if (!$dom->schemaValidate('http://www.ubercart.org/files/store.xsd')){
+    die("Did not validate against the schema.<br /><pre>". htmlentities($xml) .'</pre>');
+  } */
+  uc_importer_import($xml);
+  die("Maybe a successful import. :P");
+}

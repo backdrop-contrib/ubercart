@@ -31,9 +31,9 @@ class xml2Array {
                   xml_error_string(xml_get_error_code($this->resParser)),
                   xml_get_current_line_number($this->resParser)));
     }
-                        
+
     xml_parser_free($this->resParser);
-        
+
     return $this->arrOutput;
   }
 

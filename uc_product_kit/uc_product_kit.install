@@ -12,19 +12,21 @@ function uc_product_kit_install(){
         `qty` smallint(6) NOT NULL,
         `discount` float NOT NULL default 0.0,
         `data` text NOT NULL,
+        `ordering` smallint NOT NULL default 0,
         PRIMARY KEY  (`nid`, `product_id`)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
     break;
     case 'pgsql':
-      db_query('CREATE TABLE {uc_product_kits} (
-        "nid" mediumint(9) NOT NULL,
-        "product_id" mediumint(9) NOT NULL,
-        "mutable" smallint(1) NOT NULL default 0,
-        "qty" smallint(6) NOT NULL,
-        "discount" float NOT NULL default 0.0,
-        "data" text NOT NULL,
-        PRIMARY KEY  ("nid", "product_id")
-      );');
+      db_query("CREATE TABLE {uc_product_kits} (
+        nid integer NOT NULL default 0,
+        product_id integer NOT NULL default 0,
+        mutable smallint NOT NULL default 0,
+        qty smallint NOT NULL default 0,
+        discount float NOT NULL default 0.0,
+        data text NOT NULL default '',
+        orderint smallint NOT NULL default 0,
+        PRIMARY KEY  (nid, product_id)
+      );");
     break;
   }
 }
@@ -46,6 +48,20 @@ function uc_product_kit_update_1(){
       $ret[] = update_sql("ALTER TABLE {uc_product_kits} ADD PRIMARY KEY (nid, product_id)");
       db_add_column($ret, 'uc_product_kits', 'mutable', 'smallint', array('not null' => true, 'default' => 0));
       db_add_column($ret, 'uc_product_kits', 'discount', 'float', array('not null' => true, 'default' => 0.0));
+    break;
+  }
+  return $ret;
+}
+
+function uc_product_kit_update_2(){
+  $ret = array();
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_product_kits} ADD COLUMN ordering smallint NOT NULL default 0");
+    break;
+    case 'pgsql':
+      db_add_column($ret, 'uc_product_kits', 'ordering', 'smallint', array('not null' => true, 'default' => 0));
     break;
   }
   return $ret;

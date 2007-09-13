@@ -1,0 +1,1115 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Converts xml into product listings and vice versa.
+ */
+
+/**
+ * Do not save objects if the database already contains their names.
+ */
+define('UC_IMPORTER_DO_NOTHING', 0);
+
+/**
+ * Replace objects if the database already contains their names.
+ */
+define('UC_IMPORTER_REPLACE', 1);
+
+/**
+ * Append '_#' to the names of objects already in the database.
+ */
+define('UC_IMPORTER_INCREMENT', 2);
+
+/******************************************************************************
+ * Drupal Hooks                                                               *
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_perm().
+ */
+function uc_importer_perm(){
+  return array('import', 'export');
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function uc_importer_menu($may_cache){
+  $items = array();
+  
+  if ($may_cache){
+    $items[] = array('path' => 'admin/store/products/export',
+      'access' => user_access('export'),
+      'title' => t('Export'),
+      'callback' => 'uc_importer_export_page',
+      'type' => MENU_NORMAL_ITEM,
+    );
+    $items[] = array('path' => 'admin/store/products/import',
+      'access' => user_access('import'),
+      'title' => t('Import'),
+      'callback' => 'uc_importer_import_page',
+      'type' => MENU_NORMAL_ITEM,
+    );
+    $items[] = array('path' => 'admin/store/settings/importer',
+      'access' => user_access('import'),
+      'title' => t('Importer settings'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('uc_importer_admin_settings'),
+      'type' => MENU_NORMAL_ITEM,
+    );
+  }
+  
+  return $items;
+}
+
+function uc_importer_requirements($phase){
+  $requirements = array();
+  $t = get_t();
+  
+  $requirements['simplexml'] = array(
+    'title' => $t('SimpleXML'),
+    'description' => $t('The Übercart Importer module requires the PHP SimpleXML extension. It is enabled by default in PHP version 5'),
+  );
+  if ($sxml_version = phpversion('simplexml')){
+    $requirements['simplexml']['value'] = $sxml_version;
+  }
+  else{
+    $requirements['simplexml']['severity'] = REQUIREMENT_ERROR;
+  }
+  
+  return $requirements;
+}
+
+/******************************************************************************
+ * Menu Callbacks                                                             *
+ ******************************************************************************/
+
+function uc_importer_admin_settings(){
+  $form = array();
+  
+  $form['uc_importer_handle_duplicates'] = array('#type' => 'radios',
+    '#title' => t('How should similarly named items be handled during import?'),
+    '#options' => array(
+      UC_IMPORTER_DO_NOTHING => t('Do not save the new item.'),
+      UC_IMPORTER_REPLACE => t('Overwrite the existing item.'),
+      UC_IMPORTER_INCREMENT => t('Save the new item as a separate entity,'),
+    ),
+    '#default_value' => variable_get('uc_importer_handle_duplicates', UC_IMPORTER_DO_NOTHING),
+  );
+  $account = user_load(array('uid' => variable_get('uc_importer_user', 0)));
+  $form['uc_importer_user'] = array('#type' => 'textfield',
+    '#title' => t('Authored by'),
+    '#maxlength' => 60,
+    '#autocomplete_path' => 'user/autocomplete',
+    '#default_value' => $account ? $account->name : '',
+    '#description' => t('The "author" of imported products. Leave blank for %anonymous.', array('%anonymous' => variable_get('anonymous', t('Anonymous'))))
+  );
+
+  $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
+  $form['buttons']['reset'] = array('#type' => 'submit', '#value' => t('Reset to defaults') );
+
+  if (!empty($_POST) && form_get_errors()) {
+    drupal_set_message(t('The settings have not been saved because of the errors.'), 'error');
+  }
+  
+  return $form;
+}
+
+function uc_importer_admin_settings_validate($form_id, $form_values){
+  if (!empty($form_values['uc_importer_user']) && !($account = user_load(array('name' => $form_values['uc_importer_user'])))) {
+    // The use of empty() is mandatory in the context of usernames
+    // as the empty string denotes the anonymous user. In case we
+    // are dealing with an anonymous user we set the user ID to 0.
+    form_set_error('uc_importer_user', t('The username %name does not exist.', array('%name' => $form_values['uc_importer_user'])));
+  }
+}
+
+function uc_importer_admin_settings_submit($form_id, $form_values){
+  if ($op == t('Reset to defaults')) {
+    variable_del('uc_importer_handle_duplicates');
+    variable_del('uc_importer_user');
+    drupal_set_message(t('The configuration options have been reset to their default values.'));
+  }
+  else{
+    if ($account = user_load(array('name' => $form_values['uc_importer_user']))) {
+      variable_set('uc_importer_user', $account->uid);
+    }
+    else {
+      variable_set('uc_importer_user', 0);
+    }
+    variable_set('uc_importer_handle_duplicates', $form_values['uc_importer_handle_duplicates']);
+    drupal_set_message(t('The configuration options have been saved.'));
+  }
+}
+
+/**
+ * Wrapper function to generate a page to hold the export form.
+ */
+function uc_importer_export_page(){
+  drupal_add_js(drupal_get_path('module', 'uc_product') .'/uc_product.js', 'module');
+  $output = '';
+  $nids = array();
+  $args = func_get_args();
+  foreach ($args as $nid){
+    if (is_numeric($nid)){
+      $nids[] = (int)$nid;
+    }
+  }
+  $settings = array(
+    'div' => '#products-selector',
+    'class' => 'product-ubrowser',
+    'vid' => variable_get('uc_catalog_vid', 0),
+    'filter' => implode(',', array_keys(uc_product_node_info())),
+    'search' => 'true',
+    'nids' => 'true',
+    'nodesg' => 'product',
+    'nodepl' => 'products',
+    'multi' => 'true',
+    'select' => 'buffer_products("'. base_path() .'","'. file_create_url('') .'")',
+  );
+
+  if (module_exists('uc_catalog')) {
+    $output .= ubrowser($settings, 'products-selector');
+    $output .= drupal_get_form('uc_importer_export_buffer_form', $nids);
+  }
+  else{
+    $output .= drupal_get_form('uc_importer_export_form');
+  }
+
+  return $output;
+}
+
+/**
+ * Wrapper function to generate a page to hold the import form.
+ */
+function uc_importer_import_page(){
+  return drupal_get_form('uc_importer_import_form');
+}
+
+/******************************************************************************
+ * Module Functions                                                           *
+ ******************************************************************************/
+
+function uc_importer_export_form(){
+  $form = array();
+  
+  $products = array();
+  $result = db_query(db_rewrite_sql("SELECT nid, model FROM {uc_products}"));
+  while ($product = db_fetch_object($result)){
+    $products[$product->nid] = $product->model;
+  }
+  $form['nids'] = array('#type' => 'select',
+    '#multiple' => true,
+    '#title' => t('Products'),
+    '#options' => $products,
+    '#description' => t('Hold "Ctrl" to select multiple items.'),
+  );
+  $form['submit'] = array('#type' => 'submit', '#value' => t('Export'));
+  
+  return $form;
+}
+
+function uc_importer_export_form_submit($form_id, $form_values){
+  if (count($form_values['nids'])){
+    $xml = uc_importer_export((array)$form_values['nids']);
+    if ($file = file_save_data($xml, file_directory_temp() .'/uc_export.xml', FILE_EXISTS_REPLACE)){
+      //drupal_set_message(print_r($file, true));
+      file_transfer($file, array(
+        'Content-Type: application/xml',
+        'Content-Length: '. filesize($file),
+        'Content-Disposition: attachment; filename="'. $file .'"',
+      ));
+    }
+  }
+}
+
+/**
+ * Form to collect the id numbers of all the store components to be exported.
+ */
+function uc_importer_export_buffer_form($nids){
+  $form = array();
+  
+  $buffer = '';
+  foreach ($nids as $nid){
+    $node = node_load($nid);
+    $buffer .= theme('imagecache', 'thumbnail', $node->field_image_cache['filepath']);
+  }
+  $form['#attributes'] = array('class' => 'product-buffer');
+  $form['thumbnails'] = array('#type' => 'markup',
+    '#value' => '<div id="buffer-images"></div>',
+  );
+  $form['products'] = array('#type' => 'hidden',
+  );
+  $form['reset'] = array('#type' => 'submit',
+    '#value' => t('Reset'),
+  );
+  $form['submit'] = array('#type' => 'submit',
+    '#value' => t('Export'),
+  );
+
+  return $form;
+}
+
+function uc_importer_export_buffer_form_submit($form_id, $form_values){
+  $item = menu_get_item(menu_get_active_item());
+  //drupal_set_message(print_r($form_values, true));
+  if ($form_values['op'] == t('Reset')){
+    return $item['path'];
+  }
+  else{
+    $products = array_filter(explode('/', $form_values['products']));
+    //drupal_set_message('<pre>'. print_r($products, true) .'</pre>');
+    $xml = uc_importer_export($products);
+    if ($file = file_save_data($xml, file_directory_temp() .'/uc_export.xml', FILE_EXISTS_REPLACE)){
+      //drupal_set_message(print_r($file, true));
+      file_transfer($file, array(
+        'Content-Type: application/xml',
+        'Content-Length: '. filesize($file),
+        'Content-Disposition: attachment; filename="'. $file .'"',
+      ));
+    }
+  }
+}
+
+/**
+ * Upload form for an XML file to be imported.
+ */
+function uc_importer_import_form(){
+  $form = array();
+  $form['#attributes'] = array('enctype' => "multipart/form-data");
+
+  $form['file'] = array('#type' => 'file',
+    '#title' => t('Import XML File'),
+  );
+  $form['directory'] = array('#type' => 'textfield',
+    '#title' => t('Directory containing XML files'),
+  );
+  $form['submit'] = array('#type' => 'submit',
+    '#value' => t('Import'),
+  );
+  
+  return $form;
+}
+
+/**
+ * Submit function for uc_importer_import_form().
+ */
+function uc_importer_import_form_submit($form_id, $form_values){
+  $file = file_check_upload('file');
+  if ($file){
+    $file = file_save_upload($file);
+    drupal_set_message(t('File uploaded successfully.'));
+    //drupal_set_message('<pre>'. print_r($file, true) .'</pre>');
+    if ($xml = file_get_contents($file->filepath)){
+      uc_importer_import($xml);
+    }
+  }
+  else if ($form_values['directory']){
+    file_scan_directory(file_directory_path() .'/'. $form_values['directory'], '.*\.xml$', array('.', '..', 'CVS'), 'uc_import_directory_parse');
+  }else{
+    drupal_set_message(t('Error: File failed to upload.'), 'error');
+  }
+}
+
+/**
+ * Constructs the XML representation of the store from the ids given.
+ *
+ * @param $data
+ *   Array containing the following keys:
+ *   categories:
+ *     List of term ids in the product catalog.
+ *   attributes
+ *     List of attribute ids.
+ *   classes
+ *     List of class ids.
+ *   products
+ *     List of node ids representing products.
+ * @return
+ *   Path to XML file created from parameters.
+ */
+function uc_importer_export($nids){
+  $data = array(
+    'categories' => array(),
+    'manufacturers' => array(),
+    'categories' => array(),
+    'attributes' => array(),
+    'classes' => array(),
+    'products' => array(),
+  );
+  foreach ($nids as $nid){
+    $data['products'][] = $nid;
+    $node = node_load($nid);
+    if (uc_product_class_load($node->type)){
+      $data['classes'][] = $node->type;
+    }
+    foreach ($node->taxonomy as $tid => $term){
+      if ($term->vid == variable_get('uc_catalog_vid', 0) && !in_array($term->tid, $data['categories'])){
+        foreach (taxonomy_get_parents_all($term->tid) as $parent){
+          // First $parent is $term, so no special case needed
+          $data['categories'][] = $parent->tid;
+        }
+      }
+      elseif ($term->vid == variable_get('uc_manufacturer_vid', 0)){
+        $data['manufacturers'][] = $tid;
+      }
+    }
+    if (module_exists('uc_attribute')){
+      $data['attributes'] += array_keys(uc_product_get_attributes($nid));
+    }
+  }
+  foreach ($data as $type => $ids){
+    $data[$type] = array_unique($ids);
+  }
+  //drupal_set_message('<pre>'. print_r($data, true) .'</pre>');
+  $xml = '<?xml version="1.0"?>'. "\n";
+  $xml .= '<store xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.ubercart.org http://www.ubercart.org/files/store.xsd">';
+  if (is_array($data['categories']) && !empty($data['categories'])){
+    $xml .= _uc_importer_export_categories($data['categories']);
+  }
+  if (is_array($data['manufacturers']) && !empty($data['manufacturers'])){
+    $xml .= _uc_importer_export_manufacturers($data['manufacturers']);
+  }
+  if (is_array($data['attributes']) && !empty($data['attributes'])){
+    $xml .= _uc_importer_export_attributes($data['attributes']);
+  }
+  if (is_array($data['classes']) && !empty($data['classes'])){
+    $xml .= _uc_importer_export_classes($data['classes']);
+  }
+  if (is_array($data['products']) && !empty($data['products'])){
+    $xml .= _uc_importer_export_products($data['products']);
+  }
+  if (is_array($data['orders']) && !empty($data['orders'])){
+    $xml .= _uc_importer_export_orders($data['orders']);
+  }
+  $xml .= '</store>';
+  
+  //drupal_set_message(htmlspecialchars($xml));
+  return $xml;
+}
+
+/**
+ * Export categories as XML.
+ */
+function _uc_importer_export_categories($categories){
+  $xml .= '<categories>';
+  foreach ($categories as $tid){
+    $xml .= '<category>';
+    $term = taxonomy_get_term($tid);
+    $parents = taxonomy_get_parents($tid);
+    $xml .= '<id>'. $term->tid .'</id>';
+    $xml .= '<name>'. htmlentities($term->name) .'</name>';
+    $xml .= '<description>'. htmlentities($term->description) .'</description>';
+    foreach ($parents as $parent){
+      $xml .= '<parent>'. $parent->tid .'</parent>';
+    }
+    $xml .= '</category>';
+  }
+  $xml .= '</categories>';
+  return $xml;
+}
+
+/**
+ * Export manufacturers as XML.
+ */
+function _uc_importer_export_manufacturers($manufacturers){
+  $xml = '<manufacturers>';
+  foreach ($manufacturers as $tid){
+    $manufacturer = uc_manufacturer_load($tid);
+    $xml .= '<manufacturer>';
+    $xml .= '<id>'. $manufacturer->tid .'</id>';
+    $xml .= '<name>'. htmlentities($manufacturer->name) .'</name>';
+    $xml .= isset($manufacturer->url) && !empty($manufacturer->url) ? ('<url>'. $manufacturer->url .'</url>') : '';
+    $xml .= isset($manufacturer->phone_no) && !empty($manufacturer->phone_no) ? ('<phone_no>'. $manufacturer->phone_no .'</phone_no>') : '';
+    $xml .= isset($manufacturer->fax_no) && !empty($manufacturer->fax_no) ? ('<fax_no>'. $manufacturer->fax_no .'</fax_no>') : '';
+    $xml .= '</manufacturer>';
+  }
+  $xml .= '</manufacturers>';
+  return $xml;
+}
+
+/**
+ * Export product attributes as XML.
+ */
+function _uc_importer_export_attributes($attributes){
+  $xml = '<attributes>';
+  foreach ($attributes as $aid){
+    $attribute = uc_attribute_load($aid, 'product');
+    $xml .= '<attribute>';
+    $xml .= '<id>'. $attribute->aid .'</id>';
+    $xml .= '<name>'. htmlentities($attribute->name) .'</name>';
+    $xml .= '<ordering>'. $attribute->ordering .'</ordering>';
+    $xml .= '<options>';
+    if (is_array($attribute->options)){
+      foreach ($attribute->options as $option){
+        $xml .= '<option>';
+        $xml .= '<id>'. $option->oid .'</id>';
+        $xml .= '<name>'. htmlentities($option->name) .'</name>';
+        $xml .= '<price>'. $option->price .'</price>';
+        $xml .= '<weight>'. $option->weight .'</weight>';
+        $xml .= '<ordering>'. $option->ordering .'</ordering>';
+        $xml .= '</option>';
+      }
+    }
+    $xml .= '</options>';
+    $xml .= '</attribute>';
+  }
+  $xml .= '</attributes>';
+  return $xml;
+}
+
+/**
+ * Export product node types as XML.
+ */
+function _uc_importer_export_classes($classes){
+  $xml = '<classes>';
+  foreach ($classes as $pcid){
+    $class = uc_product_class_load($pcid);
+    $xml .= '<class>';
+    $xml .= '<id>'. $class->pcid .'</id>';
+    $xml .= '<name>'. $class->name .'</name>';
+    $xml .= '<description>'. $class->description .'</description>';
+    $xml .= '</class>';
+  }
+  $xml .= '</classes>';
+  return $xml;
+}
+
+/**
+ * Export products as XML.
+ */
+function _uc_importer_export_products($products){
+  $xml = '<products>';
+  foreach ($products as $nid){
+    $xml .= '<product>';
+    $product = node_load($nid);
+    $xml .= '<unique_hash>'. $product->unique_hash .'</unique_hash>';
+    $xml .= '<id>'. $product->nid .'</id>';
+    $xml .= '<type>'. $product->type .'</type>';
+    $xml .= '<name>'. htmlentities($product->title) .'</name>';
+    $xml .= '<description>'. htmlentities($product->body) .'</description>';
+    $xml .= '<model>'. htmlentities($product->model) .'</model>';
+    if (module_exists('uc_manufacturer')){
+      $manufacturer = uc_product_get_manufacturer($product->nid);
+      $xml .= isset($manufacturer->tid) ? ('<manufacturer>'. htmlentities($manufacturer->name) .'</manufacturer>') : '';
+    }
+    $xml .= isset($product->list_price) ? ('<list_price>'. $product->list_price .'</list_price>') : '';
+    $xml .= isset($product->cost) ? ('<cost>'. $product->cost .'</cost>') : '';
+    $xml .= '<sell_price>'. $product->sell_price .'</sell_price>';
+    $xml .= '<weight>'. $product->weight .'</weight>';
+    if (isset($product->field_image_cache) && file_exists($product->field_image_cache[0]['filepath'])){
+      foreach ($product->field_image_cache as $image){
+        $xml .= '<image>';
+        $xml .= '<path>'. $image['filepath'] .'</path>';
+        if (!empty($image['alt'])){
+          $xml .= '<alt>'. $image['alt'] .'</alt>';
+        }
+        if (!empty($image['title'])){
+          $xml .= '<title>'. $image['title'] .'</title>';
+        }
+        $xml .= '</image>';
+      }
+    }
+    if (module_exists('content')){
+      $type = content_types($product->type);
+      if (count($type['fields'])){
+        $xml .= '<fields>';
+        foreach ($type['fields'] as $field){
+          if ($field['field_name'] != 'field_image_cache'){
+            $node_field = isset($product->$field['field_name']) ? $product->$field['field_name'] : array();
+            if (count($node_field)){
+              $xml .= '<field>';
+              $xml .= '<name>'. $field['field_name'] .'</name>';
+              foreach ($node_field as $columns){
+                $xml .= '<delta>';
+                foreach ($columns as $name => $value){
+                  $xml .= '<'. $name .'>'. $value .'</'. $name .'>';
+                }
+                $xml .= '</delta>';
+              }
+              $xml .= '</field>';
+            }
+          }
+        }
+        $xml .= '</fields>';
+      }
+    }
+    if (module_exists('taxonomy')){
+      $terms = taxonomy_node_get_terms_by_vocabulary($product->nid, variable_get('uc_catalog_vid', 0));
+      $xml .= '<categories>';
+      foreach ($terms as $term){
+        $xml .= '<category>';
+        $xml .= '<id>'. $term->tid .'</id>';
+        $xml .= '</category>';
+      }
+      $xml .= '</categories>';
+    }
+    if (module_exists('uc_attribute')){
+      $attributes = uc_product_get_attributes($product->nid);
+      if (!empty($attributes)){
+        $xml .= '<attributes>';
+        foreach ($attributes as $attribute){
+          $xml .= '<attribute>';
+          $xml .= '<id>'. $attribute->aid .'</id>';
+          $xml .= '<name>'. htmlentities($attribute->name) .'</name>';
+          $xml .= '<ordering>'. $attribute->ordering .'</ordering>';
+          $xml .= '<default_option>'. $attribute->default_option .'</default_option>';
+          if (!empty($attribute->options)){
+            $xml .= '<options>';
+            foreach ($attribute->options as $option){
+              $xml .= '<option>';
+              $xml .= '<id>'. $option->oid .'</id>';
+              $xml .= '<name>'. htmlentities($option->name) .'</name>';
+              $xml .= '<price>'. $option->price .'</price>';
+              $xml .= '<weight>'. $option->weight .'</weight>';
+              $xml .= '<ordering>'. $option->ordering .'</ordering>';
+              $xml .= '</option>';
+            }
+            $xml .= '</options>';
+          }
+          $xml .= '</attribute>';
+        }
+        $xml .= '</attributes>';
+      }
+      $result = db_query("SELECT combination, model FROM {uc_product_adjustments} WHERE nid = %d", $product->nid);
+      if (db_num_rows($result)){
+        $xml .= '<adjustments>';
+        while ($adjustment = db_fetch_object($result)){
+          $xml .= '<adjustment>';
+          $xml .= '<combination>'. htmlentities($adjustment->combination) .'</combination>';
+          $xml .= '<model>'. htmlentities($adjustment->model) .'</model>';
+          $xml .= '</adjustment>';
+        }
+        $xml .= '</adjustments>';
+      }
+    }
+    $xml .= '</product>';
+  }
+  $xml .= '</products>';
+  return $xml;
+}
+
+/**
+ * Export orders as XML.
+ */
+function _uc_importer_export_orders($orders){
+  $xml = '<orders>';
+  foreach ($orders as $order_id){
+    $order = uc_order_load($order_id);
+    if (!empty($order)){
+      $xml .= '<order>';
+      $xml .= '<order_status>'. uc_order_get_status_name($order->order_status) .'</order_status>';
+      $xml .= '<order_total>'. $order->order_total .'</order_total>';
+      $xml .= '<primary_email>'. htmlentities($order->primary_email) .'</primary_email>';
+      $xml .= '<delivery_first_name>'. htmlentities($order->delivery_first_name) .'</delivery_first_name>';
+      $xml .= '<delivery_last_name>'. htmlentities($order->delivery_last_name) .'</delivery_last_name>';
+      $xml .= '<delivery_phone>'. htmlentities($order->delivery_phone) .'</delivery_phone>';
+      $xml .= '<delivery_company>'. htmlentities($order->delivery_company) .'</delivery_company>';
+      $xml .= '<delivery_street1>'. htmlentities($order->delivery_street1) .'</delivery_street1>';
+      $xml .= '<delivery_street2>'. htmlentities($order->delivery_street2) .'</delivery_street2>';
+      $xml .= '<delivery_city>'. htmlentities($order->delivery_city) .'</delivery_city>';
+      $xml .= '<delivery_zone>'. $order->delivery_zone .'</delivery_zone>';
+      $xml .= '<delivery_zip>'. htmlentities($order->delivery_zip) .'</delivery_zip>';
+      $xml .= '<delivery_country>'. $order->delivery_country .'</delivery_country>';
+      $xml .= '<billing_first_name>'. htmlentities($order->billing_first_name) .'</billing_first_name>';
+      $xml .= '<billing_last_name>'. htmlentities($order->billing_last_name) .'</billing_last_name>';
+      $xml .= '<billing_phone>'. htmlentities($order->billing_phone) .'</billing_phone>';
+      $xml .= '<billing_company>'. htmlentities($order->billing_company) .'</billing_company>';
+      $xml .= '<billing_street1>'. htmlentities($order->billing_street1) .'</billing_street1>';
+      $xml .= '<billing_street2>'. htmlentities($order->billing_street2) .'</billing_street2>';
+      $xml .= '<billing_city>'. htmlentities($order->billing_city) .'</billing_city>';
+      $xml .= '<billing_zone>'. $order->billing_zone .'</billing_zone>';
+      $xml .= '<billing_zip>'. htmlentities($order->billing_zip) .'</billing_zip>';
+      $xml .= '<billing_country>'. $order->billing_country .'</billing_country>';
+      $xml .= '<payment_method>'. $order->payment_method .'</payment_method>';
+      if (!empty($order->products)){
+        $xml .= '<products>';
+        foreach ($order->products as $product){
+          $xml .= '<product>';
+          $xml .= '<qty>'. $product->qty .'</qty>';
+          $xml .= '<name>'. htmlentities($product->title) .'</name>';
+          if ($product->manufacturer){
+            $xml .= '<manufacturer>'. htmlentities($product->manufacturer) .'</manufacturer>';
+          }
+          $xml .= '<model>'. htmlentities($product->model) .'</model>';
+          $xml .= '<cost>'. $product->cost .'</cost>';
+          $xml .= '<price>'. $product->price .'</price>';
+          $xml .= '<weight>'. $product->weight .'</weight>';
+          $xml .= '<data>'. htmlentities($product->data) .'</data>';
+          $xml .= '</product>';
+        }
+        $xml .= '</products>';
+        $quote = $order->quote;
+        $xml .= '<quote>';
+          $xml .= '<method>'. $quote['method'] .'</method>';
+          $xml .= '<accessorials>'. $quote['accessorials'] .'</accessorials>';
+          $xml .= '<rate>'. $quote['rate'] .'</rate>';
+          $xml .= '<quote_form>'. htmlentities($quote['quote_form']) .'</quote_form>';
+        $xml .= '</quote>';
+        if (!empty($order->line_items)){
+          $xml .= '<line_items>';
+          foreach ($order->line_items as $line_item){
+            $xml .= '<line_item>';
+            $xml .= '<type>'. $line_item['type'] .'</type>';
+            $xml .= '<title>'. htmlentities($line_item['title']) .'</title>';
+            $xml .= '<amount>'. $line_item['amount'] .'</amount>';
+            $xml .= '<weight>'. $line_item['weight'] .'</weight>';
+            $xml .= '</line_item>';
+          }
+          $xml .= '</line_items>';
+        }
+      }
+      $xml .= '</order>';
+    }
+  }
+  $xml .= '</orders>';
+  return $xml;
+}
+
+/**
+ * Imports an XML document into the database.
+ *
+ * The script checks for objects that have the same names as those in the XML
+ * document. If it finds a duplicate, it may replace that object with the XML,
+ * create a new object with marker indicating its imported status, or abort the
+ * importing of that particular object.
+ */
+function uc_importer_import($xml){
+  global $user, $active_db;
+  
+  $error = '';
+  /* $data = new DOMDocument();
+  $data->loadXML($xml);
+  
+  if (!$data){
+    $error = "Error: Could not load XML.";
+  }
+  else{ */
+    /* if (!($data->schemaValidate('http://www.ubercart.org/files/store.xsd'))){
+      $error = "Error: XML is not validated by schema.";
+    }
+    else{ */
+      $id_map = array('categories' => array(), 'manufacturers' => array(), 'attributes' => array(), 'options' => array(), 'classes' => array(), 'products' => array());
+      $action = variable_get('uc_importer_handle_duplicates', UC_IMPORTER_DO_NOTHING);
+      $store = simplexml_load_string($xml);
+      $categories = array();
+      foreach ($store->categories->category as $category_data){
+        $name =(string)$category_data->name;
+        $result = db_query("SELECT tid FROM {term_data} WHERE name = '%s'", $name);
+        if (db_num_rows($result) && $action != UC_IMPORTER_INCREMENT){
+          $id_map['categories'][(string)$category_data->id] = db_result($result);
+        }
+        else{
+          $tid = db_next_id('{term_data}_tid');
+          $id_map['categories'][(string)$category_data->id] = $tid;
+          db_query("INSERT INTO {term_data} (tid, vid, name, description) VALUES (%d, %d, '%s', '%s')", $tid, variable_get('uc_catalog_vid', 0), (string)$category_data->name, (string)$category_data->description);
+        }
+      }
+      foreach ($store->categories->category as $category_data){
+        if (isset($id_map['categories'][(string)$category_data->parent]) || (string)$category_data->parent == 0){
+          switch ($action){
+            case UC_IMPORTER_INCREMENT:
+            case UC_IMPORTER_REPLACE:
+              db_query("INSERT IGNORE INTO {term_hierarchy} (tid, parent) VALUES (%d, %d)", $id_map['categories'][(string)$category_data->id], $id_map['categories'][(string)$category_data->parent]);
+            break;
+          }          
+        }
+      }
+      db_query("DELETE FROM {term_hierarchy} WHERE tid = parent");
+      foreach ($store->manufacturers->manufacturer as $manufacturer_data){
+        $manufacturer = new stdClass();
+        foreach ($manufacturer_data->children() as $datum){
+          $manufacturer->{$datum->getName()} = (string)$datum;
+        }
+        $result = db_query("SELECT tid FROM {term_data} WHERE name LIKE '%s\\__' OR name LIKE '%s'", $manufacturer->name, $manufacturer->name);
+        if ($tid = db_result($result)){
+          switch ($action){
+            case UC_IMPORTER_REPLACE:
+              drupal_execute('taxonomy_form_term', (array)$manufacturer, variable_get('uc_manufacturer_vid', 0), array('tid' => $tid));
+            break;
+            case UC_IMPORTER_INCREMENT:
+              $manufacturer->name .= '_'. db_num_rows($result);
+              drupal_execute('taxonomy_form_term', (array)$manufacturer, variable_get('uc_manufacturer_vid', 0));
+            break;
+          }
+        }
+        else{
+          drupal_execute('taxonomy_form_term', (array)$manufacturer, variable_get('uc_manufacturer_vid', 0));
+        }
+      }
+      foreach ($store->attributes->attribute as $attribute_data){
+        $attribute = new stdClass();
+        $attribute->name = html_entity_decode($attribute_data->name);
+        $attribute->ordering = isset($attribute_data->ordering) ? (integer)$attribute_data->ordering : 0;
+        $result = db_query("SELECT aid FROM {uc_attributes} WHERE name LIKE '%s\\__' OR name LIKE '%s'", $attribute->name, $attribute->name);
+        if ($aid = db_result($result)){
+          if ($action == UC_IMPORTER_INCREMENT){
+            $attribute->name .= '_'. db_num_rows($result);
+            drupal_execute('uc_attribute_form', (array)$attribute);
+          }
+        }
+        else{
+          drupal_execute('uc_attribute_form', (array)$attribute);
+          $aid = db_result(db_query("SELECT aid FROM {uc_attributes} WHERE name = '%s'", $attribute->name));
+        }
+        if ($aid){
+          $id_map['attributes'][(string)$attribute_data->id] = $aid;
+          $attribute->options = array();
+          foreach ($attribute_data->options->option as $option_data){
+            $option = new stdClass();
+            $option->name = html_entity_decode($option_data->name);
+            $option->price = isset($option_data->price) ? (float)$option_data->price : 0;
+            $option->weight = isset($option_data->weight) ? (float)$option_data->weight : 0;
+            $option->ordering = isset($option_data->ordering) ? (integer)$option_data->ordering : 0;
+            $result = db_query("SELECT oid FROM {uc_attribute_options} WHERE aid = %d AND (name LIKE '%s\\__' OR name LIKE '%s')", $aid, $option->name, $option->name);
+            if ($oid = db_result($result)){
+              switch ($action){
+                case UC_IMPORTER_INCREMENT:
+                  $option->name .= '_'. db_num_rows($result);
+                  drupal_execute('uc_attribute_option_form', (array)$option, $aid);
+                  $id_map['options'][(string)$option_data->id] = mysql_insert_id($active_db);
+                break;
+                case UC_IMPORTER_REPLACE:
+                  drupal_execute('uc_attribute_option_form', (array)$option, $aid, $oid);
+                case UC_IMPORTER_DO_NOTHING:
+                  $id_map['options'][(string)$option_data->id] = $oid;
+                break;
+              }
+            }
+            else{
+              drupal_execute('uc_attribute_option_form', (array)$option, $aid);
+              $id_map['options'][(string)$option_data->id] = mysql_insert_id($active_db);
+            }
+          }
+        }
+      }
+      $class = 'class'; // keyword workaround
+      foreach ($store->classes->$class as $class_data){
+        $class = new stdClass();
+        $class->pcid = (string)$class_data->id;
+        $class->name = (string)$class_data->name;
+        $class->description = (string)$class_data->description;
+        $result = db_query("SELECT pcid FROM {uc_product_classes} WHERE pcid = '%s'", $class->pcid);
+        if ($pcid = db_result($result)){
+          switch ($action){
+            case UC_IMPORTER_REPLACE:
+              drupal_execute('uc_product_class_form', (array)$class, $class->pcid);
+            break;
+            case UC_IMPORTER_INCREMENT:
+              drupal_execute('uc_product_class_form', (array)$class);
+            break;
+          }
+        }
+        else{
+          drupal_execute('uc_product_class_form', (array)$class, $class->pcid);
+        }
+      }
+      foreach ($store->products->product as $product_data){
+        $product = new stdClass();
+        watchdog('importer', '<pre>'. print_r($product_data->unique_hash, true) .'</pre>');
+        if (!isset($product_data->unique_hash)){
+          $product_data->addChild('unique_hash', md5((string)$product_data->nid . (string)$product_data->model . (string)$product_data->list_price . (string)$product_data->cost . (string)$product_data->sell_price . (string)$product_data->weight . (string)$product_data->units . (string)$product_data->default_qty . time()));
+        }
+        if ($nid = db_result(db_query("SELECT nid FROM {uc_products} WHERE unique_hash LIKE '%s'", (string)$product_data->unique_hash))){
+          switch ($action){
+            case UC_IMPORTER_REPLACE;
+              $product->nid = $nid;
+              $product->revision = true;
+              $id_map['products'][(string)$product_data->id] = $nid;
+            break;
+            case UC_IMPORTER_INCREMENT:
+              $product->nid = $nid = db_next_id('{node}_nid');
+              unset($product_data->unique_hash);
+              $id_map['products'][(string)$product_data->id] = $nid;
+            break;
+            case UC_IMPORTER_DO_NOTHING:
+              $product->nid = $nid;
+              $id_map['products'][(string)$product_data->id] = $nid;
+            continue 2;
+          }
+        }
+        $product->type = (string)$product_data->type;
+        $product->uid = $user->uid;
+        $product->log = t('Imported product from XML.');
+        $product->name = $user->name;
+        $product->status = 1;
+        $product->format = 3;
+        foreach ($product_data->categories->category as $category_data){
+          $product->taxonomy[] = $id_map['categories'][(string)$category_data->id];
+        }
+        $product->unique_hash = (string)$product_data->unique_hash;
+        $product->title = html_entity_decode((string)$product_data->name);
+        $product->body = html_entity_decode((string)$product_data->description);
+        $product->model = html_entity_decode((string)$product_data->model);
+        if ($manufacturer = variable_get('uc_manufacturer_vid', 0)){
+          $product->taxonomy['tags'][$manufacturer] = html_entity_decode((string)$product_data->manufacturer);
+        }
+        $product->list_price = (float)$product_data->list_price;
+        $product->cost = (float)$product_data->cost;
+        $product->sell_price = (float)$product_data->sell_price;
+        $product->weight = (float)$product_data->weight;
+        $i = 0;
+        foreach ($product_data->image as $image){
+          $image_path = (string)$image->path;
+          $path_info = pathinfo($image_path);
+          $local_path = file_create_path() .'/ubercart_images/'. $_SERVER['HTTP_HOST'];
+          if (!file_check_directory($local_path)){
+            $local_path = file_create_path() .'/ubercart_images';
+          }
+          $local_path .= '/'. basename($image_path);
+          if (file_exists($local_path) || $size = file_put_contents($local_path, fopen($image_path, 'rb'))){
+            $product->field_image_cache[$i] = array(
+              'fid' => (file_exists($local_path) ? db_result(db_query("SELECT fid FROM {files} WHERE nid = %d AND filepath = '%s'", $nid, $local_path)) : 'upload'),
+              'title' => isset($image->title) ? html_entity_decode((string)$image->title) : '',
+              'alt' => isset($image->alt) ? html_entity_decode((string)$image->alt) : '',
+              'filename' => basename($image_path),
+              'filepath' => $local_path,
+              'filesize' => (file_exists($local_path) ? @filesize($local_path) : $size),
+              'filemime' => 'image/'. $path_info['extension'],
+            );
+            $i++;
+          }
+        }
+        if (isset($product_data->fields)){
+          $fields = array();
+          foreach ($product_data->fields->field as $field_data){
+            foreach ($field_data->delta as $delta){
+              $columns = array();
+              foreach ($delta->children() as $value_data){
+                $columns[$value_data->getName()] = html_entity_decode((string)$value_data);
+              }
+              $field_name = html_entity_decode((string)$field_data->name);
+              if (!is_array($product->$field_name)){
+                $product->$field_name = array();
+              }
+              array_push($product->$field_name, $columns);
+            }
+          }
+        }
+        watchdog('importer', '<pre>'. print_r($product_data, true) .'</pre>');
+        watchdog('importer', '<pre>'. print_r($product, true) .'</pre>');
+        node_save($product);
+        if (!isset($product->nid)){
+          $product->nid = db_result(db_query("SELECT id FROM {sequences} WHERE name = '{node}_nid'"));
+        }
+        $id_map['products'][(string)$product_data->id] = $product->nid;
+        if (module_exists('uc_attribute')){
+          $attr_replace = array();
+          $attr_values = array();
+          $opt_replace = array();
+          $opt_values = array();
+          foreach($product_data->attributes->attribute as $attribute_data){
+            if (!isset($id_map['attributes'][(string)$attribute_data->id])){
+              $attribute = new stdClass();
+              $attribute->name = html_entity_decode((string)$attribute_data->name);
+              $attribute->ordering = isset($attribute_data->ordering) ? (integer)$attribute_data->ordering : 0;
+              drupal_execute('uc_attribute_form', (array)$attribute);
+              $id_map['attributes'][(string)$attribute_data->id] = db_result(db_query("SELECT aid FROM {uc_attributes} WHERE name = '%s'", $attribute->name));
+            }
+            $attr_replace[] = '%d,%d,%d,%d';
+            $attr_values[] = $product->nid;
+            $attr_values[] = $id_map['attributes'][(string)$attribute_data->id];
+            $attr_values[] = isset($attribute_data->ordering) ? (integer)$attribute_data->ordering : 0;
+            foreach ($attribute_data->options->option as $option_data){
+              if (!isset($id_map['options'][(string)$option_data->id])){
+                $option = new stdClass();
+                $option->name = html_entity_decode((string)$option_data->name);
+                $option->price = $option_data->price;
+                $option->weight = $option_data->weight;
+                $option->ordering = isset($option_data->ordering) ? (integer)$option_data->ordering : 0;
+                drupal_execute('uc_attribute_option_form', (array)$option, $id_map['attributes'][(string)$attribute_data->id]);
+                $id_map['options'][(string)$option_data->id] = mysql_insert_id($active_db);
+              }
+              $opt_replace[] = '%d,%d,%f,%f,%d';
+              $opt_values[] = $product->nid;
+              $opt_values[] = $id_map['options'][(string)$option_data->id];
+              $opt_values[] = $option_data->price;
+              $opt_values[] = $option_data->weight;
+              $opt_values[] = isset($option_data->ordering) ? (integer)$option_data->ordering : 0;
+            }
+            $default_option = isset($attribute_data->default_option) ? (string)$attribute_data->default_option : $attribute_data->options->option[0]->id;
+            $attr_values[] = $id_map['options'][$default_option];
+          }
+          if (count($attr_values)){
+            db_query("DELETE FROM {uc_product_attributes} WHERE nid = %d", $product->nid);
+            db_query("INSERT INTO {uc_product_attributes} (nid, aid, ordering, default_option) VALUES (". implode('),(', $attr_replace) .")", $attr_values);
+          }
+          if (count($opt_values)){
+            db_query("DELETE FROM {uc_product_options} WHERE nid = %d", $product->nid);
+            db_query("INSERT INTO {uc_product_options} (nid, oid, price, weight, ordering) VALUES (". implode('),(', $opt_replace) .")", $opt_values);
+          }
+          $adjustments = array('nid' => $product->nid, 'default' => $product->model, 'body' => array());
+          foreach ($product_data->adjustments->adjustment as $adjustment_data){
+            $combination = array();
+            $old_combo = unserialize(html_entity_decode((string)$adjustment_data->combination));
+            if (is_array($old_combo)){
+              foreach ($old_combo as $aid => $oid){
+                $combination[$id_map['attributes'][$aid]] = $id_map['options'][$oid];
+              }
+              $adjustments['body'][] = array(
+                'combo_array' => serialize($combination),
+                'model' => html_entity_decode((string)$adjustment_data->model),
+              );
+            }
+          }
+          if (count($adjustments['body'])){
+            drupal_execute('uc_product_adjustments_form', $adjustments, $product->nid);
+          }
+        }
+      }
+    //}
+    //drupal_set_message('<pre>'. print_r($id_map, true) .'</pre>');
+    cache_clear_all();
+  //}
+  
+  if ($error){
+    drupal_set_message($error, 'error');
+  }
+}
+
+function uc_importer_directory_parse($filename){
+  if ($xml = file_get_contents($filename)){
+    uc_importer_import($xml);
+  }
+}
+
+function uc_importer_orders($xml){
+  $id_map = array(
+    'statuses' => array(
+      1  => 1,
+      20 => 0,
+      30 => 1,
+      40 => 2,
+      50 => 3,
+      60 => 4,
+      70 => 4,
+      -20 => -1,
+      -10 => 0,
+    ),
+    'countries' => array(
+      38 => 124,  // Canada
+      138 => 484, // Mexico
+      223 => 840, // United States
+      240 => 158, // Taiwan
+      241 => 826, // United Kingdom
+      242 => 276, // Germany
+    ),
+    'orders' => array(),
+    'products' => array(),
+  );
+  $store = simplexml_load_string($xml);
+  foreach ($store->orders->order as $order_data){
+    $uid = 0;
+    $user = user_load(array('mail' => (string)$order_data->primary_email));
+    if ($user){
+      $uid = $user->uid;
+    }
+    $status = $id_map['statuses'][(int)$order_data->order_status];
+    $order = uc_order_new($uid, $status);
+    $order_fields = array(
+      'order_status',
+      'order_total',
+      'primary_email',
+      'delivery_first_name',
+      'delivery_last_name',
+      'delivery_phone',
+      'delivery_company',
+      'delivery_street1',
+      'delivery_street2',
+      'delivery_city',
+      'delivery_zone',
+      'delivery_postal_code',
+      'billing_first_name',
+      'billing_last_name',
+      'billing_phone',
+      'billing_company',
+      'billing_street1',
+      'billing_street2',
+      'billing_city',
+      'billing_zone',
+      'billing_postal_code',
+      'payment_method',
+      'modified',
+      'created',
+    );
+    foreach ($order_fields as $field){
+      $order->$field = (string)$order_data->$field;
+    }
+    $order->delivery_country = $id_map['countries'][(string)$order_data->delivery_country];
+    $order->billing_country = $id_map['countries'][(string)$order_data->billing_country];
+    db_query("UPDATE {uc_orders} SET uid = %d, order_status = %d, order_total = %f, primary_email = '%s', "
+          ."delivery_first_name = '%s', delivery_last_name = '%s', delivery_phone = '%s', "
+          ."delivery_company = '%s', delivery_street1 = '%s', delivery_street2 = '%s', "
+          ."delivery_city = '%s', delivery_zone = %d, delivery_postal_code = '%s', delivery_country = %d, "
+          ."billing_first_name = '%s', billing_last_name = '%s', billing_phone = '%s', "
+          ."billing_company = '%s', billing_street1 = '%s', billing_street2 = '%s', "
+          ."billing_city = '%s', billing_zone = %d, billing_postal_code = '%s', billing_country = %d, "
+          ."payment_method = '%s', modified = %d, created = %d WHERE order_id = %d", $order->uid, $order->order_status, $order->order_total,
+           $order->primary_email, $order->delivery_first_name, $order->delivery_last_name, $order->delivery_phone,
+           $order->delivery_company, $order->delivery_street1, $order->delivery_street2,
+           $order->delivery_city, $order->delivery_zone, $order->delivery_postal_code,
+           ((is_null($order->delivery_country) || $order->delivery_country == 0) ? variable_get('uc_store_country', 840) : $order->delivery_country),
+           $order->billing_first_name, $order->billing_last_name, $order->billing_phone,
+           $order->billing_company, $order->billing_street1, $order->billing_street2,
+           $order->billing_city, $order->billing_zone, $order->billing_postal_code,
+           ((is_null($order->billing_country) || $order->billing_country == 0) ? variable_get('uc_store_country', 840) : $order->billing_country),
+           $order->payment_method, $order->modified, $order->created, $order->order_id);
+    
+    foreach ($order_data->products->product as $product_data){
+      $product = new stdClass();
+      $product->nid = 0;
+      $product_fields = array(
+        'qty',
+        'name',
+        'manufacturer',
+        'model',
+        'cost',
+        'price',
+        'weight',
+      );
+      foreach ($product_fields as $field){
+        $product->$field = (string)$product_data->$field;
+      }
+      $product->data = unserialize((string)$product_data->data);
+      uc_order_product_save($order->order_id, $product);
+    }
+    $comments_types = array();
+    $comments_values = array();
+    foreach ($order->comments->comment as $comment){
+      $comments_types[] = "(%d,%d,'%s',%d,%d,%d)";
+      $comments_values[] = $order->order_id;
+      $commenter = user_load(array('name' => (string)$comment->user));
+      if ($commenter){
+        $comments_values[] = $commenter->uid;
+      }
+      else{
+        $comments_values[] = 0;
+      }
+      $comments_values[] = (string)$comment->message;
+      $comments_values[] = (int)$comment->order_status;
+      $comments_values[] = (int)$comment->notified;
+      $comments_values[] = (int)$comment->created;
+    }
+    if (count($comments_values)){
+      db_query("INSERT INTO {uc_order_comments} (order_id, uid, message, order_status, notified, created) VALUES ". implode(',', $comments_types), $comments_values);
+    }
+    $comments_types = array();
+    $comments_values = array();
+    foreach ($order->admin_comments->comment as $comment){
+      $comments_types[] = "(%d,%d,'%s',%d)";
+      $comments_values[] = $order->order_id;
+      $commenter = user_load(array('name' => (string)$comment->user));
+      if ($commenter){
+        $comments_values[] = $commenter->uid;
+      }
+      else{
+        $comments_values[] = 0;
+      }
+      $comments_values[] = (string)$comment->message;
+      $comments_values[] = (int)$comment->created;
+    }
+    if (count($comments_values)){
+      db_query("INSERT INTO {uc_order_admin_comments} (order_id, uid, message, created) VALUES ". implode(',', $comments_types), $comments_values);
+    }
+  }
+}

@@ -10,7 +10,7 @@ $(document).ready(
       function() {
         $(this).dblclick(
           function() {
-            var url = base_path + '?q=admin/store/orders/' + this.id.substring(6);
+            var url = Drupal.settings['base_path'] + '?q=admin/store/orders/' + this.id.substring(6);
             window.location = url;
           }
         );
@@ -47,7 +47,7 @@ function load_address_select(uid, div, address_type) {
     'func' : "apply_address('" + address_type + "', this.value);"
   };
 
-  $.post(base_path + '?q=admin/store/orders/address_book', options,
+  $.post(Drupal.settings['base_path'] + '?q=admin/store/orders/address_book', options,
          function (contents) {
            $(div).empty().addClass('address-select-box').append(contents);
          }
@@ -95,7 +95,7 @@ function load_customer_search() {
     return close_customer_select();
   }
 
-  $.post(base_path + '?q=admin/store/orders/customer', {},
+  $.post(Drupal.settings['base_path'] + '?q=admin/store/orders/customer', {},
          function (contents) {
            $('#customer-select').empty().addClass('customer-select-box').append(contents);
            $('#customer-select #edit-first-name').val($('#edit-billing-first-name').val());
@@ -122,7 +122,7 @@ function load_customer_search_results() {
     email = '0';
   }
 
-  $.post(base_path + '?q=admin/store/orders/customer/search/' + first_name + '/' + last_name + '/' + email,
+  $.post(Drupal.settings['base_path'] + '?q=admin/store/orders/customer/search/' + first_name + '/' + last_name + '/' + email,
          { },
          function (contents) {
            $('#customer-select').empty().append(contents);
@@ -146,7 +146,7 @@ function load_new_customer_form() {
     return close_customer_select();
   }
 
-  $.post(base_path + '?q=admin/store/orders/customer/new', {},
+  $.post(Drupal.settings['base_path'] + '?q=admin/store/orders/customer/new', {},
          function (contents) {
            $('#customer-select').empty().addClass('customer-select-box').append(contents);
            customer_select = 'new';
@@ -159,7 +159,7 @@ function check_new_customer_address() {
   var options = {
     'email' : $('#customer-select #edit-email').val()
   };
-  $.post(base_path + '?q=admin/store/orders/customer/new/check/' + options['email'], options,
+  $.post(Drupal.settings['base_path'] + '?q=admin/store/orders/customer/new/check/' + options['email'], options,
          function (contents) {
            $('#customer-select').empty().append(contents);
          }
@@ -188,7 +188,7 @@ function close_customer_select() {
 function uc_order_load_product_edit_div(order_id) {
   $(document).ready(
     function() {
-      $.post(base_path + '?q=admin/store/orders/' + order_id + '/products',
+      $.post(Drupal.settings['base_path'] + '?q=admin/store/orders/' + order_id + '/products',
              { action: 'view' },
              function(contents) {
                if (contents != '') {
@@ -207,7 +207,7 @@ function load_product_select(order_id, search) {
     options = { };
   }
 
-  $.post(base_path + '?q=admin/store/orders/' + order_id + '/product_select', options,
+  $.post(Drupal.settings['base_path'] + '?q=admin/store/orders/' + order_id + '/product_select', options,
          function (contents) {
            $('#products-selector').empty().addClass('product-select-box2').append(contents);
          }
@@ -230,7 +230,7 @@ function add_product_form() {
   add_product_browser = $('#products-selector').html();
 
   if (parseInt($('#edit-unid').val()) > 0) {
-    $.post(base_path + '?q=admin/store/orders/' + $('#edit-order-id').val() + '/add_product/' + $('#edit-unid').val(), { },
+    $.post(Drupal.settings['base_path'] + '?q=admin/store/orders/' + $('#edit-order-id').val() + '/add_product/' + $('#edit-unid').val(), { },
            function(contents) {
              $('#products-selector').empty().append(contents);
            });
@@ -250,7 +250,7 @@ function add_product_to_order(order_id, node_id) {
       }
     }
   );
-  $.post(base_path + '?q=admin/store/orders/' + order_id + '/products', post_vars,
+  $.post(Drupal.settings['base_path'] + '?q=admin/store/orders/' + order_id + '/products', post_vars,
          function(contents) {
            if (contents != '') {
              $('#products-container').empty().append(contents);
@@ -262,7 +262,7 @@ function add_product_to_order(order_id, node_id) {
 }
 
 function add_blank_line_button(order_id) {
-  $.post(base_path + '?q=admin/store/orders/' + order_id + '/products',
+  $.post(Drupal.settings['base_path'] + '?q=admin/store/orders/' + order_id + '/products',
          { action: 'add_blank' },
          function(contents) {
            if (contents != '') {
@@ -274,7 +274,7 @@ function add_blank_line_button(order_id) {
 
 function remove_product_button(message, opid) {
   if (confirm(message)) {
-    $.post(base_path + '?q=admin/store/orders/' + $('#edit-order-id').val() + '/products',
+    $.post(Drupal.settings['base_path'] + '?q=admin/store/orders/' + $('#edit-order-id').val() + '/products',
            { 'action': 'remove', 'opid': opid },
            function(contents) {
              if (contents != '') {

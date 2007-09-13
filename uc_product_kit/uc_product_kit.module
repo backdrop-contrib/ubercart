@@ -15,23 +15,6 @@
  ******************************************************************************/
 
 /**
- * Implementation of hook_menu().
- */
-function uc_product_kit_menu($may_cache){
-  $items = array();
-  if ($may_cache){
-/*    $items[] = array('path' => 'admin/store/products/kits',
-      'title' => t('Kits'),
-      'access' => user_access('administer products'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => 'uc_product_kit_admin_settings',
-    );
-*/
-  }
-  return $items;
-}
-
-/**
  * Implementation of hook_access().
  */
 function uc_product_kit_access($op, $node){
@@ -48,8 +31,6 @@ function uc_product_kit_access($op, $node){
       else{
         return user_access('edit products');
       }
-    default:
-      return user_access('administer products');
   }
 }
 
@@ -57,6 +38,15 @@ function uc_product_kit_access($op, $node){
  * Implementation of hook_insert().
  */
 function uc_product_kit_insert(&$node){
+  $obj = new stdClass();
+  $obj->nid = $node->nid;
+  $obj->model = '';
+  $obj->list_price = 0;
+  $obj->cost = 0;
+  $obj->sell_price = 0;
+  $obj->weight = 0;
+  $obj->units = variable_get('uc_weight_unit', 'lb');
+
   $values = array();
   $placeholders = array();
   foreach ($node->products as $product){
@@ -65,14 +55,35 @@ function uc_product_kit_insert(&$node){
     $values[] = $node->mutable;
     $values[] = 1;
     $placeholders[] = '(%d, %d, %d, %d)';
+    
+    $product = node_load($product);
+    $obj->model .= $product->model . ' / ';
+    $obj->list_price += $product->list_price * $product->qty;
+    $obj->cost += $product->cost * $product->qty;
+    $obj->sell_price += $product->sell_price * $product->qty;
+    $obj->weight += $product->weight * $product->qty * uc_weight_conversion($product->units, $obj->units);
   }
   db_query("INSERT INTO {uc_product_kits} (nid, product_id, mutable, qty) VALUES ". implode(',', $placeholders), $values);
+  $obj->model = rtrim($obj->model, ' / ');
+  db_query("INSERT INTO {uc_products} (nid, model, list_price, cost, sell_price, weight, units, unique_hash) VALUES (%d, '%s', %f, %f, %f, %f, '%s', '%s')",
+    $obj->nid, $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->units,
+    md5($obj->nid . $obj->model . $obj->list_price . $obj->cost . $obj->sell_price . $obj->weight . $obj->units . time())
+  );
 }
 
 /**
  * Implementation of hook_update().
  */
 function uc_product_kit_update(&$node){
+  $obj = new stdClass();
+  $obj->nid = $node->nid;
+  $obj->model = '';
+  $obj->list_price = 0;
+  $obj->cost = 0;
+  $obj->sell_price = 0;
+  $obj->weight = 0;
+  $obj->units = variable_get('uc_weight_unit', 'lb');
+  
   db_query("DELETE FROM {uc_product_kits} WHERE nid = %d", $node->nid);
   $values = array();
   $placeholders = array();
@@ -82,16 +93,43 @@ function uc_product_kit_update(&$node){
     $values[] = $node->mutable;
     $values[] = $node->items[$i]['qty'];
     $values[] = $node->items[$i]['discount'];
-    $placeholders[] = '(%d, %d, %d, %d, %f)';
+    $values[] = $node->items[$i]['ordering'];
+    $placeholders[] = '(%d, %d, %d, %d, %f, %d)';
+
+    $product = node_load($product);
+    $product->qty = $node->items[$i]['qty'];
+    if ($node->items[$i]['discount'] !== ''){
+      if ($node->items[$i]['discount'] < 0){
+        $product->sell_price += $node->items[$i]['discount'];
+      }
+      else{
+        $product->sell_price = $node->items[$i]['discount'];
+      }
+    }
+    $obj->model .= $product->model . ' / ';
+    $obj->list_price += $product->list_price * $product->qty;
+    $obj->cost += $product->cost * $product->qty;
+    $obj->sell_price += $product->sell_price * $product->qty;
+    $obj->weight += $product->weight * $product->qty * uc_weight_conversion($product->units, $obj->units);
   }
-  db_query("INSERT INTO {uc_product_kits} (nid, product_id, mutable, qty, discount) VALUES ". implode(',', $placeholders), $values);
+  db_query("INSERT INTO {uc_product_kits} (nid, product_id, mutable, qty, discount, ordering) VALUES ". implode(',', $placeholders), $values);
+  $obj->model = rtrim($obj->model, ' / ');
+  db_query("UPDATE {uc_products} SET model = '%s', list_price = %f, cost = %f, sell_price = %f, weight = %f, units = '%s' WHERE nid = %d",
+    $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->units, $obj->nid);
+  if (!db_affected_rows()){
+    db_query("INSERT INTO {uc_products} (nid, model, list_price, cost, sell_price, weight, units, unique_hash) VALUES (%d, '%s', %f, %f, %f, %f, '%s', '%s')",
+      $obj->nid, $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->units,
+      md5($obj->nid . $obj->model . $obj->list_price . $obj->cost . $obj->sell_price . $obj->weight . $obj->units . time())
+    );
+  }
 }
 
 /**
  * Implementation of hook_delete().
  */
 function uc_product_kit_delete(&$node) {
-  db_query("DELETE from {uc_product_kits} WHERE nid = %d", $node->nid);
+  db_query("DELETE FROM {uc_product_kits} WHERE nid = %d", $node->nid);
+  db_query("DELETE FROM {uc_products} WHERE nid = %d", $node->nid);
 }
 
 /**
@@ -101,33 +139,23 @@ function uc_product_kit_load(&$node){
   $obj = new stdClass();
 
   $products = array();
-  $result = db_query("SELECT product_id, mutable, qty, discount FROM {uc_product_kits} WHERE nid = %d", $node->nid);
+  $result = db_query("SELECT product_id, mutable, qty, discount, ordering FROM {uc_product_kits} WHERE nid = %d ORDER BY ordering", $node->nid);
   while ($prod = db_fetch_object($result)){
     $obj->mutable = $prod->mutable;
     $product = node_load($prod->product_id);
     $product->qty = $prod->qty;
-    /* if ($prod->discount < 0){
-      $product->sell_price += $prod->discount;
-    }
-    else{
-      $product->sell_price = $prod->discount;
-    } */
+    $product->discount = $prod->discount;
+    $product->ordering = $prod->ordering;
     $products[$prod->product_id] = $product;
   }
+  uasort($products, '_uc_product_kit_sort_products');
   $obj->products = $products;
-  $obj->model = '';
-  $obj->list_price = 0;
-  $obj->cost = 0;
-  $obj->sell_price = 0;
-  $obj->weight = 0;
-  foreach ($obj->products as $product){
-    $obj->model .= $product->model . ' / ';
-    $obj->list_price += $product->list_price * $product->qty;
-    $obj->cost += $product->cost * $product->qty;
-    $obj->sell_price += $product->sell_price * $product->qty;
-    $obj->weight += $product->weight * $product->qty;
+  if ($extra = uc_product_load($node)) {
+    foreach ($extra as $key => $value) {
+      $obj->$key = $value;
+    }
   }
-  $obj->model = rtrim($obj->model, ' / ');
+
   return $obj;
 }
 
@@ -141,6 +169,17 @@ function uc_product_kit_forms(){
   }
 
   return $forms;
+}
+
+function uc_product_kit_form_alter($form_id, &$form) {
+  if ($form_id == 'uc_product_settings') {
+    $form['uc_product_kit_mutable'] = array('#type' => 'radios',
+      '#title' => t('How are product kits handled by the cart?'),
+      '#options' => array(t('As a unit. Customers may only change how many kits they are buying.'), t('As individual products. Customers may add or remove kit components at will.')),
+      '#default_value' => variable_get('uc_product_kit_mutable', 0),
+      '#weight' => -5,
+    );
+  }
 }
 
 /**
@@ -194,20 +233,25 @@ function uc_product_kit_form(&$node){
   if (isset($node->products)){
     foreach ($node->products as $i => $product){
       $form['base']['items'][$i] = array('#type' => 'fieldset',
-        '#title' => $product->title,
+        //'#title' => $product->title,
       );
       $form['base']['items'][$i]['link'] = array('#type' => 'item',
-        '#value' => l(t('Link to product'), 'node/'. $i),
+        '#value' => l(t('@product', array('@product' => $product->title)), 'node/'. $i),
       );
       $form['base']['items'][$i]['qty'] = array('#type' => 'textfield',
         '#title' => t('Quantity'),
         '#default_value' => $product->qty,
         '#size' => 5,
       );
+      $form['base']['items'][$i]['ordering'] = array('#type' => 'weight',
+        '#title' => t('Ordering'),
+        '#default_value' => $product->ordering,
+      );
+      $item = node_load($i);
       $form['base']['items'][$i]['discount'] = array('#type' => 'textfield',
         '#title' => t('Discount'),
-        '#description' => t('Enter a negative value to lower the item price by that amount. Enter a postive value to set the item price to that amount.'),
-        '#default_value' => $product->discount,
+        '#description' => t('Enter a negative value to lower the item price by that amount. Enter a postive value to set the item price to that amount. This discount is applied to each %product in the kit.', array('%product' => $product->title)),
+        '#default_value' => (is_null($product->discount) || $product->discount === '' ? $item->sell_price : $product->discount),
         '#size' => 5,
       );
     }
@@ -282,6 +326,7 @@ function uc_product_kit_view($node, $teaser = 0, $page = 0){
     $node->content['products'] = array('#weight' => 6);
     foreach ($node->products as $product){
       $node->content['products'][$product->nid]['qty'] = array('#value' => '<div class="product-qty">'. $product->qty .' x '. l($product->title, 'node/'. $product->nid) .'</div>');
+      $node->content['products'][$product->nid]['#weight'] = $product->ordering;
     }
     $node->content['add_to_cart'] = array('#value' => theme('uc_product_kit_add_to_cart', $node),
       '#weight' => 10,
@@ -359,6 +404,24 @@ function uc_product_kit_product_info(){
   );
 }
 
+function uc_product_kit_cart_item($op, &$item){
+  switch ($op){
+    case 'load':
+      if (isset($item->data['kit_id']) && ($kit = node_load($item->data['kit_id'])) && !$kit->mutable){
+        $kit_discount = $kit->products[$item->nid]->discount;
+        if ($kit_discount !== ''){
+          if ($kit_discount < 0){
+            $item->price += $kit_discount;
+          }
+          else{
+            $item->price += $kit_discount - $kit->products[$item->nid]->sell_price;
+          }
+        }
+      }
+    break;
+  }
+}
+
 /**
  * Implementation of Übercart's hook_cart_display().
  *
@@ -391,7 +454,7 @@ function uc_product_kit_cart_display($item){
       $element['remove'] = array('#type' => 'checkbox');
       $element['options'] = array('#value' => "<ul class=\"cart_options\">\n");
       $element['title'] = array('#value' => l($kit->title, 'node/'. $kit->nid));
-      $element['#total'] = $kit_discount; // TODO: Actually get a kit discount from somewhere
+      $element['#total'] = 0;
       $element['qty'] = array(
         '#type' => 'textfield',
         '#default_value' => $item->qty / $kit->products[$item->nid]->qty,
@@ -409,8 +472,8 @@ function uc_product_kit_cart_display($item){
       $op_names = '-- '. $op_names;
     }
     $element['options']['#value'] .= '<li>'. $item->qty .' x '. l($item->title, 'node/'. $item->nid) ." <em>$op_names</em></li>\n";
-    $element['data'][$item->nid] = $item;
     $element['#total'] += $item->price * $item->qty;
+    $element['data'][$item->nid] = $item;
     $products[$data['unique_id']][] = $item->nid;
     // Check if all products in this kit have been accounted for.
     $done = true;
@@ -456,33 +519,11 @@ function uc_product_kit_update_cart_item($nid, $data = array(), $qty, $cid = nul
   }
 }
 
-/******************************************************************************
- * Menu Callbacks                                                             *
- ******************************************************************************/
-
-/*function uc_product_kit_admin_settings(){
-  $form = array();
-  
-  $form['uc_product_kit_mutable'] = array('#type' => 'radios',
-    '#title' => t('Can product kits be modified after they are put in the cart?'),
-    '#options' => array(t('No'), t('Yes')),
-    '#default_value' => variable_get('uc_product_kit_mutable', 0),
-  );
-  
-  return system_settings_form($form);
-}*/
-
-function uc_product_kit_form_alter($form_id, &$form) {
-  if ($form_id == 'uc_product_settings') {
-    $form['uc_product_kit_mutable'] = array('#type' => 'radios',
-      '#title' => t('How are product kits handled by the cart?'),
-      '#options' => array(t('As a unit. Customers may only change how many kits they are buying.'), t('As individual products. Customers may add or remove kit components at will.')),
-      '#default_value' => variable_get('uc_product_kit_mutable', 0),
-      '#weight' => -5,
-    );
+function _uc_product_kit_sort_products($a, $b){
+  if ($a->ordering == $b->ordering){
+    return 0;
+  }
+  else{
+    return ($a->ordering < $b->ordering) ? -1 : 1;
   }
 }
-
-/******************************************************************************
- * Module Functions                                                           *
- ******************************************************************************/

@@ -1,0 +1,446 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * A module used for CyberSource's Silent Order POST method of payment.
+ *
+ * Developed by Ryan of Ubercart.org.
+ *
+ * Development sponsored by Plum Drama - http://www.plumdrama.com
+ */
+
+/*******************************************************************************
+ * Hook Functions (Drupal)
+ ******************************************************************************/
+
+function uc_cybersource_menu($may_cache) {
+  $items[] = array(
+    'path' => 'cs/receipt',
+    'title' => t('Payment received'),
+    'callback' => 'uc_cybersource_receipt',
+    'access' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+
+/*******************************************************************************
+ * Hook Functions (Ubercart)
+ ******************************************************************************/
+
+function uc_cybersource_payment_gateway() {
+  $gateways[] = array(
+    'id' => 'cybersource',
+    'title' => t('CyberSource'),
+    'description' => t('Process credit card payments using the Silent Order POST service of CyberSource.'),
+    'settings' => 'uc_cybersource_settings_form',
+    'credit' => 'uc_cybersource_charge',
+  );
+
+  return $gateways;
+}
+
+
+/*******************************************************************************
+ * Callback Functions, Forms, and Tables
+ ******************************************************************************/
+
+function uc_cybersource_receipt() {
+  drupal_goto('<front>');
+}
+
+function uc_cybersource_settings_form() {
+  if (variable_get('uc_cybersource_method', 'post') == 'post' &&
+      !file_exists(drupal_get_path('module', 'uc_cybersource') .'/HOP.php')) {
+    drupal_set_message(t('You must download the security script from your CyberSource account (found in Tools & Settings > Hosted Order Page > Security) and place it in the ubercart/payment/uc_cybersource directory to use the Silent Order POST.'), 'error');
+  }
+
+  $form['cybersource'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('CyberSource settings'),
+  );
+  $form['cybersource']['uc_cybersource_server'] = array(
+    '#type' => 'select',
+    '#title' => t('Payment server'),
+    '#description' => t('CyberSource server used when processing payments.'),
+    '#options' => array(
+      'production' => t('Production'),
+      'test' => t('Test'),
+    ),
+    '#default_value' => variable_get('uc_cybersource_server', 'test'),
+  );
+  $form['cybersource']['uc_cybersource_method'] = array(
+    '#type' => 'select',
+    '#title' => t('Payment method'),
+    '#description' => t('The Simple Order API offers extended functionality but requires the CyberSource PHP extension.'),
+    '#options' => array(
+      'post' => t('Silent Order POST'),
+      'api' => t('Simple Order API'),
+    ),
+    '#default_value' => variable_get('uc_cybersource_method', 'post'),
+  );
+  $form['cybersource']['uc_cybersource_transaction_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Transaction type'),
+    '#description' => t('Complete Sale will authorize and capture the funds at the time the payment is processed.<br>Authorization will only reserve funds on the card to be captured later through your PayPal account.'), 
+    '#options' => array(
+      'sale' => t('Complete Sale'),
+      'authorization' => t('Authorization'),
+    ),
+    '#default_value' => variable_get('uc_cybersource_transaction_type', 'sale'),
+  );
+  $form['cybersource']['uc_cybersource_avs'] = array(
+    '#type' => 'radios',
+    '#title' => t('Ensure address verification'),
+    '#options' => array(
+      'true' => t('Process transaction only if address passes verification.'),
+      'false' => t('Process transaction regardless of the result of address verification.'),
+    ),
+    '#default_value' => variable_get('uc_cybersource_avs', 'true'),
+  );
+
+  return $form;
+}
+
+function uc_cybersource_charge($order_id, $amount, $data) {
+  if (!function_exists('curl_init')) {
+    drupal_set_message(t('Cybersource requires curl.  Please talk to your system administrator to get this configured.'));
+    return array('success' => FALSE);
+  }
+
+  global $user;
+  require_once(drupal_get_path('module', 'uc_cybersource') .'/HOP.php');
+  $order = uc_order_load($order_id);
+
+  $amount = uc_currency_format($amount, FALSE, FALSE, '.');
+
+  $cc_type = NULL;
+  if (isset($order->payment_details['cc_type'])) {
+    switch (strtolower($order->payment_details['cc_type'])) {
+      case 'amex':
+      case 'american express':
+        $cc_type = 'Amex';
+        break;
+      case 'visa':
+        $cc_type = 'Visa';
+        break;
+      case 'mastercard':
+      case 'master card':
+        $cc_type = 'MasterCard';
+        break;
+      case 'discover':
+        $cc_type = 'Discover';
+        break;
+    }
+  }
+  if (is_null($cc_type)) {
+    $cc_type = _uc_cybersource_card_type($order->payment_details['cc_number']);
+    if ($cc_type === FALSE) {
+      drupal_set_message(t('The credit card type did not pass validation.', 'error'));
+      watchdog('uc_paypal', t('Could not figure out cc type: !number / !type', array('!number' => $order->payment_details['cc_number'], '!type' => $order->payment_details['cc_type'])), WATCHDOG_ERROR);
+      return array('success' => FALSE);
+    }
+  }
+
+  $country = uc_get_country_data(array('country_id' => $order->billing_country));
+  if ($country === FALSE) {
+    $country = array(0 => array('country_iso_code_2' => 'US'));
+  }
+
+  $request = array(
+    'billTo_firstName' => $order->billing_first_name,
+    'billTo_lastName' => $order->billing_last_name,
+    'billTo_street1' => $order->billing_street1,
+    'billTo_city' => $order->billing_city,
+    'billTo_country' => $country[0]['country_iso_code_2'],
+    'billTo_state' => uc_get_zone_code($order->billing_zone),
+    'billTo_postalCode' => $order->billing_postal_code,
+    'billTo_email' => $order->primary_email,
+    'card_accountNumber' => $order->payment_details['cc_number'],
+    'card_cardType' => $cc_type,
+    'card_expirationMonth' => $order->payment_details['cc_exp_month'],
+    'card_expirationYear' => $order->payment_details['cc_exp_year'],
+  );
+
+  if (variable_get('uc_credit_cvv_enabled', TRUE)) {
+    $request['card_cvNumber'] = $order->payment_details['cc_cvv'];
+  }
+
+  if (variable_get('uc_cybersource_method', 'post') == 'post') {
+    $currency = variable_get('uc_cybersource_currency', 'usd');
+    $merchantID = getMerchantID();
+    $timestamp = getmicrotime();
+    $data = $merchantID . $amount . $currency . $timestamp;
+    $pub = getPublicKey();
+    $serialNumber = getSerialNumber();
+    $pub_digest = hopHash($data, $pub);
+
+    $request['amount'] = $amount;
+    $request['currency'] = $currency;
+    $request['merchantID'] = $merchantID;
+    $request['orderNumber'] = $order_id;
+    $request['orderPage_timestamp'] = $timestamp;
+    $request['orderPage_ignoreAVS'] = variable_get('uc_cybersource_avs', 'true');
+    $request['orderPage_signaturePublic'] = $pub_digest;
+    $request['orderPage_version'] = '4';
+    $request['orderPage_serialNumber'] = $serialNumber;
+    $request['orderPage_transactionType'] = variable_get('uc_cybersource_transaction_type', 'sale');
+
+    $data = '';
+    while (list($key, $value) = each($request)) {
+      $data .= $key .'='. urlencode(ereg_replace(',', '', $value)) .'&';
+    }
+    $data = substr($data, 0, -1);
+  
+    if (variable_get('uc_cybersource_server', 'test') == 'test') {
+      $url = 'https://orderpagetest.ic3.com/hop/ProcessOrder.do';
+    }
+    else {
+      $url = 'https://orderpage.ic3.com/hop/ProcessOrder.do';
+    }
+  
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_VERBOSE, 0);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+    curl_setopt($ch, CURLOPT_NOPROGRESS, 1);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION,0);
+    $response = curl_exec($ch);
+    curl_close($ch);
+  
+    if (preg_match_all('`name=".+" value=".+"`', $response, $pairs) > 0) {
+      for ($i = 0; $i < count($pairs[0]); $i++) {
+        list($name, $value) = explode('" value="', substr($pairs[0][$i], 6, strlen($pairs[0][$i]) - 7));
+        $nvp[$name] = $value;
+      }
+
+      // Create the order and payment ledger comments.
+      $o_comment = t('<b>Credit card !type:</b> !amount<br /><b>Decision: !decision</b><br /><b>Reason:</b> !reason', array('!type' => variable_get('uc_cybersource_transaction_type', 'sale'), '!amount' => uc_currency_format($nvp['orderAmount']), '!decision' => $nvp['decision'], '!reason' => _parse_cs_reason_code($nvp['reasonCode'])));
+      $p_comment = t('!id<br />!decision, Reason: !reason', array('!id' => $nvp['orderPage_serialNumber'], '!decision' => $nvp['decision'], '!reason' => $nvp['reasonCode']));
+      if (!empty($nvp['ccAuthReply_avsCode'])) {
+        $o_comment .= t('<br /><b>AVS:</b> !avs', array('!avs' => _parse_cs_avs_code($nvp['ccAuthReply_avsCode'])));
+        $p_comment .= t(', AVS: !avs', array('!avs' => $nvp['ccAuthReply_avsCode']));
+      }
+      if (!empty($nvp['ccAuthReply_cvCode'])) {
+        $o_comment .= t('<br /><b>CVV:</b> !cvv', array('!cvv' => _parse_cs_cvv_code($nvp['ccAuthReply_cvCode'])));
+        $p_comment .= t(', CVV: !cvv', array('!cvv' => $nvp['ccAuthReply_cvCode']));
+      }
+      uc_order_comment_save($order_id, $user->uid, $o_comment, 'admin');
+
+      if ($nvp['decision'] == 'ACCEPT') {
+        $result = array(
+          'success' => TRUE,
+          'comment' => $p_comment,
+          'message' => $o_comment,
+          'uid' => $user->uid,
+        );
+      }
+      else {
+        $result = array(
+          'success' => FALSE,
+          'comment' => $p_comment,
+          'message' => $o_comment,
+          'uid' => $user->uid,
+        );
+      }
+    }
+    else {
+      $result = array(
+        'success' => FALSE,
+        'message' => t('No response returned from CyberSource.'),
+      );
+    }
+  
+    return $result;
+  }
+  else {
+    $config = cybs_load_config('cybs.ini');
+    if (variable_get('uc_cybersource_server', 'test') == 'test') {
+      $config['sendToProduction'] = 'false';
+    }
+
+    $request['ccAuthService_run'] = 'true';
+    if (variable_get('uc_cybersource_transaction_type', 'sale') == 'sale') {
+      $request['ccCaptureService_run'] = 'true';
+    }
+    $request['merchantReferenceCode'] = $order_id;
+    $request['purchaseTotals_currency'] = 'USD';
+    $request['purchaseTotals_grandTotalAmount'] = $amount;
+
+    drupal_set_message('<pre>'. print_r($config, TRUE) .'</pre>');
+    drupal_set_message('<pre>'. print_r($request, TRUE) .'</pre>');
+  }
+}
+
+function _uc_cybersource_card_type($cc_number) {
+  switch(substr(strval($cc_number), 0, 1)) {
+    case '3':
+      if (strlen($cc_number) == 14) {
+        return '005';  // Diners Club
+      }
+      elseif (strlen($cc_number) == 15) {
+        return '003';  // AmEx
+      }
+      else {
+        return '007';  // JCB
+      }
+    case '4':
+      return '001';  // Visa
+    case '5':
+      return '002';  // MasterCard
+    case '6':
+      return '004';  // Discover
+  }
+
+  return FALSE;
+}
+
+// Returns the meaning of the reason code given by CyberSource.
+function _parse_cs_reason_code($code) {
+  switch ($code) {
+    case '100':
+      return t('Successful transaction.');
+    case '102':
+      return t('One or more fields in the request are missing or invalid.<br /><b>Possible action:</b> Resend the request with the correct information.');
+    case '150':
+      return t('<b>Error:</b> General system failure.<br /><b>Possible action:</b> Wait a few minutes and resend the request.');
+    case '151':
+      return t('<b>Error:</b> The request was received, but a server time-out occurred. This error does not include time-outs between the client and the server.<br /><b>Possible action:</b> To avoid duplicating the order, do not resend the request until you have reviewed the order status in the Business Center.');
+    case '152':
+      return t('<b>Error:</b> The request was received, but a service did not finish running in time.<br /><b>Possible action:</b> To avoid duplicating the order, do not resend the request until you have reviewed the order status in the Business Center.');
+    case '200':
+      return t('The authorization request was approved by the issuing bank but declined by CyberSource because it did not pass the Address Verification Service (AVS) check.<br /><b>Possible action:</b> You can capture the authorization, but consider reviewing the order for the possibility of fraud.');
+    case '202':
+      return t('Expired card.<br /><b>Possible action:</b> Request a different card or other form of payment.');
+    case '203':
+      return t('General decline of the card. No other information provided by the issuing bank.<br /><b>Possible action:</b> Request a different card or other form of payment.');
+    case '204':
+      return t('Insufficient funds in the account.<br /><b>Possible action:</b> Request a different card or other form of payment.');
+    case '205':
+      return t("Stolen or lost card.<br /><b>Possible action:</b> Review the customer's information and determine if you want to request a different card from the customer.");
+    case '207':
+      return t('Issuing bank unavailable.<br /><b>Possible action:</b> Wait a few minutes and resend the request.');
+    case '208':
+      return t('Inactive card or card not authorized for card-not-present transactions.<br /><b>Possible action:</b> Request a different card or other form of payment.');
+    case '210':
+      return t('The card has reached the credit limit.<br /><b>Possible action:</b> Request a different card or other form of payment.');
+    case '211':
+      return t('The card verification number is invalid.<br /><b>Possible action:</b> Request a different card or other form of payment.');
+    case '220':
+      return t("The processor declined the request based on a general issue with the customer's account.<br /><b>Possible action:</b> Request a different form of payment.");
+    case '221':
+      return t('The customer matched an entry on the processor’s negative file.<br /><b>Possible action:</b> Review the order and contact the payment processor.');
+    case '222':
+      return t("The customer's bank account is frozen.<br /><b>Possible action:</b> Review the order or request a different form of payment.");
+    case '230':
+      return t('The authorization request was approved by the issuing bank but declined by CyberSource because it did not pass the card verification number check.<br /><b>Possible action:</b> You can capture the authorization, but consider reviewing the order for the possibility of fraud.');
+    case '231':
+      return t('Invalid account number.<br /><b>Possible action:</b> Request a different card or other form of payment.');
+    case '232':
+      return t('The card type is not accepted by the payment processor.<br /><b>Possible action:</b> Request a different card or other form of payment. Also, check with CyberSource Customer Support to make sure that your account is configured correctly.');
+    case '233':
+      return t('The processor declined the request based on an issue with the request itself.<br /><b>Possible action:</b> Request a different form of payment.');
+    case '234':
+      return t('There is a problem with your CyberSource merchant configuration.<br /><b>Possible action:</b> Do not resend the request. Contact Customer Support to correct the configuration problem.');
+    case '236':
+      return t('Processor failure.<br /><b>Possible action:</b> Possible action: Wait a few minutes and resend the request.');
+    case '240':
+      return t('The card type sent is invalid or does not correlate with the credit card number.<br /><b>Possible action:</b> Ask your customer to verify that the card is really the type indicated in your Web store, then resend the request.');
+    case '250':
+      return t('<b>Error:</b> The request was received, but a time-out occurred with the payment processor.<br /><b>Possible action:</b> To avoid duplicating the transaction, do not resend the request until you have reviewed the transaction status in the Business Center.');
+    case '475':
+      return t('The customer is enrolled in payer authentication.<br /><b>Possible action:</b> Authenticate the cardholder before continuing with the transaction.');
+    case '476':
+      return t("The customer cannot be authenticated.<br /><b>Possible action:</b> Review the customer's order.");
+    case '520':
+      return t('The authorization request was approved by the issuing bank but declined by CyberSource based on your Smart Authorization settings.<br /><b>Possible action:</b> Do not capture the authorization without further review. Review the avsCode, cvResult, and factorCode fields to determine why CyberSource rejected the request.');
+  }
+}
+
+// Returns the meaning of the code for Address Verification.
+function _parse_cs_avs_code($code) {
+  switch ($code) {
+    case 'A':
+      return t('Street address matches, but 5- and 9-digit postal codes do not match.');
+    case 'B':
+      return t('Street address matches, but postal code not verified. Returned only for non U.S.-issued Visa cards.');
+    case 'C':
+      return t('Street address and postal code do not match. Returned only for non U.S.-issued Visa cards.');
+    case 'D':
+      return t('Street address and postal code match. Returned only for non U.S.-issued Visa cards.');
+    case 'E':
+      return t('AVS data is invalid, or AVS is not allowed for this card type.');
+    case 'F':
+      return t("Card member's name does not match, but postal code matches. Returned only for the American Express card type.");
+    case 'G':
+      return t('Non-U.S. issuing bank does not support AVS.');
+    case 'H':
+      return t("Card member's name does not match. Street address and postal code match. Returned only for the American Express card type.");
+    case 'I':
+      return t('Address not verified. Returned only for non U.S.-issued Visa cards.');
+    case 'K':
+      return t("Card member's name matches but billing address and billing postal code do not match. Returned only for the American Express card type.");
+    case 'L':
+      return t("Card member's name and billing postal code match, but billing address does not match. Returned only for the American Express card type");
+    case 'N':
+      return t("Street address and postal code do not match. - or - Card member's name, street address and postal code do not match. Returned only for the American Express card type.");
+    case 'O':
+      return t("Card member's name and billing address match, but billing postal code does not match. Returned only for the American Express card type.");
+    case 'P':
+      return t('Postal code matches, but street address not verified. Returned only for non-U.S.-issued Visa cards.');
+    case 'R':
+      return t('System unavailable.');
+    case 'S':
+      return t('U.S.-issuing bank does not support AVS.');
+    case 'T':
+      return t("Card member's name does not match, but street address matches. Returned only for the American Express card type.");
+    case 'U':
+      return t('Address information unavailable. Returned if non-U.S. AVS is not available or if the AVS in a U.S. bank is not functioning properly.');
+    case 'W':
+      return t('Street address does not match, but 9-digit postal code matches.');
+    case 'X':
+      return t('Exact match. Street address and 9-digit postal code match.');
+    case 'Y':
+      return t('Exact match. Street address and 5-digit postal code match.');
+    case 'Z':
+      return t('Street address does not match, but 5-digit postal code matches.');
+    case '1':
+      return t('AVS is not supported for this processor or card type.');
+    case '2':
+      return t('The processor returned an unrecognized value for the AVS response.');
+  }
+}
+
+// Returns the meaning of the code sent back for CVV verification.
+function _parse_cs_cvv_code($code) {
+  switch ($code) {
+    case 'D':
+      return t('Transaction determined suspicious by issuing bank.');
+    case 'I':
+      return t("Card verification number failed processor's data validation check.");
+    case 'M':
+      return t('Card verification number matched.');
+    case 'N':
+      return t('Card verification number not matched.');
+    case 'P':
+      return t('Card verification number not processed by processor for unspecified reason.');
+    case 'S':
+      return t('Card verification number is on the card but was not included in the request.');
+    case 'U':
+      return t('Card verification is not supported by the issuing bank.');
+    case 'X':
+      return t('Card verification is not supported by the card association.');
+    case '1':
+      return t('Card verification is not supported for this processor or card type.');
+    case '2':
+      return t('Unrecognized result code returned by processor for card verification response.');
+    case '3':
+      return t('No result code returned by processor.');
+  }
+}

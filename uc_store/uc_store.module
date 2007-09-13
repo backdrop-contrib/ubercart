@@ -12,6 +12,40 @@
  * Development sponsored by the Ubercart project.  http://www.ubercart.org
  */
 
+/**
+ * Weight unit conversion ratios.
+ *
+ * Multiply the value by the appropriate constant to get the converted value.
+ * Ex.:
+ *   $kgs = 30;
+ *   $lbs = $kgs * KG_TO_LB;
+ *
+ * If the units are stored in variables, you can use constant().
+ * Ex.:
+ *   $weight = 30;
+ *   $units = 'kg';
+ *   $lbs = $weight * constant(strtoupper($units) .'_TO_LB');
+ */
+define('KG_TO_KG', 1);
+define('KG_TO_G', 1000);
+define('KG_TO_LB', 2.204622622);
+define('KG_TO_OZ', 35.27396195);
+
+define('G_TO_G', 1);
+define('G_TO_KG', 0.001);
+define('G_TO_LB', 0.002204623);
+define('G_TO_OZ', 0.035273962);
+
+define('LB_TO_LB', 1);
+define('LB_TO_OZ', 16);
+define('LB_TO_KG', 0.45359237);
+define('LB_TO_G', 453.59237);
+
+define('OZ_TO_OZ', 1);
+define('OZ_TO_LB', 0.0625);
+define('OZ_TO_G', 28.349523125);
+define('OZ_TO_KG', 0.028349523);
+
 /*******************************************************************************
  * Hook Functions (Drupal)
  ******************************************************************************/
@@ -287,6 +321,14 @@ function uc_store_menu($may_cache) {
 }
 
 /**
+ * Implementation of hook_init().
+ */
+function uc_store_init() {
+  // Add base_path to the Drupal object for use in Ubercart .js files.
+  drupal_add_js(array('base_path' => base_path()), 'setting');
+}
+
+/**
  * Implementation of hook_token_values(). (token.module)
  */
 function uc_store_token_values($type, $object = NULL) {
@@ -381,9 +423,6 @@ function uc_store_cron(){
               $vars['ubercart_version'] = $info['version'];
             }
           }
-          else if (defined(drupal_strtoupper($module) .'_VERSION')){
-            $return['version'] = constant(drupal_strtoupper($module) .'_VERSION');
-          }
           $vars['modules'][] = $return;
         }
       }
@@ -404,11 +443,11 @@ function uc_store_cron(){
           $vars['products'] = $stats['products'];
         }
       }
+      variable_set('uc_store_prev_time', $later - 10);
+      $response = drupal_http_request('http://www.ubercart.org/statistics/gather', array('Content-Type' => 'application/x-www-form-urlencoded'), 'POST', drupal_query_string_encode($vars));
+      $sid = $response->data;
+      variable_set('uc_store_site_id', $sid);
     }
-    variable_set('uc_store_prev_time', $later - 10);
-    $response = drupal_http_request('http://www.ubercart.org/statistics/gather', array('Content-Type' => 'application/x-www-form-urlencoded'), 'POST', drupal_query_string_encode($vars));
-    $sid = $response->data;
-    variable_set('uc_store_site_id', $sid);
   }
 }
 
@@ -448,7 +487,7 @@ function uc_store_perm() {
   return array('administer store', 'view customers', 'view store reports');
 }
 
-function uc_store_footer($main = 0){
+function uc_store_footer($main = 0) {
   drupal_add_css(drupal_get_path('module', 'uc_store') .'/uc_store.css');
   $path = drupal_get_normal_path($_GET['q']);
   $parts = explode('/', $path);
@@ -460,17 +499,25 @@ function uc_store_footer($main = 0){
       // else fall through
     case 'node':
       if (is_numeric($parts[1]) && $node = node_load($parts[1])){
-        if (function_exists('uc_catalog_node_types') && !in_array($node->type, uc_catalog_node_types())){
+        if (function_exists('uc_product_node_info') && !in_array($node->type, array_keys(uc_product_node_info()))){
           break;
         }
         // else fall through
       }
-    case 'catalog':
+      else{
+        if (function_exists('uc_product_node_info') && !in_array($parts[2], array_keys(uc_product_node_info()))){
+          break;
+        }
+        // else fall through
+      }
+    case variable_get('uc_catalog_url', 'catalog'):
     case 'cart':
     case 'manufacturer':
-      return '<div id="store-footer">'. t('E-commerce powered by Ubercart, the <a href="!url">free e-commerce shopping cart software.</a>', array('!url' => 'http://www.ubercart.org/')) .'</div>';
+      $message = t('E-commerce powered by Ubercart, the <a href="!url">free e-commerce shopping cart software.</a>', array('!url' => 'http://www.ubercart.org/'));
+      return theme('uc_store_footer', $message);
   }
 }
+
 
 /******************************************************************************
  * Übercart Hooks                                                             *
@@ -660,7 +707,7 @@ function uc_store_customers($message = NULL, $query = NULL, $count_query = NULL,
   }
 
   drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_store.js');
-  uc_add_base_path_js();
+  //uc_add_base_path_js();
   $output = '<p>'. $message .'</p>'
           . theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-customer-table'))
            .'<br />'. theme_pager(NULL, $page_length);
@@ -721,7 +768,7 @@ function uc_store_customer_orders($uid) {
   }
 
   drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_store.js');
-  uc_add_base_path_js();
+  //uc_add_base_path_js();
   $output = '<p>'. l(t('Create an order for this customer.'),
                      'admin/store/orders/create/'. $uid) .'</p>';
   $output .= '<p>'. t('!totals_orders orders shown match that account with !totals_items items purchased and !totals_total spent:',
@@ -741,18 +788,18 @@ function uc_store_customer_search() {
   $output = drupal_get_form('uc_store_customer_search_form');
 
   if (arg(4) == 'results') {
-    $first_name = str_replace('*', '%', check_plain(arg(5)));
-    $last_name = str_replace('*', '%', check_plain(arg(6)));
-    $email = str_replace('*', '%', check_plain(arg(7)));
+    $first_name = strtolower(str_replace('*', '%', check_plain(arg(5))));
+    $last_name = strtolower(str_replace('*', '%', check_plain(arg(6))));
+    $email = strtolower(str_replace('*', '%', check_plain(arg(7))));
 
     if ($first_name !== '0' && $first_name !== '%') {
-      $where .= " AND o.billing_first_name LIKE '". $first_name ."'";
+      $where .= " AND LOWER(o.billing_first_name) LIKE '". $first_name ."'";
     }
     if ($last_name !== '0' && $last_name !== '%') {
-      $where .= " AND o.billing_last_name LIKE '". $last_name ."'";
+      $where .= " AND LOWER(o.billing_last_name) LIKE '". $last_name ."'";
     }
     if ($email !== '0' && $email !== '%') {
-      $where .= " AND o.primary_email LIKE '". $email ."'";
+      $where .= " AND LOWER(o.primary_email) LIKE '". $email ."'";
     }
 
     $query = "SELECT DISTINCT o.uid, u.mail, o.billing_first_name,"
@@ -858,7 +905,11 @@ function uc_store_customer_search_form_submit($form_id, $form_values) {
  * Display main reports page.
  */
 function uc_store_reports() {
-  $output = "Display report list here.";
+  $menu = menu_get_item(NULL, 'admin/store/reports');
+  $content = system_admin_menu_block($menu);
+
+  $output = t('Default reports have not been added to Ubercart yet, but they will be here before the beta release.  In the meantime, you may be able to find <a href="!url">contributed modules</a> that create reports.  If so, you will find link to them here!', array('!url' => 'http://www.ubercart.org/contrib'))
+          . theme('admin_block_content', $content);
 
   return $output;
 }
@@ -940,7 +991,7 @@ function uc_country_import_form() {
       $row = array(
         $country->country_name,
         $country->country_iso_code_3,
-        array('data' => $country->version, 'align' => 'center')
+        array('data' => abs($country->version), 'align' => 'center')
       );
   
       $ops = array();
@@ -1389,14 +1440,14 @@ function uc_store_format_settings_form() {
     '#disabled' => TRUE,
     '#size' => 10,
   );
-  $form['currency']['uc_currency_sign'] = uc_textfield(t('Currency Sign'), variable_get('uc_currency_sign', '$'), TRUE, NULL, 10, 10);
+  $form['currency']['uc_currency_sign'] = uc_textfield(t('Currency Sign'), variable_get('uc_currency_sign', '$'), FALSE, NULL, 10, 10);
   $form['currency']['uc_sign_after_amount'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display currency sign after amount.'),
     '#default_value' => variable_get('uc_sign_after_amount', FALSE),
   );
-  $form['currency']['uc_currency_thou'] = uc_textfield(t('Thousands Marker'), variable_get('uc_currency_thou', ','), TRUE, NULL, 10, 10);
-  $form['currency']['uc_currency_dec'] = uc_textfield(t('Decimal Marker'), variable_get('uc_currency_dec', '.'), TRUE, NULL, 10, 10);
+  $form['currency']['uc_currency_thou'] = uc_textfield(t('Thousands Marker'), variable_get('uc_currency_thou', ','), FALSE, NULL, 10, 10);
+  $form['currency']['uc_currency_dec'] = uc_textfield(t('Decimal Marker'), variable_get('uc_currency_dec', '.'), FALSE, NULL, 10, 10);
 
   $form['currency']['uc_currency_prec'] = array(
     '#type' => 'select',
@@ -1415,15 +1466,15 @@ function uc_store_format_settings_form() {
     '#value' => '<div>'. t('Supply a format string for each unit. !value represents the weight value.') .'</div>',
   );
   $units = array(
-    'lb.' => t('Pounds'),
-    'oz.' => t('Ounces'),
+    'lb' => t('Pounds'),
+    'oz' => t('Ounces'),
     'kg' => t('Kilograms'),
     'g' => t('Grams'),
   );
   $form['weight']['uc_weight_unit'] = array(
     '#type' => 'select',
     '#title' => t('Default unit of measurement'),
-    '#default_value' => variable_get('uc_weight_unit', 'lb.'),
+    '#default_value' => variable_get('uc_weight_unit', 'lb'),
     '#options' => $units,
   );
   foreach ($units as $unit => $name){
@@ -1624,7 +1675,7 @@ function uc_store_census_settings() {
 
   $form['data'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Opt-in data'),
+    '#title' => t('Optional data'),
     '#description' => t('In addition to PHP, MySQL, and Drupal version information, the following types of data will also be reported:'),
     '#collapsible' => FALSE,
   );
@@ -1813,17 +1864,37 @@ function uc_weight_format($value, $unit = NULL) {
   $vars = array('!value' => $value);
   
   if (is_null($unit)){
-    $unit = variable_get('uc_weight_unit', 'lb.');
+    $unit = variable_get('uc_weight_unit', 'lb');
   }
+  
+  $defaults = array(
+    'lb' => '!value lb.',
+    'oz' => '!value oz.',
+    'kg' => '!valuekg',
+    'g' => '!valueg',
+  );
 
-  $pattern = variable_get('uc_weight_format_'. $unit, '!value '. $unit);
+  $pattern = variable_get('uc_weight_format_'. $unit, $defaults[$unit]);
   if (strpos($pattern, '!value') === FALSE) {
-    $pattern = '!value '. $unit;
+    $pattern = $defaults[$unit];
   }
 
   $format = strtr($pattern, $vars);
 
   return $format;
+}
+
+function uc_weight_conversion($from_units, $to_units = NULL){
+  if (is_null($to_units)){
+    $to_units = variable_get('uc_weight_unit', 'lb');
+  }
+  $constant = strtoupper($from_units) .'_TO_'. strtoupper($to_units);
+  if (defined($constant) && ($conversion = constant($constant)) > 0){
+    return $conversion;
+  }
+  else{
+    return 1;
+  }
 }
 
 /**
@@ -2121,7 +2192,7 @@ function uc_country_select($title, $default = NULL, $description = NULL, $displa
   );
 
   drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_country_select.js');
-  uc_add_base_path_js();
+  //uc_add_base_path_js();
 
   return $select;
 }
@@ -2223,7 +2294,7 @@ function uc_get_addresses($uid, $type = 'billing') {
                    . $type ."_street2 AS street2, ". $type ."_city AS city, "
                    . $type ."_zone AS zone, ". $type ."_postal_code AS postal_code, "
                    . $type ."_country AS country FROM {uc_orders} WHERE uid = %d "
-                    ."AND order_status > 0 ORDER BY created ASC", $uid);
+                    ."AND order_status > 0 ORDER BY created DESC", $uid);
 
   $addresses = array();
   while ($address = db_fetch_array($result)) {
@@ -2389,7 +2460,6 @@ function theme_uc_settings_overview($sections) {
   }
 
   drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_store.js');
-  uc_add_base_path_js();
 
   $output = '<p><table class="settings-overview">';
 
@@ -2488,6 +2558,31 @@ function uc_store_address() {
     variable_get('uc_store_postal_code', NULL), variable_get('uc_store_country', 840));
 
   return $store_address;
+}
+
+function uc_numeric_validate($form, $sign = 0){
+  $error = t('You must enter a number.');
+  switch ($sign){
+    case -1:
+      $error = t('You must enter a negative number.');
+    break;
+    case 1:
+      $error = t('You must enter a positive number.');
+    break;
+  }
+  // Allow an empty field to be cast to 0
+  if (empty($form['#value']) || is_numeric($form['#value'])){
+    if (($form['#value'] <= 0 && $sign == 1) || ($form['#value'] >= 0 && $sign == -1)){
+      form_error($form, $error);
+    }
+  }
+  else{
+    form_error($form, $error);
+  }
+}
+
+function theme_uc_store_footer($message) {
+  return '<div id="store-footer">'. $message .'</div>';
 }
 
 if (!function_exists('currency_api_get_list')){

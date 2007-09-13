@@ -45,6 +45,13 @@ function uc_attribute_menu($may_cache){
       'type' => MENU_NORMAL_ITEM,
       'weight' => -1,
     );
+    $items[] = array('path' => 'admin/store/settings/attributes',
+      'title' => t('Attribute settings'),
+      'access' => user_access('administer products'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('uc_attribute_admin_settings'),
+      'type' => MENU_NORMAL_ITEM,
+    );
   }
   else{
     $items[] = array('path' => 'admin/store/products/attributes/'. arg(4),
@@ -52,50 +59,50 @@ function uc_attribute_menu($may_cache){
       'access' => user_access('administer products'),
       'callback' => 'uc_attribute_view',
       'callback arguments' => array(arg(4)),
-      'type' => MENU_CALLBACK_ITEM,
+      'type' => MENU_CALLBACK,
     );
     $items[] = array('path' => 'admin/store/products/attributes/'. arg(4) .'/edit',
       'title' => t('Edit attribute'),
       'access' => user_access('administer products'),
       'callback' => 'drupal_get_form',
       'callback arguments' => array('uc_attribute_form', arg(4)),
-      'type' => MENU_CALLBACK_ITEM,
+      'type' => MENU_CALLBACK,
     );
     $items[] = array('path' => 'admin/store/products/attributes/'. arg(4) .'/add',
       'title' => t('Add option'),
       'access' => user_access('administer products'),
       'callback' => 'drupal_get_form',
       'callback arguments' => array('uc_attribute_option_form', arg(4), null),
-      'type' => MENU_CALLBACK_ITEM,
+      'type' => MENU_CALLBACK,
     );
     $items[] = array('path' => 'admin/store/products/attributes/'. arg(4) .'/delete',
       'access' => user_access('administer products'),
       'callback' => 'drupal_get_form',
       'callback arguments' => array('uc_attribute_delete_confirm', arg(4)),
-      'type' => MENU_CALLBACK_ITEM,
+      'type' => MENU_CALLBACK,
     );
     $items[] = array('path' => 'admin/store/products/attributes/'. arg(4) .'/'. arg(5) .'/edit',
       'title' => t('Edit option'),
       'callback' => 'drupal_get_form',
       'callback arguments' => array('uc_attribute_option_form', arg(4), arg(5)),
-      'type' => MENU_CALLBACK_ITEM,
+      'type' => MENU_CALLBACK,
     );
     $items[] = array('path' => 'admin/store/products/attributes/'. arg(4) .'/'. arg(5) .'/delete',
       'title' => t('Delete option'),
       'callback' => 'drupal_get_form',
       'callback arguments' => array('uc_attribute_option_delete_confirm', arg(4), arg(5)),
-      'type' => MENU_CALLBACK_ITEM,
+      'type' => MENU_CALLBACK,
     );
 
     $items[] = array('path' => 'admin/store/products/classes/'. arg(4) .'/attributes',
-      'title' => t('attributes'),
+      'title' => t('Attributes'),
       'callback' => 'drupal_get_form',
       'callback arguments' => array('uc_object_attributes_form', arg(4), 'class'),
       'weight' => 1,
-      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'type' => MENU_LOCAL_TASK,
     );
     $items[] = array('path' => 'admin/store/products/classes/'. arg(4) .'/options',
-      'title' => t('attribute options'),
+      'title' => t('Attribute options'),
       'callback' => 'drupal_get_form',
       'callback arguments' => array('uc_object_options_form', arg(4), 'class'),
       'weight' => 2,
@@ -172,7 +179,7 @@ function uc_attribute_nodeapi(&$node, $op, $arg3 = null, $arg4 = null){
     switch($op){
       case 'insert':
         db_query("INSERT IGNORE INTO {uc_product_attributes} (nid, aid, default_option) SELECT %d, aid, default_option FROM {uc_class_attributes} WHERE pcid = '%s'", $node->nid, $node->type);
-        db_query("INSERT IGNORE INTO {uc_product_options} (nid, oid, price, weight) SELECT %d, oid, price, weight FROM {uc_class_attribute_options} WHERE pcid = '%s'", $node->nid, $node->type);
+        db_query("INSERT IGNORE INTO {uc_product_options} (nid, oid, cost, price, weight) SELECT %d, oid, cost, price, weight FROM {uc_class_attribute_options} WHERE pcid = '%s'", $node->nid, $node->type);
       break;
       case 'delete':
         db_query("DELETE FROM {uc_product_options} WHERE nid = %d", $node->nid);
@@ -245,6 +252,22 @@ function uc_attribute_cart_item($op, &$item) {
  * Menu Callbacks                                                             *
  ******************************************************************************/
 
+function uc_attribute_admin_settings(){
+  $form = array();
+  
+  $form['uc_attribute_option_price_format'] = array('#type' => 'radios',
+    '#title' => t('Option price format'),
+    '#default_value' => variable_get('uc_attribute_option_price_format', 'adjustment'),
+    '#options' => array('none' => t('Do not display'),
+      'adjustment' => t('Display price adjustment'),
+      'total' => t('Display total price'),
+    ),
+    '#description' => t('Formats the price is in the attribute selection form when the customer adds a product to their cart. The total price will only be displayed on products with only one attribute.'),
+  );
+  
+  return system_settings_form($form);
+}
+
 /**
  * Displays a list of attributes and a form to add more.
  */
@@ -280,12 +303,12 @@ function uc_attribute_view($attr_id){
   $output = '<h2>'. $attribute->name .'</h2>';
   $rows = array();
   foreach ($attribute->options as $key => $input){
-    $rows[] = array($input->name, $input->price, $input->weight, $input->ordering, l(t('edit'), 'admin/store/products/attributes/'. $attr_id .'/'. $key .'/edit'), l(t('delete'), 'admin/store/products/attributes/'. $attr_id .'/'. $key .'/delete'));
+    $rows[] = array($input->name, $input->cost, $input->price, $input->weight, $input->ordering, l(t('edit'), 'admin/store/products/attributes/'. $attr_id .'/'. $key .'/edit'), l(t('delete'), 'admin/store/products/attributes/'. $attr_id .'/'. $key .'/delete'));
   }
   if (count($rows) == 0){
-    $rows[] = array(array('data' => t('No options defined for this product attribute.'), 'colspan' => '6'));
+    $rows[] = array(array('data' => t('No options defined for this product attribute.'), 'colspan' => '7'));
   }
-  $header = array(t('Name'), t('Default Price'), t('Default Weight'), t('Order'), array('data' => t('Operations'), 'colspan' => '2'));
+  $header = array(t('Name'), t('Default Cost'), t('Default Price'), t('Default Weight'), t('Order'), array('data' => t('Operations'), 'colspan' => '2'));
   $output .= theme('table', $header, $rows);
   $output .= '<h2>'. t('Add an option') .'</h2>';
   $output .= drupal_get_form('uc_attribute_option_form', $attr_id);
@@ -397,22 +420,28 @@ function uc_attribute_option_form($attr_id, $opt_id = null){
     '#required' => true,
     '#weight' => 0,
   );
+  $form['cost'] = array('#type' => 'textfield',
+    '#title' => t('Default Cost'),
+    '#default_value' => $option->cost,
+    '#description' => t('Adjusts the product cost by the specified dollar amount.'),
+    '#weight' => 1,
+  );
   $form['price'] = array('#type' => 'textfield',
     '#title' => t('Default Price'),
     '#default_value' => $option->price,
     '#description' => t('Adjusts the product price by the specified dollar amount.'),
-    '#weight' => 1,
+    '#weight' => 2,
   );
   $form['weight'] = array('#type' => 'textfield',
     '#title' => t('Default Weight'),
     '#default_value' => $option->weight,
     '#description' => t('Adjusts the product weight by this value in pounds.'),
-    '#weight' => 2,
+    '#weight' => 3,
   );
   $form['ordering'] = array('#type' => 'weight',
     '#title' => t('Order'),
     '#default_value' => $option->ordering,
-    '#weight' => 3,
+    '#weight' => 4,
   );
   $form['aid'] = array('#type' => 'hidden', '#value' => $attr_id);
   if ($opt_id){
@@ -430,6 +459,9 @@ function uc_attribute_option_form_validate($form_id, $form_values){
   /* if(!is_numeric($form_values['cost']['#value']) && !preg_match($pattern, $form_values['cost']['#value'])){
     form_set_error('cost', $price_error);
   } */
+  if(!is_numeric($form_values['cost']['#value']) && !preg_match($pattern, $form_values['cost']['#value'])){
+    form_set_error('cost', $price_error);
+  }
   if(!is_numeric($form_values['price']['#value']) && !preg_match($pattern, $form_values['price']['#value'])){
     form_set_error('price', $price_error);
   }
@@ -443,12 +475,12 @@ function uc_attribute_option_form_validate($form_id, $form_values){
  */
 function uc_attribute_option_form_submit($form_id, $form_values){
   if (!isset($form_values['oid'])){
-    db_query("INSERT INTO {uc_attribute_options} (aid, name, price, weight, ordering) VALUES (%d, '%s', %f, %f, %d)",
-      $form_values['aid'], $form_values['name'], $form_values['price'], $form_values['weight'], $form_values['ordering']);
+    db_query("INSERT INTO {uc_attribute_options} (aid, name, cost, price, weight, ordering) VALUES (%d, '%s', %f, %f, %f, %d)",
+      $form_values['aid'], $form_values['name'], $form_values['cost'], $form_values['price'], $form_values['weight'], $form_values['ordering']);
   }
   else{
-    db_query("UPDATE {uc_attribute_options} SET name = '%s', price = %f, weight = %f, ordering = %d WHERE aid = %d AND oid = %d",
-      $form_values['name'], $form_values['price'], $form_values['weight'], $form_values['ordering'], $form_values['aid'], $form_values['oid']);
+    db_query("UPDATE {uc_attribute_options} SET name = '%s', cost = %f, price = %f, weight = %f, ordering = %d WHERE aid = %d AND oid = %d",
+      $form_values['name'], $form_values['cost'], $form_values['price'], $form_values['weight'], $form_values['ordering'], $form_values['aid'], $form_values['oid']);
   }
   return 'admin/store/products/attributes/'. $form_values['aid'];
 }
@@ -459,7 +491,7 @@ function uc_attribute_option_form_submit($form_id, $form_values){
 function uc_attribute_option_delete_confirm($attr_id, $opt_id){
   $form['aid'] = array('#type' => 'value', '#value' => $attr_id);
   $form['oid'] = array('#type' => 'value', '#value' => $opt_id);
-  $form['#redirect'] = 'admin/store/products/attributes/'. $attr_id .'/edit';
+  //$form['#redirect'] = 'admin/store/products/attributes/'. $attr_id .'/edit';
   $output = confirm_form($form, t('Are you sure you want to delete this option?'), 'admin/store/products/attributes/'. $attr_id .'/edit',
     '', t('Continue'), t('Cancel'));
   return $output;
@@ -660,7 +692,7 @@ function uc_object_options_form($obj_id, $type){
     );
     $base_attr = uc_attribute_load($attribute->aid);
     if ($base_attr->options){
-      $result = db_query("SELECT ao.aid, ao.oid, ao.name, ao.price AS default_price, ao.weight AS default_weight, ao.ordering AS default_ordering, po.price, po.weight, po.ordering FROM {uc_attribute_options} AS ao LEFT JOIN $table AS po ON ao.oid = po.oid AND po.$id = %d WHERE aid = %d ORDER BY po.ordering, default_ordering, ao.name", $obj_id, $attribute->aid);
+      $result = db_query("SELECT ao.aid, ao.oid, ao.name, ao.cost AS default_cost, ao.price AS default_price, ao.weight AS default_weight, ao.ordering AS default_ordering, po.cost, po.price, po.weight, po.ordering FROM {uc_attribute_options} AS ao LEFT JOIN $table AS po ON ao.oid = po.oid AND po.$id = %d WHERE aid = %d ORDER BY po.ordering, default_ordering, ao.name", $obj_id, $attribute->aid);
       $options = array();
       $n = db_num_rows($result);
       $i = 0;
@@ -673,6 +705,11 @@ function uc_object_options_form($obj_id, $type){
         );
         $form['prod_attr'][$key]['options'][$oid]['name'] = array('#type' => 'markup',
           '#value' => $op_array->name,
+        );
+        $form['prod_attr'][$key]['options'][$oid]['cost'] = array('#type' => 'textfield',
+          '#title' => t('Cost'),
+          '#default_value' => (is_null($op_array->cost) ? $op_array->default_cost : $op_array->cost),
+          '#size' => 6,
         );
         $form['prod_attr'][$key]['options'][$oid]['price'] = array('#type' => 'textfield',
           '#title' => t('Price'),
@@ -710,7 +747,7 @@ function uc_object_options_form($obj_id, $type){
 
 function theme_uc_object_options_form($form){
   $output = drupal_render($form['admin_link']);
-  $header = array(t('Attribute'), t('Default Option'), array('colspan' => 5, 'data' => t('Options')));
+  $header = array(t('Attribute'), t('Default Option'), array('colspan' => 6, 'data' => t('Options')));
   $rows = array();
   foreach (element_children($form['prod_attr']) as $key){
     $row = array();
@@ -722,12 +759,13 @@ function theme_uc_object_options_form($form){
         $row[] = drupal_render($form['prod_attr'][$key]['default'][$oid]);
         $row[] = drupal_render($form['prod_attr'][$key]['options'][$oid]['select']);
         $row[] = drupal_render($form['prod_attr'][$key]['options'][$oid]['name']);
+        $row[] = drupal_render($form['prod_attr'][$key]['options'][$oid]['cost']);
         $row[] = drupal_render($form['prod_attr'][$key]['options'][$oid]['price']);
         $row[] = drupal_render($form['prod_attr'][$key]['options'][$oid]['weight']);
         $row[] = drupal_render($form['prod_attr'][$key]['options'][$oid]['ordering']);
         // if not the first row for the attribute, make empty cells on the left
         if ($i != 0){ 
-          $row = array_pad($row, -7, '');
+          $row = array_pad($row, -8, '');
         }
         /* else{
           $row = array('data' => $row, 'style' => 'border-top: 1px solid black');
@@ -742,7 +780,7 @@ function theme_uc_object_options_form($form){
       $row[] = array('data' => drupal_render($form['prod_attr'][$key]['default']), 'colspan' => 6);
       $rows[] = $row;
     }
-    $rows[] = array(array('data' => '<hr />', 'colspan' => 7));
+    $rows[] = array(array('data' => '<hr />', 'colspan' => 8));
   }
   $output .= theme('table', $header, $rows, array('class' => 'product_attributes'));
   $output .= drupal_render($form);
@@ -786,14 +824,14 @@ function uc_object_options_form_submit($form_id, $form_values){
   // adjustments also have no meaning if option combination is changed in any way.
   foreach ($form_values['prod_attr'] as $prod_attr){
     db_query("DELETE FROM $attr_table WHERE $id = $type AND aid = %d", $form_values['id'], $prod_attr['aid']);
-    db_query("INSERT INTO $attr_table ($id, aid, ordering, default_option) VALUES (%d, %d, %d, %d)",
+    db_query("INSERT INTO $attr_table ($id, aid, ordering, default_option) VALUES ($type, %d, %d, %d)",
       $form_values['id'], $prod_attr['aid'], $prod_attr['ordering'], $prod_attr['default']);
     if (is_array($prod_attr['options'])){
       foreach ($prod_attr['options'] as $oid => $option){
         db_query("DELETE FROM $opt_table WHERE $id = $type AND oid = %d", $form_values['id'], $oid);
         if ($option['select']){
-          db_query("INSERT INTO $opt_table ($id, oid, price, weight, ordering) VALUES ($type, %d, %f, %f, %d)",
-            $form_values['id'], $oid, $option['price'], $option['weight'], $option['ordering']);
+          db_query("INSERT INTO $opt_table ($id, oid, cost, price, weight, ordering) VALUES ($type, %d, %f, %f, %f, %d)",
+            $form_values['id'], $oid, $option['cost'], $option['price'], $option['weight'], $option['ordering']);
         }
         else if ($form_values['type'] == 'product'){
           $aid = $prod_attr['aid'];
@@ -952,11 +990,11 @@ function uc_attribute_load($attr_id, $nid = null, $type = ''){
     switch ($type){
       case 'product':
         $attribute = db_fetch_object(db_query("SELECT a.aid, a.name, pa.default_option, pa.ordering FROM {uc_attributes} AS a LEFT JOIN {uc_product_attributes} AS pa ON a.aid = pa.aid AND pa.nid = %d WHERE a.aid = %d ORDER BY pa.ordering", $nid, $attr_id));
-        $result = db_query("SELECT po.nid, po.oid, po.price, po.weight, po.ordering, ao.name, ao.aid FROM {uc_product_options} AS po LEFT JOIN {uc_attribute_options} AS ao ON po.oid = ao.oid AND nid = %d WHERE aid = %d ORDER BY po.ordering, ao.name", $nid, $attr_id);
+        $result = db_query("SELECT po.nid, po.oid, po.cost, po.price, po.weight, po.ordering, ao.name, ao.aid FROM {uc_product_options} AS po LEFT JOIN {uc_attribute_options} AS ao ON po.oid = ao.oid AND nid = %d WHERE aid = %d ORDER BY po.ordering, ao.name", $nid, $attr_id);
       break;
       case 'class':
         $attribute = db_fetch_object(db_query("SELECT a.aid, a.name, ca.default_option, ca.ordering FROM {uc_attributes} AS a LEFT JOIN {uc_class_attributes} AS ca ON a.aid = ca.aid AND ca.pcid = '%s' WHERE a.aid = %d ORDER BY ca.ordering", $nid, $attr_id));
-        $result = db_query("SELECT co.pcid, co.oid, co.price, co.weight, co.ordering, ao.name, ao.aid FROM {uc_class_attribute_options} AS co LEFT JOIN {uc_attribute_options} AS ao ON co.oid = ao.oid AND co.pcid = '%s' WHERE ao.aid = %d ORDER BY co.ordering, ao.name", $nid, $attr_id);
+        $result = db_query("SELECT co.pcid, co.oid, co.cost, co.price, co.weight, co.ordering, ao.name, ao.aid FROM {uc_class_attribute_options} AS co LEFT JOIN {uc_attribute_options} AS ao ON co.oid = ao.oid AND co.pcid = '%s' WHERE ao.aid = %d ORDER BY co.ordering, ao.name", $nid, $attr_id);
       break;
       default:
         $attribute = db_fetch_object(db_query("SELECT * FROM {uc_attributes} WHERE aid = %d", $attr_id));
@@ -1112,11 +1150,27 @@ function _uc_cart_product_get_options($item){
  */
 function _uc_attribute_alter_form($product){
   $result = db_query("SELECT * FROM {uc_product_attributes} WHERE nid = %d ORDER BY ordering", $product['nid']['#value']);
+  $total_attributes = db_num_rows($result);
+  $node = node_load($product['nid']['#value']);
   while ($relation = db_fetch_object($result)){
     $attribute = uc_attribute_load($relation->aid, $product['nid']['#value'], 'product');
     $opt_array = array();
     foreach($attribute->options as $option){
-      $opt_array[$option->oid] = $option->name . ($option->price != 0 ? ', '. ($option->price > 0 ? '+' : '') . uc_currency_format($option->price) : '');
+      switch (variable_get('uc_attribute_option_price_format', 'adjustment')){
+        case 'total':
+          $display_price = ', '. uc_currency_format($node->sell_price + $option->price);
+          if ($total_attributes == 1){
+            break;
+          }
+        case 'adjustment':
+          $display_price = ($option->price != 0 ? ', '. ($option->price > 0 ? '+' : '') . uc_currency_format($option->price) : '');
+        break;
+        case 'none':
+        default:
+          $display_price = '';
+        break;
+      }
+      $opt_array[$option->oid] = $option->name . $display_price;
     }
     if (count($attribute->options)){
       $product['attributes'][$attribute->aid] = array('#type' => 'select',
@@ -1130,6 +1184,7 @@ function _uc_attribute_alter_form($product){
         '#title' => $attribute->name,
       );
     }
+    $product['attributes']['#theme'] = 'uc_attribute_add_to_cart';
   }
   return $product;
 }

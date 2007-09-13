@@ -35,19 +35,19 @@ function uc_taxes_menu($may_cache){
       'access' => user_access('configure taxes'),
       'callback' => 'drupal_get_form',
       'callback arguments' => array('uc_taxes_form'),
-      'type' => MENU_CALLBACK_ITEM,
+      'type' => MENU_CALLBACK,
     );
     $items[] = array('path' => 'admin/store/settings/taxes/copy',
       'access' => user_access('configure taxes'),
       'callback' => 'uc_taxes_copy',
-      'type' => MENU_CALLBACK_ITEM,
+      'type' => MENU_CALLBACK,
     );
     $items[] = array('path' => 'admin/store/settings/taxes/delete',
       'title' => t('Delete tax rule'),
       'access' => user_access('configure taxes'),
       'callback' => 'drupal_get_form',
       'callback arguments' => array('uc_taxes_delete'),
-      'type' => MENU_CALLBACK_ITEM,
+      'type' => MENU_CALLBACK,
     );
   }
   else{
@@ -56,7 +56,7 @@ function uc_taxes_menu($may_cache){
     $items[] = array('path' => 'taxes/calculate',
       'access' => true,
       'callback' => 'uc_taxes_javascript',
-      'type' => MENU_CALLBACK_ITEM,
+      'type' => MENU_CALLBACK,
     );
   }
   
@@ -74,18 +74,18 @@ function uc_taxes_line_item() {
   $items[] = array(
     'id' => 'tax',
     'title' => t('Tax'),
-    'weight' => 9,
-    'default' => FALSE,
-    'stored' => FALSE,
-    'calculated' => FALSE,
-    'display_only' => TRUE,
     'callback' => 'uc_line_item_tax',
+    'weight' => 9,
+    'stored' => FALSE,
+    'default' => FALSE,
+    'calculated' => TRUE,
+    'display_only' => FALSE,
   );
 
   return $items;
 }
 
-function uc_taxes_order($op, $arg1, $arg2){
+/* function uc_taxes_order($op, $arg1, $arg2){
   switch($op){
     case 'total':
       $total_tax = 0;
@@ -95,12 +95,14 @@ function uc_taxes_order($op, $arg1, $arg2){
       }
       return $total_tax;
   }
-}
+} */
 
 function uc_taxes_form($tax_id = 0, $form_values = null){
   $form = array('#multistep' => true, '#redirect' => false);
   if ($tax_id != 0 && is_null($form_values)){
     $form_values = db_fetch_array(db_query("SELECT * FROM {uc_taxes} WHERE id = %d", $tax_id));
+    $form_values['taxed_product_types'] = serialize(array_values(unserialize($form_values['taxed_product_types'])));
+    $form_values['taxed_line_items'] = serialize(array_values(unserialize($form_values['taxed_line_items'])));
     $form_values['step'] = 0;
     $form_values['op'] = t('Next');
   }
@@ -142,7 +144,8 @@ function uc_taxes_form($tax_id = 0, $form_values = null){
       );
       $form['area'] = array('#type' => 'hidden', '#value' => $form_values['area']);
       $form['rate'] = array('#type' => 'hidden', '#value' => $form_values['rate']);
-      $form['cumulative'] = array('#type' => 'hidden', '#value' => $form_values['cumulative']);
+      $form['taxed_product_types'] = array('#type' => 'hidden', '#value' => $form_values['taxed_product_types']);
+      $form['taxed_line_items'] = array('#type' => 'hidden', '#value' => $form_values['taxed_line_items']);
       $form['weight'] = array('#type' => 'hidden', '#value' => $form_values['weight']);
       $form['conditions'] = array('#type' => 'hidden', '#value' => $form_values['conditions']);
       $form['cancel'] = array('#type' => 'submit', '#value' => t('Cancel'));
@@ -176,7 +179,8 @@ function uc_taxes_form($tax_id = 0, $form_values = null){
         break;
       }
       $form['rate'] = array('#type' => 'hidden', '#value' => $form_values['rate']);
-      $form['cumulative'] = array('#type' => 'hidden', '#value' => $form_values['cumulative']);
+      $form['taxed_product_types'] = array('#type' => 'hidden', '#value' => $form_values['taxed_product_types']);
+      $form['taxed_line_items'] = array('#type' => 'hidden', '#value' => $form_values['taxed_line_items']);
       $form['weight'] = array('#type' => 'hidden', '#value' => $form_values['weight']);
       $form['conditions'] = array('#type' => 'hidden', '#value' => $form_values['conditions']);
       $form['back'] = array('#type' => 'submit', '#value' => t('Back'));
@@ -195,27 +199,30 @@ function uc_taxes_form($tax_id = 0, $form_values = null){
         '#validate' => array('uc_taxes_element_validate' => array()),
         //'#required' => true,
       );
+      $types = array();
+      foreach (uc_product_node_info() as $type => $info){
+        $types[$type] = $info['name'];
+      }
+      $form['taxed_product_types'] = array('#type' => 'checkboxes',
+        '#title' => t('Tax Product Types'),
+        '#multiple' => true,
+        '#options' => $types,
+        '#description' => t('Apply taxes to specific product types.'),
+      );
       $options = array();
       foreach(_line_item_list() as $line_item){
-        if (!in_array($line_item['id'], array('subtotal', 'tax', 'total'))){
+        if (!in_array($line_item['id'], array('subtotal', 'total'))){
           $options[$line_item['id']] = $line_item['title'];
         }
-        /* if (!isset($form_values['taxed_line_items'][$line_item['id']])){
-          $form_values['taxed_line_items'][$line_item['id']] = 0;
-        } */
       }
       $form['taxed_line_items'] = array('#type' => 'checkboxes',
         '#title' => t('Tax Shipping Costs'),
-        //'#default_value' => isset($_POST['taxed_line_items']) ? $_POST['taxed_line_items'] : array(),
+        '#multiple' => true,
         '#options' => $options,
         '#description' => t('Includes any taxed_line_items cost in the subtotal for the order.'),
       );
-      $form['cumulative'] = array('#type' => 'checkbox',
-        '#title' => t('Cumulative'),
-        '#default_value' => isset($form_values['cumulative']) ? $form_values['cumulative'] : 0,
-        '#description' => t('Applies the tax to the current order total, rather than the subtotal.'),
-      );
       $form['weight'] = array('#type' => 'weight',
+        '#title' => t('Weight'),
         '#default_value' => isset($form_values['weight']) ? $form_values['weight'] : 0,
         '#description' => t('Lighter taxes are applied to an order first. This value is unimportant if there are no cumulative taxes.'),
       );
@@ -241,7 +248,7 @@ function uc_taxes_form($tax_id = 0, $form_values = null){
 
 function theme_uc_taxes_form($form){
   if ($form['step']['#value'] == 0){
-    $header = array(t('Name'), t('Area'), t('Rate'), t('Taxed Line Items'), t('Cumulative?'), t('Weight'), array('data' => t('Actions'), 'colspan' => 3));
+    $header = array(t('Name'), t('Area'), t('Rate'), t('Taxed Product Types'), t('Taxed Line Items'), t('Weight'), array('data' => t('Actions'), 'colspan' => 3));
     $rows = array();
     $result = db_query("SELECT * FROM {uc_taxes} ORDER BY weight");
     while ($rule = db_fetch_object($result)){
@@ -256,8 +263,9 @@ function theme_uc_taxes_form($form){
           $country = uc_get_country_data(array('country_id' => $rule->area));
           $area = $country[0]['country_iso_code_3'];
       }
+      $rule->taxed_product_types = (array)unserialize($rule->taxed_product_types);
       $rule->taxed_line_items = (array)unserialize($rule->taxed_line_items);
-      $rows[] = array($rule->name, $area, $rule->rate * 100 .'%', implode(', ', $rule->taxed_line_items), ($rule->cumulative ? t('Yes') : t('No')), $rule->weight, l(t('edit'), 'admin/store/settings/taxes/edit/'. $rule->id), l(t('copy'), 'admin/store/settings/taxes/copy/'. $rule->id), l(t('delete'), 'admin/store/settings/taxes/delete/'. $rule->id));
+      $rows[] = array($rule->name, $area, $rule->rate * 100 .'%', implode(', ', $rule->taxed_product_types), implode(', ', $rule->taxed_line_items), $rule->weight, l(t('edit'), 'admin/store/settings/taxes/edit/'. $rule->id), l(t('copy'), 'admin/store/settings/taxes/copy/'. $rule->id), l(t('delete'), 'admin/store/settings/taxes/delete/'. $rule->id));
     }
     $output = theme('table', $header, $rows);
   }
@@ -275,7 +283,6 @@ function uc_taxes_element_validate($elements){
 }
 
 function uc_taxes_form_submit($form_id, $form_values){
-  //drupal_set_message('Submit:<pre>'. print_r($form_values, true) .'</pre>');
   if ($form_values['op'] == t('Cancel')){
     drupal_goto('admin/store/settings/taxes');
   }
@@ -287,15 +294,17 @@ function uc_taxes_form_submit($form_id, $form_values){
       $rate = floatval($form_values['rate']);
     }
     if (($form_values['id']) != ''){
-      db_query("UPDATE {uc_taxes} SET name = '%s', area = '%s', type = '%s', rate = %f, taxed_line_items = '%s', cumulative = %d, weight = %d, conditions = '%s' WHERE id = %d",
-        $form_values['name'], $form_values['area'], $form_values['type'], $rate, serialize(array_filter($form_values['taxed_line_items'])), $form_values['cumulative'], $form_values['weight'], $form_values['conditions'], $form_values['id']
+      db_query("UPDATE {uc_taxes} SET name = '%s', area = '%s', type = '%s', rate = %f, taxed_product_types = '%s', taxed_line_items = '%s', weight = %d, conditions = '%s' WHERE id = %d",
+        $form_values['name'], $form_values['area'], $form_values['type'], $rate, serialize(array_filter($form_values['taxed_product_types'])), serialize(array_filter($form_values['taxed_line_items'])), $form_values['weight'], $form_values['conditions'], $form_values['id']
       );
     }
     else{
-      db_query("INSERT INTO {uc_taxes} (id, name, area, type, rate, taxed_line_items, cumulative, weight, conditions) VALUES (%d, '%s', '%s', '%s', %f, '%s', %d, %d, '%s')",
-        db_next_id('{uc_taxes}_id'), $form_values['name'], $form_values['area'], $form_values['type'], $rate, serialize(array_filter($form_values['taxed_line_items'])), $form_values['cumulative'], $form_values['weight'], $form_values['conditions']
+      db_query("INSERT INTO {uc_taxes} (id, name, area, type, rate, taxed_product_types, taxed_line_items, weight, conditions) VALUES (%d, '%s', '%s', '%s', %f, '%s', '%s', %d, '%s')",
+        db_next_id('{uc_taxes}_id'), $form_values['name'], $form_values['area'], $form_values['type'], $rate, serialize(array_filter($form_values['taxed_product_types'])), serialize(array_filter($form_values['taxed_line_items'])), $form_values['weight'], $form_values['conditions']
       );
     }
+    
+    drupal_set_message(t('%name settings have been saved.', array('%name' => $form_values['name'])));
     
     drupal_goto('admin/store/settings/taxes'); // workaround #redirect = false for editing tax rules.
   }
@@ -330,6 +339,9 @@ function uc_taxes_delete_submit($form_id, $form_values){
   if ($form_values['confirm']){
     db_query("DELETE FROM {uc_taxes} WHERE id = %d", $form_values['id']);
   }
+  
+  drupal_set_message(t('Tax rule deleted.'));
+  
   return 'admin/store/settings/taxes';
 }
 
@@ -339,13 +351,13 @@ function uc_taxes_delete_submit($form_id, $form_values){
 function uc_line_item_tax($op, $order) {
   switch ($op) {
     case 'cart-preview':
-      $items = $order;
+      /* $items = $order;
       $order = new stdClass();
-      $order->products = $items;
+      $order->products = $items; */
       $taxes = uc_taxes_calculate($order);
       $script = '';
       foreach ($taxes as $tax){
-        $script .= "set_line_item('tax_". $tax['id'] ."', '". $tax['name'] ."', ". $tax['amount'] .", 9);\n";
+        $script .= "set_line_item('tax_". $tax['id'] ."', '". $tax['name'] ."', ". $tax['amount'] .", + ". variable_get('uc_li_tax_weight', 9) + ($tax['weight'] / 10) .");\n";
       }
       if ($script){
         drupal_add_js("\$(document).ready( function() { ". $script ." } );", 'inline');
@@ -359,6 +371,7 @@ function uc_line_item_tax($op, $order) {
           'id' => 'tax_'. $tax['id'],
           'title' => $tax['name'],
           'amount' => $tax['amount'],
+          'weight' => variable_get('uc_li_tax_weight', 9) + $tax['weight'] / 10,
         );
       }
       return $lines;
@@ -376,8 +389,9 @@ function uc_taxes_get_rates(){
   if (empty($taxes)){
     $result = db_query("SELECT * FROM {uc_taxes} ORDER BY weight");
     while ($rule = db_fetch_object($result)){
+      $rule->taxed_product_types = unserialize($rule->taxed_product_types);
       $rule->taxed_line_items = unserialize($rule->taxed_line_items);
-      $taxes[] = $rule;
+      $taxes[$rule->id] = $rule;
     }
   }
   
@@ -387,84 +401,82 @@ function uc_taxes_get_rates(){
 function uc_taxes_calculate($order){
   if (is_numeric($order)){
     $order = uc_order_load($order);
-    if (empty($order->delivery_postal_code)){
-      $order->delivery_postal_code = $order->billing_postal_code;
-    }
-    if (empty($order->delivery_zone)){
-      $order->delivery_zone = $order->billing_zone;
-    }
-    if (empty($order->delivery_country)){
-      $order->delivery_country = $order->billing_country;
-    }
   }
-  if ($order === FALSE) {
+  else if (!is_object($order)){
     return array();
+  }
+  if (empty($order->delivery_postal_code)){
+    $order->delivery_postal_code = $order->billing_postal_code;
+  }
+  if (empty($order->delivery_zone)){
+    $order->delivery_zone = $order->billing_zone;
+  }
+  if (empty($order->delivery_country)){
+    $order->delivery_country = $order->billing_country;
   }
   $tax_rules = uc_taxes_get_rates();
   $subtotal = 0;
   $taxes = array();
-  if (is_array($order->products)) {
-    foreach($order->products as $item){
-      $subtotal += $item->price * $item->qty;
-    }
-  }
-  $new_total = $subtotal;
-  if (is_array($order->line_items)){
-    foreach ($order->line_items as $line_item){
-      $new_total += $line_item['amount'];
-    }
-  }
   foreach ($tax_rules as $rule){
     $conditions = $rule->conditions;
     if (!$conditions){
       $conditions = 'return true;';
     }
-    else{
-      //watchdog('taxes', drupal_eval($conditions));
-    }
-    if (($rate = uc_taxes_match_area($rule, $order->delivery_postal_code, $order->delivery_zone, $order->delivery_country)) && eval($conditions)){
-      if ($rule->cumulative){
-        $amount = $new_total * $rate;
+    if ((uc_taxes_match_area($rule, $order)) && eval($conditions)){
+      $rate = $rule->rate;
+      $amount = 0;
+      $debug = ' (';
+      if (is_array($order->products)) {
+        foreach($order->products as $item){
+          $node = node_load($item->nid);
+          if (in_array($node->type, $rule->taxed_product_types)){
+            $amount += $item->price * $item->qty * $rate;
+            $debug .= ' + '. $item->price;
+          }
+        }
       }
-      else{
-        $taxed_line_items = $rule->taxed_line_items;
-        $amount = $subtotal * $rate;
-        if (is_array($order->line_items) && is_array($taxed_line_items)){
-          foreach ($order->line_items as $line_item){
-            if (in_array($line_item['type'], $taxed_line_items)){
-              $amount += $line_item['amount'] * $rate;
+      $debug = substr($debug, 3);
+      $taxed_line_items = $rule->taxed_line_items;
+      if (is_array($order->line_items) && is_array($taxed_line_items)){
+        foreach ($order->line_items as $key => $line_item){
+          if (strpos($line_item['type'], 'tax_') !== false){
+            // Calculated taxes might be different from the line item, so handle them later.
+            continue;
+          }
+          if (in_array($line_item['type'], $taxed_line_items) && $line_item['type'] != 'tax'){
+            $amount += $line_item['amount'] * $rate;
+            $debug .= ' + '. $line_item['amount'];
+          }
+        }
+        if (in_array('tax', $taxed_line_items)){
+          foreach ($taxes as $id => $taxed_tax){
+            if ($taxed_tax['weight'] < $rule->weight){
+              $amount += $taxed_tax['amount'] * $rate;
+              $debug .= ' + '. $taxed_tax['amount'];
             }
           }
         }
       }
-      $new_total += $amount;
-      $taxes[] = array('id' => $rule->id, 'name' => $rule->name, 'amount' => $amount);
+      $debug .= ') * '. $rate;
+      $taxes[$rule->id] = array('id' => $rule->id, 'name' => $rule->name /* . $debug */, 'amount' => $amount, 'weight' => $rule->weight);
     }
   }
   return $taxes;
 }
 
-function uc_taxes_match_area($tax, $postal_code, $state, $country = '840'){
-  $rate = 0;
+function uc_taxes_match_area($tax, $order){
+  if (!is_object($order)){
+    return false;
+  }
   switch ($tax->type){
     case 'code':
       $code = rtrim($tax->area, '*');
-      if (strpos($postal_code, $code) === 0){
-        $rate = $tax->rate;
-      }
-    break;
+      return (strpos($order->delivery_postal_code, $code) === 0);
     case 'zone':
-      if ($tax->area == $state){
-        $rate = $tax->rate;
-      }
-    break;
+      return $tax->area == $order->delivery_zone;
     case 'country':
-      if ($tax->area == $country){
-        $rate = $tax->rate;
-      }
-    break;
+      return $tax->area == $order->delivery_country;
   }
-  return $rate;
 }
 
 function uc_taxes_javascript(){

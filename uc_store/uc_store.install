@@ -25,18 +25,18 @@ function uc_store_install(){
       break;
     case 'pgsql':
       db_query("CREATE TABLE {uc_countries} (
-        `country_id` mediumint(11) NOT NULL,
-        `country_name` varchar(255) NOT NULL,
-        `country_iso_code_2` char(2) NOT NULL,
-        `country_iso_code_3` char(3) NOT NULL,
-        `version` smallint(11) NOT NULL default '0',
-        PRIMARY KEY (`country_id`),
-        KEY country_name (`country_name`)
+        country_id integer NOT NULL default 0,
+        country_name varchar(255) NOT NULL default '',
+        country_iso_code_2 char(2) NOT NULL default '',
+        country_iso_code_3 char(3) NOT NULL default '',
+        version integer NOT NULL default '0',
+        PRIMARY KEY (country_id),
+        KEY country_name (country_name)
       )");
       db_query("CREATE INDEX {uc_countries}_country_id ON {uc_countries} (country_id)");
       db_query("CREATE TABLE {uc_zones} (
-        zone_id mediumint(11) NOT NULL,
-        zone_country_id mediumint(11) NOT NULL default '0',
+        zone_id integer NOT NULL default 0,
+        zone_country_id integer NOT NULL default 0,
         zone_code varchar(32) NOT NULL default '',
         zone_name varchar(25) NOT NULL default '',
         PRIMARY KEY (zone_id),
@@ -55,8 +55,8 @@ function uc_store_install(){
 }
 
 function uc_store_uninstall() {
-  db_query("DROP TABLE IF EXISTS {uc_countries}");
-  db_query("DROP TABLE IF EXISTS {uc_zones}");
+  db_query("DROP TABLE {uc_countries}");
+  db_query("DROP TABLE {uc_zones}");
   db_query("DELETE FROM {variable} WHERE name LIKE 'user_initials_%'");
   db_query("DELETE FROM {sequences} WHERE name LIKE '{uc_zones}_zone_id'");
   variable_del('uc_store_name');
@@ -78,10 +78,10 @@ function uc_store_uninstall() {
   variable_del('uc_currency_dec');
   variable_del('uc_currency_prec');
   variable_del('uc_weight_format');
-  variable_del('uc_weight_format_LBS');
-  variable_del('uc_weight_format_KGS');
-  variable_del('uc_weight_format_OZS');
-  variable_del('uc_weight_format_GMS');
+  variable_del('uc_weight_format_lb');
+  variable_del('uc_weight_format_kg');
+  variable_del('uc_weight_format_oz');
+  variable_del('uc_weight_format_g');
   variable_del('uc_date_format_default');
   variable_del('uc_field_first_name');
   variable_del('uc_field_last_name');
@@ -111,16 +111,28 @@ function uc_store_update_1() {
     case 'pgsql':
       $ret[] = update_sql("DROP TABLE IF EXISTS {uc_address_formats}");
       $ret[] = update_sql("ALTER TABLE {uc_countries} CHANGE address_format_id version SMALLINT(11) NOT NULL DEFAULT '0'");
-      $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_name zone_name VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL");
+      $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_name zone_name VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL default ''");
       break;
   }
   return $ret;
 }
 
 function uc_store_update_2() {
+  $ret = array();
   // Get rid of the auto_increment.
-  $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_id zone_id MEDIUMINT(11) NOT NULL");
-  $ret[] = update_sql("ALTER TABLE {uc_countries} CHANGE country_id country_id MEDIUMINT(11) NOT NULL");
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_id zone_id MEDIUMINT(11) NOT NULL");
+      $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_name zone_name VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL");
+      $ret[] = update_sql("ALTER TABLE {uc_countries} CHANGE country_id country_id MEDIUMINT(11) NOT NULL");
+    break;
+    case 'pgsql':
+      db_change_column($ret, 'uc_zones', 'zone_id', 'zone_id', 'integer', array('not null' => true, 'default' => 0));
+      db_change_column($ret, 'uc_zones', 'zone_name', 'zone_name', 'varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci', array('not null' => true, 'default' => ''));
+      db_change_column($ret, 'uc_countries', 'country_id', 'country_id', 'integer', array('not null' => true, 'default' => 0));
+    break;
+  }
 
   // Make the fixes for U.S.
   $ret[] = update_sql("UPDATE {uc_countries} SET country_id = 840 WHERE country_id = 223");
@@ -146,7 +158,6 @@ function uc_store_update_2() {
     $max_id = 1;
   }
   $ret[] = update_sql("INSERT INTO {sequences} VALUES ('{uc_zones}_zone_id', $max_id)");
-  $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_name zone_name VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL");
   return $ret;
 }
 
