@@ -16,13 +16,13 @@ Features overview:
 http://www.ubercart.org/what_is_ubercart
 
 Screenshots:
-http://www.ubercart.org/ubercart_screenshots
+http://www.ubercart.org/screenshots
 
 User's and Developer's Guides:
 http://www.ubercart.org/docs
 
 Installation Manual (with module descriptions):
-http://www.ubercart.org/ubercart_users_guide/installing_ubercart
+http://www.ubercart.org/docs/user/90/installing_ubercart
 
 Support forums:
 http://www.ubercart.org/forum

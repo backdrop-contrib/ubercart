@@ -6,16 +6,18 @@ function uc_flatrate_install(){
     case 'mysql':
     case 'mysqli':
       db_query("CREATE TABLE {uc_flatrate_products} (
-        `nid` mediumint(9) unsigned NOT NULL,
+        `vid` mediumint(9) unsigned NOT NULL default 0,
+        `nid` mediumint(9) unsigned NOT NULL default 0,
         `rate` float NOT NULL default '0',
-        UNIQUE KEY `nid` (`nid`)
+        PRIMARY KEY (`vid`)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
     break;
     case 'pgsql':
       db_query("CREATE TABLE {uc_flatrate_products} (
+        vid integer unsigned NOT NULL default 0,
         nid integer unsigned NOT NULL default 0,
         rate float NOT NULL default 0.0,
-        UNIQUE KEY nid (nid)
+        PRIMARY KEY (vid)
       );");
     break;
   }
@@ -23,4 +25,30 @@ function uc_flatrate_install(){
 
 function uc_flatrate_uninstall(){
   db_query("DROP TABLE {uc_flatrate_products}");
+}
+
+function uc_flatrate_update_1(){
+  $ret = array();
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_flatrate_products} ADD COLUMN vid mediumint(9) unsigned NOT NULL default 0 FIRST");
+      $ret[] = update_sql("ALTER TABLE {uc_flatrate_products} DROP INDEX nid");
+      $result = db_query("SELECT nid, vid FROM {node}");
+      while ($product = db_fetch_object($result)){
+        db_query("UPDATE {uc_flatrate_products} SET vid = %d WHERE nid = %d", $product->vid, $product->nid);
+      }
+      $ret[] = update_sql("ALTER TABLE {uc_flatrate_products} ADD PRIMARY KEY (vid)");
+    break;
+    case 'pgsql':
+      db_add_column($ret, 'uc_flatrate_products', 'vid', 'integer unsigned', array('not null' => true, 'default' => 0));
+      $ret[] = update_sql("ALTER TABLE {uc_flatrate_products} DROP CONSTRAINT {uc_flatrate_products}_nid_key");
+      $result = db_query("SELECT nid, vid FROM {node}");
+      while ($product = db_fetch_object($result)){
+        db_query("UPDATE {uc_flatrate_products} SET vid = %d WHERE nid = %d", $product->vid, $product->nid);
+      }
+      $ret[] = update_sql("ALTER TABLE {uc_flatrate_products} ADD PRIMARY KEY (vid)");
+    break;
+  }
+  return $ret;
 }

@@ -500,7 +500,7 @@ function _uc_importer_export_products($products){
     if (isset($product->field_image_cache) && file_exists($product->field_image_cache[0]['filepath'])){
       foreach ($product->field_image_cache as $image){
         $xml .= '<image>';
-        $xml .= '<path>'. $image['filepath'] .'</path>';
+        $xml .= '<path>'. $GLOBALS['base_url'] .'/'. dirname($image['filepath']) .'/'. rawurlencode(basename($image['filepath'])) .'</path>';
         if (!empty($image['alt'])){
           $xml .= '<alt>'. $image['alt'] .'</alt>';
         }
@@ -598,7 +598,7 @@ function _uc_importer_export_orders($orders){
     $order = uc_order_load($order_id);
     if (!empty($order)){
       $xml .= '<order>';
-      $xml .= '<order_status>'. uc_order_get_status_name($order->order_status) .'</order_status>';
+      $xml .= '<order_status>'. uc_order_status_data($order->order_status, 'title') .'</order_status>';
       $xml .= '<order_total>'. $order->order_total .'</order_total>';
       $xml .= '<primary_email>'. htmlentities($order->primary_email) .'</primary_email>';
       $xml .= '<delivery_first_name>'. htmlentities($order->delivery_first_name) .'</delivery_first_name>';
@@ -692,93 +692,99 @@ function uc_importer_import($xml){
       $id_map = array('categories' => array(), 'manufacturers' => array(), 'attributes' => array(), 'options' => array(), 'classes' => array(), 'products' => array());
       $action = variable_get('uc_importer_handle_duplicates', UC_IMPORTER_DO_NOTHING);
       $store = simplexml_load_string($xml);
-      $categories = array();
-      foreach ($store->categories->category as $category_data){
-        $name =(string)$category_data->name;
-        $result = db_query("SELECT tid FROM {term_data} WHERE name = '%s'", $name);
-        if (db_num_rows($result) && $action != UC_IMPORTER_INCREMENT){
-          $id_map['categories'][(string)$category_data->id] = db_result($result);
-        }
-        else{
-          $tid = db_next_id('{term_data}_tid');
-          $id_map['categories'][(string)$category_data->id] = $tid;
-          db_query("INSERT INTO {term_data} (tid, vid, name, description) VALUES (%d, %d, '%s', '%s')", $tid, variable_get('uc_catalog_vid', 0), (string)$category_data->name, (string)$category_data->description);
-        }
-      }
-      foreach ($store->categories->category as $category_data){
-        if (isset($id_map['categories'][(string)$category_data->parent]) || (string)$category_data->parent == 0){
-          switch ($action){
-            case UC_IMPORTER_INCREMENT:
-            case UC_IMPORTER_REPLACE:
-              db_query("INSERT IGNORE INTO {term_hierarchy} (tid, parent) VALUES (%d, %d)", $id_map['categories'][(string)$category_data->id], $id_map['categories'][(string)$category_data->parent]);
-            break;
-          }          
-        }
-      }
-      db_query("DELETE FROM {term_hierarchy} WHERE tid = parent");
-      foreach ($store->manufacturers->manufacturer as $manufacturer_data){
-        $manufacturer = new stdClass();
-        foreach ($manufacturer_data->children() as $datum){
-          $manufacturer->{$datum->getName()} = (string)$datum;
-        }
-        $result = db_query("SELECT tid FROM {term_data} WHERE name LIKE '%s\\__' OR name LIKE '%s'", $manufacturer->name, $manufacturer->name);
-        if ($tid = db_result($result)){
-          switch ($action){
-            case UC_IMPORTER_REPLACE:
-              drupal_execute('taxonomy_form_term', (array)$manufacturer, variable_get('uc_manufacturer_vid', 0), array('tid' => $tid));
-            break;
-            case UC_IMPORTER_INCREMENT:
-              $manufacturer->name .= '_'. db_num_rows($result);
-              drupal_execute('taxonomy_form_term', (array)$manufacturer, variable_get('uc_manufacturer_vid', 0));
-            break;
+      if (module_exists('uc_catalog')){
+        $categories = array();
+        foreach ($store->categories->category as $category_data){
+          $name =(string)$category_data->name;
+          $result = db_query("SELECT tid FROM {term_data} WHERE name = '%s'", $name);
+          if (db_num_rows($result) && $action != UC_IMPORTER_INCREMENT){
+            $id_map['categories'][(string)$category_data->id] = db_result($result);
+          }
+          else{
+            $tid = db_next_id('{term_data}_tid');
+            $id_map['categories'][(string)$category_data->id] = $tid;
+            db_query("INSERT INTO {term_data} (tid, vid, name, description) VALUES (%d, %d, '%s', '%s')", $tid, variable_get('uc_catalog_vid', 0), (string)$category_data->name, (string)$category_data->description);
           }
         }
-        else{
-          drupal_execute('taxonomy_form_term', (array)$manufacturer, variable_get('uc_manufacturer_vid', 0));
-        }
-      }
-      foreach ($store->attributes->attribute as $attribute_data){
-        $attribute = new stdClass();
-        $attribute->name = html_entity_decode($attribute_data->name);
-        $attribute->ordering = isset($attribute_data->ordering) ? (integer)$attribute_data->ordering : 0;
-        $result = db_query("SELECT aid FROM {uc_attributes} WHERE name LIKE '%s\\__' OR name LIKE '%s'", $attribute->name, $attribute->name);
-        if ($aid = db_result($result)){
-          if ($action == UC_IMPORTER_INCREMENT){
-            $attribute->name .= '_'. db_num_rows($result);
-            drupal_execute('uc_attribute_form', (array)$attribute);
+        foreach ($store->categories->category as $category_data){
+          if (isset($id_map['categories'][(string)$category_data->parent]) || !isset($category_data->parent) || (string)$category_data->parent == 0){
+            switch ($action){
+              case UC_IMPORTER_INCREMENT:
+              case UC_IMPORTER_REPLACE:
+                db_query("INSERT IGNORE INTO {term_hierarchy} (tid, parent) VALUES (%d, %d)", $id_map['categories'][(string)$category_data->id], $id_map['categories'][(string)$category_data->parent]);
+              break;
+            }          
           }
         }
-        else{
-          drupal_execute('uc_attribute_form', (array)$attribute);
-          $aid = db_result(db_query("SELECT aid FROM {uc_attributes} WHERE name = '%s'", $attribute->name));
-        }
-        if ($aid){
-          $id_map['attributes'][(string)$attribute_data->id] = $aid;
-          $attribute->options = array();
-          foreach ($attribute_data->options->option as $option_data){
-            $option = new stdClass();
-            $option->name = html_entity_decode($option_data->name);
-            $option->price = isset($option_data->price) ? (float)$option_data->price : 0;
-            $option->weight = isset($option_data->weight) ? (float)$option_data->weight : 0;
-            $option->ordering = isset($option_data->ordering) ? (integer)$option_data->ordering : 0;
-            $result = db_query("SELECT oid FROM {uc_attribute_options} WHERE aid = %d AND (name LIKE '%s\\__' OR name LIKE '%s')", $aid, $option->name, $option->name);
-            if ($oid = db_result($result)){
-              switch ($action){
-                case UC_IMPORTER_INCREMENT:
-                  $option->name .= '_'. db_num_rows($result);
-                  drupal_execute('uc_attribute_option_form', (array)$option, $aid);
-                  $id_map['options'][(string)$option_data->id] = mysql_insert_id($active_db);
-                break;
-                case UC_IMPORTER_REPLACE:
-                  drupal_execute('uc_attribute_option_form', (array)$option, $aid, $oid);
-                case UC_IMPORTER_DO_NOTHING:
-                  $id_map['options'][(string)$option_data->id] = $oid;
-                break;
-              }
+        db_query("DELETE FROM {term_hierarchy} WHERE tid = parent");
+      }
+      if (module_exists('uc_manufacturer')){
+        foreach ($store->manufacturers->manufacturer as $manufacturer_data){
+          $manufacturer = new stdClass();
+          foreach ($manufacturer_data->children() as $datum){
+            $manufacturer->{$datum->getName()} = (string)$datum;
+          }
+          $result = db_query("SELECT tid FROM {term_data} WHERE name LIKE '%s\\__' OR name LIKE '%s'", $manufacturer->name, $manufacturer->name);
+          if ($tid = db_result($result)){
+            switch ($action){
+              case UC_IMPORTER_REPLACE:
+                drupal_execute('taxonomy_form_term', (array)$manufacturer, variable_get('uc_manufacturer_vid', 0), array('tid' => $tid));
+              break;
+              case UC_IMPORTER_INCREMENT:
+                $manufacturer->name .= '_'. db_num_rows($result);
+                drupal_execute('taxonomy_form_term', (array)$manufacturer, variable_get('uc_manufacturer_vid', 0));
+              break;
             }
-            else{
-              drupal_execute('uc_attribute_option_form', (array)$option, $aid);
-              $id_map['options'][(string)$option_data->id] = mysql_insert_id($active_db);
+          }
+          else{
+            drupal_execute('taxonomy_form_term', (array)$manufacturer, variable_get('uc_manufacturer_vid', 0));
+          }
+        }
+      }
+      if (module_exists('uc_attribute')){
+        foreach ($store->attributes->attribute as $attribute_data){
+          $attribute = new stdClass();
+          $attribute->name = html_entity_decode($attribute_data->name);
+          $attribute->ordering = isset($attribute_data->ordering) ? (integer)$attribute_data->ordering : 0;
+          $result = db_query("SELECT aid FROM {uc_attributes} WHERE name LIKE '%s\\__' OR name LIKE '%s'", $attribute->name, $attribute->name);
+          if ($aid = db_result($result)){
+            if ($action == UC_IMPORTER_INCREMENT){
+              $attribute->name .= '_'. db_num_rows($result);
+              drupal_execute('uc_attribute_form', (array)$attribute);
+            }
+          }
+          else{
+            drupal_execute('uc_attribute_form', (array)$attribute);
+            $aid = db_result(db_query("SELECT aid FROM {uc_attributes} WHERE name = '%s'", $attribute->name));
+          }
+          if ($aid){
+            $id_map['attributes'][(string)$attribute_data->id] = $aid;
+            $attribute->options = array();
+            foreach ($attribute_data->options->option as $option_data){
+              $option = new stdClass();
+              $option->name = html_entity_decode($option_data->name);
+              $option->price = isset($option_data->price) ? (float)$option_data->price : 0;
+              $option->weight = isset($option_data->weight) ? (float)$option_data->weight : 0;
+              $option->ordering = isset($option_data->ordering) ? (integer)$option_data->ordering : 0;
+              $result = db_query("SELECT oid FROM {uc_attribute_options} WHERE aid = %d AND (name LIKE '%s\\__' OR name LIKE '%s')", $aid, $option->name, $option->name);
+              if ($oid = db_result($result)){
+                switch ($action){
+                  case UC_IMPORTER_INCREMENT:
+                    $option->name .= '_'. db_num_rows($result);
+                    drupal_execute('uc_attribute_option_form', (array)$option, $aid);
+                    $id_map['options'][(string)$option_data->id] = mysql_insert_id($active_db);
+                  break;
+                  case UC_IMPORTER_REPLACE:
+                    drupal_execute('uc_attribute_option_form', (array)$option, $aid, $oid);
+                  case UC_IMPORTER_DO_NOTHING:
+                    $id_map['options'][(string)$option_data->id] = $oid;
+                  break;
+                }
+              }
+              else{
+                drupal_execute('uc_attribute_option_form', (array)$option, $aid);
+                $id_map['options'][(string)$option_data->id] = mysql_insert_id($active_db);
+              }
             }
           }
         }
@@ -834,14 +840,16 @@ function uc_importer_import($xml){
         $product->name = $user->name;
         $product->status = 1;
         $product->format = 3;
-        foreach ($product_data->categories->category as $category_data){
-          $product->taxonomy[] = $id_map['categories'][(string)$category_data->id];
+        if (module_exists('uc_catalog')){
+          foreach ($product_data->categories->category as $category_data){
+            $product->taxonomy[] = $id_map['categories'][(string)$category_data->id];
+          }
         }
         $product->unique_hash = (string)$product_data->unique_hash;
         $product->title = html_entity_decode((string)$product_data->name);
         $product->body = html_entity_decode((string)$product_data->description);
         $product->model = html_entity_decode((string)$product_data->model);
-        if ($manufacturer = variable_get('uc_manufacturer_vid', 0)){
+        if (module_exists('uc_manufacturer') && $manufacturer = variable_get('uc_manufacturer_vid', 0)){
           $product->taxonomy['tags'][$manufacturer] = html_entity_decode((string)$product_data->manufacturer);
         }
         $product->list_price = (float)$product_data->list_price;
@@ -849,25 +857,27 @@ function uc_importer_import($xml){
         $product->sell_price = (float)$product_data->sell_price;
         $product->weight = (float)$product_data->weight;
         $i = 0;
-        foreach ($product_data->image as $image){
-          $image_path = (string)$image->path;
-          $path_info = pathinfo($image_path);
-          $local_path = file_create_path() .'/ubercart_images/'. $_SERVER['HTTP_HOST'];
-          if (!file_check_directory($local_path)){
-            $local_path = file_create_path() .'/ubercart_images';
-          }
-          $local_path .= '/'. basename($image_path);
-          if (file_exists($local_path) || $size = file_put_contents($local_path, fopen($image_path, 'rb'))){
-            $product->field_image_cache[$i] = array(
-              'fid' => (file_exists($local_path) ? db_result(db_query("SELECT fid FROM {files} WHERE nid = %d AND filepath = '%s'", $nid, $local_path)) : 'upload'),
-              'title' => isset($image->title) ? html_entity_decode((string)$image->title) : '',
-              'alt' => isset($image->alt) ? html_entity_decode((string)$image->alt) : '',
-              'filename' => basename($image_path),
-              'filepath' => $local_path,
-              'filesize' => (file_exists($local_path) ? @filesize($local_path) : $size),
-              'filemime' => 'image/'. $path_info['extension'],
-            );
-            $i++;
+        if (module_exists('imagefield')){
+          foreach ($product_data->image as $image){
+            $image_path = (string)$image->path;
+            $path_info = pathinfo($image_path);
+            $local_path = file_create_path() .'/ubercart_images/'. $_SERVER['HTTP_HOST'];
+            if (!file_check_directory($local_path)){
+              $local_path = file_create_path() .'/ubercart_images';
+            }
+            $local_path .= '/'. rawurldecode(basename($image_path));
+            if (file_exists($local_path) || $size = file_put_contents($local_path, fopen($image_path, 'rb'))){
+              $product->field_image_cache[$i] = array(
+                'fid' => (file_exists($local_path) ? db_result(db_query("SELECT fid FROM {files} WHERE nid = %d AND filepath = '%s'", $nid, $local_path)) : 'upload'),
+                'title' => isset($image->title) ? html_entity_decode((string)$image->title) : '',
+                'alt' => isset($image->alt) ? html_entity_decode((string)$image->alt) : '',
+                'filename' => basename($image_path),
+                'filepath' => $local_path,
+                'filesize' => (file_exists($local_path) ? @filesize($local_path) : $size),
+                'filemime' => 'image/'. $path_info['extension'],
+              );
+              $i++;
+            }
           }
         }
         if (isset($product_data->fields)){
@@ -976,15 +986,15 @@ function uc_importer_directory_parse($filename){
 function uc_importer_orders($xml){
   $id_map = array(
     'statuses' => array(
-      1  => 1,
-      20 => 0,
-      30 => 1,
-      40 => 2,
-      50 => 3,
-      60 => 4,
-      70 => 4,
-      -20 => -1,
-      -10 => 0,
+      1  => 'pending',
+      20 => 'in_checkout',
+      30 => 'pending',
+      40 => 'processing',
+      50 => 'processing',
+      60 => 'completed',
+      70 => 'completed',
+      -20 => 'canceled',
+      -10 => 'in_checkout',
     ),
     'countries' => array(
       38 => 124,  // Canada
@@ -1004,7 +1014,7 @@ function uc_importer_orders($xml){
     if ($user){
       $uid = $user->uid;
     }
-    $status = $id_map['statuses'][(int)$order_data->order_status];
+    $status = $id_map['statuses'][$order_data->order_status];
     $order = uc_order_new($uid, $status);
     $order_fields = array(
       'order_status',
@@ -1037,7 +1047,7 @@ function uc_importer_orders($xml){
     }
     $order->delivery_country = $id_map['countries'][(string)$order_data->delivery_country];
     $order->billing_country = $id_map['countries'][(string)$order_data->billing_country];
-    db_query("UPDATE {uc_orders} SET uid = %d, order_status = %d, order_total = %f, primary_email = '%s', "
+    db_query("UPDATE {uc_orders} SET uid = %d, order_status = '%s', order_total = %f, primary_email = '%s', "
           ."delivery_first_name = '%s', delivery_last_name = '%s', delivery_phone = '%s', "
           ."delivery_company = '%s', delivery_street1 = '%s', delivery_street2 = '%s', "
           ."delivery_city = '%s', delivery_zone = %d, delivery_postal_code = '%s', delivery_country = %d, "
@@ -1086,7 +1096,7 @@ function uc_importer_orders($xml){
         $comments_values[] = 0;
       }
       $comments_values[] = (string)$comment->message;
-      $comments_values[] = (int)$comment->order_status;
+      $comments_values[] = (string)$comment->order_status;
       $comments_values[] = (int)$comment->notified;
       $comments_values[] = (int)$comment->created;
     }

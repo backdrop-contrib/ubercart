@@ -15,16 +15,23 @@ function uc_product_install() {
         PRIMARY KEY  (`pcid`)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
       db_query("CREATE TABLE {uc_products} (
-        `nid` mediumint(9) NOT NULL,
-        `model` varchar(255) NOT NULL,
-        `list_price` decimal(10,2) NOT NULL default '0.00',
-        `cost` decimal(10,2) NOT NULL default '0.00',
-        `sell_price` decimal(10,2) NOT NULL default '0.00',
-        `weight` float NOT NULL default '0',
-        `units` varchar(255) NOT NULL default 'lbs',
-        `default_qty` smallint(5) unsigned NOT NULL default '1',
+        `vid` mediumint(9) NOT NULL default 0,
+        `nid` mediumint(9) NOT NULL default 0,
+        `model` varchar(255) NOT NULL default '',
+        `list_price` decimal(10,2) NOT NULL default 0.00,
+        `cost` decimal(10,2) NOT NULL default 0.00,
+        `sell_price` decimal(10,2) NOT NULL default 0.00,
+        `weight` float NOT NULL default 0,
+        `weight_units` varchar(255) NOT NULL default 'lb',
+        `length` float unsigned NOT NULL default 0,
+        `width` float unsigned NOT NULL default 0,
+        `height` float unsigned NOT NULL default 0,
+        `length_units` varchar(255) NOT NULL default 'in',
+        `pkg_qty` smallint unsigned NOT NULL default 1,
+        `default_qty` smallint(5) unsigned NOT NULL default 1,
         `unique_hash` varchar(32) NOT NULL,
-        PRIMARY KEY  (`nid`)
+        `ordering` tinyint(2) NOT NULL default 0,
+        PRIMARY KEY  (`vid`)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
     break;
     case "pgsql":
@@ -35,27 +42,27 @@ function uc_product_install() {
         PRIMARY KEY  (pcid)
       );");
       db_query("CREATE TABLE {uc_products} (
-        nid integer NOT NULL default 0 REFERENCES {node} (nid),
+        vid integer NOT NULL default 0,
+        nid integer NOT NULL default 0,
         model varchar(255) NOT NULL default '',
         list_price decimal(10,2) NOT NULL default 0.00,
         cost decimal(10,2) NOT NULL default 0.00,
         sell_price decimal(10,2) NOT NULL default 0.00,
         weight float NOT NULL default 0,
-        units varchar(255) NOT NULL default 'lbs',
+        weight_units varchar(255) NOT NULL default 'lb',
+        length float unsigned NOT NULL default 0,
+        width float unsigned NOT NULL default 0,
+        height float unsigned NOT NULL default 0,
+        length_units varchar(255) NOT NULL default 'in',
+        pkg_qty smallint unsigned NOT NULL default 1,
         default_qty smallint unsigned NOT NULL default 1,
-        unique_hash varchar(32) NOT NULL default ''
+        unique_hash varchar(32) NOT NULL default '',
+        ordering smallint(2) NOT NULL default 0,
+        PRIMARY KEY (vid)
       );");
     break;
   }
   
-  variable_set('uc_product_default_fields', array(
-    'model' => 'model',
-    'image' => 'image',
-    'list_price' => 'list_price',
-    'cost' => 'cost',
-    'sell_price' => 'sell_price',
-    'weight' => 'weight',
-  ));
   $file_path = file_create_path('ubercart_images');
   file_check_directory($file_path, FILE_CREATE_DIRECTORY);
 }
@@ -63,7 +70,13 @@ function uc_product_install() {
 function uc_product_uninstall(){
   db_query("DROP TABLE {uc_product_classes}");
   db_query("DROP TABLE {uc_products}");
-  variable_del('uc_product_default_fields');
+  variable_del('uc_product_nodes_per_page');
+  variable_del('uc_product_add_to_cart_qty');
+  variable_del('uc_product_add_to_cart_teaser');
+  variable_del('uc_teaser_add_to_cart_text');
+  variable_del('uc_product_add_to_cart_text');
+  variable_del('uc_product_field_enabled');
+  variable_del('uc_product_field_weight');
 }
 
 function uc_product_update_1(){
@@ -182,5 +195,71 @@ function uc_product_update_5(){
     break;
   }
   
+  return $ret;
+}
+
+function uc_product_update_6(){
+  $ret = array();
+  
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_products} ADD COLUMN ordering smallint(2) NOT NULL default 0");
+    break;
+    case 'pgsql':
+      db_add_column($ret, 'uc_products', 'default_qty', 'smallint(2)', array('not null' => true, 'default' => 0));
+    break;
+  }
+  
+  return $ret;
+}
+
+function uc_product_update_7(){
+  $ret = array();
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_products} CHANGE units weight_units varchar(255) NOT NULL default 'lb'");
+      $ret[] = update_sql("ALTER TABLE {uc_products} ADD length float unsigned NOT NULL default 0 AFTER weight_units");
+      $ret[] = update_sql("ALTER TABLE {uc_products} ADD width float unsigned NOT NULL default 0 AFTER length");
+      $ret[] = update_sql("ALTER TABLE {uc_products} ADD height float unsigned NOT NULL default 0 AFTER width");
+      $ret[] = update_sql("ALTER TABLE {uc_products} ADD length_units varchar(255) NOT NULL default 'in' AFTER height");
+      $ret[] = update_sql("ALTER TABLE {uc_products} ADD pkg_qty smallint unsigned NOT NULL default 1 AFTER length_units");
+    break;
+    case 'pgsql':
+      db_change_column($ret, 'uc_products', 'units', 'weight_units', 'varchar(255)', array('not null' => true, 'default' => 'lb'));
+      db_add_column($ret, 'uc_products', 'pkg_qty', 'smallint unsigned', array('not null' => true, 'default' => 1));
+      db_add_column($ret, 'uc_products', 'length', 'float unsigned', array('not null' => true, 'default' => 0));
+      db_add_column($ret, 'uc_products', 'width', 'float unsigned', array('not null' => true, 'default' => 0));
+      db_add_column($ret, 'uc_products', 'height', 'float unsigned', array('not null' => true, 'default' => 0));
+      db_add_column($ret, 'uc_products', 'length_units', 'varchar(255)', array('not null' => true, 'default' => 'in'));
+    break;
+  }
+  return $ret;
+}
+
+function uc_product_update_8(){
+  $ret = array();
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_products} ADD vid mediumint(9) NOT NULL default 0 FIRST");
+      $ret[] = update_sql("ALTER TABLE {uc_products} DROP PRIMARY KEY");
+      $result = db_query("SELECT nid, vid FROM {node}");
+      while ($product = db_fetch_object($result)){
+        db_query("UPDATE {uc_products} SET vid = %d WHERE nid = %d", $product->vid, $product->nid);
+      }
+      $ret[] = update_sql("ALTER TABLE {uc_products} ADD PRIMARY KEY (vid)");
+    break;
+    case 'pgsql':
+      db_add_column($ret, 'uc_products', 'vid', 'integer', array('not null' => true, 'default' => 0));
+      $ret[] = update_sql("ALTER TABLE {uc_products} DROP CONSTRAINT {uc_products}_pkey");
+      $result = db_query("SELECT nid, vid FROM {node}");
+      while ($product = db_fetch_object($result)){
+        db_query("UPDATE {uc_products} SET vid = %d WHERE nid = %d", $product->vid, $product->nid);
+      }
+      $ret[] = update_sql("ALTER TABLE {uc_products} ADD PRIMARY KEY (vid)");
+    break;
+  }
   return $ret;
 }

@@ -4,10 +4,13 @@
 function uc_checkout_pane_payment($op, &$arg1, $arg2) {
   switch ($op) {
     case 'view':
+      drupal_add_js('misc/progress.js');
       if (module_exists('uc_taxes')){
         drupal_add_js('var tax_weight = '. variable_get('uc_li_tax_weight', 9), 'inline');
         drupal_add_js(drupal_get_path('module', 'uc_taxes') .'/uc_taxes.js');
       }
+      drupal_add_js("var def_payment_msg = '". variable_get('uc_default_payment_msg', t('Continue with checkout to complete payment.')) ."';", 'inline');
+
       $contents['current_total'] = array(
         '#type' => 'hidden',
         '#value' => $arg1->order_total > 0 ? $arg1->order_total : NULL,

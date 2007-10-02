@@ -178,8 +178,8 @@ function uc_attribute_nodeapi(&$node, $op, $arg3 = null, $arg4 = null){
   if (in_array($node->type, array_keys(uc_product_node_info()))){
     switch($op){
       case 'insert':
-        db_query("INSERT IGNORE INTO {uc_product_attributes} (nid, aid, default_option) SELECT %d, aid, default_option FROM {uc_class_attributes} WHERE pcid = '%s'", $node->nid, $node->type);
-        db_query("INSERT IGNORE INTO {uc_product_options} (nid, oid, cost, price, weight) SELECT %d, oid, cost, price, weight FROM {uc_class_attribute_options} WHERE pcid = '%s'", $node->nid, $node->type);
+        db_query("INSERT IGNORE INTO {uc_product_attributes} (nid, aid, ordering, default_option) SELECT %d, aid, ordering, default_option FROM {uc_class_attributes} WHERE pcid = '%s'", $node->nid, $node->type);
+        db_query("INSERT IGNORE INTO {uc_product_options} (nid, oid, cost, price, weight, ordering) SELECT %d, oid, cost, price, weight, ordering FROM {uc_class_attribute_options} WHERE pcid = '%s'", $node->nid, $node->type);
       break;
       case 'delete':
         db_query("DELETE FROM {uc_product_options} WHERE nid = %d", $node->nid);
@@ -333,7 +333,7 @@ function uc_attribute_form($attr_id = null){
     '#weight' => 0,
   );
   $form['ordering'] = array('#type' => 'weight',
-    '#title' => t('Weight'),
+    '#title' => t('Order'),
     '#default_value' => $attribute->ordering,
     '#weight' => 1,
   );
@@ -519,10 +519,12 @@ function uc_object_attributes_form($id, $type){
   $location[] = menu_get_item(null, 'admin/store/products');
   $location[] = menu_get_item(null, 'admin/store/products/attributes');
   $breadcrumb = drupal_get_breadcrumb();
-  foreach ($location as $item){
-    $breadcrumb[] = l($item['title'], $item['path']);
+  if (count($breadcrumb) == 1){
+    foreach ($location as $item){
+      $breadcrumb[] = l($item['title'], $item['path']);
+    }
+    drupal_set_breadcrumb($breadcrumb);
   }
-  drupal_set_breadcrumb($breadcrumb);
   
   $form['admin_link'] = array('#value' => l(t('Attributes administration'), 'admin/store/products/attributes'));
   if ($type == 'product'){
@@ -654,11 +656,12 @@ function uc_object_options_form($obj_id, $type){
   $location[] = menu_get_item(null, 'admin/store/products');
   $location[] = menu_get_item(null, 'admin/store/products/attributes');
   $breadcrumb = drupal_get_breadcrumb();
-  foreach ($location as $item){
-    $breadcrumb[] = l($item['title'], $item['path']);
+  if (count($breadcrumb) == 1){
+    foreach ($location as $item){
+      $breadcrumb[] = l($item['title'], $item['path']);
+    }
+    drupal_set_breadcrumb($breadcrumb);
   }
-  drupal_set_breadcrumb($breadcrumb);
-  
   $form['admin_link'] = array('#value' => l(t('Attributes administration'), 'admin/store/products/attributes'));
   if ($type == 'product'){
     $product = node_load($obj_id);
@@ -683,7 +686,7 @@ function uc_object_options_form($obj_id, $type){
     $form['prod_attr'][$key]['aid'] = array('#type' => 'hidden',
       '#value' => $attribute->aid,
     );
-    $form['prod_attr'][$key]['ordering'] = array('#type' => 'hidden',
+    $form['prod_attr'][$key]['ordering'] = array('#type' => 'value',
       '#value' => $attribute->ordering,
     );
     
@@ -767,9 +770,6 @@ function theme_uc_object_options_form($form){
         if ($i != 0){ 
           $row = array_pad($row, -8, '');
         }
-        /* else{
-          $row = array('data' => $row, 'style' => 'border-top: 1px solid black');
-        } */
         $i++;
         $rows[] = $row;
         $row = array();
@@ -853,11 +853,12 @@ function uc_product_adjustments_form($nid){
   $location[] = menu_get_item(null, 'admin/store/products');
   $location[] = menu_get_item(null, 'admin/store/products/attributes');
   $breadcrumb = drupal_get_breadcrumb();
-  foreach ($location as $item){
-    $breadcrumb[] = l($item['title'], $item['path']);
+  if (count($breadcrumb)){
+    foreach ($location as $item){
+      $breadcrumb[] = l($item['title'], $item['path']);
+    }
+    drupal_set_breadcrumb($breadcrumb);
   }
-  drupal_set_breadcrumb($breadcrumb);
-  
   $form['admin_link'] = array('#value' => l(t('Attributes administration'), 'admin/store/products/attributes'));
   $node = node_load($nid);
   drupal_set_title(check_plain($node->title));
@@ -1151,40 +1152,41 @@ function _uc_cart_product_get_options($item){
 function _uc_attribute_alter_form($product){
   $result = db_query("SELECT * FROM {uc_product_attributes} WHERE nid = %d ORDER BY ordering", $product['nid']['#value']);
   $total_attributes = db_num_rows($result);
-  $node = node_load($product['nid']['#value']);
-  while ($relation = db_fetch_object($result)){
-    $attribute = uc_attribute_load($relation->aid, $product['nid']['#value'], 'product');
-    $opt_array = array();
-    foreach($attribute->options as $option){
-      switch (variable_get('uc_attribute_option_price_format', 'adjustment')){
-        case 'total':
-          $display_price = ', '. uc_currency_format($node->sell_price + $option->price);
-          if ($total_attributes == 1){
-            break;
-          }
-        case 'adjustment':
-          $display_price = ($option->price != 0 ? ', '. ($option->price > 0 ? '+' : '') . uc_currency_format($option->price) : '');
-        break;
-        case 'none':
-        default:
-          $display_price = '';
-        break;
+  if ($node = node_load((int)$product['nid']['#value'])){
+    while ($relation = db_fetch_object($result)){
+      $attribute = uc_attribute_load($relation->aid, $product['nid']['#value'], 'product');
+      $opt_array = array();
+      foreach($attribute->options as $option){
+        switch (variable_get('uc_attribute_option_price_format', 'adjustment')){
+          case 'total':
+            $display_price = ', '. uc_currency_format($node->sell_price + $option->price);
+            if ($total_attributes == 1){
+              break;
+            }
+          case 'adjustment':
+            $display_price = ($option->price != 0 ? ', '. ($option->price > 0 ? '+' : '') . uc_currency_format($option->price) : '');
+          break;
+          case 'none':
+          default:
+            $display_price = '';
+          break;
+        }
+        $opt_array[$option->oid] = $option->name . $display_price;
       }
-      $opt_array[$option->oid] = $option->name . $display_price;
+      if (count($attribute->options)){
+        $product['attributes'][$attribute->aid] = array('#type' => 'select',
+          '#title' => $attribute->name,
+          '#default_value' => $relation->default_option,
+          '#options' => $opt_array,
+        );
+      }
+      else{
+        $product['attributes'][$attribute->aid] = array('#type' => 'textfield',
+          '#title' => $attribute->name,
+        );
+      }
+      $product['attributes']['#theme'] = 'uc_attribute_add_to_cart';
     }
-    if (count($attribute->options)){
-      $product['attributes'][$attribute->aid] = array('#type' => 'select',
-        '#title' => $attribute->name,
-        '#default_value' => $relation->default_option,
-        '#options' => $opt_array,
-      );
-    }
-    else{
-      $product['attributes'][$attribute->aid] = array('#type' => 'textfield',
-        '#title' => $attribute->name,
-      );
-    }
-    $product['attributes']['#theme'] = 'uc_attribute_add_to_cart';
   }
   return $product;
 }

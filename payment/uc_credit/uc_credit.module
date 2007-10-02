@@ -434,15 +434,14 @@ function uc_payment_method_credit($op, &$arg1) {
       $form['number_clearing_instr'] = array(
         '#value' => '<div>'. t('Specify below the status and age of orders whose credit card information will be cleaned from the database.') .'</div>',
       );
-      $statuses = uc_order_get_status_name(0, FALSE, TRUE);
-      foreach ($statuses as $key => $value) {
-        $options[$key] = $value['title'];
+      foreach (uc_order_status_list() as $status) {
+        $options[$status['id']] = $status['title'];
       }
       $form['uc_credit_clear_status'] = array(
         '#type' => 'select',
         '#title' => t('Order status'),
         '#options' => $options,
-        '#default_value' => variable_get('uc_credit_clear_status', 4),
+        '#default_value' => variable_get('uc_credit_clear_status', 'completed'),
       );
       $form['table1'] = array('#value' => '<table><tbody style="border: 0px;"><tr><td>');
       $form['uc_credit_number_duration'] = array(
@@ -496,6 +495,7 @@ function uc_payment_method_credit_form($order) {
       '#type' => 'textfield',
       '#title' => t('Card Owner'),
       '#default_value' => $order->payment_details['cc_owner'],
+      '#attributes' => array('autocomplete' => 'off'),
       '#size' => 32,
       '#maxlength' => 64,
     );
@@ -517,6 +517,7 @@ function uc_payment_method_credit_form($order) {
     '#type' => 'textfield',
     '#title' => t('Card Number'),
     '#default_value' => $default_num,
+    '#attributes' => array('autocomplete' => 'off'),
     '#size' => 20,
     '#maxlength' => 16,
   );
@@ -528,6 +529,7 @@ function uc_payment_method_credit_form($order) {
       '#type' => 'textfield',
       '#title' => t('CVV'),
       '#default_value' => $order->payment_details['cc_cvv'],
+      '#attributes' => array('autocomplete' => 'off'),
       '#size' => $cvv_length,
       '#maxlength' => $cvv_length,
     );
@@ -537,6 +539,7 @@ function uc_payment_method_credit_form($order) {
       '#type' => 'textfield',
       '#title' => t('Issuing Bank'),
       '#default_value' => $order->payment_details['cc_bank'],
+      '#attributes' => array('autocomplete' => 'off'),
       '#size' => 32,
       '#maxlength' => 64,
     );

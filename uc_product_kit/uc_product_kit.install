@@ -6,18 +6,20 @@ function uc_product_kit_install(){
     case 'mysql':
     case 'mysqli':
       db_query("CREATE TABLE {uc_product_kits} (
-        `nid` mediumint(9) NOT NULL,
+        `vid` mediumint(9) NOT NULL default 0,
+        `nid` mediumint(9) NOT NULL default 0,
         `product_id` mediumint(9) NOT NULL,
         `mutable` tinyint(1) NOT NULL default 0,
         `qty` smallint(6) NOT NULL,
         `discount` float NOT NULL default 0.0,
         `data` text NOT NULL,
         `ordering` smallint NOT NULL default 0,
-        PRIMARY KEY  (`nid`, `product_id`)
+        PRIMARY KEY  (`vid`, `product_id`)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
     break;
     case 'pgsql':
       db_query("CREATE TABLE {uc_product_kits} (
+        vid integer NOT NULLl default 0,
         nid integer NOT NULL default 0,
         product_id integer NOT NULL default 0,
         mutable smallint NOT NULL default 0,
@@ -25,7 +27,7 @@ function uc_product_kit_install(){
         discount float NOT NULL default 0.0,
         data text NOT NULL default '',
         orderint smallint NOT NULL default 0,
-        PRIMARY KEY  (nid, product_id)
+        PRIMARY KEY  (vid, product_id)
       );");
     break;
   }
@@ -64,5 +66,42 @@ function uc_product_kit_update_2(){
       db_add_column($ret, 'uc_product_kits', 'ordering', 'smallint', array('not null' => true, 'default' => 0));
     break;
   }
+  return $ret;
+}
+
+function uc_product_kit_update_3(){
+  $ret = array();
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_product_kits} ADD COLUMN vid mediumint(9) NOT NULL default 0 FIRST");
+      $ret[] = update_sql("ALTER TABLE {uc_product_kits} DROP PRIMARY KEY");
+      $result = db_query("SELECT nid, vid FROM {node}");
+      while ($product = db_fetch_object($result)){
+        db_query("UPDATE {uc_product_kits} SET vid = %d WHERE nid = %d", $product->vid, $product->nid);
+      }
+      $ret[] = update_sql("ALTER TABLE {uc_product_kits} ADD PRIMARY KEY (vid, product_id)");
+    break;
+    case 'pgsql':
+      db_add_column($ret, 'uc_product_kits', 'vid', 'mediumint', array('not null' => true, 'default' => 0));
+      $ret[] = update_sql("ALTER TABLE {uc_product_kits} DROP CONSTRAINT {uc_products}_pkey");
+      $result = db_query("SELECT nid, vid FROM {node}");
+      while ($product = db_fetch_object($result)){
+        db_query("UPDATE {uc_product_kits} SET vid = %d WHERE nid = %d", $product->vid, $product->nid);
+      }
+      $ret[] = update_sql("ALTER TABLE {uc_product_kits} ADD PRIMARY KEY (vid, product_id)");
+    break;
+  }
+  return $ret;
+}
+
+function uc_product_kit_4(){
+  $ret = array();
+  db_query("UPDATE {node} SET type = 'product_kit' WHERE type = 'kit'");
+  if (module_exists('content')){
+    $ret[] = update_sql("ALTER TABLE {content_type_kit} RENAME TO {content_type_product_kit}");
+  }
+  node_types_rebuild();
+  menu_rebuild();
   return $ret;
 }

@@ -39,6 +39,7 @@ function uc_product_kit_access($op, $node){
  */
 function uc_product_kit_insert(&$node){
   $obj = new stdClass();
+  $obj->vid = $node->vid;
   $obj->nid = $node->nid;
   $obj->model = '';
   $obj->list_price = 0;
@@ -50,11 +51,12 @@ function uc_product_kit_insert(&$node){
   $values = array();
   $placeholders = array();
   foreach ($node->products as $product){
+    $values[] = $node->vid;
     $values[] = $node->nid;
     $values[] = $product;
     $values[] = $node->mutable;
     $values[] = 1;
-    $placeholders[] = '(%d, %d, %d, %d)';
+    $placeholders[] = '(%d, %d, %d, %d, %d)';
     
     $product = node_load($product);
     $obj->model .= $product->model . ' / ';
@@ -63,11 +65,11 @@ function uc_product_kit_insert(&$node){
     $obj->sell_price += $product->sell_price * $product->qty;
     $obj->weight += $product->weight * $product->qty * uc_weight_conversion($product->units, $obj->units);
   }
-  db_query("INSERT INTO {uc_product_kits} (nid, product_id, mutable, qty) VALUES ". implode(',', $placeholders), $values);
+  db_query("INSERT INTO {uc_product_kits} (vid, nid, product_id, mutable, qty) VALUES ". implode(',', $placeholders), $values);
   $obj->model = rtrim($obj->model, ' / ');
-  db_query("INSERT INTO {uc_products} (nid, model, list_price, cost, sell_price, weight, units, unique_hash) VALUES (%d, '%s', %f, %f, %f, %f, '%s', '%s')",
-    $obj->nid, $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->units,
-    md5($obj->nid . $obj->model . $obj->list_price . $obj->cost . $obj->sell_price . $obj->weight . $obj->units . time())
+  db_query("INSERT INTO {uc_products} (vid, nid, model, list_price, cost, sell_price, weight, units, unique_hash) VALUES (%d, %d, '%s', %f, %f, %f, %f, '%s', '%s')",
+    $obj->vid, $obj->nid, $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->units,
+    md5($obj->vid . $obj->nid . $obj->model . $obj->list_price . $obj->cost . $obj->sell_price . $obj->weight . $obj->units . time())
   );
 }
 
@@ -76,6 +78,7 @@ function uc_product_kit_insert(&$node){
  */
 function uc_product_kit_update(&$node){
   $obj = new stdClass();
+  $obj->vid = $node->vid;
   $obj->nid = $node->nid;
   $obj->model = '';
   $obj->list_price = 0;
@@ -84,17 +87,17 @@ function uc_product_kit_update(&$node){
   $obj->weight = 0;
   $obj->units = variable_get('uc_weight_unit', 'lb');
   
-  db_query("DELETE FROM {uc_product_kits} WHERE nid = %d", $node->nid);
   $values = array();
   $placeholders = array();
   foreach ($node->products as $i => $product){
+    $values[] = $node->vid;
     $values[] = $node->nid;
     $values[] = $product;
     $values[] = $node->mutable;
     $values[] = $node->items[$i]['qty'];
     $values[] = $node->items[$i]['discount'];
     $values[] = $node->items[$i]['ordering'];
-    $placeholders[] = '(%d, %d, %d, %d, %f, %d)';
+    $placeholders[] = '(%d, %d, %d, %d, %d, %f, %d)';
 
     $product = node_load($product);
     $product->qty = $node->items[$i]['qty'];
@@ -112,15 +115,26 @@ function uc_product_kit_update(&$node){
     $obj->sell_price += $product->sell_price * $product->qty;
     $obj->weight += $product->weight * $product->qty * uc_weight_conversion($product->units, $obj->units);
   }
-  db_query("INSERT INTO {uc_product_kits} (nid, product_id, mutable, qty, discount, ordering) VALUES ". implode(',', $placeholders), $values);
   $obj->model = rtrim($obj->model, ' / ');
-  db_query("UPDATE {uc_products} SET model = '%s', list_price = %f, cost = %f, sell_price = %f, weight = %f, units = '%s' WHERE nid = %d",
-    $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->units, $obj->nid);
-  if (!db_affected_rows()){
-    db_query("INSERT INTO {uc_products} (nid, model, list_price, cost, sell_price, weight, units, unique_hash) VALUES (%d, '%s', %f, %f, %f, %f, '%s', '%s')",
-      $obj->nid, $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->units,
-      md5($obj->nid . $obj->model . $obj->list_price . $obj->cost . $obj->sell_price . $obj->weight . $obj->units . time())
+  if (!$node->revision){
+    db_query("DELETE FROM {uc_product_kits} WHERE nid = %d", $node->nid);
+  }
+  db_query("INSERT INTO {uc_product_kits} (vid, nid, product_id, mutable, qty, discount, ordering) VALUES ". implode(',', $placeholders), $values);
+  if ($node->revision){
+    db_query("INSERT INTO {uc_products} (vid, nid, model, list_price, cost, sell_price, weight, units, unique_hash) VALUES (%d, %d, '%s', %f, %f, %f, %f, '%s', '%s')",
+      $obj->vid, $obj->nid, $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->units,
+      md5($obj->vid . $obj->nid . $obj->model . $obj->list_price . $obj->cost . $obj->sell_price . $obj->weight . $obj->units . time())
     );
+  }
+  else{
+    db_query("UPDATE {uc_products} SET model = '%s', list_price = %f, cost = %f, sell_price = %f, weight = %f, units = '%s' WHERE vid = %d",
+      $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->units, $obj->vid);
+    if (!db_affected_rows()){
+      db_query("INSERT INTO {uc_products} (vid, nid, model, list_price, cost, sell_price, weight, units, unique_hash) VALUES (%d, %d, '%s', %f, %f, %f, %f, '%s', '%s')",
+        $obj->vid, $obj->nid, $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->units,
+        md5($obj->vid . $obj->nid . $obj->model . $obj->list_price . $obj->cost . $obj->sell_price . $obj->weight . $obj->units . time())
+      );
+    }
   }
 }
 
@@ -139,7 +153,7 @@ function uc_product_kit_load(&$node){
   $obj = new stdClass();
 
   $products = array();
-  $result = db_query("SELECT product_id, mutable, qty, discount, ordering FROM {uc_product_kits} WHERE nid = %d ORDER BY ordering", $node->nid);
+  $result = db_query("SELECT product_id, mutable, qty, discount, ordering FROM {uc_product_kits} WHERE vid = %d ORDER BY ordering", $node->vid);
   while ($prod = db_fetch_object($result)){
     $obj->mutable = $prod->mutable;
     $product = node_load($prod->product_id);
@@ -394,7 +408,7 @@ function uc_product_kit_add_to_cart_form_submit($form_id, $form_values){
 
 function uc_product_kit_product_info(){
   return array(
-    'kit' => array(
+    'product_kit' => array(
       'name' => t('Product kit'),
       'module' => 'uc_product_kit',
       'description' => t('This node represents two or more products that have been listed together. This presents a logical and convenient grouping of items to the customer.'),

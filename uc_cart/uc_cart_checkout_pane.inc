@@ -65,6 +65,10 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
       return array('description' => $description, 'contents' => $contents);
 
     case 'process':
+      if (!valid_email_address($arg2['primary_email'])) {
+        drupal_set_message(t('You must enter a valid e-mail address.'), 'error');
+        return FALSE;
+      }
       $arg1->primary_email = $arg2['primary_email'];
       if ($user->uid) {
         $arg1->uid = $user->uid;
@@ -99,40 +103,40 @@ function uc_checkout_pane_delivery($op, &$arg1, $arg2) {
       }
 
       if (uc_address_field_enabled('first_name')) {
-        $contents['delivery_first_name'] = uc_textfield(uc_get_field_name('first_name'), $arg1->delivery_first_name);
+        $contents['delivery_first_name'] = uc_textfield(uc_get_field_name('first_name'), $arg1->delivery_first_name, uc_address_field_required('first_name'));
       }
       if (uc_address_field_enabled('last_name')) {
-        $contents['delivery_last_name'] = uc_textfield(uc_get_field_name('last_name'), $arg1->delivery_last_name);
+        $contents['delivery_last_name'] = uc_textfield(uc_get_field_name('last_name'), $arg1->delivery_last_name, uc_address_field_required('last_name'));
       }
       if (uc_address_field_enabled('company')) {
-        $contents['delivery_company'] = uc_textfield(uc_get_field_name('company'), $arg1->delivery_company, FALSE, NULL, 64);
+        $contents['delivery_company'] = uc_textfield(uc_get_field_name('company'), $arg1->delivery_company, uc_address_field_required('company'), NULL, 64);
       }
       if (uc_address_field_enabled('street1')) {
-        $contents['delivery_street1'] = uc_textfield(uc_get_field_name('street1'), $arg1->delivery_street1, TRUE, NULL, 64);
+        $contents['delivery_street1'] = uc_textfield(uc_get_field_name('street1'), $arg1->delivery_street1, uc_address_field_required('street1'), NULL, 64);
       }
       if (uc_address_field_enabled('street2')) {
-        $contents['delivery_street2'] = uc_textfield(uc_get_field_name('street2'), $arg1->delivery_street2, FALSE, NULL, 64);
-      }
+        $contents['delivery_street2'] = uc_textfield(uc_get_field_name('street2'), $arg1->delivery_street2, uc_address_field_required('street2'), NULL, 64);
+      }                                                                                                                        
       if (uc_address_field_enabled('city')) {
-        $contents['delivery_city'] = uc_textfield(uc_get_field_name('city'), $arg1->delivery_city);
+        $contents['delivery_city'] = uc_textfield(uc_get_field_name('city'), $arg1->delivery_city, uc_address_field_required('city'));
       }
       if (uc_address_field_enabled('country')) {
-        $contents['delivery_country'] = uc_country_select(uc_get_field_name('country'), $arg1->delivery_country);
+        $contents['delivery_country'] = uc_country_select(uc_get_field_name('country'), $arg1->delivery_country, NULL, 'name', uc_address_field_required('country'));
       }
       if (uc_address_field_enabled('zone')) {
-        if (isset($_POST['panes']['delivery']['pane']['delivery_country'])) {
-          $country_id = intval($_POST['panes']['delivery']['pane']['delivery_country']);
+        if (isset($_POST['panes']['delivery']['delivery_country'])) {
+          $country_id = intval($_POST['panes']['delivery']['delivery_country']);
         }
         else {
           $country_id = $arg1->delivery_country;
         }
-        $contents['delivery_zone'] = uc_zone_select(uc_get_field_name('zone'), $arg1->delivery_zone, NULL, $country_id);
+        $contents['delivery_zone'] = uc_zone_select(uc_get_field_name('zone'), $arg1->delivery_zone, NULL, $country_id, 'name', uc_address_field_required('zone'));
       }
       if (uc_address_field_enabled('postal_code')) {
-        $contents['delivery_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $arg1->delivery_postal_code, TRUE, NULL, 10, 10);
+        $contents['delivery_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $arg1->delivery_postal_code, uc_address_field_required('postal_code'), NULL, 10, 10);
       }
       if (uc_address_field_enabled('phone')) {
-        $contents['delivery_phone'] = uc_textfield(uc_get_field_name('phone'), $arg1->delivery_phone, TRUE, NULL, 32, 16);
+        $contents['delivery_phone'] = uc_textfield(uc_get_field_name('phone'), $arg1->delivery_phone, uc_address_field_required('phone'), NULL, 32, 16);
       }
 
       return array('description' => $description, 'contents' => $contents, 'theme' => 'address_pane');
@@ -152,7 +156,7 @@ function uc_checkout_pane_delivery($op, &$arg1, $arg2) {
 
     case 'review':
       $review[] = array('title' => t('Address'), 'data' => uc_order_address($arg1, 'delivery', FALSE));
-      if (uc_address_field_enabled('phone')) {
+      if (uc_address_field_enabled('phone') && !empty($arg1->delivery_phone)) {
         $review[] = array('title' => t('Phone'), 'data' => $arg1->delivery_phone);
       }
       return $review;
@@ -182,40 +186,40 @@ function uc_checkout_pane_billing($op, &$arg1, $arg2) {
         }
       }
       if (uc_address_field_enabled('first_name')) {
-        $contents['billing_first_name'] = uc_textfield(uc_get_field_name('first_name'), $arg1->billing_first_name);
+        $contents['billing_first_name'] = uc_textfield(uc_get_field_name('first_name'), $arg1->billing_first_name, uc_address_field_required('first_name'));
       }
       if (uc_address_field_enabled('last_name')) {
-        $contents['billing_last_name'] = uc_textfield(uc_get_field_name('last_name'), $arg1->billing_last_name);
+        $contents['billing_last_name'] = uc_textfield(uc_get_field_name('last_name'), $arg1->billing_last_name, uc_address_field_required('last_name'));
       }
       if (uc_address_field_enabled('company')) {
-        $contents['billing_company'] = uc_textfield(uc_get_field_name('company'), $arg1->billing_company, FALSE, NULL, 64);
+        $contents['billing_company'] = uc_textfield(uc_get_field_name('company'), $arg1->billing_company, uc_address_field_required('company'), NULL, 64);
       }
       if (uc_address_field_enabled('street1')) {
-        $contents['billing_street1'] = uc_textfield(uc_get_field_name('street1'), $arg1->billing_street1, TRUE, NULL, 64);
+        $contents['billing_street1'] = uc_textfield(uc_get_field_name('street1'), $arg1->billing_street1, uc_address_field_required('street1'), NULL, 64);
       }
       if (uc_address_field_enabled('street2')) {
-        $contents['billing_street2'] = uc_textfield(uc_get_field_name('street2'), $arg1->billing_street2, FALSE, NULL, 64);
+        $contents['billing_street2'] = uc_textfield(uc_get_field_name('street2'), $arg1->billing_street2, uc_address_field_required('street2'), NULL, 64);
       }
       if (uc_address_field_enabled('city')) {
-        $contents['billing_city'] = uc_textfield(uc_get_field_name('city'), $arg1->billing_city);
+        $contents['billing_city'] = uc_textfield(uc_get_field_name('city'), $arg1->billing_city, uc_address_field_required('city'));
       }
       if (uc_address_field_enabled('country')) {
-        $contents['billing_country'] = uc_country_select(uc_get_field_name('country'), $arg1->billing_country);
+        $contents['billing_country'] = uc_country_select(uc_get_field_name('country'), $arg1->billing_country, NULL, 'name', uc_address_field_required('country'));
       }
       if (uc_address_field_enabled('zone')) {
-        if (isset($_POST['panes']['billing']['pane']['billing_country'])) {
-          $country_id = intval($_POST['panes']['billing']['pane']['billing_country']);
+        if (isset($_POST['panes']['billing']['billing_country'])) {
+          $country_id = intval($_POST['panes']['billing']['billing_country']);
         }
         else {
           $country_id = $arg1->billing_country;
         }
-        $contents['billing_zone'] = uc_zone_select(uc_get_field_name('zone'), $arg1->billing_zone, NULL, $country_id);
+        $contents['billing_zone'] = uc_zone_select(uc_get_field_name('zone'), $arg1->billing_zone, NULL, $country_id, 'name', uc_address_field_required('zone'));
       }
       if (uc_address_field_enabled('postal_code')) {
-        $contents['billing_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $arg1->billing_postal_code, TRUE, NULL, 10, 10);
+        $contents['billing_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $arg1->billing_postal_code, uc_address_field_required('postal_code'), NULL, 10, 10);
       }
       if (uc_address_field_enabled('phone')) {
-        $contents['billing_phone'] = uc_textfield(uc_get_field_name('phone'), $arg1->billing_phone, TRUE, NULL, 32, 16);
+        $contents['billing_phone'] = uc_textfield(uc_get_field_name('phone'), $arg1->billing_phone, uc_address_field_required('phone'), NULL, 32, 16);
       }
 
       return array('description' => $description, 'contents' => $contents, 'theme' => 'address_pane');
@@ -235,7 +239,7 @@ function uc_checkout_pane_billing($op, &$arg1, $arg2) {
 
     case 'review':
       $review[] = array('title' => t('Address'), 'data' => uc_order_address($arg1, 'billing', FALSE));
-      if (uc_address_field_enabled('phone')) {
+      if (uc_address_field_enabled('phone') && !empty($arg1->billing_phone)) {
         $review[] = array('title' => t('Phone'), 'data' => $arg1->billing_phone);
       }
       return $review;

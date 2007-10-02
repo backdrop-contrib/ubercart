@@ -120,6 +120,17 @@ function uc_catalog_perm(){
   return array('administer catalog');
 }
 
+function uc_catalog_enable(){
+  if (module_exists('imagecache')){
+    $result = db_query("SELECT presetid FROM {imagecache_preset} WHERE presetname = 'category'");
+    if (!db_fetch_object($result)){
+      $id = db_next_id('{imagecache_preset}_presetid');
+      db_query("INSERT INTO {imagecache_preset} (presetid, presetname) VALUES (%d, 'category')", $id);
+      db_query("INSERT INTO {imagecache_action} (actionid, presetid, weight, data) VALUES (%d, %d, 0, '%s')", db_next_id('{imagecache_action}_actionid'), $id, 'a:4:{s:8:"function";s:5:"scale";s:3:"fit";s:6:"inside";s:5:"width";s:2:"96";s:6:"height";s:2:"96";}');
+    }
+  }
+}
+
 /**
  * Implementation of hook_nodeapi().
  */
@@ -129,7 +140,7 @@ function uc_catalog_nodeapi(&$node, $op, $a3 = null, $a4 = null){
   if (in_array($node->type, array_keys(uc_product_node_info()))){
     switch($op){
       case 'view':
-        if ($a4 == true){
+        if ($a4 == true && variable_get('uc_catalog_breadcrumb', true)){
           $crumbs = array();
           $terms = taxonomy_node_get_terms_by_vocabulary($node->nid, variable_get('uc_catalog_vid', 0));
           if (count($terms)){
@@ -197,7 +208,10 @@ function uc_catalog_taxonomy($op, $type, $object = null){
         break;
         case 'update':
           $field_name = 'image';
-          if ($file = file_check_upload($field_name)) {
+          if ($object['remove']){
+            db_query("DELETE FROM {uc_catalog_images} WHERE tid = %d", $object['tid']);
+          }
+          else if ($file = file_check_upload($field_name)) {
             $file->filepath = str_replace('\\', '/', $file->filepath);
             $file = file_save_upload($field_name, file_create_path('ubercart_images') .'/'. $file->filename);
             if ($file) {
@@ -224,10 +238,24 @@ function uc_catalog_form_alter($form_id, &$form){
     $form['#attributes'] = array("enctype" => "multipart/form-data");
     
     $form['name']['#weight'] = -1;
-    $form['image'] = array('#type' => 'file',
+    $form['image']['#weight'] = 0;
+    $form['image']['image'] = array('#type' => 'file',
       '#title' => t('Image'),
       '#weight' => 0,
     );
+    $image = uc_catalog_image_load($form['tid']['#value']);
+    if ($image){
+      if (module_exists('imagecache')){
+        $image_display = theme('imagecache', 'category', $image->filepath);
+      }
+      else{
+        $image_display = theme('placeholder', $image->filename);
+      }
+      $form['image']['remove'] = array('#type' => 'checkbox',
+        '#title' => t('Remove category image: !image', array('!image' => $image_display)),
+        '#weigt' => 1,
+      );
+    }
   }
 }
 
@@ -237,7 +265,12 @@ function uc_catalog_form_alter($form_id, &$form){
  * This hook rewrites taxonomy term links to point to the return value.
  */
 function uc_catalog_term_path($term){
-  return variable_get('uc_catalog_url', 'catalog') .'/'. $term->tid .'/'. iconv('UTF-8', 'ASCII//TRANSLIT', preg_replace(array('/ /', '/\W[_ ]?/'), array('_', ''), strtolower($term->name)));
+  if (function_exists('iconv')){
+    return variable_get('uc_catalog_url', 'catalog') .'/'. $term->tid .'/'. iconv('UTF-8', 'ASCII//TRANSLIT', preg_replace(array('/ /', '/\W[_ ]?/'), array('_', ''), strtolower($term->name)));
+  }
+  else{
+    return variable_get('uc_catalog_url', 'catalog') .'/'. $term->tid .'/'. preg_replace(array('/ /', '/\W[_ ]?/'), array('_', ''), strtolower($term->name));
+  }
 }
 
 /**
@@ -592,7 +625,7 @@ function theme_uc_catalog_browse($tid = 0){
   $header = tapir_get_header('uc_product_table', array());
   $order = substr(tablesort_sql($header), 10);
   if (empty($order)){
-    $order = 'n.title';
+    $order = 'p.ordering, n.title';
   }
   $product_types = array_keys(uc_product_node_info());
   $sql = 'SELECT DISTINCT(n.nid), n.sticky, n.title, n.created FROM {node} n INNER JOIN {term_node} tn ON n.nid = tn.nid INNER JOIN {uc_products} AS p ON n.nid = p.nid WHERE tn.tid = %d AND n.status = 1 AND n.type IN ("'. implode('","', $product_types) .'") ORDER BY '. $order;
@@ -688,7 +721,7 @@ function uc_catalog_admin_form(){
   
   $form['uc_catalog_breadcrumb_nodecount'] = array('#type' => 'checkbox',
     '#title' => t('Display node counts in Catalog Breadcrumb'),
-    '#default_value' => variable_get('uc_catalog_breadcrumb_nodecount', true),
+    '#default_value' => variable_get('uc_catalog_breadcrumb_nodecount', false),
   );
   
   $form['uc_catalog_show_subcategories'] = array('#type' => 'checkbox',

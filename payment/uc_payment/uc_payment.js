@@ -33,7 +33,7 @@ function set_line_item(key, title, value, weight) {
            }
     );
 
-    $.post(Drupal.settings['base_path'] + '?q=cart/checkout/line_items', li_info,
+    $.post(Drupal.settings['base_path'] + 'cart/checkout/line_items', li_info,
            function(contents) {
              $('#line-items-div').empty().append(contents);
            }
@@ -45,13 +45,17 @@ function set_line_item(key, title, value, weight) {
  * Display the payment details when a payment method radio button is clicked.
  */
 function get_payment_details(path) {
+  var progress = new Drupal.progressBar('paymentProgress');
+  progress.setProgress(-1, '');
+  $('#payment_details').empty().append(progress.element).removeClass('display-none');
+
   $.post(path, { },
     function(details) {
       if (details == '') {
-        $('#payment_details').empty().addClass('display-none');
+        $('#payment_details').empty().html(def_payment_msg);
       }
       else {
-        $('#payment_details').removeClass('display-none').empty().append(details);
+        $('#payment_details').empty().append(details);
       }
     }
   );
@@ -74,7 +78,7 @@ function show_default_payment_details(path) {
  * Pop-up an info box for the credit card CVV.
  */
 function cvv_info_popup() {
-  var popup = window.open(Drupal.settings['base_path'] + '?q=cart/checkout/credit/cvv_info', 'CVV Info', 'toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=1,width=480,height=460,left=282,top=122');
+  var popup = window.open(Drupal.settings['base_path'] + 'cart/checkout/credit/cvv_info', 'CVV_Info', 'toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=1,width=480,height=460,left=282,top=122');
 }
 
 /**

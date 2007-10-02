@@ -1,4 +1,6 @@
 <?php
+// $Id$
+
 ##################
 #  CyberSource Hosted Order Page library.  Inserts fields into the
 #  checkout form for posting data to the CyberSource Hosted Order

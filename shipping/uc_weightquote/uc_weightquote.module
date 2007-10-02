@@ -64,13 +64,15 @@ function uc_weightquote_nodeapi(&$node, $op){
     case 'insert':
     case 'update':
       if (isset($node->weightquote)){
-        db_query("DELETE FROM {uc_weightquote_products} WHERE nid = %d", $node->nid);
-        db_query("INSERT INTO {uc_weightquote_products} (nid, rate) VALUES (%d, %f)",
-          $node->nid, $node->weightquote);
+        if (!$node->revision){
+          db_query("DELETE FROM {uc_weightquote_products} WHERE vid = %d", $node->vid);
+        }
+        db_query("INSERT INTO {uc_weightquote_products} (vid, nid, rate) VALUES (%d, %d, %f)",
+          $node->vid, $node->nid, $node->weightquote);
       }
     break;
     case 'load':
-      $rate = db_result(db_query("SELECT rate FROM {uc_weightquote_products} WHERE nid = %d", $node->nid));
+      $rate = db_result(db_query("SELECT rate FROM {uc_weightquote_products} WHERE vid = %d", $node->vid));
       if ($rate === false || $rate == -1){
         return array('weightquote' => variable_get('uc_weightquote_product_default', 0.00));
       }
@@ -80,6 +82,9 @@ function uc_weightquote_nodeapi(&$node, $op){
     break;
     case 'delete':
       db_query("DELETE FROM {uc_weightquote_products} WHERE nid = %d", $node->nid);
+    break;
+    case 'delete revision':
+      db_query("DELETE FROM {uc_weightquote_products} WHERE vid = %d", $node->vid);
     break;
   }
 }

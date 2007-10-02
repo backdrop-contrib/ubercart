@@ -80,8 +80,8 @@ function uc_quote_taxonomy($op, $type, $object = null){
         case 'insert':
         case 'update':
           db_query("DELETE FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $object['tid']);
-          db_query("INSERT INTO {uc_quote_manufacturer_locations} (tid, first_name, last_name, company, address1, address2, city, zone, postal_code, country) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', %d)",
-            $object['tid'], $object['first_name'], $object['last_name'], $object['company'], $object['address1'], $object['address2'], $object['city'], $object['zone'], $object['postal_code'], $object['country']
+          db_query("INSERT INTO {uc_quote_manufacturer_locations} (tid, first_name, last_name, company, street1, street2, city, zone, postal_code, country) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', %d)",
+            $object['tid'], $object['first_name'], $object['last_name'], $object['company'], $object['street1'], $object['street2'], $object['city'], $object['zone'], $object['postal_code'], $object['country']
           );
           uc_quote_set_shipping_type('manufacturer', $object['tid'], $object['shipping_type']);
         break;
@@ -109,8 +109,8 @@ function uc_quote_nodeapi(&$node, $op, $arg3 = null, $arg4 = null){
     case 'insert':
     case 'update':
       db_query("DELETE FROM {uc_quote_product_locations} WHERE nid = %d", $node->nid);
-      db_query("INSERT INTO {uc_quote_product_locations} (nid, first_name, last_name, company, address1, address2, city, zone, postal_code, country) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', %d)",
-        $node->nid, $node->first_name, $node->last_name, $node->company, $node->address1, $node->address2, $node->city, $node->zone, $node->postal_code, $node->country
+      db_query("INSERT INTO {uc_quote_product_locations} (nid, first_name, last_name, company, street1, street2, city, zone, postal_code, country) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', %d)",
+        $node->nid, $node->first_name, $node->last_name, $node->company, $node->street1, $node->street2, $node->city, $node->zone, $node->postal_code, $node->country
       );
     break;
     case 'load':
@@ -127,10 +127,10 @@ function uc_quote_nodeapi(&$node, $op, $arg3 = null, $arg4 = null){
           $shipping_type = variable_get('uc_store_shipping_type', 'small_package');
         }
       }
-      $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1 AS street1, address2 AS street2, city, zone, postal_code, country FROM {uc_quote_product_locations} WHERE nid = %d", $node->nid));
+      $address = db_fetch_object(db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country FROM {uc_quote_product_locations} WHERE nid = %d", $node->nid));
       if (empty($address)){
         if (module_exists('uc_manufacturer')){
-          $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1 AS street1, address2 AS street2, city, zone, postal_code, country FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $manufacturer->tid));
+          $address = db_fetch_object(db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $manufacturer->tid));
         }
         if (empty($address)){
           $address = variable_get('uc_quote_store_default_address', new stdClass());
@@ -166,7 +166,7 @@ function uc_quote_form_alter($form_id, &$form){
       $id = $form['tid']['#value'];
       $weight = 0;
       if (module_exists('uc_manufacturer')){
-        $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1, address2, city, zone, postal_code, country FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $id));
+        $address = db_fetch_object(db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $id));
       }
     }
     if (empty($address)){
@@ -195,8 +195,8 @@ function uc_quote_form_alter($form_id, &$form){
     $form['shipping']['default_address']['first_name'] = uc_textfield(uc_get_field_name('first_name'), $address->first_name, FALSE);
     $form['shipping']['default_address']['last_name'] = uc_textfield(uc_get_field_name('last_name'), $address->last_name, FALSE);
     $form['shipping']['default_address']['company'] = uc_textfield(uc_get_field_name('company'), $address->company, FALSE);
-    $form['shipping']['default_address']['address1'] = uc_textfield(uc_get_field_name('street1'), $address->address1, FALSE, NULL, 64);
-    $form['shipping']['default_address']['address2'] = uc_textfield(uc_get_field_name('street2'), $address->address2, FALSE, NULL, 64);
+    $form['shipping']['default_address']['street1'] = uc_textfield(uc_get_field_name('street1'), $address->street1, FALSE, NULL, 64);
+    $form['shipping']['default_address']['street2'] = uc_textfield(uc_get_field_name('street2'), $address->street2, FALSE, NULL, 64);
     $form['shipping']['default_address']['city'] = uc_textfield(uc_get_field_name('city'), $address->city, FALSE);
     if (isset($_POST['country'])){
       $country = $_POST['country'];
@@ -603,25 +603,6 @@ function uc_quote_method_settings_submit($form_id, $form_values){
   drupal_set_message(t('The configuration options have been saved.'));
 }
 
-function uc_quote_country_settings(){
-  $form = array();
-  
-  $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration'));
-  return $form;
-}
-
-function theme_uc_quote_country_settings($form){
-  $output = '';
-  
-  $output .= drupal_render($form);
-  return $output;
-}
-
-function uc_quote_country_settings_submit($form_id, $form_values){
-  
-  drupal_set_message(t('The configuration options have been saved.'));
-}
-
 /******************************************************************************
  * Module Functions                                                           *
  ******************************************************************************/
@@ -682,11 +663,11 @@ function uc_product_get_shipping_type($product){
 }
 
 function uc_quote_get_default_shipping_address($nid){
-  $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1 AS street1, address2 AS street2, city, zone, postal_code, country FROM {uc_quote_product_locations} WHERE nid = %d", $nid));
+  $address = db_fetch_object(db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country FROM {uc_quote_product_locations} WHERE nid = %d", $nid));
   if (empty($address)){
     if (module_exists('uc_manufacturer')){
       $manufacturer = uc_product_get_manufacturer($nid);
-      $address = db_fetch_object(db_query("SELECT first_name, last_name, company, address1 AS street1, address2 AS street2, city, zone, postal_code, country FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $manufacturer->tid));
+      $address = db_fetch_object(db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country FROM {uc_quote_manufacturer_locations} WHERE tid = %d", $manufacturer->tid));
     }
     if (empty($address)){
       $address = variable_get('uc_quote_store_default_address', new stdClass());
@@ -950,7 +931,9 @@ function uc_order_pane_quotes($op, $arg1){
       );
       
       drupal_add_js('misc/progress.js');
-      drupal_add_js(drupal_get_path('module', 'uc_taxes') .'/uc_taxes.js');
+      if (module_exists('uc_taxes')){
+        drupal_add_js(drupal_get_path('module', 'uc_taxes') .'/uc_taxes.js');
+      }
       drupal_add_js(drupal_get_path('module', 'uc_quote') .'/uc_quote.js');
       $default = $arg1->quote['accessorials'] ? $arg1->quote['accessorials'] : 0;
       // If a previous quote gets loaded, make sure it gets saved again.
@@ -976,8 +959,8 @@ function uc_order_pane_quotes($op, $arg1){
       $changes['quote']['quote_form'] = rawurldecode($_POST['quote-form']);
       return $changes;
     case 'edit-ops':
-      return array(t('Apply to Order'));
-    case t('Apply to Order'):
+      return array(t('Apply to order'));
+    case t('Apply to order'):
       if (isset($_POST['quote-option'])){
         if ($order = uc_order_load($arg1['order_id'])){
           $details = array();

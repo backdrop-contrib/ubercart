@@ -5,13 +5,15 @@
  * Implementation of hook_install().
  */
 function uc_order_install(){
+  $t = get_t();
+
   switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       db_query("CREATE TABLE {uc_orders} (
         order_id mediumint(9) NOT NULL,
         uid mediumint(9) NOT NULL,
-        order_status smallint(6) NOT NULL,
+        order_status varchar(32) NOT NULL,
         order_total decimal(10,2) NOT NULL,
         primary_email varchar(96) NOT NULL,
         delivery_first_name varchar(32) NOT NULL,
@@ -96,18 +98,20 @@ function uc_order_install(){
         KEY order_id (order_id)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
       db_query("CREATE TABLE {uc_order_statuses} (
-        order_status_id mediumint(9) NOT NULL,
-        title varchar(32) NOT NULL,
-        notify tinyint(4) NOT NULL,
+        order_status_id varchar(32) NOT NULL,
+        title varchar(48) NOT NULL,
+        state varchar(32) NOT NULL,
+        weight smallint(9) NOT NULL,
+        locked tinyint(4) NOT NULL,
         PRIMARY KEY  (order_status_id)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-      $t = get_t();
-      db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, "
-              ."notify) VALUES (0, '%s', 0),(1, '%s', 0),"
-              ."(2, '%s', 1),(3, '%s', 0),"
-              ."(4, 'Shipped', 1)", $t('In Checkout'), $t('Pending'),
-               $t('Processing'), $t('Shipment Pending'));
-    break;
+      db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES "
+              ."('canceled', '". $t('Canceled') ."', 'canceled', -20, 1), "
+              ."('in_checkout', '". $t('In checkout') ."', 'in_checkout', -10, 1), "
+              ."('pending', '". $t('Pending') ."', 'post_checkout', 0, 1), "
+              ."('processing', '". $t('Processing') ."', 'post_checkout', 10, 1), "
+              ."('completed', '". $t('Completed') ."', 'completed', 20, 1);");
+      break;
     case 'pgsql':
       db_query("CREATE TABLE {uc_orders} (
         order_id integer NOT NULL default 0,
@@ -197,16 +201,20 @@ function uc_order_install(){
         KEY order_id (order_id)
       );");
       db_query("CREATE TABLE {uc_order_statuses} (
-        order_status_id integer NOT NULL default 0,
-        title varchar(32) NOT NULL default '',
-        notify smallint NOT NULL default 0,
-        PRIMARY KEY (order_status_id)
-      );");
-      db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, "
-              ."notify) VALUES (0, 'In Checkout', 0),(1, 'Pending', 0),"
-              ."(2, 'Processing', 1),(3, 'Shipment Pending', 0),"
-              ."(4, 'Shipped', 1);");
-    break;
+        order_status_id varchar(32) NOT NULL,
+        title varchar(48) NOT NULL,
+        state varchar(32) NOT NULL,
+        weight smallint(9) NOT NULL,
+        locked tinyint(4) NOT NULL,
+        PRIMARY KEY  (order_status_id)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
+      db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES "
+              ."('canceled', '". $t('Canceled') ."', 'canceled', -20, 1), "
+              ."('in_checkout', '". $t('In checkout') ."', 'in_checkout', -10, 1), "
+              ."('pending', '". $t('Pending') ."', 'post_checkout', 0, 1), "
+              ."('processing', '". $t('Processing') ."', 'post_checkout', 5, 1), "
+              ."('completed', '". $t('Completed') ."', 'completed', 20, 1);");
+      break;
   }
 }
 
@@ -219,6 +227,7 @@ function uc_order_uninstall() {
   db_query("DROP TABLE {uc_order_products}");
   db_query("DROP TABLE {uc_order_statuses}");
   db_query("DELETE FROM {variable} WHERE name LIKE 'uc_order_pane_%'");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_state_%'");
   variable_del('uc_order_number_displayed');
   variable_del('uc_order_logging');
   variable_del('uc_order_capitalize_addresses');
@@ -226,7 +235,6 @@ function uc_order_uninstall() {
 }
 
 function uc_order_update_1(){
-  $ret = array();
   switch ($GLOBALS['db_type']){
     case 'mysql':
     case 'mysqli':
@@ -247,7 +255,6 @@ function uc_order_update_1(){
 }
 
 function uc_order_update_2() {
-  $ret = array();
   switch ($GLOBALS['db_type']){
     case 'mysql':
     case 'mysqli':
@@ -257,5 +264,42 @@ function uc_order_update_2() {
       $ret[] = update_sql("ALTER TABLE {uc_order_products} CHANGE weight weight FLOAT NOT NULL DEFAULT 0.0");
       break;
   }
+  return $ret;
+}
+
+function uc_order_update_3() {
+  // Update orders and comments to hold string values for order statuses.
+  $ret[] = update_sql("ALTER TABLE {uc_orders} CHANGE order_status order_status VARCHAR(32) NOT NULL");
+  $ret[] = update_sql("UPDATE {uc_orders} SET order_status = 'in_checkout' WHERE order_status = '0'");
+  $ret[] = update_sql("UPDATE {uc_orders} SET order_status = 'pending' WHERE order_status = '1'");
+  $ret[] = update_sql("UPDATE {uc_orders} SET order_status = 'processing' WHERE order_status = '2' OR order_status = '3'");
+  $ret[] = update_sql("UPDATE {uc_orders} SET order_status = 'completed' WHERE order_status = '4'");
+
+  $ret[] = update_sql("ALTER TABLE {uc_order_comments} CHANGE order_status order_status VARCHAR(32) NOT NULL");
+  $ret[] = update_sql("UPDATE {uc_order_comments} SET order_status = 'in_checkout' WHERE order_status = '0'");
+  $ret[] = update_sql("UPDATE {uc_order_comments} SET order_status = 'pending' WHERE order_status = '1'");
+  $ret[] = update_sql("UPDATE {uc_order_comments} SET order_status = 'processing' WHERE order_status = '2' OR order_status = '3'");
+  $ret[] = update_sql("UPDATE {uc_order_comments} SET order_status = 'completed' WHERE order_status = '4'");
+
+  // Clean out the old order status table and redefine its structure.
+  if ($_SESSION['statuses'] !== TRUE) {
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE order_status_id order_status_id VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL default ''");
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE title title VARCHAR(48) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL default ''");
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE notify state VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL default ''");
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} ADD weight MEDIUMINT(9) NOT NULL");
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} ADD locked TINYINT NOT NULL DEFAULT '0'");
+    $ret[] = update_sql("DELETE FROM {uc_order_statuses} WHERE order_status_id LIKE '_'");
+    $_SESSION['statuses'] = TRUE;
+  }
+
+  // Fill the table with the new default order statuses.
+  $t = get_t();
+  $ret[] = update_sql("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES "
+                     ."('canceled', '". $t('Canceled') ."', 'canceled', -20, 1), "
+                     ."('in_checkout', '". $t('In checkout') ."', 'in_checkout', -10, 1), "
+                     ."('pending', '". $t('Pending') ."', 'post_checkout', 0, 1), "
+                     ."('processing', '". $t('Processing') ."', 'post_checkout', 5, 1), "
+                     ."('completed', '". $t('Completed') ."', 'completed', 20, 1);");
+
   return $ret;
 }

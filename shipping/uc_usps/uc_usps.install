@@ -6,26 +6,18 @@ function uc_usps_install(){
     case 'mysql':
     case 'mysqli':
       db_query("CREATE TABLE {uc_usps_products} (
-        `nid` mediumint(9) unsigned NOT NULL,
+        `vid` mediumint(9) unsigned NOT NULL default 0,
+        `nid` mediumint(9) unsigned NOT NULL default 0,
         `container` varchar(2) NOT NULL,
-        `qty` smallint unsigned NOT NULL default '1',
-        `length` float unsigned NOT NULL,
-        `width` float unsigned NOT NULL,
-        `height` float unsigned NOT NULL,
-        `units` varchar(255) NOT NULL default 'in',
-        UNIQUE KEY `nid` (`nid`)
+        PRIMARY KEY (`vid`)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
     break;
     case 'pgsql':
       db_query("CREATE TABLE {uc_usps_products} (
+        vid integer unsigned NOT NULL default 0,
         nid integer unsigned NOT NULL default 0,
         container varchar(2) NOT NULL default '',
-        qty smallint unsigned NOT NULL default 1,
-        length float unsigned NOT NULL default 0,
-        width float unsigned NOT NULL default 0,
-        height float unsigned NOT NULL default 0,
-        units varchar(255) NOT NULL default 'in',
-        UNIQUE KEY nid (nid)
+        PRIMARY KEY (vid)
       );");
     break;
   }
@@ -33,4 +25,46 @@ function uc_usps_install(){
 
 function uc_usps_uninstall(){
   db_query("DROP TABLE {uc_usps_products}");
+}
+
+function uc_usps_update_1(){
+  $ret = array();
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+    case 'pgsql':
+      $ret[] = update_sql("ALTER TABLE {uc_usps_products} DROP COLUMN qty");
+      $ret[] = update_sql("ALTER TABLE {uc_usps_products} DROP COLUMN length");
+      $ret[] = update_sql("ALTER TABLE {uc_usps_products} DROP COLUMN width");
+      $ret[] = update_sql("ALTER TABLE {uc_usps_products} DROP COLUMN height");
+      $ret[] = update_sql("ALTER TABLE {uc_usps_products} DROP COLUMN units");
+    break;
+  }
+  return $ret;
+}
+
+function uc_usps_update_2(){
+  $ret = array();
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_usps_products} ADD COLUMN vid mediumint(9) unsigned NOT NULL default 0 FIRST");
+      $ret[] = update_sql("ALTER TABLE {uc_usps_products} DROP INDEX nid");
+      $result = db_query("SELECT nid, vid FROM {node}");
+      while ($product = db_fetch_object($result)){
+        db_query("UPDATE {uc_usps_products} SET vid = %d WHERE nid = %d", $product->vid, $product->nid);
+      }
+      $ret[] = update_sql("ALTER TABLE {uc_usps_products} ADD PRIMARY KEY (vid)");
+    break;
+    case 'pgsql':
+      db_add_column($ret, 'uc_usps_products', 'vid', 'integer unsigned', array('not null' => true, 'default' => 0));
+      $ret[] = update_sql("ALTER TABLE {uc_usps_products} DROP CONSTRAINT {uc_usps_products}_nid_key");
+      $result = db_query("SELECT nid, vid FROM {node}");
+      while ($product = db_fetch_object($result)){
+        db_query("UPDATE {uc_usps_products} SET vid = %d WHERE nid = %d", $product->vid, $product->nid);
+      }
+      $ret[] = update_sql("ALTER TABLE {uc_usps_products} ADD PRIMARY KEY (vid)");
+    break;
+  }
+  return $ret;
 }

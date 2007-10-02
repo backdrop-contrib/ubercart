@@ -200,6 +200,7 @@ function uc_payment_perm() {
  */
 function uc_payment_form_alter($form_id, &$form) {
   if ($form_id == 'uc_cart_checkout_form') {
+    drupal_add_js('misc/progress.js');
     drupal_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
   }
 }
@@ -302,6 +303,20 @@ function uc_payment_order_pane() {
 }
 
 /**
+ * Implementation of hook_order_state().
+ */
+function uc_payment_order_state() {
+  $states[] = array(
+    'id' => 'payment_received',
+    'title' => t('Payment received'),
+    'weight' => 10,
+    'scope' => 'general',
+  );
+
+  return $states;
+}
+
+/**
  * Implementation of hook_payment_method().
  */
 function uc_payment_payment_method() {
@@ -398,6 +413,13 @@ function uc_payment_settings_form() {
     '#type' => 'checkbox',
     '#title' => t('Log payments entered and deleted to order log.'),
     '#default_value' => variable_get('uc_payment_logging', TRUE),
+  );
+
+  $form['uc_default_payment_msg'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default payment details message'),
+    '#description' => t('Message displayed when a payment method does not display any further details.'),
+    '#default_value' => variable_get('uc_default_payment_msg', t('Continue with checkout to complete payment.')),
   );
 
   return system_settings_form($form);

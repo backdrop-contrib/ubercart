@@ -180,6 +180,17 @@ function uc_cart_menu($may_cache) {
   return $items;
 }
 
+function uc_cart_enable(){
+  if (module_exists('imagecache')){
+    $result = db_query("SELECT presetid FROM {imagecache_preset} WHERE presetname = 'cart'");
+    if (!db_fetch_object($result)){
+      $id = db_next_id('{imagecache_preset}_presetid');
+      db_query("INSERT INTO {imagecache_preset} (presetid, presetname) VALUES (%d, 'cart')", $id);
+      db_query("INSERT INTO {imagecache_action} (actionid, presetid, weight, data) VALUES (%d, %d, 0, '%s')", db_next_id('{imagecache_action}_actionid'), $id, 'a:4:{s:8:"function";s:5:"scale";s:3:"fit";s:6:"inside";s:5:"width";s:2:"50";s:6:"height";s:2:"50";}');
+    }
+  }
+}
+
 /**
  * Implementation of hook_cron().
  */
@@ -228,8 +239,8 @@ function uc_cart_block($op = 'list', $delta = 0, $edit = array()) {
     $arrow_down_image = $uc_cart_path .'/images/bullet-arrow-down.gif';
     $arrow_up_image = $uc_cart_path .'/images/bullet-arrow-up.gif';
 
-    $block['subject'] = theme('uc_cart_title_block', $cart_image, $uc_cart_path, $arrow_up_image);
-    $block['content'] = theme('uc_cart_display_block');
+    $block['subject'] = theme('uc_cart_block_title', $cart_image, $uc_cart_path, $arrow_up_image);
+    $block['content'] = theme('uc_cart_block_content');
 
     return $block;
   }
@@ -270,20 +281,20 @@ function uc_cart_block($op = 'list', $delta = 0, $edit = array()) {
 /**
  * Theme the shopping cart block title
  */
-function theme_uc_cart_title_block($cart_image, $uc_cart_path, $arrow_up_image) {
+function theme_uc_cart_block_title($cart_image, $uc_cart_path, $arrow_up_image) {
   $output = l('<img src="'. $cart_image .'" id="block-cart-title-image" alt="" />', 'cart', NULL, NULL, NULL, FALSE, TRUE)
              .'<span class="block-cart-title-bar" id="block-cart-title-bar-text" onclick="cart_toggle(\''. $uc_cart_path .'\');">'
              .'<span id="block-cart-title">'. t('Shopping Cart') .'</span></span>'
              .'<span class="block-cart-title-bar" id="block-cart-title-bar-arrow" onclick="cart_toggle(\''. $uc_cart_path .'\');">'
-             .'<img id="block-cart-title-arrow" "src="'. $arrow_up_image .'" alt="[]" title="'. t('Expand cart block.') .'" /></span>';
+             .'<img id="block-cart-title-arrow" src="'. $arrow_up_image .'" alt="[]" title="'. t('Expand cart block.') .'" /></span>';
 
   return $output;
 }
 
 /**
- * Theme the shopping cart block contents.
+ * Theme the shopping cart block content.
  */
-function theme_uc_cart_display_block() {
+function theme_uc_cart_block_content() {
   /* The e-commerce cart has a bit here that takes into account page caching
      for anonymous users.  This would really only affect anonymous users browsing
      with items in their cart, not just people browsing the site.  If there is
@@ -386,6 +397,9 @@ function uc_cart_user($op, &$edit, &$user, $category = NULL) {
  */
 function uc_cart_form_alter($form_id, &$form) {
   if ($form_id == 'user_login' || $form_id == 'user_edit') {
+    if ($_SESSION['checkout-redirect'] == TRUE) {
+      $form['#action'] = url($_GET['q'], "destination=cart/checkout");
+    }
     $referer = referer_uri();
     if (substr($referer, -13, 13) == 'cart/checkout') {
       $form['#action'] = url($_GET['q'], "destination=cart/checkout");
@@ -426,7 +440,7 @@ function uc_cart_table_settings() {
  */
 function uc_cart_uc_message() {
   $messages['checkout_instructions'] = '';
-  $messages['review_instructions'] = t('Please review the details of your order and click !submit if all the information is correct.  You may use the Back button to make changes to your order if necessary.', array('!submit' => variable_get('uc_checkout_submit_button', t('Submit Order'))));
+  $messages['review_instructions'] = t('Your order is not complete. Please review the details of your order and click !submit if all the information is correct.  You may use the Back button to make changes to your order if necessary.', array('!submit' => variable_get('uc_checkout_submit_button', t('Submit Order'))));
   $messages['completion_message'] = t('Your order is complete!');
   $messages['completion_logged_in'] = t('Thank you for shopping at !site. While logged in, you may continue shopping or <a href="!url">click here</a> to view your current order status and order history.', array('!url' => url('user', NULL, NULL, TRUE)));
   $messages['completion_existing_user'] = t('Thank you for shopping at !site. Your current order has been attached to the account we found matching your e-mail address.') .'<p>'. t('<a href="!url">Click here</a> to login and view your current order status and order history. Remember to login when you make your next purchase for a faster checkout experience!', array('!url' => url('user', NULL, NULL, TRUE)));
@@ -898,6 +912,17 @@ function uc_cart_checkout_panes_form() {
       '#type' => 'weight',
       '#default_value' => $pane['weight'],
     );
+
+    $pane_settings = $pane['callback']('settings', $null, NULL);
+    if (is_array($pane_settings)) {
+      $form['pane_'. $pane['id']] = array(
+        '#type' => 'fieldset',
+        '#title' => t('!pane settings', array('!pane' => $pane['title'])),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+      $form['pane_'. $pane['id']] = array_merge($form['pane_'. $pane['id']], $pane_settings);
+    }
   }
 
   return system_settings_form($form);
@@ -1151,12 +1176,12 @@ function uc_cart_checkout() {
     }
   }
 
-  if(!$user->uid) {
-    if(!variable_get('uc_checkout_anonymous', TRUE)) {
-      drupal_set_message(t('You must login before you can proceed to checkout.'));
-      drupal_set_message(t('If you do not have an account, you can <a href="!base_pathuser/register">click here</a> to create one.', array('!base_path' => base_path())));
-      drupal_goto('user');
-    }
+  // Send anonymous users to login page when anonymous checkout is disabled.
+  if(!$user->uid && !variable_get('uc_checkout_anonymous', TRUE)) {
+    drupal_set_message(t('You must login before you can proceed to checkout.'));
+    drupal_set_message(t('If you do not have an account, you can !click_here to create one.', array('!click_here' => l(t('click here'), 'user/register'))));
+    $_SESSION['checkout-redirect'] = TRUE;
+    drupal_goto('user');
   }
 
   $list = _line_item_list();
@@ -1188,11 +1213,11 @@ function uc_cart_checkout_form() {
   $referer = referer_uri();
   if (substr($referer, -20, 20) == 'cart/checkout/review'
    || substr($referer, -13, 13) == 'cart/checkout') {
-    if (!($order = uc_order_load($_SESSION['cart_order'])) || $order->order_status != uc_get_order_status_id('in_checkout')) {
+    if (!($order = uc_order_load($_SESSION['cart_order'])) || uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
       unset($_SESSION['cart_order']);
       $order = NULL;
     }
-    if ($order->order_status != 0 || ($user->uid && $user->uid != $order->uid)) {
+    if (uc_order_status_data($order->order_status, 'state') != 'in_checkout' || ($user->uid && $user->uid != $order->uid)) {
       $order = NULL;
     }
   }
@@ -1240,7 +1265,7 @@ function uc_cart_checkout_form() {
 
         // Add the 'Next' button if necessary.
         if ($return['next-button'] !== FALSE && $pane['next'] !== FALSE &&
-            variable_get('uc_use_next_buttons', FALSE) !== FALSE) {
+            variable_get('uc_use_next_buttons', FALSE) != FALSE) {
           $opt = variable_get('uc_collapse_current_pane', FALSE) ? $pane['id'] : 'false';
           $form['panes'][$pane['id']]['next'] = array(
             '#type' => 'button',
@@ -1309,6 +1334,7 @@ function uc_cart_checkout_form_submit($form_id, $form_values) {
   else {
     $order = new stdClass();
     $order->order_id = $_SESSION['cart_order'];
+    $order->order_status = uc_order_state_default('in_checkout');
   }
 
   $order->products = unserialize($form_values['cart_contents']);
@@ -1337,7 +1363,7 @@ function uc_cart_checkout_form_submit($form_id, $form_values) {
  * Allow a customer to review their order before finally submitting it.
  */
 function uc_cart_checkout_review() {
-  $form_output = drupal_get_form('uc_cart_checkout_review_form');
+  $form = drupal_get_form('uc_cart_checkout_review_form');
 
   if ($_SESSION['do_review'] !== TRUE) {
     drupal_goto('cart');
@@ -1349,18 +1375,16 @@ function uc_cart_checkout_review() {
   $order_id = intval($_SESSION['cart_order']);
 
   $order = uc_order_load($order_id);
-  if ($order === FALSE || $order->order_status != uc_get_order_status_id('in_checkout')) {
+
+  if ($order === FALSE || uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
     $_SESSION['cart_order'] = NULL;
     unset($_SESSION['cart_order']);
     drupal_goto('cart');
   }
 
-  drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
-
-  $output = '<p>'. variable_get('uc_checkout_review_instructions',
+  $help = variable_get('uc_checkout_review_instructions',
             t('Please review the details of your order and click !submit if all the information is correct.  You may use the Back button to make changes to your order if necessary.',
-              array('!submit' => variable_get('uc_checkout_submit_button', t('Submit Order'))))) .'</p>';
-  $output .= '<table class="order-review-table">';
+              array('!submit' => variable_get('uc_checkout_submit_button', t('Submit Order')))));
 
   $panes = _checkout_pane_list();
   foreach ($panes as $pane) {
@@ -1369,35 +1393,66 @@ function uc_cart_checkout_review() {
       if (function_exists($func)) {
         $return = $func('review', $order, NULL);
         if (!is_null($return)) {
-          $output .= '<tr class="pane-title-row"><td colspan="2">'
-                   . $pane['title'] .'</td></tr>';
-          if (is_array($return)) {
-            foreach ($return as $row) {
-              if (is_array($row)) {
-                if (isset($row['border'])) {
-                  $border = ' class="row-border-'. $row['border'] .'"';
-                }
-                else {
-                  $border = '';
-                }
-                $output .= '<tr valign="top"'. $border .'><td class="title-col" '
-                          .'nowrap>'. $row['title'] .':</td><td class="data-col">'
-                         . $row['data'] .'</td></tr>';
-              }
-              else {
-                $output .= '<tr valign="top"><td colspan="2">'. $row .'</td></tr>';
-              }
-            }
-          }
-          else {
-            $output .= '<tr valign="top"><td colspan="2">'. $return .'</td></tr>';
-          }
+          $data[$pane['title']] = $return;
         }
       }
     }
   }
 
-  $output .= '<tr class="review-button-row"><td colspan="2">'. $form_output .'</td></tr></table>';
+  $output = theme('uc_cart_checkout_review', $help, $data, $form);
+
+  return $output;
+}
+
+/**
+ * Theme the checkout review order page.
+ *
+ * @param $help
+ *   A string containing the review order page help message.
+ * @param $panes
+ *   An associative array for each checkout pane that has information to add to
+ *   the review page.  The key is the pane's title and the value is either the
+ *   data returned for that pane or an array of returned data.
+ * @param $form
+ *   The HTML version of the form that by default includes the 'Back' and
+ *   'Submit order' buttons at the bottom of the review page.
+ * @return
+ *   A string of HTML for the page contents.
+ * @ingroup themeable
+ */
+function theme_uc_cart_checkout_review($help, $panes, $form) {
+  drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
+
+  $output = '<p>'. $help .'</p><table class="order-review-table">';
+
+  foreach ($panes as $title => $data) {
+    $output .= '<tr class="pane-title-row"><td colspan="2">'. $title
+              .'</td></tr>';
+    if (is_array($data)) {
+      foreach ($data as $row) {
+        if (is_array($row)) {
+          if (isset($row['border'])) {
+            $border = ' class="row-border-'. $row['border'] .'"';
+          }
+          else {
+            $border = '';
+          }
+          $output .= '<tr valign="top"'. $border .'><td class="title-col" '
+                    .'nowrap>'. $row['title'] .':</td><td class="data-col">'
+                   . $row['data'] .'</td></tr>';
+        }
+        else {
+          $output .= '<tr valign="top"><td colspan="2">'. $row .'</td></tr>';
+        }
+      }
+    }
+    else {
+      $output .= '<tr valign="top"><td colspan="2">'. $data .'</td></tr>';
+    }
+  }
+
+  $output .= '<tr class="review-button-row"><td colspan="2">'. $form
+            .'</td></tr></table>';
 
   return $output;
 }
@@ -1717,8 +1772,8 @@ function uc_cart_complete_sale($order) {
   unset($_SESSION['new_user']);
 
   // Move an order's status from "In Checkout" to "Pending"
-  if ($order->order_status == uc_get_order_status_id('in_checkout')) {
-    uc_order_update_status($order->order_id, uc_get_order_status_id('post_checkout'));
+  if (uc_order_status_data($order->order_status, 'state') == 'in_checkout') {
+    uc_order_update_status($order->order_id, uc_order_state_default('post_checkout'));
   }
 
   return $output;

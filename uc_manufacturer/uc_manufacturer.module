@@ -88,6 +88,17 @@ function uc_manufacturer_menu($may_cache){
   return $items;
 }
 
+function uc_manufacturer_enable(){
+  if (module_exists('imagecache')){
+    $result = db_query("SELECT presetid FROM {imagecache_preset} WHERE presetname = 'manufacturer'");
+    if (!db_fetch_object($result)){
+      $id = db_next_id('{imagecache_preset}_presetid');
+      db_query("INSERT INTO {imagecache_preset} (presetid, presetname) VALUES (%d, 'manufacturer')", $id);
+      db_query("INSERT INTO {imagecache_action} (actionid, presetid, weight, data) VALUES (%d, %d, 0, '%s')", db_next_id('{imagecache_action}_actionid'), $id, 'a:4:{s:8:"function";s:5:"scale";s:3:"fit";s:6:"inside";s:5:"width";s:2:"80";s:6:"height";s:2:"80";}');
+    }
+  }
+}
+
 /**
  * Implementation of hook_term_path().
  *

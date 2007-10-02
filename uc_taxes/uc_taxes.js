@@ -45,7 +45,7 @@ function getTax(){
     + line_item + '}';
   $.ajax({
     type: "POST",
-    url: Drupal.settings['base_path'] + "?q=taxes/calculate",
+    url: Drupal.settings['base_path'] + "taxes/calculate",
     data: 'order=' + order,
     dataType: "json",
     success: function(taxes){

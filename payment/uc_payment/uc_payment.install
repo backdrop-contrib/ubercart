@@ -1,11 +1,14 @@
 <?php
+// $Id$
 
 function uc_payment_install(){
+  $t = get_t();
+
   switch($GLOBALS['db_type']){
     case 'mysql':
     case 'mysqli':
       db_query("CREATE TABLE {uc_payment_check} (
-        check_id mediumint(9) NOT NULL auto_increment,
+        check_id mediumint(9) NOT NULL,
         order_id mediumint(9) NOT NULL,
         clear_date int(11) NOT NULL,
         PRIMARY KEY (check_id),
@@ -16,7 +19,7 @@ function uc_payment_install(){
         delivery_month smallint(6) NOT NULL,
         delivery_day smallint(6) NOT NULL,
         delivery_year smallint(6) NOT NULL,
-        PRIMARY KEY  (order_id)
+        PRIMARY KEY (order_id)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
       db_query("CREATE TABLE {uc_payment_other} (
         order_id mediumint(9) NOT NULL,
@@ -35,6 +38,7 @@ function uc_payment_install(){
         PRIMARY KEY (receipt_id),
         KEY order_id (order_id)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
+      db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('payment_received', '". $t('Payment received') ."', 'payment_received', 10, 1);");
       break;
     case 'pgsql':
       db_query("CREATE TABLE {uc_payment_check} (
@@ -68,6 +72,7 @@ function uc_payment_install(){
         PRIMARY KEY (receipt_id),
         KEY order_id (order_id)
       )");
+      db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('payment_received', '". $t('Payment received') ."', 'payment_received', 10, 1);");
       break;
   }
 }
@@ -130,6 +135,25 @@ function uc_payment_update_1() {
     $ret[] = update_sql("INSERT INTO {sequences} VALUES ('{uc_payment_check}_check_id', $max_id)");
   }
   $ret[] = update_sql("ALTER TABLE {uc_payment_check} CHANGE check_id check_id MEDIUMINT(9) NOT NULL");
+
+  return $ret;
+}
+
+function uc_payment_update_2() {
+  $t = get_t();
+
+  // Clean out the old order status table and redefine its structure.
+  if ($_SESSION['statuses'] !== TRUE) {
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE order_status_id order_status_id VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL default ''");
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE title title VARCHAR(48) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL default ''");
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE notify state VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL default ''");
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} ADD weight MEDIUMINT(9) NOT NULL");
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} ADD locked TINYINT NOT NULL DEFAULT '0'");
+    $ret[] = update_sql("DELETE FROM {uc_order_statuses} WHERE order_status_id LIKE '_'");
+    $_SESSION['statuses'] = TRUE;
+  }
+
+  $ret[] = update_sql("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('payment_received', '". $t('Payment received') ."', 'payment_received', 10, 1);");
 
   return $ret;
 }

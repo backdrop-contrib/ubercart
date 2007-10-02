@@ -20,7 +20,7 @@ function buffer_products(base_path, file_path){
     var productsURL = $("#edit-products").val();
     if (productsURL.search(new RegExp("\/" + this.value + "(\/|$)")) == -1){
       $("#edit-products").val(productsURL + "/" + this.value);
-      $.post(Drupal.settings['base_path'] + '?q=products/field_image_cache/' + this.value, {}, function(contents){
+      $.post(Drupal.settings['base_path'] + 'products/field_image_cache/' + this.value, {}, function(contents){
         //alert(contents);
         //alert(file_path);
         if (contents != "false"){

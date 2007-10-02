@@ -89,6 +89,11 @@ function uc_notify_perm(){
 function uc_notify_form_alter($form_id, &$form){
   switch ($form_id){
     case 'uc_order_view_update_form':
+      $form['controls']['notify'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Send e-mail notification on update.'),
+        '#weight' => 0,
+      );
       $form['#submit']['uc_notify_order_update'] = array();
       break;
   }
@@ -115,8 +120,11 @@ function uc_notify_order($op, $arg1, $status){
   switch ($op){
     case 'update':
       $order = uc_order_load($arg1);
-      if ($order->order_status == uc_get_order_status_id('in_checkout') &&
-          $status == uc_get_order_status_id('post_checkout')) {
+      foreach (uc_order_status_list('general') as $data) {
+        $statuses[] = $data['id'];
+      }
+      if (uc_order_status_data($order->order_status, 'state') == 'in_checkout' &&
+          in_array($status, $statuses)) {
         uc_notify_checkout($order);
       }
       break;

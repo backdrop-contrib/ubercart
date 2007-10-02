@@ -44,8 +44,7 @@ $(document).ready(
       function() {
         $(this).dblclick(
           function() {
-            var url = Drupal.settings('base_path') + '?q=admin/store/customers/orders/' + this.id.substring(9);
-            window.location = url;
+            window.location = Drupal.settings['base_path'] + 'admin/store/customers/orders/' + this.id.substring(9);
           }
         );
       }
@@ -60,8 +59,7 @@ $(document).ready(
       function() {
         $(this).dblclick(
           function() {
-            var url = Drupal.settings['base_path'] + '?q=admin/store/orders/' + this.id.substring(6);
-            window.location = url;
+            window.location = Drupal.settings['base_path'] + 'admin/store/orders/' + this.id.substring(6);
           }
         );
       }
@@ -76,7 +74,7 @@ $(document).ready(
       function() {
         $(this).click(
           function() {
-            window.location = Drupal.settings['base_path'] + '?q=' + this.id;
+            window.location = Drupal.settings['base_path'] + this.id;
           }
         );
       }

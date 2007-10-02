@@ -51,6 +51,9 @@ function uc_order_pane_payment($op, $arg1) {
       return $output;
 
     case 'edit-form':
+      drupal_add_js('misc/progress.js');
+      drupal_add_js("var def_payment_msg = '';", 'inline');
+      
       $form['payment'] = array(
         '#type' => 'fieldset',
         '#title' => t("Modify 'Payment Info'"),

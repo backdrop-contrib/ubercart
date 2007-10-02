@@ -63,13 +63,15 @@ function uc_flatrate_nodeapi(&$node, $op){
     case 'insert':
     case 'update':
       if (isset($node->flatrate)){
-        db_query("DELETE FROM {uc_flatrate_products} WHERE nid = %d", $node->nid);
-        db_query("INSERT INTO {uc_flatrate_products} (nid, rate) VALUES (%d, %f)",
-          $node->nid, $node->flatrate);
+        if (!$node->revision){
+          db_query("DELETE FROM {uc_flatrate_products} WHERE vid = %d", $node->vid);
+        }
+        db_query("INSERT INTO {uc_flatrate_products} (vid, nid, rate) VALUES (%d, %d, %f)",
+          $node->vid, $node->nid, $node->flatrate);
       }
     break;
     case 'load':
-      $rate = db_result(db_query("SELECT rate FROM {uc_flatrate_products} WHERE nid = %d", $node->nid));
+      $rate = db_result(db_query("SELECT rate FROM {uc_flatrate_products} WHERE vid = %d", $node->vid));
       if ($rate === false || $rate == -1){
         return array('flatrate' => variable_get('uc_flatrate_product_default', 0.00));
       }
@@ -79,6 +81,9 @@ function uc_flatrate_nodeapi(&$node, $op){
     break;
     case 'delete':
       db_query("DELETE FROM {uc_flatrate_products} WHERE nid = %d", $node->nid);
+    break;
+    case 'delete revision':
+      db_query("DELETE FROM {uc_flatrate_products} WHERE vid = %d", $node->vid);
     break;
   }
 }
@@ -163,10 +168,6 @@ function uc_flatrate_admin_settings(){
   );
   
   return system_settings_form($form);
-}
-
-function uc_flatrate_fulfill_order($order){
-  
 }
 
 /******************************************************************************

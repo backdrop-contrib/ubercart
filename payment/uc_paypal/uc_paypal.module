@@ -590,7 +590,9 @@ function uc_paypal_ipn($order_id = 0) {
           $comment = t('PayPal transaction ID: !txn_id', array('!txn_id' => $txn_id));
           uc_payment_enter($order_id, 'paypal_wps', $payment_amount, $order->uid, NULL, $comment);
           uc_cart_complete_sale($order);
-          uc_order_comment_save($order_id, 0, t('PayPal IPN reported a payment of !amount !currency.', array('!amount' => uc_currency_format($payment_amount, FALSE), '!currency' => $payment_currency)), 'admin');
+          uc_order_update_status($order_id, 'payment_received');
+          uc_order_comment_save($order_id, 0, t('Payment of !amount !currency submitted through PayPal.', array('!amount' => uc_currency_format($payment_amount, FALSE), '!currency' => $payment_currency)), 'customer', 'payment_received');
+          uc_order_comment_save($order_id, 0, t('PayPal IPN reported a payment of !amount !currency.', array('!amount' => uc_currency_format($payment_amount, FALSE), '!currency' => $payment_currency)));
           break;
 
         case 'Denied':
@@ -606,7 +608,8 @@ function uc_paypal_ipn($order_id = 0) {
           break;
 
         case 'Pending':
-          uc_order_update_status($order_id, uc_get_order_status_id('awaiting_payment'));
+//          uc_order_update_status($order_id, uc_get_order_status_id('awaiting_payment'));
+          uc_order_update_status($order_id, 'paypal_pending');
           uc_order_comment_save($order_id, 0, t('Payment is pending at PayPal: !reason', array('!reason' => _uc_paypal_pending_message(check_plain($_POST['pending_reason'])))), 'admin');
           break;
 
@@ -641,9 +644,9 @@ function uc_paypal_ipn($order_id = 0) {
 
 // Handles a complete Website Payments Standard sale.
 function uc_paypal_complete($order_id = 0) {
-  if (intval($order_id) < 1) {
+  /*  if (intval($order_id) < 1) {
     drupal_goto('cart');
-  }
+  }*/
 
   if (intval($_SESSION['cart_order']) != $order_id) {
     $_SESSION['cart_order'] = $order_id;
@@ -651,7 +654,7 @@ function uc_paypal_complete($order_id = 0) {
 
   $order = uc_order_load($order_id);
 
-  if ($order === FALSE || $oder->order_status != uc_get_order_status_id('in_checkout')) {
+  if ($order === FALSE || (uc_order_status_data($order->order_status, 'state') != 'in_checkout' && uc_order_status_data($order->order_status, 'state') != 'payment_received')) {
     drupal_goto('cart');
   }
 
@@ -777,14 +780,14 @@ function uc_paypal_ec_submit() {
 
 // Redirects if a customer selects PayPal Express Checkout as a payment method.
 function uc_paypal_ec_checkout($form_id, $form_values) {
-  if ($form_values['panes']['payment']['pane']['payment_method'] != 'paypal_ec') {
+  if ($form_values['panes']['payment']['payment_method'] != 'paypal_ec') {
     return;
   }
 
   $order_id = intval($_SESSION['cart_order']);
 
   $order = uc_order_load($order_id);
-  if ($order === FALSE || $order->order_status != uc_get_order_status_id('in_checkout')) {
+  if ($order === FALSE || uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
     $_SESSION['cart_order'] = NULL;
     unset($_SESSION['cart_order']);
     drupal_goto('cart');
@@ -910,10 +913,9 @@ function uc_paypal_ec_review_form($order) {
     drupal_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
 
     $result = uc_checkout_pane_quotes('view', $order, NULL);
-    $form['panes'] = array('#tree' => TRUE);
-    $form['panes']['quotes'] = $result->fields;
-    $form['panes']['quotes']['pane']['#collapsible'] = FALSE;
-    $form['panes']['quotes']['pane']['#title'] = t('Calculate shipping');
+    $form['panes']['quotes'] = $result['contents'];
+    $form['panes']['quotes']['#collapsible'] = FALSE;
+    $form['panes']['quotes']['#title'] = t('Calculate shipping');
 
     // Fake the checkout form delivery information.
     $form['delivery_first_name'] = array('#type' => 'hidden', '#value' => $order->delivery_first_name);
@@ -978,9 +980,8 @@ function uc_paypal_ec_review_form($order) {
 
 function uc_paypal_ec_review_form_validate($form_id, $form_values) {
   if (module_exists('uc_quote') && variable_get('uc_paypal_ec_review_shipping', TRUE)) {
-    if (empty($form_values['panes']['quotes']['pane']['quote_method']) || !isset($_POST['quote-option'])) {
-      drupal_set_message(t('You must specify a shipping option.'), 'error');
-      return FALSE;
+    if (!isset($_POST['quote-option'])) {
+      form_set_error('shipping', t('You must calculate and select a shipping option.'));
     }
   }
 }
@@ -989,9 +990,11 @@ function uc_paypal_ec_review_form_submit($form_id, $form_values) {
   $order = uc_order_load($_SESSION['cart_order']);
 
   if (module_exists('uc_quote') && variable_get('uc_paypal_ec_review_shipping', TRUE)) {
-    $order->quote['method'] = $form_values['panes']['quotes']['pane']['quote_method'];
-    $order->quote['accessorials'] = isset($_POST['quote-option']) ? strval($_POST['quote-option']) : 0;
-    $order->quote['rate'] = $_POST['rate'][$order->quote['accessorials']];
+    $method_accessorials= split("---", isset($_POST['quote-option']) ? strval($_POST['quote-option']) : 0);
+    $order->quote['method'] = $method_accessorials[0];
+    $order->quote['accessorials'] = $method_accessorials[1];
+    $order->quote['rate'] = $_POST['rate'][isset($_POST['quote-option']) ? strval($_POST['quote-option']) : 0];
+
     $order->quote['quote_form'] = rawurldecode($_POST['quote-form']);
     $methods = module_invoke_all('shipping_method');
     $method = $methods[$order->quote['method']];

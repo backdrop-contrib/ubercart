@@ -288,7 +288,7 @@ function uc_order_pane_products($op, $arg1) {
         'div' => '#products-selector',
         'class' => 'product-select-box',
         'vid' => variable_get('uc_catalog_vid', 0),
-        'filter' => 'product, kit',
+        'filter' => implode(',', array_keys(uc_product_node_info())),
         'search' => 'true',
         'nids' => 'true',
         'close' => 'true',
@@ -506,7 +506,8 @@ function uc_order_pane_order_comments($op, $arg1) {
           $rows[] = array(
             'data' => array(
               array('data' => date('m/d/Y', $comment->created), 'align' => 'center'),
-              array('data' => uc_order_get_status_name($comment->order_status), 'align' => 'center'),
+              //array('data' => uc_order_get_status_name($comment->order_status), 'align' => 'center'),
+              array('data' => $comment->title, 'align' => 'center'),
               $comment->message
             ),
             'valign' => 'top'
@@ -571,6 +572,93 @@ function uc_order_pane_update($op, $arg1) {
     case 'view':
       return drupal_get_form('uc_order_view_update_form', $arg1);
   }
+}
+
+function uc_order_view_update_form($order) {
+  $form['order_comment_field'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Add an order comment'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['order_comment_field']['order_comment'] = array(
+    '#type' => 'textarea',
+    '#description' => t('Order comments are used primarily to communicate with the customer.'),
+  );
+
+  $form['admin_comment_field'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Add an admin comment'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['admin_comment_field']['admin_comment'] = array(
+    '#type' => 'textarea',
+    '#description' => t('Admin comments are only seen by store administrators.'),
+  );
+
+  $form['current_status'] = array(
+    '#type' => 'hidden',
+    '#value' => $order->order_status,
+  );
+
+  $form['order_id'] = array(
+    '#type' => 'hidden',
+    '#value' => $order->order_id,
+  );
+
+  $form['controls'] = array(
+    '#theme' => 'uc_order_view_update_controls',
+  );
+
+  foreach (uc_order_status_list('general') as $status) {
+    $options[$status['id']] = $status['title'];
+  }
+  foreach (uc_order_status_list('specific') as $status) {
+    $options[$status['id']] = $status['title'];
+  }
+  $form['controls']['status'] = array(
+    '#type' => 'select',
+    '#title' => t('Order status'),
+    '#default_value' => $order->order_status,
+    '#options' => $options,
+    '#attributes' => array('style' => 'display: inline;'),
+    '#weight' => -10,
+  );
+
+  $form['controls']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update'),
+    '#weight' => 10,
+  );
+
+  return $form;
+}
+
+function theme_uc_order_view_update_controls($form) {
+  return '<div class="update-controls">'. drupal_render($form) .'</div>';
+}
+
+function uc_order_view_update_form_submit($form_id, $form_values) {
+  global $user;
+
+  if ($form_values['status'] != $form_values['current_status']) {
+    if (uc_order_update_status($form_values['order_id'], $form_values['status'])) {
+      if (is_null($form_values['order_comment']) || strlen($form_values['order_comment']) == 0) {
+        uc_order_comment_save($form_values['order_id'], $user->uid, '-', 'order', $form_values['status']);
+      }
+    }
+  }
+
+  if (!is_null($form_values['order_comment']) && strlen(trim($form_values['order_comment'])) > 0) {
+    uc_order_comment_save($form_values['order_id'], $user->uid, $form_values['order_comment'], 'order', $form_values['status'], $form_values['notify']);
+  }
+
+  if (!is_null($form_values['admin_comment']) && strlen(trim($form_values['admin_comment'])) > 0) {
+    uc_order_comment_save($form_values['order_id'], $user->uid, $form_values['admin_comment']);
+  }
+
+  drupal_set_message(t('Order updated.'));
 }
 
 /**
@@ -691,7 +779,7 @@ function op_order_comments_view_table($op, $comments) {
           $data['date'][] = array('data' => date('m/d/Y<\b\r />g:i:s A', $comment->created), 'align' => 'center', 'nowrap' => 'true');
           $data['user'][] = array('data' => uc_get_initials($comment->uid), 'align' => 'center');
           $data['notified'][] = array('data' => (($comment->notified == 1) ? '<img src="'. base_path() . drupal_get_path('module', 'uc_order') .'/images/true-icon.gif" />': '<img src="'. base_path() . drupal_get_path('module', 'uc_order') .'/images/false-icon.gif" />'), 'align' => 'center');
-          $data['status'][] = array('data' => uc_order_get_status_name($comment->order_status), 'align' => 'center');
+          $data['status'][] = array('data' => $comment->title, 'align' => 'center');
           $data['comment'][] = array('data' => $comment->message);
         }
       }

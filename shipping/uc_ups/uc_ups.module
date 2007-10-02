@@ -26,6 +26,19 @@ function uc_ups_menu($may_cache){
     );
   }
   else{
+    $items[] = array('path' => 'admin/store/orders/'. arg(3) .'/shipments/ups',
+      'access' => user_access('fulfill orders'),
+      'title' => t('UPS Shipment'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('uc_ups_confirm_shipment', arg(3)),
+      'type' => MENU_CALLBACK,
+    );
+    $items[] = array('path' => 'admin/store/orders/'. arg(3) .'/labels/ups',
+      'access' => user_access('fulfill orders'),
+      'callback' => 'theme',
+      'callback arguments' => array('uc_ups_label_image'),
+      'type' => MENU_CALLBACK,
+    );
     drupal_add_css(drupal_get_path('module', 'uc_ups') .'/uc_ups.css');
   }
   
@@ -54,37 +67,6 @@ function uc_ups_form_alter($form_id, &$form){
       '#options' => _uc_ups_pkg_types(),
       '#default_value' => $node->ups['pkg_type'] ? $node->ups['pkg_type'] : '02',
     );
-    $ups['qty'] = array('#type' => 'textfield',
-      '#title' => t('Package Quantity'),
-      '#default_value' => $node->ups['qty'] ? $node->ups['qty'] : 1,
-      '#description' => t('For a package containing only this product, how many are in it?'),
-    );
-    $ups['dimensions'] = array('#type' => 'fieldset',
-      '#title' => t('Dimensions'),
-      '#description' => t('Physical dimensions of the packaged product.'),
-      '#theme' => 'uc_ups_dimensions',
-    );
-    $ups['dimensions']['units'] = array('#type' => 'select',
-      '#title' => t('Units of measurement'),
-      '#options' => array(
-        'in' => t('Inches'),
-        'cm' => t('Centimeters'),
-      ),
-      '#default_value' => $node->ups ? $node->ups['units'] : variable_get('uc_store_length_unit', 'in'),
-    );
-    $ups['dimensions']['length'] = array('#type' => 'textfield',
-      '#title' => t('Length'),
-      '#default_value' => $node->ups['length'],
-    );
-    $ups['dimensions']['width'] = array('#type' => 'textfield',
-      '#title' => t('Width'),
-      '#default_value' => $node->ups['width'],
-    );
-    $ups['dimensions']['height'] = array('#type' => 'textfield',
-      '#title' => t('Height'),
-      '#default_value' => $node->ups['height'],
-    );
-    
     $form['shipping']['ups'] = $ups;
     if ($enabled['ups']){
       $form['#validate']['uc_ups_product_alter_validate'] = array();
@@ -92,25 +74,12 @@ function uc_ups_form_alter($form_id, &$form){
   }
 }
 
-/**
- * Theme function for uc_ups_form_alter().
- */
-function theme_uc_ups_dimensions($form){
-  $output = '';
-  $row = array();
-  foreach (element_children($form) as $dimension){
-    $row[] = drupal_render($form[$dimension]);
-  }
-  $output .= theme('table', array(), array($row));
-  return $output;
-}
-
 function uc_ups_product_alter_validate($form_id, $form_values){
   $enabled = variable_get('uc_quote_enabled', array('ups' => true));
   if ($form_values['shipping_type'] == 'small_package'){
-    $dimensions = $form_values['ups']['dimensions'];
+    $dimensions = $form_values['base']['dimensions'];
     if ($form_values['ups']['pkg_type'] == '02' && (empty($dimensions['length']) || empty($dimensions['width']) || empty($dimensions['height']))){
-      form_set_error('ups][dimensions', t('Dimensions are required for custom packaging.'));
+      form_set_error('base][dimensions', t('Dimensions are required for custom packaging.'));
     }
   }
 }
@@ -124,18 +93,23 @@ function uc_ups_nodeapi(&$node, $op){
     case 'update':
       if (isset($node->ups)){
         $ups_values = $node->ups;
-        db_query("DELETE FROM {uc_ups_products} WHERE nid = %d", $node->nid);
-        db_query("INSERT INTO {uc_ups_products} (nid, pkg_type, qty, length, width, height, units) VALUES (%d, '%s', %d, %f, %f, %f, '%s')",
-          $node->nid, $ups_values['pkg_type'], $ups_values['qty'], $ups_values['dimensions']['length'], $ups_values['dimensions']['width'], $ups_values['dimensions']['height'], $ups_values['dimensions']['units']);
+        if (!$node->revision){
+          db_query("DELETE FROM {uc_ups_products} WHERE vid = %d", $node->vid);
+        }
+        db_query("INSERT INTO {uc_ups_products} (vid, nid, pkg_type) VALUES (%d, %d, '%s')",
+          $node->vid, $node->nid, $ups_values['pkg_type']);
       }
     break;
     case 'load':
       if (uc_product_get_shipping_type($node) == 'small_package'){
-        return array('ups' => db_fetch_array(db_query("SELECT * FROM {uc_ups_products} WHERE nid = %d", $node->nid)));
+        return array('ups' => db_fetch_array(db_query("SELECT * FROM {uc_ups_products} WHERE vid = %d", $node->vid)));
       }
     break;
     case 'delete':
       db_query("DELETE FROM {uc_ups_products} WHERE nid = %d", $node->nid);
+    break;
+    case 'delete revision':
+      db_query("DELETE FROM {uc_ups_products} WHERE vid = %d", $node->vid);
     break;
   }
 }
@@ -180,7 +154,8 @@ function uc_ups_shipping_method(){
     ),
     'ship' => array(
       'type' => 'small_package',
-      'callback' => 'uc_ups_pro_fulfill_order',
+      'callback' => 'uc_ups_fulfill_order',
+      'pkg_types' => _uc_ups_pkg_types(),
     ),
     'weight' => $weight['ups'],
   );
@@ -273,7 +248,7 @@ function uc_ups_admin_settings(){
       '19' => 'Letter Center',
       '20' => 'Air Service Center',
     ),
-    '#default_value' => '01',
+    '#default_value' => variable_get('uc_ups_pickup_type', '01'),
   );
   $form['uc_ups_negotiated_rates'] = array('#type' => 'radios',
     '#title' => t('Negotiated Rates'),
@@ -387,7 +362,7 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service){
           }
           $package_schema .= "<Dimensions>";
             $package_schema .= "<UnitOfMeasurement>";
-            if ($package->units == 'cm'){
+            if ($package->length_units == 'cm'){
               $package_schema .= "<Code>CM</Code>";
               //$package_schema .= "<Description>Centimeters</Description>";
             }
@@ -538,7 +513,7 @@ function uc_ups_quote($products, $details){
     $package = new stdClass();
     foreach ($products as $product){
       $product->weight *= $product->qty;
-      switch ($product->units){
+      switch ($product->weight_units){
         case 'oz':
           $weight = $product->weight / 16;
           $shipment_weight += $weight;
@@ -566,19 +541,14 @@ function uc_ups_quote($products, $details){
   }
   else{
     foreach ($products as $product){
-      if (!$product->ups['qty']){
-        $product->ups['qty'] = 1;
+      if (!$product->pkg_qty){
+        $product->pkg_qty = 1;
       }
-      $num_of_pkgs = (int)($product->qty / $product->ups['qty']);
+      $num_of_pkgs = (int)($product->qty / $product->pkg_qty);
       if ($num_of_pkgs){
         $package = drupal_clone($product);
-        $package->weight = $product->weight * $product->ups['qty'];
-        $package->weight_units = $product->units;
-        $package->length = $product->ups['length'];
-        $package->width = $product->ups['width'];
-        $package->height = $product->ups['height'];
-        $package->units = $product->ups['units'];
-        $package->price = $product->price * $product->ups['qty'];
+        $package->weight = $product->weight * $product->pkg_qty;
+        $package->price = $product->price * $product->pkg_qty;
         $package->qty = $num_of_pkgs;
         $package->pkg_type = $product->ups['pkg_type'];
         $packages[] = $package;
@@ -588,11 +558,6 @@ function uc_ups_quote($products, $details){
         $package = drupal_clone($product);
         $package->description = $product->model;
         $package->weight = $product->weight * $remaining_qty;
-        $package->weight_units = $product->units;
-        $package->length = $product->ups['length'];
-        $package->width = $product->ups['width'];
-        $package->height = $product->ups['height'];
-        $package->units = $product->ups['units'];
         $package->price = $product->price * $remaining_qty;
         $package->qty = 1;
         $package->pkg_type = $product->ups['pkg_type'];
@@ -674,12 +639,19 @@ function uc_ups_fulfill_order($order_id, $package_ids){
   $form = array();
   $pkg_types = _uc_ups_pkg_types();
   if ($order = uc_order_load($order_id)){
+    drupal_add_js(drupal_get_path('module', 'uc_shipping') .'/uc_shipping.js');
     $form['order_id'] = array('#type' => 'value', '#value' => $order_id);
     $packages = array();
+    $addresses = array();
     $form['packages'] = array('#tree' => true);
     foreach ($package_ids as $id){
       $package = uc_shipping_package_load($id);
       if ($package){
+        foreach ($package->addresses as $address){
+          if (!in_array($address, $addresses)){
+            $addresses[] = $address;
+          }
+        }
         // Create list of products and get a representative product for default values
         $product_list = array();
         $declared_value = 0;
@@ -687,12 +659,12 @@ function uc_ups_fulfill_order($order_id, $package_ids){
           $product_list[] = $product->qty .' x '. $product->model;
           $declared_value += $product->qty * $product->price;
         }
-        $ups_data = db_fetch_array(db_query("SELECT pkg_type, qty, length, width, height, units FROM {uc_ups_products} WHERE nid = %d", $product->nid));
+        $ups_data = db_fetch_array(db_query("SELECT pkg_type FROM {uc_ups_products} WHERE nid = %d", $product->nid));
         $product->ups = $ups_data;
         $pkg_form = array('#type' => 'fieldset',
           '#title' => t('Package !id', array('!id' => $id)),
         );
-        $pkg_form['products'] = array('#value' => '<ul><li>'. implode('</li><li>', $product_list) .'</li></ul>');
+        $pkg_form['products'] = array('#value' => theme('item_list', $product_list));
         $pkg_form['package_id'] = array('#type' => 'hidden', '#value' => $id);
         $pkg_form['pkg_type'] = array('#type' => 'select',
           '#title' => t('Package Type'),
@@ -714,19 +686,19 @@ function uc_ups_fulfill_order($order_id, $package_ids){
             'in' => t('Inches'),
             'cm' => t('Centimeters'),
           ),
-          '#default_value' => $product->ups ? $product->ups['units'] : variable_get('uc_store_length_unit', 'in'),
+          '#default_value' => $product->length_units ? $product->length_units : variable_get('uc_store_length_unit', 'in'),
         );
         $pkg_form['dimensions']['length'] = array('#type' => 'textfield',
           '#title' => t('Length'),
-          '#default_value' => $product->ups['length'],
+          '#default_value' => $product->length,
         );
         $pkg_form['dimensions']['width'] = array('#type' => 'textfield',
           '#title' => t('Width'),
-          '#default_value' => $product->ups['width'],
+          '#default_value' => $product->width,
         );
         $pkg_form['dimensions']['height'] = array('#type' => 'textfield',
           '#title' => t('Height'),
-          '#default_value' => $product->ups['height'],
+          '#default_value' => $product->height,
         );
         $form['packages'][$id] = $pkg_form;
       }
@@ -741,6 +713,8 @@ function uc_ups_fulfill_order($order_id, $package_ids){
       '#collapsed' => false,
       '#weight' => -2,
     );
+    $form['origin']['pickup_address_select'] = uc_shipping_select_address($addresses, 'apply_address(\'pickup\', this.value);', t('Saved Addresses'), TRUE);
+    $form['origin']['pickup_address_select']['#weight'] = -2;
     $form['origin']['pickup_email'] = uc_textfield(uc_get_field_name('email'), variable_get('uc_store_email', null), FALSE);
     $form['origin']['pickup_email']['#weight'] = -1;
     $form['origin']['pickup_first_name'] = uc_textfield(uc_get_field_name('first_name'), $address->first_name, FALSE);
