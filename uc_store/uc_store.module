@@ -55,7 +55,7 @@ define('OZ_TO_KG', 0.028349523);
  */
 function uc_store_menu($may_cache) {
   $items = array();
-
+  drupal_add_css(drupal_get_path('module', 'uc_store') .'/uc_store.css');
   if ($may_cache) {
     $items[] = array(
       'path' => 'admin/store',
@@ -257,6 +257,12 @@ function uc_store_menu($may_cache) {
     );
   }
   else {
+    $base_path = base_path();
+    if (!variable_get('clean_url', 0)) {
+      $base_path .= '?q=';
+    }
+    drupal_add_js(array('base_path' => $base_path), 'setting');
+
     $items[] = array(
       'path' => 'uc_js_util/'. arg(1),
       'title' => t('JS utilities'),
@@ -325,7 +331,7 @@ function uc_store_menu($may_cache) {
  */
 function uc_store_init() {
   // Add base_path to the Drupal object for use in Ubercart .js files.
-  drupal_add_js(array('base_path' => base_path()), 'setting');
+  // drupal_add_js(array('base_path' => base_path()), 'setting');
 }
 
 /**
@@ -428,7 +434,7 @@ function uc_store_cron(){
       }
         
       $vars['currency'] = variable_get('uc_currency_code', 'USD');
-      $result = db_query("SELECT COUNT(DISTINCT o.order_id) AS orders, SUM(o.order_total) AS sales FROM {uc_orders} AS o WHERE o.order_status = 4 GROUP BY o.order_status");
+      $result = db_query("SELECT COUNT(DISTINCT o.order_id) AS orders, SUM(o.order_total) AS sales FROM {uc_orders} AS o WHERE o.order_status = 'completed' GROUP BY o.order_status");
       if ($stats = db_fetch_array($result)){
         if (variable_get('uc_store_opt_in_orders', TRUE)){
           $vars['orders'] = $stats['orders'];
@@ -437,7 +443,7 @@ function uc_store_cron(){
           $vars['sales'] = $stats['sales'];
         }
       }
-      $result = db_query("SELECT SUM(op.qty) AS products FROM {uc_order_products} AS op LEFT JOIN {uc_orders} AS o ON op.order_id = o.order_id WHERE o.order_status = 4 GROUP BY o.order_status");
+      $result = db_query("SELECT SUM(op.qty) AS products FROM {uc_order_products} AS op LEFT JOIN {uc_orders} AS o ON op.order_id = o.order_id WHERE o.order_status = 'completed' GROUP BY o.order_status");
       if ($stats = db_fetch_array($result)){
         if (variable_get('uc_store_opt_in_products', TRUE)){
           $vars['products'] = $stats['products'];
@@ -488,7 +494,6 @@ function uc_store_perm() {
 }
 
 function uc_store_footer($main = 0) {
-  drupal_add_css(drupal_get_path('module', 'uc_store') .'/uc_store.css');
   $path = drupal_get_normal_path($_GET['q']);
   $parts = explode('/', $path);
   switch ($parts[0]){
@@ -655,11 +660,13 @@ function uc_store_customers($message = NULL, $query = NULL, $count_query = NULL,
             ."o.billing_last_name, o.billing_city, o.billing_zone, "
             ."o.billing_country FROM {uc_orders} AS o LEFT JOIN "
             ."{users} AS u ON o.uid = u.uid WHERE o.uid > 0 AND "
-            ."o.order_status > 0 ORDER BY billing_last_name ASC";
+            ."o.order_status IN ". uc_order_status_list('general', TRUE)
+            ." ORDER BY billing_last_name ASC";
     $count_query = "SELECT COUNT(DISTINCT o.uid, o.billing_first_name, "
                   ."o.billing_last_name, u.mail) FROM {uc_orders} AS o "
                   ."LEFT JOIN {users} AS u ON o.uid = u.uid WHERE o.uid > 0 "
-                  ."AND o.order_status > 0 ORDER BY billing_last_name ASC";
+                  ."AND o.order_status IN ". uc_order_status_list('general', TRUE)
+                  ." ORDER BY billing_last_name ASC, billing_first_name ASC";
     $message = t('The following users on your site have placed orders:');
   }
 
@@ -707,7 +714,7 @@ function uc_store_customers($message = NULL, $query = NULL, $count_query = NULL,
   }
 
   drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_store.js');
-  //uc_add_base_path_js();
+
   $output = '<p>'. $message .'</p>'
           . theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-customer-table'))
            .'<br />'. theme_pager(NULL, $page_length);
@@ -717,7 +724,8 @@ function uc_store_customers($message = NULL, $query = NULL, $count_query = NULL,
 
 function uc_store_customer_orders($uid) {
   $result = pager_query("SELECT * FROM {uc_orders} WHERE uid = %d AND "
-                       ."order_status > 0 ORDER BY created DESC", 50, 0,
+                       ."order_status IN ". uc_order_status_list('general', TRUE)
+                       ." ORDER BY created DESC", 50, 0,
                         NULL, $uid);
 
   $header = array(t('View'), t('Order ID'), t('Date'), t('Billing Name'),
@@ -768,7 +776,7 @@ function uc_store_customer_orders($uid) {
   }
 
   drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_store.js');
-  //uc_add_base_path_js();
+
   $output = '<p>'. l(t('Create an order for this customer.'),
                      'admin/store/orders/create/'. $uid) .'</p>';
   $output .= '<p>'. t('!totals_orders orders shown match that account with !totals_items items purchased and !totals_total spent:',
@@ -806,11 +814,13 @@ function uc_store_customer_search() {
             ."o.billing_last_name, o.billing_city, o.billing_zone, "
             ."o.billing_country FROM {uc_orders} AS o LEFT JOIN "
             ."{users} AS u ON o.uid = u.uid WHERE o.uid > 0 AND "
-            ."o.order_status > 0". $where ." ORDER BY o.billing_last_name ASC";
+            ."o.order_status IN ". uc_order_status_list('general', TRUE)
+           . $where ." ORDER BY o.billing_last_name ASC";
     $count_query = "SELECT COUNT(DISTINCT o.uid, o.billing_first_name, "
                   ."o.billing_last_name, u.mail) FROM {uc_orders} AS o "
                   ."LEFT JOIN {users} AS u ON o.uid = u.uid WHERE o.uid > 0 AND "
-                  ."o.order_status > 0". $where ." ORDER BY o.billing_last_name ASC";
+                  ."o.order_status IN ". uc_order_status_list('general', TRUE)
+                 . $where ." ORDER BY o.billing_last_name ASC";
     $message = t('Search returned the following results:');
 
     $output .= uc_store_customers($message, $query, $count_query, 100);
@@ -1550,11 +1560,16 @@ function uc_store_address_fields_form() {
     'street' => array(t('Street Address'), FALSE),
   );
   $current = variable_get('uc_address_fields', drupal_map_assoc(array('first_name', 'last_name', 'phone', 'company', 'street1', 'street2', 'city', 'zone', 'postal_code', 'country')));
+  $required = variable_get('uc_address_fields_required', drupal_map_assoc(array('first_name', 'last_name', 'street1', 'city', 'zone', 'postal_code', 'country')));
   foreach ($fields as $field => $data) {
     if ($data[1]) {
       $form['fields'][$field]['enabled'] = array(
         '#type' => 'checkbox',
         '#default_value' => isset($current[$field]) ? TRUE : FALSE,
+      );
+      $form['fields'][$field]['required'] = array(
+        '#type' => 'checkbox',
+        '#default_value' => isset($required[$field]) ? TRUE : FALSE,
       );
     }
     else {
@@ -1585,13 +1600,14 @@ function uc_store_address_fields_form() {
 }
 
 function theme_uc_store_address_fields_form($form) {
-  $header = array(t('Enabled'), t('Field'), t('Title'));
+  $header = array(t('Enabled'), t('Field'), t('Title'), t('Required'));
 
   foreach (element_children($form['fields']) as $field) {
     $rows[] = array(
       array('data' => drupal_render($form['fields'][$field]['enabled']), 'align' => 'center'),
       drupal_render($form['fields'][$field]['default']),
       drupal_render($form['fields'][$field]['title']),
+      drupal_render($form['fields'][$field]['required']),
     );
   }
 
@@ -1604,13 +1620,18 @@ function uc_store_address_fields_form_submit($form_id, $form_values) {
   switch ($form_values['op']) {
     case t('Save configuration'):
       $fields = array();
+      $required = array();
       foreach ($form_values['fields'] as $field => $data) {
         variable_set('uc_field_'. $field, $data['title']);
         if ($data['enabled'] == TRUE) {
           $fields[] = $field;
         }
+        if ($data['required'] == TRUE) {
+          $required[] = $field;
+        }
       }
       variable_set('uc_address_fields', drupal_map_assoc($fields));
+      variable_set('uc_address_fields_required', drupal_map_assoc($required));
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
@@ -1671,6 +1692,7 @@ function uc_store_census_settings() {
     '#type' => 'checkbox',
     '#title' => t('Send anonymous statistical data to Ubercart.org as specified below.'),
     '#default_value' => variable_get('uc_store_opt_in', TRUE),
+    '#description' => t('To see the results of this data collection, please visit the !statistics page.', array('!statistics' => l('Übercart statistics', 'http://www.ubercart.org/statistics'))),
   );
 
   $form['data'] = array(
@@ -1757,11 +1779,15 @@ function theme_uc_store_block_links($menu){
           . l($link_title, $menu['path'], array(), NULL, NULL, FALSE, TRUE);
   if (is_array($menu['children']) && !empty($menu['children'])){
     usort($menu['children'], '_menu_sort');
-    $output .= "\n". str_repeat(" ", 2 * $depth + 1) ."<ul>\n";
+    $child_output = '';
     foreach ($menu['children'] as $child){
-      $output .= theme('uc_store_block_links', menu_get_item($child));
+      $child_output .= theme('uc_store_block_links', menu_get_item($child));
     }
-    $output .= str_repeat(" ", 2 * $depth + 1) ."</ul>\n". str_repeat("  ", $depth);
+    if ($child_output) {
+      $output .= "\n". str_repeat(" ", 2 * $depth + 1) ."<ul>\n";
+      $output .= $child_output;
+      $output .= str_repeat(" ", 2 * $depth + 1) ."</ul>\n". str_repeat("  ", $depth);
+    }
   }
   $output .= "</li>\n";
   return $output;
@@ -1895,6 +1921,31 @@ function uc_weight_conversion($from_units, $to_units = NULL){
   else{
     return 1;
   }
+}
+
+/**
+ * Format a length value for display.
+ */
+function uc_length_format($value, $unit = NULL) {
+  $vars = array('!value' => $value);
+  
+  if (is_null($unit)){
+    $unit = variable_get('uc_length_unit', 'in');
+  }
+  
+  $defaults = array(
+    'in' => '!value in.',
+    'cm' => '!valuecm',
+  );
+
+  $pattern = variable_get('uc_length_format_'. $unit, $defaults[$unit]);
+  if (strpos($pattern, '!value') === FALSE) {
+    $pattern = $defaults[$unit];
+  }
+
+  $format = strtr($pattern, $vars);
+
+  return $format;
 }
 
 /**
@@ -2109,6 +2160,20 @@ function uc_address_field_enabled($field) {
 }
 
 /**
+ * Return TRUE if a field is required.
+ */
+function uc_address_field_required($field) {
+  $fields = variable_get('uc_address_fields_required', drupal_map_assoc(array('first_name', 'last_name', 'street1', 'city', 'zone', 'postal_code', 'country')));
+
+  if (!isset($fields[$field])) {
+    return FALSE;
+  }
+  else {
+    return TRUE;
+  }
+}
+
+/**
  * A simple Forms API textfield generator...
  */
 function uc_textfield($title, $default = NULL, $required = TRUE, $description = NULL, $maxlength = 32, $size = 32) {
@@ -2132,7 +2197,7 @@ function uc_textfield($title, $default = NULL, $required = TRUE, $description = 
  * Create a zone select box for a form.
  * $display can be 'code' or 'name'.
  */
-function uc_zone_select($title, $default = NULL, $description = NULL, $country_id = NULL, $display = 'name') {
+function uc_zone_select($title, $default = NULL, $description = NULL, $country_id = NULL, $display = 'name', $required = FALSE) {
   if (empty($country_id)) {
     $country_id = variable_get('uc_store_country', 840);
   }
@@ -2152,7 +2217,8 @@ function uc_zone_select($title, $default = NULL, $description = NULL, $country_i
     '#title' => $title,
     '#description' => $description,
     '#options' => $options,
-    '#default_value' => $default
+    '#default_value' => $default,
+    '#required' => $required,
   );
 
   return $select;
@@ -2162,7 +2228,7 @@ function uc_zone_select($title, $default = NULL, $description = NULL, $country_i
  * Create a country select box for a form.
  * $display can be 'name', 'code2' for the 2-digit code, or 'code3' for the 3-digit code.
  */
-function uc_country_select($title, $default = NULL, $description = NULL, $display = 'name') {
+function uc_country_select($title, $default = NULL, $description = NULL, $display = 'name', $required = FALSE) {
   if ($display == 'name') {
     $order_by = 'country_name';
   }
@@ -2189,6 +2255,7 @@ function uc_country_select($title, $default = NULL, $description = NULL, $displa
     '#description' => $description,
     '#options' => $options,
     '#default_value' => empty($default) ? variable_get('uc_store_country', 840) : $default,
+    '#required' => $required,
   );
 
   drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_country_select.js');
@@ -2294,7 +2361,8 @@ function uc_get_addresses($uid, $type = 'billing') {
                    . $type ."_street2 AS street2, ". $type ."_city AS city, "
                    . $type ."_zone AS zone, ". $type ."_postal_code AS postal_code, "
                    . $type ."_country AS country FROM {uc_orders} WHERE uid = %d "
-                    ."AND order_status > 0 ORDER BY created DESC", $uid);
+                    ."AND order_status IN ". uc_order_status_list('general', TRUE)
+                    ." ORDER BY created DESC", $uid);
 
   $addresses = array();
   while ($address = db_fetch_array($result)) {
