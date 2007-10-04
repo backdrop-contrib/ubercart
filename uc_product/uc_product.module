@@ -3,12 +3,13 @@
 
 /**
  * @file
- * The product module for the bercart.
+ * The product module for Ubercart.
  * 
  * Provides information that is common to all products, and user-defined product
  * classes for more specification. Recommends the image and taxonomy modules.
  * 
  * Coded by: Lyle Mantooth
+ * Product Features by: Ryan Szrama
  */
 
 /******************************************************************************
@@ -96,8 +97,41 @@ function uc_product_menu($may_cache){
       'weight' => -5,
       'type' => MENU_LOCAL_TASK,
     );
+    $items[] = array(
+      'path' => 'admin/store/settings/products/edit/features',
+      'title' => t('Product features'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('uc_product_feature_settings_form'),
+      'access' => user_access('administer product features'),
+      'weight' => 0,
+      'type' => MENU_LOCAL_TASK,
+    );
   }
   else {
+    // Insert subitems into the edit node page for product types.
+    if (arg(0) == 'node' && is_numeric(arg(1)) && arg(2) == 'edit'){
+      $node = node_load(arg(1));
+      if ($node->nid && in_array($node->type, array_keys(uc_product_node_info()))){
+        $items[] = array('path' => 'node/'. arg(1) .'/edit/product',
+          'title' => t('product'),
+          'weight' => -10,
+          'type' => MENU_DEFAULT_LOCAL_TASK,
+        );
+
+        $features = module_invoke_all('product_feature');
+        if (!empty($features)) {
+          $items[] = array('path' => 'node/'. arg(1) .'/edit/features',
+            'title' => t('features'),
+            'callback' => 'uc_product_features',
+            'callback arguments' => array($node),
+            'access' => user_access('administer product features'),
+            'weight' => 10,
+            'type' => MENU_LOCAL_TASK,
+          );
+        }
+      }
+    }
+
     $items[] = array('path' => 'admin/store/settings/products/defaults/'. arg(5),
       'title' => t('Imagecache default settings'),
       'access' => user_access('administer products'),
@@ -161,7 +195,7 @@ function uc_product_help($section = ''){
  * Implementation of hook_perm().
  */
 function uc_product_perm(){
-  return array('administer products', 'administer product classes', 'create products', 'edit own products', 'edit products');
+  return array('administer products', 'administer product classes', 'administer product features', 'create products', 'edit own products', 'edit products');
 }
 
 /**
@@ -1513,6 +1547,17 @@ function uc_product_settings_overview() {
     ),
   );
 
+  foreach (module_invoke_all('product_feature') as $feature) {
+    $features[] = $feature['title'];
+  }
+  $sections[] = array(
+    'edit' => 'admin/store/settings/products/edit/features',
+    'title' => t('Product features'),
+    'items' => array(
+      t('The following features are enabled: !list', array('!list' => theme('item_list', $features))),
+    ),
+  );
+
   $output = theme('uc_settings_overview', $sections);
 
   return $output;
@@ -2062,3 +2107,237 @@ function _uc_product_get_image_field_filepath($nid){
   }
   exit();
 }
+
+// Display the settings form for all product features.
+function uc_product_feature_settings_form() {
+  $features = module_invoke_all('product_feature');
+  foreach ($features as $feature) {
+    $titles[] = $feature['title'];
+  }
+  $form['features_list'] = array(
+    '#value' => '<div><b>'. t('The following product features are enabled')
+               .':</b><br />'. implode(', ', $titles) .'</div><br />',
+  );
+
+  foreach ($features as $feature) {
+    if (function_exists($feature['settings'])) {
+      $form[$feature['id']] = array(
+        '#type' => 'fieldset',
+        '#title' => t('!feature settings', array('!feature' => $feature['title'])),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+      $form[$feature['id']] = array_merge($form[$feature['id']], $feature['settings']());
+    }
+  }
+
+  return system_settings_form($form);
+}
+
+// Displays the project features tab on a product node edit form.
+function uc_product_features($node) {
+  drupal_set_title($node->title);
+
+  if (arg(4)) {
+    // First check to see if we're trying to remove a feature.
+    if (intval(arg(5)) > 0 && arg(6) == 'delete') {
+      $result = db_query("SELECT * FROM {uc_product_features} WHERE pfid = %d AND fid = '%s'", intval(arg(5)), arg(4));
+      if ($feature = db_fetch_array($result)) {
+        // If the user confirmed the delete, process it!
+        if ($_POST['pf_delete']) {
+          // Call the delete function for this product feature if it exists.
+          $func = uc_product_feature_data($feature['fid'], 'delete');
+          if (function_exists($func)) {
+            $func($feature);
+          }
+
+          // Remove the product feature data from the database.
+          db_query("DELETE FROM {uc_product_features} WHERE pfid = %d", intval(arg(5)));
+
+          drupal_set_message(t('The product feature has been deleted.'));
+          drupal_goto('node/'. arg(1) .'/edit/features');
+        }
+
+        // Show the confirmation form for deleting this feature.
+        $question = $node->title;
+        $description = t('Are you sure you wish to delete this %feature?', array('%feature' => uc_product_feature_data($feature['fid'], 'title')))
+                      .'<div><b>'. t('Description') .':</b><br />'. $feature['description'] .'</div><br />';
+        return drupal_get_form('confirm_form', NULL, $question, 'node/'. arg(1) .'/edit/features', $description, t('Delete'), t('Cancel'), 'pf_delete');
+      }
+      else {
+        drupal_set_message(t("That product feature doesn't exist."), 'error');
+        drupal_goto('node/'. arg(1) .'/edit/features');
+      }
+    }
+
+    // Handle adding or editing product features.
+    $func = uc_product_feature_data(arg(4), 'callback');
+    if (function_exists($func)) {
+      if (arg(5) == 'add') {
+        $output = drupal_get_form($func, $node, array());
+      }
+      elseif (intval(arg(5)) > 0) {
+        $result = db_query("SELECT * FROM {uc_product_features} WHERE pfid = %d AND fid = '%s'", intval(arg(5)), arg(4));
+        if ($feature = db_fetch_array($result)) {
+          $output = drupal_get_form($func, $node, $feature);
+        }
+      }
+    }
+    else {
+      drupal_set_message(t('Error: Attempted to add a non-existent product feature type.'), 'error');
+      drupal_goto('node/'. $node->nid .'/edit/features');
+    }
+
+    if (empty($output)) {
+      drupal_set_message(t('Error: No form data was returned for that operation.'), 'error');
+      drupal_goto('node/'. $node->nid .'/edit/features');
+    }
+
+    return $output;
+  }
+
+  $header = array(t('Type'), t('Description'), t('Operations'));
+
+  $result = db_query("SELECT * FROM {uc_product_features} WHERE nid = %d", $node->nid);
+  while ($feature = db_fetch_object($result)) {
+    $operations = array(
+      l(t('edit'), 'node/'. $node->nid .'/edit/features/'. $feature->fid .'/'. $feature->pfid),
+      l(t('delete'), 'node/'. $node->nid .'/edit/features/'. $feature->fid .'/'. $feature->pfid .'/delete'),
+    );
+    $rows[] = array(
+      array('data' => uc_product_feature_data($feature->fid, 'title'), 'nowrap' => 'nowrap'),
+      array('data' => check_plain($feature->description), 'width' => '100%'),
+      array('data' => implode(' ', $operations), 'nowrap' => 'nowrap'),
+    );
+  }
+
+  if (empty($rows)) {
+    $rows[] = array(
+      array('data' => t('No features found for this product.'), 'colspan' => 3),
+    );
+  }
+
+  $output = theme('table', $header, $rows)
+          . drupal_get_form('uc_product_feature_add_form');
+
+  return $output;
+}
+
+// Add the form for adding a product feature to the features tab.
+function uc_product_feature_add_form() {
+  foreach (module_invoke_all('product_feature') as $feature) {
+    $options[$feature['id']] = $feature['title'];
+  }
+
+  $form['feature'] = array(
+    '#type' => 'select',
+    '#title' => t('Add a new feature'),
+    '#options' => $options,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Add'),
+  );
+
+  return $form;
+}
+
+function theme_uc_product_feature_add_form($form) {
+  $output = '<table class="add-feature"><tr><td>'. drupal_render($form) .'</td></tr></table>';
+  return $output;
+}
+
+function uc_product_feature_add_form_submit($form_id, $form_values) {
+  return 'node/'. arg(1) .'/edit/features/'. $form_values['feature'] .'/add';
+}
+
+/**
+ * Return a bit of data from a product feature array based on the feature ID
+ * and array key.
+ *
+ * @param $fid
+ *   The string ID of the product feature you want to get data from.
+ * @param $key
+ *   The key in the product feature array you want: title, callback, delete,
+ *     settings
+ * @return
+ *   The value of the key you specify.
+ */
+function uc_product_feature_data($fid, $key) {
+  static $features;
+
+  if (empty($features)) {
+    foreach (module_invoke_all('product_feature') as $feature) {
+      $features[$feature['id']] = $feature;
+    }
+  }
+
+  return $features[$fid][$key];
+}
+
+/**
+ * Returns a form array with some default hidden values and submit button.
+ *
+ * @param $form
+ *   The form array you wish to add the elements to.
+ * @return
+ *   The form array with elements added for the nid, pfid, submit button, and
+ *     cancel link.
+ */
+function uc_product_feature_form($form) {
+  $form['nid'] = array(
+    '#type' => 'hidden',
+    '#value' => intval(arg(1)),
+  );
+  $form['pfid'] = array(
+    '#type' => 'hidden',
+    '#value' => intval(arg(5)),
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save feature'),
+  );
+  $form['cancel'] = array(
+    '#value' => l(t('Cancel'), 'node/'. intval(arg(1)) .'/edit/features'),
+  );
+
+  return $form;
+}
+
+/**
+ * Save a product feature to a product node.
+ *
+ * @param $data
+ *   An array consisting of the following keys:
+ *   - pfid: the numeric ID of the product feature when editing an existing one
+ *   - nid: the numeric ID of the product node
+ *   - fid: the string ID of the feature type
+ *   - description: the string description of the feature for the overview table
+ */
+function uc_product_feature_save($data) {
+  if (empty($data['nid']) && arg(0) == 'node' && intval(arg(1)) > 0) {
+    $data['nid'] = intval(arg(1));
+  }
+  if (empty($data['pfid']) && arg(0) == 'node' && arg(3) == 'features' && intval(arg(5)) > 0) {
+    $data['pfid'] = intval(arg(5));
+  }
+
+  // First attempt to update an existing row.
+  db_query("UPDATE {uc_product_features} SET description = '%s' WHERE pfid = %d", $data['description'], intval($data['pfid']));
+
+  // Otherwise insert this feature as a new row.
+  if (db_affected_rows() == 0) {
+    db_query("INSERT INTO {uc_product_features} VALUES (%d, %d, '%s', '%s')",
+             db_next_id('{uc_product_features}_pfid'), $data['nid'],
+             $data['fid'], $data['description']);
+    drupal_set_message(t('The product feature has been added.'));
+  }
+  else {
+    drupal_set_message(t('The product feature has been updated.'));
+  }
+
+  return 'node/'. $data['nid'] .'/edit/features';
+}
+

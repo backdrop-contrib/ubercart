@@ -145,7 +145,7 @@ function uc_shipping_order_packages($order_id){
     $rows[][] = array('data' => t("This order's products have not been organized into packages."), 'colspan' => 9);
   }
   $output = theme('table', $header, $rows);
-  $result = db_query("SELECT op.order_product_id, SUM(op.qty) AS total, SUM(pp.qty) AS packaged FROM uc_order_products AS op LEFT JOIN uc_packaged_products AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = %d GROUP BY op.order_product_id HAVING packaged IS NULL OR total > packaged", $order_id);
+  $result = db_query("SELECT op.order_product_id, SUM(op.qty) AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = %d GROUP BY op.order_product_id HAVING packaged IS NULL OR total > packaged", $order_id);
   if (db_num_rows($result)){
     $output .= l(t('Create packages.'), 'admin/store/orders/'. $order_id .'/packages/new');
   }
@@ -444,7 +444,7 @@ function uc_shipping_order_shipments($order_id){
     $output .= l(t('Make a new shipment'), 'admin/store/orders/'. $order_id .'/shipments/new');
   }
   else{
-    $result = db_query("SELECT op.order_product_id, SUM(op.qty) AS total, SUM(pp.qty) AS packaged FROM uc_order_products AS op LEFT JOIN uc_packaged_products AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = %d GROUP BY op.order_product_id HAVING packaged IS NULL OR total > packaged", $order_id);
+    $result = db_query("SELECT op.order_product_id, SUM(op.qty) AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = %d GROUP BY op.order_product_id HAVING packaged IS NULL OR total > packaged", $order_id);
     if (db_num_rows($result)){
       $output .= l(t('Put products into packages to make shipments.'), 'admin/store/orders/'. $order_id .'/packages/new');
     }

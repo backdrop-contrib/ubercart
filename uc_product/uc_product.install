@@ -14,6 +14,14 @@ function uc_product_install() {
         `description` text,
         PRIMARY KEY  (`pcid`)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
+      db_query("CREATE TABLE {uc_product_features} (
+        `pfid` mediumint(9) NOT NULL default 0,
+        `nid` mediumint(9) NOT NULL default 0,
+        `fid` varchar(32) NOT NULL,
+        `description` text,
+        PRIMARY KEY (`pfid`),
+        KEY nid (nid)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
       db_query("CREATE TABLE {uc_products} (
         `vid` mediumint(9) NOT NULL default 0,
         `nid` mediumint(9) NOT NULL default 0,
@@ -40,6 +48,14 @@ function uc_product_install() {
         name varchar(255) NOT NULL default '',
         description text,
         PRIMARY KEY  (pcid)
+      );");
+      db_query("CREATE TABLE {uc_product_features} (
+        pfid mediumint(9) NOT NULL default 0,
+        nid mediumint(9) NOT NULL default 0,
+        fid varchar(32) NOT NULL,
+        description text,
+        PRIMARY KEY (pfid),
+        KEY nid (nid)
       );");
       db_query("CREATE TABLE {uc_products} (
         vid integer NOT NULL default 0,
@@ -69,6 +85,7 @@ function uc_product_install() {
 
 function uc_product_uninstall(){
   db_query("DROP TABLE {uc_product_classes}");
+  db_query("DROP TABLE {uc_product_features}");
   db_query("DROP TABLE {uc_products}");
   variable_del('uc_product_nodes_per_page');
   variable_del('uc_product_add_to_cart_qty');
@@ -261,5 +278,25 @@ function uc_product_update_8(){
       $ret[] = update_sql("ALTER TABLE {uc_products} ADD PRIMARY KEY (vid)");
     break;
   }
+  return $ret;
+}
+
+// Update to add in product feature support.
+function uc_product_update_9() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("CREATE TABLE {uc_product_features} (
+        `pfid` mediumint(9) NOT NULL default 0,
+        `nid` mediumint(9) NOT NULL default 0,
+        `fid` varchar(32) NOT NULL,
+        `description` text,
+        PRIMARY KEY (`pfid`),
+        KEY nid (nid)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
+      break;
+  }
+
   return $ret;
 }

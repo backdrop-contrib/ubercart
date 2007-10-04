@@ -37,7 +37,7 @@ function uc_importer_perm(){
  */
 function uc_importer_menu($may_cache){
   $items = array();
-  
+
   if ($may_cache){
     $items[] = array('path' => 'admin/store/products/export',
       'access' => user_access('export'),
@@ -59,14 +59,14 @@ function uc_importer_menu($may_cache){
       'type' => MENU_NORMAL_ITEM,
     );
   }
-  
+
   return $items;
 }
 
 function uc_importer_requirements($phase){
   $requirements = array();
   $t = get_t();
-  
+
   $requirements['simplexml'] = array(
     'title' => $t('SimpleXML'),
     'description' => $t('The Übercart Importer module requires the PHP SimpleXML extension. It is enabled by default in PHP version 5'),
@@ -77,7 +77,7 @@ function uc_importer_requirements($phase){
   else{
     $requirements['simplexml']['severity'] = REQUIREMENT_ERROR;
   }
-  
+
   return $requirements;
 }
 
@@ -87,7 +87,7 @@ function uc_importer_requirements($phase){
 
 function uc_importer_admin_settings(){
   $form = array();
-  
+
   $form['uc_importer_handle_duplicates'] = array('#type' => 'radios',
     '#title' => t('How should similarly named items be handled during import?'),
     '#options' => array(
@@ -112,7 +112,7 @@ function uc_importer_admin_settings(){
   if (!empty($_POST) && form_get_errors()) {
     drupal_set_message(t('The settings have not been saved because of the errors.'), 'error');
   }
-  
+
   return $form;
 }
 
@@ -193,7 +193,7 @@ function uc_importer_import_page(){
 
 function uc_importer_export_form(){
   $form = array();
-  
+
   $products = array();
   $result = db_query(db_rewrite_sql("SELECT nid, model FROM {uc_products}"));
   while ($product = db_fetch_object($result)){
@@ -206,7 +206,7 @@ function uc_importer_export_form(){
     '#description' => t('Hold "Ctrl" to select multiple items.'),
   );
   $form['submit'] = array('#type' => 'submit', '#value' => t('Export'));
-  
+
   return $form;
 }
 
@@ -229,7 +229,7 @@ function uc_importer_export_form_submit($form_id, $form_values){
  */
 function uc_importer_export_buffer_form($nids){
   $form = array();
-  
+
   $buffer = '';
   foreach ($nids as $nid){
     $node = node_load($nid);
@@ -288,7 +288,7 @@ function uc_importer_import_form(){
   $form['submit'] = array('#type' => 'submit',
     '#value' => t('Import'),
   );
-  
+
   return $form;
 }
 
@@ -383,7 +383,7 @@ function uc_importer_export($nids){
     $xml .= _uc_importer_export_orders($data['orders']);
   }
   $xml .= '</store>';
-  
+
   //drupal_set_message(htmlspecialchars($xml));
   return $xml;
 }
@@ -676,11 +676,11 @@ function _uc_importer_export_orders($orders){
  */
 function uc_importer_import($xml){
   global $user, $active_db;
-  
+
   $error = '';
   /* $data = new DOMDocument();
   $data->loadXML($xml);
-  
+
   if (!$data){
     $error = "Error: Could not load XML.";
   }
@@ -713,7 +713,7 @@ function uc_importer_import($xml){
               case UC_IMPORTER_REPLACE:
                 db_query("INSERT IGNORE INTO {term_hierarchy} (tid, parent) VALUES (%d, %d)", $id_map['categories'][(string)$category_data->id], $id_map['categories'][(string)$category_data->parent]);
               break;
-            }          
+            }
           }
         }
         db_query("DELETE FROM {term_hierarchy} WHERE tid = parent");
@@ -816,7 +816,14 @@ function uc_importer_import($xml){
         if (!isset($product_data->unique_hash)){
           $product_data->addChild('unique_hash', md5((string)$product_data->nid . (string)$product_data->model . (string)$product_data->list_price . (string)$product_data->cost . (string)$product_data->sell_price . (string)$product_data->weight . (string)$product_data->units . (string)$product_data->default_qty . time()));
         }
-        if ($nid = db_result(db_query("SELECT nid FROM {uc_products} WHERE unique_hash LIKE '%s'", (string)$product_data->unique_hash))){
+        // Try by unique_hash...
+        if(!$nid = db_result(db_query("SELECT nid FROM {uc_products} WHERE unique_hash LIKE '%s'", (string)$product_data->unique_hash))){
+          // ...else try by node title. SHould make this optional in the settings
+          // This is because I'm never exporting, only importing so will never have unique_hash values.
+          $nid = db_result(db_query("SELECT nid FROM {node} WHERE title LIKE '%s'", (string)$product_data->name));
+        }
+
+        if ($nid){
           switch ($action){
             case UC_IMPORTER_REPLACE;
               $product->nid = $nid;
@@ -903,6 +910,10 @@ function uc_importer_import($xml){
           $product->nid = db_result(db_query("SELECT id FROM {sequences} WHERE name = '{node}_nid'"));
         }
         $id_map['products'][(string)$product_data->id] = $product->nid;
+
+        // Product-by-product hook call to try and improve efficency if 'uc_import' hook
+        module_invoke_all('uc_import_product', $product, $product_data, $store, $id_map);
+
         if (module_exists('uc_attribute')){
           $attr_replace = array();
           $attr_values = array();
@@ -967,11 +978,14 @@ function uc_importer_import($xml){
           }
         }
       }
+      // General hook call if data to import isn't too Product sepecific
+      module_invoke_all('uc_import', $store, $id_map);
+
     //}
     //drupal_set_message('<pre>'. print_r($id_map, true) .'</pre>');
     cache_clear_all();
   //}
-  
+
   if ($error){
     drupal_set_message($error, 'error');
   }
@@ -1064,7 +1078,7 @@ function uc_importer_orders($xml){
            $order->billing_city, $order->billing_zone, $order->billing_postal_code,
            ((is_null($order->billing_country) || $order->billing_country == 0) ? variable_get('uc_store_country', 840) : $order->billing_country),
            $order->payment_method, $order->modified, $order->created, $order->order_id);
-    
+
     foreach ($order_data->products->product as $product_data){
       $product = new stdClass();
       $product->nid = 0;
@@ -1120,6 +1134,44 @@ function uc_importer_orders($xml){
     }
     if (count($comments_values)){
       db_query("INSERT INTO {uc_order_admin_comments} (order_id, uid, message, created) VALUES ". implode(',', $comments_types), $comments_values);
+    }
+  }
+}
+
+//  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
+// Fucntions to implement hooks defined here for modules that haven't.
+// Hook is invoked in uc_importer_import()
+//  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
+
+function taxonomy_uc_import_product($product, $product_xml, $store, $id_map){
+  if (isset($product_xml->vocabularies)){
+    foreach ($product_xml->vocabularies->taxonomy as $taxonomy){
+      // Whats so "simple" about it? Why no getAttribute('id') ?!?!?
+      $attrs = $taxonomy->attributes();
+      $vid = (string) $attrs['id'];
+
+      $query = db_query('SELECT tid, name FROM {term_data} WHERE vid = %d', $vid);
+      while ($row = db_fetch_object($query)){
+        $vocab[$row->tid] = $row->name;
+      }
+
+      foreach ($taxonomy->term as $xml_value){
+        $found = false;
+        foreach ($vocab as $tid => $name){
+          if ($name == (string) $xml_value){
+            $terms[] = $tid;
+            $found = true;
+          }
+        }
+        
+        if (!$found){
+          $tid = db_next_id('{term_data}_tid');
+          db_query("INSERT INTO {term_data} (tid, name, vid) VALUES (%d, '%s', %d)", $tid, (string) $xml_value, $vid);
+          db_query("INSERT INTO {term_hierarchy} (tid, parent) VALUES (%d, %d)", $tid, '0');
+          $terms[] = $tid;
+        }
+      }
+      taxonomy_node_save($product->nid, $terms);
     }
   }
 }
