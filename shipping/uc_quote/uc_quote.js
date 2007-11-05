@@ -17,6 +17,18 @@ function setQuoteCallbacks(products){
   });
 }
 
+function setTaxCallbacks(){
+  $("#quote").find("input:radio").change(function(){
+    var i = $(this).val();
+    try {
+      var label = $(this).parent().text()
+      set_line_item("shipping", label.substr(0, label.indexOf(":")), Number($(this).parent().prev().val()).toFixed(2), 1);
+      getTax();
+    }
+    catch(err) { }
+  }).end();
+}
+
 function quoteCallback(products){
   var updateCallback = function (progress, status, pb) {
     if (progress == 100) {
@@ -28,8 +40,8 @@ function quoteCallback(products){
   details = new Object();
   //details["details[zone]"] = $("select[@name*=delivery_zone] option:selected").val();
   //details["details[country]"] = $("select[@name*=delivery_country] option:selected").val();
-  $("select[@name*=delivery]").each(function(i){
-    details["details[" + $(this).attr("name").split("delivery_")[1].replace(/]/, "") + "]"] = $(this).children("option:selected").val();
+  $("select[@name*=delivery_]").each(function(i){
+    details["details[" + $(this).attr("name").split("delivery_")[1].replace(/]/, "") + "]"] = $(this).val();
   });
   $("input[@name*=delivery_]").each(function(i){
     details["details[" + $(this).attr("name").split("delivery_")[1].replace(/]/, "") + "]"] = $(this).val();
@@ -78,58 +90,59 @@ function displayQuote(data){
   var i;
   for (i in data){
     numQuotes++;
-    errorFlag = false;
   }
   for (i in data){
     var label = data[i].option_label;
     
-    if (typeof(data[i].rate) == undefined && typeof(data[i].error) == undefined){
-      errorFlag = true;
-    }
-    else{
-      if (data[i].rate != undefined){
-        if (numQuotes > 1 && page != 'cart'){
-          quoteDiv.append("<div class=\"form-item\">\n"
-            + "<input type=\"hidden\" name=\"rate[" + i + "]\" value=\"" + Number(data[i].rate).toFixed(2) + "\" />\n"
-            + "<label class=\"option\">"
-            + "<input type=\"radio\" class=\"form-radio\" name=\"quote-option\" value=\"" + i + "\" />\n"
-            + label + ": " + data[i].format + "</label>\n</div>\n"
-          );
-          if (page == "checkout"){
-            quoteDiv.find("input:radio[@value=" + i +"]").click(function(){
-              var i = $(this).val();
-              if (set_line_item != undefined){
-                set_line_item("shipping", data[i].option_label, Number(data[i].rate).toFixed(2), 1);
-              }
-            }).end();
-          }
+    if (data[i].rate != undefined){
+      if (numQuotes > 1 && page != 'cart'){
+        var item = "<div class=\"form-item\">\n"
+          + "<input type=\"hidden\" name=\"rate[" + i + "]\" value=\"" + Number(data[i].rate).toFixed(2) + "\" />\n"
+          + "<label class=\"option\">"
+          + "<input type=\"radio\" class=\"form-radio\" name=\"quote-option\" value=\"" + i + "\" />\n"
+          + label + ": " + data[i].format + "</label>\n";
+        if (data[i].notes) {
+          item += "<div class=\"quote-notes\">" + data[i].notes + "</div>\n";
         }
-        else{
-          quoteDiv.append("<div>\n"
-            + "<input type=\"hidden\" name=\"quote-option\" value=\"" + i + "\" />\n"
-            + "<input type=\"hidden\" name=\"rate[" + i + "]\" value=\"" + Number(data[i].rate).toFixed(2) + "\" />\n"
-            + "<label class=\"option\">" + label + ": " + data[i].format + "</label>\n</div>\n"
-          );
-          if (page == "checkout"){
-            if (label != "" && set_line_item != undefined){
-              set_line_item("shipping", label, Number(data[i].rate).toFixed(2), 1);
+        item += "</div>\n";
+        quoteDiv.append(item);
+        if (page == "checkout"){
+          quoteDiv.find("input:radio[@value=" + i +"]").change(function(){
+            var i = $(this).val();
+            try {
+              set_line_item("shipping", data[i].option_label, Number(data[i].rate).toFixed(2), 1);
+              getTax();
             }
-          }
+            catch(err) { }
+          }).end();
         }
       }
       else{
-        errorFlag = true;
-      }
-      if (data[i].debug != undefined){
-        quoteDiv.append("<pre>" + data[i].debug + "</pre>");
+        var item = "<div>\n"
+          + "<input type=\"hidden\" name=\"quote-option\" value=\"" + i + "\" />\n"
+          + "<input type=\"hidden\" name=\"rate[" + i + "]\" value=\"" + Number(data[i].rate).toFixed(2) + "\" />\n"
+          + "<label class=\"option\">" + label + ": " + data[i].format + "</label>\n";
+        if (data[i].notes) {
+          item += "<div class=\"quote-notes\">" + data[i].notes + "</div>\n";
+        }
+        item += "</div>\n";
+        quoteDiv.append(item);
+        if (page == "checkout"){
+          if (label != "" && set_line_item != undefined){
+            set_line_item("shipping", label, Number(data[i].rate).toFixed(2), 1);
+          }
+        }
       }
     }
+    if (data[i].debug != undefined){
+      quoteDiv.append("<pre>" + data[i].debug + "</pre>");
+    }
   }
-  if (errorFlag || quoteDiv.find("input").length == 0){
+  if (quoteDiv.find("input").length == 0){
     quoteDiv.append("There were problems getting a shipping quote. Please verify the delivery and product information and try again.<br />If this does not resolve the issue, please call in to complete your order.");
   }
   else{
-    quoteDiv.find("input:radio").eq(0).click().end().end();
+    quoteDiv.end().find("input:radio").eq(0).click().end().end();
     var quoteForm = quoteDiv.html();
     quoteDiv.append("<input type=\"hidden\" name=\"quote-form\" value=\"" + encodeURIComponent(quoteForm) + "\" />");
   }

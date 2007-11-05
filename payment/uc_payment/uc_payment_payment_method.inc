@@ -140,7 +140,7 @@ function uc_payment_method_cod($op, &$arg1) {
       break;
 
     case 'order-delete':
-      db_query("DELETE FROM {uc_payment_cod} WHERE order_id = %d", $arg1);
+      db_query("DELETE FROM {uc_payment_cod} WHERE order_id = %d", $arg1->order_id);
       break;
 
     case 'settings':

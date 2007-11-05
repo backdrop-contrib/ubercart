@@ -506,8 +506,7 @@ function uc_order_pane_order_comments($op, $arg1) {
           $rows[] = array(
             'data' => array(
               array('data' => date('m/d/Y', $comment->created), 'align' => 'center'),
-              //array('data' => uc_order_get_status_name($comment->order_status), 'align' => 'center'),
-              array('data' => $comment->title, 'align' => 'center'),
+              array('data' => $comment->title, 'align' => 'center', 'nowrap' => 'nowrap'),
               $comment->message
             ),
             'valign' => 'top'

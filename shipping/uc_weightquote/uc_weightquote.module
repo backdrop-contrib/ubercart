@@ -3,7 +3,9 @@
 
 /**
  * @file
- * Shipping quote module that defines a flat shipping rate for each product.
+ * Shipping quote module that defines a shipping rate for each product based on weight.
+ *
+ * Coded by Lyle Mantooth.
  */
 
 /******************************************************************************
@@ -32,7 +34,9 @@ function uc_weightquote_menu($may_cache){
 /**
  * Implementation of hook_form_alter().
  *
- * Adds a form element for the shipping rate of a product.
+ * Add a form element for the shipping rate of a product.
+ *
+ * @see uc_product_form
  */
 function uc_weightquote_form_alter($form_id, &$form){
   $node = $form['#node'];
@@ -90,6 +94,34 @@ function uc_weightquote_nodeapi(&$node, $op){
 }
 
 /******************************************************************************
+ * Workflow-ng Hooks                                                          *
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_configuration().
+ *
+ * Connect the weightquote action and event.
+ */
+function uc_weightquote_configuration(){
+  $enabled = variable_get('uc_quote_enabled', array('weightquote' => true));
+  $configurations = array(
+    'uc_weightquote_get_quote' => array(
+      '#label' => t('Shipping quote via product weight'),
+      '#event' => 'get_quote_from_weightquote',
+      '#module' => 'uc_weightquote',
+      '#active' => $enabled['weightquote'],
+    ),
+  );
+  
+  $action = workflow_ng_use_action('uc_quote_action_get_quote', array(
+    '#label' => t('Fetch a shipping quote'),
+  ));
+  $configurations['uc_weightquote_get_quote'] = workflow_ng_configure($configurations['uc_weightquote_get_quote'], $action);
+  
+  return $configurations;
+}
+
+/******************************************************************************
  * Übercart Hooks                                                             *
  ******************************************************************************/
 
@@ -125,7 +157,7 @@ function uc_weightquote_shipping_method(){
  ******************************************************************************/
 
 /**
- * Configures the store default shipping rate.
+ * Configure the store default shipping rate.
  */
 function uc_weightquote_admin_settings(){
   $form['uc_weightquote_base_rate'] = array('#type' => 'textfield',
@@ -154,7 +186,7 @@ function uc_weightquote_admin_settings(){
  ******************************************************************************/
 
 /**
- * Standard callback to return a shipping rate via the flat rate method.
+ * Standard callback to return a shipping rate via the weightquote method.
  *
  * @param $products
  *   The order's products.

@@ -120,6 +120,11 @@ function uc_catalog_perm(){
   return array('administer catalog');
 }
 
+/**
+ * Implementation of hook_enable().
+ *
+ * Add imagecache preset "category".
+ */
 function uc_catalog_enable(){
   if (module_exists('imagecache')){
     $result = db_query("SELECT presetid FROM {imagecache_preset} WHERE presetname = 'category'");
@@ -167,7 +172,7 @@ function uc_catalog_nodeapi(&$node, $op, $a3 = null, $a4 = null){
 }
 
 /**
- * Performs garbage collection when the module's vocabulary is deleted.
+ * Implementation of hook_taxonomy().
  */
 function uc_catalog_taxonomy($op, $type, $object = null){
   switch($type){
@@ -233,6 +238,9 @@ function uc_catalog_taxonomy($op, $type, $object = null){
   }
 }
 
+/**
+ * Add an image field to the catalog's taxonomy term form.
+ */
 function uc_catalog_form_alter($form_id, &$form){
   if ($form_id == 'taxonomy_form_term' && $form['vid']['#value'] == variable_get('uc_catalog_vid', 0)){
     $form['#attributes'] = array("enctype" => "multipart/form-data");
@@ -249,7 +257,7 @@ function uc_catalog_form_alter($form_id, &$form){
         $image_display = theme('imagecache', 'category', $image->filepath);
       }
       else{
-        $image_display = theme('placeholder', $image->filename);
+        $image_display = theme('image', $image->filename, t('Term image'));
       }
       $form['image']['remove'] = array('#type' => 'checkbox',
         '#title' => t('Remove category image: !image', array('!image' => $image_display)),
@@ -308,10 +316,24 @@ function uc_catalog_block($op = 'list', $delta = 0, $edit = array()){
   }
 }
 
+/**
+ * Theme the beginning of the catalog block.
+ *
+ * @ingroup themeable
+ * @see theme_uc_catalog_item
+ * @see theme_uc_catalog_block_end
+ */
 function theme_uc_catalog_block_start(){
   return '<ul class="menu">';
 }
 
+/**
+ * Theme the end of the catalog block.
+ *
+ * @ingroup themeable
+ * @see theme_uc_catalog_block_start
+ * @see theme_uc_catalog_item
+ */
 function theme_uc_catalog_block_end(){
   return '</ul>';
 }
@@ -323,7 +345,7 @@ function theme_uc_catalog_block_end(){
 /**
  * Implementation of Übercart's hook_store_status().
  * 
- * Provides status information about the "Product Catalog" and products not listed in the catalog.
+ * Provide status information about the "Product Catalog" and products not listed in the catalog.
  */
 function uc_catalog_store_status(){
   $statuses = array();
@@ -360,6 +382,12 @@ function uc_catalog_store_status(){
   return $statuses;
 }
 
+/**
+ * Implementation of Übercart's hook_product_class.
+ *
+ * Add and remove product node types to the catalog vocabulary as they are
+ *   created and deleted.
+ */
 function uc_catalog_product_class($type, $op){
   $vid = variable_get('uc_catalog_vid', 0);
   switch($op){
@@ -380,6 +408,9 @@ function uc_catalog_product_class($type, $op){
  * Menu Callbacks                                                             *
  ******************************************************************************/
 
+/**
+ * Display an overview of all catalog settings.
+ */
 function uc_catalog_settings_overview(){
   $sections = array();
   
@@ -397,7 +428,7 @@ function uc_catalog_settings_overview(){
       variable_get('uc_catalog_block_nodecount', true) ?
         t('The number of nodes in a category will be shown in the catalog block.') :
         t('The number of nodes in a category will not be shown in the catalog block.'),
-      variable_get('uc_catalog_breadcrumb_nodecount', true) ?
+      variable_get('uc_catalog_breadcrumb_nodecount', false) ?
         t('The number of nodes in a category will be shown in the catalog breadcrumb.') :
         t('The number of nodes in a category will not be shown in the catalog breadcrumb.'),
       variable_get('uc_catalog_show_subcategories', true) ?
@@ -416,6 +447,8 @@ function uc_catalog_settings_overview(){
 
 /**
  * Determines if the "Product Catalog" vocabulary has been set up.
+ *
+ * @see uc_catalog_admin_form
  */
 function uc_catalog_admin_settings(){
   $output = '';
@@ -435,6 +468,9 @@ function uc_catalog_admin_settings(){
 
 /**
  * Form to change the category of many nodes at once.
+ *
+ * @ingroup forms
+ * @see uc_catalog_set_category_form_submit
  */
 function uc_catalog_set_category_form(){
   drupal_add_css(drupal_get_path('module', 'uc_catalog') .'/uc_catalog.css');
@@ -495,16 +531,14 @@ function uc_catalog_set_category_form_submit($form_id, $form_values){
 }
 
 /**
- * Catalog taxonomy browser.
+ * Load catalog information for display.
  *
- * URL is of the form 'catalog/category_name'.
- * The breadcrumb provides links to all ancestry paths to the current term.
- * A table of links provides access to the immediate children and grandchildren.
- * 
- * Inspired by taxonomy_term_page().
+ * Retrieve image, product, and subcategory information for the current term id.
  *
+ * @param $tid
+ *   Taxonomy term id.
  * @return
- *   A Drupal page providing links to products in this category, and nearby categories.
+ *   A catalog object containing all the information needed to display a catalog page.
  */
 function uc_catalog_get_page($tid){
   $catalog = new stdClass();
@@ -563,6 +597,18 @@ function uc_catalog_get_page($tid){
   return $catalog;
 }
 
+/**
+ * Display a formatted catalog page.
+ *
+ * If the category has products in it, display them in a TAPIr table. Subcategories
+ *   are linked along the top of the page. If it does not have products, display
+ *   subcategories in a grid with their images and subcategories.
+ *
+ * @param $tid
+ *   Catalog term id from URL.
+ * @return
+ *   Formatted HTML of the catalog page.
+ */
 function theme_uc_catalog_browse($tid = 0){
   drupal_add_css(drupal_get_path('module', 'uc_catalog') .'/uc_catalog.css');
   
@@ -579,13 +625,13 @@ function theme_uc_catalog_browse($tid = 0){
   $child_list = array();
   foreach ($catalog->children as $child){
     if ($child->nodes){
-      $links[] = array('title' => $child->name . (variable_get('uc_catalog_breadcrumb_nodecount', true) ? ' ('. $child->nodes .')' : ''), 'href' => uc_catalog_term_path($child),
+      $links[] = array('title' => $child->name . (variable_get('uc_catalog_breadcrumb_nodecount', false) ? ' ('. $child->nodes .')' : ''), 'href' => uc_catalog_term_path($child),
         'attributes' => array('rel' => 'tag'),
       );
     }
     if ($child->image){
       $image = '<div>';
-      $image .= l(theme('imagecache', 'category', $child->image['filepath']), uc_catalog_term_path($child), array(), null, null, false, true);
+      $image .= l(theme('imagecache', 'category', $child->image['filepath'], $child->name, $child->name), uc_catalog_term_path($child), array(), null, null, false, true);
       $image .= '</div>';
     }
     else{
@@ -672,6 +718,15 @@ function theme_uc_catalog_browse($tid = 0){
   return $output;
 }
 
+/**
+ * Display a formatted list of products.
+ *
+ * @param $products
+ *   An array of product nids.
+ * @return
+ *   A TAPIr table.
+ * @ingroup themeable
+ */
 function theme_uc_catalog_products($products){
   $table_args = array('nids' => $products, 'attributes' => array('id' => 'category-products'));
   $product_table = tapir_get_table('uc_product_table', $table_args);
@@ -685,7 +740,9 @@ function theme_uc_catalog_products($products){
 /**
  * Catalog settings form.
  *
- * Configures the display of the catalog breadcrumb.
+ * Configure the display of the catalog breadcrumb.
+ *
+ * @ingroup forms
  */
 function uc_catalog_admin_form(){
   $form = array();
@@ -743,6 +800,13 @@ function uc_catalog_admin_form(){
 
 /**
  * Formats the breadcrumb to the current term's ancestry.
+ *
+ * @param $tid
+ *   The currently viewed catalog term's id.
+ * @param $is_node
+ *   If true, include the current category page in the breadcrumb.
+ * @return
+ *   An array of breadcrumb links.
  */
 function uc_catalog_set_breadcrumb($tid, $is_node = false){
   static $breadcrumbs = array();
@@ -776,7 +840,7 @@ function uc_catalog_set_breadcrumb($tid, $is_node = false){
 }
 
 /**
- * Displays links to all products that have not been categorized.
+ * Display links to all products that have not been categorized.
  */
 function uc_catalog_orphaned_products() {
   $output = '<p>'. t('Orphaned products are products that you have created but 
@@ -807,11 +871,11 @@ function uc_catalog_orphaned_products() {
  * Emulates Drupal's menu system, but based soley on the structure of "Product Catalog".
  *
  * @param $branch
- *   A treeNode as defined in uc_catalog_block. Determines if the URL points to itself,
+ *   A treeNode object. Determines if the URL points to itself,
  *   or possibly one of it's children, if present.
  *
- *   If the URL points to itself or one of it's products, it displays it's name, and
- *   expands to show it's children, otherwise displays a link and a count of the products in it.
+ *   If the URL points to itself or one of its products, it displays its name, and
+ *   expands to show its children, otherwise displays a link and a count of the products in it.
  *   If the URL points to one of it's children, it still displays a link and product count,
  *   but must still be expanded.
  *   Otherwise, it is collapsed and a link.
@@ -883,6 +947,13 @@ function _uc_catalog_navigation($branch){
   return array($inpath, $output);
 }
 
+/**
+ * Display a formatted link in the catalog block.
+ *
+ * @ingroup themeable
+ * @see theme_uc_catalog_block_start
+ * @see theme_uc_catalog_block_end
+ */
 function theme_uc_catalog_item($here, $active_link = '', $lis, $expand, $inpath, $link, $count_children ){
   $output='';
   
@@ -920,6 +991,9 @@ function theme_uc_catalog_item($here, $active_link = '', $lis, $expand, $inpath,
   return $output;
 }
 
+/**
+ * Load a catalog term's image.
+ */
 function uc_catalog_image_load($term){
   if (is_object($term)){
     $tid = $term->tid;

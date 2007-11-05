@@ -1,42 +1,58 @@
 // $Id$
 
+// Arrays for order total preview data.
 var li_titles = {};
 var li_values = {};
 var li_weight = {};
-var latest_call = new Date();
 
+// Timestamps for last time line items or payment details were updated.
+var line_update = 0;
+var payment_update = 0;
+
+/**
+ * Sets a line item in the order total preview.
+ */
 function set_line_item(key, title, value, weight) {
   var do_update = false;
-  var this_call = new Date();
 
-  if (undefined === window.li_values[key]) {
+  // Check to see if we're actually changing anything and need to update.
+  if (window.li_values[key] === undefined) {
     do_update = true;
   }
   else {
     if (li_titles[key] != title || li_values[key] != value || li_weight[key] != weight) {
       do_update = true;
-      //alert(latest_call.getTime() +" < " + this_call.getTime());
     }
   }
 
   if (do_update) {
-    latest_call.setTime(this_call.getTime());
+    // Set the timestamp for this update.
+    var this_update = new Date();
+
+    // Set the global timestamp for the update.
+    line_update = this_update.getTime();
+
+    // Set the values passed in, overriding previous values for that key.
     li_titles[key] = title;
     li_values[key] = value;
     li_weight[key] = weight;
 
+    // Put all the existing line item data into a single array.
     var li_info = {};
-
     $.each(li_titles,
-           function(a, b) {
-             li_info[a] = li_weight[a] + ';' + li_values[a] + ';' + li_titles[a];
-           }
+      function(a, b) {
+        li_info[a] = li_weight[a] + ';' + li_values[a] + ';' + li_titles[a];
+      }
     );
 
+    // Post the line item data to a URL and get it back formatted for display.
     $.post(Drupal.settings['base_path'] + 'cart/checkout/line_items', li_info,
-           function(contents) {
-             $('#line-items-div').empty().append(contents);
-           }
+      function(contents) {
+        // Only display the changes if this was the last requested update.
+        if (this_update.getTime() == line_update) {
+          $('#line-items-div').empty().append(contents);
+        }
+      }
     );
   }
 }
@@ -49,13 +65,24 @@ function get_payment_details(path) {
   progress.setProgress(-1, '');
   $('#payment_details').empty().append(progress.element).removeClass('display-none');
 
+  // Get the timestamp for the current update.
+  var this_update = new Date();
+
+  // Set the global timestamp for the update.
+  payment_update = this_update.getTime();
+
+  // Make the post to get the details for the chosen payment method.
   $.post(path, { },
     function(details) {
-      if (details == '') {
-        $('#payment_details').empty().html(def_payment_msg);
-      }
-      else {
-        $('#payment_details').empty().append(details);
+      if (this_update.getTime() == payment_update) {
+        // If the response was empty, throw up the default message.
+        if (details == '') {
+          $('#payment_details').empty().html(def_payment_msg);
+        }
+        // Otherwise display the returned details.
+        else {
+          $('#payment_details').empty().append(details);
+        }
       }
     }
   );
@@ -95,9 +122,3 @@ function receive_check_toggle(checked) {
   }
 }
 
-/**
- * Return a payment method's ID from its Name.
- */
-function get_payment_id(name) {
-  
-}

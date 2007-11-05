@@ -1,9 +1,9 @@
 function switch_vocabulary(base_path, file_path){
   var settings = {
     'div': "#products-selector",
-    'class': "product-ubrowserr",
+    'class': "product-ubrowser",
     'vid': $("#ubrowser-vocab-select option:selected").val(),
-    'filter': "product,kit",
+    'filter': "product,product_kit",
     'search': "true",
     'nids': "true",
     'nodesg': "product",

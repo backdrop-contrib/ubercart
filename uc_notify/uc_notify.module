@@ -116,16 +116,15 @@ function uc_notify_uc_message() {
 /**
  * Implementation of hook_order().
  */
-function uc_notify_order($op, $arg1, $status){
+function uc_notify_order($op, $arg1, $arg2){
   switch ($op){
     case 'update':
-      $order = uc_order_load($arg1);
       foreach (uc_order_status_list('general') as $data) {
         $statuses[] = $data['id'];
       }
-      if (uc_order_status_data($order->order_status, 'state') == 'in_checkout' &&
-          in_array($status, $statuses)) {
-        uc_notify_checkout($order);
+      if (uc_order_status_data($arg1->order_status, 'state') == 'in_checkout' &&
+          in_array($arg2, $statuses)) {
+        uc_notify_checkout($arg1);
       }
       break;
   }

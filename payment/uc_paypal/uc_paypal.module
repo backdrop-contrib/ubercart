@@ -351,7 +351,8 @@ function uc_paypal_wpp_charge($order_id, $amount, $data){
     'CITY' => substr($order->billing_city, 0, 40),
     'STATE' => uc_get_zone_code($order->billing_zone),
     'ZIP' => $order->billing_postal_code,
-    'COUNTRYCODE' => ($country[0]['country_iso_code_2'] == 'GB') ? 'UK' : $country[0]['country_iso_code_2'],
+    // 'COUNTRYCODE' => ($country[0]['country_iso_code_2'] == 'GB') ? 'UK' : $country[0]['country_iso_code_2'],
+    'COUNTRYCODE' => $country[0]['country_iso_code_2'],
     'CURRENCYCODE' => variable_get('uc_paypal_wpp_currency', 'USD'),
     'DESC' => substr($desc, 0, 127),
     'INVNUM' => $order_id .'-'. time(),
@@ -465,10 +466,15 @@ function uc_payment_method_paypal_wps($op, &$arg1) {
         '#title' => t('PayPal cart submission method'),
         '#description' => t('You must use a single line item on your site if you have any fees or discounts besides shipping and tax.'),
         '#options' => array(
-          'itemized' => t('Submit an itemized order showing each product and description.'),
           'single' => t('Submit the whole order as a single line item.'),
+          'itemized' => t('Submit an itemized order showing each product and description.'),
         ),
-        '#default_value' => variable_get('uc_paypal_wbs_submit_method', 'itemized'),
+        '#default_value' => variable_get('uc_paypal_wbs_submit_method', 'single'),
+      );
+      $form['uc_paypal_wps_address_override'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Submit address information to PayPal to override PayPal stored addresses.'),
+        '#default_value' => variable_get('uc_paypal_wps_address_override', TRUE),
       );
       $form['uc_paypal_wps_debug_ipn'] = array(
         '#type' => 'checkbox',
@@ -542,13 +548,20 @@ function uc_paypal_ipn($order_id = 0) {
     $req .= '&'. $key .'='. $value;
   }
 
+  if (variable_get('uc_paypal_wpp_server', '') == 'https://api-3t.paypal.com/nvp') {
+    $host = 'https://www.paypal.com/cgi-bin/webscr';
+  }
+  else {
+    $host = variable_get('uc_paypal_wps_server', 'https://www.sandbox.paypal.com/cgi-bin/webscr');
+  }
+
+  $host = explode('/', substr($host, 8));
+
   // Post back to PayPal to validate
   $header = "POST /cgi-bin/webscr HTTP/1.0\r\n";
+  $header .= "Host: ".$host[0].":80\r\n";
   $header .= "Content-Type: application/x-www-form-urlencoded\r\n";
   $header .= "Content-Length: ". strlen($req) ."\r\n\r\n";
-
-  $host = variable_get('uc_paypal_wps_server', 'https://www.sandbox.paypal.com/cgi-bin/webscr');
-  $host = explode('/', substr($host, 8));
 
   $fp = fsockopen($host[0], 80, $errno, $errstr, 30);
 
@@ -608,7 +621,6 @@ function uc_paypal_ipn($order_id = 0) {
           break;
 
         case 'Pending':
-//          uc_order_update_status($order_id, uc_get_order_status_id('awaiting_payment'));
           uc_order_update_status($order_id, 'paypal_pending');
           uc_order_comment_save($order_id, 0, t('Payment is pending at PayPal: !reason', array('!reason' => _uc_paypal_pending_message(check_plain($_POST['pending_reason'])))), 'admin');
           break;
@@ -635,7 +647,7 @@ function uc_paypal_ipn($order_id = 0) {
     }
     elseif (strcmp($res, 'INVALID') == 0) {
       watchdog('uc_paypal', t('IPN transaction failed verification.'), WATCHDOG_ERROR);
-      uc_order_comment_save($order_id, 0, t('An IPN transaction failed verificationed for this order.'), 'admin');
+      uc_order_comment_save($order_id, 0, t('An IPN transaction failed verification for this order.'), 'admin');
     }
   }
 
@@ -818,7 +830,8 @@ function uc_paypal_ec_checkout($form_id, $form_values) {
     'SHIPTOSTREET2' => substr($order->delivery_street2, 0, 100),
     'SHIPTOCITY' => substr($order->delivery_city, 0, 40),
     'SHIPTOSTATE' => uc_get_zone_code($order->delivery_zone),
-    'SHIPTOCOUNTRYCODE' => ($country[0]['country_iso_code_2'] == 'GB') ? 'UK' : $country[0]['country_iso_code_2'],
+    //'SHIPTOCOUNTRYCODE' => ($country[0]['country_iso_code_2'] == 'GB') ? 'UK' : $country[0]['country_iso_code_2'],
+    'SHIPTOCOUNTRYCODE' => $country[0]['country_iso_code_2'],
     'SHIPTOZIP' => substr($order->delivery_postal_code, 0, 20),
     'PHONENUM' => substr($order->delivery_phone, 0, 20),
   );
@@ -909,11 +922,11 @@ function uc_paypal_ec_form_submit($form_id, $form_values) {
 function uc_paypal_ec_review_form($order) {
   if (module_exists('uc_quote') && variable_get('uc_paypal_ec_review_shipping', TRUE)) {
     // Remove once line items are out of checkout. -RS
-    uc_add_base_path_js();
     drupal_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
 
     $result = uc_checkout_pane_quotes('view', $order, NULL);
     $form['panes']['quotes'] = $result['contents'];
+    $form['panes']['quotes']['#type'] = 'fieldset';
     $form['panes']['quotes']['#collapsible'] = FALSE;
     $form['panes']['quotes']['#title'] = t('Calculate shipping');
 
@@ -1148,7 +1161,6 @@ function uc_paypal_wps_form($order) {
     'rm' => 2,
 
     // Transaction information
-    'address_override' => 1,
     'currency_code' => variable_get('uc_paypal_wps_currency', 'USD'),
     'handling_cart' => uc_currency_format($shipping, FALSE, FALSE, '.'),
     'invoice' => $order->order_id,
@@ -1158,28 +1170,37 @@ function uc_paypal_wps_form($order) {
     'business' => variable_get('uc_paypal_wps_email', ''),
     'upload' => 1,
 
-    // Prepopulating forms/address overriding
-    'address1' => substr($order->billing_street1, 0, 100),
-    'address2' => substr($order->billing_street2, 0, 100),
-    'city' => substr($order->billing_city, 0, 40),
-    'country' => ($country[0]['country_iso_code_2'] == 'GB') ? 'UK' : $country[0]['country_iso_code_2'],
-    'email' => $order->primary_email,
-    'first_name' => substr($order->billing_first_name, 0, 32),
-    'last_name' => substr($order->billing_last_name, 0, 64),
-    'state' => uc_get_zone_code($order->billing_zone),
-    'zip' => $order->billing_postal_code,
-    'night_phone_a' => $phone_a,
-    'night_phone_b' => $phone_b,
-    'night_phone_c' => $phone_c,
     'lc' => variable_get('uc_paypal_wps_language', 'US'),
   );
+
+  if (variable_get('uc_paypal_wps_address_override', TRUE)) {
+    $address_info = array(
+      'address_override' => 1,
+  
+      // Prepopulating forms/address overriding
+      'address1' => substr($order->billing_street1, 0, 100),
+      'address2' => substr($order->billing_street2, 0, 100),
+      'city' => substr($order->billing_city, 0, 40),
+      //'country' => ($country[0]['country_iso_code_2'] == 'GB') ? 'UK' : $country[0]['country_iso_code_2'],
+      'country' => $country[0]['country_iso_code_2'],
+      'email' => $order->primary_email,
+      'first_name' => substr($order->billing_first_name, 0, 32),
+      'last_name' => substr($order->billing_last_name, 0, 64),
+      'state' => uc_get_zone_code($order->billing_zone),
+      'zip' => $order->billing_postal_code,
+      'night_phone_a' => $phone_a,
+      'night_phone_b' => $phone_b,
+      'night_phone_c' => $phone_c,
+    );
+    $data = array_merge($data, $address_info);
+  }
 
   // Account for stores that just want to authorize funds instead of capture.
   if (variable_get('uc_paypal_wps_payment_action', 'Sale') == 'Authorize') {
     $data['paymentaction'] = 'authorization';
   }
 
-  if (variable_get('uc_paypal_wbs_submit_method', 'itemized') == 'itemized') {
+  if (variable_get('uc_paypal_wbs_submit_method', 'single') == 'itemized') {
     // List individual items
     $i = 0;
     foreach ($order->products as $item) {
@@ -1211,7 +1232,9 @@ function uc_paypal_wps_form($order) {
   $form['#action'] = variable_get('uc_paypal_wps_server', 'https://www.sandbox.paypal.com/cgi-bin/webscr');
 
   foreach ($data as $name => $value) {
-    $form[$name] = array('#type' => 'hidden', '#value' => $value);
+    if (!empty($value)) {
+      $form[$name] = array('#type' => 'hidden', '#value' => $value);
+    }
   }
 
   $form['submit'] = array(

@@ -26,10 +26,11 @@
  * Implementation of hook_footer() to insert the required HTML and Javascript.
  */
 function uc_googleanalytics_footer($main = 0) {
-  $script = '';
+  $checkout_page = variable_get('uc_cart_checkout_complete_page', '');
+
   // check to see if we are at the order complete page
-  if(arg(0) == 'cart' && arg(1) == 'checkout' && arg(2) == 'complete') {
-    // uc_googleanalytics_order_id will only be set if e-commerce tracking is enabled
+  if((arg(0) == 'cart' && arg(1) == 'checkout' && arg(2) == 'complete') ||
+      !empty($checkout_page) && $checkout_page == $_GET['q']){
     if($order = uc_order_load($_SESSION['uc_googleanalytics_order_id'])) {
       $script .= _uc_googleanalytics_ecommerce_form($order);
       $_SESSION['uc_googleanalytics_order_id'] = NULL;

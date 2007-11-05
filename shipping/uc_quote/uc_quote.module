@@ -8,6 +8,8 @@
  * This module collects information that is necessary to transport products from 
  * one place to another. Its hook system is used by fulfillment modules to get
  * their specific information so that a shipment may be quoted and requested.
+ *
+ * Coded by Lyle Mantooth
  */
 
 /******************************************************************************
@@ -73,6 +75,11 @@ function uc_quote_menu($may_cache){
   return $items;
 }
 
+/**
+ * Implementation of hook_taxonomy().
+ *
+ * Save and delete manufacturer shipping locations.
+ */
 function uc_quote_taxonomy($op, $type, $object = null){
   switch ($type){
     case 'term':
@@ -97,7 +104,7 @@ function uc_quote_taxonomy($op, $type, $object = null){
 /**
  * Implementation of hook_nodeapi().
  *
- * Loads and deletes the shipping type of products.
+ * Load, save, and delete the shipping type and default shipping address of products.
  */
 function uc_quote_nodeapi(&$node, $op, $arg3 = null, $arg4 = null){
   switch($op){
@@ -148,7 +155,7 @@ function uc_quote_nodeapi(&$node, $op, $arg3 = null, $arg4 = null){
 /**
  * Implementation of hook_form_alter().
  *
- * Adds a default shipping address for products and manufacturers. If it is left
+ * Add a default shipping address for products and manufacturers. If it is left
  * blank, products default to their manufacturers', which default to the store's.
  */
 function uc_quote_form_alter($form_id, &$form){
@@ -227,9 +234,148 @@ function uc_quote_form_alter($form_id, &$form){
 }
 
 /******************************************************************************
+ * Workflow-ng Hooks                                                          *
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_event_info().
+ *
+ * Register an event for each shipping method. Enabled methods have active
+ * configurations.
+ */
+function uc_quote_event_info(){
+  $methods = module_invoke_all('shipping_method');
+  $events = array();
+  foreach ($methods as $id => $method){
+    $events['get_quote_from_'. $id] = array(
+      '#label' => t('Getting shipping quote via !method', array('!method' => $method['title'])),
+      '#module' => t('Quote'),
+      '#arguments' => array(
+        'order' => array('#entity' => 'order', '#label' => t('Order')),
+        'method' => array('#entity' => 'quote_method', '#label' => t('Quote method')),
+      ),
+    );
+  }
+  return $events;
+}
+
+/**
+ * Implementation of hook_condition_info().
+ */
+function uc_quote_condition_info(){
+  return array(
+    'uc_quote_condition_product_shipping_type' => array(
+      '#label' => t("Order has a product of a particular shipping type"),
+      '#arguments' => array(
+        'order' => array('#entity' => 'order', '#label' => t('Order')),
+      ),
+      '#module' => t('Order: Product'),
+    ),
+  );
+}
+
+/**
+ * Returns true if the order has a product of the chosen shipping type.
+ *
+ * @see uc_quote_condition_product_shipping_type_form
+ */
+function uc_quote_condition_product_shipping_type($order, $settings){
+  $result = false;
+  foreach ($order->products as $product){
+    if ($product->shipping_type == $settings['type']){
+      $result = true;
+      break;
+    }
+  }
+  return $result;
+}
+
+/**
+ * Settings form for uc_quote_condition_product_shipping_type().
+ *
+ * @ingroup forms
+ * @see uc_quote_condition_product_shipping_type
+ * @see uc_quooe_condition_product_shipping_type_submit
+ */
+function uc_quote_condition_product_shipping_type_form($settings = array()){
+  $form = array();
+  
+  $options = array();
+  $types = module_invoke_all('shipping_type');
+  foreach ($types as $id => $type){
+    $options[$id] = $type['title'];
+  }
+  $form['type'] = array('#type' => 'select',
+    '#title' => t('Shipping type'),
+    '#options' => $option,
+    '#default_value' => $settings['type'],
+  );
+  
+  return $form;
+}
+
+/**
+ * Submit handler for uc_quote_condition_product_shipping_type_form().
+ */
+function uc_quote_condition_product_shipping_type_submit($form_id, $form_values){
+  return array(
+    'type' => $form_values['type'],
+  );
+}
+
+/**
+ * Implementation of hook_action_info().
+ */
+function uc_quote_action_info(){
+  return array(
+    'uc_quote_action_get_quote' => array(
+      '#label' => t('Fetch a shipping quote'),
+      '#arguments' => array(
+        'order' => array('#entity' => 'order', '#label' => t('Order')),
+        'method' => array('#entity' => 'quote_method', '#label' => t('Quote method')),
+      ),
+      '#module' => t('Quote'),
+    ),
+  );
+}
+
+/**
+ * Retrive shipping quote and print JSON data.
+ *
+ * @param $order
+ *   The order the quote is for.
+ * @param $method
+ *   The shipping method to generate the quote.
+ */
+function uc_quote_action_get_quote($order, $method){
+  $details = array();
+  foreach ($order as $key => $value){
+    if (substr($key, 0, 9) == 'delivery_'){
+      $field = substr($key, 9);
+      $details[$field] = $value;
+    }
+  }
+  ob_start();
+  if (function_exists($method['quote']['callback'])){
+    $quote_data = call_user_func($method['quote']['callback'], $order->products, $details, $method);
+  }
+  $messages = ob_get_contents();
+  ob_end_clean();
+  //drupal_set_message('<pre>'. print_r($quote_data, true) .'</pre>');
+  if ($messages && variable_get('uc_quote_log_errors', false)){
+    watchdog('quote', $messages, WATCHDOG_WARNING);
+    watchdog('quote', '<pre>'. print_r($quote_data, true) .'</pre>'. WATCHDOG_WARNING);
+  }
+  print serialize($quote_data);
+}
+
+/******************************************************************************
  * Ubercart Hooks                                                             *
  ******************************************************************************/
 
+/**
+ * Implementation of Übercart's hook_cart_pane.
+ */
 function uc_quote_cart_pane($items){
   $panes[] = array('id' => 'quotes',
     'title' => t('Shipping quotes'),
@@ -250,6 +396,7 @@ function uc_quote_checkout_pane(){
     'title' => t('Calculate Shipping Cost'),
     'desc' => t('Extra information necessary to ship.'),
     'weight' => 5,
+    'shippable' => TRUE,
   );
   return $panes;
 }
@@ -289,7 +436,7 @@ function uc_quote_order($op, &$arg1, $arg2){
       $arg1->quote['accessorials'] = strval($quote['accessorials']);
       break;
     case 'delete':
-      db_query("DELETE FROM {uc_order_quotes} WHERE oid = %d", $arg1);
+      db_query("DELETE FROM {uc_order_quotes} WHERE oid = %d", $arg1->order_id);
       break;
   }
 }
@@ -311,6 +458,9 @@ function uc_quote_line_item(){
   return $items;
 }
 
+/**
+ * Implementation of Übercart's hook_shipping_type().
+ */
 function uc_quote_shipping_type(){
   $weight = variable_get('uc_quote_type_weight', array('small_package' => 0));
   
@@ -325,31 +475,12 @@ function uc_quote_shipping_type(){
 }
 
 /******************************************************************************
- * Workflow-ng Integration                                                    *
- ******************************************************************************/
-
-function uc_quote_action_info(){
-  return array(
-    'uc_quote_action_quote_order' => array(
-      '#label' => t('Quote shipping for an order'),
-      '#arguments' => array(
-        'order' => array('#entity' => 'uc_order', '#label' => t('Order')),
-        'method' => array('#entity' => 'uc_quote', '#label' => t('Method used to quote shipping')),
-      ),
-    ),
-  );
-}
-
-function uc_quote_action_quote_order($order, $method){
-  $order->quote['method'] = key($method);
-  
-  return array('order' => $order);
-}
-
-/******************************************************************************
  * Menu Callbacks                                                             *
  ******************************************************************************/
 
+/**
+ * Display a summary of the shipping quote settings.
+ */
 function uc_quote_overview(){
   $sections = array();
   $address = variable_get('uc_quote_store_default_address', new stdClass());
@@ -387,7 +518,7 @@ function uc_quote_overview(){
   
   $sections[] = array(
     'edit' => 'admin/store/settings/quotes/methods',
-    'title' => t('Shipping methods'),
+    'title' => t('Quote methods'),
     'items' => $items,
   );
   
@@ -410,6 +541,9 @@ function uc_quote_overview(){
  * determine which quotin methods are enabled and which take precedence over
  * the others. Also sets the default quote and shipping types of all products
  * in the store. Individual products may be configured differently.
+ *
+ * @ingroup forms
+ * @see uc_quote_admin_settings_submit
  */
 function uc_quote_admin_settings(){
   $address = variable_get('uc_quote_store_default_address', new stdClass());
@@ -479,6 +613,16 @@ function uc_quote_admin_settings_submit($form_id, $form_values){
   drupal_set_message(t('The configuration options have been saved.'));
 }
 
+/**
+ * Settings for the shipping quote methods.
+ *
+ * Enable and reorder shipping quote methods. Set the default shipping type.
+ *
+ * @ingroup forms
+ * @see theme_uc_quote_method_settings
+ * @see uc_quote_method_settings_validate
+ * @see uc_quote_method_settings_submit
+ */
 function uc_quote_method_settings(){
   $form = array();
   
@@ -489,25 +633,11 @@ function uc_quote_method_settings(){
   $enabled = variable_get('uc_quote_enabled', array());
   $weight = variable_get('uc_quote_method_weight', array());
   $methods = uc_quote_shipping_method_options();
-
-  //$country_defaults = uc_quote_default_country_methods();
-  $country_methods = variable_get('uc_quote_country_methods', array());
-  $country_options = array(t('--All--'));
-  $countries = uc_get_country_data();
-  foreach ($countries as $country_data){
-    $country_options[$country_data['country_id']] = $country_data['country_name'];
-  }
-  
+  uasort($methods, '_uc_quote_type_sort');
   if (is_array($methods)){
     foreach ($methods as $id => $title){
       $form['methods'][$id]['uc_quote_enabled'] = array('#type' => 'checkbox',
         '#default_value' => $enabled[$id],
-      );
-      $form['methods'][$id]['uc_quote_country_method'] = array('#type' => 'select',
-        '#multiple' => true,
-        '#options' => $country_options,
-        '#default_value' => isset($country_methods[$id]) ? $country_methods[$id] : 0,
-        '#size' => min(10, count(uc_get_country_data()) + 1),
       );
       $form['methods'][$id]['uc_quote_method_weight'] = array('#type' => 'weight',
         '#delta' => 5,
@@ -552,17 +682,22 @@ function uc_quote_method_settings(){
   return $form;
 }
 
+/**
+ * Display a formatted list of shipping quote methods and form elements.
+ *
+ * @ingroup themeable
+ * @see uc_quote_method_settings
+ */
 function theme_uc_quote_method_settings($form){
   $methods = uc_quote_shipping_method_options();
   $output = '';
   
-  $header = array(t('Enable'), t('Shipping Method'), t('Countries'), t('Weight'));
+  $header = array(t('Enable'), t('Shipping Method'), t('Weight'));
   $rows = array();
   foreach (element_children($form['methods']) as $method){
     $row = array();
     $row[] = drupal_render($form['methods'][$method]['uc_quote_enabled']);
     $row[] = $methods[$method];
-    $row[] = drupal_render($form['methods'][$method]['uc_quote_country_method']);
     $row[] = drupal_render($form['methods'][$method]['uc_quote_method_weight']);
     $rows[] = $row;
   }
@@ -572,6 +707,11 @@ function theme_uc_quote_method_settings($form){
   return $output;
 }
 
+/**
+ * Validation handler for uc_quote_method_settings().
+ *
+ * Must enable at least one shipping method.
+ */
 function uc_quote_method_settings_validate($form_id, $form_values){
   $none_enabled = true;
   foreach ($form_values['methods'] as $method){
@@ -584,18 +724,18 @@ function uc_quote_method_settings_validate($form_id, $form_values){
   }
 }
 
+/**
+ * Submit handler for uc_quote_method_settings().
+ */
 function uc_quote_method_settings_submit($form_id, $form_values){
   $enabled = array();
-  $country_methods = array();
   $method_weight = array();
   foreach ($form_values['methods'] as $id => $method){
     $enabled[$id] = $method['uc_quote_enabled'];
-    $country_methods[$id] = $method['uc_quote_country_method'];
     $method_weight[$id] = $method['uc_quote_method_weight'];
   }
 
   variable_set('uc_quote_enabled', $enabled);
-  variable_set('uc_quote_country_methods', $country_methods);
   variable_set('uc_quote_method_weight', $method_weight);
   variable_set('uc_quote_type_weight', $form_values['uc_quote_type_weight']);
   variable_set('uc_store_shipping_type', $form_values['uc_store_shipping_type']);
@@ -608,7 +748,7 @@ function uc_quote_method_settings_submit($form_id, $form_values){
  ******************************************************************************/
 
 /**
- * Stores the shipping type of products and manufacturers.
+ * Store the shipping type of products and manufacturers.
  *
  * Fulfillment modules are invoked for products that match their shipping type.
  * This function stores the shipping type of a product or a manufacturer.
@@ -629,7 +769,7 @@ function uc_quote_set_shipping_type($id_type, $id, $shipping_type){
 }
 
 /**
- * Retrieve's a product's or manufacturer's shipping type from the database.
+ * Retrieve a product's or manufacturer's shipping type from the database.
  *
  * @param $id_type
  *   product | manufacturer
@@ -662,6 +802,17 @@ function uc_product_get_shipping_type($product){
   return $shipping_type;
 }
 
+/**
+ * Get a product's default shipping address.
+ *
+ * Load the default shipping address of a product, it's manufacturer's, or the
+ * store's, whichever is available.
+ *
+ * @param $nid
+ *   A product node id.
+ * @return
+ *   An address object.
+ */
 function uc_quote_get_default_shipping_address($nid){
   $address = db_fetch_object(db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country FROM {uc_quote_product_locations} WHERE nid = %d", $nid));
   if (empty($address)){
@@ -676,6 +827,12 @@ function uc_quote_get_default_shipping_address($nid){
   return $address;
 }
 
+/**
+ * Cart pane callback.
+ *
+ * @ingroup forms
+ * @see theme_uc_cart_pane_quotes
+ */
 function uc_cart_pane_quotes($items){
   // Get all quote types neccessary to fulfill order.
   $shipping_types = array();
@@ -744,6 +901,9 @@ function uc_cart_pane_quotes($items){
   return $form;
 }
 
+/**
+ * Display the formatted quote cart pane.
+ */
 function theme_uc_cart_pane_quotes($form){
   $output = '<div class="solid-border">';
   $output .= '<strong>'. t('Estimated shipping cost:') .'</strong>';
@@ -764,10 +924,6 @@ function theme_uc_cart_pane_quotes($form){
  * Adds a line item to the order that records the chosen shipping quote.
  */
 function uc_checkout_pane_quotes($op, &$arg1, $arg2){
-  if (!uc_cart_is_shippable() && variable_get('uc_cart_delivery_not_shippable', TRUE)) {
-    return;
-  }
-
   switch ($op){
     case 'view':
       $description = t('Shipping quotes are generated automatically when you enter your address and may be updated manually with the button below.');
@@ -792,6 +948,11 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2){
           if (set_line_item != undefined){
             set_line_item("shipping", "'. $method['quote']['accessorials'][$arg1->quote['accessorials']] .'", '. $arg1->quote['rate'] .', 1);
           }
+          try {
+            getTax();
+            setTaxCallbacks();
+          }
+          catch (err) { }
         })', 'inline');
       }
       else{
@@ -837,7 +998,7 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2){
 
     case 'process':
       if (!isset($_POST['quote-option'])){
-        drupal_set_message(t('You must select a quote before continuing.'), 'error');
+        drupal_set_message(t('You must select a shipping option before continuing.'), 'error');
         return false;
       }
       $details = array();
@@ -861,29 +1022,19 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2){
       $arg1->quote['accessorials'] = $quote_option[1];
       $arg1->quote['quote_form'] = rawurldecode($_POST['quote-form']);
       $methods = array_filter(module_invoke_all('shipping_method'), '_uc_quote_method_enabled');
-      uasort($methods, '_uc_quote_type_sort');
-      $country_methods = variable_get('uc_quote_country_methods', array());
-      foreach ($methods as $id => $method){
-        if ($method['quote']['type'] != 'order' && $method['quote']['type'] != $shipping_type
-          && !empty($country_methods[$id]) && !isset($country_methods[$id][0]) && !isset($country_methods[$id][$details['country']])){
-          unset($methods[$id]);
-        }
-      }
       $method = $methods[$quote_option[0]];
       $quote_data = array();
       ob_start();
-      $quote_data[$method['id']] = call_user_func($method['quote']['callback'], $products, $details);
-      $messages = ob_get_contents();
+      workflow_ng_invoke_event('get_quote_from_'. $method['id'], $arg1, $method);
+      $quote_string = ob_get_contents();
       ob_end_clean();
-      if ($messages && variable_get('uc_quote_log_errors', false)){
-        watchdog('quote', $messages, WATCHDOG_WARNING);
-      }
-      if (!isset($quote_data[$quote_option[0]][$quote_option[1]])){
+      $quote_data = unserialize($quote_string);
+      if (!isset($quote_data[$quote_option[1]])){
         drupal_set_message(t('Invalid option selected. Recalculate shipping quotes to continue.'), 'error');
         return false;
       }
       $label = $method['quote']['accessorials'][$quote_option[1]];
-      $arg1->quote['rate'] = $quote_data[$quote_option[0]][$quote_option[1]]['rate'];
+      $arg1->quote['rate'] = $quote_data[$quote_option[1]]['rate'];
       $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = %d AND type = 'shipping'", $arg1->order_id);
       if ($lid = db_result($result)){
         uc_order_update_line_item($lid, 
@@ -985,29 +1136,21 @@ function uc_order_pane_quotes($op, $arg1){
           $order->quote['accessorials'] = $quote_option[1];
           $order->quote['quote_form'] = rawurldecode($_POST['quote-form']);
           $methods = array_filter(module_invoke_all('shipping_method'), '_uc_quote_method_enabled');
-          uasort($methods, '_uc_quote_type_sort');
-          $country_methods = variable_get('uc_quote_country_methods', array());
-          foreach ($methods as $id => $method){
-            if ($method['quote']['type'] != 'order' && $method['quote']['type'] != $shipping_type
-              && !empty($country_methods[$id]) && !isset($country_methods[$id][0]) && !isset($country_methods[$id][$details['country']])){
-              unset($methods[$id]);
-            }
-          }
           $method = $methods[$quote_option[0]];
           $quote_data = array();
           ob_start();
-          $quote_data[$method['id']] = call_user_func($method['quote']['callback'], $products, $details);
-          $messages = ob_get_contents();
+          workflow_ng_invoke_event('get_quote_from_'. $method['id'], $order, $method);
+          $quote_string = ob_get_contents();
           ob_end_clean();
-          if ($messages && variable_get('uc_quote_log_errors', false)){
-            watchdog('quote', $messages, WATCHDOG_WARNING);
-          }
-          if (!isset($quote_data[$quote_option[0]][$quote_option[1]])){
+          $quote_data = unserialize($quote_string);
+          //drupal_set_message('Chosen quote method:<pre>'. print_r($method, true) .'</pre>');
+          //drupal_set_message('Chosen quote data:<pre>'. print_r($quote_data, true) .'</pre>');
+          if (!isset($quote_data[$quote_option[1]])){
             drupal_set_message(t('Invalid option selected. Recalculate shipping quotes to continue.'), 'error');
             break;
           }
           $label = $method['quote']['accessorials'][$quote_option[1]];
-          $order->quote['rate'] = $quote_data[$quote_option[0]][$quote_option[1]]['rate'];
+          $order->quote['rate'] = $quote_data[$quote_option[1]]['rate'];
           $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = %d AND type = 'shipping'", $arg1['order_id']);
           if ($lid = db_result($result)){
             uc_order_update_line_item($lid, 
@@ -1028,7 +1171,7 @@ function uc_order_pane_quotes($op, $arg1){
 }
 
 /**
- * Callback to return the shipping quote(s) of the appropriate quoting method.
+ * Callback to return the shipping quote(s) of the appropriate quoting method(s).
  */
 function uc_quote_request_quotes(){
   /* print '<pre>';
@@ -1062,6 +1205,12 @@ function uc_quote_request_quotes(){
     $products[] = $product;
   }
   
+  $fake_order = new stdClass();
+  $fake_order->products = $products;
+  foreach ($details as $key => $value){
+    $field = 'delivery_'. $key;
+    $fake_order->$field = $value;
+  }
   // Get all quote types neccessary to fulfill order.
   $shipping_types = array();
   foreach ($products as $product){
@@ -1070,6 +1219,7 @@ function uc_quote_request_quotes(){
   $shipping_types = array_unique($shipping_types);
   $all_types = module_invoke_all('shipping_type');
   $shipping_type = '';
+  // Use the most prominent shipping type (lightest weight).
   $type_weight = 1000; // arbitrary large number
   foreach ($shipping_types as $type){
     if ($all_types[$type]['weight'] < $type_weight){
@@ -1079,10 +1229,8 @@ function uc_quote_request_quotes(){
   }
   $methods = array_filter(module_invoke_all('shipping_method'), '_uc_quote_method_enabled');
   uasort($methods, '_uc_quote_type_sort');
-  $country_methods = variable_get('uc_quote_country_methods', array());
   foreach ($methods as $id => $method){
-    if (($method['quote']['type'] != 'order' && $method['quote']['type'] != $shipping_type)
-      || (!empty($country_methods[$id]) && !isset($country_methods[$id][0]) && !isset($country_methods[$id][$details['country']]))){
+    if ($method['quote']['type'] != 'order' && $method['quote']['type'] != $shipping_type){
       unset($methods[$id]);
     }
   }
@@ -1090,9 +1238,13 @@ function uc_quote_request_quotes(){
   //drupal_set_message('<pre>'. print_r($products, true) .'</pre>');
   $quote_data = array();
   foreach ($methods as $method){
-    $quote_data[$method['id']] = call_user_func($method['quote']['callback'], $products, $details);
+    workflow_ng_invoke_event('get_quote_from_'. $method['id'], $fake_order, $method);
+    $data = ob_get_contents();
+    if ($data = unserialize($data)){
+      $quote_data[$method['id']] = $data;
+    }
+    ob_clean();
   }
-  $messages = ob_get_contents();
   ob_end_clean();
   //drupal_set_message('<pre>'. print_r($methods, true) .'</pre>');
   //drupal_set_message('<pre>'. print_r($quote_data, true) .'</pre>');
@@ -1102,11 +1254,8 @@ function uc_quote_request_quotes(){
       $return_quotes[$method_id .'---'. $accsrl] = $data;
     }
   }
-  if ($messages && variable_get('uc_quote_log_errors', false)){
-    watchdog('quote', $messages, WATCHDOG_WARNING);
-    watchdog('quote', '<pre>'. print_r($return_quotes, true) .'</pre>'. WATCHDOG_WARNING);
-  }
   print drupal_to_js($return_quotes);
+  exit();
 }
 
 /**
@@ -1170,23 +1319,4 @@ function uc_quote_shipping_method_options(){
     $types[$method['id']] = $method['title'];
   }
   return $types;
-}
-
-/**
- * Default value of 'uc_quote_country_methods'.
- */
-function uc_quote_default_country_methods($reset = false){
-  static $default = array();
-  
-  if (!$reset){
-    $methods = module_invoke_all('shipping_method');
-    $countries = uc_get_country_data();
-    foreach (array_keys($methods) as $method){
-      foreach ($countries as $country_data){
-        $default[$method][$country_data['country_id']] = $country_data['country_id'];
-      }
-    }
-  }
-  
-  return $default;
 }

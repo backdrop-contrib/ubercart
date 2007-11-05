@@ -1,0 +1,61 @@
+<?php
+// $Id$
+
+function uc_file_install(){
+  switch($GLOBALS['db_type']){
+    case 'mysqli':
+    case 'mysql': 
+      db_query("CREATE TABLE {uc_files} (
+        `fid` mediumint(9) NOT NULL,
+        `filename` varchar(255) NOT NULL,
+        KEY fid (fid)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 COLLATE utf8_unicode_ci */ ");
+      db_query("CREATE TABLE {uc_file_products} (
+        `pfid` mediumint(9) NOT NULL,
+				`fid` mediumint(9) NOT NULL,
+        `model` varchar(255) default NULL,
+				`description` VARCHAR(255) default NULL,
+				`shippable` BOOL NOT NULL,
+        KEY pfid (pfid),
+				KEY fid (fid)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 COLLATE utf8_unicode_ci */ ");
+      db_query("CREATE TABLE {uc_file_users} (
+        `fid` mediumint(9) NOT NULL,
+				`uid` mediumint(9) NOT NULL,
+				`pfid` mediumint(9) default NULL,
+        `key` varchar(32) NOT NULL,
+				`granted` int(11) NOT NULL,
+				`accessed` smallint(5) unsigned NOT NULL default 0,
+				`addresses` text,
+        KEY fid (fid),
+				KEY uid (uid)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 COLLATE utf8_unicode_ci */ ");
+      break;
+      break;
+    case 'pgsql':
+      break;
+  }
+}
+
+function uc_file_uninstall() {
+	db_query("DROP TABLE IF EXISTS {uc_files}");
+	db_query("DROP TABLE IF EXISTS {uc_file_products}");
+	db_query("DROP TABLE IF EXISTS {uc_file_users}");
+	db_query("DELETE FROM {uc_product_features} WHERE fid = 'file'");
+}
+
+function uc_file_update_1() {
+	$ret = array();
+	
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+			$ret[] = update_sql("ALTER TABLE {uc_file_products} ADD `description` VARCHAR( 255 ) NULL AFTER `model`");
+      $ret[] = update_sql("ALTER TABLE {uc_file_users} CHANGE model `pfid` mediumint(9) NULL DEFAULT NULL");
+			break;
+    case 'pgsql':
+    	break;
+  }
+	
+	return $ret;
+}

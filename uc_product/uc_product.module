@@ -229,10 +229,36 @@ function uc_product_enable(){
     if (!db_num_rows($result)){
       db_query("INSERT INTO {node_field} (field_name, type, global_settings, required, multiple, db_storage) VALUES ('field_image_cache', 'image', '%s', 0, 1, 0)", 'a:0:{}');
     }
+    $image_path = file_create_path('ubercart_images');
+    if (file_check_directory($image_path)){
+      $image_path = 'ubercart_images';
+    }
+    else{
+      $image_path = '';
+    }
+    $widget_settings = array(
+      'max_resolution' => '0',
+      'image_path' => $image_path,
+      'custom_alt' => 1,
+      'custom_title' => 1,
+      'teaser_preset' => null,
+      'body_preset' => null,
+    );
+    $display_settings = array(
+      'label' => array(
+        'format' => 'hidden',
+      ),
+      'teaser' => array(
+        'format' => 'hidden',
+      ),
+      'full' => array(
+        'format' => 'hidden',
+      ),
+    );
     foreach (array_keys(uc_product_node_info()) as $type){
       $result = db_query("SELECT * FROM {node_field_instance} WHERE field_name = 'field_imagecache' and type_name = '%s'", $type);
       if (!db_num_rows($result)){
-        db_query("INSERT INTO {node_field_instance} VALUES ('field_image_cache', '%s', -2, 'Image', 'image', '%s', '%s', '')", $type, 'a:6:{s:14:"max_resolution";s:1:"0";s:10:"image_path";s:6:"ubercart_images";s:10:"custom_alt";i:1;s:12:"custom_title";i:1;s:13:"teaser_preset";N;s:11:"body_preset";N;}', 'a:3:{s:5:"label";a:1:{s:6:"format";s:6:"hidden";}s:6:"teaser";a:1:{s:6:"format";s:6:"hidden";}s:4:"full";a:1:{s:6:"format";s:6:"hidden";}}');
+        db_query("INSERT INTO {node_field_instance} VALUES ('field_image_cache', '%s', -2, 'Image', 'image', '%s', '%s', '')", $type, serialize($widget_settings), serialize($display_settings));
       }
       switch ($GLOBALS['db_type']){
         case 'mysql':
@@ -306,6 +332,8 @@ function uc_product_enable(){
 
 /**
  * Implementation of hook_node_info().
+ *
+ * Create node types for each product class and other product modules.
  */
 function uc_product_node_info($reset = false){
   static $types = array();
@@ -338,11 +366,15 @@ function uc_product_node_info($reset = false){
   return $types;
 }
 
+/**
+ * Implementation of hook_forms().
+ *
+ * Register an "add to cart" form for each product to prevent id collisions.
+ */
 function uc_product_forms(){
   $products = db_query("SELECT nid FROM {uc_products}");
 
-  while ($product = db_fetch_object($products))
-  {
+  while ($product = db_fetch_object($products)){
     $forms['uc_product_add_to_cart_form_'. $product->nid] = array('callback' => 'uc_product_add_to_cart_form');
     $forms['uc_catalog_buy_it_now_form_'. $product->nid] = array('callback' => 'uc_catalog_buy_it_now_form');
   }
@@ -352,6 +384,12 @@ function uc_product_forms(){
 
 /**
  * Implementation of hook_form().
+ *
+ * @ingroup forms
+ * @see theme_uc_product_form_prices
+ * @see theme_uc_product_form_weight
+ * @see theme_uc_product_dimensions
+ * @see uc_product_form_validate
  */
 function uc_product_form(&$node){
   $location = array();
@@ -377,6 +415,7 @@ function uc_product_form(&$node){
     '#title' => t('Description'),
     '#required' => FALSE,
     '#default_value' => $node->body,
+    '#rows' => 20,
     '#description' => t('Enter the product description used for product teasers and pages.'),
   );
   $form['body_filter']['format'] = filter_form($node->format);
@@ -394,13 +433,12 @@ function uc_product_form(&$node){
     '#required' => TRUE,
     '#default_value' => $node->model,
     '#description' => t('Product SKU/model'),
-    '#weight' => 1,
+    '#weight' => 0,
     '#size' => 32,
-    '#maxlength' => 32,
   );
   
   $form['base']['prices'] = array(
-    '#weight' => 2,
+    '#weight' => 5,
     '#theme' => 'uc_product_form_prices',
   );
   
@@ -435,8 +473,15 @@ function uc_product_form(&$node){
     '#maxlength' => 35,
   );
 
+  $form['base']['shippable'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Product and its derivatives are shippable.'),
+    '#default_value' => isset($node->shippable) ? $node->shippable : TRUE,
+    '#weight' => 10,
+  );
+
   $form['base']['weight'] = array(
-    '#weight' => 3,
+    '#weight' => 15,
     '#theme' => 'uc_product_form_weight',
   );
   $form['base']['weight']['weight'] = array('#type' => 'textfield',
@@ -459,7 +504,7 @@ function uc_product_form(&$node){
   $form['base']['dimensions'] = array('#type' => 'fieldset',
     '#title' => t('Dimensions'),
     '#description' => t('Physical dimensions of the packaged product.'),
-    '#weight' => 4,
+    '#weight' => 20,
     '#theme' => 'uc_product_dimensions_form',
   );
   $form['base']['dimensions']['length_units'] = array('#type' => 'select',
@@ -468,7 +513,7 @@ function uc_product_form(&$node){
       'in' => t('Inches'),
       'cm' => t('Centimeters'),
     ),
-    '#default_value' => $node->length_units ? $node->length_units : variable_get('uc_store_length_unit', 'in'),
+    '#default_value' => $node->length_units ? $node->length_units : variable_get('uc_length_unit', 'in'),
   );
   $form['base']['dimensions']['length'] = array('#type' => 'textfield',
     '#title' => t('Length'),
@@ -489,12 +534,13 @@ function uc_product_form(&$node){
     '#title' => t('Package quantity'),
     '#default_value' => $node->pkg_qty ? $node->pkg_qty : 1,
     '#description' => t('For a package containing only this product, how many are in it?'),
+    '#weight' => 25,
   );
   $form['base']['default_qty'] = array('#type' => 'textfield',
     '#title' => t('Default quantity to add to cart'),
-    '#default_value' => $node->default_qty ? $node->default_qty : 1,
+    '#default_value' => !is_null($node->default_qty) ? $node->default_qty : 1,
     '#description' => t('Leave blank or zero to disable the quantity field in the add to cart form.'),
-    '#weight' => 5,
+    '#weight' => 27,
     '#size' => 5,
     '#maxlength' => 6,
   );
@@ -502,7 +548,7 @@ function uc_product_form(&$node){
     '#title' => t('List order'),
     '#delta' => 25,
     '#default_value' => $node->ordering,
-    '#weight' => 6,
+    '#weight' => 30,
   );
 
   $form['#validate']['uc_product_form_validate'] = array();
@@ -510,6 +556,9 @@ function uc_product_form(&$node){
   return $form;
 }
 
+/**
+ * @ingroup themeable
+ */
 function theme_uc_product_form_prices($prices){
   return '<table><tr><td>'. "\n". drupal_render($prices['list_price'])
     .'</td><td>'. drupal_render($prices['cost'])
@@ -517,11 +566,19 @@ function theme_uc_product_form_prices($prices){
     ."</td></tr></table>\n";
 }
 
+/**
+ * @ingroup themeable
+ */
 function theme_uc_product_form_weight($form) {
   return '<table><tr><td>' . drupal_render($form['weight']) .'</td><td>'
-       . drupal_render($form['units']) .'</td></tr></table>';
+       . drupal_render($form['weight_units']) .'</td></tr></table>';
 }
 
+/**
+ * Put length, width, and height fields on the same line.
+ *
+ * @ingroup themeable
+ */
 function theme_uc_product_dimensions_form($form){
   $output = '';
   $row = array();
@@ -533,26 +590,26 @@ function theme_uc_product_dimensions_form($form){
 }
 
 function uc_product_form_validate($form_id, $form_values){
-//  drupal_set_message(print_r($form_values, true));
+  //drupal_set_message(print_r($form_values, true));
   $pattern = '/^\d*(\.\d*)?$/';
   $price_error = t('Price must be in a valid number format. No commas and only one decimal point.');
-  if (!is_numeric($form_values['list_price']['#value']) && !preg_match($pattern, $form_values['list_price']['#value'])){
+  if (!empty($form_values['list_price']) && !is_numeric($form_values['list_price']) && !preg_match($pattern, $form_values['list_price'])){
     form_set_error('list_price', $price_error);
   }
-  if (!is_numeric($form_values['cost']['#value']) && !preg_match($pattern, $form_values['cost']['#value'])){
+  if (!empty($form_values['cost']) && !is_numeric($form_values['cost']) && !preg_match($pattern, $form_values['cost'])){
     form_set_error('cost', $price_error);
   }
-  if (!is_numeric($form_values['sell_price']['#value']) && !preg_match($pattern, $form_values['sell_price']['#value'])){
+  if (!is_numeric($form_values['sell_price']) && !preg_match($pattern, $form_values['sell_price'])){
     form_set_error('sell_price', $price_error);
   }
-  if (!empty($form_values['weight']['#value']) && !is_numeric($form_values['weight']['#value'])){
+  if (!empty($form_values['weight']) && !is_numeric($form_values['weight'])){
     form_set_error('weight', t('Weight must be in a valid number format. No commas and only one decimal point.'));
   }
-  if ($form_values['default_qty']['#value']){
-    if (!is_numeric($form_values['default_qty']['#value'])){
+  if ($form_values['default_qty']){
+    if (!is_numeric($form_values['default_qty'])){
       form_set_error('default_qty', t('Quantities should be numeric.'));
     }
-    else if ($form_values['default_qty']['#value'] < 0){
+    else if ($form_values['default_qty'] < 0){
       form_set_error('default_qty', t("Adding negative items to the cart doesn't make sense, so don't make it easy."));
     }
   }
@@ -563,10 +620,10 @@ function uc_product_form_validate($form_id, $form_values){
  */
 function uc_product_insert($node){
   if (!isset($node->unique_hash)){
-    $node->unique_hash = md5($node-> vid . $node->nid . $node->model . $node->list_price . $node->cost . $node->sell_price . $node->weight . $node->weight_units . $node->length . $node->width . $node->height . $node->length_units . $node->pkg_qty . $node->default_qty . time());
+    $node->unique_hash = md5($node->vid . $node->nid . $node->model . $node->list_price . $node->cost . $node->sell_price . $node->weight . $node->weight_units . $node->length . $node->width . $node->height . $node->length_units . $node->pkg_qty . $node->default_qty . $node->shippable . time());
   }
-  db_query("INSERT INTO {uc_products} (vid, nid, model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, unique_hash, ordering) VALUES (%d, %d, '%s', %f, %f, %f, %f, '%s', %f, %f, %f, '%s', %d, %d, '%s', %d)",
-    $node->vid, $node->nid, $node->model, $node->list_price, $node->cost, $node->sell_price, $node->weight, $node->weight_units, $node->length, $node->width, $node->height, $node->length_units, $node->pkg_qty, $node->default_qty, $node->unique_hash, $node->ordering
+  db_query("INSERT INTO {uc_products} (vid, nid, model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, unique_hash, ordering, shippable) VALUES (%d, %d, '%s', %f, %f, %f, %f, '%s', %f, %f, %f, '%s', %d, %d, '%s', %d, %d)",
+    $node->vid, $node->nid, $node->model, $node->list_price, $node->cost, $node->sell_price, $node->weight, $node->weight_units, $node->length, $node->width, $node->height, $node->length_units, $node->pkg_qty, $node->default_qty, $node->unique_hash, $node->ordering, $node->shippable
   );
 }
 
@@ -575,14 +632,14 @@ function uc_product_insert($node){
  */
 function uc_product_update($node){
   if ($node->revision){
-    db_query("INSERT INTO {uc_products} (vid, nid, model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, unique_hash, ordering) VALUES (%d, %d, '%s', %f, %f, %f, %f, '%s', %f, %f, %f, '%s', %d, %d, '%s', %d)",
-      $node->vid, $node->nid, $node->model, $node->list_price, $node->cost, $node->sell_price, $node->weight, $node->weight_units, $node->length, $node->width, $node->height, $node->length_units, $node->pkg_qty, $node->default_qty, $node->unique_hash, $node->ordering
+    db_query("INSERT INTO {uc_products} (vid, nid, model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, unique_hash, ordering, shippable) VALUES (%d, %d, '%s', %f, %f, %f, %f, '%s', %f, %f, %f, '%s', %d, %d, '%s', %d, %d)",
+      $node->vid, $node->nid, $node->model, $node->list_price, $node->cost, $node->sell_price, $node->weight, $node->weight_units, $node->length, $node->width, $node->height, $node->length_units, $node->pkg_qty, $node->default_qty, $node->unique_hash, $node->ordering, $node->shippable
     );
   }
   else{
     //drupal_set_message('<pre>'. print_r($node, true) .'</pre>');drupal_set_message('<pre>'. print_r($node, true) .'</pre>');
-    db_query("UPDATE {uc_products} SET model = '%s', list_price = %f, cost = %f, sell_price = %f, weight = %f, weight_units = '%s', length = %f, width = %f, height = %f, length_units = '%s', pkg_qty = %d, default_qty = %d, ordering = %d WHERE vid = %d",
-      $node->model, $node->list_price, $node->cost, $node->sell_price, $node->weight, $node->weight_units, $node->length, $node->width, $node->height, $node->length_units, $node->pkg_qty, $node->default_qty, $node->ordering, $node->vid);
+    db_query("UPDATE {uc_products} SET model = '%s', list_price = %f, cost = %f, sell_price = %f, weight = %f, weight_units = '%s', length = %f, width = %f, height = %f, length_units = '%s', pkg_qty = %d, default_qty = %d, ordering = %d, shippable = %d WHERE vid = %d",
+      $node->model, $node->list_price, $node->cost, $node->sell_price, $node->weight, $node->weight_units, $node->length, $node->width, $node->height, $node->length_units, $node->pkg_qty, $node->default_qty, $node->ordering, $node->shippable, $node->vid);
   }
 }
 
@@ -590,7 +647,7 @@ function uc_product_update($node){
  * Implementation of hook_load().
  */
 function uc_product_load(&$node) {
-  return db_fetch_object(db_query('SELECT model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, unique_hash FROM {uc_products} WHERE vid = %d', $node->vid));
+  return db_fetch_object(db_query('SELECT model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, unique_hash, ordering, shippable FROM {uc_products} WHERE vid = %d', $node->vid));
 }
 
 /**
@@ -771,6 +828,11 @@ function uc_product_form_alter($form_id, &$form){
  * TAPIr Hooks                                                                *
  ******************************************************************************/
 
+/**
+ * Define up the product list table.
+ *
+ * @see uc_product_table
+ */
 function uc_product_table_settings(){
   $tables = array();
   
@@ -785,6 +847,11 @@ function uc_product_table_settings(){
   return $tables;
 }
 
+/**
+ * Display product fields in a TAPIr table.
+ *
+ * Display image, name, price, and add to cart form.
+ */
 function uc_product_table($op, $args = array()){
   switch($op){
     case 'fields':
@@ -808,7 +875,7 @@ function uc_product_table($op, $args = array()){
         $node = node_load($nid);
         if ($node->type != 'image'){
           if (module_exists('imagecache') && isset($node->field_image_cache) && file_exists($node->field_image_cache[0]['filepath'])){
-            $data['image'][] = l(theme('imagecache', 'product_list', $node->field_image_cache[0]['filepath']), 'node/'. $node->nid, array(), null, null, false, true);
+            $data['image'][] = l(theme('imagecache', 'product_list', $node->field_image_cache[0]['filepath'], $node->field_image_cache[0]['alt'], $node->field_image_cache[0]['title']), 'node/'. $node->nid, array(), null, null, false, true);
           }
           else{
             $data['image'][] = t('n/a');
@@ -826,6 +893,11 @@ function uc_product_table($op, $args = array()){
   }
 }
 
+/**
+ * @ingroup forms
+ * @see uc_product_forms
+ * @see uc_catalog_buy_it_now_form_submit
+ */
 function uc_catalog_buy_it_now_form($node){
   $form = array();
   $form['#base'] = 'uc_catalog_buy_it_now_form';
@@ -856,18 +928,65 @@ function uc_catalog_buy_it_now_form_submit($form_id, $form_values){
 }
 
 /******************************************************************************
+ * Token Hooks                                                                *
+ ******************************************************************************/
+
+/**
+ * Provide product token values.
+ */
+function uc_product_token_values($type, $object = NULL, $options = array()){
+  if ($type == 'node' && uc_product_is_product($object)){
+    $tokens = array();
+    $tokens['model'] = $object->model;
+    $tokens['list_price'] = $object->list_price;
+    $tokens['cost'] = $object->cost;
+    $tokens['sell_price'] = $object->sell_price;
+    $tokens['weight_units'] = $object->weight_units;
+    $tokens['weight-raw'] = $object->weight;
+    $tokens['weight'] = uc_weight_format($object->weight, $object->weight_units);
+    $tokens['length_units'] = $object->length_units;
+    $tokens['length-raw'] = $object->length;
+    $tokens['length'] = uc_length_format($object->length, $object->length_units);
+    $tokens['width-raw'] = $object->width;
+    $tokens['width'] = uc_length_format($object->width, $object->length_units);
+    $tokens['height-raw'] = $object->height;
+    $tokens['height'] = uc_length_format($object->height, $object->length_units);
+    return $tokens;
+  }
+}
+
+function uc_product_token_list($type = 'all'){
+  if ($type == 'node' || $type == 'all'){
+    $tokens = array();
+    $tokens['product']['model'] = t("The product's model number.");
+    $tokens['product']['list_price'] = t("The product's list price.");
+    $tokens['product']['cost'] = t("The product's cost.");
+    $tokens['product']['sell_price'] = t("The product's sell price.");
+    $tokens['product']['weight_units'] = t("The unit of measurement for the product's weight.");
+    $tokens['product']['weight-raw'] = t("The numerical value of the product's weight.");
+    $tokens['product']['weight'] = t("The product's formatted weight.");
+    $tokens['product']['length_units'] = t("The unit of measurement for the product's length, width, and height.");
+    $tokens['product']['length-raw'] = t("The numerical value of the product's length.");
+    $tokens['product']['length'] = t("The product's formatted length.");
+    $tokens['product']['width-raw'] = t("The numerical value of the product's width.");
+    $tokens['product']['width'] = t("The product's formatted width.");
+    $tokens['product']['height-raw'] = t("The numerical value of the product's height.");
+    $tokens['product']['height'] = t("The product's formatted height.");
+    return $tokens;
+  }
+}
+
+/******************************************************************************
  * Views Hooks                                                                *
  ******************************************************************************/
 
 /**
- * @file
- * Ubercart Views integration.
- *
- * Provides Ubercart integration with views.
- */
-
-/**
  * Implementation of hook_views_tables()
+ *
+ * @see uc_views_handler_price
+ * @see uc_views_handler_weight
+ * @see uc_product_views_handler_add_to_cart_link
+ * @see uc_product_views_handler_filter_product
  */
 function uc_product_views_tables(){
   $tables['uc_products'] = array(
@@ -935,6 +1054,9 @@ function uc_product_views_tables(){
       'weight' => array(
         'name' => t('Product: Weight'),
       ),
+      'ordering' => array(
+        'name' => t('Product; Ordering'),
+      ),
     ),
     'filters' => array(
       'is_product' => array(
@@ -951,43 +1073,51 @@ function uc_product_views_tables(){
   return $tables;
 }
 
-// Return a formatted price value to display in the View.
+/**
+ * Return a formatted price value to display in the View.
+ */
 function uc_views_handler_price($fieldinfo, $fielddata, $value, $data) {
   return uc_currency_format($value);
 }
 
-// Return a formatted weight value to display in the View.
+/**
+ * Return a formatted weight value to display in the View.
+ */
 function uc_views_handler_weight($fieldinfo, $fielddata, $value, $data) {
   return uc_weight_format($value);
 }
 
+/**
+ * Return a formatted add to cart form to display in the View.
+ */
 function uc_product_views_handler_add_to_cart_link($fieldinfo, $fielddata, $value, $data) {
-  return theme_uc_product_add_to_cart($data);
+  return theme('uc_product_add_to_cart', $data);
 }
 
+/**
+ * Filter out nodes that are not products.
+ */
 function uc_product_views_handler_filter_product($op, $filter, $filterinfo, &$query) {
   $types = array_keys(uc_product_node_info());
 
-  switch ($op)
-  {
+  switch ($op){
     case 'handler':
-      switch ($filter['value'][0]) 
-      {
+      switch ($filter['value'][0]) {
         case '0':
           $query->add_where("node.type NOT IN ('" . implode("','", $types) . "')");
-          break;
-
+        break;
         case '1':
           $query->add_where("node.type IN ('" . implode("','", $types) . "')");
-          break;
+        break;
       }
-      break;
+    break;
   }
 }
 
-function uc_product_views_default_views()
-{
-  // Provide a default products view similar to what ubercart has out of box
+/**
+ * Provide a default products view.
+ */
+function uc_product_views_default_views(){
   $view = new stdClass();
   $view->name = 'products';
   $view->description = 'products';
@@ -1005,17 +1135,24 @@ function uc_product_views_default_views()
   $view->url = 'products';
   $view->use_pager = TRUE;
   $view->nodes_per_page = '10';
-  $view->sort = array (
-  );
-  $view->argument = array (
-  );
+  $view->menu = TRUE;
+  $view->menu_title = '';
+  $view->menu_tab = FALSE;
+  $view->menu_tab_weight = '0';
+  $view->menu_tab_default = FALSE;
+  $view->menu_tab_default_parent = NULL;
+  $view->menu_tab_default_parent_type = 'tab';
+  $view->menu_parent_tab_weight = '0';
+  $view->menu_parent_title = '';
+  $view->sort = array ();
+  $view->argument = array ();
   $view->field = array (
     array (
       'tablename' => 'node_data_field_image_cache',
       'field' => 'field_image_cache_fid',
       'label' => 'Image(s)',
       'handler' => 'content_views_field_handler_group',
-      'options' => 'thickbox][category',
+      'options' => 'product_list_linked',
     ),
     array (
       'tablename' => 'node',
@@ -1031,11 +1168,6 @@ function uc_product_views_default_views()
       'field' => 'sell_price',
       'label' => 'Price',
       'sortable' => '1',
-    ),
-    array (
-      'tablename' => 'uc_products',
-      'field' => 'addtocartlink',
-      'label' => 'Options',
     ),
   );
   $view->filter = array (
@@ -1054,8 +1186,7 @@ function uc_product_views_default_views()
       'value' => '1',
     ),
   );
-  $view->exposed_filter = array (
-  );
+  $view->exposed_filter = array ();
   $view->requires = array('node_data_field_image_cache', 'node', 'uc_products');
   $views[$view->name] = $view;
 
@@ -1066,6 +1197,11 @@ function uc_product_views_default_views()
  * Übercart Hooks                                                             *
  ******************************************************************************/
 
+/**
+ * Display the status of the product image handlers.
+ *
+ * @see uc_product_image_defaults
+ */
 function uc_product_store_status(){
   $title = t('Images');
   if (!module_exists('imagefield') || !module_exists('imagecache')){
@@ -1134,15 +1270,15 @@ function uc_product_cart_display($item){
   $element['nid'] = array('#type' => 'value', '#value' => $node->nid);
   $element['module'] = array('#type' => 'value', '#value' => 'uc_product');
   $element['remove'] = array('#type' => 'checkbox');
-  $op_names = '';
-  if (module_exists('uc_attribute')){
-    $op_names = "<ul class=\"cart-options\">\n";
+
+  $element['options'] = '';
+  if (module_exists('uc_attribute') && is_array($item->options)){
     foreach ($item->options as $option){
-      $op_names .= '<li>'. $option['attribute'] .': '. $option['name'] ."</li>\n";
+      $op_names[] = $option['attribute'] .': '. $option['name'];
     }
-    $op_names .= "</ul>\n";
+    $element['options'] = array('#value' => theme('item_list', $op_names, NULL, 'ul', array('class' => 'cart-options')));
   }
-  $element['options'] = array('#value' => $op_names);
+
   $element['title'] = array(
     '#value' => l($node->title, 'node/'. $node->nid),
   );
@@ -1178,8 +1314,28 @@ function uc_product_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
   }
 }
 
+/**
+ * Implementation of hook_add_to_cart_data().
+ */
 function uc_product_add_to_cart_data($form_values){
   return array('module' => 'uc_product');
+}
+
+function uc_product_product_class($pcid, $op){
+  switch ($op){
+    case 'insert':
+      db_query("UPDATE {node_type} SET module = 'uc_product', custom = 0 WHERE type = '%s'", $pcid);
+      $result = db_query("SELECT vid, nid FROM {node} WHERE type = '%s'", $pcid);
+      while ($node = db_fetch_object($result)){
+        $node->weight_units = variable_get('uc_weight_unit', 'lb');
+        $node->length_units = variable_get('uc_length_unit', 'in');
+        $node->pkg_qty = 1;
+        $node->default_qty = 1;
+        $node->shippable = 1;
+        uc_product_insert($node);
+      }
+    break;
+  }
 }
 
 /******************************************************************************
@@ -1193,7 +1349,7 @@ function uc_product_default(){
     $order = 'p.ordering, n.title';
   }
   $table_nids = array();
-  $result = pager_query(db_rewrite_sql("SELECT n.nid FROM {node} AS n RIGHT JOIN {uc_products} AS p ON n.nid = p.nid ORDER BY ". $order), variable_get('uc_product_nodes_per_page', 10), 0, null);
+  $result = pager_query(db_rewrite_sql("SELECT n.nid FROM {node} AS n RIGHT JOIN {uc_products} AS p ON n.nid = p.nid WHERE n.status = 1 ORDER BY ". $order), variable_get('uc_product_nodes_per_page', 10), 0, null);
   while ($node = db_fetch_object($result)){
     $table_nids[] = $node->nid;
   }
@@ -1203,6 +1359,15 @@ function uc_product_default(){
   return $output;
 }
 
+/**
+ * Set up imagefield and imagecache for products.
+ *
+ * @param $checks A bitmap describing the state of the image modules. Four 
+ *   checks are made to fill this bitmap: an imagefield exists, an imagefield
+ *   is attached to product, the imagecache presets exist, and each preset has
+ *   at least one action.
+ * @see uc_product_store_status
+ */
 function uc_product_image_defaults($checks){
   $field_check = $checks & 8;
   $product_field_check = $checks & 4;
@@ -1225,7 +1390,35 @@ function uc_product_image_defaults($checks){
     content_clear_type_cache();
   }
   if (!$product_field_check){
-    db_query("INSERT INTO {node_field_instance} VALUES ('field_image_cache', 'product', -2, 'Image', 'image', '%s', '%s', '')", 'a:6:{s:14:"max_resolution";s:1:"0";s:10:"image_path";s:6:"ubercart_images";s:10:"custom_alt";i:1;s:12:"custom_title";i:1;s:13:"teaser_preset";N;s:11:"body_preset";N;}', 'a:3:{s:5:"label";a:1:{s:6:"format";s:6:"hidden";}s:6:"teaser";a:1:{s:6:"format";s:6:"hidden";}s:4:"full";a:1:{s:6:"format";s:6:"hidden";}}');
+    $image_path = file_create_path('ubercart_images');
+    if (file_check_directory($image_path)){
+      $image_path = 'ubercart_images';
+    }
+    else{
+      $image_path = '';
+    }
+    $widget_settings = array(
+      'max_resolution' => '0',
+      'image_path' => $image_path,
+      'custom_alt' => 1,
+      'custom_title' => 1,
+      'teaser_preset' => null,
+      'body_preset' => null,
+    );
+    $display_settings = array(
+      'label' => array(
+        'format' => 'hidden',
+      ),
+      'teaser' => array(
+        'format' => 'hidden',
+      ),
+      'full' => array(
+        'format' => 'hidden',
+      ),
+    );
+    foreach (array_keys(uc_product_node_info()) as $type){
+      db_query("INSERT INTO {node_field_instance} VALUES ('field_image_cache', '%s', -2, 'Image', 'image', '%s', '%s', '')", $type, serialize($widget_settings), serialize($display_settings));
+    }
     switch ($GLOBALS['db_type']){
       case 'mysql':
       case 'mysqli':
@@ -1304,6 +1497,9 @@ function uc_product_image_defaults($checks){
   drupal_goto('admin/store');
 }
 
+/**
+ * Display a formatted administration menu.
+ */
 function uc_product_overview(){
   drupal_add_css(drupal_get_path('module', 'uc_store') .'/uc_store.css');
   drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_store.js', 'module');
@@ -1382,7 +1578,7 @@ function uc_product_overview(){
 }
 
 /**
- * Lists the subcategories of product administration.
+ * List the subcategories of product administration.
  */
 function uc_product_administration(){
   $nids = array();
@@ -1450,11 +1646,17 @@ function uc_product_administration(){
   return $output;
 }
 
+/**
+ * Store a list of nodes for further processing.
+ *
+ * @ingroup forms
+ * @see uc_product_buffer_form_submit
+ */
 function uc_product_buffer_form($nids){
   $buffer = '';
   foreach ($nids as $nid){
     $node = node_load($nid);
-    $buffer .= theme('imagecache', 'thumbnail', $node->field_image_cache['filepath']);
+    $buffer .= theme('imagecache', 'thumbnail', $node->field_image_cache[0]['filepath'], $node->field_image_cache[0]['alt'], $node->field_image_cache[0]['title']);
   }
   $form['#attributes'] = array('class' => 'product-buffer');
   $form['thumbnails'] = array('#type' => 'markup',
@@ -1472,6 +1674,9 @@ function uc_product_buffer_form($nids){
   return $form;
 }
 
+/**
+ * Submit handler for uc_product_buffer_form.
+ */
 function uc_product_buffer_form_submit($form_id, $form_values){
   $item = menu_get_item(menu_get_active_item());
   //drupal_set_message(print_r($form_values, true));
@@ -1483,6 +1688,12 @@ function uc_product_buffer_form_submit($form_id, $form_values){
   }
 }
 
+/**
+ * Display overview of product settings.
+ *
+ * @see uc_product_settings_form
+ * @see uc_product_field_settings_form
+ */
 function uc_product_settings_overview() {
   $items[] = t('Teaser and catalog pages = %text', array('%text' => variable_get('uc_teaser_add_to_cart_text', t('Add to cart'))));
   $items[] = t('Product view pages = %text', array('%text' => variable_get('uc_product_add_to_cart_text', t('Add to cart'))));
@@ -1550,12 +1761,20 @@ function uc_product_settings_overview() {
   foreach (module_invoke_all('product_feature') as $feature) {
     $features[] = $feature['title'];
   }
+  if (!empty($features)) {
+    $items = array(
+      t('The following features are enabled: !list', array('!list' => theme('item_list', $features))),
+    );
+  }
+  else {
+    $items = array(
+      t('No product features enabled.'),
+    );
+  }
   $sections[] = array(
     'edit' => 'admin/store/settings/products/edit/features',
     'title' => t('Product features'),
-    'items' => array(
-      t('The following features are enabled: !list', array('!list' => theme('item_list', $features))),
-    ),
+    'items' => $items,
   );
 
   $output = theme('uc_settings_overview', $sections);
@@ -1563,6 +1782,12 @@ function uc_product_settings_overview() {
   return $output;
 }
 
+/**
+ * Form to change product settings.
+ *
+ * @ingroup forms
+ * @see uc_product_settings_overview
+ */
 function uc_product_settings_form() {
   $form['uc_product_nodes_per_page'] = array(
     '#type' => 'select',
@@ -1608,6 +1833,11 @@ function uc_product_settings_form() {
 
 /**
  * Allows store administrators to control what product information is relavent to their store.
+ *
+ * @ingroup forms
+ * @see uc_product_settings_overview
+ * @see theme_uc_product_field_settings_form
+ * @see uc_product_field_settings_form_submit
  */
 function uc_product_field_settings_form() {
   $form = array();
@@ -1663,6 +1893,12 @@ function uc_product_field_settings_form() {
   return $form;
 }
 
+/**
+ * Display the product field settings form.
+ *
+ * @ingroup themeable
+ * @see uc_product_field_settings_form
+ */
 function theme_uc_product_field_settings_form($form){
   $options = array(
     'model' => t('Model'),
@@ -1691,6 +1927,9 @@ function theme_uc_product_field_settings_form($form){
   return $output;
 }
 
+/**
+ * Submit handler for uc_product_settings_form.
+ */
 function uc_product_field_settings_form_submit($form_id, $form_values){
   if ($op == t('Reset to defaults')) {
     variable_del('uc_product_field_enabled');
@@ -1712,6 +1951,9 @@ function uc_product_field_settings_form_submit($form_id, $form_values){
   }
 }
 
+/**
+ * Display a list of product classes.
+ */
 function uc_product_class_default(){
   $result = db_query("SELECT * FROM {uc_product_classes}");
   $header = array(t('Class ID'), t('Name'), t('Description'), array('data' => t('Operations'), 'colspan' => '2'));
@@ -1738,6 +1980,9 @@ function uc_product_class_default(){
 
 /**
  *  Form builder for product classes.
+ *
+ * @ingroup forms
+ * @see uc_product_class_form_submit
  */
 function uc_product_class_form($pcid = null){
   if ($pcid){
@@ -1772,6 +2017,9 @@ function uc_product_class_form($pcid = null){
   return $form;
 }
 
+/**
+ * Submit handler for uc_product_class_form.
+ */
 function uc_product_class_form_submit($form_id, $form_values){
   if (uc_product_class_load($form_values['pcid'])){
     $is_new = false;
@@ -1785,7 +2033,7 @@ function uc_product_class_form_submit($form_id, $form_values){
     // Convert whitespace to underscores, and remove other non-alphanumeric characters.
     $pcid = preg_replace(array('/\s+/', '/\W/'), array('_', ''), strtolower($form_values['pcid']));
     // Search for class ids of the form $pcid_# where # is any character.
-    $similar = db_num_rows(db_query("SELECT pcid FROM {uc_product_classes} WHERE pcid LIKE '%s\\__' OR pcid LIKE '%s'", $pcid, $pcid));
+    $similar = db_num_rows(db_query("SELECT pcid FROM {uc_product_classes} WHERE pcid LIKE '%s\\__' OR pcid LIKE '%s' UNION SELECT type FROM {node_type} WHERE type = '%s' AND custom = 0", $pcid, $pcid, $pcid));
     if ($similar){
       $pcid = $pcid .'_'. $similar;
     }
@@ -1807,6 +2055,11 @@ function uc_product_class_form_submit($form_id, $form_values){
   return 'admin/store/products/classes';
 }
 
+/**
+ * Confirm the deletion of a product class.
+ *
+ * @see uc_product_class_delete_confirm_submit
+ */
 function uc_product_class_delete_confirm($class_id){
   $result = db_query("SELECT COUNT(*) AS number FROM {node} WHERE type = '%s'", $class_id);
   $products = db_fetch_object($result);
@@ -1819,6 +2072,9 @@ function uc_product_class_delete_confirm($class_id){
   return $output;
 }
 
+/**
+ * Submit handler for uc_product_class_delete_confirm.
+ */
 function uc_product_class_delete_confirm_submit($form_id, $form_values){
   if ($form_values['confirm']){
     db_query("UPDATE {node} SET type = 'product' WHERE type = '%s'", $form_values['pcid']);
@@ -1841,8 +2097,18 @@ function uc_product_class_delete_confirm_submit($form_id, $form_values){
 /******************************************************************************
  * Module Functions                                                           *
  ******************************************************************************/
- 
+
+/**
+ * Determing if the given node is a product.
+ *
+ * @param $node If an object or array, it's "type" member is considered. If a
+ *   a string, it's value is considered. If an integer, node_load() is called.
+ * @return boolean
+ */
 function uc_product_is_product($node){
+  if (is_int($node)){
+    $node = node_load($node);
+  }
   if (is_object($node)){
     $type = $node->type;
   }
@@ -1890,6 +2156,15 @@ function theme_uc_product_add_to_cart($node){
   return $output;
 }
 
+/**
+ * Form to add the $node product to the cart.
+ *
+ * @ingroup forms
+ * @param $node A product node.
+ * @see uc_product_forms
+ * @see uc_product_add_to_cart_form_validate
+ * @see uc_product_add_to_cart_form_submit
+ */
 function uc_product_add_to_cart_form($node){
   $form = array();
   $form['#base'] = 'uc_product_add_to_cart_form';
@@ -1909,12 +2184,18 @@ function uc_product_add_to_cart_form($node){
   return $form;
 }
 
+/**
+ * Allow only positive, numeric quantities.
+ */
 function uc_product_add_to_cart_form_validate($form_id, $form_values){
   if (!is_numeric($form_values['qty']) || intval($form_values['qty']) <= 0){
     form_set_error('qty', t('You have entered an invalid quantity.'));
   }
 }
 
+/**
+ * Submit handler for uc_product_add_to_cart_form.
+ */
 function uc_product_add_to_cart_form_submit($form_id, $form_values){
   return uc_cart_add_item($form_values['nid'], $form_values['qty'],  module_invoke_all('add_to_cart_data', $form_values));
 }
@@ -1984,6 +2265,8 @@ function theme_uc_product_dimensions($length, $width, $height, $units = null){
 }
 
 /**
+ * Format a product's images with imagecache and Thickbox.
+ *
  * @ingroup themeable
  */
 function theme_uc_product_image($images){
@@ -2071,7 +2354,7 @@ function uc_product_get_picture($node_id, $format = 'product'){
   }
   $path = $product->field_image_cache[0]['filepath'];
   if (file_exists($path)){
-    $img = theme('imagecache', $format, $path);
+    $img = theme('imagecache', $format, $path, $product->field_image_cache[0]['alt'], $product->field_image_cache[0]['title']);
     if ($format == 'product'){
       $img = '<a href="'. check_url(file_create_url($path)) .'" class="thickbox" rel="field_image_cache">'. $img .'</a>';
     }
@@ -2083,7 +2366,7 @@ function uc_product_get_picture($node_id, $format = 'product'){
 }
 
 /**
- * Implementation of hook_load().
+ * Load a product class.
  */
 function uc_product_class_load($class_id){
   static $classes = array();
@@ -2097,6 +2380,9 @@ function uc_product_class_load($class_id){
   return $classes[$class_id];
 }
 
+/**
+ * AJAX callback helper for product images.
+ */
 function _uc_product_get_image_field_filepath($nid){
   $result = db_result(db_query("SELECT filepath FROM {files} WHERE nid = %d ORDER BY fid LIMIT 1", $nid));
   if ($result){
@@ -2108,11 +2394,19 @@ function _uc_product_get_image_field_filepath($nid){
   exit();
 }
 
-// Display the settings form for all product features.
+/**
+ * Display the settings form for all product features.
+ *
+ * @ingroup forms
+ */
 function uc_product_feature_settings_form() {
+  $titles = array();
   $features = module_invoke_all('product_feature');
   foreach ($features as $feature) {
     $titles[] = $feature['title'];
+  }
+  if (empty($titles)) {
+    $titles[] = '<em>'. t('No product features found.') .'</em>';
   }
   $form['features_list'] = array(
     '#value' => '<div><b>'. t('The following product features are enabled')
@@ -2134,7 +2428,9 @@ function uc_product_feature_settings_form() {
   return system_settings_form($form);
 }
 
-// Displays the project features tab on a product node edit form.
+/**
+ * Displays the project features tab on a product node edit form.
+ */
 function uc_product_features($node) {
   drupal_set_title($node->title);
 
@@ -2205,9 +2501,12 @@ function uc_product_features($node) {
       l(t('delete'), 'node/'. $node->nid .'/edit/features/'. $feature->fid .'/'. $feature->pfid .'/delete'),
     );
     $rows[] = array(
-      array('data' => uc_product_feature_data($feature->fid, 'title'), 'nowrap' => 'nowrap'),
-      array('data' => check_plain($feature->description), 'width' => '100%'),
-      array('data' => implode(' ', $operations), 'nowrap' => 'nowrap'),
+      'data' => array(
+        array('data' => uc_product_feature_data($feature->fid, 'title'), 'nowrap' => 'nowrap'),
+        array('data' => check_plain($feature->description), 'width' => '100%'),
+        array('data' => implode(' ', $operations), 'nowrap' => 'nowrap'),
+      ),
+      'valign' => 'top',
     );
   }
 
@@ -2223,7 +2522,12 @@ function uc_product_features($node) {
   return $output;
 }
 
-// Add the form for adding a product feature to the features tab.
+/**
+ * Add the form for adding a product feature to the features tab.
+ *
+ * @ingroup forms
+ * @see theme_uc_product_feature_add_form
+ */
 function uc_product_feature_add_form() {
   foreach (module_invoke_all('product_feature') as $feature) {
     $options[$feature['id']] = $feature['title'];
@@ -2243,11 +2547,17 @@ function uc_product_feature_add_form() {
   return $form;
 }
 
+/**
+ * @ingroup themeable
+ */
 function theme_uc_product_feature_add_form($form) {
   $output = '<table class="add-feature"><tr><td>'. drupal_render($form) .'</td></tr></table>';
   return $output;
 }
 
+/**
+ * Submit handler for uc_product_feature_add_form_submit.
+ */
 function uc_product_feature_add_form_submit($form_id, $form_values) {
   return 'node/'. arg(1) .'/edit/features/'. $form_values['feature'] .'/add';
 }
@@ -2284,6 +2594,7 @@ function uc_product_feature_data($fid, $key) {
  * @return
  *   The form array with elements added for the nid, pfid, submit button, and
  *     cancel link.
+ * @ingroup forms
  */
 function uc_product_feature_form($form) {
   $form['nid'] = array(
@@ -2340,4 +2651,3 @@ function uc_product_feature_save($data) {
 
   return 'node/'. $data['nid'] .'/edit/features';
 }
-

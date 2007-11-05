@@ -1,0 +1,30 @@
+<?php
+// $Id$
+
+function uc_cart_links_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {uc_cart_link_clicks} (
+        cart_link_id varchar(32) NOT NULL default '0',
+        clicks int(10) NOT NULL default '0',
+        last_click int(10) NOT NULL default '0',
+        PRIMARY KEY cart_link_id (cart_link_id)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
+      break;
+    case 'pgsql':
+      db_query("CREATE TABLE {uc_cart_link_clicks} (
+        cart_link_id varchar(32) NOT NULL default 0,
+        clicks integer NOT NULL default 0,
+        last_click integer NOT NULL default 0
+      )");
+      db_query("CREATE INDEX {uc_cart_link_clicks}_cart_link_id ON {uc_cart_link_clicks} (cart_link_id)");
+      break;
+  }
+}
+
+function uc_cart_links_uninstall() {
+  db_query("DROP TABLE {uc_cart_link_clicks}");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_cart_links_%%'");
+  cache_clear_all('variables', 'cache');
+}

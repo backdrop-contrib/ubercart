@@ -3,7 +3,10 @@
 
 /**
  * @file
- * Shipping quote module that interfaces with www.ups.com to get rates for small package shipments.
+ * Shipping quote module that interfaces with www.ups.com to get rates for small
+ * package shipments.
+ *
+ * Coded by Lyle Mantooth
  */
 
 /******************************************************************************
@@ -48,7 +51,10 @@ function uc_ups_menu($may_cache){
 /**
  * Implementation of hook_form_alter().
  *
- * Adds package type and physical dimensions to products.
+ * Add package type to products.
+ *
+ * @see uc_product_form
+ * @see uc_ups_product_alte_validate
  */
 function uc_ups_form_alter($form_id, &$form){
   $node = $form['#node'];
@@ -74,6 +80,9 @@ function uc_ups_form_alter($form_id, &$form){
   }
 }
 
+/**
+ * Validation handler for UPS product fields.
+ */
 function uc_ups_product_alter_validate($form_id, $form_values){
   $enabled = variable_get('uc_quote_enabled', array('ups' => true));
   if ($form_values['shipping_type'] == 'small_package'){
@@ -112,6 +121,34 @@ function uc_ups_nodeapi(&$node, $op){
       db_query("DELETE FROM {uc_ups_products} WHERE vid = %d", $node->vid);
     break;
   }
+}
+
+/******************************************************************************
+ * Workflow-ng Hooks                                                          *
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_configuration().
+ *
+ * Connect the UPS quote action and event.
+ */
+function uc_ups_configuration(){
+  $enabled = variable_get('uc_quote_enabled', array('ups' => true));
+  $configurations = array(
+    'uc_ups_get_quote' => array(
+      '#label' => t('Shipping quote from UPS'),
+      '#event' => 'get_quote_from_ups',
+      '#module' => 'uc_ups',
+      '#active' => $enabled['ups'],
+    ),
+  );
+  
+  $action = workflow_ng_use_action('uc_quote_action_get_quote', array(
+    '#label' => t('Fetch a shipping quote'),
+  ));
+  $configurations['uc_ups_get_quote'] = workflow_ng_configure($configurations['uc_ups_get_quote'], $action);
+  
+  return $configurations;
 }
 
 /******************************************************************************
@@ -166,7 +203,7 @@ function uc_ups_shipping_method(){
 /**
  * Implementation of Übercart's hook_store_status().
  *
- * Let's the administrator know that the UPS account information has not been
+ * Let the administrator know that the UPS account information has not been
  * filled out.
  */
 function uc_ups_store_status(){
@@ -195,10 +232,13 @@ function uc_ups_store_status(){
  ******************************************************************************/
 
 /**
- * Default UPS Online Tool settings.
+ * UPS Online Tool settings.
  *
- * Records UPS account information neccessary to use service. Allows testing
- * or production mode. Configures which UPS services are quoted to customers.
+ * Record UPS account information neccessary to use the service. Allow testing
+ * or production mode. Configure which UPS services are quoted to customers.
+ *
+ * @ingroup forms
+ * @see uc_admin_settings_validate
  */
 function uc_ups_admin_settings(){
   $form = array();
@@ -221,7 +261,6 @@ function uc_ups_admin_settings(){
   $form['uc_ups_password'] = array('#type' => 'password',
     '#title' => t('Password'),
     '#default_value' => variable_get('uc_ups_password', ''),
-    '#required' => true,
   );
   $form['uc_ups_connection_address'] = array('#type' => 'select',
     '#title' => t('Mode'),
@@ -250,6 +289,15 @@ function uc_ups_admin_settings(){
     ),
     '#default_value' => variable_get('uc_ups_pickup_type', '01'),
   );
+  $form['uc_ups_classification'] = array('#type' => 'select', 
+    '#title' => t('Customer Classification'),
+    '#options' => array(
+      '01' => t('Wholesale'),
+      '03' => t('Occasional'),
+      '04' => t('Retail'),
+    ),
+    '#default' => variable_get('uc_ups_classification', '04'),
+  );
   $form['uc_ups_negotiated_rates'] = array('#type' => 'radios',
     '#title' => t('Negotiated Rates'),
     '#default_value' => variable_get('uc_ups_negotiated_rates', 0),
@@ -270,8 +318,34 @@ function uc_ups_admin_settings(){
     ),
     '#description' => t('Indicate whether each product is quoted as shipping separately or all in one package.'),
   );
+  $form['uc_ups_unit_system'] = array('#type' => 'select',
+    '#title' => t('System of measurement'),
+    '#default_value' => variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in')),
+    '#options' => array(
+      'in' => t('British'),
+      'cm' => t('Metric'),
+    ),
+    '#description' => t('Choose the standard system of measurement for your country.'),
+  );
   
   return system_settings_form($form);
+}
+
+/**
+ * Validation handler for uc_ups_admin_settings.
+ *
+ * Require password only if it hasn't been set.
+ */
+function uc_ups_admin_settings_validate($form_id, $form_values, $form){
+  $old_password = variable_get('uc_ups_password', '');
+  if (!$form_values['uc_ups_password']){
+    if ($old_password){
+      form_set_value($form['uc_ups_password'], $old_password);
+    }
+    else{
+      form_set_error('uc_ups_password', t('Password field is required.'));
+    }
+  }
 }
 
 /******************************************************************************
@@ -279,7 +353,7 @@ function uc_ups_admin_settings(){
  ******************************************************************************/
 
 /**
- * Returns XML access request to be prepended to all requests to the UPS webservice.
+ * Return XML access request to be prepended to all requests to the UPS webservice.
  */
 function uc_ups_access_request(){
   $access = variable_get('uc_ups_access_license', '');
@@ -295,7 +369,7 @@ function uc_ups_access_request(){
 }
 
 /**
- * Constructs an XML quote request.
+ * Construct an XML quote request.
  *
  * @param $packages
  *   Array of packages received from the cart.
@@ -306,7 +380,7 @@ function uc_ups_access_request(){
  * @param $ups_service
  *   UPS service code (refers to UPS Ground, Next-Day Air, etc.).
  * @return
- *   ShipConfirm XML document to send to UPS
+ *   RatingServiceSelectionRequest XML document to send to UPS
  */
 function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service){
   $store['name'] = variable_get('uc_store_name', NULL);
@@ -349,7 +423,6 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service){
   foreach ($packages as $package){
     $qty = $package->qty;
     for ($i = 0; $i < $qty; $i++){
-      $size = $package->length + 2 * ($package->width + $package->height);
       $package_type = array('code' => $package->pkg_type, 'description' => $pkg_types[$package->pkg_type]);
       $package_schema .= "<Package>";
         $package_schema .= "<PackagingType>";
@@ -362,52 +435,35 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service){
           }
           $package_schema .= "<Dimensions>";
             $package_schema .= "<UnitOfMeasurement>";
-            if ($package->length_units == 'cm'){
-              $package_schema .= "<Code>CM</Code>";
-              //$package_schema .= "<Description>Centimeters</Description>";
-            }
-            else{
-              $package_schema .= "<Code>IN</Code>";
-              //$package_schema .= "<Description>Inches</Description>";
-            }
+            $conversion = uc_weight_conversion($package->length_units, variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in')));
+            $package_schema .= "<Code>". strtoupper(variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in'))) ."</Code>";
             $package_schema .= "</UnitOfMeasurement>";
-            $package_schema .= "<Length>". $package->length ."</Length>";
-            $package_schema .= "<Width>". $package->width ."</Width>";
-            $package_schema .= "<Height>". $package->height ."</Height>";
+            $package_schema .= "<Length>". number_format($package->length * $conversion, 2, '.', '') ."</Length>";
+            $package_schema .= "<Width>". number_format($package->width * $conversion, 2, '.', '') ."</Width>";
+            $package_schema .= "<Height>". number_format($package->height * $conversion, 2, '.', '') ."</Height>";
           $package_schema .= "</Dimensions>";
         }
-        switch ($package->weight_units){
-          case 'oz':
+        $size = $package->length * $conversion + 2 * $conversion * ($package->width + $package->height);
+        switch (variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in'))){
+          case 'in':
             $units = 'LBS';
             $unit_name = 'Pounds';
-            $weight = $package->weight / 16;
-            $shipment_weight += $weight;
+            $conversion = uc_weight_conversion($package->weight_units, 'lb');
           break;
-          case 'lb':
-            $units = 'LBS';
-            $unit_name = 'Pounds';
-            $weight = $package->weight;
-            $shipment_weight += $weight;
-          break;
-          case 'g':
+          case 'cm':
             $units = 'KGS';
             $unit_name = 'Kilograms';
-            $weight = $package->weight / 1000;
-            $shipment_weight += $weight * 2.2;
-          break;
-          case 'kg':
-            $units = 'KGS';
-            $unit_name = 'Kilograms';
-            $weight = $package->weight;
-            $shipment_weight += $weight * 2.2;
+            $conversion = uc_weight_conversion($package->weight_units, 'kg');
           break;
         }
+        $weight = $package->weight * $conversion;
+        $shipment_weight += $weight;
         $package_schema .= "<PackageWeight>";
           $package_schema .= "<UnitOfMeasurement>";
             $package_schema .= "<Code>$units</Code>";
             $package_schema .= "<Description>$unit_name</Description>";
           $package_schema .= "</UnitOfMeasurement>";
-          $package_schema .= "<Weight>". $weight ."</Weight>";
+          $package_schema .= "<Weight>". number_format($weight, 1, '.', '') ."</Weight>";
         $package_schema .= "</PackageWeight>";
         if ($size > 130 && $size <= 165){
           $package_schema .= "<LargePackageIndicator/>";
@@ -436,6 +492,9 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service){
   <PickupType>
     <Code>". variable_get('uc_ups_pickup_type', '01') ."</Code>
   </PickupType>
+  <CustomerClassification>
+    <Code>". variable_get('uc_ups_classification', '04') ."</Code>
+  </CustomerClassification>
   <Shipment>
     <Shipper>
       <ShipperNumber>". variable_get('uc_ups_shipper_number', '') ."</ShipperNumber>
@@ -469,7 +528,7 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service){
       <UnitOfMeasurement>
         <Code>LBS</Code>
       </UnitOfMeasurement>
-      <Weight>$shipment_weight</Weight>
+      <Weight>". number_format($shipment_weight, 1, '.', '') ."</Weight>
     </ShipmentWeight>
     <Service>
       <Code>{$service[code]}</Code>
@@ -489,9 +548,226 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service){
 }
 
 /**
+ * Construct an XML shippment request.
+ *
+ * @param $packages
+ *   Array of packages received from the cart.
+ * @param $origin
+ *   Delivery origin address information.
+ * @param $destination
+ *   Delivery destination address information.
+ * @param $ups_service
+ *   UPS service code (refers to UPS Ground, Next-Day Air, etc.).
+ * @return
+ *   ShipConfirm XML document to send to UPS
+ */
+function uc_ups_shipment_request($packages, $origin, $destination, $ups_service){
+  $store['name'] = variable_get('uc_store_name', NULL);
+  $store['owner'] = variable_get('uc_store_owner', NULL);
+  $store['email'] = variable_get('uc_store_email', NULL);
+  $store['email_from'] = variable_get('uc_store_email_from', NULL);
+  $store['phone'] = variable_get('uc_store_phone', NULL);
+  $store['fax'] = variable_get('uc_store_fax', NULL);
+  $store['street1'] = variable_get('uc_store_street1', NULL);
+  $store['street2'] = variable_get('uc_store_street2', NULL);
+  $store['city'] = variable_get('uc_store_city', NULL);
+  $store['zone'] = variable_get('uc_store_zone', NULL);
+  $store['postal_code'] = variable_get('uc_store_postal_code', NULL); 
+  $store['country'] = variable_get('uc_store_country', 840);
+  
+  $account = variable_get('uc_ups_shipper_number', '');
+  $ua = explode(' ', $_SERVER['HTTP_USER_AGENT']);
+  $user_agent = $ua[0];
+  
+  $services = _uc_ups_service_list();
+  $service = array('code' => $ups_service, 'description' => $services[$ups_service]);
+  
+  $pkg_types = _uc_ups_pkg_types();
+  
+  $shipper_zone = uc_get_zone_code($store['zone']);
+  $shipper_country = uc_get_country_data(array('country_id' => $store['country']));
+  $shipper_country = $shipper_country[0]['country_iso_code_2'];
+  $shipper_zip = $store['postal_code'];
+  $shipto_zone = uc_get_zone_code($destination->zone);
+  $shipto_country = uc_get_country_data(array('country_id' => $destination->country));
+  $shipto_country = $shipto_country[0]['country_iso_code_2'];
+  $shipto_zip = $destination->postal_code;
+  $shipfrom_zone = uc_get_zone_code($origin->zone);
+  $shipfrom_country = uc_get_country_data(array('country_id' => $origin->country));
+  $shipfrom_country = $shipfrom_country[0]['country_iso_code_2'];
+  $shipfrom_zip = $origin->postal_code;
+
+  //$shipment_weight = 0;
+  $package_schema = '';
+  foreach ($packages as $package){
+    $qty = $package->qty;
+    for ($i = 0; $i < $qty; $i++){
+      $package_type = array('code' => $package->pkg_type, 'description' => $pkg_types[$package->pkg_type]);
+      $package_schema .= "<Package>";
+        $package_schema .= "<PackagingType>";
+          $package_schema .= "<Code>". $package_type['code'] ."</Code>";
+          //$package_schema .= "<Description>". $package_type['description'] ."</Description>";
+        $package_schema .= "</PackagingType>";
+        if ($package->pkg_type == '02' && $package->length && $package->width && $package->height){
+          if ($package->length < $package->width){
+            list($package->length, $package->width) = array($package->width, $package->length);
+          }
+          $package_schema .= "<Dimensions>";
+            $package_schema .= "<UnitOfMeasurement>";
+            $conversion = constant(strtoupper($package->length_units) .'_TO_'. strtoupper(variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in'))));
+            $package_schema .= "<Code>". strtoupper(variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in'))) ."</Code>";
+            $package_schema .= "</UnitOfMeasurement>";
+            $package_schema .= "<Length>". (floor($package->length * $conversion) + 1) ."</Length>";
+            $package_schema .= "<Width>". (floor($package->width * $conversion) + 1) ."</Width>";
+            $package_schema .= "<Height>". (floor($package->height * $conversion) + 1) ."</Height>";
+          $package_schema .= "</Dimensions>";
+        }
+        $size = $package->length * $conversion + 2 * $conversion * ($package->width + $package->height);
+        switch (variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in'))){
+          case 'in':
+            $units = 'LBS';
+            $unit_name = 'Pounds';
+            $conversion = constant(strtoupper($package->weight_units) .'_TO_LB');
+          break;
+          case 'cm':
+            $units = 'KGS';
+            $unit_name = 'Kilograms';
+            $conversion = constant(strtoupper($package->weight_units) .'_TO_KG');
+          break;
+        }
+        $weight = $package->weight * $conversion;
+        //$shipment_weight += $weight;
+        $package_schema .= "<PackageWeight>";
+          $package_schema .= "<UnitOfMeasurement>";
+            $package_schema .= "<Code>$units</Code>";
+            $package_schema .= "<Description>$unit_name</Description>";
+          $package_schema .= "</UnitOfMeasurement>";
+          $package_schema .= "<Weight>". number_format($weight, 1, '.', '') ."</Weight>";
+        $package_schema .= "</PackageWeight>";
+        if ($size > 130 && $size <= 165){
+          $package_schema .= "<LargePackageIndicator/>";
+        }
+        $package_schema .= "<PackageServiceOptions>";
+          $package_schema .= "<InsuredValue>";
+            $package_schema .= "<CurrencyCode>". variable_get('uc_currency_code', 'USD') ."</CurrencyCode>";
+            $package_schema .= "<MonetaryValue>". number_format($package->price, 2, '.', '') ."</MonetaryValue>";
+          $package_schema .= "</InsuredValue>";
+        $package_schema .= "</PackageServiceOptions>";
+      $package_schema .= "</Package>";
+    }
+  }
+
+  $schema = uc_ups_access_request() ."
+<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<ShipmentConfirmRequest xml:lang=\"en-US\">
+  <Request>
+    <TransactionReference>
+      <CustomerContext>Complex Rate Request</CustomerContext>
+      <XpciVersion>1.0001</XpciVersion>
+    </TransactionReference>
+    <RequestAction>ShipConfirm</RequestAction>
+    <RequestOption>validate</RequestOption>
+  </Request>
+  <Shipment>";
+    $schema .= "<Shipper>";
+      $schema .= "<Name>". $store['name'] ."</Name>";
+      $schema .= "<ShipperNumber>". variable_get('uc_ups_shipper_number', '') ."</ShipperNumber>";
+      if ($store['phone']){
+        $schema .= "<PhoneNumber>". $store['phone'] ."</PhoneNumber>";
+      }
+      if ($store['fax']){
+        $schema .= "<FaxNumber>". $store['fax'] ."</FaxNumber>";
+      }
+      if ($store['email']){
+        $schema .= "<EMailAddress>". $store['email'] ."</EMailAddress>";
+      }
+      $schema .= "<Address>";
+        $schema .= "<AddressLine1>". $store['street1'] ."</AddressLine1>";
+        if ($store['street2']){
+          $schema .= "<AddressLine2>". $store['street2'] ."</AddressLine2>";
+        }
+        $schema .= "<City>". $store['city'] ."</City>";
+        $schema .= "<StateProvinceCode>$shipper_zone</StateProvinceCode>";
+        $schema .= "<PostalCode>$shipper_zip</PostalCode>";
+        $schema .= "<CountryCode>$shipper_country</CountryCode>";
+      $schema .= "</Address>";
+    $schema .= "</Shipper>";
+    $schema .= "<ShipTo>";
+      $schema .= "<CompanyName>". $destination->company ."</CompanyName>";
+      $schema .= "<AttentionName>". $destination->first_name .' '. $destination->last_name ."</AttentionName>";
+      $schema .= "<PhoneNumber>". $destination->phone ."</PhoneNumber>";
+      $schema .= "<EMailAddress>". $destination->email ."</EMailAddress>";
+      $schema .= "<Address>";
+        $schema .= "<AddressLine1>". $destination->street1 ."</AddressLine1>";
+        if ($destination->street2){
+          $schema .= "<AddressLine2>". $destination->street2 ."</AddressLine2>";
+        }
+        $schema .= "<City>". $destination->city ."</City>";
+        $schema .= "<StateProvinceCode>$shipto_zone</StateProvinceCode>";
+        $schema .= "<PostalCode>$shipto_zip</PostalCode>";
+        $schema .= "<CountryCode>$shipto_country</CountryCode>";
+      if ($destination->residence){
+        $schema .= "<ResidentialAddressIndicator/>";
+      }
+      $schema .= "</Address>";
+    $schema .= "</ShipTo>";
+    $schema .= "<ShipFrom>";
+      $schema .= "<CompanyName>". $origin->company ."</CompanyName>";
+      $schema .= "<AttentionName>". $origin->first_name .' '. $origin->last_name ."</AttentionName>";
+      $schema .= "<PhoneNumber>". $origin->phone ."</PhoneNumber>";
+      $schema .= "<EMailAddress>". $origin->email ."</EMailAddress>";
+      $schema .= "<Address>";
+        $schema .= "<AddressLine1>". $origin->street1 ."</AddressLine1>";
+        if ($origin->street2){
+          $schema .= "<AddressLine2>". $origin->street2 ."</AddressLine2>";
+        }
+        $schema .= "<City>". $origin->city ."</City>";
+        $schema .= "<StateProvinceCode>$shipfrom_zone</StateProvinceCode>";
+        $schema .= "<PostalCode>$shipfrom_zip</PostalCode>";
+        $schema .= "<CountryCode>$shipfrom_country</CountryCode>";
+      $schema .= "</Address>";
+    $schema .= "</ShipFrom>";
+    $schema .= "<PaymentInformation>";
+      $schema .= "<Prepaid>";
+        $schema .= "<BillShipper>";
+          $schema .= "<AccountNumber>$account</AccountNumber>";
+        $schema .= "</BillShipper>";
+      $schema .= "</Prepaid>";
+    $schema .= "</PaymentInformation>";
+    if (variable_get('uc_ups_negotiated_rates', false)){
+      $schema .= "<RateInformation>
+          <NegotiatedRatesIndicator/>
+        </RateInformation>";
+    }
+    $schema .= "<Service>";
+      $schema .= "<Code>{$service[code]}</Code>";
+      $schema .= "<Description>{$service[description]}</Description>";
+    $schema .= "</Service>";
+    /* $schema .= "<ShipmentWeight>";
+      $schema .= "<UnitOfMeasurement>";
+        $schema .= "<Code>LBS</Code>";
+      $schema .= "</UnitOfMeasurement>";
+      $schema .= "<Weight>". number_format($shipment_weight, 1, '.', '') ."</Weight>";
+    $schema .= "</ShipmentWeight>"; */
+    $schema .= $package_schema;
+  $schema .= "</Shipment>";
+  $schema .= "<LabelSpecification>";
+    $schema .= "<LabelPrintMethod>";
+      $schema .= "<Code>GIF</Code>";
+    $schema .= "</LabelPrintMethod>";
+    $schema .= "<LabelImageFormat>";
+      $schema .= "<Code>GIF</Code>";
+    $schema .= "</LabelImageFormat>";
+  $schema .= "</LabelSpecification>";
+$schema .= "</ShipmentConfirmRequest>";
+
+  return $schema;
+}
+
+/**
  * Callback for retrieving a UPS shipping quote.
  *
- * Requests a quote for each enabled UPS Service. Therefore, the quote will 
+ * Request a quote for each enabled UPS Service. Therefore, the quote will 
  * take longer to display to the user for each option the customer has available.
  *
  * @param $products
@@ -537,7 +813,9 @@ function uc_ups_quote($products, $details){
     $package->weight = $shipment_weight;
     $package->qty = 1;
     $package->pkg_type = '02';
-    $packages[] = $package;
+    if ($package->weight){
+      $packages[] = $package;
+    }
   }
   else{
     foreach ($products as $product){
@@ -551,9 +829,11 @@ function uc_ups_quote($products, $details){
         $package->price = $product->price * $product->pkg_qty;
         $package->qty = $num_of_pkgs;
         $package->pkg_type = $product->ups['pkg_type'];
-        $packages[] = $package;
+        if ($package->weight){
+          $packages[] = $package;
+        }
       }
-      $remaining_qty = $product->qty % $product->ups['qty'];
+      $remaining_qty = $product->qty % $product->pkg_qty;
       if ($remaining_qty){
         $package = drupal_clone($product);
         $package->description = $product->model;
@@ -561,9 +841,14 @@ function uc_ups_quote($products, $details){
         $package->price = $product->price * $remaining_qty;
         $package->qty = 1;
         $package->pkg_type = $product->ups['pkg_type'];
-        $packages[] = $package;
+        if ($package->weight){
+          $packages[] = $package;
+        }
       }
     }
+  }
+  if (!count($packages)){
+    return array();
   }
   
   $dest = (object)$details;
@@ -635,6 +920,18 @@ function uc_ups_quote($products, $details){
   return $quotes;
 }
 
+/**
+ * Shipment creation callback.
+ *
+ * Confirm shipment data before requesting a shipping label.
+ *
+ * @param $order_id
+ *   The order id for the shipment.
+ * @param $package_ids
+ *   Array of package ids to shipped.
+ * @ingroup forms
+ * @see uc_ups_fulfill_order_submit
+ */
 function uc_ups_fulfill_order($order_id, $package_ids){
   $form = array();
   $pkg_types = _uc_ups_pkg_types();
@@ -670,10 +967,12 @@ function uc_ups_fulfill_order($order_id, $package_ids){
           '#title' => t('Package Type'),
           '#options' => $pkg_types,
           '#default_value' => $product->ups['pkg_type'],
+          '#required' => true,
         );
         $pkg_form['declared_value'] = array('#type' => 'textfield',
           '#title' => t('Declared Value'),
-          '#default_value' => $declared_value
+          '#default_value' => $declared_value,
+          '#required' => true,
         );
         $pkg_type['dimensions'] = array('#type' => 'fieldset',
           '#title' => t('Dimensions'),
@@ -686,7 +985,7 @@ function uc_ups_fulfill_order($order_id, $package_ids){
             'in' => t('Inches'),
             'cm' => t('Centimeters'),
           ),
-          '#default_value' => $product->length_units ? $product->length_units : variable_get('uc_store_length_unit', 'in'),
+          '#default_value' => $product->length_units ? $product->length_units : variable_get('uc_length_unit', 'in'),
         );
         $pkg_form['dimensions']['length'] = array('#type' => 'textfield',
           '#title' => t('Length'),
@@ -715,23 +1014,23 @@ function uc_ups_fulfill_order($order_id, $package_ids){
     );
     $form['origin']['pickup_address_select'] = uc_shipping_select_address($addresses, 'apply_address(\'pickup\', this.value);', t('Saved Addresses'), TRUE);
     $form['origin']['pickup_address_select']['#weight'] = -2;
-    $form['origin']['pickup_email'] = uc_textfield(uc_get_field_name('email'), variable_get('uc_store_email', null), FALSE);
+    $form['origin']['pickup_email'] = uc_textfield(uc_get_field_name('email'), variable_get('uc_store_email', null), true);
     $form['origin']['pickup_email']['#weight'] = -1;
-    $form['origin']['pickup_first_name'] = uc_textfield(uc_get_field_name('first_name'), $address->first_name, FALSE);
-    $form['origin']['pickup_last_name'] = uc_textfield(uc_get_field_name('last_name'), $address->last_name, FALSE);
-    $form['origin']['pickup_company'] = uc_textfield(uc_get_field_name('company'), $address->company, FALSE);
-    $form['origin']['pickup_street1'] = uc_textfield(uc_get_field_name('street1'), $address->street1, FALSE, NULL, 64);
+    $form['origin']['pickup_first_name'] = uc_textfield(uc_get_field_name('first_name'), $address->first_name, false);
+    $form['origin']['pickup_last_name'] = uc_textfield(uc_get_field_name('last_name'), $address->last_name, true);
+    $form['origin']['pickup_company'] = uc_textfield(uc_get_field_name('company'), $address->company, true);
+    $form['origin']['pickup_street1'] = uc_textfield(uc_get_field_name('street1'), $address->street1, true, NULL, 64);
     $form['origin']['pickup_street2'] = uc_textfield(uc_get_field_name('street2'), $address->street2, FALSE, NULL, 64);
-    $form['origin']['pickup_city'] = uc_textfield(uc_get_field_name('city'), $address->city, FALSE);
+    $form['origin']['pickup_city'] = uc_textfield(uc_get_field_name('city'), $address->city, true);
     if (isset($_POST['pickup_country'])){
       $country = $_POST['pickup_country'];
     }
     else{
       $country = $address->country;
     }
-    $form['origin']['pickup_zone'] = uc_zone_select(uc_get_field_name('zone'), $address->zone, null, $country);
-    $form['origin']['pickup_country'] = uc_country_select(uc_get_field_name('country'), $address->country);
-    $form['origin']['pickup_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $address->postal_code, FALSE, NULL, 10, 10);
+    $form['origin']['pickup_zone'] = uc_zone_select(uc_get_field_name('zone'), $address->zone, null, $country, 'name', true);
+    $form['origin']['pickup_country'] = uc_country_select(uc_get_field_name('country'), $address->country, null, 'name', true);
+    $form['origin']['pickup_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $address->postal_code, true, NULL, 10, 10);
 
     $order_form = uc_order_pane_ship_to('edit-form', $order);
     $form['destination'] = $order_form['ship_to'];
@@ -739,6 +1038,9 @@ function uc_ups_fulfill_order($order_id, $package_ids){
     $form['destination']['delivery_email']['#weight'] = -1;
     $form['destination']['#title'] = t('Destination Address');
     $form['destination']['#weight'] = -1;
+    foreach (array('delivery_email', 'delivery_last_name', 'delivery_company', 'delivery_street1', 'delivery_city', 'delivery_zone', 'delivery_country', 'delivery_postal_code') as $field){
+      $form['destination'][$field]['#required'] = true;
+    }
     
     $ups_services = _uc_ups_service_list();
     $services = array_filter(variable_get('uc_ups_services', array()));
@@ -769,6 +1071,13 @@ function uc_ups_fulfill_order($order_id, $package_ids){
   return $form;
 }
 
+/**
+ * Submit handler for uc_ups_fulfill_order().
+ *
+ * Pass final information into shipment object.
+ *
+ * @see uc_ups_confirm_shipment
+ */
 function uc_ups_fulfill_order_submit($form_id, $form_values){
   include_once(drupal_get_path('module', 'uc_store') .'/includes/simplexml.php');
   $origin = new stdClass();
@@ -776,11 +1085,11 @@ function uc_ups_fulfill_order_submit($form_id, $form_values){
   $packages = array();
   foreach ($form_values as $key => $value){
     if (substr($key, 0, 7) == 'pickup_'){
-      $field = 'o_'. substr($key, 7);
+      $field = substr($key, 7);
       $origin->$field = $value;
     }
     else if (substr($key, 0, 9) == 'delivery_'){
-      $field = 'd_'. substr($key, 9);
+      $field = substr($key, 9);
       $destination->$field = $value;
     }
   }
@@ -794,7 +1103,7 @@ function uc_ups_fulfill_order_submit($form_id, $form_values){
     $package->length = $pkg_form['dimensions']['length'];
     $package->width = $pkg_form['dimensions']['width'];
     $package->height = $pkg_form['dimensions']['height'];
-    $package->units = $pkg_form['dimensions']['units'];
+    $package->length_units = $pkg_form['dimensions']['units'];
     $package->qty = 1;
     $_SESSION['ups']['packages'][$id] = $package;
   }
@@ -803,37 +1112,45 @@ function uc_ups_fulfill_order_submit($form_id, $form_values){
   $_SESSION['ups']['expected_delivery'] = $form_values['expected_delivery'];
   $_SESSION['ups']['order_id'] = $form_values['order_id'];
   
-  $request = uc_ups_shipping_quote($_SESSION['ups']['packages'], $origin, $destination, $form_values['service']);
+  $request = uc_ups_shipment_request($_SESSION['ups']['packages'], $origin, $destination, $form_values['service']);
+  //print htmlentities($request);
   $response_obj = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') .'ShipConfirm', array(), 'POST', $request);
   $response = new JSimpleXML();
   $response->loadString($response_obj->data);
-  if (is_array($response->document->response->error)){
-    $error = $response->document->response->error[0];
-    $error_msg = $error->errorseverity[0]->data() .' '. $error->errorcode[0]->data() .': '. $error->errordescription[0]->data();
-    //drupal_set_message($error_msg, 'error');
+  drupal_set_message('<pre>'. htmlentities($response->document->asXML()) .'</pre>');
+  if (is_array($response->document->response[0]->error)){
+    $error = $response->document->response[0]->error[0];
+    $error_msg = $error->errorseverity[0]->data() .' Error '. $error->errorcode[0]->data() .': '. $error->errordescription[0]->data();
+    drupal_set_message($error_msg, 'error');
     //drupal_set_message('<pre>'. print_r($_SESSION['ups']['packages'], true) .'</pre>' . htmlentities($request) .' <br /><br /> '. htmlentities($response->data));
-    if ($error->errorseverity[0]->data() == 'HardError'){
-      return 'admin/store/orders/'. $form_values['order_id'] .'/shipments/new';
+    if ($error->errorseverity[0]->data() == 'Hard'){
+      return null;
     }
   }
-  $charges = $response[0]['children'][1]['children'];
-  $charge = array();
+  $charge = new stdClass();
   // if NegotiatedRates exist, quote based on those, otherwise, use TotalCharges
   if (is_array($response->document->shipmentcharges)){
     $charge = $response->document->shipmentcharges[0]->totalcharges[0];
     $_SESSION['ups']['rate']['type'] = t('Total Charges');
     if (is_array($response->document->shipmentcharges[0]->negotiatedrates)){
-      $charge = $response->document->shipmentcharges[0]->negotiatedrates[0]->grandtotal[0];
+      $charge = $response->document->shipmentcharges[0]->negotiatedrates[0]->netsummarycharges[0]->grandtotal[0];
       $_SESSION['ups']['rate']['type'] = t('Negotiated Rates');
     }
   }
   $_SESSION['ups']['rate']['currency'] = $charge->currencycode[0]->data();
   $_SESSION['ups']['rate']['amount'] = $charge->monetaryvalue[0]->data();
-  $_SESSION['ups']['digest'] = $response->shipmentdigest[0]->data();
+  $_SESSION['ups']['digest'] = $response->document->shipmentdigest[0]->data();
 
   return 'admin/store/orders/'. $form_values['order_id'] .'/shipments/ups';
 }
 
+/**
+ * Last chance for user to review shipment.
+ *
+ * @ingroup forms
+ * @see theme_uc_ups_confirm_shipment
+ * @see uc_ups_confirm_shipment_submit
+ */
 function uc_ups_confirm_shipment($order_id){
   $form = array();
   $form['digest'] = array('#type' => 'hidden', '#value' => $_SESSION['ups']['digest']);
@@ -841,6 +1158,9 @@ function uc_ups_confirm_shipment($order_id){
   return $form;
 }
 
+/**
+ * Display final shipment information for review.
+ */
 function theme_uc_ups_confirm_shipment($form){
   $output = '';
   
@@ -886,6 +1206,11 @@ function theme_uc_ups_confirm_shipment($form){
   return $output;
 }
 
+/**
+ * Submit handler for uc_ups_confirm_shipment().
+ *
+ * Generate label and schedule pickup of the shipment.
+ */
 function uc_ups_confirm_shipment_submit($form_id, $form_values){
   include_once(drupal_get_path('module', 'uc_store') .'/includes/simplexml.php');
   // Request pickup using parameters in form.
@@ -895,9 +1220,9 @@ function uc_ups_confirm_shipment_submit($form_id, $form_values){
   $result = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') .'ShipAccept', array(), 'POST', $request);
   $response = new JSimpleXML();
   $response->loadString($result->data);
-  $code = $response->document->responsestatuscode[0]->data();
+  $code = $response->document->response[0]->responsestatuscode[0]->data();
   if ($code == 0) { // failed request 
-    $error = $response->document->error[0];
+    $error = $response->document->response[0]->error[0];
     $error_severity = $error->errorseverity[0]->data();
     $error_code = $error->errorcode[0]->data();
     $error_description = $error->errordescription[0]->data();
@@ -916,15 +1241,15 @@ function uc_ups_confirm_shipment_submit($form_id, $form_values){
   $shipment->accessorials = $_SESSION['ups']['service'];
   $shipment->carrier = t('UPS');
   // if NegotiatedRates exist, quote based on those, otherwise, use TotalCharges
-  if (is_array($response->document->shipmentcharges)){
-    $charge = $response->document->shipmentcharges[0]->totalcharges[0];
-    if (is_array($response->document->shipmentcharges[0]->negotiatedrates)){
-      $charge = $response->document->shipmentcharges[0]->negotiatedrates[0]->grandtotal[0];
+  if (is_array($response->document->shipmentresults[0]->shipmentcharges)){
+    $charge = $response->document->shipmentresults[0]->shipmentcharges[0]->totalcharges[0];
+    if (is_array($response->document->shipmentresults[0]->negotiatedrates)){
+      $charge = $response->document->shipmentresults[0]->negotiatedrates[0]->netsummarycharges[0]->grandtotal[0];
     }
   }
   $cost = $charge->monetaryvalue[0]->data();
   $shipment->cost = $cost;
-  $shipment->tracking_number = $response->shipmentresults[0]->shipmentidentificationnumber[0]->data();
+  $shipment->tracking_number = $response->document->shipmentresults[0]->shipmentidentificationnumber[0]->data();
   $ship_date = $_SESSION['ups']['ship_date'];
   $shipment->ship_date = gmmktime(12, 0, 0, $ship_date['month'], $ship_date['day'], $ship_date['year']);
   $exp_delivery = $_SESSION['ups']['expected_delivery'];
@@ -932,7 +1257,7 @@ function uc_ups_confirm_shipment_submit($form_id, $form_values){
   
   foreach ($response->document->shipmentresults[0]->packageresults as $package_results){
     $package =& current($shipment->packages);
-    $package->tracking_number = $package_result->trackingnumber[0]->data();
+    $package->tracking_number = $package_results->trackingnumber[0]->data();
     $label_image = $package_results->labelimage[0]->graphicimage[0]->data();
     if (file_check_directory(file_create_path('ubercart_images/ups_labels'), FILE_CREATE_DIRECTORY)){
       $label_path = file_create_path('ubercart_images/ups_labels') .'/label'. $package->tracking_number .'.gif';
@@ -958,6 +1283,18 @@ function uc_ups_confirm_shipment_submit($form_id, $form_values){
   return 'admin/store/orders/'. $order_id .'/shipments';
 }
 
+/**
+ * Construct an XML label and pickup request.
+ *
+ * @param $digest
+ *   Base-64 encoded shipment request.
+ * @param $order_id
+ *   The order id of the shipment.
+ * @param $packages
+ *   An array of package ids to be shipped.
+ * @return
+ *   ShipmentAcceptRequest XML document to send to UPS.
+ */
 function uc_ups_request_pickup($digest, $order_id = 0, $packages = array()){
   $packages = (array)$packages;
   
@@ -985,6 +1322,13 @@ function uc_ups_request_pickup($digest, $order_id = 0, $packages = array()){
   return $schema;
 }
 
+/**
+ * Display the shipping label for printing.
+ *
+ * Each argument is a component of the file path to the image.
+ *
+ * @ingroup themeable
+ */
 function theme_uc_ups_label_image(){
   $args = func_get_args();
   $image_path = implode('/', $args);
@@ -1038,7 +1382,7 @@ FOLD HERE</td>
 }
 
 /**
- * Modifies the rate received from UPS before displaying to the customer.
+ * Modify the rate received from UPS before displaying to the customer.
  */
 function uc_ups_markup($rate){
   $markup = variable_get('uc_ups_markup', '0%');
@@ -1091,7 +1435,7 @@ function _uc_ups_pkg_types(){
 /**
  * Callback for usort().
  *
- * Sorts service rates by increasing price.
+ * Sort service rates by increasing price.
  */
 function _uc_ups_sort_quotes($a, $b){
   $ar = $a['rate'];

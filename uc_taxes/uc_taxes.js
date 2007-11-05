@@ -15,7 +15,7 @@ $(document).ready(function(){
 });
 
 function getTax(){
-  var zone = $("select[@name*=" + pane + "_zone] option:selected").val();
+  var zone = $("select[@name*=" + pane + "_zone]").val();
   if (!zone){
     zone = "0";
   }
@@ -23,7 +23,7 @@ function getTax(){
   if (!code){
     code = '';
   }
-  var country = $("select[@name*=" + pane + "_country] option:selected").val();
+  var country = $("select[@name*=" + pane + "_country]").val();
   if (!country){
     country = "0";
   }

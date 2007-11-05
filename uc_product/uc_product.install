@@ -2,6 +2,11 @@
 // $Id$
 
 /**
+ * @file
+ * Database installation, uninstallation, and updates for the product module.
+ */
+
+/**
  * Ubercart uc_product.module schema
  */
 function uc_product_install() {
@@ -39,6 +44,7 @@ function uc_product_install() {
         `default_qty` smallint(5) unsigned NOT NULL default 1,
         `unique_hash` varchar(32) NOT NULL,
         `ordering` tinyint(2) NOT NULL default 0,
+        `shippable` tinyint(2) NOT NULL default 1,
         PRIMARY KEY  (`vid`)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
     break;
@@ -78,9 +84,6 @@ function uc_product_install() {
       );");
     break;
   }
-  
-  $file_path = file_create_path('ubercart_images');
-  file_check_directory($file_path, FILE_CREATE_DIRECTORY);
 }
 
 function uc_product_uninstall(){
@@ -298,5 +301,20 @@ function uc_product_update_9() {
       break;
   }
 
+  return $ret;
+}
+
+// Update to add the shippable column to the product table.
+function uc_product_update_10() {
+  $ret = array();
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_products} ADD shippable tinyint(2) NOT NULL default 1");
+    break;
+    case 'pgsql':
+      db_add_column($ret, 'uc_products', 'shippable', 'tinyint', array('not null' => true, 'default' => 1));
+    break;
+  }
   return $ret;
 }

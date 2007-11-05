@@ -59,7 +59,7 @@ function uc_credit_cron() {
                   . variable_get('uc_cart_anon_unit', 'hours') .' ago');
   db_query("DELETE upc.* FROM {uc_orders} AS uo LEFT JOIN {uc_payment_credit} "
           ."AS upc ON uo.order_id = upc.order_id WHERE uo.modified <= %d AND "
-          ."uo.order_status = 0", $time);
+          ."uo.order_status = '%s'", $time, uc_order_state_default('in_checkout'));
 
   // Mask old stored credit card numbers.
   $time = strtotime(variable_get('uc_credit_number_duration', '1') .' '
@@ -67,8 +67,8 @@ function uc_credit_cron() {
   db_query("UPDATE {uc_orders} AS uo LEFT JOIN {uc_payment_credit} AS upc "
           ."ON uo.order_id = upc.order_id SET upc.cc_number = "
           ."RIGHT(upc.cc_number, 4), upc.cc_cvv = '000' WHERE uo.modified "
-          ."<= %d AND uo.order_status = %d AND CHAR_LENGTH(upc.cc_number) > 4",
-           $time, variable_get('uc_credit_clear_status', 4));
+          ."<= %d AND uo.order_status = '%s' AND CHAR_LENGTH(upc.cc_number) > 4",
+           $time, variable_get('uc_credit_clear_status', uc_order_state_default('completed')));
 }
 
 /*******************************************************************************
@@ -147,7 +147,7 @@ function uc_credit_order($op, &$arg1, $arg2) {
       break;
 
     case 'delete':
-      db_query("DELETE FROM {uc_payment_credit} WHERE order_id = %d", $arg1);
+      db_query("DELETE FROM {uc_payment_credit} WHERE order_id = %d", $arg1->order_id);
       break;
   }
 }
@@ -441,7 +441,7 @@ function uc_payment_method_credit($op, &$arg1) {
         '#type' => 'select',
         '#title' => t('Order status'),
         '#options' => $options,
-        '#default_value' => variable_get('uc_credit_clear_status', 'completed'),
+        '#default_value' => variable_get('uc_credit_clear_status', uc_order_state_default('completed')),
       );
       $form['table1'] = array('#value' => '<table><tbody style="border: 0px;"><tr><td>');
       $form['uc_credit_number_duration'] = array(

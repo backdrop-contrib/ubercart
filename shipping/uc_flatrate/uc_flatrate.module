@@ -4,6 +4,8 @@
 /**
  * @file
  * Shipping quote module that defines a flat shipping rate for each product.
+ *
+ * Coded by Lyle Mantooth
  */
 
 /******************************************************************************
@@ -32,7 +34,7 @@ function uc_flatrate_menu($may_cache){
 /**
  * Implementation of hook_form_alter().
  *
- * Adds a form element for the shipping rate of a product.
+ * Add a form element for the shipping rate of a product.
  */
 function uc_flatrate_form_alter($form_id, &$form){
   $node = $form['#node'];
@@ -89,6 +91,41 @@ function uc_flatrate_nodeapi(&$node, $op){
 }
 
 /******************************************************************************
+ * Workflow-ng Hooks                                                          *
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_configuration().
+ *
+ * Connect the quote action with the quote event.
+ */
+function uc_flatrate_configuration(){
+  $enabled = variable_get('uc_quote_enabled', array('flatrate' => true, 'order_rate' => false));
+  $configurations = array(
+    'uc_flatrate_get_quote' => array(
+      '#label' => t('Shipping quote via flat rate per product'),
+      '#event' => 'get_quote_from_flatrate',
+      '#module' => 'uc_flatrate',
+      '#active' => $enabled['flatrate'],
+    ),
+    'uc_flatrate_get_quote_by_order' => array(
+      '#label' => t('Shipping quote via flat rate per order'),
+      '#event' => 'get_quote_from_order_rate',
+      '#module' => 'uc_flatrate',
+      '#active' => $enabled['order_rate'],
+    ),
+  );
+  
+  $action = workflow_ng_use_action('uc_quote_action_get_quote', array(
+    '#label' => t('Fetch a shipping quote'),
+  ));
+  $configurations['uc_flatrate_get_quote'] = workflow_ng_configure($configurations['uc_flatrate_get_quote'], $action);
+  $configurations['uc_flatrate_get_quote_by_order'] = workflow_ng_configure($configurations['uc_flatrate_get_quote_by_order'], $action);
+  
+  return $configurations;
+}
+
+/******************************************************************************
  * Übercart Hooks                                                             *
  ******************************************************************************/
 
@@ -133,21 +170,12 @@ function uc_flatrate_shipping_method(){
   return $methods;
 }
 
-/**
- * Implementation of Übercart's hook_store_status().
- */
-function uc_flatrate_store_status(){
-  $messages = array();
-
-  return $messages;
-}
-
 /******************************************************************************
  * Menu Callbacks                                                             *
  ******************************************************************************/
 
 /**
- * Configures the store default shipping rate.
+ * Configure the store default shipping rates.
  */
 function uc_flatrate_admin_settings(){
   $form = array();
@@ -198,6 +226,16 @@ function uc_flatrate_quote($products, $details){
   return $quotes;
 }
 
+/**
+ * Standard callback to return a shipping rate via the order rate method.
+ *
+ * @param $products
+ *   The order's products.
+ * @param $details
+ *   Other order details including a shipping address.
+ * @return
+ *   A JSON object containing the shipping quote for the order.
+ */
 function uc_flatrate_quote_order($products, $details){
   $method = uc_flatrate_shipping_method();
   $rate = variable_get('uc_flatrate_order_rate', 0);

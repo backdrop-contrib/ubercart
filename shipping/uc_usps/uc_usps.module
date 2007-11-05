@@ -1,6 +1,21 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * Shipping quote method module that receives quotes from the United States
+ * Postal Service via XML web service.
+ *
+ * Coded by Lyle Mantooth.
+ */
+
+/******************************************************************************
+ * Drupal Hooks                                                               *
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_menu().
+ */
 function uc_usps_menu($may_cache){
   $items = array();
   
@@ -17,6 +32,13 @@ function uc_usps_menu($may_cache){
   return $items;
 }
 
+/**
+ * Implementation of hook_form_alter().
+ *
+ * Add package type to products.
+ *
+ * @see uc_product_form
+ */
 function uc_usps_form_alter($form_id, &$form){
   $node = $form['#node'];
   $product_types = uc_product_node_info();
@@ -67,6 +89,41 @@ function uc_usps_nodeapi(&$node, $op){
   }
 }
 
+/******************************************************************************
+ * Workflow-ng Hooks                                                          *
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_configuration().
+ *
+ * Connect USPS quote action and event.
+ */
+function uc_usps_configuration(){
+  $enabled = variable_get('uc_quote_enabled', array('usps' => true));
+  $configurations = array(
+    'uc_usps_get_quote' => array(
+      '#label' => t('Shipping quote from USPS'),
+      '#event' => 'get_quote_from_usps',
+      '#module' => 'uc_usps',
+      '#active' => $enabled['usps'],
+    ),
+  );
+  
+  $action = workflow_ng_use_action('uc_quote_action_get_quote', array(
+    '#label' => t('Fetch a shipping quote'),
+  ));
+  $configurations['uc_usps_get_quote'] = workflow_ng_configure($configurations['uc_usps_get_quote'], $action);
+  
+  return $configurations;
+}
+
+/******************************************************************************
+ * Übercart Hooks                                                             *
+ ******************************************************************************/
+
+/**
+ * Implementation of Übercart's hook_shipping_type().
+ */
 function uc_usps_shipping_type(){
   $weight = variable_get('uc_quote_type_weight', array('small_package' => 0));
   
@@ -79,6 +136,9 @@ function uc_usps_shipping_type(){
   return $types;
 }
 
+/**
+ * Implementation of Übercart's hook_shipping_method().
+ */
 function uc_usps_shipping_method(){
   $enabled = variable_get('uc_quote_enabled', array('usps' => true));
   $weight = variable_get('uc_quote_method_weight', array('usps' => 0));
@@ -98,6 +158,15 @@ function uc_usps_shipping_method(){
   return $methods;
 }
 
+/******************************************************************************
+ * Menu Callbacks                                                             *
+ ******************************************************************************/
+
+/**
+ * Configure USPS settings.
+ *
+ * @ingroup forms
+ */
 function uc_usps_admin_settings(){
   $form = array();
   
@@ -116,75 +185,68 @@ function uc_usps_admin_settings(){
     '#default_value' => variable_get('uc_usps_markup', '0%'),
     '#description' => t('Markup shipping rate quote by dollar amount, percentage, or multiplier.'),
   );
+  $form['uc_usps_all_in_one'] = array('#type' => 'radios',
+    '#title' => t('Product Packages'),
+    '#default_value' => variable_get('uc_usps_all_in_one', 1),
+    '#options' => array(
+      0 => t('Each in its own package'),
+      1 => t('All in one'),
+    ),
+    '#description' => t('Indicate whether each product is quoted as shipping separately or all in one package.'),
+  );
   
   return system_settings_form($form);
 }
 
+/******************************************************************************
+ * Module Functions                                                           *
+ ******************************************************************************/
+
+/**
+ * Callback for retrieving USPS shipping quote.
+ *
+ * @param $products
+ *   Array of cart contents.
+ * @param $details
+ *   Order details other than product information.
+ * @return
+ *   JSON object containing rate, error, and debugging information.
+ */
 function uc_usps_quote($products, $details){
   include_once(drupal_get_path('module', 'uc_store') .'/includes/simplexml.php');
+  //drupal_set_message('<pre>'. print_r($products, true) .'</pre>');
+  //drupal_set_message('<pre>'. print_r($details, true) .'</pre>');
   
   $packages = array();
-  foreach ($products as $product){
-    if (!$product->pkg_qty){
-      $product->pkg_qty = 1;
+  if (variable_get('uc_usps_all_in_one', true)){
+    $package = new stdClass();
+    foreach ($products as $product){
+      $package->price += $product->price * $product->qty;
+      $weight += $product->weight * $product->qty * uc_weight_conversion($product->weight_units, 'lb');
     }
-    $num_of_pkgs = (int)($product->qty / $product->pkg_qty);
-
-    $package = drupal_clone($product);
-    $package->description = $product->model;
-    $weight = $product->weight * $product->pkg_qty;
-    switch($product->weight_units){
-      case 'g':
-        $weight = $weight / 1000;
-      case 'kg':
-        $weight = $weight * 2.2;
-      case 'lb':
-        $package->pounds = floor($weight);
-        $package->ounces = 16 * ($weight - $package->pounds);
-      break;
-      case 'oz':
-        $package->pounds = floor($weight / 16);
-        $package->ounces = $weight % 16;
-      break;
-    }
-    $package->container = $product->usps['container'];
-    $package->length = max($product->length, $product->width);
-    $package->width = min($product->length, $product->width);
-    $package->height = $product->height;
-    if ($package->length < $package->width){
-      list($package->length, $package->width) = array($package->width, $package->length);
-    }
-    $package->girth = 2 * $package->width + 2 * $package->height;
-    $package->size = $package->length + $package->girth;
-    if ($package->size <= 84){
-      $package->size = 'REGULAR';
-    }
-    else if ($package->size <= 108){
-      $package->size = 'LARGE';
-    }
-    else if ($package->size <= 130){
-      $package->size = 'OVERSIZE';
-    }
-    else{
-      $package->size = 'GI-HUGE-IC'; // Too big for the U.S. Postal service.
-    }
+    $package->pounds = floor($weight);
+    $package->ounces = 16 * ($weight - $package->pounds);
+    $package->container = 'RECTANGULAR';
+    $package->size = 'REGULAR';
+    // Packages are "machinable" if heavier than 6oz. and less than 35lbs.
     $package->machinable = (
-      $package->length >= 6 && $package->length <= 34 &&
-      $package->width >= 0.25 && $package->width <= 17 &&
-      $package->height >= 3.5 && $package->height >= 17 &&
       ($package->pounds == 0 ? $package->ounces >= 6 : true) &&
       $package->pounds <= 35 &&
       ($package->pounds == 35 ? $package->ounces == 0 : true)
     );
-    $package->price = $product->price * $product->pkg_qty;
-    $package->qty = $num_of_pkgs;
+    $package->qty = 1;
     $packages[] = $package;
-
-    $remaining_qty = $product->qty % $product->pkg_qty;
-    if ($remaining_qty){
+  }
+  else{
+    foreach ($products as $product){
+      if (!$product->pkg_qty){
+        $product->pkg_qty = 1;
+      }
+      $num_of_pkgs = (int)($product->qty / $product->pkg_qty);
+  
       $package = drupal_clone($product);
       $package->description = $product->model;
-      $weight = $product->weight * $remaining_qty;
+      $weight = $product->weight * $product->pkg_qty;
       switch($product->weight_units){
         case 'g':
           $weight = $weight / 1000;
@@ -203,6 +265,9 @@ function uc_usps_quote($products, $details){
       $package->length = max($product->length, $product->width);
       $package->width = min($product->length, $product->width);
       $package->height = $product->height;
+      if ($package->length < $package->width){
+        list($package->length, $package->width) = array($package->width, $package->length);
+      }
       $package->girth = 2 * $package->width + 2 * $package->height;
       $package->size = $package->length + $package->girth;
       if ($package->size <= 84){
@@ -223,11 +288,61 @@ function uc_usps_quote($products, $details){
         $package->height >= 3.5 && $package->height >= 17 &&
         ($package->pounds == 0 ? $package->ounces >= 6 : true) &&
         $package->pounds <= 35 &&
-      ($package->pounds == 35 ? $package->ounces == 0 : true)
+        ($package->pounds == 35 ? $package->ounces == 0 : true)
       );
-      $package->price = $product->price * $remaining_qty;
-      $package->qty = 1;
+      $package->price = $product->price * $product->pkg_qty;
+      $package->qty = $num_of_pkgs;
       $packages[] = $package;
+  
+      $remaining_qty = $product->qty % $product->pkg_qty;
+      if ($remaining_qty){
+        $package = drupal_clone($product);
+        $package->description = $product->model;
+        $weight = $product->weight * $remaining_qty;
+        switch($product->weight_units){
+          case 'g':
+            $weight = $weight / 1000;
+          case 'kg':
+            $weight = $weight * 2.2;
+          case 'lb':
+            $package->pounds = floor($weight);
+            $package->ounces = 16 * ($weight - $package->pounds);
+          break;
+          case 'oz':
+            $package->pounds = floor($weight / 16);
+            $package->ounces = $weight % 16;
+          break;
+        }
+        $package->container = $product->usps['container'];
+        $package->length = max($product->length, $product->width);
+        $package->width = min($product->length, $product->width);
+        $package->height = $product->height;
+        $package->girth = 2 * $package->width + 2 * $package->height;
+        $package->size = $package->length + $package->girth;
+        if ($package->size <= 84){
+          $package->size = 'REGULAR';
+        }
+        else if ($package->size <= 108){
+          $package->size = 'LARGE';
+        }
+        else if ($package->size <= 130){
+          $package->size = 'OVERSIZE';
+        }
+        else{
+          $package->size = 'GI-HUGE-IC'; // Too big for the U.S. Postal service.
+        }
+        $package->machinable = (
+          $package->length >= 6 && $package->length <= 34 &&
+          $package->width >= 0.25 && $package->width <= 17 &&
+          $package->height >= 3.5 && $package->height >= 17 &&
+          ($package->pounds == 0 ? $package->ounces >= 6 : true) &&
+          $package->pounds <= 35 &&
+        ($package->pounds == 35 ? $package->ounces == 0 : true)
+        );
+        $package->price = $product->price * $remaining_qty;
+        $package->qty = 1;
+        $packages[] = $package;
+      }
     }
   }
   
@@ -262,13 +377,13 @@ function uc_usps_quote($products, $details){
           if ($attr['classid'] === 0 || $attr['classid'] === '0'){
             $attr['classid'] = 'zero';
           }
-          $services[$attr['classid']]['label'] = $postage->mailservice[0]->data();
+          $services[$attr['classid']]['label'] = t('U.S.P.S. @service', array('@service' => $postage->mailservice[0]->data()));
           $services[$attr['classid']]['rate'] += uc_usps_markup($postage->rate[0]->data());
         }
       }
     }
   }
-  $usps_services = variable_get('uc_usps_services', _uc_usps_services());
+  $usps_services = array_filter(variable_get('uc_usps_services', _uc_usps_services()));
   foreach ($services as $service => $quote){
     if (!in_array($service, $usps_services)){
       unset($services[$service]);
@@ -317,6 +432,18 @@ function uc_usps_quote($products, $details){
   return $services;
 }
 
+/**
+ * Construct an XML quote request.
+ *
+ * @param $packages
+ *   Array of packages received from the cart.
+ * @param $origin
+ *   Delivery origin address information.
+ * @param $destination
+ *   Delivery destination address information.
+ * @return
+ *   RateV3Request XML document to send to USPS
+ */
 function uc_usps_rate_request($packages, $origin, $destination){
   $request  = '<RateV3Request USERID="' . variable_get('uc_usps_user_id', '') . '">';
   $services_count = 0;
@@ -342,7 +469,7 @@ function uc_usps_rate_request($packages, $origin, $destination){
 }
 
 /**
- * Modifies the rate received from USPS before displaying to the customer.
+ * Modify the rate received from USPS before displaying to the customer.
  */
 function uc_usps_markup($rate){
   $markup = variable_get('uc_usps_markup', '0%');
@@ -360,6 +487,9 @@ function uc_usps_markup($rate){
   }
 }
 
+/**
+ * Convenience function for select form elements.
+ */
 function _uc_usps_pkg_types(){
   return array(
     'VARIABLE' => t('Variable'),
@@ -370,6 +500,9 @@ function _uc_usps_pkg_types(){
   );
 }
 
+/**
+ * Convenience function for select form elements.
+ */
 function _uc_usps_services(){
   return array(
     'zero' => t('U.S.P.S. First-Class'),
@@ -390,7 +523,7 @@ function _uc_usps_services(){
 /**
  * Callback for uasort().
  *
- * Sorts service rates by increasing price.
+ * Sort service rates by increasing price.
  */
 function _uc_usps_sort_quotes($a, $b){
   $ar = $a['rate'];

@@ -56,7 +56,7 @@ function uc_order_install(){
         comment_id mediumint(9) NOT NULL auto_increment,
         order_id mediumint(9) NOT NULL,
         uid mediumint(9) NOT NULL,
-        order_status tinyint(4) NOT NULL,
+        order_status varchar(32) NOT NULL,
         notified tinyint(4) NOT NULL,
         message text NOT NULL,
         created int(11) NOT NULL,
@@ -232,6 +232,8 @@ function uc_order_uninstall() {
   variable_del('uc_order_logging');
   variable_del('uc_order_capitalize_addresses');
   variable_del('uc_ubrowser_product_select');
+  variable_del('uc_cust_view_order_invoices');
+  variable_del('uc_cust_order_invoice_template');
 }
 
 function uc_order_update_1(){
@@ -300,6 +302,13 @@ function uc_order_update_3() {
                      ."('pending', '". $t('Pending') ."', 'post_checkout', 0, 1), "
                      ."('processing', '". $t('Processing') ."', 'post_checkout', 5, 1), "
                      ."('completed', '". $t('Completed') ."', 'completed', 20, 1);");
+
+  return $ret;
+}
+
+function uc_order_update_4() {
+  // Because I forgot to change the CREATE statement...
+  $ret[] = update_sql("ALTER TABLE {uc_order_comments} CHANGE order_status order_status VARCHAR(32) NOT NULL");
 
   return $ret;
 }

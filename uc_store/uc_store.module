@@ -13,7 +13,7 @@
  */
 
 /**
- * Weight unit conversion ratios.
+ * Unit conversion ratios.
  *
  * Multiply the value by the appropriate constant to get the converted value.
  * Ex.:
@@ -45,6 +45,12 @@ define('OZ_TO_OZ', 1);
 define('OZ_TO_LB', 0.0625);
 define('OZ_TO_G', 28.349523125);
 define('OZ_TO_KG', 0.028349523);
+
+define('IN_TO_IN', 1);
+define('IN_TO_CM', 2.54);
+
+define('CM_TO_CM', 1);
+define('CM_TO_IN', 0.393700787);
 
 /*******************************************************************************
  * Hook Functions (Drupal)
@@ -106,7 +112,7 @@ function uc_store_menu($may_cache) {
       'path' => 'admin/store/settings',
       'title' => t('Configuration'),
       'description' => t('Adjust configuration settings for Ubercart.'),
-      'callback' => 'uc_store_configuration',
+      'callback' => 'uc_store_configuration_page',
       'access' => user_access('administer store'),
       'weight' => 6,
       'type' => MENU_NORMAL_ITEM,
@@ -702,6 +708,10 @@ function uc_store_customers($message = NULL, $query = NULL, $count_query = NULL,
       $city = ucfirst($customer->billing_city) .', '
             . uc_get_zone_code($customer->billing_zone);
     }
+    if ($name == ', ') {
+      $name = db_result(db_query("SELECT name FROM {users} WHERE uid = %d", $customer->uid));
+      $name = t('User: !name', array('!name' => $name));
+    }
     $rows[] = array(
       'data' => array(
         array('data' => $icons),
@@ -927,7 +937,7 @@ function uc_store_reports() {
 /**
  * Display store configuration page.
  */
-function uc_store_configuration() {
+function uc_store_configuration_page() {
   $menu = menu_get_item(NULL, 'admin/store/settings');
   $content = system_admin_menu_block($menu);
 
@@ -942,7 +952,7 @@ function uc_store_configuration() {
 function uc_store_ubercart_help() {
   $output = '<p>'. t('Use the following links to find documentation and support:') .'</p>';
 
-  $items[] = l(t("Ubercart User's Guide"), 'http://www.ubercart.org/ubercart_users_guide');
+  $items[] = l(t("Ubercart User's Guide"), 'http://www.ubercart.org/docs/user');
   $items[] = l(t('Support Forums'), 'http://www.ubercart.org/forum');
   $items[] = l(t('Drupal Handbook'), 'http://drupal.org/node/258');
   $output .= theme_item_list($items);
@@ -1024,6 +1034,9 @@ function uc_country_import_form() {
 
   foreach ($files as $file) {
     $import_list[$file['file']] = $file['file'];
+  }
+  if (is_array($import_list)) {
+    ksort($import_list);
   }
 
   $form['text'] = array(
@@ -1115,7 +1128,7 @@ function uc_country_remove_form($country_id) {
     drupal_goto('admin/store/settings/countries/edit');
   }
 
-  if ($_POST['op'] != t('Remove')) {
+  if ($_POST['op'] != t('Remove') && module_exists('uc_order')) {
     $result = db_query("SELECT COUNT(order_id) AS orders FROM {uc_orders} WHERE "
                       ."delivery_country = %d OR billing_country = %d",
                        $country_id, $country_id);
@@ -1403,19 +1416,10 @@ function uc_store_display_settings_form() {
     '#default_value' => variable_get('uc_store_admin_page_display', 1),
   );
 
-/*
-  $form['uc_store_display_links'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Display store links on administration page by default.'),
-    '#default_value' => variable_get('uc_store_display_links', TRUE),
-  );
-*/
-
   $desc = t('Select the address to be used on customer lists and summaries.');
   if (module_exists('uc_notify')) {
     $desc .= ' '. t('Also applies to notification e-mails.');
   }
-
   $form['uc_customer_list_address'] = array(
     '#type' => 'radios',
     '#title' => t('Primary customer address'),
@@ -1508,10 +1512,10 @@ function uc_store_format_settings_form() {
     'in' => t('Inches'),
     'cm' => t('Centimeters'),
   );
-  $form['length']['uc_store_length_unit'] = array(
+  $form['length']['uc_length_unit'] = array(
     '#type' => 'select',
     '#title' => t('Default unit of measurement'),
-    '#default_value' => variable_get('uc_store_length_unit', 'in'),
+    '#default_value' => variable_get('uc_length_unit', 'in'),
     '#options' => $units,
   );
   foreach ($units as $unit => $name){
@@ -1845,9 +1849,7 @@ function uc_store_get_icon($path, $small = FALSE, $class = 'uc-store-icon', $alt
     $file .= '_small';
   }
 
-  if (!is_null($alt)) {
-    $alt = ' alt="'. (string) $alt .'"';
-  }
+  $alt = ' alt="'. (string) $alt .'"';
 
   $output = '<img src="'. base_path() . drupal_get_path('module', 'uc_store')
            .'/images/'. $file .'.gif" class="'. $class .'"'. $alt .' />';
@@ -2097,49 +2099,26 @@ function uc_get_country_data($match = array(), $sort = 'country_name') {
  * Return the name of an address field.
  */
 function uc_get_field_name($field) {
-  switch ($field) {
-    case 'first_name':
-      $default = t('First Name');
-      break;
-    case 'last_name':
-      $default = t('Last Name');
-      break;
-    case 'email':
-      $default = t('E-mail');
-      break;
-    case 'phone':
-      $default = t('Phone Number');
-      break;
-    case 'company':
-      $default = t('Company');
-      break;
-    case 'address':
-      $default = t('Address');
-      break;
-    case 'street':
-      $default = t('Street Address');
-      break;
-    case 'street1':
-      $default = t('Street Address 1');
-      break;
-    case 'street2':
-      $default = t('Street Address 2');
-      break;
-    case 'city':
-      $default = t('City');
-      break;
-    case 'zone':
-      $default = t('Zone');
-      break;
-    case 'postal_code':
-      $default = t('Postal Code');
-      break;
-    case 'country':
-      $default = t('Country');
-      break;
-    default:
-      drupal_set_message(t('The field title %field is being accessed incorrectly.', array('%field' => $field)), 'error');
-      return '';
+  $fields = array(
+    'first_name' => t('First Name'),
+    'last_name' => t('Last Name'),
+    'email' => t('E-mail'),
+    'phone' => t('Phone Number'),
+    'company' => t('Company'),
+    'address' => t('Address'),
+    'street' => t('Street Address'),
+    'street1' => t('Street Address 1'),
+    'street2' => t('Street Address 2'),
+    'city' => t('City'),
+    'zone' => t('Zone'),
+    'postal_code' => t('Postal Code'),
+    'country' => t('Country'),
+  );
+
+  $default = $fields[$field];
+  if (empty($default)) {
+    drupal_set_message(t('The field title %field is being accessed incorrectly.', array('%field' => $field)), 'error');
+    return '';
   }
 
   return variable_get('uc_field_'. $field, $default);
@@ -2203,10 +2182,10 @@ function uc_zone_select($title, $default = NULL, $description = NULL, $country_i
   }
   $result = db_query("SELECT * FROM {uc_zones} WHERE zone_country_id = %d ORDER BY %s", $country_id, ($display == 'code') ? 'zone_code' : 'zone_name');
   if (db_num_rows($result) == 0) {
-    $options[] = t('Not applicable');
+    $options[-1] = t('Not applicable');
   }
   else {
-    $options[] = t('Please Select');
+    $options[''] = t('Please Select');
   }
   while ($zone = db_fetch_object($result)) {
     $options[$zone->zone_id] = ($display == 'code') ? $zone->zone_code : $zone->zone_name;
@@ -2219,6 +2198,7 @@ function uc_zone_select($title, $default = NULL, $description = NULL, $country_i
     '#options' => $options,
     '#default_value' => $default,
     '#required' => $required,
+    '#disabled' => isset($options[-1]) ? TRUE : FALSE,
   );
 
   return $select;

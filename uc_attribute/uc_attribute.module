@@ -145,7 +145,7 @@ function uc_attribute_menu($may_cache){
 /**
  * Implementation of hook_form_alter().
  *
- * Attaches option selectors to the form with the "Add to Cart" button.
+ * Attach option selectors to the form with the "Add to Cart" button.
  */
 function uc_attribute_form_alter($form_id, &$form){
   if (strpos($form_id, 'add_to_cart_form') || strpos($form_id, 'add_product_form')){
@@ -209,6 +209,9 @@ function uc_attribute_add_to_cart_data($form_values){
   return array('attributes' => $form_values['attributes'], 'model' => $model);
 }
 
+/**
+ * Implementation of hook_product_class().
+ */
 function uc_attribute_product_class($type, $op){
   switch ($op){
     case 'delete':
@@ -247,6 +250,11 @@ function uc_attribute_cart_item($op, &$item) {
  * Menu Callbacks                                                             *
  ******************************************************************************/
 
+/**
+ * Change the display of attribute option prices.
+ *
+ * @ingroup forms
+ */
 function uc_attribute_admin_settings(){
   $form = array();
   
@@ -264,7 +272,9 @@ function uc_attribute_admin_settings(){
 }
 
 /**
- * Displays a list of attributes and a form to add more.
+ * Display a list of attributes and a form to add more.
+ *
+ * @see uc_attribute_form
  */
 function uc_attribute_default(){
   $result = db_query("SELECT a.aid, a.name, a.ordering, COUNT(ao.oid) AS options FROM {uc_attributes} AS a LEFT JOIN {uc_attribute_options} AS ao ON a.aid = ao.aid GROUP BY a.aid ORDER BY a.ordering, a.name");
@@ -285,7 +295,9 @@ function uc_attribute_default(){
 }
 
 /**
- * Displays options and the modifications to products they represent.
+ * Display options and the modifications to products they represent.
+ *
+ * @see uc_attribute_option_form
  */
 function uc_attribute_view($attr_id){
   if (!($attribute = uc_attribute_load($attr_id))){
@@ -312,7 +324,11 @@ function uc_attribute_view($attr_id){
 }
 
 /**
- *  Form builder for product attributes.
+ * Form builder for product attributes.
+ *
+ * @ingroup forms
+ * @see uc_attribute_form_validate
+ * @see uc_attribute_form_submit
  */
 function uc_attribute_form($attr_id = null){
   $attribute = uc_attribute_load($attr_id);
@@ -395,6 +411,10 @@ function uc_attribute_delete_confirm_submit($form_id, $form_values){
 
 /**
  * Form builder for attribute options.
+ *
+ * @ingroup forms
+ * @see uc_attribute_option_form_validate
+ * @see uc_attribute_option_form_submit
  */
 function uc_attribute_option_form($attr_id, $opt_id = null){
   $attribute = uc_attribute_load($attr_id);
@@ -448,12 +468,12 @@ function uc_attribute_option_form($attr_id, $opt_id = null){
   return $form;
 }
 
+/**
+ * Validate number formats.
+ */
 function uc_attribute_option_form_validate($form_id, $form_values){
   $pattern = '/^-?\d*(\.\d*)?$/';
   $price_error = t('This must be in a valid number format. No commas and only one decimal point.');
-  /* if(!is_numeric($form_values['cost']['#value']) && !preg_match($pattern, $form_values['cost']['#value'])){
-    form_set_error('cost', $price_error);
-  } */
   if(!is_numeric($form_values['cost']['#value']) && !preg_match($pattern, $form_values['cost']['#value'])){
     form_set_error('cost', $price_error);
   }
@@ -505,7 +525,13 @@ function uc_attribute_option_delete_confirm_submit($form_id, $form_values){
 }
 
 /**
- * Form builder to associate attributes with products.
+ * Form builder to associate attributes with products or classes.
+ *
+ * @param $id The nid of the product, or the pcid of a class.
+ * @param $type Either 'product' or 'class'
+ * @ingroup forms
+ * @see theme_uc_object_attributes_form
+ * @see uc_object_attributes_form_submit
  */
 function uc_object_attributes_form($id, $type){
   $location = array();
@@ -585,6 +611,11 @@ function uc_object_attributes_form($id, $type){
   return $form;
 }
 
+/**
+ * Display the formatted attribute form.
+ *
+ * @ingroup themeable
+ */
 function theme_uc_object_attributes_form($form){
   $output = drupal_render($form['admin_link']);
   $header = array(t('Remove'), t('Name'), t('Default Option'), t('Order'));
@@ -644,6 +675,15 @@ function uc_object_attributes_form_submit($form_id, $form_values){
   //return 'node/'. $form_values['id'] .'/edit/attributes';
 }
 
+/**
+ * Form builder to attach attribute options to products or classes.
+ *
+ * @param $id The nid of the product, or the pcid of a class.
+ * @param $type Either 'product' or 'class'
+ * @ingroup forms
+ * @see theme_uc_object_options_form
+ * @see uc_object_options_form_submit
+ */
 function uc_object_options_form($obj_id, $type){
   $location = array();
   $location[] = menu_get_item(null, 'admin');
@@ -743,6 +783,11 @@ function uc_object_options_form($obj_id, $type){
   return $form;
 }
 
+/**
+ * Display the option form.
+ *
+ * @ingroup themeable
+ */
 function theme_uc_object_options_form($form){
   $output = drupal_render($form['admin_link']);
   $header = array(t('Attribute'), t('Default Option'), array('colspan' => 6, 'data' => t('Options')));
@@ -783,7 +828,7 @@ function theme_uc_object_options_form($form){
 }
 
 /**
- * Validate function for uc_product_optinos_form().
+ * Validate function for uc_product_options_form().
  */
 function uc_object_options_form_validate($form_id, $form_values){
   if (isset($form_values['prod_attr'])){
@@ -803,6 +848,9 @@ function uc_object_options_form_validate($form_id, $form_values){
   }
 }
 
+/**
+ * Submit handler for uc_object_options_form().
+ */
 function uc_object_options_form_submit($form_id, $form_values){
   if ($form_values['type'] == 'product'){
     $attr_table = '{uc_product_attributes}';
@@ -816,7 +864,7 @@ function uc_object_options_form_submit($form_id, $form_values){
     $id = 'pcid';
     $type = "'%s'";
   }
-  // adjustments also have no meaning if option combination is changed in any way.
+  // Adjustments have no meaning if possible option combinations are changed in any way.
   foreach ($form_values['prod_attr'] as $prod_attr){
     db_query("DELETE FROM $attr_table WHERE $id = $type AND aid = %d", $form_values['id'], $prod_attr['aid']);
     db_query("INSERT INTO $attr_table ($id, aid, ordering, default_option) VALUES ($type, %d, %d, %d)",
@@ -840,6 +888,9 @@ function uc_object_options_form_submit($form_id, $form_values){
 
 /**
  * Form builder to associate option combinations with mutations of a product's model number.
+ *
+ * @ingroup forms
+ * @see uc_product_adjustments_form_submit
  */
 function uc_product_adjustments_form($nid){
   $location = array();
@@ -927,7 +978,7 @@ function uc_product_adjustments_form($nid){
       $serial_array = serialize($comb_array);
       $default_model = $model;
       foreach ($old_vals as $ov){
-        if ($ov->combination == $serial_array){
+        if (!count(array_diff_assoc(unserialize($ov->combination), unserialize($serial_array)))){
           $default_model = $ov->model;
           break;
         }
@@ -973,7 +1024,7 @@ function uc_product_adjustments_form_submit($form_id, $form_values){
  ******************************************************************************/
 
 /**
- * Loads an attribute from the database.
+ * Load an attribute from the database.
  *
  * @param $attr_id
  *   The id of the attribute.
@@ -1013,7 +1064,7 @@ function uc_attribute_load($attr_id, $nid = null, $type = ''){
 }
 
 /**
- * Loads the option identified by $opt_id.
+ * Load the option identified by $opt_id.
  */
 function uc_attribute_option_load($opt_id){
   $result = db_query("SELECT * FROM {uc_attribute_options} WHERE oid = %d", $opt_id);
@@ -1033,6 +1084,9 @@ function uc_product_get_attributes($nid){
   return $chosen_attr;
 }
 
+/**
+ * Load all attributes associated with a product class.
+ */
 function uc_class_get_attributes($pcid){
   $result = db_query("SELECT aid FROM {uc_class_attributes} WHERE pcid = '%s' ORDER BY ordering", $pcid);
   $chosen_attr = array();
@@ -1044,7 +1098,7 @@ function uc_class_get_attributes($pcid){
 }
 
 /**
- * Handles formatting of data associated with attributes
+ * Display formatted of data associated with attributes
  *
  * @param $type
  *   options | attributes
@@ -1086,7 +1140,7 @@ function theme_uc_attribute($type, $data, $nid){
 }
 
 /**
- * Formats an attribute and its options.
+ * Format an attribute and its options.
  *
  * @ingroup themeable
  */
@@ -1106,7 +1160,7 @@ function theme_uc_attribute_options($aid, $nid){
 }
 
 /**
- * Gets the options chosen for a product that is in the cart.
+ * Get the options chosen for a product that is in the cart.
  *
  * @param $item
  *   An element of the array returned by uc_cart_get_contents.
@@ -1186,6 +1240,9 @@ function _uc_attribute_alter_form($product){
   return $product;
 }
 
+/**
+ * usort() callback.
+ */
 function _uc_attribute_sort($a, $b){
   if ($a->ordering == $b->ordering){
     return 0;

@@ -16,6 +16,7 @@
 require_once('uc_payment_checkout_pane.inc');
 require_once('uc_payment_order_pane.inc');
 require_once('uc_payment_payment_method.inc');
+require_once('uc_payment_workflow.inc');
 
 /*******************************************************************************
  * Hook Functions (Drupal)
@@ -256,8 +257,13 @@ function uc_payment_order($op, &$arg1) {
       }
       break;
 
+    case 'can_delete':
+      if (uc_payment_load_payments($arg1->order_id) !== FALSE) {
+        return FALSE;
+      }
+
     case 'delete':
-      db_query("DELETE FROM {uc_payment_receipts} WHERE order_id = %d", $arg1);
+      db_query("DELETE FROM {uc_payment_receipts} WHERE order_id = %d", $arg1->order_id);
       // Call each payment method to delete method specific data from the database.
       $methods = _payment_method_list();
       foreach ($methods as $method) {
@@ -891,8 +897,9 @@ function uc_payment_process($method, $order_id, $amount, $data = NULL, $default 
     return FALSE;
   }
   if (count($gateways) == 1) {
-    if (function_exists($gateways[0][$method])) {
-      $result = $gateways[0][$method]($order_id, $amount, $data);
+    $keys = array_keys($gateways);
+    if (function_exists($gateways[$keys[0]][$method])) {
+      $result = $gateways[$keys[0]][$method]($order_id, $amount, $data);
     }
     else {
       if (user_access('administer store')) {
@@ -975,6 +982,10 @@ function uc_payment_enter($order_id, $method, $amount, $uid, $data, $comment) {
           ."amount, uid, data, comment, received) VALUES (%d, %d, '%s', %f, "
           ."%d, '%s', '%s', %d)", db_next_id('{uc_payment_receipts}_receipt_id'),
           $order_id, $method_name, $amount, $uid, $data, $comment, time());
+
+  if (module_exists('workflow_ng')) {
+    workflow_ng_invoke_event('payment_entered', uc_order_load($order_id));
+  }
 }
 
 /**
@@ -1052,7 +1063,6 @@ function uc_payment_load_payments($order_id, $action = NULL) {
 /**
  * Build a list of payment methods defined in the enabled modules.
  */
- 
 function _payment_method_list($action = NULL) {
   static $methods;
 

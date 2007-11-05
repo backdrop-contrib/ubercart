@@ -15,6 +15,7 @@
 
 require_once('uc_order_order_pane.inc');
 require_once('uc_order_line_item.inc');
+require_once('uc_order_workflow.inc');
 
 /*******************************************************************************
  * Hook Functions (Drupal)
@@ -149,24 +150,35 @@ function uc_order_menu($may_cache) {
   else {
     drupal_add_css(drupal_get_path('module', 'uc_order') .'/uc_order.css');
 
-    $items[] = array(
-      'path' => 'user/'. arg(1) .'/order/'. arg(3),
-      'title' => t('Order !order_id', array('!order_id' => arg(3))),
-      'description' => t('View order !order_id.', array('!order_id' => arg(3))),
-      'callback' => 'uc_order_view',
-      'callback arguments' => array(arg(3), 'customer'),
-      'access' => user_access('view all orders') || $user->uid == arg(1),
-      'type' => MENU_CALLBACK,
-    );
-    $items[] = array(
-      'path' => 'user/'. arg(1) .'/order/'. arg(3) .'/invoice',
-      'title' => t('View invoice'),
-      'description' => t('View order !order_id invoice.', array('!order_id' => arg(3))),
-      'callback' => 'uc_order_view',
-      'callback arguments' => array(arg(3), 'invoice'),
-      'access' => user_access('view all orders') || $user->uid == arg(1),
-      'type' => MENU_CALLBACK,
-    );
+    if ($user->uid) {
+      $items[] = array(
+        'path' => 'user/'. arg(1) .'/orders',
+        'title' => t('Orders'),
+        'description' => t('View your order history.'),
+        'callback' => 'uc_order_history',
+        'callback arguments' => array(arg(1)),
+        'access' => user_access('view all orders') || $user->uid == arg(1),
+        'type' => MENU_LOCAL_TASK,
+      );
+      $items[] = array(
+        'path' => 'user/'. arg(1) .'/order/'. arg(3),
+        'title' => t('Order !order_id', array('!order_id' => arg(3))),
+        'description' => t('View order !order_id.', array('!order_id' => arg(3))),
+        'callback' => 'uc_order_view',
+        'callback arguments' => array(arg(3), 'customer'),
+        'access' => user_access('view all orders') || $user->uid == arg(1),
+        'type' => MENU_CALLBACK,
+      );
+      $items[] = array(
+        'path' => 'user/'. arg(1) .'/order/'. arg(3) .'/invoice',
+        'title' => t('View invoice'),
+        'description' => t('View order !order_id invoice.', array('!order_id' => arg(3))),
+        'callback' => 'uc_order_view',
+        'callback arguments' => array(arg(3), 'invoice'),
+        'access' => user_access('view all orders') || $user->uid == arg(1),
+        'type' => MENU_CALLBACK,
+      );
+    }
 
     if (arg(2) == 'orders' && arg(3) == 'create' && is_numeric(arg(4))) {
       $items[] = array(
@@ -293,7 +305,7 @@ function uc_order_menu($may_cache) {
         'description' => t('Delete order !order_id.', array('!order_id' => arg(3))),
         'callback' => 'uc_order_delete_confirm',
         'callback arguments' => array(arg(3)),
-        'access' => user_access('delete orders'),
+        'access' => user_access('delete orders') || user_access('delete any order'),
         'type' => MENU_CALLBACK,
       );
     }
@@ -391,36 +403,19 @@ function uc_order_token_list($type = 'all') {
  * Implementation of hook_perm().
  */
 function uc_order_perm() {
-  return array('view all orders', 'create orders', 'edit orders', 'delete orders');
+  return array('view all orders', 'create orders', 'edit orders', 'delete orders', 'delete any order', 'administer order workflow');
 }
 
 /**
  * Implementation of hook_user().
  */
-function uc_order_user($op, &$edit, &$account, $category = null){
+function uc_order_user($op, &$edit, &$account, $category = NULL){
   global $user;
   switch ($op){
     case 'view':
-      if (user_access('view all orders') || $user->uid == $account->uid) {
-        $header = array(t('Date'), t('Order #'), t('Status'), t('Products'), t('Total'));
-        $rows = array();
-        $result = pager_query("SELECT o.order_id, o.created, os.title, SUM(op.qty) AS products, o.order_total AS total FROM {uc_orders} AS o LEFT JOIN {uc_order_statuses} AS os ON o.order_status = os.order_status_id LEFT JOIN {uc_order_products} AS op ON o.order_id = op.order_id WHERE o.uid = %d AND o.order_status IN ". uc_order_status_list('general', TRUE) ." GROUP BY o.order_id ORDER BY o.created DESC", 20, 0, "SELECT COUNT(*) FROM {uc_orders} WHERE uid = %d AND order_status NOT IN ". uc_order_status_list('specific', TRUE), $account->uid);
-        while ($order = db_fetch_object($result)){
-          $link = l($order->order_id, 'user/'. $account->uid .'/order/'. $order->order_id);
-          if (user_access('view all orders')){
-            $link .= '<span class="order-admin-icons">'. _uc_order_admin_icons($order) .'</span>';
-          }
-          $rows[] = array(
-            array('data' => date('m/d/Y', $order->created)),
-            array('data' => $link),
-            array('data' => $order->title),
-            array('data' => (!is_null($order->products) ? $order->products : 0), 'align' => 'center'),
-            array('data' => uc_currency_format($order->total, TRUE), 'align' => 'right'),
-          );
-        }
-        $items = array();
-        $items['orders'] = array('title' => t('Order History'),
-          'value' => theme('table', $header, $rows) . theme('pager', null, 20, 0),
+      if ($user->uid && ($user->uid == $account->uid || user_access('view all orders'))) {
+        $items['orders'] = array(
+          'value' => l(t('Click here to view your order history.'), 'user/'. $account->uid .'/orders'),
           'class' => 'member',
         );
         return array(t('Orders') => $items);
@@ -602,45 +597,6 @@ function uc_order_order_state() {
   );
 
   return $states;
-}
-
-/**
- * Ubercart's hook_order_actions to define default order actions.
- * Returns an array of arrays with the following keys: name, weight, 
- *   url (%order_id filters out), status (restrict it to an array of order
- *   statuses.. might need to limit this to on site setup since users can
- *   have different status ids), icon (img tag for icon if it can have one)
- */
-function uc_order_order_actions() {
-  $actions[] = array(
-    'name' => t('View'),
-    'weight' => 1,
-    'url' => 'admin/store/orders/%order_id',
-    'icon' => '<img src="'. base_path() . drupal_get_path('module', 'uc_store') .'/images/order_view.gif" alt="View order." />',
-    'title' => t('View order %order_id.'),
-  );
-
-  $actions[] = array(
-    'name' => t('Edit'),
-    'weight' => 2,
-    'url' => 'admin/store/orders/%order_id/edit',
-    'icon' => '<img src="'. base_path() . drupal_get_path('module', 'uc_store') .'/images/order_edit.gif" alt="Edit order." />',
-    'title' => t('Edit order %order_id.'),
-    'disable' => array('in_checkout'),
-    'callback' => 'uc_order_can_edit',
-  );
-
-  $actions[] = array(
-    'name' => t('Delete'),
-    'weight' => 10,
-    'url' => 'admin/store/orders/%order_id/delete',
-    'icon' => '<img src="'. base_path() . drupal_get_path('module', 'uc_store') .'/images/order_delete.gif" alt="Delete order." />',
-    'title' => t('Delete order %order_id.'),
-    'enable' => array('in_checkout', 'pending'),
-    'callback' => 'uc_order_can_delete',
-  );
-
-  return $actions;
 }
 
 /**
@@ -1103,11 +1059,11 @@ function uc_order_panes_form() {
 function uc_order_admin($sql = NULL, $search = FALSE) {
   $header = array(
     array('data' => t('Actions')),
-    array('data' => t('Order ID')),
+    array('data' => t('Order ID'), 'field' => 'o.order_id', 'sort' => 'desc'),
     array('data' => t('Customer')),
-    array('data' => t('Total'), 'align' => 'center'),
-    array('data' => t('Purchase Date'), 'align' => 'center'),
-    array('data' => t('Status')),
+    array('data' => t('Total'), 'align' => 'center', 'field' => 'o.order_total'),
+    array('data' => t('Purchase Date'), 'align' => 'center', 'field' => 'o.created'),
+    array('data' => t('Status'), 'field' => 'os.title'),
   );
 
   if (is_null($sql)) {
@@ -1115,19 +1071,19 @@ function uc_order_admin($sql = NULL, $search = FALSE) {
   
     if (arg(3) == 'sort' && !is_null(arg(4))) {
       $_SESSION['sort_status'] = arg(4);
-      $status = "o.order_status = '". arg(4) ."'";
+      $where = "WHERE o.order_status = '". arg(4) ."'";
     }
     else {
       if (isset($_SESSION['sort_status']) && !is_null($_SESSION['sort_status'])) {
-        $status = "o.order_status = '". $_SESSION['sort_status'] ."'";
+        $where = "WHERE o.order_status = '". $_SESSION['sort_status'] ."'";
       }
       else {
-        $status = 'o.order_status IN '. uc_order_status_list('general', TRUE);
+        $where = 'WHERE o.order_status IN '. uc_order_status_list('general', TRUE);
       }
     }
     $sql = 'SELECT o.order_id, o.uid, o.billing_first_name, o.billing_last_name, o.order_total, '
     .'o.order_status, o.created, os.title FROM {uc_orders} o LEFT JOIN {uc_order_statuses} os '
-    .'ON o.order_status = os.order_status_id WHERE '. $status . (($sort == NULL) ? ' ORDER BY o.created DESC' : $sort);
+    .'ON o.order_status = os.order_status_id '. $where . tablesort_sql($header);
   }
 
   $address = variable_get('uc_customer_list_address', 'billing');
@@ -1159,12 +1115,13 @@ function uc_order_admin($sql = NULL, $search = FALSE) {
     } 
     $rows[] = array(
       'data' => array(
-        array('data' => _uc_order_admin_icons($order), 'nowrap' => 'nowrap'),
+        array('data' => uc_order_actions($order, TRUE), 'nowrap' => 'nowrap'),
         array('data' => $order->order_id),
-        array('data' => $order_name, 'class' => 'nowrap'),
+        array('data' => $order_name, 'nowrap' => 'nowrap'),
         array('data' => uc_currency_format($order->order_total, TRUE), 'align' => 'right', 'nowrap' => 'true'),
         array('data' => date('m/d/Y', $order->created), 'align' => 'center'),
-        array('data' => $order->title)),
+        array('data' => $order->title)
+      ),
       'id' => 'order-'. $order->order_id,
     );
   }
@@ -1178,7 +1135,7 @@ function uc_order_admin($sql = NULL, $search = FALSE) {
              .'</td></tr></tbody></table>';
   }
 
-  $output .= theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-orders-table', 'style' => 'clear: right;'));
+  $output .= theme('table', $header, $rows, array('class' => 'uc-orders-table'));
   $output .= theme('pager', NULL, variable_get('uc_order_number_displayed', 30), 0);
   return $output;
 }
@@ -1213,7 +1170,7 @@ function uc_order_select_form_submit($form_id, $form_values) {
  * Create the order status select box on the order overview screen.
  */
 function uc_order_admin_sort_form() {
-  $options = array('-1' => t('All Orders'));
+  $options = array('-1' => t('Active orders'));
 
   foreach (uc_order_status_list() as $status) {
     $options[$status['id']] = $status['title'];
@@ -1554,6 +1511,49 @@ function uc_order_search_form_submit($form_id, $form_values) {
 }
 
 /**
+ * Returns the sortable table listing of a customer's orders.
+ *
+ * @param $uid
+ *   The user ID whose orders you wish to list.
+ */
+function uc_order_history($uid) {
+  drupal_set_title(t('My order history'));
+
+  $breadcrumb = drupal_get_breadcrumb();
+  $breadcrumb[] = l(t('My account'), 'user/'. arg(1));
+  drupal_set_breadcrumb($breadcrumb);
+
+  $header = array(
+    array('data' => t('Date'), 'field' => 'o.created', 'sort' => 'desc'),
+    array('data' => t('Order #'), 'field' => 'o.order_id'),
+    array('data' => t('Status'), 'field' => 'os.title'),
+    array('data' => t('Products'), 'field' => 'products'),
+    array('data' => t('Total'), 'field' => 'o.order_total')
+  );
+
+  $result = pager_query("SELECT o.order_id, o.created, os.title, SUM(op.qty) AS products, o.order_total AS total FROM {uc_orders} AS o LEFT JOIN {uc_order_statuses} AS os ON o.order_status = os.order_status_id LEFT JOIN {uc_order_products} AS op ON o.order_id = op.order_id WHERE o.uid = %d AND o.order_status IN ". uc_order_status_list('general', TRUE) ." GROUP BY o.order_id". tablesort_sql($header), 20, 0, "SELECT COUNT(*) FROM {uc_orders} WHERE uid = %d AND order_status NOT IN ". uc_order_status_list('specific', TRUE), $uid);
+
+  // Build a table based on the customer's orders.
+  while ($order = db_fetch_object($result)){
+    $link = l($order->order_id, 'user/'. $uid .'/order/'. $order->order_id);
+    if (user_access('view all orders')){
+      $link .= '<span class="order-admin-icons">'. uc_order_actions($order, TRUE) .'</span>';
+    }
+    $rows[] = array(
+      array('data' => date('m/d/Y', $order->created)),
+      array('data' => $link, 'nowrap' => 'nowrap'),
+      array('data' => $order->title),
+      array('data' => (!is_null($order->products) ? $order->products : 0), 'align' => 'center'),
+      array('data' => uc_currency_format($order->total, TRUE), 'align' => 'right'),
+    );
+  }
+
+  $output = theme('table', $header, $rows) . theme('pager', null, 20, 0);
+
+  return $output;
+}
+
+/**
  * Display the order view screen, constructed via hook_order_pane().
  */
 function uc_order_view($order_id, $view = 'view') {
@@ -1563,6 +1563,12 @@ function uc_order_view($order_id, $view = 'view') {
     if ($order === FALSE || (!user_access('view all orders') && $order->uid != arg(1))) {
       drupal_goto('user/'. arg(1));
     }
+  }
+
+  if ($view == 'customer') {
+    $breadcrumb = drupal_get_breadcrumb();
+    $breadcrumb[] = l(t('Order history'), 'user/'. arg(1) .'/orders');
+    drupal_set_breadcrumb($breadcrumb);
   }
 
   if ($view == 'invoice') {
@@ -1616,11 +1622,6 @@ function uc_order_edit($order_id) {
     drupal_goto('admin/store/orders');
   }
 
-  if (!uc_order_can_edit($order)) {
-    drupal_set_message(t('It is not possible to edit order %id.', array('%id' => $order->order_id)));
-    drupal_goto('admin/store/orders');
-  }
-
   $output = drupal_get_form('uc_order_edit_form', $order);
 
   return $output;
@@ -1657,9 +1658,6 @@ function uc_order_edit_form($order) {
 }
 
 function theme_uc_order_edit_form($form) {
-  // To display this like a normal ol' form, uncomment the following line:
-  // return drupal_render($form);
-
   $panes = _order_pane_list();
   foreach ($panes as $pane) {
     if (in_array('edit', $pane['show']) &&
@@ -2564,8 +2562,9 @@ function uc_order_load($order_id) {
 
   $result = db_query("SELECT * FROM {uc_orders} WHERE order_id = %d", $order_id);
 
-  if (db_num_rows($result) == 0)
+  if (db_num_rows($result) == 0) {
     return FALSE;
+  }
 
   $order = db_fetch_object($result);
 
@@ -2598,23 +2597,29 @@ function uc_order_load($order_id) {
 }
 
 /**
- * Delete an order.
+ * Deletes an order and tells other modules to do the same.
+ *
+ * @param $order_id
+ *   The ID of the order you wish to delete.
  */
 function uc_order_delete($order_id) {
-  if (is_null($order_id) || $order_id == 0)
-    return;
+  $order = uc_order_load($order_id);
 
-  // Invoke hook_order() in enabled modules.
-  foreach (module_implements('order') as $module) {
-    $func = $module .'_order';
-    $func('delete', $order_id, $null);
+  // Perform the operations if we're deleting a valid order.
+  if ($order !== FALSE) {
+    // Invoke hook_order() in enabled modules.
+    foreach (module_implements('order') as $module) {
+      $func = $module .'_order';
+      $func('delete', $order, $null, NULL);
+    }
+
+    // Delete data from the appropriate Ubercart order tables.
+    db_query("DELETE FROM {uc_orders} WHERE order_id = %d", $order_id);
+    db_query("DELETE FROM {uc_order_products} WHERE order_id = %d", $order_id);
+    db_query("DELETE FROM {uc_order_comments} WHERE order_id = %d", $order_id);
+    db_query("DELETE FROM {uc_order_admin_comments} WHERE order_id = %d", $order_id);
+    db_query("DELETE FROM {uc_order_log} WHERE order_id = %d", $order_id);
   }
-
-  db_query("DELETE FROM {uc_orders} WHERE order_id = %d", $order_id);
-  db_query("DELETE FROM {uc_order_products} WHERE order_id = %d", $order_id);
-  db_query("DELETE FROM {uc_order_comments} WHERE order_id = %d", $order_id);
-  db_query("DELETE FROM {uc_order_admin_comments} WHERE order_id = %d", $order_id);
-  db_query("DELETE FROM {uc_order_log} WHERE order_id = %d", $order_id);
 }
 
 /**
@@ -2701,23 +2706,61 @@ function uc_order_load_line_items($order, $stored) {
 }
 
 /**
- * Update an order's status.
+ * Update an order's status as long as no one objects.
+ *
+ * @param $order_id
+ *   The ID of the order to be updated.
+ * @param $status
+ *   The new status ID we want to move the order to.
+ * @return
+ *   TRUE or FALSE depending on the success of the update.
  */
 function uc_order_update_status($order_id, $status) {
-  $return = module_invoke_all('order', 'update', $order_id, $status);
-  for ($i = 0; $i < count($return); $i++) {
-    if ($return[$i] === FALSE) {
-      return FALSE;
-    }
+  // Return FALSE if an invalid $status is specified.
+  if (uc_order_status_data($status, 'id') == NULL) {
+    return FALSE;
   }
 
-  db_query("UPDATE {uc_orders} SET order_status = '%s' WHERE order_id = %d", $status, $order_id);
+  $order = uc_order_load($order_id);
 
-  return TRUE;
+  // Attempt the update if the order exists.
+  if ($order !== FALSE) {
+    // Return false if any module says the update is not good to go.
+    $return = module_invoke_all('order', 'can_update', $order, $status);
+    for ($i = 0; $i < count($return); $i++) {
+      if ($return[$i] === FALSE) {
+        return FALSE;
+      }
+    }
+
+    // Otherwise perform the update and log the changes.
+    db_query("UPDATE {uc_orders} SET order_status = '%s' WHERE order_id = %d", $status, $order_id);
+    module_invoke_all('order', 'update', $order, $status);
+
+    $change = array(t('Order status') => array('old' => $order->order_status, 'new' => $status));
+    uc_order_log_changes($order->order_id, $change);
+
+    $updated = uc_order_load($order_id);
+    workflow_ng_invoke_event('order_status_update', $order, $updated);
+
+    return TRUE;
+  }
+
+  // Return FALSE if the order didn't exist.
+  return FALSE;
 }
 
 /**
  * Log changes made to an order.
+ *
+ * @param $order_id
+ *   The ID of the order that was changed.
+ * @param $changes
+ *   An array of changes with the keys being the name of the field changed and
+ *     the values being associative arrays with the keys 'old' and 'new' to
+ *     represent the old and new values of the field.
+ * @return
+ *   TRUE or FALSE depending on whether or not changes were logged.
  */
 function uc_order_log_changes($order_id, $changes) {
   global $user;
@@ -2765,83 +2808,6 @@ function uc_order_address($order, $type) {
   }
 
   return $address;
-}
-
-/**
- * Generate the shortcut icons for available actions on an order.
- */
-function _uc_order_admin_icons($order) {
-  $actions = uc_order_get_actions($order->order_status);
-  foreach($actions as $action) {
-    if (isset($action['callback']) && function_exists($action['callback'])) {
-      if (!$action['callback']($order)) {
-        continue;
-      }
-    }
-    if (!is_null($action['icon']) && $action['icon'] != '') {
-      $output .= l($action['icon'], str_replace('%order_id', $order->order_id, $action['url']), array('title' => str_replace('%order_id', $order->order_id, $action['title'])), NULL, NULL, NULL, TRUE);
-    }
-  }
-  
-  return $output;
-}
-
-/**
- * Return TRUE if an order is editable.
- */
-function uc_order_can_edit($order) {
-  $actions = uc_order_get_actions($order->order_status);
-  foreach ($actions as $action) {
-    if ($action['name'] == t('Edit')) {
-      return TRUE;
-    }
-  }
-
-  return FALSE;
-}
-
-/**
- * Return TRUE if an order can be deleted.
- */
-function uc_order_can_delete($order) {
-  if (module_exists('uc_payment')) {
-    if (uc_payment_load_payments($order->order_id) !== FALSE) {
-      return FALSE;
-    }
-  }
-
-  $actions = uc_order_get_actions($order->order_status);
-  foreach ($actions as $action) {
-    if ($action['name'] == t('Delete')) {
-      return TRUE;
-    }
-  }
-
-  return FALSE;
-}
-
-/**
- * Return the valid actions for $order_status.
- */
-function uc_order_get_actions($order_status) {
-  $actions = module_invoke_all('order_actions');
-  foreach($actions as $action) {
-    if (is_array($action['enable']) && count($action['enable']) > 0) {
-      if (in_array($order_status, $action['enable'])) {
-        $valid_actions[] = $action;
-      }
-    }
-    elseif (is_array($action['disable']) && count($action['disable']) > 0) {
-      if (!in_array($order_status, $action['disable'])) {
-        $valid_actions[] = $action;
-      }
-    }
-    else {
-      $valid_actions[] = $action;
-    }
-  }
-
-  return $valid_actions;
 }
 
 /**
@@ -3157,3 +3123,81 @@ function uc_order_status_data($status_id, $key) {
   return $statuses[$status_id][$key];
 }
 
+/**
+ * Return the actions a user may perform on an order.
+ *
+ * @param $icon_html
+ *   Specify whether or not to return the result as an HTML string with the
+ *     order action icon links.
+ * @return
+ *   Valid actions for an order; returned according to the $icon_html parameter.
+ */
+function uc_order_actions($order, $icon_html = FALSE) {
+  $state = uc_order_status_data($order->order_status, 'state');
+  $order_id = array('!order_id' => $order->order_id);
+
+  if (user_access('view all orders')) {
+    $alt = t('View order !order_id.', $order_id);
+    $actions[] = array(
+      'name' => t('View'),
+      'url' => 'admin/store/orders/'. $order->order_id,
+      'icon' => '<img src="'. base_path() . drupal_get_path('module', 'uc_store') .'/images/order_view.gif" alt="'. $alt .'" />',
+      'title' => $alt,
+    );
+  }
+
+  if (user_access('edit orders')) {
+    $alt = t('Edit order !order_id.', $order_id);
+    $actions[] = array(
+      'name' => t('Edit'),
+      'url' => 'admin/store/orders/'. $order->order_id .'/edit',
+      'icon' => '<img src="'. base_path() . drupal_get_path('module', 'uc_store') .'/images/order_edit.gif" alt="'. $alt .'" />',
+      'title' => $alt,
+    );
+  }
+
+  if (user_access('delete orders')) {
+    $can_delete = TRUE;
+    $return = module_invoke_all('order', 'can_delete', $order, NULL);
+    if (!empty($return)) {
+      foreach ($return as $response) {
+        if ($response === FALSE) {
+          $can_delete = FALSE;
+        }
+      }
+    }
+    if (user_access('delete any order') || ($state != 'completed' && $can_delete)) {
+      $alt = t('Delete order !order_id.', $order_id);
+      $actions[] = array(
+        'name' => t('Delete'),
+        'url' => 'admin/store/orders/'. $order->order_id .'/delete',
+        'icon' => '<img src="'. base_path() . drupal_get_path('module', 'uc_store') .'/images/order_delete.gif" alt="'. $alt .'" />',
+        'title' => $alt,
+      );
+    }
+  }
+
+  if ($icon_html) {
+    foreach($actions as $action) {
+      $output .= l($action['icon'], $action['url'], array('title' => $action['title']), NULL, NULL, NULL, TRUE);
+    }
+    return $output;
+  }
+  else {
+    return $actions;
+  }
+}
+
+/**
+ * Return TRUE if an order can be deleted by the current user.
+ */
+function uc_order_can_delete($order) {
+  $can_delete = FALSE;
+  foreach (uc_order_actions($order) as $action) {
+    if ($action['name'] == t('Delete')) {
+      $can_delete = TRUE;
+    }
+  }
+
+  return $can_delete;
+}

@@ -44,7 +44,7 @@ function uc_shipping_install(){
         `length` float UNSIGNED NULL,
         `width` float UNSIGNED NULL,
         `height` float UNSIGNED NULL,
-        `units` varchar(255) NULL,
+        `length_units` varchar(255) NULL,
         `value` decimal(10,2) UNSIGNED NULL,
         `sid` mediumint(11) UNSIGNED NULL,
         `tracking_number` varchar(255) NULL,
@@ -98,7 +98,7 @@ function uc_shipping_install(){
         length float UNSIGNED NULL,
         width float UNSIGNED NULL,
         height float UNSIGNED NULL,
-        units varchar(255) NULL,
+        length_units varchar(255) NULL,
         value decimal(10,2) UNSIGNED NULL,
         sid integer UNSIGNED NULL,
         tracking_number varchar(255) NULL,
@@ -119,4 +119,18 @@ function uc_shipping_uninstall(){
   db_query("DROP TABLE {uc_shipments}");
   db_query("DROP TABLE {uc_packages}");
   db_query("DROP TABLE {uc_packaged_products}");
+}
+
+function uc_shipping_update_1(){
+  $ret = array();
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_packages} CHANGE units length_units varchar(255) NULL");
+    break;
+    case 'pgsql':
+      db_change_column($ret, 'uc_packages', 'units', 'length_units', 'varchar(255)', array('not null' => false));
+    break;
+  }
+  return $ret;
 }

@@ -8,14 +8,10 @@ function uc_taxes_install(){
       db_query("CREATE TABLE {uc_taxes} (
         `id` mediumint(9) NOT NULL,
         `name` varchar(255) NOT NULL,
-        `area` varchar(255) NOT NULL,
-        `type` enum('code','zone','country') NOT NULL,
         `rate` float unsigned NOT NULL default '0',
         `taxed_product_types` text NOT NULL,
         `taxed_line_items` text NOT NULL,
-        `cumulative` tinyint(1) NOT NULL default '0',
         `weight` tinyint(2) NOT NULL default '0',
-        `conditions` text NOT NULL,
         PRIMARY KEY  (`id`)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
     break;
@@ -23,14 +19,10 @@ function uc_taxes_install(){
       db_query("CREATE TABLE {uc_taxes} (
         id integer NOT NULL default 0,
         name varchar(255) NOT NULL default '',
-        area varchar(255) NOT NULL default '',
-        type enum('code','zone','country') NOT NULL default 'code',
         rate float unsigned NOT NULL default 0,
         taxed_product_types text NOT NULL default '',
         taxed_line_items text NOT NULL default '',
-        cumulative smallint NOT NULL default 0,
         weight smallint NOT NULL default 0,
-        conditions text NOT NULL default '',
         PRIMARY KEY  (id)
       );");
       db_query("CREATE INDEX {uc_taxes}_id ON {uc_taxes} (id)");
@@ -136,5 +128,60 @@ function uc_taxes_update_5(){
   }
   db_query("UPDATE {uc_taxes} SET taxed_product_types = '%s'", serialize($types));
   
+  return $ret;
+}
+
+function uc_taxes_update_6(){
+  $ret = array();
+  if (module_exists('workflow_ng_ui')){
+    $configurations = array();
+    $taxes = uc_taxes_get_rates();
+    foreach ($taxes as $tax){
+      $configurations['uc_taxes_'. $tax->id] = array(
+        '#name' => 'uc_taxes_'. $tax->id,
+        '#label' => $tax->name,
+        '#event' => 'calculate_tax_'. $tax->id,
+        '#module' => 'uc_taxes',
+        '#active' => true,
+      );
+      $action = workflow_ng_use_action('uc_taxes_action_apply_tax', array(
+        '#label' => t('Apply @tax', array('@tax' => $tax->name)),
+      ));
+      switch ($tax->type){
+        case 'code':
+          $area_condition = workflow_ng_use_condition('uc_order_condition_delivery_postal_code', array(
+            '#label' => t('Is in postal code area @code', array('@code' => $tax->area)),
+            '#settings' => array(
+              'pattern' => $tax->area,
+            ),
+          ));
+        break;
+        case 'zone':
+          $zone = uc_get_zone_code($tax->area);
+          $area_condition = workflow_ng_use_condition('uc_order_condition_delivery_zone', array(
+            '#label' => t('Is in @zone', array('@zone' => $zone)),
+            '#settings' => array(
+              'zones' => array($tax->area),
+            ),
+          ));
+        break;
+        case 'country':
+          $country = uc_get_country_data(array('country_id' => $tax->area));
+          $country_name = $country[0]['country_name'];
+          $area_condition = workflow_ng_use_condition('uc_order_condition_delivery_country', array(
+            '#label' => t('Is in @country', array('@country' => $country_name)),
+            '#settings' => array(
+              'countries' => array($tax->area),
+            ),
+          ));
+        break;
+      }
+      $configurations['uc_taxes_'. $tax->id] = workflow_ng_configure($configurations['uc_taxes_'. $tax->id], $action, $area_condition);
+      workflow_ng_ui_save_configuration($configurations['uc_taxes_'. $tax->id]);
+    }
+    $ret[] = update_sql("ALTER TABLE {uc_taxes} DROP area");
+    $ret[] = update_sql("ALTER TABLE {uc_taxes} DROP type");
+    $ret[] = update_sql("ALTER TABLE {uc_taxes} DROP conditions");
+  }
   return $ret;
 }

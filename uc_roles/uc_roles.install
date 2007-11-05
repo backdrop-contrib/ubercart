@@ -1,0 +1,69 @@
+<?php
+// $Id$
+
+function uc_roles_install(){
+  switch($GLOBALS['db_type']){
+    case 'mysqli':
+    case 'mysql':
+      db_query("CREATE TABLE {uc_roles_products} (
+				pfid mediumint(9) NOT NULL,
+				nid int(10) NOT NULL,
+        model varchar(255) default NULL,
+        rid mediumint(11) NOT NULL,
+				duration smallint(4) default NULL,
+				granularity varchar(32) default NULL,
+				shippable BOOL NOT NULL,
+				KEY pfid (pfid),
+        KEY nid (nid),
+        KEY model (model),
+        KEY rid (rid)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 COLLATE utf8_unicode_ci */ ");
+      db_query("CREATE TABLE {uc_roles_expirations} (
+        uid mediumint(11) NOT NULL,
+        rid mediumint(11) NOT NULL,
+				expiration int(11) NOT NULL,
+				notified tinyint(2) default NULL,
+        KEY uid (uid),
+        KEY rid (rid)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 COLLATE utf8_unicode_ci */ ");
+      break;
+    case 'pgsql':
+      break;
+  }
+}
+
+function uc_roles_uninstall() {
+	db_query("DROP TABLE IF EXISTS {uc_roles_products}");
+	db_query("DROP TABLE IF EXISTS {uc_roles_expirations}");
+}
+
+function uc_roles_update_1() {
+	$ret = array();
+	
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_roles_products} CHANGE expiration duration SMALLINT( 4 ) NULL DEFAULT NULL");
+      $ret[] = update_sql("ALTER TABLE {uc_roles_products} CHANGE model model VARCHAR( 255 ) CHARACTER SET utf8 COLLATE utf8_unicode_ci NULL");
+			break;
+    case 'pgsql':
+    	break;
+  }
+	
+	return $ret;
+}
+
+function uc_roles_update_2() {
+	$ret = array();
+	
+  switch ($GLOBALS['db_type']){
+    case 'mysql':
+    case 'mysqli':
+			$ret[] = update_sql("ALTER TABLE {uc_roles_products} ADD shippable BOOL NOT NULL");
+			break;
+    case 'pgsql':
+    	break;
+  }
+	
+	return $ret;
+}
