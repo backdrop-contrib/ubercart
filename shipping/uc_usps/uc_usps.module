@@ -107,12 +107,34 @@ function uc_usps_configuration(){
       '#module' => 'uc_usps',
       '#active' => $enabled['usps'],
     ),
+    'uc_usps_get_intl_quote' => array(
+      '#label' => t('Shipping quote from USPS Intl.'),
+      '#event' => 'get_quote_from_usps_intl',
+      '#module' => 'uc_usps',
+      '#active' => $enabled['usps_intl'],
+    ),
   );
+  // Domestic areas include U.S., American Samoa, Guam, Puerto Rico, and the Virgin Islands
+  $countries = array(16, 316, 630, 840, 850);
+  $us_area_condition = workflow_ng_use_condition('uc_order_condition_delivery_country', array(
+    '#label' => t('Is in domestic US areas (US, AS, GU, PR, VI)'),
+    '#settings' => array(
+      'countries' => $countries,
+    ),
+  ));
+  $not_us_area_condition = workflow_ng_use_condition('uc_order_condition_delivery_country', array(
+    '#label' => t('Is not in domestic US areas (US, AS, GU, PR, VI)'),
+    '#negate' => true,
+    '#settings' => array(
+      'countries' => $countries,
+    ),
+  ));
   
   $action = workflow_ng_use_action('uc_quote_action_get_quote', array(
     '#label' => t('Fetch a shipping quote'),
   ));
-  $configurations['uc_usps_get_quote'] = workflow_ng_configure($configurations['uc_usps_get_quote'], $action);
+  $configurations['uc_usps_get_quote'] = workflow_ng_configure($configurations['uc_usps_get_quote'], $action, $us_area_condition);
+  $configurations['uc_usps_get_intl_quote'] = workflow_ng_configure($configurations['uc_usps_get_intl_quote'], $action, $not_us_area_condition);
   
   return $configurations;
 }
@@ -140,20 +162,33 @@ function uc_usps_shipping_type(){
  * Implementation of Übercart's hook_shipping_method().
  */
 function uc_usps_shipping_method(){
-  $enabled = variable_get('uc_quote_enabled', array('usps' => true));
-  $weight = variable_get('uc_quote_method_weight', array('usps' => 0));
+  $enabled = variable_get('uc_quote_enabled', array('usps' => true, 'usps_intl' => true));
+  $weight = variable_get('uc_quote_method_weight', array('usps' => 0, 'usps_intl' => 1));
   
-  $methods = array('usps' => array(
-    'id' => 'usps',
-    'title' => t('U.S. Postal Service'),
-    'quote' => array(
-      'type' => 'small_package',
-      'callback' => 'uc_usps_quote',
-      'accessorials' => _uc_usps_services(),
+  $methods = array(
+    'usps' => array(
+      'id' => 'usps',
+      'title' => t('U.S. Postal Service'),
+      'quote' => array(
+        'type' => 'small_package',
+        'callback' => 'uc_usps_quote',
+        'accessorials' => _uc_usps_services(),
+      ),
+      'enabled' => $enabled['usps'],
+      'weight' => $weight['usps'],
     ),
-    'enabled' => $enabled['usps'],
-    'weight' => $weight['usps'],
-  ));
+    'usps_intl' => array(
+      'id' => 'usps_intl',
+      'title' => t('U.S. Postal Service (Intl.)'),
+      'quote' => array(
+        'type' => 'small_package',
+        'callback' => 'uc_usps_intl_quote',
+        'accessorials' => _uc_usps_intl_services(),
+      ),
+      'enabled' => $enabled['usps_intl'],
+      'weight' => $weight['usps_intl'],
+    ),
+  );
   
   return $methods;
 }
@@ -178,6 +213,12 @@ function uc_usps_admin_settings(){
     '#title' => t('USPS Services'),
     '#default_value' => variable_get('uc_usps_services', _uc_usps_services()),
     '#options' => _uc_usps_services(),
+    '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
+  );
+  $form['uc_usps_intl_services'] = array('#type' => 'checkboxes',
+    '#title' => t('USPS International Services'),
+    '#default_value' => variable_get('uc_usps_intl_services', _uc_usps_intl_services()),
+    '#options' => _uc_usps_intl_services(),
     '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
   );
   $form['uc_usps_markup'] = array('#type' => 'textfield',
@@ -216,7 +257,255 @@ function uc_usps_quote($products, $details){
   include_once(drupal_get_path('module', 'uc_store') .'/includes/simplexml.php');
   //drupal_set_message('<pre>'. print_r($products, true) .'</pre>');
   //drupal_set_message('<pre>'. print_r($details, true) .'</pre>');
+  $packages = _uc_usps_package_products($products);
   
+  $orig = variable_get('uc_quote_store_default_address', new stdClass());
+  $orig->email = variable_get('uc_store_email', '');
+  
+  $dest = (object)$details;
+  
+  // TODO: Check for international shipping and change these accordingly.
+  // Hopefully the response XML isn't too different.
+  $usps_server = 'production.shippingapis.com';
+  $api_dll = 'ShippingAPI.dll';
+  $connection_url = 'http://'. $usps_server .'/'. $api_dll;
+  $request = uc_usps_rate_request($packages, $orig, $dest);
+
+  $result = drupal_http_request($connection_url, array(), 'POST', $request);
+  if (user_access('configure quotes') && variable_get('uc_quote_display_debug', false)){
+    $services['data']['debug'] .= htmlentities($result->data) ."<br />\n";
+  }
+  $response = new JSimpleXML();
+  $response->loadString($result->data);
+  
+  $services = array();
+  if (is_array($response->document->package)){
+    foreach ($response->document->package as $package){
+      if (isset($package->error)){
+        
+      }
+      else{
+        foreach ($package->postage as $postage){
+          $attr = $postage->attributes();
+          if ($attr['classid'] === 0 || $attr['classid'] === '0'){
+            $attr['classid'] = 'zero';
+          }
+          $services[$attr['classid']]['label'] = t('U.S.P.S. @service', array('@service' => $postage->mailservice[0]->data()));
+          $services[$attr['classid']]['rate'] += uc_usps_markup($postage->rate[0]->data());
+        }
+      }
+    }
+  }
+  $usps_services = array_filter(variable_get('uc_usps_services', _uc_usps_services()));
+  foreach ($services as $service => $quote){
+    if (!in_array($service, $usps_services)){
+      unset($services[$service]);
+    }
+  }
+  $transitreq  = 'USERID="' . variable_get('uc_usps_user_id', '') .'">' .
+    '<OriginZip>' . $orig->postal_code . '</OriginZip>' .
+    '<DestinationZip>' . $dest->postal_code . '</DestinationZip>';
+  foreach ($services as $key => $quote){
+    if (isset($quote['rate'])){
+      $services[$key]['format'] = uc_currency_format($quote['rate']);
+      $services[$key]['option_label'] = $quote['label'];
+      if (strpos($quote['label'], 'Express') !== false){
+        $transreq = 'API=ExpressMailCommitment&XML='. urlencode(str_replace('Zip', 'ZIP', '<ExpressMailCommitmentRequest ' . $transitreq . '<Date/></ExpressMailCommitmentRequest>'));
+      }
+      elseif (strpos($quote['label'], 'Priority') !== false){
+        $transreq = 'API=PriorityMail&XML='. urlencode( '<PriorityMailRequest ' . $transitreq . '</PriorityMailRequest>');
+      }
+      else{
+        $transreq = 'API=StandardB&XML='. urlencode( '<StandardBRequest ' . $transitreq . '</StandardBRequest>');
+      }
+      $result = drupal_http_request($connection_url, array(), 'POST', $transreq);
+      if (user_access('configure quotes') && variable_get('uc_quote_display_debug', false)){
+        $services['data']['debug'] .= htmlentities($result->data) ."<br />\n";
+      }
+      $transresp = new JSimpleXML();
+      $transresp->loadString($result->data);
+      if (isset($transresp->document)){
+        if ($transresp->document->name() == 'Error'){
+          $services[$key]['error'][] = $transresp->document->description[0]->data();
+        }
+        else if (isset($transresp->document->days)){
+          $services[$key]['transit'] = $transresp->document->days[0]->data();
+          $services[$key]['option_label'] .= format_plural($services[$key]['transit'], ', 1 day in transit', ', @count days in transit');
+        }
+        else if (isset($transresp->document->commitment)){
+          $services[$key]['commitment'] = $transresp->document->commitment[0]->commitmentname[0]->data() .' -- '. $transresp->document->commitment[0]->commitmenttime[0]->data();
+          $services[$key]['option_label'] .= ', '. $services[$key]['commitment'];
+        }
+      }
+    }
+  }
+  
+  uasort($services, '_uc_usps_sort_quotes');
+  
+  return $services;
+}
+
+/**
+ * Callback for retrieving USPS shipping quote to other countries.
+ *
+ * @param $products
+ *   Array of cart contents.
+ * @param $details
+ *   Order details other than product information.
+ * @return
+ *   JSON object containing rate, error, and debugging information.
+ */
+function uc_usps_intl_quote($products, $details){
+  include_once(drupal_get_path('module', 'uc_store') .'/includes/simplexml.php');
+
+  
+  $packages = _uc_usps_package_products($products);
+
+  
+  $orig = variable_get('uc_quote_store_default_address', new stdClass());
+  $orig->email = variable_get('uc_store_email', '');
+  
+  $dest = (object)$details;
+  
+  $usps_server = 'production.shippingapis.com';
+  $api_dll = 'ShippingAPI.dll';
+  $connection_url = 'http://'. $usps_server .'/'. $api_dll;
+  
+  $request = uc_usps_intl_rate_request($packages, $orig, $dest);
+  $result = drupal_http_request($connection_url, array(), 'POST', $request);
+  if (user_access('configure quotes') && variable_get('uc_quote_display_debug', false)){
+    $services['data']['debug'] .= htmlentities($result->data) ."<br />\n";
+  }
+  $response = new JSimpleXML();
+  $response->loadString($result->data);
+   
+  // drupal_set_message('<pre>'. htmlentities($result->data) .'</pre>');
+  
+  $services = array();
+  if (is_array($response->document->package)){
+  
+    foreach ($response->document->package as $package){
+      if (isset($package->error)){
+        
+      }
+      else{
+        foreach ($package->service as $service){
+          $attr = $service->attributes();
+          if ($attr['id'] === 0 || $attr['id'] === '0'){
+            $attr['id'] = 'zero';
+          }
+          $services[$attr['id']]['label'] = t('USPS @service', array('@service' => $service->svcdescription[0]->data()));
+          $services[$attr['id']]['rate'] += uc_usps_markup($service->postage[0]->data());
+        }
+      }
+    }
+  }
+  
+  $usps_services = variable_get('uc_usps_intl_services', _uc_usps_intl_services());
+  foreach ($services as $service => $quote){
+    if (!in_array($service, $usps_services)){
+      unset($services[$service]);
+    }
+  }
+
+  foreach ($services as $key => $quote){
+    if (isset($quote['rate'])){
+      $services[$key]['format'] = uc_currency_format($quote['rate']);
+      $services[$key]['option_label'] = $quote['label'];
+    }
+  }
+  
+  uasort($services, '_uc_usps_sort_quotes');
+  
+  return $services;
+}  
+  
+
+
+/**
+ * Construct an XML quote request.
+ *
+ * @param $packages
+ *   Array of packages received from the cart.
+ * @param $origin
+ *   Delivery origin address information.
+ * @param $destination
+ *   Delivery destination address information.
+ * @return
+ *   RateV3Request XML document to send to USPS
+ */
+function uc_usps_rate_request($packages, $origin, $destination){
+  $request  = '<RateV3Request USERID="' . variable_get('uc_usps_user_id', '') . '">';
+  $services_count = 0;
+
+  foreach($packages as $package){
+    $request .= '<Package ID="' . $services_count . '">' .
+      '<Service>ALL</Service>' .
+      '<ZipOrigination>' . $origin->postal_code . '</ZipOrigination>' .
+      '<ZipDestination>' . $destination->postal_code . '</ZipDestination>' .
+      '<Pounds>' . intval($package->pounds) . '</Pounds>' .
+      '<Ounces>' . intval($package->ounces) . '</Ounces>' .
+      '<Container>' . $package->container . '</Container>' .
+      '<Size>' . $package->size . '</Size>' .
+      '<Machinable>' . ($package->machinable ? 'True' : 'False') . '</Machinable>' .
+      '</Package>';
+
+    $services_count++;
+  }
+  $request .= '</RateV3Request>';
+
+  $request = 'API=RateV3&XML=' . urlencode($request);
+  return $request;
+}
+
+/*
+ * uc_usps_intl_rate_request function (added by Erik - feel free to improve)
+ *
+ */
+ 
+function uc_usps_intl_rate_request($packages, $origin, $destination){
+  $request  = '<IntlRateRequest USERID="' . variable_get('uc_usps_user_id', '') . '">';
+  $services_count = 0;
+
+  // This needs to be international name per USPS website. See http://pe.usps.com/text/Imm/immctry.htm
+  $shipto_country = uc_get_country_data(array('country_id' => $destination->country));
+  
+  foreach($packages as $package){
+    $request .= '<Package ID="' . $services_count . '">' .
+      '<Pounds>' . intval($package->pounds) . '</Pounds>' .
+      '<Ounces>' . intval($package->ounces) . '</Ounces>' .
+      '<MailType>Package</MailType>' .
+      '<Country>'.$shipto_country[0]['country_name'].'</Country>' .    
+      '</Package>';
+
+    $services_count++;
+  }
+  $request .= '</IntlRateRequest>';
+
+  $request = 'API=IntlRate&XML=' . urlencode($request);
+  return $request;
+}
+ 
+/**
+ * Modify the rate received from USPS before displaying to the customer.
+ */
+function uc_usps_markup($rate){
+  $markup = variable_get('uc_usps_markup', '0%');
+  if (strpos($markup, '%') !== false){
+    return $rate + $rate * floatval(rtrim($markup, '%')) / 100;
+  }
+  else if (strpos($markup, '$') !== false){
+    return $rate + floatval(ltrim($markup, '$'));
+  }
+  else if (floatval($markup)){
+    return $rate + $rate * floatval($markup);
+  }
+  else{
+    return $rate;
+  }
+}
+
+function _uc_usps_package_products($products){
   $packages = array();
   if (variable_get('uc_usps_all_in_one', true)){
     $package = new stdClass();
@@ -345,146 +634,7 @@ function uc_usps_quote($products, $details){
       }
     }
   }
-  
-  $orig = variable_get('uc_quote_store_default_address', new stdClass());
-  $orig->email = variable_get('uc_store_email', '');
-  
-  $dest = (object)$details;
-  
-  // TODO: Check for international shipping and change these accordingly.
-  // Hopefully the response XML isn't too different.
-  $usps_server = 'production.shippingapis.com';
-  $api_dll = 'ShippingAPI.dll';
-  $connection_url = 'http://'. $usps_server .'/'. $api_dll;
-  $request = uc_usps_rate_request($packages, $orig, $dest);
-
-  $result = drupal_http_request($connection_url, array(), 'POST', $request);
-  if (user_access('configure quotes') && variable_get('uc_quote_display_debug', false)){
-    $services['data']['debug'] .= htmlentities($result->data) ."<br />\n";
-  }
-  $response = new JSimpleXML();
-  $response->loadString($result->data);
-  
-  $services = array();
-  if (is_array($response->document->package)){
-    foreach ($response->document->package as $package){
-      if (isset($package->error)){
-        
-      }
-      else{
-        foreach ($package->postage as $postage){
-          $attr = $postage->attributes();
-          if ($attr['classid'] === 0 || $attr['classid'] === '0'){
-            $attr['classid'] = 'zero';
-          }
-          $services[$attr['classid']]['label'] = t('U.S.P.S. @service', array('@service' => $postage->mailservice[0]->data()));
-          $services[$attr['classid']]['rate'] += uc_usps_markup($postage->rate[0]->data());
-        }
-      }
-    }
-  }
-  $usps_services = array_filter(variable_get('uc_usps_services', _uc_usps_services()));
-  foreach ($services as $service => $quote){
-    if (!in_array($service, $usps_services)){
-      unset($services[$service]);
-    }
-  }
-  $transitreq  = 'USERID="' . variable_get('uc_usps_user_id', '') .'">' .
-    '<OriginZip>' . $orig->postal_code . '</OriginZip>' .
-    '<DestinationZip>' . $dest->postal_code . '</DestinationZip>';
-  foreach ($services as $key => $quote){
-    if (isset($quote['rate'])){
-      $services[$key]['format'] = uc_currency_format($quote['rate']);
-      $services[$key]['option_label'] = $quote['label'];
-      if (strpos($quote['label'], 'Express') !== false){
-        $transreq = 'API=ExpressMailCommitment&XML='. urlencode(str_replace('Zip', 'ZIP', '<ExpressMailCommitmentRequest ' . $transitreq . '<Date/></ExpressMailCommitmentRequest>'));
-      }
-      elseif (strpos($quote['label'], 'Priority') !== false){
-        $transreq = 'API=PriorityMail&XML='. urlencode( '<PriorityMailRequest ' . $transitreq . '</PriorityMailRequest>');
-      }
-      else{
-        $transreq = 'API=StandardB&XML='. urlencode( '<StandardBRequest ' . $transitreq . '</StandardBRequest>');
-      }
-      $result = drupal_http_request($connection_url, array(), 'POST', $transreq);
-      if (user_access('configure quotes') && variable_get('uc_quote_display_debug', false)){
-        $services['data']['debug'] .= htmlentities($result->data) ."<br />\n";
-      }
-      $transresp = new JSimpleXML();
-      $transresp->loadString($result->data);
-      if (isset($transresp->document)){
-        if ($transresp->document->name() == 'Error'){
-          $services[$key]['error'][] = $transresp->document->description[0]->data();
-        }
-        else if (isset($transresp->document->days)){
-          $services[$key]['transit'] = $transresp->document->days[0]->data();
-          $services[$key]['option_label'] .= format_plural($services[$key]['transit'], ', 1 day in transit', ', @count days in transit');
-        }
-        else if (isset($transresp->document->commitment)){
-          $services[$key]['commitment'] = $transresp->document->commitment[0]->commitmentname[0]->data() .' -- '. $transresp->document->commitment[0]->commitmenttime[0]->data();
-          $services[$key]['option_label'] .= ', '. $services[$key]['commitment'];
-        }
-      }
-    }
-  }
-  
-  uasort($services, '_uc_usps_sort_quotes');
-  
-  return $services;
-}
-
-/**
- * Construct an XML quote request.
- *
- * @param $packages
- *   Array of packages received from the cart.
- * @param $origin
- *   Delivery origin address information.
- * @param $destination
- *   Delivery destination address information.
- * @return
- *   RateV3Request XML document to send to USPS
- */
-function uc_usps_rate_request($packages, $origin, $destination){
-  $request  = '<RateV3Request USERID="' . variable_get('uc_usps_user_id', '') . '">';
-  $services_count = 0;
-
-  foreach($packages as $package){
-    $request .= '<Package ID="' . $services_count . '">' .
-      '<Service>ALL</Service>' .
-      '<ZipOrigination>' . $origin->postal_code . '</ZipOrigination>' .
-      '<ZipDestination>' . $destination->postal_code . '</ZipDestination>' .
-      '<Pounds>' . intval($package->pounds) . '</Pounds>' .
-      '<Ounces>' . intval($package->ounces) . '</Ounces>' .
-      '<Container>' . $package->container . '</Container>' .
-      '<Size>' . $package->size . '</Size>' .
-      '<Machinable>' . ($package->machinable ? 'True' : 'False') . '</Machinable>' .
-      '</Package>';
-
-    $services_count++;
-  }
-  $request .= '</RateV3Request>';
-
-  $request = 'API=RateV3&XML=' . urlencode($request);
-  return $request;
-}
-
-/**
- * Modify the rate received from USPS before displaying to the customer.
- */
-function uc_usps_markup($rate){
-  $markup = variable_get('uc_usps_markup', '0%');
-  if (strpos($markup, '%') !== false){
-    return $rate + $rate * floatval(rtrim($markup, '%')) / 100;
-  }
-  else if (strpos($markup, '$') !== false){
-    return $rate + floatval(ltrim($markup, '$'));
-  }
-  else if (floatval($markup)){
-    return $rate + $rate * floatval($markup);
-  }
-  else{
-    return $rate;
-  }
+  return $packages;
 }
 
 /**
@@ -517,6 +667,22 @@ function _uc_usps_services(){
     13 => t('U.S.P.S. Express Mail Flat-Rate Envelope'),
     16 => t('U.S.P.S. Priority Mail Flat-Rate Envelope'),
     17 => t('U.S.P.S. Priority Mail Flat-Rate Box')
+  );
+}
+
+function _uc_usps_intl_services() {
+  return array(
+    'zero' => t('Priority Mail International'),
+    1 => t('Express Mail International (EMS)'),
+    2 => t('Priority Mail International'),
+    3 => t('First-Class Mail International'),
+    4 => t('Global Express Guaranteed'),
+    5 => t('Airmail Parcel Post'),
+    6 => t('Global Express Guaranteed Non-Document Rectangular'),
+    7 => t('Global Express Guaranteed Non-Document Non-Rectangular'),
+    8 => t('Priority Mail International Flat Rate Envelope'),
+    9 => t('riority Mail International Flat Rate Box'),
+    10 => t('Global Priority Mail - Variable Weight (Single)'),
   );
 }
 

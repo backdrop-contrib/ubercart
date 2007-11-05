@@ -740,10 +740,11 @@ function uc_object_options_form($obj_id, $type){
         $options[$oid] = $op_array->name;
         $form['prod_attr'][$key]['options'][$oid]['select'] = array('#type' => 'checkbox',
           '#default_value' => (isset($attribute->options[$oid]) ? 1 : 0),
+          '#title' => $op_array->name,
         );
-        $form['prod_attr'][$key]['options'][$oid]['name'] = array('#type' => 'markup',
+        /* $form['prod_attr'][$key]['options'][$oid]['name'] = array('#type' => 'markup',
           '#value' => $op_array->name,
-        );
+        ); */
         $form['prod_attr'][$key]['options'][$oid]['cost'] = array('#type' => 'textfield',
           '#title' => t('Cost'),
           '#default_value' => (is_null($op_array->cost) ? $op_array->default_cost : $op_array->cost),
@@ -790,7 +791,7 @@ function uc_object_options_form($obj_id, $type){
  */
 function theme_uc_object_options_form($form){
   $output = drupal_render($form['admin_link']);
-  $header = array(t('Attribute'), t('Default Option'), array('colspan' => 6, 'data' => t('Options')));
+  $header = array(t('Attribute'), t('Default Option'), array('colspan' => 5, 'data' => t('Options')));
   $rows = array();
   foreach (element_children($form['prod_attr']) as $key){
     $row = array();
@@ -801,14 +802,14 @@ function theme_uc_object_options_form($form){
       foreach (element_children($form['prod_attr'][$key]['default']) as $oid){
         $row[] = drupal_render($form['prod_attr'][$key]['default'][$oid]);
         $row[] = drupal_render($form['prod_attr'][$key]['options'][$oid]['select']);
-        $row[] = drupal_render($form['prod_attr'][$key]['options'][$oid]['name']);
+        //$row[] = drupal_render($form['prod_attr'][$key]['options'][$oid]['name']);
         $row[] = drupal_render($form['prod_attr'][$key]['options'][$oid]['cost']);
         $row[] = drupal_render($form['prod_attr'][$key]['options'][$oid]['price']);
         $row[] = drupal_render($form['prod_attr'][$key]['options'][$oid]['weight']);
         $row[] = drupal_render($form['prod_attr'][$key]['options'][$oid]['ordering']);
         // if not the first row for the attribute, make empty cells on the left
         if ($i != 0){ 
-          $row = array_pad($row, -8, '');
+          $row = array_pad($row, -7, '');
         }
         $i++;
         $rows[] = $row;
@@ -817,10 +818,10 @@ function theme_uc_object_options_form($form){
       unset($form['prod_attr'][$key]['default']);
     }
     else{
-      $row[] = array('data' => drupal_render($form['prod_attr'][$key]['default']), 'colspan' => 6);
+      $row[] = array('data' => drupal_render($form['prod_attr'][$key]['default']), 'colspan' => 7);
       $rows[] = $row;
     }
-    $rows[] = array(array('data' => '<hr />', 'colspan' => 8));
+    $rows[] = array(array('data' => '<hr />', 'colspan' => 7));
   }
   $output .= theme('table', $header, $rows, array('class' => 'product_attributes'));
   $output .= drupal_render($form);
@@ -884,6 +885,7 @@ function uc_object_options_form_submit($form_id, $form_values){
       }
     }
   }
+  drupal_set_message(t('The @type options have been saved.', array('@type' => $form_values['type'])));
 }
 
 /**
