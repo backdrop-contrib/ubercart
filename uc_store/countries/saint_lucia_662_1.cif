@@ -1,0 +1,56 @@
+<?php
+// $Id$
+
+/**
+ * First implement hook_install() using the name of the country as the base of
+ * the function name.
+ */
+function saint_lucia_install() {
+  // Make the entry in the country table.
+  // VALUES = Country ID, Country Name, 2-digit Code, 3-digit Code, File Version
+  db_query("INSERT INTO {uc_countries} VALUES (662, 'Saint Lucia', 'LC', 'LCA', 1)");
+
+  // Make the entries in the zones table.  Use %d for the zone_id and the
+  // function uc_get_zone_ids($num) as the second argument for db_query() where
+  // $num is the number of zones in the INSERT query.
+  // VALUES = %d for ID, Parent Country ID, Zone Abbreviation, Zone Name
+  db_query("INSERT INTO {uc_zones} VALUES "
+          ."(%d, 662, 'AR', 'Anse-la-Raye'),"
+          ."(%d, 662, 'CA', 'Castries'),"
+          ."(%d, 662, 'CH', 'Choiseul'),"
+          ."(%d, 662, 'DA', 'Dauphin'),"
+          ."(%d, 662, 'DE', 'Dennery'),"
+          ."(%d, 662, 'GI', 'Gros-Islet'),"
+          ."(%d, 662, 'LA', 'Laborie'),"
+          ."(%d, 662, 'MI', 'Micoud'),"
+          ."(%d, 662, 'PR', 'Praslin'),"
+          ."(%d, 662, 'SO', 'Soufriere'),"
+          ."(%d, 662, 'VF', 'Vieux-Fort')",
+          uc_get_zone_ids(11));
+
+  // Use uc_set_address_format() with the country ID as the first argument and
+  // an address format string as the second.  Documentation on address formats
+  // is available at:
+  // http://www.ubercart.org/ubercart_users_guide/country_settings#address_format_docs
+  uc_set_address_format(040,
+    "!company\r\n!first_name !last_name\r\n!street1\r\n!street2"
+   ."\r\n!city !zone_code !postal_code\r\n!country_name_if");
+}
+
+/**
+ * If necessary, implement hook_update() with $version being the only argument.
+ * Add a new case for each version update, and be sure to always include the
+ * latest changes in the install function.
+ */
+function austria_update($version) {
+}
+
+/**
+ * If necessary, implement hook_uninstall().  This requires no argument.  The
+ * store module automatically removes rows from the country and zones tables
+ * related to the country, and it unsets the address format.  This function is
+ * only necessary for other things you may have included in your country's
+ * installation process.
+ */
+function austria_uninstall() {
+}

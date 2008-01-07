@@ -1,0 +1,377 @@
+<?php
+// $Id$
+
+/**
+* @file
+* Allow ubercart products to have stock levels associated with their SKU
+*
+* uc_stock enables ubercart to manage stock for products. Store admins can set
+* the stock levels on a product edit page and a threshold for each SKU value 
+* When that threshold is reached admins can be optionally notified about the
+* current stock level. Store admins can view all stock levels in the reports 
+* section of ubercart
+*
+* Development sponsored by the Ubercart project.  http://www.ubercart.org
+*/
+
+/*******************************************************************************
+* Hook Functions (Drupal)
+*******************************************************************************/
+
+/**
+* Implementation of hook_help().
+*/
+function uc_stock_help($section) {
+  switch ($section) {
+		case 'node/'.arg(1).'/edit/stock':
+			return t("To keep track of stock for a particular product SKU, check the ")."<strong>".t("active")."</strong>".t(" checkbox and enter a value for ")."<strong>".t("stock")."</strong>".t(". When the ")."<strong>".t("threshold")."</strong>".t(" value is hit uc_stock will take action upon it. Clicking disable will set the ")."<strong>".t("stock & threshold")."</strong>".t(" values back to 0 and stop stock tracking for these product SKUs.");
+		case 'admin/store/reports/stock':
+			return t('This is the list of product SKUs that are currently active. Stock levels below their threshold have highlighted rows. To view only these rows, check the "Only show SKUs that are below their threshold" checkbox.');
+	}
+}
+
+/**
+* Implementation of hook_menu().
+*/
+function uc_stock_menu($may_cache) {
+  $items = array();
+	if ($may_cache) {
+    $items[] = array(
+      'path' => 'admin/store/reports/stock',
+      'title' => t('Stock reports'),
+      'description' => t('View reports for product stock'),
+      'callback' => 'drupal_get_form',
+			'callback arguments' => array('uc_stock_report_form'),
+      'access' => user_access('view reports'),
+      'type' => MENU_NORMAL_ITEM,
+    );
+    $items[] = array(
+      'path' => 'admin/store/settings/stock',
+      'title' => t('Stock settings'),
+      'description' => t('View the stock settings.'),
+			'callback' => 'drupal_get_form',
+			'callback arguments' => array('uc_stock_settings_form'),
+      'access' => user_access('administer store'),
+      'type' => MENU_NORMAL_ITEM,
+    );
+	}
+	else {
+		$items[] = array(
+	 		'path' => 'node/'.arg(1).'/edit/stock',
+			'title' => t('Stock'),
+			'callback' => 'drupal_get_form',
+			'callback arguments' => array('uc_stock_edit_form',arg(1)),
+			'weight' => 10,
+			'type' => MENU_LOCAL_TASK,
+		);
+		drupal_add_css(drupal_get_path('module', 'uc_stock') .'/uc_stock.css');
+	}
+	return $items;
+}
+
+/*******************************************************************************
+* Übercart Hooks
+*******************************************************************************/
+
+/**
+* Implementation of hook_order().
+*/
+function uc_stock_order($op, $order, $arg2) {
+	switch ($op) {
+		case 'submit':
+			$stock_warnings = array();
+			foreach ($order->products as $product) {
+				if (($stock = uc_stock_level($product->model)) !== FALSE) {
+					$stock_level = db_fetch_object(db_query("SELECT * FROM {uc_product_stock} WHERE sku = '%s'",$product->model));
+					if ((($stock-$product->qty) <= $stock_level->threshold) && !in_array($product->model,array_keys($stock_warnings)) ) {
+						$stock_level->stock -= $product->qty;
+						$stock_warnings[$product->model] = $stock_level;
+					}
+					uc_stock_adjust($product->model,-$product->qty);
+					uc_order_comment_save($order->order_id, 0, t('The stock level for %model_name has been decreased to !qty',array('%model_name' => $product->model,'!qty' => ($stock - $product->qty))));
+				}
+			}
+			if (!empty($stock_warnings) && variable_get('uc_stock_threshold_notification',FALSE)) {
+				foreach ($stock_warnings as $model => $stock_level) {
+					_uc_stock_send_mail($order, $stock_level);
+				}
+			}
+			break;
+		default:
+			break;
+	}
+}
+
+/**
+* Implementation of hook_token_list().
+*/
+function uc_stock_token_list($type = 'all') {
+  if ($type == 'stock' || $type == 'ubercart' || $type == 'all') {
+    $tokens['stock']['stock-level'] = t('The current stock level');
+		$tokens['stock']['stock-model'] = t('The model or SKU of the stock level');
+		$tokens['stock']['stock-threshold'] = t('The threshold or warning limit of the stock level');
+  }
+  return $tokens;
+}
+
+/**
+* Implementation of hook_token_values().
+*/
+function uc_stock_token_values($type, $object = NULL) {
+  switch ($type) {
+    case 'stock':
+			$values['stock-level'] = $object->stock;
+			$values['stock-model'] = $object->sku;
+      $values['stock-threshold'] = $object->threshold;
+      break;
+  }
+  return $values;
+}
+
+/**
+* Implementation of hook_uc_message().
+*/
+function uc_stock_uc_message() {
+	$messages['uc_stock_threshold_notification_subject'] = t('[store-name]: Stock threshold limit reached');
+	$messages['uc_stock_threshold_notification_message'] = t("This message has been sent to let you know that the stock level for the model [stock-model] has reached [stock-level]. There may not be enough units in stock to fulfill order #[order-link].");
+	return $messages;
+}
+
+/*******************************************************************************
+* Callback Functions, Forms, and Tables
+*******************************************************************************/
+
+/**
+* Form builder for stock edit form
+*/ 
+function theme_uc_stock_edit_form($form) {
+	$header = array(
+    array('data' => t('Active')),
+		array('data' => t('SKU')),
+		array('data' => t('Stock')),
+		array('data' => t('Threshold')),
+  );
+	foreach ($form['models']['#value'] as $model) {
+    $rows[] = array(
+      array('data' => drupal_render($form['active_'.$model])),
+			array('data' => $model),
+			array('data' => drupal_render($form['stock_'.$model])),
+			array('data' => drupal_render($form['threshold_'.$model])),
+		);
+	}
+	return theme('table', $header, $rows).drupal_render($form);
+}
+function uc_stock_edit_form($nid) {
+	$node = node_load(array('nid' => $nid));
+	$skus = array($node->model);
+	$models = db_query("SELECT `model` FROM {uc_product_adjustments} WHERE `nid` = %d", $node->nid);
+	while ($model = db_fetch_object($models)) {
+		if (!in_array($model,$skus)) {
+			$skus[] = $model->model;
+		}
+	}
+	
+	drupal_set_title($node->title);
+	foreach ($skus as $sku) {
+		$stock = db_fetch_object(db_query("SELECT `active`, `stock`, `threshold` FROM {uc_product_stock} WHERE `nid` = %d AND `sku` = '%s'",$node->nid,$sku));
+		$form['active_'.$sku] = array (
+			'#type' => 'checkbox', 
+			'#default_value' => $stock->active,
+		);
+		$form['stock_'.$sku] = array(
+			'#type' => 'textfield',
+			'#default_value' => (!empty($stock->stock)) ? $stock->stock : 0,
+			'#maxlength' => 9,
+			'#size' => 9,
+		);
+		$form['threshold_'.$sku] = array(
+			'#type' => 'textfield',
+			'#default_value' => (!empty($stock->threshold)) ? $stock->threshold : 0,
+			'#maxlength' => 9,
+			'#size' => 9,
+		);
+	}
+	$form['models'] = array(
+			'#type' => 'value',
+			'#value' => $skus,
+	);
+	$form['nid'] = array(
+			'#type' => 'value',
+			'#value' => $node->nid,
+	);
+	$form['save'] = array(
+		'#type' => 'submit', 
+		'#value' => t('Save changes'),
+	);
+	$form['remove'] = array(
+		'#type' => 'submit', 
+		'#value' => t('Disable'),
+	);
+	return $form;
+}
+function uc_stock_edit_form_submit($form_id, $form_values) {
+	$node = node_load(array('nid' => $form_values['nid']));
+	
+	switch ($form_values['op']) {
+		default:
+		case t('Save changes'):
+			foreach ($form_values['models'] as $model) {
+				if ($form_values['active_'.$model]) {
+					if (db_result(db_query("SELECT active FROM {uc_product_stock} WHERE `sku` = '%s'",$model))) {
+						db_query("UPDATE {uc_product_stock} SET `active` = %d, `stock` = %d, `threshold` = %d WHERE `sku` = '%s'",$form_values['active_'.$model],$form_values['stock_'.$model],$form_values['threshold_'.$model],$model);
+					}
+					else {
+						db_query("INSERT INTO {uc_product_stock} (`sku`, `nid`, `active`, `stock`, `threshold`) VALUES ('%s', %d, %d, %d, %d)",$model,$form_values['nid'],$form_values['active_'.$model],$form_values['stock_'.$model],$form_values['threshold_'.$model]);
+					}
+				}
+				else {
+					db_query("DELETE FROM {uc_product_stock} WHERE `sku` = '%s'",$model);
+				}
+			}
+			drupal_set_message(t("Stock changes saved for %product_name",array('%product_name' => $node->title)));
+			break;
+		case t('Disable'):
+			db_query("DELETE FROM {uc_product_stock} WHERE `nid` = %d",$form_values['nid']);
+			drupal_set_message(t("Stock disabled for %product_name",array('%product_name' => $node->title)));
+			break;
+	}
+}
+
+/**
+* Form builder for stock report form
+*/ 
+function theme_uc_stock_report_form($form) {
+	$show_threshold = (!empty($_GET['threshold'])) ? $_GET['threshold'] : FALSE;
+	$output = drupal_render($form);
+	$header = array(
+		array('data' => t('SKU'), 'field' => 'sku', 'sort' => 'asc'),
+		array('data' => t('Product'), 'field' => 'title'),
+		array('data' => t('Stock'), 'field' => 'stock'),
+		array('data' => t('Threshold'), 'field' => 'threshold'),
+		array('data' => t('')),
+	);
+	$sql = "SELECT s.nid,`sku`,`title`,`stock`,`threshold` FROM {uc_product_stock} as s LEFT JOIN {node_revisions} as n ON s.nid = n.nid WHERE active = 1";
+	$sql .= ($show_threshold) ? " AND `threshold` >= `stock`" : "";
+	$stock_levels = pager_query($sql.tablesort_sql($header), variable_get('uc_reports_table_size',30), 0, NULL);
+	
+	while ($stock = db_fetch_object($stock_levels)) {
+		$rows[] = array(
+			'data' => array(
+				array('data' => $stock->sku),
+				array('data' => l($stock->title,'node/'.$stock->nid)),
+				array('data' => $stock->stock),
+				array('data' => $stock->threshold),
+				array('data' => l(t('edit'),'node/'.$stock->nid.'/edit/stock',array(),'destination=admin/store/reports/stock')),
+			),
+			'class' => ($stock->threshold >= $stock->stock) ? 'uc-stock-below-threshold' : 'uc-stock-above-threshold',
+		);
+	}
+	$output .= theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-stock-table'));
+	$output .= theme_pager(NULL, variable_get('uc_reports_table_size',30));
+	
+	return $output;
+}
+function uc_stock_report_form() {
+	$show_threshold = (!empty($_GET['threshold'])) ? $_GET['threshold'] : FALSE;
+  $form['threshold'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Only show SKUs that are below their threshold'),
+    '#default_value' => $show_threshold,
+		'#attributes' => array('onchange' => "document.uc_stock_report_form.submit();"),
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+		'#attributes' => array('style' => "display:none;"),
+	);
+	$form['#attributes'] = array('name' => 'uc_stock_report_form');
+	return $form;
+}
+function uc_stock_report_form_submit($form_id, $form_values) {
+	if ($form_values['threshold']) {
+		drupal_goto("admin/store/reports/stock","threshold=1");
+	}
+	else {
+		drupal_goto("admin/store/reports/stock");
+	}
+}
+
+/**
+* Form builder for stock settings form
+*/ 
+function uc_stock_settings_form() {
+  $form['uc_stock_threshold_notification'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Send email notification when stock level reaches its threshold value'),
+    '#default_value' => variable_get('uc_stock_threshold_notification',FALSE),
+  );
+  $form['uc_stock_threshold_notification_recipients'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Notification recipients'),
+		'#default_value' => variable_get('uc_stock_threshold_notification_recipients',variable_get('uc_store_email', ini_get('sendmail_from'))),
+    '#description' => t('The list of comma seperated email addresses that will receive the notification.'),
+  );
+  $form['uc_stock_threshold_notification_subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Message subject'),
+		'#default_value' => variable_get('uc_stock_threshold_notification_subject',uc_get_message('uc_stock_threshold_notification_subject')),
+  );
+  $form['uc_stock_threshold_notification_message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Message text'),
+		'#default_value' => variable_get('uc_stock_threshold_notification_message',uc_get_message('uc_stock_threshold_notification_message')),
+    '#description' => t('The message the user receives when granted a new role (uses <a href="!token-help-page">global, order, and stock tokens</a>)',array('!token-help-page' => url('admin/store/help/tokens'))),
+		'#rows' => 10,
+  );
+	$form['uc_stock_threshold_notification_format'] = filter_form(variable_get('uc_stock_threshold_notification_format', FILTER_FORMAT_DEFAULT), NULL, array('uc_stock_threshold_notification_format'));
+  return system_settings_form($form);
+}
+
+/*******************************************************************************
+* Module and Helper Functions
+*******************************************************************************/
+
+/**
+* Get the stock level of a particular product SKU
+* @param $sku
+*   The ubercart product SKU of the stock level to return
+* @return:
+* The associated stock level with the particular SKU or FALSE if not 
+*/
+function uc_stock_level($sku) {
+	return db_result(db_query("SELECT `stock` FROM {uc_product_stock} WHERE `sku` = '%s'",$sku));
+}
+
+/**
+* Adjust the product stock level by a set amount
+* @param $sku
+*   The ubercart product SKU of the stock level to adjust
+* @param $qty
+*   The amount to adjust the stock level by
+*/
+function uc_stock_adjust($sku, $qty) {
+	$stock = db_result(db_query("SELECT `stock` FROM {uc_product_stock} WHERE `sku` = '%s'",$sku));
+	db_query("UPDATE {uc_product_stock} SET `stock` = %d WHERE `sku` = '%s'",$stock+$qty,$sku);
+}
+
+/**
+* Email admins regarding any stock level thresholds hit
+* @param $order
+*   The order object that tripped the threshold limit
+* @param $product
+*   The product object that is associated with the SKU
+* @param $stock
+*   The stock level object that contains the stock level and SKU
+* @return:
+* Sends result of drupal_mail
+*/
+function _uc_stock_send_mail($order, $stock) {
+	$token_filters = array ('global' => NULL,'order' => $order,'stock' => $stock);
+	$to = variable_get('uc_stock_threshold_notification_recipients',variable_get('uc_store_email', ini_get('sendmail_from')));
+	$from = variable_get('uc_store_email_from', ini_get('sendmail_from'));
+	$subject = variable_get('uc_stock_threshold_notification_subject',uc_get_message('uc_stock_threshold_notification_subject'));
+	$subject = token_replace_multiple($subject, $token_filters);
+	$body = variable_get('uc_stock_threshold_notification_message',uc_get_message('uc_stock_threshold_notification_message'));
+	$body = token_replace_multiple($body, $token_filters);
+	return drupal_mail('uc_stock', $to, $subject, $body, $from);
+}
