@@ -151,12 +151,12 @@ function theme_uc_stock_edit_form($form) {
 		array('data' => t('Stock')),
 		array('data' => t('Threshold')),
   );
-	foreach ($form['models']['#value'] as $model) {
+	foreach ($form['models']['#value'] as $index => $model) {
     $rows[] = array(
-      array('data' => drupal_render($form['active_'.$model])),
+      array('data' => drupal_render($form['active_'.$index])),
 			array('data' => $model),
-			array('data' => drupal_render($form['stock_'.$model])),
-			array('data' => drupal_render($form['threshold_'.$model])),
+			array('data' => drupal_render($form['stock_'.$index])),
+			array('data' => drupal_render($form['threshold_'.$index])),
 		);
 	}
 	return theme('table', $header, $rows).drupal_render($form);
@@ -172,19 +172,19 @@ function uc_stock_edit_form($nid) {
 	}
 	
 	drupal_set_title($node->title);
-	foreach ($skus as $sku) {
+	foreach ($skus as $index => $sku) {
 		$stock = db_fetch_object(db_query("SELECT `active`, `stock`, `threshold` FROM {uc_product_stock} WHERE `nid` = %d AND `sku` = '%s'",$node->nid,$sku));
-		$form['active_'.$sku] = array (
+		$form['active_'.$index] = array (
 			'#type' => 'checkbox', 
 			'#default_value' => $stock->active,
 		);
-		$form['stock_'.$sku] = array(
+		$form['stock_'.$index] = array(
 			'#type' => 'textfield',
 			'#default_value' => (!empty($stock->stock)) ? $stock->stock : 0,
 			'#maxlength' => 9,
 			'#size' => 9,
 		);
-		$form['threshold_'.$sku] = array(
+		$form['threshold_'.$index] = array(
 			'#type' => 'textfield',
 			'#default_value' => (!empty($stock->threshold)) ? $stock->threshold : 0,
 			'#maxlength' => 9,
@@ -211,17 +211,16 @@ function uc_stock_edit_form($nid) {
 }
 function uc_stock_edit_form_submit($form_id, $form_values) {
 	$node = node_load(array('nid' => $form_values['nid']));
-	
 	switch ($form_values['op']) {
 		default:
 		case t('Save changes'):
-			foreach ($form_values['models'] as $model) {
-				if ($form_values['active_'.$model]) {
-					if (db_result(db_query("SELECT active FROM {uc_product_stock} WHERE `sku` = '%s'",$model))) {
-						db_query("UPDATE {uc_product_stock} SET `active` = %d, `stock` = %d, `threshold` = %d WHERE `sku` = '%s'",$form_values['active_'.$model],$form_values['stock_'.$model],$form_values['threshold_'.$model],$model);
+			foreach ($form_values['models'] as $index => $model) {
+				if ($form_values['active_'.$index]) {
+					if (db_result(db_query("SELECT nid FROM {uc_product_stock} WHERE `sku` = '%s'",$model))) {
+						db_query("UPDATE {uc_product_stock} SET `active` = %d, `stock` = %d, `threshold` = %d WHERE `sku` = '%s'",$form_values['active_'.$index],$form_values['stock_'.$index],$form_values['threshold_'.$index],$model);
 					}
 					else {
-						db_query("INSERT INTO {uc_product_stock} (`sku`, `nid`, `active`, `stock`, `threshold`) VALUES ('%s', %d, %d, %d, %d)",$model,$form_values['nid'],$form_values['active_'.$model],$form_values['stock_'.$model],$form_values['threshold_'.$model]);
+						db_query("INSERT INTO {uc_product_stock} (`sku`, `nid`, `active`, `stock`, `threshold`) VALUES ('%s', %d, %d, %d, %d)",$model,$form_values['nid'],$form_values['active_'.$index],$form_values['stock_'.$index],$form_values['threshold_'.$index]);
 					}
 				}
 				else {
@@ -243,6 +242,8 @@ function uc_stock_edit_form_submit($form_id, $form_values) {
 function theme_uc_stock_report_form($form) {
 	$show_threshold = (!empty($_GET['threshold'])) ? $_GET['threshold'] : FALSE;
 	$output = drupal_render($form);
+  $csv_rows = array();
+  
 	$header = array(
 		array('data' => t('SKU'), 'field' => 'sku', 'sort' => 'asc'),
 		array('data' => t('Product'), 'field' => 'title'),
@@ -250,6 +251,7 @@ function theme_uc_stock_report_form($form) {
 		array('data' => t('Threshold'), 'field' => 'threshold'),
 		array('data' => t('')),
 	);
+  $csv_rows[] = array(t('SKU'),t('Product'),t('Stock'),t('Threshold'));
 	$sql = "SELECT s.nid,`sku`,`title`,`stock`,`threshold` FROM {uc_product_stock} as s LEFT JOIN {node_revisions} as n ON s.nid = n.nid WHERE active = 1";
 	$sql .= ($show_threshold) ? " AND `threshold` >= `stock`" : "";
 	$stock_levels = pager_query($sql.tablesort_sql($header), variable_get('uc_reports_table_size',30), 0, NULL);
@@ -265,10 +267,14 @@ function theme_uc_stock_report_form($form) {
 			),
 			'class' => ($stock->threshold >= $stock->stock) ? 'uc-stock-below-threshold' : 'uc-stock-above-threshold',
 		);
+    $csv_rows[] = array($stock->sku,$stock->title,$stock->stock,$stock->threshold);
 	}
+  $csv_data = uc_reports_store_csv('uc_stock',$csv_rows);
+  
 	$output .= theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-stock-table'));
 	$output .= theme_pager(NULL, variable_get('uc_reports_table_size',30));
-	
+	$output .= '<div class="uc-reports-export-link">'.l(t('Export to CSV file'),'admin/store/reports/getcsv/'.$csv_data['report'].'/'.$csv_data['user']).'</div>';
+  
 	return $output;
 }
 function uc_stock_report_form() {
