@@ -13,6 +13,7 @@
 * Development sponsored by the Ubercart project.  http://www.ubercart.org
 */
 
+define('UC_REPORTS_MAX_RECORDS',PHP_INT_MAX);
 /*******************************************************************************
 * Hook Functions (Drupal)
 *******************************************************************************/
@@ -63,7 +64,7 @@ function uc_reports_menu($may_cache) {
     $items[] = array(
       'path' => 'admin/store/reports/products',
       'title' => t('Product reports'),
-      'description' => t('View reports for all store products'),
+      'description' => t('View reports for store products'),
       'callback' => 'uc_reports_products',
       'access' => user_access('view reports'),
       'type' => MENU_NORMAL_ITEM,
@@ -71,7 +72,7 @@ function uc_reports_menu($may_cache) {
     $items[] = array(
       'path' => 'admin/store/reports/sales',
       'title' => t('Sales reports'),
-      'description' => t('View reports for all store sales'),
+      'description' => t('View reports for store sales'),
       'callback' => 'uc_reports_sales_summary',
       'access' => user_access('view reports'),
       'type' => MENU_NORMAL_ITEM,
@@ -149,6 +150,7 @@ function uc_reports_customers() {
   $first_name = ($address_preference == 'billing') ? 'billing_first_name' : 'delivery_first_name';
   $last_name = ($address_preference == 'billing') ? 'billing_last_name' : 'delivery_last_name';
   $page = (!is_null($_GET['page'])) ? intval($_GET['page']) : 0;
+  $page_size = (!is_null($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size',30);
   $order_statuses = _uc_reports_order_statuses();
   $csv_rows = array();
   
@@ -165,7 +167,7 @@ function uc_reports_customers() {
   
   $sql = "SELECT u.uid, u.name, ou.$first_name, ou.$last_name, (SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN $order_statuses) as orders, (SELECT SUM(qty) FROM {uc_order_products} as ps LEFT JOIN {uc_orders} as os ON ps.order_id = os.order_id WHERE os.order_status IN $order_statuses AND os.uid = u.uid) as products, (SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN $order_statuses) as total, ROUND((SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN $order_statuses)/(SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN $order_statuses),2) as average FROM {users} as u LEFT JOIN {uc_orders} as ou ON u.uid = ou.uid WHERE u.uid > 0 GROUP BY u.uid";
   $sql_count = "SELECT COUNT(DISTINCT(u.uid)) FROM {users} as u LEFT JOIN {uc_orders} as ou ON u.uid = ou.uid WHERE u.uid > 0";
-  $customers = pager_query($sql.tablesort_sql($header), variable_get('uc_reports_table_size',30), 0, $sql_count);
+  $customers = pager_query($sql.tablesort_sql($header), $page_size, 0, $sql_count);
   
   while ($customer = db_fetch_array($customers)) {
     $name = (!empty($customer[$last_name]) || !empty($customer[$first_name])) ? l($customer[$last_name].", ".$customer[$first_name],'admin/store/customers/orders/'.$customer['uid']) : l($customer['name'],'admin/store/customers/orders/'.$customer['uid']);
@@ -193,8 +195,8 @@ function uc_reports_customers() {
   $csv_data = uc_reports_store_csv('uc_customers',$csv_rows);
   
   $output = theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'));
-  $output .= theme_pager(NULL, variable_get('uc_reports_table_size',30));
-  $output .= '<div class="uc-reports-export-link">'.l(t('Export to CSV file'),'admin/store/reports/getcsv/'.$csv_data['report'].'/'.$csv_data['user']).'</div>';
+  $output .= theme_pager(NULL, $page_size);
+  $output .= '<div class="uc-reports-links">'.l(t('Export to CSV file'),'admin/store/reports/getcsv/'.$csv_data['report'].'/'.$csv_data['user']).'&nbsp;&nbsp;&nbsp;'.((!is_null($_GET['nopage'])) ? l(t('Show paged records'),'admin/store/reports/customers') : l(t('Show all records'),'admin/store/reports/customers',array(),'nopage=1')).'</div>';
   
   return $output;
 }
@@ -206,6 +208,7 @@ function uc_reports_products() {
   $statistics = db_result(db_query("SELECT status FROM {system} WHERE name = 'statistics'"));
   $count_views = variable_get('statistics_count_content_views', FALSE);
   $page = (!is_null($_GET['page'])) ? intval($_GET['page']) : 0;
+  $page_size = (!is_null($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size',30);
   $order_statuses = _uc_reports_order_statuses();
   $product_types = array("'product'");
   $types = db_query("SELECT DISTINCT(pcid) FROM {uc_product_classes}");
@@ -237,7 +240,7 @@ function uc_reports_products() {
   }
   
   $sql_count = "SELECT COUNT(nid) FROM {node} WHERE type IN (".implode(",",$product_types).")";
-  $products = pager_query($sql.tablesort_sql($header), variable_get('uc_reports_table_size',30), 0, $sql_count);
+  $products = pager_query($sql.tablesort_sql($header), $page_size, 0, $sql_count);
   
   while ($product = db_fetch_array($products)) {
     $row_cell = ($page*variable_get('uc_reports_table_size',30))+(count($rows)+1);
@@ -296,8 +299,8 @@ function uc_reports_products() {
   $csv_data = uc_reports_store_csv('uc_products',$csv_rows);
   
   $output = theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'));
-  $output .= theme_pager(NULL, variable_get('uc_reports_table_size',30));
-  $output .= '<div class="uc-reports-export-link">'.l(t('Export to CSV file'),'admin/store/reports/getcsv/'.$csv_data['report'].'/'.$csv_data['user']).'</div>';
+  $output .= theme_pager(NULL, $page_size);
+  $output .= '<div class="uc-reports-links">'.l(t('Export to CSV file'),'admin/store/reports/getcsv/'.$csv_data['report'].'/'.$csv_data['user']).'&nbsp;&nbsp;&nbsp;'.((!is_null($_GET['nopage'])) ? l(t('Show paged records'),'admin/store/reports/products') : l(t('Show all records'),'admin/store/reports/products',array(),'nopage=1')).'</div>';
   $output .= "<small>*".t('Make sure %setting_name is set to %state in the ',array('%setting_name' => 'count content views', '%state' => 'enabled')).l(t('access log settings page'),'admin/logs/settings',array(),'destination=admin/store/reports/products').t(' to enable views column.')."</small>";
   
   return $output;
@@ -455,7 +458,7 @@ function uc_reports_sales_yearly($year = NULL) {
   $csv_data = uc_reports_store_csv('uc_sales_yearly',$csv_rows);
   
   $output .= theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'));
-  $output .= '<div class="uc-reports-export-link">'.l(t('Export to CSV file'),'admin/store/reports/getcsv/'.$csv_data['report'].'/'.$csv_data['user']).'</div>';
+  $output .= '<div class="uc-reports-links">'.l(t('Export to CSV file'),'admin/store/reports/getcsv/'.$csv_data['report'].'/'.$csv_data['user']).'</div>';
   
   return $output; 
 }
@@ -608,7 +611,7 @@ function uc_reports_sales_custom() {
   $csv_data = uc_reports_store_csv('uc_sales_custom',$csv_rows);
   
   $output .= theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'));
-  $output .= '<div class="uc-reports-export-link">'.l(t('Export to CSV file'),'admin/store/reports/getcsv/'.$csv_data['report'].'/'.$csv_data['user']).'</div>';
+  $output .= '<div class="uc-reports-links">'.l(t('Export to CSV file'),'admin/store/reports/getcsv/'.$csv_data['report'].'/'.$csv_data['user']).'</div>';
   
   return $output;
 }

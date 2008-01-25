@@ -24,7 +24,7 @@
 function uc_stock_help($section) {
   switch ($section) {
 		case 'node/'.arg(1).'/edit/stock':
-			return t("To keep track of stock for a particular product SKU, check the ")."<strong>".t("active")."</strong>".t(" checkbox and enter a value for ")."<strong>".t("stock")."</strong>".t(". When the ")."<strong>".t("threshold")."</strong>".t(" value is hit uc_stock will take action upon it. Clicking disable will set the ")."<strong>".t("stock & threshold")."</strong>".t(" values back to 0 and stop stock tracking for these product SKUs.");
+			return t("To keep track of stock for a particular product SKU, check the ")."<strong>".t("active")."</strong>".t(" checkbox and enter a value for ")."<strong>".t("stock")."</strong>".t(". When the ")."<strong>".t("threshold")."</strong>".t(" value is hit uc_stock will take action upon it. Clicking disable will stop stock tracking for these product SKUs.");
 		case 'admin/store/reports/stock':
 			return t('This is the list of product SKUs that are currently active. Stock levels below their threshold have highlighted rows. To view only these rows, check the "Only show SKUs that are below their threshold" checkbox.');
 	}
@@ -163,33 +163,12 @@ function theme_uc_stock_edit_form($form) {
 }
 function uc_stock_edit_form($nid) {
 	$node = node_load(array('nid' => $nid));
-	$skus = array($node->model);
-	$models = db_query("SELECT `model` FROM {uc_product_adjustments} WHERE `nid` = %d", $node->nid);
-	while ($model = db_fetch_object($models)) {
-		if (!in_array($model,$skus)) {
-			$skus[] = $model->model;
-		}
-	}
+  $skus = uc_stock_skus($nid);
+  $form = array();
+  drupal_set_title($node->title);
 	
-	drupal_set_title($node->title);
 	foreach ($skus as $index => $sku) {
-		$stock = db_fetch_object(db_query("SELECT `active`, `stock`, `threshold` FROM {uc_product_stock} WHERE `nid` = %d AND `sku` = '%s'",$node->nid,$sku));
-		$form['active_'.$index] = array (
-			'#type' => 'checkbox', 
-			'#default_value' => $stock->active,
-		);
-		$form['stock_'.$index] = array(
-			'#type' => 'textfield',
-			'#default_value' => (!empty($stock->stock)) ? $stock->stock : 0,
-			'#maxlength' => 9,
-			'#size' => 9,
-		);
-		$form['threshold_'.$index] = array(
-			'#type' => 'textfield',
-			'#default_value' => (!empty($stock->threshold)) ? $stock->threshold : 0,
-			'#maxlength' => 9,
-			'#size' => 9,
-		);
+    $form = array_merge($form,uc_stock_sku_fields($index, $sku));
 	}
 	$form['models'] = array(
 			'#type' => 'value',
@@ -242,6 +221,7 @@ function uc_stock_edit_form_submit($form_id, $form_values) {
 function theme_uc_stock_report_form($form) {
 	$show_threshold = (!empty($_GET['threshold'])) ? $_GET['threshold'] : FALSE;
 	$output = drupal_render($form);
+  $page_size = (!is_null($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size',30);
   $csv_rows = array();
   
 	$header = array(
@@ -254,7 +234,7 @@ function theme_uc_stock_report_form($form) {
   $csv_rows[] = array(t('SKU'),t('Product'),t('Stock'),t('Threshold'));
 	$sql = "SELECT s.nid,`sku`,`title`,`stock`,`threshold` FROM {uc_product_stock} as s LEFT JOIN {node_revisions} as n ON s.nid = n.nid WHERE active = 1";
 	$sql .= ($show_threshold) ? " AND `threshold` >= `stock`" : "";
-	$stock_levels = pager_query($sql.tablesort_sql($header), variable_get('uc_reports_table_size',30), 0, NULL);
+	$stock_levels = pager_query($sql.tablesort_sql($header), $page_size, 0, NULL);
 	
 	while ($stock = db_fetch_object($stock_levels)) {
 		$rows[] = array(
@@ -272,8 +252,8 @@ function theme_uc_stock_report_form($form) {
   $csv_data = uc_reports_store_csv('uc_stock',$csv_rows);
   
 	$output .= theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-stock-table'));
-	$output .= theme_pager(NULL, variable_get('uc_reports_table_size',30));
-	$output .= '<div class="uc-reports-export-link">'.l(t('Export to CSV file'),'admin/store/reports/getcsv/'.$csv_data['report'].'/'.$csv_data['user']).'</div>';
+	$output .= theme_pager(NULL, $page_size);
+	$output .= '<div class="uc-reports-links">'.l(t('Export to CSV file'),'admin/store/reports/getcsv/'.$csv_data['report'].'/'.$csv_data['user']).'&nbsp;&nbsp;&nbsp;'.((!is_null($_GET['nopage'])) ? l(t('Show paged records'),'admin/store/reports/stock') : l(t('Show all records'),'admin/store/reports/stock',array(),'nopage=1')).'</div>';
   
 	return $output;
 }
@@ -338,6 +318,18 @@ function uc_stock_settings_form() {
 *******************************************************************************/
 
 /**
+* Adjust the product stock level by a set amount
+* @param $sku
+*   The ubercart product SKU of the stock level to adjust
+* @param $qty
+*   The amount to adjust the stock level by
+*/
+function uc_stock_adjust($sku, $qty) {
+  $op = ($qty < 0) ? "-" : "+";
+	db_query("UPDATE {uc_product_stock} SET 'stock' = 'stock' $op %d WHERE 'sku' = '%s'", (int) abs($qty), $sku);
+}
+
+/**
 * Get the stock level of a particular product SKU
 * @param $sku
 *   The ubercart product SKU of the stock level to return
@@ -349,15 +341,66 @@ function uc_stock_level($sku) {
 }
 
 /**
-* Adjust the product stock level by a set amount
-* @param $sku
-*   The ubercart product SKU of the stock level to adjust
-* @param $qty
-*   The amount to adjust the stock level by
+* Get the SKUs associated with a particular product
+* @param $nid
+*   The node id of the ubercart product
+* @return:
+* An array of containing all the SKUs that are associated with the product or 
+* FALSE if the node id isn't an ubercart product.
 */
-function uc_stock_adjust($sku, $qty) {
-	$stock = db_result(db_query("SELECT `stock` FROM {uc_product_stock} WHERE `sku` = '%s'",$sku));
-	db_query("UPDATE {uc_product_stock} SET `stock` = %d WHERE `sku` = '%s'",$stock+$qty,$sku);
+function uc_stock_skus($nid) {
+  $node = node_load(array('nid' => $nid));
+  if (is_null($node->model)) {
+    return FALSE;
+  }
+  else {
+    $skus = array($node->model);
+    if (module_exists('uc_attribute')) {
+      $models = db_query("SELECT `model` FROM {uc_product_adjustments} WHERE `nid` = %d", $node->nid);
+      while ($model = db_fetch_object($models)) {
+        if (!in_array($model,$skus)) {
+          $skus[] = $model->model;
+        }
+      }
+    }
+    return $skus;
+  }
+}
+
+/**
+* Return form elements for editing SKU levels
+* @param $id
+*   A unique string to identify the form fields
+* @param $sku
+*   The SKU of the stock level to edit
+* @return:
+* An array of form elements as defined in the Drupal Form API or FALSE if the 
+* SKU doesn't have a stock level in the table
+*/
+function uc_stock_sku_fields($id, $sku) {
+  $stock = db_fetch_object(db_query("SELECT `active`, `stock`, `threshold` FROM {uc_product_stock} WHERE `sku` = '%s'",$sku));
+	if (is_null($stock)) {
+    return FALSE;
+  }
+  else {
+    $form["active_$id"] = array (
+      '#type' => 'checkbox', 
+      '#default_value' => $stock->active,
+    );
+    $form["stock_$id"] = array(
+      '#type' => 'textfield',
+      '#default_value' => (!empty($stock->stock)) ? $stock->stock : 0,
+      '#maxlength' => 9,
+      '#size' => 9,
+    );
+    $form["threshold_$id"] = array(
+      '#type' => 'textfield',
+      '#default_value' => (!empty($stock->threshold)) ? $stock->threshold : 0,
+      '#maxlength' => 9,
+      '#size' => 9,
+    );
+    return $form;
+  }
 }
 
 /**
@@ -381,3 +424,4 @@ function _uc_stock_send_mail($order, $stock) {
 	$body = token_replace_multiple($body, $token_filters);
 	return drupal_mail('uc_stock', $to, $subject, $body, $from);
 }
+
