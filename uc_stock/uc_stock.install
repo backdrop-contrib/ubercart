@@ -6,29 +6,37 @@ function uc_stock_install() {
     case 'mysqli':
     case 'mysql':
       db_query("CREATE TABLE {uc_product_stock} (
-				`sku` varchar(255) NOT NULL,
-				`nid` mediumint(9) NOT NULL,
-				`active` tinyint(2) NOT NULL default 0,
-				`stock` mediumint(11) NOT NULL default 0,
-				`threshold` mediumint(11) NOT NULL default 0,
-				PRIMARY KEY (`sku`),
-				KEY nid (nid)
+        `sku` varchar(255) NOT NULL,
+        `nid` mediumint(9) NOT NULL,
+        `active` tinyint(2) NOT NULL default 0,
+        `stock` mediumint(11) NOT NULL default 0,
+        `threshold` mediumint(11) NOT NULL default 0,
+        PRIMARY KEY (`sku`),
+        KEY nid (nid)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 COLLATE utf8_unicode_ci */ ");
       break;
     case 'pgsql':
       db_query("CREATE TABLE {uc_product_stock} (
         sku varchar(255) NOT NULL default '',
-				nid integer NOT NULL default 0,
-				active smallint NOT NULL default 0,
-				stock integer NOT NULL default 0,
-				threshold integer NOT NULL default 0,
+        nid integer NOT NULL default 0,
+        active smallint NOT NULL default 0,
+        stock integer NOT NULL default 0,
+        threshold integer NOT NULL default 0,
         PRIMARY KEY (sku)
       );");
-			db_query("CREATE INDEX {uc_product_stock}_nid ON {uc_product_stock} (nid)");
+      db_query("CREATE INDEX {uc_product_stock}_nid ON {uc_product_stock} (nid)");
       break;
   }
 }
 
 function uc_stock_uninstall() {
-	db_query("DROP TABLE IF EXISTS {uc_product_stock}");
+  switch($GLOBALS['db_type']){
+    case 'mysqli':
+    case 'mysql':
+	    db_query("DROP TABLE IF EXISTS {uc_product_stock}");
+	    break;
+	case 'pgsql':
+	    db_query("DROP TABLE {uc_product_stock}");
+	    break;
+  }
 }

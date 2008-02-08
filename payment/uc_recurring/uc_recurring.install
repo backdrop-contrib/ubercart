@@ -1,0 +1,41 @@
+<?php
+// $Id$
+
+function uc_recurring_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {uc_recurring_products} (
+				pfid mediumint(9) NOT NULL,
+        model varchar(255) NOT NULL,
+        fee_amount decimal(10,2) NOT NULL,
+        initial_charge varchar(255) NOT NULL,
+        regular_interval varchar(255) NOT NULL,
+        number_intervals smallint(4) NOT NULL,
+        PRIMARY KEY pfid (pfid)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
+      db_query("CREATE TABLE {uc_recurring_users} (
+        rfid mediumint(9) NOT NULL,
+        uid mediumint(9) NOT NULL,
+        next_charge int(11) NOT NULL,
+        fee_amount decimal(10,2) NOT NULL,
+        regular_interval varchar(255) NOT NULL,
+        remaining_intervals smallint(4) NOT NULL,
+        charged_intervals smallint(4) NOT NULL,
+        order_id mediumint(9) NOT NULL,
+        data text NOT NULL,
+        created int(11) NOT NULL,
+        PRIMARY KEY rfid (rfid)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
+      break;
+    case 'pgsql':
+      break;
+  }
+}
+
+function uc_recurring_uninstall() {
+  db_query("DROP TABLE {uc_recurring_products}");
+  db_query("DROP TABLE {uc_recurring_users}");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_recurring_%%'");
+  cache_clear_all('variables', 'cache');
+}

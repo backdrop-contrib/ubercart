@@ -164,9 +164,22 @@ function uc_reports_customers() {
     array('data' => t('Average'), 'field' => 'average'),
   );
   $csv_rows[] = array(t('#'),t('Customer'),t('Username'),t('Orders'),t('Products'),t('Total'),t('Average'));
-  
-  $sql = "SELECT u.uid, u.name, ou.$first_name, ou.$last_name, (SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN $order_statuses) as orders, (SELECT SUM(qty) FROM {uc_order_products} as ps LEFT JOIN {uc_orders} as os ON ps.order_id = os.order_id WHERE os.order_status IN $order_statuses AND os.uid = u.uid) as products, (SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN $order_statuses) as total, ROUND((SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN $order_statuses)/(SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN $order_statuses),2) as average FROM {users} as u LEFT JOIN {uc_orders} as ou ON u.uid = ou.uid WHERE u.uid > 0 GROUP BY u.uid";
-  $sql_count = "SELECT COUNT(DISTINCT(u.uid)) FROM {users} as u LEFT JOIN {uc_orders} as ou ON u.uid = ou.uid WHERE u.uid > 0";
+
+  $sql = "";
+  $sql_count = "";
+
+  switch ($GLOBALS['db_type']){
+    case 'mysqli':
+    case 'mysql':
+      $sql = "SELECT u.uid, u.name, ou.$first_name, ou.$last_name, (SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN $order_statuses) as orders, (SELECT SUM(qty) FROM {uc_order_products} as ps LEFT JOIN {uc_orders} as os ON ps.order_id = os.order_id WHERE os.order_status IN $order_statuses AND os.uid = u.uid) as products, (SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN $order_statuses) as total, ROUND((SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN $order_statuses)/(SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN $order_statuses),2) as average FROM {users} as u LEFT JOIN {uc_orders} as ou ON u.uid = ou.uid WHERE u.uid > 0 GROUP BY u.uid";
+      $sql_count = "SELECT COUNT(DISTINCT(u.uid)) FROM {users} as u LEFT JOIN {uc_orders} as ou ON u.uid = ou.uid WHERE u.uid > 0";
+      break;
+    case 'pgsql':
+      $sql = "SELECT u.uid, u.name, ou.$first_name, ou.$last_name, (SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN $order_statuses) as orders, (SELECT SUM(qty) FROM {uc_order_products} as ps LEFT JOIN {uc_orders} as os ON ps.order_id = os.order_id WHERE os.order_status IN $order_statuses AND os.uid = u.uid) as products, (SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN $order_statuses) as total, ROUND((SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN $order_statuses)/(SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN $order_statuses),2) as average FROM {users} as u LEFT JOIN {uc_orders} as ou ON u.uid = ou.uid WHERE u.uid > 0 GROUP BY u.uid, u.name, ou.$first_name, ou.$last_name";
+      $sql_count = "SELECT COUNT(DISTINCT(u.uid)) FROM {users} as u LEFT JOIN {uc_orders} as ou ON u.uid = ou.uid WHERE u.uid > 0";
+      break;
+  }
+
   $customers = pager_query($sql.tablesort_sql($header), $page_size, 0, $sql_count);
   
   while ($customer = db_fetch_array($customers)) {
@@ -224,9 +237,20 @@ function uc_reports_products() {
       array('data' => t('Views'), 'field' => 'c.totalcount'),
       array('data' => t('Sold'), 'field' => 'sold'),
       array('data' => t('Revenue'), 'field' => 'revenue', 'sort' => 'desc'),
+      array('data' => t('Gross'), 'field' => 'gross'),
     );
-    $csv_rows[] = array(t('#'),t('Product'),t('Views'),t('Sold'),t('Revenue'));
-    $sql = "SELECT n.nid, n.title, c.totalcount, (SELECT SUM(qty) FROM {uc_order_products} as p LEFT JOIN {uc_orders} as o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.nid = n.nid) as sold, (SELECT (SUM(p2.price*p2.qty)) FROM {uc_order_products} as p2 LEFT JOIN {uc_orders} as o2 ON p2.order_id = o2.order_id WHERE o2.order_status IN $order_statuses AND p2.nid = n.nid) as revenue FROM {node} as n LEFT JOIN {node_counter} as c ON n.nid = c.nid WHERE type IN (".implode(",",$product_types).") GROUP BY n.nid DESC";
+    $csv_rows[] = array(t('#'),t('Product'),t('Views'),t('Sold'),t('Revenue'),t('Gross'));
+
+    $sql = "";
+    switch ($GLOBALS['db_type']){
+      case 'mysqli':
+      case 'mysql':
+        $sql = "SELECT n.nid, n.title, c.totalcount, (SELECT SUM(qty) FROM {uc_order_products} as p LEFT JOIN {uc_orders} as o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.nid = n.nid) as sold, (SELECT (SUM(p2.price*p2.qty)) FROM {uc_order_products} as p2 LEFT JOIN {uc_orders} as o2 ON p2.order_id = o2.order_id WHERE o2.order_status IN $order_statuses AND p2.nid = n.nid) as revenue FROM {node} as n LEFT JOIN {node_counter} as c ON n.nid = c.nid WHERE type IN (".implode(",",$product_types).") GROUP BY n.nid DESC";
+        break;
+      case 'pgsql':
+        $sql = "SELECT n.nid, n.title, c.totalcount, (SELECT SUM(qty) FROM {uc_order_products} as p LEFT JOIN {uc_orders} as o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.nid = n.nid) as sold, (SELECT (SUM(p2.price*p2.qty)) FROM {uc_order_products} as p2 LEFT JOIN {uc_orders} as o2 ON p2.order_id = o2.order_id WHERE o2.order_status IN $order_statuses AND p2.nid = n.nid) as revenue FROM {node} as n LEFT JOIN {node_counter} as c ON n.nid = c.nid WHERE type IN (".implode(",",$product_types).") GROUP BY n.nid";
+        break;
+    }
   }
   else {
     $header = array(
@@ -234,9 +258,20 @@ function uc_reports_products() {
       array('data' => t('Product'), 'field' => 'n.title'),
       array('data' => t('Sold'), 'field' => 'sold'),
       array('data' => t('Revenue'), 'field' => 'revenue', 'sort' => 'desc'),
+      array('data' => t('Gross'), 'field' => 'gross'),
     );
-    $csv_rows[] = array(t('#'),t('Product'),t('Sold'),t('Revenue'));
-    $sql = "SELECT n.nid, n.title, (SELECT SUM(qty) FROM {uc_order_products} as p LEFT JOIN {uc_orders} as o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.nid = n.nid) as sold, (SELECT (SUM(p2.price*p2.qty)) FROM {uc_order_products} as p2 LEFT JOIN {uc_orders} as o2 ON p2.order_id = o2.order_id WHERE o2.order_status IN $order_statuses AND p2.nid = n.nid) as revenue FROM {node} as n WHERE type IN (".implode(",",$product_types).") GROUP BY n.nid DESC";
+    $csv_rows[] = array(t('#'),t('Product'),t('Sold'),t('Revenue'),t('Gross'));
+
+
+    switch ($GLOBALS['db_type']){
+      case 'mysqli':
+      case 'mysql':
+        $sql = "SELECT n.nid, n.title, (SELECT SUM(qty) FROM {uc_order_products} as p LEFT JOIN {uc_orders} as o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.nid = n.nid) as sold, (SELECT (SUM(p2.price*p2.qty)) FROM {uc_order_products} as p2 LEFT JOIN {uc_orders} as o2 ON p2.order_id = o2.order_id WHERE o2.order_status IN $order_statuses AND p2.nid = n.nid) as revenue FROM {node} as n WHERE type IN (".implode(",",$product_types).") GROUP BY n.nid DESC";
+        break;
+      case 'pgsql':
+        $sql = "SELECT n.nid, n.title, (SELECT SUM(qty) FROM {uc_order_products} as p LEFT JOIN {uc_orders} as o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.nid = n.nid) as sold, (SELECT (SUM(p2.price*p2.qty)) FROM {uc_order_products} as p2 LEFT JOIN {uc_orders} as o2 ON p2.order_id = o2.order_id WHERE o2.order_status IN $order_statuses AND p2.nid = n.nid) as revenue FROM {node} as n WHERE type IN (".implode(",",$product_types).") GROUP BY n.nid, n.title";
+        break;
+    }
   }
   
   $sql_count = "SELECT COUNT(nid) FROM {node} WHERE type IN (".implode(",",$product_types).")";
@@ -250,27 +285,33 @@ function uc_reports_products() {
     $sold_csv = $sold_cell;
     $revenue_cell = uc_currency_format((empty($product['revenue'])) ? 0 : $product['revenue']);
     $revenue_csv = $revenue_cell;
+    $gross_cell = uc_currency_format((empty($product['gross'])) ? 0 : $product['gross']);
+    $gross_csv = $gross_cell;
     
     if (module_exists('uc_attribute')) {
       $product_models = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = %d",$product['nid']);
       $models = array(db_result(db_query("SELECT model FROM {uc_products} WHERE nid = %d",$product['nid'])));
-      unset($breakdown_product,$breakdown_sold,$breakdown_revenue);
+      unset($breakdown_product,$breakdown_sold,$breakdown_revenue,$breakdown_gross);
       while ($product_model = db_fetch_object($product_models)) {
         $models[] = $product_model->model;
       }
       foreach ($models as $model) {
         $sold = db_result(db_query("SELECT SUM(qty) FROM {uc_order_products} as p LEFT JOIN {uc_orders} as o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.model = '%s' AND p.nid = %d",$model,$product['nid']));
         $revenue = db_result(db_query("SELECT SUM(p.price*p.qty) FROM {uc_order_products} as p LEFT JOIN {uc_orders} as o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.model = '%s' AND p.nid = %d",$model,$product['nid']));
+        $gross = db_result(db_query("SELECT (SUM(p.price*p.qty)-SUM(p.cost*p.qty)) FROM {uc_order_products} as p LEFT JOIN {uc_orders} as o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.model = '%s' AND p.nid = %d",$model,$product['nid']));
         $breakdown_product .= "<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$model";
         $product_csv .= "\n     $model";
         $breakdown_sold .= "<br/>".((!empty($sold)) ? $sold : 0);
         $sold_csv .= "\n     ".((!empty($sold)) ? $sold : 0);
         $breakdown_revenue .= "<br/>".(uc_currency_format((!empty($revenue)) ? $revenue : 0));
         $revenue_csv .= "\n     ".(uc_currency_format((!empty($revenue)) ? $revenue : 0));
+        $breakdown_gross .= "<br/>".(uc_currency_format((!empty($gross)) ? $gross : 0));
+        $gross_csv .= "\n     ".(uc_currency_format((!empty($gross)) ? $gross : 0));
       }
       $product_cell = $product_cell.$breakdown_product;
       $sold_cell = '<strong>'.$sold_cell.'</strong>'.$breakdown_sold;
       $revenue_cell = '<strong>'.$revenue_cell.'</strong>'.$breakdown_revenue;
+      $gross_cell = '<strong>'.$gross_cell.'</strong>'.$breakdown_gross;
     }
     if ($statistics && $count_views) {
       $views = (empty($product['totalcount'])) ? 0 : $product['totalcount'];
@@ -280,8 +321,9 @@ function uc_reports_products() {
         array('data' => $views),
         array('data' => $sold_cell),
         array('data' => $revenue_cell, 'nowrap' => 'nowrap'),
+        array('data' => $gross_cell, 'nowrap' => 'nowrap'),
       );
-      $csv_rows[] = array($row_cell,$product_csv,$views,$sold_csv,$revenue_csv);
+      $csv_rows[] = array($row_cell,$product_csv,$views,$sold_csv,$revenue_csv,$gross_csv);
     }
     else {
       $rows[] = array(
@@ -289,8 +331,9 @@ function uc_reports_products() {
         array('data' => $product_cell),
         array('data' => $sold_cell),
         array('data' => $revenue_cell, 'nowrap' => 'nowrap'),
+        array('data' => $gross_cell, 'nowrap' => 'nowrap'),
       );
-      $csv_rows[] = array($row_cell,$product_csv,$sold_csv,$revenue_csv);
+      $csv_rows[] = array($row_cell,$product_csv,$sold_csv,$revenue_csv,$gross_csv);
     }
   }
   if (empty($rows)) {
@@ -322,7 +365,7 @@ function uc_reports_sales_summary() {
   $header = array(
     array('data' => t('Description')),
     array('data' => t('Orders')),
-    array('data' => t('Income')),
+    array('data' => t('Revenue')),
     array('data' => t('Average')),
   );
   $today = _uc_reports_get_sales($today_start);
@@ -363,7 +406,7 @@ function uc_reports_sales_summary() {
     array('data' => t(''), 'colspan' => 2),
   );
   $rows = array(
-    array(array('data' => t('Grand total sales')), array('data' => uc_currency_format(db_result(db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE order_status IN $order_statuses GROUP BY order_status"))))),
+    array(array('data' => t('Grand total sales')), array('data' => uc_currency_format(db_result(db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE order_status IN $order_statuses"))))),
     array(array('data' => t('Customers total')), array('data' => db_result(db_query("SELECT COUNT(DISTINCT uid) FROM {uc_orders} WHERE order_status IN $order_statuses")))), 
     array(array('data' => t('New customers today')), array('data' => db_result(db_query("SELECT COUNT(DISTINCT uid) FROM {uc_orders} WHERE order_status IN $order_statuses AND %d >= created AND created >= %d",$today_end,$today_start)))),
     array(array('data' => t('Online customers')), array('data' => db_result(db_query("SELECT COUNT(DISTINCT s.uid) FROM {sessions} as s LEFT JOIN {uc_orders} as o ON s.uid = o.uid WHERE s.uid > 0 AND o.order_status IN $order_statuses")))),
@@ -375,7 +418,7 @@ function uc_reports_sales_summary() {
     array('data' => t('Order statuses'), 'colspan' => 2),
   );
   $rows = array();
-  $order_statuses = db_query("SELECT s.title, COUNT(o.order_status) FROM {uc_orders} as o LEFT JOIN {uc_order_statuses} as s ON s.order_status_id = o.order_status GROUP BY order_status ORDER BY weight ASC");
+  $order_statuses = db_query("SELECT s.title, s.weight, COUNT(o.order_status) FROM {uc_orders} as o LEFT JOIN {uc_order_statuses} as s ON s.order_status_id = o.order_status GROUP BY order_status, s.title, s.weight ORDER BY weight ASC");
   
   while ($order_status = db_fetch_array($order_statuses)) {
     if (!empty($order_status['title'])) {
@@ -415,10 +458,10 @@ function uc_reports_sales_yearly($year = NULL) {
   $header = array(
     array('data' => t('Description')),
     array('data' => t('Orders')),
-    array('data' => t('Income')),
+    array('data' => t('Revenue')),
     array('data' => t('Average')),
   );
-  $csv_rows[] = array(t('Description'),t('Orders'),t('Income'),t('Average'));
+  $csv_rows[] = array(t('Description'),t('Orders'),t('Revenue'),t('Average'));
   
   for ($i = 1; $i <= 12; $i++) {
     $time = gmmktime(0,0,0,$i,1,$year)-$timezone_offset;
@@ -799,26 +842,26 @@ function _uc_reports_get_csv($report_id, $user_id) {
   $csv_data = cache_get('uc_reports_'.$report_id.'_'.$user_id,'cache');
   
   if (!$csv_data || $user_id != $user_check) {
-		drupal_set_message(t("The CSV data could not be retreived. It's possible the data might have expired. Refresh the report page and try to retrieve the CSV file again."),'error');
-		drupal_not_found();
-		exit();
+    drupal_set_message(t("The CSV data could not be retreived. It's possible the data might have expired. Refresh the report page and try to retrieve the CSV file again."),'error');
+    drupal_not_found();
+    exit();
   }
   else {
     ob_end_clean();
-		$http_headers = array (
-			'Pragma: no-cache',
-			'Expires: 0',
-			'Cache-Control: no-cache, must-revalidate',
-			'Cache-Control: private',
-			'Content-Transfer-Encoding: binary',
-			'Content-Length:' . strlen($csv_data->data),
-			'Content-Disposition: attachment; filename="'.$report_id.'.csv"',	
-			'Content-Type: text/csv'
-		);
-		foreach ($http_headers as $header) {
-			$header = preg_replace('/\r?\n(?!\t| )/', '', $header);
-			drupal_set_header($header);
-		}
+    $http_headers = array (
+      'Pragma: no-cache',
+      'Expires: 0',
+      'Cache-Control: no-cache, must-revalidate',
+      'Cache-Control: private',
+      'Content-Transfer-Encoding: binary',
+      'Content-Length:' . strlen($csv_data->data),
+      'Content-Disposition: attachment; filename="'.$report_id.'.csv"',  
+      'Content-Type: text/csv'
+    );
+    foreach ($http_headers as $header) {
+      $header = preg_replace('/\r?\n(?!\t| )/', '', $header);
+      drupal_set_header($header);
+    }
     
     print $csv_data->data;
     exit();
@@ -834,31 +877,53 @@ function _uc_reports_get_csv($report_id, $user_id) {
 *   The amount of time over which to count sales (e.g. [1] day, month, year)
 * @return:
 * An associative array containing information about sales:
-* 	'date' => A string representing the day counting was started
-* 	'income' => The total revenue that occurred during the time period
-* 	'total' => The total number of orders completed during the time period
-* 	'average' => The average revenue produced for each order
+*   'date' => A string representing the day counting was started
+*   'income' => The total revenue that occurred during the time period
+*   'total' => The total number of orders completed during the time period
+*   'average' => The average revenue produced for each order
 */
 function _uc_reports_get_sales($time, $period = 'day') {
   $output = array();
   $output['income'] = 0;
   $order_statuses = _uc_reports_order_statuses();
-  
-  switch ($period) {
-    default:
-    case 'day':
-      $output['date'] = format_date($time,'custom',"n").'-'.format_date($time,'custom',"j");
-      $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE \"".format_date($time,'custom',"Y")."-".format_date($time,'custom',"m")."-".format_date($time,'custom',"d")."%%\"");
+ 
+  switch ($GLOBALS['db_type']){
+    case 'mysqli':
+    case 'mysql':
+      switch ($period) {
+        default:
+        case 'day':
+          $output['date'] = format_date($time,'custom',"n").'-'.format_date($time,'custom',"j");
+          $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE \"".format_date($time,'custom',"Y")."-".format_date($time,'custom',"m")."-".format_date($time,'custom',"d")."%%\"");
+          break;
+        case 'month':
+          $output['date'] = format_date($time,'custom',"n");
+          $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE \"".format_date($time,'custom',"Y")."-".format_date($time,'custom',"m")."%%\"");
+          break;
+        case 'year':
+          $output['date'] = format_date($time,'custom',"Y");
+          $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE \"".format_date($time,'custom',"Y")."-%%\"");
+          break;
+    }
+    case 'pgsql':
+      switch ($period) {
+        default:
+        case 'day':
+          $output['date'] = format_date($time,'custom',"n").'-'.format_date($time,'custom',"j");
+          $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE '".format_date($time,'custom',"Y")."-".format_date($time,'custom',"m")."-".format_date($time,'custom',"d")."%%'");
+          break;
+        case 'month':
+          $output['date'] = format_date($time,'custom',"n");
+          $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE '".format_date($time,'custom',"Y")."-".format_date($time,'custom',"m")."%%'");
+          break;
+        case 'year':
+          $output['date'] = format_date($time,'custom',"Y");
+          $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE '".format_date($time,'custom',"Y")."-%%'");
+          break;
+      }
       break;
-    case 'month':
-      $output['date'] = format_date($time,'custom',"n");
-      $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE \"".format_date($time,'custom',"Y")."-".format_date($time,'custom',"m")."%%\"");
-      break;
-    case 'year':
-      $output['date'] = format_date($time,'custom',"Y");
-      $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE \"".format_date($time,'custom',"Y")."-%%\"");
   }
-  
+
   while ($order = db_fetch_object($orders)) {
     $output['income'] += $order->order_total;
   }
