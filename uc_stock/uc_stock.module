@@ -14,6 +14,7 @@
 * Development sponsored by the Ubercart project.  http://www.ubercart.org
 */
 
+require_once('uc_stock_workflow.inc');
 /*******************************************************************************
 * Hook Functions (Drupal)
 *******************************************************************************/
@@ -74,35 +75,6 @@ function uc_stock_menu($may_cache) {
 *******************************************************************************/
 
 /**
-* Implementation of hook_order().
-*/
-function uc_stock_order($op, $order, $arg2) {
-  switch ($op) {
-    case 'submit':
-      $stock_warnings = array();
-      foreach ($order->products as $product) {
-        if (($stock = uc_stock_level($product->model)) !== FALSE) {
-          $stock_level = db_fetch_object(db_query("SELECT * FROM {uc_product_stock} WHERE sku = '%s'",$product->model));
-          if ((($stock-$product->qty) <= $stock_level->threshold) && !in_array($product->model,array_keys($stock_warnings)) ) {
-            $stock_level->stock -= $product->qty;
-            $stock_warnings[$product->model] = $stock_level;
-          }
-          uc_stock_adjust($product->model,-$product->qty);
-          uc_order_comment_save($order->order_id, 0, t('The stock level for %model_name has been decreased to !qty',array('%model_name' => $product->model,'!qty' => ($stock - $product->qty))));
-        }
-      }
-      if (!empty($stock_warnings) && variable_get('uc_stock_threshold_notification',FALSE)) {
-        foreach ($stock_warnings as $model => $stock_level) {
-          _uc_stock_send_mail($order, $stock_level);
-        }
-      }
-      break;
-    default:
-      break;
-  }
-}
-
-/**
 * Implementation of hook_token_list().
 */
 function uc_stock_token_list($type = 'all') {
@@ -151,41 +123,44 @@ function theme_uc_stock_edit_form($form) {
     array('data' => t('Stock')),
     array('data' => t('Threshold')),
   );
-  foreach ($form['models']['#value'] as $index => $model) {
-    $rows[] = array(
-      array('data' => drupal_render($form['active_'.$index])),
-      array('data' => $model),
-      array('data' => drupal_render($form['stock_'.$index])),
-      array('data' => drupal_render($form['threshold_'.$index])),
-    );
+  if (is_array($form['models']['#value'])) {
+    foreach ($form['models']['#value'] as $index => $model) {
+      $rows[] = array(
+        array('data' => drupal_render($form['active_'.$index])),
+        array('data' => $model),
+        array('data' => drupal_render($form['stock_'.$index])),
+        array('data' => drupal_render($form['threshold_'.$index])),
+      );
+    }
   }
   return theme('table', $header, $rows).drupal_render($form);
 }
 function uc_stock_edit_form($nid) {
   $node = node_load(array('nid' => $nid));
-  $skus = uc_stock_skus($nid);
   $form = array();
   drupal_set_title($node->title);
   
-  foreach ($skus as $index => $sku) {
-    $form = array_merge($form,uc_stock_sku_fields($index, $sku));
+  if ($skus = uc_stock_skus($nid)) {
+    foreach ($skus as $index => $sku) {
+      $form = array_merge($form,uc_stock_sku_fields($index, $sku));
+    }
+    $form['models'] = array(
+        '#type' => 'value',
+        '#value' => $skus,
+    );
+    $form['nid'] = array(
+        '#type' => 'value',
+        '#value' => $node->nid,
+    );
+    $form['save'] = array(
+      '#type' => 'submit', 
+      '#value' => t('Save changes'),
+    );
+    $form['remove'] = array(
+      '#type' => 'submit', 
+      '#value' => t('Disable'),
+    );
   }
-  $form['models'] = array(
-      '#type' => 'value',
-      '#value' => $skus,
-  );
-  $form['nid'] = array(
-      '#type' => 'value',
-      '#value' => $node->nid,
-  );
-  $form['save'] = array(
-    '#type' => 'submit', 
-    '#value' => t('Save changes'),
-  );
-  $form['remove'] = array(
-    '#type' => 'submit', 
-    '#value' => t('Disable'),
-  );
   return $form;
 }
 function uc_stock_edit_form_submit($form_id, $form_values) {
@@ -358,7 +333,7 @@ function uc_stock_skus($nid) {
     if (module_exists('uc_attribute')) {
       $models = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = %d", $node->nid);
       while ($model = db_fetch_object($models)) {
-        if (!in_array($model,$skus)) {
+        if (!in_array($model->model,$skus)) {
           $skus[] = $model->model;
         }
       }
@@ -374,33 +349,27 @@ function uc_stock_skus($nid) {
 * @param $sku
 *   The SKU of the stock level to edit
 * @return:
-* An array of form elements as defined in the Drupal Form API or FALSE if the 
-* SKU doesn't have a stock level in the table
+* An array of form elements as defined in the Drupal Form API
 */
 function uc_stock_sku_fields($id, $sku) {
   $stock = db_fetch_object(db_query("SELECT active, stock, threshold FROM {uc_product_stock} WHERE sku = '%s'",$sku));
-  if (is_null($stock)) {
-    return FALSE;
-  }
-  else {
-    $form["active_$id"] = array (
-      '#type' => 'checkbox', 
-      '#default_value' => $stock->active,
-    );
-    $form["stock_$id"] = array(
-      '#type' => 'textfield',
-      '#default_value' => (!empty($stock->stock)) ? $stock->stock : 0,
-      '#maxlength' => 9,
-      '#size' => 9,
-    );
-    $form["threshold_$id"] = array(
-      '#type' => 'textfield',
-      '#default_value' => (!empty($stock->threshold)) ? $stock->threshold : 0,
-      '#maxlength' => 9,
-      '#size' => 9,
-    );
-    return $form;
-  }
+  $form["active_$id"] = array (
+    '#type' => 'checkbox', 
+    '#default_value' => (!empty($stock->active)) ? $stock->active : 0,
+  );
+  $form["stock_$id"] = array(
+    '#type' => 'textfield',
+    '#default_value' => (!empty($stock->stock)) ? $stock->stock : 0,
+    '#maxlength' => 9,
+    '#size' => 9,
+  );
+  $form["threshold_$id"] = array(
+    '#type' => 'textfield',
+    '#default_value' => (!empty($stock->threshold)) ? $stock->threshold : 0,
+    '#maxlength' => 9,
+    '#size' => 9,
+  );
+  return $form;
 }
 
 /**
