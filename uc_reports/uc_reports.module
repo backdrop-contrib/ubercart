@@ -22,23 +22,25 @@ define('UC_REPORTS_MAX_RECORDS',PHP_INT_MAX);
 * Implementation of hook_help().
 */
 function uc_reports_help($section) {
-  $statuses = array();
-  foreach (variable_get('uc_reports_reported_statuses',array('completed')) as $status) {
-    $statuses[] = db_result(db_query("SELECT title FROM {uc_order_statuses} WHERE order_status_id = '%s'",$status));
-  }
-  $order_statuses = t('<br/><br/><strong>Order statuses used:</strong> ').implode(', ',$statuses);
-  switch ($section) {
-    case 'admin/store/reports/customers':
-      return t("The following are total orders, products, sales, and average order totals for each store customer. Clicking on the header links will toggle a descending or ascending order for that column. Clicking on a customer's name will take you to a detailed list of orders that customer has made. Clicking on a customers username will take you to their account page.$order_statuses");
-    case 'admin/store/reports/products':
-      return t('The following are all products listed in the store, their amount sold, how many times it has been viewed*, revenue they have produced, and gross they have earned. If you do not see the number of views you must enable the %module_name module on the <a href="!module_url">module administration page</a>.'.$order_statuses, array('!module_url' => url('admin/build/modules'),'%module_name' => 'statistics'));
-    case 'admin/store/reports/sales':
-      return t("These are the sales for the last two days, average sales for the month, and the projected sales for the rest of the month. Further down the list you will see other sales statistics.$order_statuses");
-    case 'admin/store/reports/sales/yearly':
-      $year = (is_null($_GET['year'])) ? format_date(time(),'custom',"Y") : $_GET['year'];
-      return t("This is the monthly break down of sales for the year !year_number. Clicking on each link will take you to a list of orders during that month for the year.$order_statuses", array('!year_number' => $year));
-    case 'admin/store/reports/sales/custom':
-      return t("By clicking the customize report link below, you will open up a form that lets you create a custom report by a few options: the date span of the report, the period between grouped orders, the order statuses to display, and whether or not to display information about products in each order.");
+  if (!strncmp($section, 'admin/store/reports/', 20)) {
+    $statuses = array();
+    foreach (variable_get('uc_reports_reported_statuses',array('completed')) as $status) {
+      $statuses[] = db_result(db_query("SELECT title FROM {uc_order_statuses} WHERE order_status_id = '%s'",$status));
+    }
+    $order_statuses = t('<br/><br/><strong>Order statuses used:</strong> ').implode(', ',$statuses);
+    switch ($section) {
+      case 'admin/store/reports/customers':
+        return t("The following are total orders, products, sales, and average order totals for each store customer. Clicking on the header links will toggle a descending or ascending order for that column. Clicking on a customer's name will take you to a detailed list of orders that customer has made. Clicking on a customers username will take you to their account page.$order_statuses");
+      case 'admin/store/reports/products':
+        return t('The following are all products listed in the store, their amount sold, how many times it has been viewed*, revenue they have produced, and gross they have earned. If you do not see the number of views you must enable the %module_name module on the <a href="!module_url">module administration page</a>.'.$order_statuses, array('!module_url' => url('admin/build/modules'),'%module_name' => 'statistics'));
+      case 'admin/store/reports/sales':
+        return t("These are the sales for the last two days, average sales for the month, and the projected sales for the rest of the month. Further down the list you will see other sales statistics.$order_statuses");
+      case 'admin/store/reports/sales/yearly':
+        $year = (is_null($_GET['year'])) ? format_date(time(),'custom',"Y") : $_GET['year'];
+        return t("This is the monthly break down of sales for the year !year_number. Clicking on each link will take you to a list of orders during that month for the year.$order_statuses", array('!year_number' => $year));
+      case 'admin/store/reports/sales/custom':
+        return t("By clicking the customize report link below, you will open up a form that lets you create a custom report by a few options: the date span of the report, the period between grouped orders, the order statuses to display, and whether or not to display information about products in each order.");
+    }
   }
 }
 
