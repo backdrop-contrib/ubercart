@@ -2,19 +2,19 @@
 // $Id$
 
 /**
-* @file
-* This file contains all the Workflow-NG hooks that are neccesary for Workflow
-* integeration with the uc_stock module
-*/
+ * @file
+ * This file contains all the Workflow-NG hooks that are neccesary for Workflow
+ * integeration with the uc_stock module
+ */
 
 
-/*******************************************************************************
-* Workflow-ng Hooks
-*******************************************************************************/
+/* ************************************************************************* *
+ *  Workflow-ng Hooks                                                        *
+ * ************************************************************************* */
 
 /*
-* Implementation of hook_configuration
-*/
+ * Implementation of hook_configuration
+ */
 function uc_stock_configuration() {
   $configurations = array();
   $configurations['uc_stock_decrement_on_order'] = array(
@@ -28,13 +28,13 @@ function uc_stock_configuration() {
       'order' => array('#entity' => 'order', '#label' => t('Order')),
     ),
   ));
-  $configurations['uc_stock_decrement_on_order'] = workflow_ng_configure($configurations['uc_stock_decrement_on_order'],$action);
+  $configurations['uc_stock_decrement_on_order'] = workflow_ng_configure($configurations['uc_stock_decrement_on_order'], $action);
   return $configurations;
 }
 
 /*
-* Implementation of hook_action_info()
-*/
+ * Implementation of hook_action_info()
+ */
 function uc_stock_action_info() {
   return array(
     'uc_stock_action_decrement_stock' => array(
@@ -47,9 +47,9 @@ function uc_stock_action_info() {
   );
 }
 
-/*******************************************************************************
-* Workflow-ng Action Callbacks and Forms
-*******************************************************************************/
+/* ************************************************************************* *
+ *  Workflow-ng Action Callbacks and Forms                                   *
+ * ************************************************************************* */
 
 function uc_stock_action_decrement_stock($order, $settings) {
   if (is_array($order->products)) {
@@ -62,7 +62,7 @@ function uc_stock_action_decrement_stock($order, $settings) {
           $stock_warnings[$product->model] = $stock_level;
         }
         uc_stock_adjust($product->model, -$product->qty);
-        uc_order_comment_save($order->order_id, 0, t('The stock level for %model_name has been decreased to !qty.', array('%model_name' => $product->model,'!qty' => ($stock - $product->qty))));
+        uc_order_comment_save($order->order_id, 0, t('The stock level for %model_name has been decreased to !qty.', array('%model_name' => $product->model, '!qty' => ($stock - $product->qty))));
       }
     }
     if (!empty($stock_warnings) && variable_get('uc_stock_threshold_notification', FALSE)) {

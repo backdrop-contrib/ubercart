@@ -1,29 +1,29 @@
 <?php
 // $Id$
 
-function uc_reports_install(){
-  switch($GLOBALS['db_type']){
+function uc_reports_install() {
+  switch ($GLOBALS['db_type']) {
     case 'mysqli':
-    case 'mysql': 
+    case 'mysql':
       break;
-	case 'pgsql':
-	  db_query("CREATE OR REPLACE FUNCTION from_unixtime(integer) RETURNS timestamp AS 'SELECT $1::abstime::timestamp without time zone AS result' LANGUAGE 'SQL';");
-	  db_query("CREATE OR REPLACE FUNCTION unix_timestamp() RETURNS integer AS 'SELECT ROUND(EXTRACT( EPOCH FROM abstime(now()) ))::int4 AS result;' LANGUAGE 'SQL';");
-	  db_query("CREATE OR REPLACE FUNCTION unix_timestamp(timestamp with time zone) RETURNS integer AS 'SELECT ROUND(EXTRACT( EPOCH FROM ABSTIME($1) ))::int4 AS result;' LANGUAGE 'SQL';");
-	  break;
+    case 'pgsql':
+      db_query("CREATE OR REPLACE FUNCTION from_unixtime(integer) RETURNS timestamp AS 'SELECT $1::abstime::timestamp without time zone AS result' LANGUAGE 'SQL';");
+      db_query("CREATE OR REPLACE FUNCTION unix_timestamp() RETURNS integer AS 'SELECT ROUND(EXTRACT( EPOCH FROM abstime(now()) ))::int4 AS result;' LANGUAGE 'SQL';");
+      db_query("CREATE OR REPLACE FUNCTION unix_timestamp(timestamp with time zone) RETURNS integer AS 'SELECT ROUND(EXTRACT( EPOCH FROM ABSTIME($1) ))::int4 AS result;' LANGUAGE 'SQL';");
+      break;
   }
 }
 
 function uc_reports_uninstall() {
-  switch($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysqli':
-    case 'mysql': 
-  	  break;
-	case 'pgsql':
-	  db_query("DROP FUNCTION from_unixtime(integer);");
-	  db_query("DROP FUNCTION unix_timestamp();");
-	  db_query("DROP FUNCTION unix_timestamp(timestamp with time zone);");
-	  break;
+    case 'mysql':
+      break;
+    case 'pgsql':
+      db_query("DROP FUNCTION from_unixtime(integer);");
+      db_query("DROP FUNCTION unix_timestamp();");
+      db_query("DROP FUNCTION unix_timestamp(timestamp with time zone);");
+      break;
   }
 }
 

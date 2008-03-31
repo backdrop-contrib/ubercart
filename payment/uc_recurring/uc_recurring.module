@@ -207,11 +207,11 @@ function uc_recurring_product_feature() {
     'id' => 'recurring',
     'title' => t('Recurring fee'),
     'callback' => 'uc_recurring_feature_form',
-		'delete' => 'uc_recurring_fee_delete',
+    'delete' => 'uc_recurring_fee_delete',
     'settings' => 'uc_recurring_settings_form',
   );
 
-	return $features;
+  return $features;
 }
 
 /**
@@ -311,15 +311,15 @@ function uc_recurring_feature_form($node, $feature) {
     $fee = uc_recurring_fee_load('product', $feature['pfid']);
   }
 
-	$options = array('' => t('<Any>'), $node->model => $node->model);
-	if (module_exists('uc_attribute')) {
-		$result = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = %d", $node->nid);
-		while ($row = db_fetch_object($result)) {
-			if (!in_array($row->model, $options)) {
-				$options[$row->model] = $row->model;
-			}
-		}
-	}
+  $options = array('' => t('<Any>'), $node->model => $node->model);
+  if (module_exists('uc_attribute')) {
+    $result = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = %d", $node->nid);
+    while ($row = db_fetch_object($result)) {
+      if (!in_array($row->model, $options)) {
+        $options[$row->model] = $row->model;
+      }
+    }
+  }
   $form['model'] = array(
     '#type' => 'select',
     '#title' => t('Applicable Model/SKU'),
@@ -427,13 +427,13 @@ function uc_recurring_feature_form_submit($form_id, $form_values) {
     '!intervals' => $fee['number_intervals'] == 0 ? t('indefinitely') : t('!num times', array('!num' => $fee['number_intervals'] - 1)),
   );
 
-	$data = array(
-		'pfid' => $fee['pfid'],
-		'nid' => $form_values['nid'],
-		'fid' => 'recurring',
-		'description' => t('When !product is purchased, add a fee for !amount charged first after !initial and every !regular after that !intervals.', $args),
-	);
-	
+  $data = array(
+    'pfid' => $fee['pfid'],
+    'nid' => $form_values['nid'],
+    'fid' => 'recurring',
+    'description' => t('When !product is purchased, add a fee for !amount charged first after !initial and every !regular after that !intervals.', $args),
+  );
+  
   return uc_product_feature_save($data);
 }
 
@@ -686,7 +686,7 @@ function uc_recurring_admin_delete_form() {
 }
 
 function uc_recurring_admin_delete_form_submit($form_id, $form_values) {
-  uc_recurring_fee_delete('user', arg(4));
+  uc_recurring_fee_delete(array('fid' => arg(4)), 'user');
 
   drupal_set_message(t('Recurring fee !fee deleted.', array('!fee' => arg(4))));
 
@@ -787,14 +787,14 @@ function uc_recurring_fee_load($type, $id) {
  * @param $id
  *   The ID of the recurring fee to be removed from the appropriate table.
  */
-function uc_recurring_fee_delete($type, $id) {
+function uc_recurring_fee_delete($feature, $type = 'product') {
   switch ($type) {
     case 'product':
-      db_query("DELETE FROM {uc_recurring_products} WHERE pfid = %d", $id);
+      db_query("DELETE FROM {uc_recurring_products} WHERE pfid = %d", $feature['fid']);
       break;
     case 'user':
-      module_invoke_all('recurring_api', 'delete', $id);
-      db_query("DELETE FROM {uc_recurring_users} WHERE rfid = %d", $id);
+      module_invoke_all('recurring_api', 'delete', $feature['fid']);
+      db_query("DELETE FROM {uc_recurring_users} WHERE rfid = %d", $feature['fid']);
       break;
   }
 }
@@ -860,7 +860,7 @@ function uc_recurring_charge($fee) {
     $func = $gateways[$keys[0]]['credit'];
   }
   elseif (count($gateways) > 1) {
-    foreach($gateways as $gateway) {
+    foreach ($gateways as $gateway) {
       if ($gateway['id'] == variable_get('uc_payment_credit_gateway', '')) {
         $func = $gateway['credit'];
       }
