@@ -15,6 +15,7 @@
  */
 
 require_once('uc_stock_workflow.inc');
+
 /* ************************************************************************* *
  *  Hook Functions (Drupal)                                                  *
  * ************************************************************************* */
@@ -67,6 +68,7 @@ function uc_stock_menu($may_cache) {
     );
     drupal_add_css(drupal_get_path('module', 'uc_stock') .'/uc_stock.css');
   }
+
   return $items;
 }
 
@@ -83,6 +85,7 @@ function uc_stock_token_list($type = 'all') {
     $tokens['stock']['stock-model'] = t('The model or SKU of the stock level');
     $tokens['stock']['stock-threshold'] = t('The threshold or warning limit of the stock level');
   }
+
   return $tokens;
 }
 
@@ -97,6 +100,7 @@ function uc_stock_token_values($type, $object = NULL) {
       $values['stock-threshold'] = $object->threshold;
       break;
   }
+
   return $values;
 }
 
@@ -123,6 +127,7 @@ function theme_uc_stock_edit_form($form) {
     array('data' => t('Stock')),
     array('data' => t('Threshold')),
   );
+
   if (is_array($form['models']['#value'])) {
     foreach ($form['models']['#value'] as $index => $model) {
       $rows[] = array(
@@ -133,13 +138,16 @@ function theme_uc_stock_edit_form($form) {
       );
     }
   }
+
   return theme('table', $header, $rows) . drupal_render($form);
 }
+
 function uc_stock_edit_form($nid) {
+  drupal_set_title(check_plain($node->title));
+
   $node = node_load(array('nid' => $nid));
   $form = array();
-  drupal_set_title($node->title);
-  
+
   if ($skus = uc_stock_skus($nid)) {
     foreach ($skus as $index => $sku) {
       $form = array_merge($form, uc_stock_sku_fields($index, $sku));
@@ -161,8 +169,10 @@ function uc_stock_edit_form($nid) {
       '#value' => t('Disable'),
     );
   }
+
   return $form;
 }
+
 function uc_stock_edit_form_submit($form_id, $form_values) {
   $node = node_load(array('nid' => $form_values['nid']));
   switch ($form_values['op']) {
@@ -232,6 +242,7 @@ function theme_uc_stock_report_form($form) {
   
   return $output;
 }
+
 function uc_stock_report_form() {
   $show_threshold = (!empty($_GET['threshold'])) ? $_GET['threshold'] : FALSE;
   $form['threshold'] = array(
@@ -248,6 +259,7 @@ function uc_stock_report_form() {
   $form['#attributes'] = array('name' => 'uc_stock_report_form');
   return $form;
 }
+
 function uc_stock_report_form_submit($form_id, $form_values) {
   if ($form_values['threshold']) {
     drupal_goto("admin/store/reports/stock", "threshold=1");
@@ -266,17 +278,20 @@ function uc_stock_settings_form() {
     '#title' => t('Send email notification when stock level reaches its threshold value'),
     '#default_value' => variable_get('uc_stock_threshold_notification', FALSE),
   );
+
   $form['uc_stock_threshold_notification_recipients'] = array(
     '#type' => 'textfield',
     '#title' => t('Notification recipients'),
     '#default_value' => variable_get('uc_stock_threshold_notification_recipients', variable_get('uc_store_email', ini_get('sendmail_from'))),
     '#description' => t('The list of comma seperated email addresses that will receive the notification.'),
   );
+
   $form['uc_stock_threshold_notification_subject'] = array(
     '#type' => 'textfield',
     '#title' => t('Message subject'),
     '#default_value' => variable_get('uc_stock_threshold_notification_subject', uc_get_message('uc_stock_threshold_notification_subject')),
   );
+
   $form['uc_stock_threshold_notification_message'] = array(
     '#type' => 'textarea',
     '#title' => t('Message text'),
@@ -285,6 +300,7 @@ function uc_stock_settings_form() {
     '#rows' => 10,
   );
   $form['uc_stock_threshold_notification_format'] = filter_form(variable_get('uc_stock_threshold_notification_format', FILTER_FORMAT_DEFAULT), NULL, array('uc_stock_threshold_notification_format'));
+
   return system_settings_form($form);
 }
 
@@ -300,8 +316,7 @@ function uc_stock_settings_form() {
  *   The amount to adjust the stock level by
  */
 function uc_stock_adjust($sku, $qty) {
-  $op = ($qty < 0) ? "-" : "+";
-  db_query("UPDATE {uc_product_stock} SET stock = stock %s %d WHERE sku = '%s'", $op, (int) abs($qty), $sku);
+  db_query("UPDATE {uc_product_stock} SET stock = stock + %d WHERE sku = '%s'", $qty, $sku);
 }
 
 /**
@@ -325,21 +340,23 @@ function uc_stock_level($sku) {
  */
 function uc_stock_skus($nid) {
   $node = node_load(array('nid' => $nid));
+
   if (is_null($node->model)) {
     return FALSE;
   }
-  else {
-    $skus = array($node->model);
-    if (module_exists('uc_attribute')) {
-      $models = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = %d", $node->nid);
-      while ($model = db_fetch_object($models)) {
-        if (!in_array($model->model, $skus)) {
-          $skus[] = $model->model;
-        }
+
+  $skus = array($node->model);
+
+  if (module_exists('uc_attribute')) {
+    $models = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = %d", $node->nid);
+    while ($model = db_fetch_object($models)) {
+      if (!in_array($model->model, $skus)) {
+        $skus[] = $model->model;
       }
     }
-    return $skus;
   }
+
+  return $skus;
 }
 
 /**
@@ -353,22 +370,26 @@ function uc_stock_skus($nid) {
  */
 function uc_stock_sku_fields($id, $sku) {
   $stock = db_fetch_object(db_query("SELECT active, stock, threshold FROM {uc_product_stock} WHERE sku = '%s'", $sku));
-  $form["active_$id"] = array(
+
+  $form['active_'. $id] = array(
     '#type' => 'checkbox', 
-    '#default_value' => (!empty($stock->active)) ? $stock->active : 0,
+    '#default_value' => !empty($stock->active) ? $stock->active : 0,
   );
-  $form["stock_$id"] = array(
+
+  $form['stock_'. $id] = array(
     '#type' => 'textfield',
-    '#default_value' => (!empty($stock->stock)) ? $stock->stock : 0,
+    '#default_value' => !empty($stock->stock) ? $stock->stock : 0,
     '#maxlength' => 9,
     '#size' => 9,
   );
-  $form["threshold_$id"] = array(
+
+  $form['threshold_'. $id] = array(
     '#type' => 'textfield',
-    '#default_value' => (!empty($stock->threshold)) ? $stock->threshold : 0,
+    '#default_value' => !empty($stock->threshold) ? $stock->threshold : 0,
     '#maxlength' => 9,
     '#size' => 9,
   );
+
   return $form;
 }
 
@@ -385,12 +406,16 @@ function uc_stock_sku_fields($id, $sku) {
  */
 function _uc_stock_send_mail($order, $stock) {
   $token_filters = array('global' => NULL, 'order' => $order, 'stock' => $stock);
+
   $to = variable_get('uc_stock_threshold_notification_recipients', variable_get('uc_store_email', ini_get('sendmail_from')));
   $from = variable_get('uc_store_email_from', ini_get('sendmail_from'));
+
   $subject = variable_get('uc_stock_threshold_notification_subject', uc_get_message('uc_stock_threshold_notification_subject'));
   $subject = token_replace_multiple($subject, $token_filters);
+
   $body = variable_get('uc_stock_threshold_notification_message', uc_get_message('uc_stock_threshold_notification_message'));
   $body = token_replace_multiple($body, $token_filters);
+
   return drupal_mail('uc_stock', $to, $subject, $body, $from);
 }
 

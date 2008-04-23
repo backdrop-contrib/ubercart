@@ -23,7 +23,7 @@ function uc_payment_pack_menu($may_cache) {
 
   return $items;
 }
- 
+
 /**
  * Implementation of hook_payment_method().
  */
@@ -120,7 +120,7 @@ function uc_payment_method_other_form($order) {
 function theme_uc_payment_method_other_form($form) {
   $output = '<table class="order-edit-table"><tr><td class="oet-label">'
           . t('Description:') .'</td><td>'
-          . drupal_render($form['pm_other_description']) 
+          . drupal_render($form['pm_other_description'])
           .'</td></tr></table>';
   return $output;
 }
@@ -303,7 +303,7 @@ function uc_payment_method_check($op, &$arg1) {
       $result = db_query("SELECT clear_date FROM {uc_payment_check} WHERE "
                         ."order_id = %d ", $arg1->order_id);
       if ($check = db_fetch_object($result)) {
-        $output = t('Clear Date:') .' '. format_date($check->clear_date, 'custom', 'm/d/Y');
+        $output = t('Clear Date:') .' '. format_date($check->clear_date, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
       }
       else {
         $output = l(t('Receive Check'), 'admin/store/orders/'. $arg1->order_id .'/receive_check');
@@ -319,7 +319,7 @@ function uc_payment_method_check($op, &$arg1) {
                         ."order_id = %d ", $arg1->order_id);
       if ($check = db_fetch_object($result)) {
         $output = t('Check received') .'<br />'
-                . t('Expected clear date:') .'<br />'. format_date($check->clear_date, 'custom', 'm/d/Y');
+                . t('Expected clear date:') .'<br />'. format_date($check->clear_date, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
       }
       return $output;
 
@@ -380,7 +380,7 @@ function uc_payment_pack_receive_check_form($order_id) {
     '#size' => 10,
     '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
     '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
-  );  
+  );
   $form['comment'] = array(
     '#type' => 'textfield',
     '#title' => t('Comment'),
@@ -409,7 +409,7 @@ function uc_payment_pack_receive_check_form($order_id) {
 }
 
 function theme_uc_payment_pack_receive_check_form($form) {
-  drupal_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
+  uc_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
 
   $output = '<p>'. t('Use the form to enter the check into the payments system and set the expected clear date.') .'</p>';
   $output .= '<p><strong>'. t('Order balance:') .'</strong> '
