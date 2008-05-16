@@ -6,7 +6,7 @@ function uc_recurring_install() {
     case 'mysql':
     case 'mysqli':
       db_query("CREATE TABLE {uc_recurring_products} (
-				pfid mediumint(9) NOT NULL,
+        pfid mediumint(9) NOT NULL,
         model varchar(255) NOT NULL,
         fee_amount decimal(10,2) NOT NULL,
         initial_charge varchar(255) NOT NULL,
@@ -29,13 +29,45 @@ function uc_recurring_install() {
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
       break;
     case 'pgsql':
+      db_query("CREATE TABLE {uc_recurring_products} (
+     	  pfid integer NOT NULL default 0,
+        model varchar(255) NOT NULL default '',
+        fee_amount decimal(10,2) NOT NULL default 0.0,
+        initial_charge varchar(255) NOT NULL default '',
+        regular_interval varchar(255) NOT NULL default '',
+        number_intervals integer NOT NULL default 0,
+        PRIMARY KEY (pfid)
+      )");
+      db_query("CREATE TABLE {uc_recurring_users} (
+        rfid integer NOT NULL default 0,
+        uid integer NOT NULL default 0,
+        next_charge integer NOT NULL default 0,
+        fee_amount decimal(10,2) NOT NULL default 0.0,
+        regular_interval varchar(255) NOT NULL default '',
+        remaining_intervals integer NOT NULL default 0,
+        charged_intervals integer NOT NULL default 0,
+        order_id integer NOT NULL default 0,
+        data text NOT NULL,
+        created integer NOT NULL,
+        PRIMARY KEY (rfid)
+      )");
       break;
   }
 }
 
 function uc_recurring_uninstall() {
-  db_query("DROP TABLE {uc_recurring_products}");
-  db_query("DROP TABLE {uc_recurring_users}");
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':	
+	    db_query("DROP TABLE IF EXISTS {uc_recurring_products}");
+	    db_query("DROP TABLE IF EXISTS {uc_recurring_users}");
+	    break;
+    case 'pgsql':
+	    db_query("DROP TABLE {uc_recurring_products}");
+	    db_query("DROP TABLE {uc_recurring_users}");
+	    break;
+  }	
+
   db_query("DELETE FROM {variable} WHERE name LIKE 'uc_recurring_%%'");
   cache_clear_all('variables', 'cache');
 }
