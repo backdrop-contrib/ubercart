@@ -8,12 +8,12 @@
  */
 
 
-/* ************************************************************************* *
- *  Workflow-ng Hooks                                                        *
- * ************************************************************************* */
+/*******************************************************************************
+ *  Workflow-ng Hooks                                                          *
+ ******************************************************************************/
 
-/*
- * Implementation of hook_configuration
+/**
+ * Implementation of hook_configuration().
  */
 function uc_stock_configuration() {
   $configurations = array();
@@ -32,13 +32,13 @@ function uc_stock_configuration() {
   return $configurations;
 }
 
-/*
- * Implementation of hook_action_info()
+/**
+ * Implementation of hook_action_info().
  */
 function uc_stock_action_info() {
   return array(
     'uc_stock_action_decrement_stock' => array(
-      '#label' => t('Decrement stock of products in order'),
+      '#label' => t('Decrement stock of products on the order with tracking activated.'),
       '#arguments' => array(
         'order' => array('#entity' => 'order', '#label' => t('Order')),
       ),
@@ -47,9 +47,9 @@ function uc_stock_action_info() {
   );
 }
 
-/* ************************************************************************* *
- *  Workflow-ng Action Callbacks and Forms                                   *
- * ************************************************************************* */
+/*******************************************************************************
+ *  Workflow-ng Action Callbacks and Forms                                     *
+ ******************************************************************************/
 
 function uc_stock_action_decrement_stock($order, $settings) {
   if (is_array($order->products)) {

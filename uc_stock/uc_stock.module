@@ -6,19 +6,19 @@
  * Allow ubercart products to have stock levels associated with their SKU
  *
  * uc_stock enables ubercart to manage stock for products. Store admins can set
- * the stock levels on a product edit page and a threshold for each SKU value 
+ * the stock levels on a product edit page and a threshold for each SKU value
  * When that threshold is reached admins can be optionally notified about the
- * current stock level. Store admins can view all stock levels in the reports 
- * section of ubercart
+ * current stock level. Store admins can view all stock levels in the reports
+ * section of Ubercart.
  *
  * Development sponsored by the Ubercart project.  http://www.ubercart.org
  */
 
 require_once('uc_stock_workflow.inc');
 
-/* ************************************************************************* *
- *  Hook Functions (Drupal)                                                  *
- * ************************************************************************* */
+/*******************************************************************************
+ *  Hook Functions (Drupal)                                                    *
+ ******************************************************************************/
 
 /**
  * Implementation of hook_help().
@@ -26,9 +26,10 @@ require_once('uc_stock_workflow.inc');
 function uc_stock_help($section) {
   switch ($section) {
     case 'node/'. arg(1) .'/edit/stock':
-      return t("To keep track of stock for a particular product SKU, check the ") ."<strong>". t("active") ."</strong>". t(" checkbox and enter a value for ") ."<strong>". t("stock") ."</strong>". t(". When the ") ."<strong>". t("threshold") ."</strong>". t(" value is hit uc_stock will take action upon it. Clicking disable will stop stock tracking for these product SKUs.");
+      return t('To keep track of stock for a particular product SKU, make sure it is marked as active and enter a stock value. When the stock level drops below the threshold value, you can be notified based on your stock settings.');
     case 'admin/store/reports/stock':
-      return t('This is the list of product SKUs that are currently active. Stock levels below their threshold have highlighted rows. To view only these rows, check the "Only show SKUs that are below their threshold" checkbox.');
+    case 'admin/store/reports/stock/threshold':
+      return t('This is the list of product SKUs that are currently active. Stock levels below their threshold have highlighted rows. Toggle the checkbox below to alter which stock levels are shown.');
   }
 }
 
@@ -41,9 +42,8 @@ function uc_stock_menu($may_cache) {
     $items[] = array(
       'path' => 'admin/store/reports/stock',
       'title' => t('Stock reports'),
-      'description' => t('View reports for product stock'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('uc_stock_report_form'),
+      'description' => t('View reports for product stock.'),
+      'callback' => 'uc_stock_report',
       'access' => user_access('view reports'),
       'type' => MENU_NORMAL_ITEM,
     );
@@ -53,7 +53,7 @@ function uc_stock_menu($may_cache) {
       'description' => t('View the stock settings.'),
       'callback' => 'drupal_get_form',
       'callback arguments' => array('uc_stock_settings_form'),
-      'access' => user_access('administer store'),
+      'access' => user_access('administer products'),
       'type' => MENU_NORMAL_ITEM,
     );
   }
@@ -63,18 +63,19 @@ function uc_stock_menu($may_cache) {
       'title' => t('Stock'),
       'callback' => 'drupal_get_form',
       'callback arguments' => array('uc_stock_edit_form', arg(1)),
+      'access' => user_access('administer products'),
       'weight' => 10,
       'type' => MENU_LOCAL_TASK,
     );
-    drupal_add_css(drupal_get_path('module', 'uc_stock') .'/uc_stock.css');
   }
 
   return $items;
 }
 
-/* ************************************************************************* *
- *  Übercart Hooks                                                           *
- * ************************************************************************* */
+
+/*******************************************************************************
+ * Ubercart Hooks                                                              *
+ ******************************************************************************/
 
 /**
  * Implementation of hook_token_list().
@@ -113,13 +114,74 @@ function uc_stock_uc_message() {
   return $messages;
 }
 
-/* ************************************************************************* *
- *  Callback Functions, Forms, and Tables                                    *
- * ************************************************************************* */
 
-/**
- * Form builder for stock edit form
- */ 
+/*******************************************************************************
+ * Callback Functions, Forms, and Tables                                       *
+ ******************************************************************************/
+
+// Form builder for product stock edit form.
+function uc_stock_edit_form($nid) {
+  $node = node_load($nid);
+  drupal_set_title(check_plain($node->title));
+
+  $form = array();
+  $skus = uc_stock_skus($nid);
+
+  if (!$skus) {
+    drupal_not_found();
+  }
+
+  $form['stock'] = array('#tree' => TRUE);
+
+  foreach ($skus as $id => $sku) {
+    $stock = db_fetch_array(db_query("SELECT * FROM {uc_product_stock} WHERE sku = '%s'", $sku));
+
+    $form['stock'][$id]['sku'] = array(
+      '#type' => 'value',
+      '#value' => $sku,
+    );
+
+    // Checkbox to mark this as active.
+    $form['stock'][$id]['active'] = array(
+      '#type' => 'checkbox',
+      '#default_value' => !empty($stock['active']) ? $stock['active'] : 0,
+    );
+
+    // Sanitized version of the SKU for display.
+    $form['stock'][$id]['display_sku'] = array(
+      '#value' => check_plain($sku),
+    );
+
+    // Textfield for entering the stock level.
+    $form['stock'][$id]['stock'] = array(
+      '#type' => 'textfield',
+      '#default_value' => !empty($stock['stock']) ? $stock['stock'] : 0,
+      '#maxlength' => 9,
+      '#size' => 9,
+    );
+
+    // Textfield for entering the threshold level.
+    $form['stock'][$id]['threshold'] = array(
+      '#type' => 'textfield',
+      '#default_value' => !empty($stock['threshold']) ? $stock['threshold'] : 0,
+      '#maxlength' => 9,
+      '#size' => 9,
+    );
+  }
+
+  $form['nid'] = array(
+    '#type' => 'value',
+    '#value' => $nid,
+  );
+
+  $form['save'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save changes'),
+  );
+
+  return $form;
+}
+
 function theme_uc_stock_edit_form($form) {
   $header = array(
     array('data' => t('Active')),
@@ -128,150 +190,119 @@ function theme_uc_stock_edit_form($form) {
     array('data' => t('Threshold')),
   );
 
-  if (is_array($form['models']['#value'])) {
-    foreach ($form['models']['#value'] as $index => $model) {
-      $rows[] = array(
-        array('data' => drupal_render($form['active_'. $index])),
-        array('data' => $model),
-        array('data' => drupal_render($form['stock_'. $index])),
-        array('data' => drupal_render($form['threshold_'. $index])),
-      );
-    }
+  foreach (element_children($form['stock']) as $id) {
+    $rows[] = array(
+      array('data' => drupal_render($form['stock'][$id]['active'])),
+      array('data' => drupal_render($form['stock'][$id]['display_sku'])),
+      array('data' => drupal_render($form['stock'][$id]['stock'])),
+      array('data' => drupal_render($form['stock'][$id]['threshold'])),
+    );
   }
 
   return theme('table', $header, $rows) . drupal_render($form);
 }
 
-function uc_stock_edit_form($nid) {
-  drupal_set_title(check_plain($node->title));
-
-  $node = node_load(array('nid' => $nid));
-  $form = array();
-
-  if ($skus = uc_stock_skus($nid)) {
-    foreach ($skus as $index => $sku) {
-      $form = array_merge($form, uc_stock_sku_fields($index, $sku));
-    }
-    $form['models'] = array(
-        '#type' => 'value',
-        '#value' => $skus,
-    );
-    $form['nid'] = array(
-        '#type' => 'value',
-        '#value' => $node->nid,
-    );
-    $form['save'] = array(
-      '#type' => 'submit', 
-      '#value' => t('Save changes'),
-    );
-    $form['remove'] = array(
-      '#type' => 'submit', 
-      '#value' => t('Disable'),
-    );
-  }
-
-  return $form;
-}
-
 function uc_stock_edit_form_submit($form_id, $form_values) {
-  $node = node_load(array('nid' => $form_values['nid']));
-  switch ($form_values['op']) {
-    default:
-    case t('Save changes'):
-      foreach ($form_values['models'] as $index => $model) {
-        if ($form_values['active_'. $index]) {
-          if (db_result(db_query("SELECT nid FROM {uc_product_stock} WHERE sku = '%s'", $model))) {
-            db_query("UPDATE {uc_product_stock} SET active = %d, stock = %d, threshold = %d WHERE sku = '%s'", $form_values['active_'. $index], $form_values['stock_'. $index], $form_values['threshold_'. $index], $model);
-          }
-          else {
-            db_query("INSERT INTO {uc_product_stock} (sku, nid, active, stock, threshold) VALUES ('%s', %d, %d, %d, %d)", $model, $form_values['nid'], $form_values['active_'. $index], $form_values['stock_'. $index], $form_values['threshold_'. $index]);
-          }
-        }
-        else {
-          db_query("DELETE FROM {uc_product_stock} WHERE sku = '%s'", $model);
-        }
-      }
-      drupal_set_message(t("Stock changes saved for %product_name", array('%product_name' => $node->title)));
-      break;
-    case t('Disable'):
-      db_query("DELETE FROM {uc_product_stock} WHERE nid = %d", $form_values['nid']);
-      drupal_set_message(t("Stock disabled for %product_name", array('%product_name' => $node->title)));
-      break;
+  foreach (element_children($form_values['stock']) as $id) {
+    db_query("UPDATE {uc_product_stock} SET active = %d, stock = %d, threshold = %d WHERE sku = '%s'",
+      $form_values['stock'][$id]['active'] ? 1 : 0, intval($form_values['stock'][$id]['stock']),
+      intval($form_values['stock'][$id]['threshold']), $form_values['stock'][$id]['sku']);
+
+    if (!db_affected_rows()) {
+      db_query("INSERT INTO {uc_product_stock} (sku, nid, active, stock, threshold) VALUES ('%s', %d, %d, %d, %d)",
+        $form_values['stock'][$id]['sku'], $form_values['nid'], $form_values['stock'][$id]['active'] ? 1 : 0,
+        intval($form_values['stock'][$id]['stock']), intval($form_values['stock'][$id]['threshold']));
+    }
   }
+
+  drupal_set_message(t('Stock settings saved.'));
 }
 
-/**
- * Form builder for stock report form
- */ 
-function theme_uc_stock_report_form($form) {
-  $show_threshold = (!empty($_GET['threshold'])) ? $_GET['threshold'] : FALSE;
-  $output = drupal_render($form);
+// Displays a stock report for products with stock tracking enabled.
+function uc_stock_report() {
+  drupal_add_css(drupal_get_path('module', 'uc_stock') .'/uc_stock.css');
+
   $page_size = (!is_null($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
   $csv_rows = array();
-  
+  $rows = array();
+
   $header = array(
     array('data' => t('SKU'), 'field' => 'sku', 'sort' => 'asc'),
     array('data' => t('Product'), 'field' => 'title'),
     array('data' => t('Stock'), 'field' => 'stock'),
     array('data' => t('Threshold'), 'field' => 'threshold'),
-    array('data' => t('')),
+    array('data' => t('Operations')),
   );
+
   $csv_rows[] = array(t('SKU'), t('Product'), t('Stock'), t('Threshold'));
-  $sql = "SELECT s.nid,sku,title,stock,threshold FROM {uc_product_stock} as s LEFT JOIN {node} as n ON s.nid = n.nid WHERE active = 1";
-  $sql .= ($show_threshold) ? " AND threshold >= stock" : "";
-  $stock_levels = pager_query($sql . tablesort_sql($header), $page_size, 0, NULL);
-  
-  while ($stock = db_fetch_object($stock_levels)) {
+
+  $sql = "SELECT s.nid, sku, title, stock, threshold FROM {uc_product_stock} as s LEFT JOIN {node} as n ON s.nid = n.nid WHERE active = 1";
+  if (arg(4) == 'threshold') {
+    $sql .= ' AND threshold >= stock';
+  }
+
+  $result = pager_query($sql . tablesort_sql($header), $page_size, 0, NULL);
+  while ($stock = db_fetch_object($result)) {
+    $op = array();
+    if (user_access('administer products')) {
+      $op[] = l(t('edit'), 'node/'. $stock->nid .'/edit/stock', array(), 'destination=admin/store/reports/stock');
+    }
+
+    // Add the data to a table row for display.
     $rows[] = array(
       'data' => array(
         array('data' => $stock->sku),
         array('data' => l($stock->title, 'node/'. $stock->nid)),
         array('data' => $stock->stock),
         array('data' => $stock->threshold),
-        array('data' => l(t('edit'), 'node/'. $stock->nid .'/edit/stock', array(), 'destination=admin/store/reports/stock')),
+        array('data' => implode(' ', $op)),
       ),
       'class' => ($stock->threshold >= $stock->stock) ? 'uc-stock-below-threshold' : 'uc-stock-above-threshold',
     );
+
+    // Add the data to the CSV contents for export.
     $csv_rows[] = array($stock->sku, $stock->title, $stock->stock, $stock->threshold);
   }
+
   $csv_data = uc_reports_store_csv('uc_stock', $csv_rows);
-  
-  $output .= theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-stock-table'));
-  $output .= theme_pager(NULL, $page_size);
+
+  $output = drupal_get_form('uc_stock_report_form')
+          . theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-stock-table'))
+          . theme_pager(NULL, $page_size);
+
   $output .= '<div class="uc-reports-links">'. l(t('Export to CSV file'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']) .'&nbsp;&nbsp;&nbsp;'. ((!is_null($_GET['nopage'])) ? l(t('Show paged records'), 'admin/store/reports/stock') : l(t('Show all records'), 'admin/store/reports/stock', array(), 'nopage=1')) .'</div>';
-  
+
   return $output;
 }
 
+// Form builder for stock report threshold filter.
 function uc_stock_report_form() {
-  $show_threshold = (!empty($_GET['threshold'])) ? $_GET['threshold'] : FALSE;
   $form['threshold'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Only show SKUs that are below their threshold'),
-    '#default_value' => $show_threshold,
-    '#attributes' => array('onchange' => "document.uc_stock_report_form.submit();"),
+    '#title' => t('Only show SKUs that are below their threshold.'),
+    '#default_value' => arg(4) == 'threshold' ? TRUE : FALSE,
+    '#attributes' => array('onchange' => 'this.form.submit();'),
   );
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
     '#attributes' => array('style' => "display:none;"),
   );
-  $form['#attributes'] = array('name' => 'uc_stock_report_form');
+
   return $form;
 }
 
 function uc_stock_report_form_submit($form_id, $form_values) {
   if ($form_values['threshold']) {
-    drupal_goto("admin/store/reports/stock", "threshold=1");
+    drupal_goto('admin/store/reports/stock/threshold');
   }
   else {
-    drupal_goto("admin/store/reports/stock");
+    drupal_goto('admin/store/reports/stock');
   }
 }
 
-/**
- * Form builder for stock settings form
- */ 
+// Form builder for stock settings form.
 function uc_stock_settings_form() {
   $form['uc_stock_threshold_notification'] = array(
     '#type' => 'checkbox',
@@ -304,16 +335,17 @@ function uc_stock_settings_form() {
   return system_settings_form($form);
 }
 
-/* ************************************************************************* *
- *  Module and Helper Functions                                              *
- * ************************************************************************* */
+/*******************************************************************************
+ *  Module and Helper Functions                                                *
+ ******************************************************************************/
 
 /**
- * Adjust the product stock level by a set amount
+ * Adjust the product stock level by a set amount.
+ *
  * @param $sku
- *   The ubercart product SKU of the stock level to adjust
+ *   The product SKU of the stock level to adjust.
  * @param $qty
- *   The amount to adjust the stock level by
+ *   The amount to add to or subtract from the stock level.
  */
 function uc_stock_adjust($sku, $qty) {
   db_query("UPDATE {uc_product_stock} SET stock = stock + %d WHERE sku = '%s'", $qty, $sku);
@@ -322,24 +354,25 @@ function uc_stock_adjust($sku, $qty) {
 /**
  * Get the stock level of a particular product SKU
  * @param $sku
- *   The ubercart product SKU of the stock level to return
+ *   The Ubercart product SKU of the stock level to return.
  * @return:
- * The associated stock level with the particular SKU or FALSE if not 
+ *   The associated stock level with the particular SKU or FALSE if not active.
  */
 function uc_stock_level($sku) {
-  return db_result(db_query("SELECT stock FROM {uc_product_stock} WHERE sku = '%s'", $sku));
+  return db_result(db_query("SELECT stock FROM {uc_product_stock} WHERE sku = '%s' AND active = 1", $sku));
 }
 
 /**
- * Get the SKUs associated with a particular product
+ * Gets the SKUs associated with a particular product.
+ *
  * @param $nid
  *   The node id of the ubercart product
  * @return:
- * An array of containing all the SKUs that are associated with the product or 
- * FALSE if the node id isn't an ubercart product.
+ *   An array containing all the SKUs that are associated with the product or
+ *     FALSE if the node ID isn't an Ubercart product.
  */
 function uc_stock_skus($nid) {
-  $node = node_load(array('nid' => $nid));
+  $node = node_load($nid);
 
   if (is_null($node->model)) {
     return FALSE;
@@ -360,55 +393,22 @@ function uc_stock_skus($nid) {
 }
 
 /**
- * Return form elements for editing SKU levels
- * @param $id
- *   A unique string to identify the form fields
- * @param $sku
- *   The SKU of the stock level to edit
- * @return:
- * An array of form elements as defined in the Drupal Form API
- */
-function uc_stock_sku_fields($id, $sku) {
-  $stock = db_fetch_object(db_query("SELECT active, stock, threshold FROM {uc_product_stock} WHERE sku = '%s'", $sku));
-
-  $form['active_'. $id] = array(
-    '#type' => 'checkbox', 
-    '#default_value' => !empty($stock->active) ? $stock->active : 0,
-  );
-
-  $form['stock_'. $id] = array(
-    '#type' => 'textfield',
-    '#default_value' => !empty($stock->stock) ? $stock->stock : 0,
-    '#maxlength' => 9,
-    '#size' => 9,
-  );
-
-  $form['threshold_'. $id] = array(
-    '#type' => 'textfield',
-    '#default_value' => !empty($stock->threshold) ? $stock->threshold : 0,
-    '#maxlength' => 9,
-    '#size' => 9,
-  );
-
-  return $form;
-}
-
-/**
- * Email admins regarding any stock level thresholds hit
+ * Emails administrator regarding any stock level thresholds hit.
+ *
  * @param $order
- *   The order object that tripped the threshold limit
+ *   The order object that tripped the threshold limit.
  * @param $product
- *   The product object that is associated with the SKU
+ *   The product object that is associated with the SKU.
  * @param $stock
- *   The stock level object that contains the stock level and SKU
- * @return:
- * Sends result of drupal_mail
+ *   The stock level object that contains the stock level and SKU.
+ * @return
+ *   The result of drupal_mail().
  */
 function _uc_stock_send_mail($order, $stock) {
   $token_filters = array('global' => NULL, 'order' => $order, 'stock' => $stock);
 
   $to = variable_get('uc_stock_threshold_notification_recipients', variable_get('uc_store_email', ini_get('sendmail_from')));
-  $from = variable_get('uc_store_email_from', ini_get('sendmail_from'));
+  $from = uc_store_email_from();
 
   $subject = variable_get('uc_stock_threshold_notification_subject', uc_get_message('uc_stock_threshold_notification_subject'));
   $subject = token_replace_multiple($subject, $token_filters);
@@ -417,5 +417,124 @@ function _uc_stock_send_mail($order, $stock) {
   $body = token_replace_multiple($body, $token_filters);
 
   return drupal_mail('uc_stock', $to, $subject, $body, $from);
+}
+
+/**
+ * Implementation of hook_views_tables().
+ */
+function uc_stock_views_tables() {
+  $tables['uc_product_stock'] = array(
+    'name' => 'uc_product_stock',
+    'join' => array(
+      'left' => array(
+        'table' => 'node',
+        'field' => 'nid'
+      ),
+      'right' => array(
+        'field' => 'nid',
+      ),
+    ),
+    'fields' => array(
+      'sku' => array(
+        'name' => t('Stock: SKU'),
+        'help' => t('The model or SKU of the stock level'),
+        'sortable' => TRUE,
+      ),
+      'active' => array(
+        'name' => t('Stock: Active'),
+        'help' => t('Whether or not the stock level is currently being tracked'),
+        'handler' => 'uc_stock_views_handler_active',
+        'sortable' => TRUE,
+      ),
+      'stock' => array(
+        'name' => t('Stock: Stock Level'),
+        'help' => t('The current stock level'),
+        'sortable' => TRUE,
+      ),
+      'threshold' => array(
+        'name' => t('Stock: Threshold'),
+        'help' => t('The threshold or warning limit of the stock level'),
+        'sortable' => TRUE,
+      ),
+    ),
+    'sorts' => array(
+      'sku' => array(
+        'name' => t('Stock: SKU'),
+      ),
+      'stock' => array(
+        'name' => t('Stock: Stock Level'),
+        'help' => t('The current stock level'),
+      ),
+      'threshold' => array(
+        'name' => t('Stock: Threshold'),
+        'help' => t('The threshold or warning limit of the stock level'),
+      ),
+    ),
+    'filters' => array(
+      'sku' => array(
+        'name' => 'Stock: SKU',
+        'operator' => 'views_handler_operator_like',
+        'handler' => 'views_handler_filter_like',
+        'help' => t('Filter the node based on stock SKU.'),
+      ),
+      'stock' => array(
+        'name' => 'Stock: Stock Level',
+        'operator' => 'views_handler_operator_gtlt',
+        'help' => t('Filter the node based on stock level.'),
+      ),
+      'threshold' => array(
+        'name' => 'Stock: Threshold',
+        'operator' => 'views_handler_operator_gtlt',
+        'help' => t('Filter the node based on threshold level.'),
+      ),
+      'is_active' => array(
+        'name' => 'Stock: Is Active',
+        'operator' => array('=' => 'Equals'),
+        'list' => 'views_handler_operator_yesno',
+        'list-type' => 'select',
+        'handler' => 'uc_stock_views_handler_filter_is_active',
+        'help' => t('Filter the data based on whether or not stock tracking is active for the SKU.'),
+      ),
+      'below_threshold' => array(
+        'name' => 'Stock: Is Below Threshold',
+        'operator' => array('=' => 'Equals'),
+        'list' => 'views_handler_operator_yesno',
+        'list-type' => 'select',
+        'handler' => 'uc_stock_views_handler_filter_below_threshold',
+        'help' => t('Filter the node based on whether it stock level is below the threshold for the SKU.'),
+      ),
+    ),
+  );
+
+  return $tables;
+}
+
+function uc_stock_views_handler_active($fieldinfo, $fielddata, $value, $data) {
+  return $value ? t('Active') : t('Inactive');
+}
+
+function uc_stock_views_handler_filter_below_threshold($op, $filter, $filterinfo, &$query) {
+  if ($op == 'handler') {
+    if ($filter['value'] == 0) {
+      $operator = '>=';
+    }
+    else {
+      $operator = '<';
+    }
+    $query->add_where('uc_product_stock.stock  '. $operator .' uc_product_stock.threshold');
+  }
+}
+
+function uc_stock_views_handler_filter_is_active($op, $filter, $filterinfo, &$query) {
+  if ($op == 'handler') {
+    if ($filter['value'] == 1) {
+      $active = '1';
+    }
+    else {
+      $active = '0';
+    }
+    $query->ensure_table('uc_product_stock');
+    $query->add_where('uc_product_stock.active = '. $active);
+  }
 }
 
