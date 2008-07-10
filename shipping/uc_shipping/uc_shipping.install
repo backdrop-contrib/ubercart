@@ -1,129 +1,294 @@
 <?php
 // $Id$
 
-function uc_shipping_install(){
-  switch($GLOBALS['db_type']){
-    case 'mysql':
-    case 'mysqli':
-      db_query("CREATE TABLE {uc_shipments} (
-        `sid` mediumint(9) UNSIGNED NOT NULL,
-        `order_id` mediumint(9) UNSIGNED NOT NULL,
-        `o_first_name` varchar(255) NOT NULL,
-        `o_last_name` varchar(255) NOT NULL,
-        `o_company` varchar(255) NOT NULL,
-        `o_street1` varchar(255) NOT NULL,
-        `o_street2` varchar(255) NOT NULL,
-        `o_city` varchar(255) NOT NULL,
-        `o_zone` mediumint(11) UNSIGNED NOT NULL,
-        `o_postal_code` varchar(255) NOT NULL,
-        `o_country` mediumint(11) UNSIGNED NOT NULL,
-        `d_first_name` varchar(255) NOT NULL,
-        `d_last_name` varchar(255) NOT NULL,
-        `d_company` varchar(255) NOT NULL,
-        `d_street1` varchar(255) NOT NULL,
-        `d_street2` varchar(255) NOT NULL,
-        `d_city` varchar(255) NOT NULL,
-        `d_zone` mediumint(11) UNSIGNED NOT NULL,
-        `d_postal_code` varchar(255) NOT NULL,
-        `d_country` mediumint(11) UNSIGNED NOT NULL,
-        `shipping_method` varchar(255) NOT NULL,
-        `accessorials` varchar(255) NOT NULL default '',
-        `carrier` varchar(255) NOT NULL,
-        `transaction_id` varchar(255) NOT NULL,
-        `tracking_number` varchar(255) NOT NULL,
-        `ship_date` int(11) NOT NULL,
-        `expected_delivery` int(11) NOT NULL,
-        `cost` decimal(10,2) NOT NULL,
-        PRIMARY KEY (sid)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-      db_query("CREATE TABLE {uc_packages} (
-        `package_id` mediumint(11) UNSIGNED NOT NULL,
-        `order_id` mediumint(11)UNSIGNED NOT NULL,
-        `shipping_type` varchar(255) NOT NULL default '',
-        `pkg_type` varchar(255) NOT NULL default '',
-        `length` float UNSIGNED NULL,
-        `width` float UNSIGNED NULL,
-        `height` float UNSIGNED NULL,
-        `length_units` varchar(255) NULL,
-        `value` decimal(10,2) UNSIGNED NULL,
-        `sid` mediumint(11) UNSIGNED NULL,
-        `tracking_number` varchar(255) NULL,
-        `label_image` varchar(255) NULL,
-        PRIMARY KEY (package_id)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-      db_query("CREATE TABLE {uc_packaged_products} (
-        `package_id` mediumint(11) UNSIGNED NOT NULL,
-        `order_product_id` mediumint(11) UNSIGNED NOT NULL,
-        `qty` int UNSIGNED NOT NULL default '0',
-        PRIMARY KEY (package_id, order_product_id)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-    break;
-    case 'pgsql':
-      db_query("CREATE TABLE {uc_shipments} (
-        sid integer UNSIGNED NOT NULL default 0,
-        order_id integer UNSIGNED NOT NULL default 0,
-        o_first_name varchar(255) NOT NULL default '',
-        o_last_name varchar(255) NOT NULL default '',
-        o_company varchar(255) NOT NULL default '',
-        o_street1 varchar(255) NOT NULL default '',
-        o_street2 varchar(255) NOT NULL default '',
-        o_city varchar(255) NOT NULL default '',
-        o_zone integer UNSIGNED NOT NULL default 0,
-        o_postal_code varchar(255) NOT NULL default '',
-        o_country integer UNSIGNED NOT NULL default 0,
-        d_first_name varchar(255) NOT NULL default '',
-        d_last_name varchar(255) NOT NULL default '',
-        d_company varchar(255) NOT NULL default '',
-        d_street1 varchar(255) NOT NULL default '',
-        d_street2 varchar(255) NOT NULL default '',
-        d_city varchar(255) NOT NULL default '',
-        d_zone integer UNSIGNED NOT NULL default 0,
-        d_postal_code varchar(255) NOT NULL default '',
-        d_country integer UNSIGNED NOT NULL default 0,
-        shipping_method varchar(255) NOT NULL default '',
-        accessorials varchar(255) NOT NULL default '',
-        carrier varchar(255) NOT NULL default '',
-        transaction_id varchar(255) NOT NULL default '',
-        tracking_number varchar(255) NOT NULL default '',
-        ship_date integer NOT NULL default 0,
-        expected_delivery integer NOT NULL default 0,
-        cost decimal(10,2) NOT NULL default 0.00,
-        PRIMARY KEY (sid)
-      );");
-      db_query("CREATE TABLE {uc_packages} (
-        package_id integer UNSIGNED NOT NULL default 0,
-        order_id integer UNSIGNED NOT NULL default 0,
-        shipping_type varchar(255) NOT NULL default '',
-        pkg_type varchar(255) NOT NULL default '',
-        length float UNSIGNED NULL,
-        width float UNSIGNED NULL,
-        height float UNSIGNED NULL,
-        length_units varchar(255) NULL,
-        value decimal(10,2) UNSIGNED NULL,
-        sid integer UNSIGNED NULL,
-        tracking_number varchar(255) NULL,
-        label_image varchar(255) NULL,
-        PRIMARY KEY (package_id)
-      );");
-      db_query("CREATE TABLE {uc_packaged_products} (
-        package_id integer UNSIGNED NOT NULL default 0,
-        order_product_id integer UNSIGNED NOT NULL default 0,
-        qty ionteger UNSIGNED NOT NULL default 0,
-        PRIMARY KEY (package_id, order_product_id)
-      );");
-    break;
-  }
+function uc_shipping_schema() {
+  $schema = array();
+
+  $schema['uc_shipments'] = array(
+    'fields' => array(
+      'sid' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'order_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'o_first_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'o_last_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'o_company' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'o_street1' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'o_street2' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'o_city' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'o_zone' => array(
+        'type' => 'int',
+        'size' => 'medium',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'o_postal_code' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'o_country' => array(
+        'type' => 'int',
+        'size' => 'medium',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'd_first_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'd_last_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'd_company' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'd_street1' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'd_street2' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'd_city' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'd_zone' => array(
+        'type' => 'int',
+        'size' => 'medium',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'd_postal_code' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'd_country' => array(
+        'type' => 'int',
+        'size' => 'medium',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'shipping_method' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'accessorials' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'carrier' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'transaction_id' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'tracking_number' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'ship_date' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'expected_delivery' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'cost' => array(
+        'type' => 'numeric',
+        'precision' => 10,
+        'scale' => 2,
+        'not null' => TRUE,
+        'default' => 0.0,
+      ),
+    ),
+    'primary key' => array('sid'),
+  );
+
+  $schema['uc_packages'] = array(
+    'fields' => array(
+      'package_id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'order_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'shipping_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'pkg_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'length' => array(
+        'type' => 'float',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+      ),
+      'width' => array(
+        'type' => 'float',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+      ),
+      'height' => array(
+        'type' => 'float',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+      ),
+      'length_units' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+      'value' => array(
+        'type' => 'numeric',
+        'precision' => 10,
+        'scale' => 2,
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+      ),
+      'sid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+      ),
+      'tracking_number' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+      'label_image' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('package_id'),
+  );
+
+  $schema['uc_packaged_products'] = array(
+    'fields' => array(
+      'package_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'order_product_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'qty' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('package_id', 'order_product_id'),
+  );
+
+  return $schema;
 }
 
-function uc_shipping_uninstall(){
-  db_query("DROP TABLE {uc_shipments}");
-  db_query("DROP TABLE {uc_packages}");
-  db_query("DROP TABLE {uc_packaged_products}");
+function uc_shipping_install() {
+  drupal_install_schema('uc_shipping');
 }
 
-function uc_shipping_update_1(){
+function uc_shipping_uninstall() {
+  drupal_uninstall_schema('uc_shipping');
+}
+
+function uc_shipping_update_1() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_packages} CHANGE units length_units varchar(255) NULL");
@@ -134,3 +299,8 @@ function uc_shipping_update_1(){
   }
   return $ret;
 }
+
+//function uc_shipping_update_2() {
+  // Abortive attempt at rearranging package_ids and order_product_ids.
+  // Leaving this here as a reminder to start the next update at "3".
+//}

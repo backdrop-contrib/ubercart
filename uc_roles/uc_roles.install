@@ -1,69 +1,117 @@
 <?php
 // $Id$
 
-function uc_roles_install(){
-  switch($GLOBALS['db_type']){
+function uc_roles_install() {
+  switch ($GLOBALS['db_type']) {
     case 'mysqli':
     case 'mysql':
       db_query("CREATE TABLE {uc_roles_products} (
-				pfid mediumint(9) NOT NULL,
-				nid int(10) NOT NULL,
+        pfid mediumint(9) NOT NULL,
+        nid int(10) NOT NULL,
         model varchar(255) default NULL,
         rid mediumint(11) NOT NULL,
-				duration smallint(4) default NULL,
-				granularity varchar(32) default NULL,
-				shippable BOOL NOT NULL,
-				KEY pfid (pfid),
+        duration smallint(4) default NULL,
+        granularity varchar(32) default NULL,
+        shippable BOOL NOT NULL,
+        by_quantity BOOL NOT NULL,
+        KEY pfid (pfid),
         KEY nid (nid),
         KEY model (model),
         KEY rid (rid)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 COLLATE utf8_unicode_ci */ ");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
       db_query("CREATE TABLE {uc_roles_expirations} (
         uid mediumint(11) NOT NULL,
         rid mediumint(11) NOT NULL,
-				expiration int(11) NOT NULL,
-				notified tinyint(2) default NULL,
+        expiration int(11) NOT NULL,
+        notified tinyint(2) default NULL,
         KEY uid (uid),
         KEY rid (rid)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 COLLATE utf8_unicode_ci */ ");
-      break;
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
+    break;
     case 'pgsql':
-      break;
+      db_query("CREATE TABLE {uc_roles_products} (
+        pfid integer NOT NULL,
+        nid integer NOT NULL,
+        model varchar(255) default NULL,
+        rid integer NOT NULL,
+        duration smallint default NULL,
+        granularity varchar(32) default NULL,
+        shippable boolean NOT NULL,
+        by_quantity boolean NOT NULL
+        );");
+      db_query("CREATE INDEX {uc_roles_products}_pfid ON {uc_roles_products} (pfid)");
+      db_query("CREATE INDEX {uc_roles_products}_nid ON {uc_roles_products} (nid)");
+      db_query("CREATE INDEX {uc_roles_products}_model ON {uc_roles_products} (model)");
+      db_query("CREATE INDEX {uc_roles_products}_rid ON {uc_roles_products} (rid)");
+      db_query("CREATE TABLE {uc_roles_expirations} (
+        uid integer NOT NULL,
+        rid integer NOT NULL,
+        expiration integer NOT NULL,
+        notified smallint default NULL
+        );");
+      db_query("CREATE INDEX {uc_roles_expirations}_uid ON {uc_roles_expirations} (uid)");
+      db_query("CREATE INDEX {uc_roles_expirations}_rid ON {uc_roles_expirations} (rid)");
+    break;
   }
 }
 
 function uc_roles_uninstall() {
-	db_query("DROP TABLE IF EXISTS {uc_roles_products}");
-	db_query("DROP TABLE IF EXISTS {uc_roles_expirations}");
+  switch ($GLOBALS['db_type']) {
+    case 'mysqli':
+    case 'mysql':
+      db_query("DROP TABLE IF EXISTS {uc_roles_products}");
+      db_query("DROP TABLE IF EXISTS {uc_roles_expirations}");
+      break;
+    case 'pgsql':
+      db_query("DROP TABLE {uc_roles_products}");
+      db_query("DROP TABLE {uc_roles_expirations}");
+      break;
+  }
 }
 
 function uc_roles_update_1() {
-	$ret = array();
-	
-  switch ($GLOBALS['db_type']){
+  $ret = array();
+  
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_roles_products} CHANGE expiration duration SMALLINT( 4 ) NULL DEFAULT NULL");
-      $ret[] = update_sql("ALTER TABLE {uc_roles_products} CHANGE model model VARCHAR( 255 ) CHARACTER SET utf8 COLLATE utf8_unicode_ci NULL");
-			break;
+      $ret[] = update_sql("ALTER TABLE {uc_roles_products} CHANGE model model VARCHAR( 255 ) CHARACTER SET utf8 NULL");
+      break;
     case 'pgsql':
-    	break;
+      break;
   }
-	
-	return $ret;
+  
+  return $ret;
 }
 
 function uc_roles_update_2() {
-	$ret = array();
-	
-  switch ($GLOBALS['db_type']){
+  $ret = array();
+  
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
-			$ret[] = update_sql("ALTER TABLE {uc_roles_products} ADD shippable BOOL NOT NULL");
-			break;
+      $ret[] = update_sql("ALTER TABLE {uc_roles_products} ADD shippable BOOL NOT NULL");
+      break;
     case 'pgsql':
-    	break;
+      break;
   }
-	
-	return $ret;
+  
+  return $ret;
+}
+
+function uc_roles_update_3() {
+  $ret = array();
+  
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_roles_products} ADD by_quantity BOOL NOT NULL");
+      break;
+    case 'pgsql':
+      $ret[] = update_sql("ALTER TABLE {uc_roles_products} ADD by_quantity boolean NOT NULL");
+      break;
+  }
+  
+  return $ret;
 }

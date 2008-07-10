@@ -4,8 +4,6 @@
 /**
  * @file
  * Integrates 2Checkout.com's redirected payment service.
- *
- * Development sponsored by .
  */
 
 /*******************************************************************************
@@ -21,6 +19,13 @@ function uc_2checkout_menu($may_cache) {
       'path' => 'cart/2checkout/complete',
       'title' => t('Order complete'),
       'callback' => 'uc_2checkout_complete',
+      'access' => user_access('access content'),
+      'type' => MENU_CALLBACK,
+    );
+    $items[] = array(
+      'path' => 'cart/2checkout/finalize',
+      'title' => t('Order complete'),
+      'callback' => 'uc_2checkout_finalize',
       'access' => user_access('access content'),
       'type' => MENU_CALLBACK,
     );
@@ -66,7 +71,7 @@ function uc_2checkout_payment_method() {
     'callback' => 'uc_payment_method_2checkout',
     'weight' => 3,
     'checkout' => TRUE,
-    'backend' => TRUE,
+    'no_gateway' => TRUE,
   );
 
   return $methods;
@@ -153,6 +158,16 @@ function uc_payment_method_2checkout($op, &$arg1) {
         '#description' => t('Provide 2Checkout specific text for the submit button on the order review page.'),
         '#default_value' => variable_get('uc_2checkout_checkout_button', t('Submit Order')),
       );
+      $form['uc_2checkout_checkout_type'] = array(
+        '#type' => 'select',
+        '#title' => t('2Checkout.com checkout type'),
+        '#description' => t('Single page checkout only works for stores selling intangible products using credit card payments.'),
+        '#options' => array(
+          'multi' => t('Multi-page checkout'),
+          'single' => t('Single page checkout'),
+        ),
+        '#default_value' => variable_get('uc_2checkout_checkout_type', 'multi'),
+      );
       return $form;
   }
 }
@@ -179,8 +194,8 @@ function uc_2checkout_form($order) {
     'street_address2' => substr($order->billing_street2, 0, 64),
     'city' => substr($order->billing_city, 0, 64),
     'state' => uc_get_zone_code($order->billing_zone),
-    'zip' => substr($order->delivery_postal_code, 0, 16),
-    'country' => $country[0]['iso_country_code_3'],
+    'zip' => substr($order->billing_postal_code, 0, 16),
+    'country' => $country[0]['country_iso_code_3'],
     'email' => substr($order->primary_email, 0, 64),
     'phone' => substr($order->billing_phone, 0, 16),
     'id_type' => 1,
@@ -195,7 +210,7 @@ function uc_2checkout_form($order) {
     $data['c_price_'. $i] = uc_currency_format($product->price, FALSE, FALSE, '.');
   }
 
-  $form['#action'] = 'https://www.2checkout.com/2co/buyer/purchase';
+  $form['#action'] = _2checkout_post_url(variable_get('uc_2checkout_checkout_type', 'multi'));
 
   foreach ($data as $name => $value) {
     $form[$name] = array('#type' => 'hidden', '#value' => $value);
@@ -258,12 +273,50 @@ function uc_2checkout_complete($cart_id = 0) {
 
   // Empty that cart...
   uc_cart_empty($cart_id);
+  
+  // Save changes to order without it's completion (it will be on finalization step)
+  uc_order_save($order);
 
-  $output .= uc_cart_complete_sale($order);
+  $url = 'cart/2checkout/finalize/'. $order->order_id;
+
+  // Javascript redirect on the finalization page.
+  $output = '<script type="text/javascript">window.location = "'. url($url, NULL, NULL, TRUE) .'";</script>';
+
+  // Text link for users without Javascript enabled.
+  $output .= l('Click to complete checkout.', $url, array(), NULL, NULL, TRUE);
+
+  // 2CO needs page larger than 255 characters to display.
+  while (strlen($output) < 255) {
+    $output .= '&nbsp;';
+  }
+
+  print $output;
+  exit();
+}
+
+function uc_2checkout_finalize() {
+  $order = uc_order_load(arg(3));
 
   // Add a comment to let sales team know this came in through the site.
   uc_order_comment_save($order->order_id, 0, t('Order created through website.'), 'admin');
 
-  print $output;
-  exit();
+  $output = uc_cart_complete_sale($order, variable_get('uc_new_customer_login', FALSE));
+
+  $page = variable_get('uc_cart_checkout_complete_page', '');
+
+  if (!empty($page)) {
+    drupal_goto($page);
+  }
+
+  return $output;
+}
+
+function _2checkout_post_url($type) {
+  switch ($type) {
+    case 'single':
+      return 'https://www.2checkout.com/checkout/spurchase';
+    case 'multi':
+    default:
+      return 'https://www.2checkout.com/2co/buyer/purchase';
+  }
 }

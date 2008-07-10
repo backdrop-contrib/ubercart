@@ -15,8 +15,8 @@
 /**
  * Implementation of hook_menu().
  */
-function uc_notify_menu($may_cache){
-  if ($may_cache){
+function uc_notify_menu($may_cache) {
+  if ($may_cache) {
     $items[] = array(
       'path' => 'admin/store/settings/notify',
       'title' => t('Notification settings'),
@@ -79,15 +79,15 @@ function uc_notify_menu($may_cache){
 /**
  * Implementation of hook_perm().
  */
-function uc_notify_perm(){
+function uc_notify_perm() {
   return array('configure notifications');
 }
 
 /**
  * Implementation of hook_form_alter().
  */
-function uc_notify_form_alter($form_id, &$form){
-  switch ($form_id){
+function uc_notify_form_alter($form_id, &$form) {
+  switch ($form_id) {
     case 'uc_order_view_update_form':
       $form['controls']['notify'] = array(
         '#type' => 'checkbox',
@@ -112,12 +112,12 @@ function uc_notify_uc_message() {
 
   return $messages;
 }
- 
+
 /**
  * Implementation of hook_order().
  */
-function uc_notify_order($op, $arg1, $arg2){
-  switch ($op){
+function uc_notify_order($op, $arg1, $arg2) {
+  switch ($op) {
     case 'update':
       foreach (uc_order_status_list('general') as $data) {
         $statuses[] = $data['id'];
@@ -157,7 +157,7 @@ function uc_notify_settings_overview() {
     'items' => array(
       t('Customer checkout notifications are !status.', array('!status' => variable_get('uc_notify_cust_checkout_enabled', TRUE) ? t('enabled') : t('disabled'))),
       t('Customer e-mail template: !template', array('!template' => $cust_template == '0' ? t('custom') : $cust_template)),
-      t('Admin checkout notifications are !status.', array('!status' => variable_get('uc_notify_admin_checkout_enabled', TRUE) ? t('enabled') : t('disabled'))),
+      t('Admin checkout notifications are !status.', array('!status' => variable_get('uc_notify_admin_checkout_enabled', FALSE) ? t('enabled') : t('disabled'))),
       t('Admin e-mail template: !template', array('!template' => $admin_template == '0' ? t('custom') : $admin_template)),
       t('Admin e-mails are sent to:') . theme('item_list', $emails),
     ),
@@ -226,7 +226,7 @@ function uc_notify_checkout_form() {
   $form['cust']['uc_notify_cust_checkout_custom'] = array(
     '#type' => 'textarea',
     '#title' => t('Custom template (if selected above)'),
-    '#description' => l(t('Uses Uc_order and Global tokens.'), 'admin/store/help/tokens'),
+    '#description' => l(t('Uses order and global tokens.'), 'admin/store/help/tokens'),
     '#default_value' => variable_get('uc_notify_cust_checkout_custom', ''),
     '#rows' => 5,
   );
@@ -258,7 +258,7 @@ function uc_notify_checkout_form() {
   $form['admin']['uc_notify_admin_checkout_custom'] = array(
     '#type' => 'textarea',
     '#title' => t('Custom template (if selected above)'),
-    '#description' => l(t('Uses Uc_order and Global tokens.'), 'admin/store/help/tokens'),
+    '#description' => l(t('Uses order and global tokens.'), 'admin/store/help/tokens'),
     '#default_value' => variable_get('uc_notify_admin_checkout_custom', ''),
     '#rows' => 5,
   );
@@ -274,11 +274,11 @@ function uc_notify_checkout_form() {
   return system_settings_form($form);
 }
 
-function uc_notify_order_update_form(){
+function uc_notify_order_update_form() {
   $form['uc_notify_order_update_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send order update e-mails to customers when specified.'),
-    '#default_value' => variable_get('uc_notify_order_update_enable', TRUE),
+    '#default_value' => variable_get('uc_notify_order_update_enabled', TRUE),
   );
   $form['uc_notify_order_update_subject'] = array(
     '#type' => 'textfield',
@@ -288,7 +288,7 @@ function uc_notify_order_update_form(){
   $form['uc_notify_order_update_body'] = array(
     '#type' => 'textarea',
     '#title' => t('Body'),
-    '#description' => l(t('Uses Uc_order and Global tokens.'), 'admin/store/help/tokens'),
+    '#description' => l(t('Uses order and global tokens.'), 'admin/store/help/tokens'),
     '#default_value' => variable_get('uc_notify_order_update_body', uc_get_message('order_update_email')),
     '#rows' => 10,
   );
@@ -301,7 +301,7 @@ function uc_notify_order_update_form(){
  * Return the headers for the notification emails.
  */
 function uc_notify_headers($extras = array()) {
-  $extras += array(
+  $extras = $extras + array(
     'Content-Type' => 'text/html; charset=UTF-8; format=flowed',
   );
   return $extras;
@@ -319,16 +319,15 @@ function uc_notify_checkout($order) {
     else {
       $body = uc_order_load_invoice($order, 'checkout-mail', $template);
     }
-    $body = token_replace_multiple($body, array('global' => NULL, 'uc_order' => $order));
+    $body = token_replace_multiple($body, array('global' => NULL, 'order' => $order));
 
     $subject = variable_get('uc_notify_cust_checkout_subject', t('Your Order at [store-name]'));
-    $subject = token_replace_multiple($subject, array('global' => NULL, 'uc_order' => $order));
+    $subject = token_replace_multiple($subject, array('global' => NULL, 'order' => $order));
 
     $email_to = $order->primary_email;
-    $email_from = variable_get('uc_store_email_from', ini_get('sendmail_from'));
     $headers = uc_notify_headers();
 
-    $sent = drupal_mail('checkout', $email_to, $subject, $body, $email_from, $headers);
+    $sent = drupal_mail('checkout', $email_to, $subject, $body, uc_store_email_from(), $headers);
 
     if ($sent) {
       $changes[] = t('Checkout message sent to @email.', array('@email' => $order->primary_email));
@@ -348,12 +347,12 @@ function uc_notify_checkout($order) {
     else {
       $body = uc_order_load_invoice($order, 'admin-mail', $template);
     }
-    $body = token_replace_multiple($body, array('global' => NULL, 'uc_order' => $order));
+    $body = token_replace_multiple($body, array('global' => NULL, 'order' => $order));
 
     $subject = variable_get('uc_notify_admin_checkout_subject', t('New Order at [store-name]'));
-    $subject = token_replace_multiple($subject, array('global' => NULL, 'uc_order' => $order));
+    $subject = token_replace_multiple($subject, array('global' => NULL, 'order' => $order));
 
-    $email_from = variable_get('uc_store_email_from', ini_get('sendmail_from'));
+    $email_from = uc_store_email_from();
     $headers = uc_notify_headers();
 
     $emails = preg_split('/\s+/', variable_get('uc_notify_admin_checkout_emails', variable_get('uc_store_email', '')));
@@ -365,10 +364,8 @@ function uc_notify_checkout($order) {
   }
 }
 
-/**
- * Send an e-mail to the customer when their order is updated.
- */
-function uc_notify_order_update($form_id, $form_values){
+// Sends an e-mail to the customer when their order is updated.
+function uc_notify_order_update($form_id, $form_values) {
   $order = uc_order_load($form_values['order_id']);
   if ($order !== FALSE && $form_values['notify']) {
     if (!variable_get('uc_notify_order_update_enabled', TRUE)) {
@@ -376,20 +373,22 @@ function uc_notify_order_update($form_id, $form_values){
       return;
     }
 
+    // Get the update e-mail body.
     $body = variable_get('uc_notify_order_update_body', uc_get_message('order_update_email'));
-    $body = token_replace_multiple($body, array('global' => NULL, 'uc_order' => $order));
+    // Check the markup per the selected input format.
+    $body = check_markup($body, variable_get('uc_notify_order_update_format', 3), FALSE);
+    // Convert tokens to their values.
+    $body = token_replace_multiple($body, array('global' => NULL, 'order' => $order));
 
     $subject = variable_get('uc_notify_order_update_subject', t('Order #[order-id] Update'));
-    $subject = token_replace_multiple($subject, array('global' => NULL, 'uc_order' => $order));
+    $subject = token_replace_multiple($subject, array('global' => NULL, 'order' => $order));
 
     $email_to = $order->primary_email;
-    $email_from = variable_get('uc_store_email_from', ini_get('sendmail_from'));
     $headers = uc_notify_headers();
 
     $sent = drupal_mail('order_comment', $order->primary_email, $subject,
                         check_markup($body, variable_get('uc_checkout_status_format', 3), FALSE),
-                        variable_get('uc_store_email_from', ini_get('sendmail_from')),
-                        uc_notify_headers());
+                        uc_store_email_from(), uc_notify_headers());
 
     if ($sent) {
       $changes[] = t('Customer notified of order update.');

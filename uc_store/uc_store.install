@@ -1,78 +1,121 @@
 <?php
 // $Id$
 
-function uc_store_install(){
-  switch($GLOBALS['db_type']){
-    case 'mysqli':
-    case 'mysql':
-      db_query("CREATE TABLE {uc_countries} (
-        country_id mediumint(11) NOT NULL,
-        country_name varchar(255) NOT NULL,
-        country_iso_code_2 char(2) NOT NULL,
-        country_iso_code_3 char(3) NOT NULL,
-        version smallint(11) NOT NULL default '0',
-        PRIMARY KEY (country_id),
-        KEY country_name (country_name)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 COLLATE utf8_unicode_ci */ ");
-      db_query("CREATE TABLE {uc_zones} (
-        zone_id mediumint(11) NOT NULL,
-        zone_country_id mediumint(11) NOT NULL default '0',
-        zone_code varchar(32) NOT NULL default '',
-        zone_name varchar(255) NOT NULL default '',
-        PRIMARY KEY (zone_id),
-        KEY zone_code (zone_code),
-        KEY zone_country_id (zone_country_id)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 COLLATE utf8_unicode_ci */");
-      break;
-    case 'pgsql':
-      db_query("CREATE TABLE {uc_countries} (
-        country_id integer NOT NULL default 0,
-        country_name varchar(255) NOT NULL default '',
-        country_iso_code_2 char(2) NOT NULL default '',
-        country_iso_code_3 char(3) NOT NULL default '',
-        version integer NOT NULL default '0',
-        PRIMARY KEY (country_id),
-        KEY country_name (country_name)
-      )");
-      db_query("CREATE INDEX {uc_countries}_country_id ON {uc_countries} (country_id)");
-      db_query("CREATE TABLE {uc_zones} (
-        zone_id integer NOT NULL default 0,
-        zone_country_id integer NOT NULL default 0,
-        zone_code varchar(32) NOT NULL default '',
-        zone_name varchar(25) NOT NULL default '',
-        PRIMARY KEY (zone_id),
-        KEY zone_code (zone_code),
-        KEY zone_country_id (zone_country_id)
-      )");
+function uc_store_schema() {
+  $schema = array();
 
-      break;
-  }
+  $schema['uc_countries'] = array(
+    'fields' => array(
+      'country_id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'country_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'country_iso_code_2' => array(
+        'description' => t('Two-character ISO country code.'),
+        'type' => 'char',
+        'length' => 2,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'country_iso_code_3' => array(
+        'description' => t('Three-character ISO country code.'),
+        'type' => 'char',
+        'length' => 3,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'version' => array(
+        'description' => t('The version of the CIF that loaded the country information.'),
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'uc_countries_country_name' => array('country_name'),
+    ),
+    'primary key' => array('country_id'),
+  );
+  $schema['uc_zones'] = array(
+    'fields' => array(
+      'zone_id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'zone_country_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'zone_code' => array(
+        'description' => t('Standard abbreviation of the zone name.'),
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'zone_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'indexes' => array(
+      'uc_zones_zone_code' => array('zone_code'),
+      'uc_zones_zone_country_id' => array('zone_country_id'),
+    ),
+    'primary key' => array('zone_id'),
+  );
+  $schema['uc_store_footers'] = array(
+    'fields' => array(
+      'path_hash' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'message' => array(
+        'type' => 'text',
+      ),
+    ),
+    'primary key' => array('path_hash'),
+  );
 
+  return $schema;
+}
+
+function uc_store_install() {
+  drupal_install_schema('uc_store');
   // Install United States and Canada by default.
-  require_once(drupal_get_path('module', 'uc_store') .'/countries/united_states_840_1.cif');
-  require_once(drupal_get_path('module', 'uc_store') .'/countries/canada_124_1.cif');
+  $path = drupal_get_path('module', 'uc_store');
+  require_once($path .'/countries/united_states_840_1.cif');
+  require_once($path .'/countries/canada_124_1.cif');
   united_states_install();
   canada_install();
 }
 
 function uc_store_uninstall() {
-  db_query("DROP TABLE {uc_countries}");
-  db_query("DROP TABLE {uc_zones}");
+  drupal_uninstall_schema('uc_store');
+
   db_query("DELETE FROM {variable} WHERE name LIKE 'user_initials_%%'");
   db_query("DELETE FROM {variable} WHERE name LIKE 'uc_address_format_%%'");
-  db_query("DELETE FROM {sequences} WHERE name LIKE '{uc_zones}_zone_id'");
+
   variable_del('uc_store_prev_time');
   variable_del('uc_store_site_id');
-  variable_del('uc_store_opt_in');
-  variable_del('uc_store_opt_in_hostname');
-  variable_del('uc_store_opt_in_modules');
-  variable_del('uc_store_opt_in_orders');
-  variable_del('uc_store_opt_in_products');
-  variable_del('uc_store_opt_in_sales');
   variable_del('uc_store_name');
   variable_del('uc_store_owner');
   variable_del('uc_store_email');
-  variable_del('uc_store_email_from');
   variable_del('uc_store_phone');
   variable_del('uc_store_fax');
   variable_del('uc_store_street1');
@@ -83,7 +126,6 @@ function uc_store_uninstall() {
   variable_del('uc_store_country');
   variable_del('uc_store_admin_page_display');
   variable_del('uc_customer_list_address');
-  variable_del('uc_currency_code');
   variable_del('uc_currency_sign');
   variable_del('uc_sign_after_amount');
   variable_del('uc_currency_thou');
@@ -118,17 +160,17 @@ function uc_store_uninstall() {
 
 function uc_store_update_1() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("DROP TABLE IF EXISTS {uc_address_formats}");
       $ret[] = update_sql("ALTER TABLE {uc_countries} CHANGE address_format_id version SMALLINT(11) NOT NULL DEFAULT '0'");
-      $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_name zone_name VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL");
+      $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_name zone_name VARCHAR(32) CHARACTER SET utf8 NOT NULL");
       break;
     case 'pgsql':
       $ret[] = update_sql("DROP TABLE IF EXISTS {uc_address_formats}");
       $ret[] = update_sql("ALTER TABLE {uc_countries} CHANGE address_format_id version SMALLINT(11) NOT NULL DEFAULT '0'");
-      $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_name zone_name VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL default ''");
+      $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_name zone_name VARCHAR(32) CHARACTER SET utf8 NOT NULL default ''");
       break;
   }
   return $ret;
@@ -137,16 +179,16 @@ function uc_store_update_1() {
 function uc_store_update_2() {
   $ret = array();
   // Get rid of the auto_increment.
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_id zone_id MEDIUMINT(11) NOT NULL");
-      $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_name zone_name VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL");
+      $ret[] = update_sql("ALTER TABLE {uc_zones} CHANGE zone_name zone_name VARCHAR(255) CHARACTER SET utf8 NOT NULL");
       $ret[] = update_sql("ALTER TABLE {uc_countries} CHANGE country_id country_id MEDIUMINT(11) NOT NULL");
     break;
     case 'pgsql':
       db_change_column($ret, 'uc_zones', 'zone_id', 'zone_id', 'integer', array('not null' => true, 'default' => 0));
-      db_change_column($ret, 'uc_zones', 'zone_name', 'zone_name', 'varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci', array('not null' => true, 'default' => ''));
+      db_change_column($ret, 'uc_zones', 'zone_name', 'zone_name', 'varchar(255) CHARACTER SET utf8', array('not null' => true, 'default' => ''));
       db_change_column($ret, 'uc_countries', 'country_id', 'country_id', 'integer', array('not null' => true, 'default' => 0));
     break;
   }
@@ -178,3 +220,31 @@ function uc_store_update_2() {
   return $ret;
 }
 
+function uc_store_update_3() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("CREATE TABLE {uc_store_footers} (
+        `path_hash` varchar(32) NOT NULL default '',
+        `message` text NOT NULL,
+        PRIMARY KEY (path_hash)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
+    break;
+    case 'pgsql':
+      $ret[] = update_sql("CREATE TABLE {uc_store_footers} (
+        path_hash varchar(32) NOT NULL default '',
+        message text NOT NULL default '',
+        PRIMARY KEY (path_hash)
+      )");
+    break;
+  }
+  return $ret;
+}
+
+function uc_store_update_4() {
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_store_opt_in%%'");
+  variable_del('uc_store_prev_time');
+
+  return array();
+}

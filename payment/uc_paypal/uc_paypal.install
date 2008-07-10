@@ -21,7 +21,20 @@ function uc_paypal_install() {
         received int(11) NOT NULL,
         KEY order_id (order_id)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-
+      db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('paypal_pending', '". $t('PayPal pending') ."', 'payment_received', 7, 1);");
+    break;
+    case 'pgsql':
+      db_query("CREATE TABLE {uc_payment_paypal_ipn} (
+        order_id integer NOT NULL,
+        txn_id varchar(255) NOT NULL,
+        txn_type varchar(255) NOT NULL,
+        mc_gross varchar(255) NOT NULL,
+        status varchar(255) NOT NULL,
+        receiver_email varchar(255) NOT NULL,
+        payer_email varchar(255) NOT NULL,
+        received integer NOT NULL
+      );");
+      db_query("CREATE INDEX {uc_payment_paypal_ipn}_order_id ON {uc_payment_paypal_ipn} (order_id)");
       db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('paypal_pending', '". $t('PayPal pending') ."', 'payment_received', 7, 1);");
     break;
   }
@@ -31,15 +44,15 @@ function uc_paypal_install() {
  * Implementation of hook_uninstall().
  */
 function uc_paypal_uninstall() {
-  db_query("DROP TABLE IF EXISTS {uc_payment_paypal_ipn}");
+  db_query("DROP TABLE {uc_payment_paypal_ipn}");
 }
 
 function uc_paypal_update_1() {
   // Clean out the old order status table and redefine its structure.
   if ($_SESSION['statuses'] !== TRUE) {
-    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE order_status_id order_status_id VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL default ''");
-    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE title title VARCHAR(48) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL default ''");
-    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE notify state VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL default ''");
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE order_status_id order_status_id VARCHAR(32) CHARACTER SET utf8 NOT NULL default ''");
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE title title VARCHAR(48) CHARACTER SET utf8 NOT NULL default ''");
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE notify state VARCHAR(32) CHARACTER SET utf8 NOT NULL default ''");
     $ret[] = update_sql("ALTER TABLE {uc_order_statuses} ADD weight MEDIUMINT(9) NOT NULL");
     $ret[] = update_sql("ALTER TABLE {uc_order_statuses} ADD locked TINYINT NOT NULL DEFAULT '0'");
     $ret[] = update_sql("DELETE FROM {uc_order_statuses} WHERE order_status_id LIKE '_'");

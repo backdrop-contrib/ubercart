@@ -75,19 +75,20 @@ function uc_cybersource_settings_form() {
   $form['cybersource']['uc_cybersource_method'] = array(
     '#type' => 'select',
     '#title' => t('Payment method'),
-    '#description' => t('The Simple Order API offers extended functionality but requires the CyberSource PHP extension.'),
+    // '#description' => t('The Simple Order API offers extended functionality but requires the CyberSource PHP extension.'),
+    '#description' => t('Currently, only the Silent Order POST method is supported.'),
     '#options' => array(
       'post' => t('Silent Order POST'),
-      'api' => t('Simple Order API'),
+      // 'api' => t('Simple Order API'),
     ),
     '#default_value' => variable_get('uc_cybersource_method', 'post'),
   );
   $form['cybersource']['uc_cybersource_transaction_type'] = array(
     '#type' => 'select',
     '#title' => t('Transaction type'),
-    '#description' => t('Complete Sale will authorize and capture the funds at the time the payment is processed.<br>Authorization will only reserve funds on the card to be captured later through your PayPal account.'), 
+    '#description' => t('"Complete sale" will authorize and capture the funds at the time the payment is processed.<br>"Authorization" will only reserve funds on the card to be captured later through your PayPal account.'), 
     '#options' => array(
-      'sale' => t('Complete Sale'),
+      'sale' => t('Complete sale'),
       'authorization' => t('Authorization'),
     ),
     '#default_value' => variable_get('uc_cybersource_transaction_type', 'sale'),
@@ -107,7 +108,7 @@ function uc_cybersource_settings_form() {
 
 function uc_cybersource_charge($order_id, $amount, $data) {
   if (!function_exists('curl_init')) {
-    drupal_set_message(t('Cybersource requires curl.  Please talk to your system administrator to get this configured.'));
+    drupal_set_message(t('Cybersource requires cURL.  Please talk to your system administrator to get this configured.'));
     return array('success' => FALSE);
   }
 
@@ -122,17 +123,17 @@ function uc_cybersource_charge($order_id, $amount, $data) {
     switch (strtolower($order->payment_details['cc_type'])) {
       case 'amex':
       case 'american express':
-        $cc_type = 'Amex';
+        $cc_type = '003';
         break;
       case 'visa':
-        $cc_type = 'Visa';
+        $cc_type = '001';
         break;
       case 'mastercard':
       case 'master card':
-        $cc_type = 'MasterCard';
+        $cc_type = '002';
         break;
       case 'discover':
-        $cc_type = 'Discover';
+        $cc_type = '004';
         break;
     }
   }
@@ -212,6 +213,9 @@ function uc_cybersource_charge($order_id, $amount, $data) {
     curl_setopt($ch, CURLOPT_NOPROGRESS, 1);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION,0);
     $response = curl_exec($ch);
+    if ($error = curl_error($ch)) {
+      watchdog('uc_cybersource', $error, WATCHDOG_ERROR);
+    }
     curl_close($ch);
   
     if (preg_match_all('`name=".+" value=".+"`', $response, $pairs) > 0) {
@@ -221,15 +225,15 @@ function uc_cybersource_charge($order_id, $amount, $data) {
       }
 
       // Create the order and payment ledger comments.
-      $o_comment = t('<b>Credit card !type:</b> !amount<br /><b>Decision: !decision</b><br /><b>Reason:</b> !reason', array('!type' => variable_get('uc_cybersource_transaction_type', 'sale'), '!amount' => uc_currency_format($nvp['orderAmount']), '!decision' => $nvp['decision'], '!reason' => _parse_cs_reason_code($nvp['reasonCode'])));
+      $o_comment = t('<b>Credit card !type:</b> !amount<br /><b>Decision: @decision</b><br /><b>Reason:</b> !reason', array('!type' => variable_get('uc_cybersource_transaction_type', 'sale'), '!amount' => uc_currency_format($nvp['orderAmount']), '@decision' => $nvp['decision'], '!reason' => _parse_cs_reason_code($nvp['reasonCode'])));
       $p_comment = t('!id<br />!decision, Reason: !reason', array('!id' => $nvp['orderPage_serialNumber'], '!decision' => $nvp['decision'], '!reason' => $nvp['reasonCode']));
       if (!empty($nvp['ccAuthReply_avsCode'])) {
         $o_comment .= t('<br /><b>AVS:</b> !avs', array('!avs' => _parse_cs_avs_code($nvp['ccAuthReply_avsCode'])));
-        $p_comment .= t(', AVS: !avs', array('!avs' => $nvp['ccAuthReply_avsCode']));
+        $p_comment .= t(', AVS: @avs', array('@avs' => $nvp['ccAuthReply_avsCode']));
       }
       if (!empty($nvp['ccAuthReply_cvCode'])) {
         $o_comment .= t('<br /><b>CVV:</b> !cvv', array('!cvv' => _parse_cs_cvv_code($nvp['ccAuthReply_cvCode'])));
-        $p_comment .= t(', CVV: !cvv', array('!cvv' => $nvp['ccAuthReply_cvCode']));
+        $p_comment .= t(', CVV: @cvv', array('@cvv' => $nvp['ccAuthReply_cvCode']));
       }
       uc_order_comment_save($order_id, $user->uid, $o_comment, 'admin');
 
@@ -279,7 +283,7 @@ function uc_cybersource_charge($order_id, $amount, $data) {
 }
 
 function _uc_cybersource_card_type($cc_number) {
-  switch(substr(strval($cc_number), 0, 1)) {
+  switch (substr(strval($cc_number), 0, 1)) {
     case '3':
       if (strlen($cc_number) == 14) {
         return '005';  // Diners Club

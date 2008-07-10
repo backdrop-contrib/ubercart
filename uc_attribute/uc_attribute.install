@@ -1,139 +1,352 @@
 <?php
 // $Id$
 
-function uc_attribute_install(){
-  switch($GLOBALS['db_type']){
-    case 'mysqli':
-    case 'mysql':
-      db_query("CREATE TABLE {uc_attributes} (
-        `aid` mediumint(9) NOT NULL auto_increment,
-        `name` varchar(255) NOT NULL,
-        `ordering` tinyint(2) NOT NULL default 0,
-        PRIMARY KEY (`aid`)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-      db_query("CREATE TABLE {uc_attribute_options} (
-        `aid` mediumint(9) NOT NULL,
-        `oid` mediumint(9) NOT NULL auto_increment,
-        `name` varchar(255) NOT NULL,
-        `cost` decimal(10,2) NOT NULL,
-        `price` decimal(10,2) NOT NULL,
-        `weight` float NOT NULL,
-        `ordering` tinyint(2) NOT NULL default 0,
-        PRIMARY KEY (`oid`)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-      db_query("CREATE TABLE {uc_class_attributes} (
-        `pcid` varchar(32) NOT NULL,
-        `aid` mediumint(9) NOT NULL,
-        `ordering` tinyint(2) NOT NULL default 0,
-        `default_option` mediumint(9) NOT NULL default '0',
-        PRIMARY KEY (`pcid`, `aid`)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-      db_query("CREATE TABLE {uc_class_attribute_options} (
-        `pcid` varchar(32) NOT NULL,
-        `oid` mediumint(9) NOT NULL,
-        `cost` decimal(10,2) NOT NULL,
-        `price` decimal(10,2) NOT NULL,
-        `weight` float NOT NULL,
-        `ordering` tinyint(2) NOT NULL default 0,
-        PRIMARY KEY (`pcid`,`oid`)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-      db_query("CREATE TABLE {uc_product_attributes} (
-        `nid` mediumint(9) NOT NULL,
-        `aid` mediumint(9) NOT NULL,
-        `ordering` tinyint(2) NOT NULL default 0,
-        `default_option` mediumint(9) NOT NULL default '0',
-        PRIMARY KEY (`nid`, `aid`)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-      db_query("CREATE TABLE {uc_product_options} (
-        `nid` mediumint(9) NOT NULL,
-        `oid` mediumint(9) NOT NULL,
-        `cost` decimal(10,2) NOT NULL,
-        `price` decimal(10,2) NOT NULL,
-        `weight` float NOT NULL,
-        `ordering` tinyint(2) NOT NULL default 0,
-        PRIMARY KEY  (`nid`,`oid`)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-      db_query("CREATE TABLE {uc_product_adjustments} (
-        `nid` mediumint(9) NOT NULL,
-        `combination` varchar(255) NOT NULL,
-        `model` varchar(255) NOT NULL,
-        PRIMARY KEY  (`nid`, `combination`)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-    break;
-    case 'pgsql':
-      db_query("CREATE TABLE {uc_attributes} (
-        aid integer NOT NULL default 0,
-        name varchar(255) NOT NULL default ''.
-        ordering tinyint(2) NOT NULL default 0,
-        PRIMARY KEY (aid)
-      );");
-      db_query("CREATE INDEX {uc_attributes}_aid ON {uc_attributes} (aid)");
-      db_query("CREATE TABLE {uc_attribute_options} (
-        aid integer NOT NULL default 0,
-        oid integer NOT NULL default 0,
-        name varchar(255) NOT NULL default '',
-        cost decimal(10,2) NOT NULL default 0.00,
-        price decimal(10,2) NOT NULL default 0.00,
-        weight float NOT NULL default 0,0,
-        ordering smallint NOT NULL default 0,
-        PRIMARY KEY (oid)
-      );");
-      db_query("CREATE INDEX {uc_attribute_options}_oid ON {uc_attributes_options} (oid)");
-      db_query("CREATE TABLE {uc_class_attributes} (
-        pcid varchar(32) NOT NULL default '',
-        aid integer NOT NULL default 0,
-        ordering smallint NOT NULL default 0,
-        default_option integer NOT NULL default '0',
-        PRIMARY KEY (pcid, aid)
-      );");
-      db_query("CREATE TABLE {uc_class_attribute_options} (
-        pcid varchar(32) NOT NULL default '',
-        oid integer NOT NULL default 0,
-        cost decimal(10,2) NOT NULL default 0.00,
-        price decimal(10,2) NOT NULL default 0.00,
-        weight float NOT NULL default 0.0,
-        ordering smallint NOT NULL default 0,
-        PRIMARY KEY (pcid,oid)
-      );");
-      db_query("CREATE TABLE {uc_product_attributes} (
-        nid integer NOT NULL default 0,
-        aid integer NOT NULL default 0,
-        ordering smallint NOT NULL default 0,
-        default_option integer NOT NULL default 0,
-        PRIMARY KEY (nid, aid)
-      );");
-      db_query("CREATE TABLE {uc_product_options} (
-        nid integer NOT NULL default 0,
-        oid integer NOT NULL default 0,
-        cost decimal(10,2) NOT NULL default 0.00,
-        price decimal(10,2) NOT NULL default 0.00,
-        weight float NOT NULL default 0,
-        ordering smallint NOT NULL default 0,
-        PRIMARY KEY  (nid,oid)
-      );");
-      db_query("CREATE TABLE {uc_product_adjustments} (
-        nid integer NOT NULL default 0,
-        combination varchar(255) NOT NULL default '',
-        model varchar(255) NOT NULL default ''
-      );");
-    break;
-  }
+function uc_attribute_schema() {
+  $schema = array();
+
+  $schema['uc_attributes'] = array(
+    'description' => t('Attributes: the decisions that need to be made about products.'),
+    'fields' => array(
+      'aid' => array(
+        'description' => t('Primary identifier for attributes.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'ordering' => array(
+        'description' => t('Determines the sort order of attributes.'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'required' => array(
+        'description' => t("Flag that, if set, requires a user response for attributes (disables default options)."),
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'display' => array(
+        'description' => t('Display type of the attribute options: 0 -- text fields, 1 -- select box (default), 2 -- radio buttons'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'description' => array(
+        'description' => t('Description of the attribute.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('aid'),
+  );
+  $schema['uc_attribute_options'] = array(
+    'description' => t('The available choices for each attribute.'),
+    'fields' => array(
+      'aid' => array(
+        'description' => t('The attribute ID.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'oid' => array(
+        'description' => t('The option ID.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'description' => t('The name of the option.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'cost' => array(
+        'description' => t("The adjustment to a product's cost with the chosen option."),
+        'type' => 'numeric',
+        'precision' => 10,
+        'scale' => 2,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'price' => array(
+        'description' => t("The adjustment to a product's price with the chosen option."),
+        'type' => 'numeric',
+        'precision' => 10,
+        'scale' => 2,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'weight' => array(
+        'description' => t("The adjustment to a product's physical weight with the chosen option."),
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'ordering' => array(
+        'description' => t('Affects the sort order of the options.'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('oid'),
+  );
+  $schema['uc_class_attributes'] = array(
+    'description' => t('Attributes copied to a product of a certain class when it is created.'),
+    'fields' => array(
+      'pcid' => array(
+        'description' => t('The product node type.'),
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'aid' => array(
+        'description' => t('Primary identifier for attributes.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'ordering' => array(
+        'description' => t('Determines the sort order of attributes.'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'default_option' => array(
+        'description' => t('The default value of the attribute field on the add to cart form.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'required' => array(
+        'description' => t("Flag that, if set, requires a user response for attributes (disables default options)."),
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'display' => array(
+        'description' => t('Display type of the attribute options: 0 -- text fields, 1 -- select box (default), 2 -- radio buttons'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+    ),
+    'primary key' => array('pcid', 'aid'),
+  );
+  $schema['uc_class_attribute_options'] = array(
+    'description' => t('The available choices for each attribute.'),
+    'fields' => array(
+      'pcid' => array(
+        'description' => t('The product node type.'),
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'oid' => array(
+        'description' => t('The option ID.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'cost' => array(
+        'description' => t("The adjustment to a product's cost with the chosen option."),
+        'type' => 'numeric',
+        'precision' => 10,
+        'scale' => 2,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'price' => array(
+        'description' => t("The adjustment to a product's price with the chosen option."),
+        'type' => 'numeric',
+        'precision' => 10,
+        'scale' => 2,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'weight' => array(
+        'description' => t("The adjustment to a product's physical weight with the chosen option."),
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'ordering' => array(
+        'description' => t('Affects the sort order of the options.'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('pcid', 'oid'),
+  );
+  $schema['uc_product_attributes'] = array(
+    'description' => t('Attributes copied to a product.'),
+    'fields' => array(
+      'nid' => array(
+        'description' => t('The product node ID.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'aid' => array(
+        'description' => t('Primary identifier for attributes.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'ordering' => array(
+        'description' => t('Determines the sort order of attributes.'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'default_option' => array(
+        'description' => t('The default value of the attribute field on the add to cart form.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'required' => array(
+        'description' => t("Flag that, if set, requires a user response for attributes (disables default options)."),
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'display' => array(
+        'description' => t('Display type of the attribute options: 0 -- text fields, 1 -- select box (default), 2 -- radio buttons'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+    ),
+    'primary key' => array('nid', 'aid'),
+  );
+  $schema['uc_product_options'] = array(
+    'description' => t('The available choices for each attribute.'),
+    'fields' => array(
+      'nid' => array(
+        'description' => t('The product node ID.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'oid' => array(
+        'description' => t('The option ID.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'cost' => array(
+        'description' => t("The adjustment to a product's cost with the chosen option."),
+        'type' => 'numeric',
+        'precision' => 10,
+        'scale' => 2,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'price' => array(
+        'description' => t("The adjustment to a product's price with the chosen option."),
+        'type' => 'numeric',
+        'precision' => 10,
+        'scale' => 2,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'weight' => array(
+        'description' => t("The adjustment to a product's physical weight with the chosen option."),
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'ordering' => array(
+        'description' => t('Affects the sort order of the options.'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('nid', 'oid'),
+  );
+  $schema['uc_product_adjustments'] = array(
+    'description' => t("Changes to a product's SKU based on the possible combination of chosen options."),
+    'fields' => array(
+      'nid' => array(
+        'description' => t('The product node ID.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'combination' => array(
+        'description' => t('A serialized array whose keys are attribute IDs and values are option IDs.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'model' => array(
+        'description' => t('The SKU representing the product with the combination of options.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'indexes' => array(
+      'uc_product_adjustments_nid' => array('nid'),
+    ),
+  );
+
+  return $schema;
 }
 
-function uc_attribute_uninstall(){
-  db_query("DROP TABLE {uc_attributes}");
-  db_query("DROP TABLE {uc_attribute_options}");
-  db_query("DROP TABLE {uc_class_attributes}");
-  db_query("DROP TABLE {uc_class_attribute_options}");
-  db_query("DROP TABLE {uc_product_attributes}");
-  db_query("DROP TABLE {uc_product_options}");
-  db_query("DROP TABLE {uc_product_adjustments}");
+function uc_attribute_install() {
+  drupal_install_schema('uc_attribute');
+}
+
+function uc_attribute_uninstall() {
+  drupal_uninstall_schema('uc_attribute');
+
   variable_del('uc_attribute_option_price_format');
 }
 
-function uc_attribute_update_1(){
+function uc_attribute_update_1() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_attributes} CHANGE name name varchar(255) NOT NULL");
@@ -174,13 +387,13 @@ function uc_attribute_update_1(){
       );");
     break;
   }
-  
+
   return $ret;
 }
 
-function uc_attribute_update_2(){
+function uc_attribute_update_2() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_attributes} ADD COLUMN ordering tinyint(2) NOT NULL default 0 AFTER name");
@@ -201,9 +414,9 @@ function uc_attribute_update_2(){
   return $ret;
 }
 
-function uc_attribute_update_3(){
+function uc_attribute_update_3() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_class_attributes} CHANGE pcid pcid varchar(32) NOT NULL");
@@ -217,9 +430,9 @@ function uc_attribute_update_3(){
   return $ret;
 }
 
-function uc_attribute_update_4(){
+function uc_attribute_update_4() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_product_adjustments} CHANGE combination combination varchar(255) NOT NULL");
@@ -232,9 +445,9 @@ function uc_attribute_update_4(){
   return $ret;
 }
 
-function uc_attribute_update_5(){
+function uc_attribute_update_5() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_attribute_options} ADD COLUMN cost decimal(10,2) NOT NULL AFTER name");
@@ -245,6 +458,80 @@ function uc_attribute_update_5(){
       db_add_column($ret, 'uc_attribute_options', 'cost', 'decimal(10,2)', array('not null' => true, 'default' => 0.0));
       db_add_column($ret, 'uc_class_attribute_options', 'cost', 'decimal(10,2)', array('not null' => true, 'default' => 0.0));
       db_add_column($ret, 'uc_product_options', 'cost', 'decimal(10,2)', array('not null' => true, 'default' => 0.0));
+    break;
+  }
+  return $ret;
+}
+
+function uc_attribute_update_6() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_product_attributes} ADD COLUMN required tinyint(2) NOT NULL default 0 AFTER default_option");
+    break;
+    case 'pgsql':
+      db_add_column($ret, 'uc_product_attributes', 'required', 'smallint', array('not null' => true, 'default' => 0));
+    break;
+  }
+  return $ret;
+}
+
+function uc_attribute_update_7() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_class_attributes} ADD COLUMN required tinyint(2) NOT NULL default 0 AFTER default_option");
+    break;
+    case 'pgsql':
+      db_add_column($ret, 'uc_class_attributes', 'required', 'smallint', array('not null' => true, 'default' => 0));
+    break;
+  }
+  return $ret;
+}
+
+function uc_attribute_update_8() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'pgsql':
+      $ret[] = update_sql("ALTER TABLE {uc_attribute_options} SET WITHOUT OIDS");
+      $ret[] = update_sql("ALTER TABLE {uc_class_attribute_options} SET WITHOUT OIDS");
+      $ret[] = update_sql("ALTER TABLE {uc_product_options} SET WITHOUT OIDS");
+    break;
+  }
+  return $ret;
+}
+
+function uc_attribute_update_9() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_attributes} ADD COLUMN required tinyint(2) NOT NULL default 1");
+      $ret[] = update_sql("ALTER TABLE {uc_attributes} ADD COLUMN display tinyint(2) NOT NULL default 1");
+      $ret[] = update_sql("ALTER TABLE {uc_class_attributes} ADD COLUMN display tinyint(2) NOT NULL default 1");
+      $ret[] = update_sql("ALTER TABLE {uc_product_attributes} ADD COLUMN display tinyint(2) NOT NULL default 1");
+    break;
+    case 'pgsql':
+      db_add_column($ret, 'uc_attributes', 'required', 'smallint', array('not null' => true, 'default' => 1));
+      db_add_column($ret, 'uc_attributes', 'display', 'smallint', array('not null' => true, 'default' => 1));
+      db_add_column($ret, 'uc_class_attributes', 'display', 'smallint', array('not null' => true, 'default' => 1));
+      db_add_column($ret, 'uc_product_attributes', 'display', 'smallint', array('not null' => true, 'default' => 1));
+    break;
+  }
+  return $ret;
+}
+
+function uc_attribute_update_10() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_attributes} ADD COLUMN description varchar(255) NOT NULL");
+    break;
+    case 'pgsql':
+      db_add_column($ret, 'uc_attributes', 'description', 'varchar(255)', array('not null' => true, 'default' => ''));
     break;
   }
   return $ret;

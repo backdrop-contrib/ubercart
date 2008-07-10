@@ -4,56 +4,100 @@
 var li_titles = {};
 var li_values = {};
 var li_weight = {};
+var li_summed = {};
 
 // Timestamps for last time line items or payment details were updated.
 var line_update = 0;
 var payment_update = 0;
 
+function show_progressBar(id) {
+  var progress = new Drupal.progressBar('paymentProgress');
+  progress.setProgress(-1, '');
+  $(id).empty().append(progress.element);
+}
+
 /**
  * Sets a line item in the order total preview.
  */
-function set_line_item(key, title, value, weight) {
+function set_line_item(key, title, value, weight, summed, render) {
   var do_update = false;
 
+  if (summed === undefined) {
+    summed = 1;
+  }
   // Check to see if we're actually changing anything and need to update.
   if (window.li_values[key] === undefined) {
     do_update = true;
   }
   else {
-    if (li_titles[key] != title || li_values[key] != value || li_weight[key] != weight) {
+    if (li_titles[key] != title || li_values[key] != value || li_weight[key] != weight || li_summed[key] != summed) {
       do_update = true;
     }
   }
 
   if (do_update) {
-    // Set the timestamp for this update.
-    var this_update = new Date();
-
-    // Set the global timestamp for the update.
-    line_update = this_update.getTime();
-
     // Set the values passed in, overriding previous values for that key.
-    li_titles[key] = title;
-    li_values[key] = value;
-    li_weight[key] = weight;
+    if (key != "") {
+      li_titles[key] = title;
+      li_values[key] = value;
+      li_weight[key] = weight;
+      li_summed[key] = summed;
+    }
+    if (render == null || render) {
+      render_line_items();
+    }
+  }
+}
 
-    // Put all the existing line item data into a single array.
-    var li_info = {};
-    $.each(li_titles,
-      function(a, b) {
-        li_info[a] = li_weight[a] + ';' + li_values[a] + ';' + li_titles[a];
-      }
-    );
+function render_line_items() {
+  // Set the timestamp for this update.
+  var this_update = new Date();
 
-    // Post the line item data to a URL and get it back formatted for display.
-    $.post(Drupal.settings['base_path'] + 'cart/checkout/line_items', li_info,
-      function(contents) {
-        // Only display the changes if this was the last requested update.
-        if (this_update.getTime() == line_update) {
-          $('#line-items-div').empty().append(contents);
-        }
+  // Set the global timestamp for the update.
+  line_update = this_update.getTime();
+
+  // Put all the existing line item data into a single array.
+  var li_info = {};
+  var cur_total = 0;
+  $.each(li_titles,
+    function(a, b) {
+      li_info[a] = li_weight[a] + ';' + li_values[a] + ';' + li_titles[a] + ';' + li_summed[a];
+
+      // Tally up the current order total for storage in a hidden item.
+      if (li_titles[a] != '' && li_summed[a] == 1) {
+        cur_total += li_values[a];
       }
-    );
+    }
+  );
+  $('#edit-panes-payment-current-total').val(cur_total).click();
+
+  $('#order-total-throbber').attr('style', 'background-image: url(' + Drupal.settings.basePath + 'misc/throbber.gif); background-repeat: no-repeat; background-position: 100% -20px;').html('&nbsp;&nbsp;&nbsp;&nbsp;');
+
+  // Post the line item data to a URL and get it back formatted for display.
+  $.post(Drupal.settings.basePath + 'cart/checkout/line_items', li_info,
+    function(contents) {
+      // Only display the changes if this was the last requested update.
+      if (this_update.getTime() == line_update) {
+        $('#line-items-div').empty().append(contents);
+      }
+    }
+  );
+}
+
+function remove_line_item(key) {
+  delete li_titles[key];
+  delete li_values[key];
+  delete li_weight[key];
+  delete li_summed[key];
+  render_line_items();
+}
+
+/**
+ * Doesn't refresh the payment details if they've already been loaded.
+ */
+function init_payment_details(payment_method) {
+  if (payment_update == 0) {
+    get_payment_details('cart/checkout/payment_details/' + payment_method);
   }
 }
 
@@ -71,8 +115,14 @@ function get_payment_details(path) {
   // Set the global timestamp for the update.
   payment_update = this_update.getTime();
 
+  if ($('#edit-payment-details-data').length) {
+    data = { 'payment-details-data' : $('#edit-payment-details-data').val() };
+  }
+  else {
+    data = {};
+  }
   // Make the post to get the details for the chosen payment method.
-  $.post(path, { },
+  $.post(Drupal.settings.basePath + path, data,
     function(details) {
       if (this_update.getTime() == payment_update) {
         // If the response was empty, throw up the default message.
@@ -84,18 +134,10 @@ function get_payment_details(path) {
           $('#payment_details').empty().append(details);
         }
       }
-    }
-  );
-}
 
-/**
- * Display the details box for the default option.
- */
-function show_default_payment_details(path) {
-  $('#payment-pane .form-radios .form-radio').each(
-    function() {
-      if (this.checked) {
-        get_payment_details(path + this.value);
+      // If on the order edit screen, clear out the order save hold.
+      if (window.remove_order_save_hold) {
+        remove_order_save_hold();
       }
     }
   );
@@ -105,7 +147,7 @@ function show_default_payment_details(path) {
  * Pop-up an info box for the credit card CVV.
  */
 function cvv_info_popup() {
-  var popup = window.open(Drupal.settings['base_path'] + 'cart/checkout/credit/cvv_info', 'CVV_Info', 'toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=1,width=480,height=460,left=282,top=122');
+  var popup = window.open(Drupal.settings.basePath + 'cart/checkout/credit/cvv_info', 'CVV_Info', 'toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=1,width=480,height=460,left=282,top=122');
 }
 
 /**

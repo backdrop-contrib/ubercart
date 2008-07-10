@@ -9,87 +9,207 @@
 /**
  * Ubercart uc_product.module schema
  */
-function uc_product_install() {
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-      db_query("CREATE TABLE {uc_product_classes} (
-        `pcid` varchar(32) NOT NULL,
-        `name` varchar(255) NOT NULL,
-        `description` text,
-        PRIMARY KEY  (`pcid`)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-      db_query("CREATE TABLE {uc_product_features} (
-        `pfid` mediumint(9) NOT NULL default 0,
-        `nid` mediumint(9) NOT NULL default 0,
-        `fid` varchar(32) NOT NULL,
-        `description` text,
-        PRIMARY KEY (`pfid`),
-        KEY nid (nid)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-      db_query("CREATE TABLE {uc_products} (
-        `vid` mediumint(9) NOT NULL default 0,
-        `nid` mediumint(9) NOT NULL default 0,
-        `model` varchar(255) NOT NULL default '',
-        `list_price` decimal(10,2) NOT NULL default 0.00,
-        `cost` decimal(10,2) NOT NULL default 0.00,
-        `sell_price` decimal(10,2) NOT NULL default 0.00,
-        `weight` float NOT NULL default 0,
-        `weight_units` varchar(255) NOT NULL default 'lb',
-        `length` float unsigned NOT NULL default 0,
-        `width` float unsigned NOT NULL default 0,
-        `height` float unsigned NOT NULL default 0,
-        `length_units` varchar(255) NOT NULL default 'in',
-        `pkg_qty` smallint unsigned NOT NULL default 1,
-        `default_qty` smallint(5) unsigned NOT NULL default 1,
-        `unique_hash` varchar(32) NOT NULL,
-        `ordering` tinyint(2) NOT NULL default 0,
-        `shippable` tinyint(2) NOT NULL default 1,
-        PRIMARY KEY  (`vid`)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-    break;
-    case "pgsql":
-      db_query("CREATE TABLE {uc_product_classes} (
-        pcid varchar(32) NOT NULL default '',
-        name varchar(255) NOT NULL default '',
-        description text,
-        PRIMARY KEY  (pcid)
-      );");
-      db_query("CREATE TABLE {uc_product_features} (
-        pfid mediumint(9) NOT NULL default 0,
-        nid mediumint(9) NOT NULL default 0,
-        fid varchar(32) NOT NULL,
-        description text,
-        PRIMARY KEY (pfid),
-        KEY nid (nid)
-      );");
-      db_query("CREATE TABLE {uc_products} (
-        vid integer NOT NULL default 0,
-        nid integer NOT NULL default 0,
-        model varchar(255) NOT NULL default '',
-        list_price decimal(10,2) NOT NULL default 0.00,
-        cost decimal(10,2) NOT NULL default 0.00,
-        sell_price decimal(10,2) NOT NULL default 0.00,
-        weight float NOT NULL default 0,
-        weight_units varchar(255) NOT NULL default 'lb',
-        length float unsigned NOT NULL default 0,
-        width float unsigned NOT NULL default 0,
-        height float unsigned NOT NULL default 0,
-        length_units varchar(255) NOT NULL default 'in',
-        pkg_qty smallint unsigned NOT NULL default 1,
-        default_qty smallint unsigned NOT NULL default 1,
-        unique_hash varchar(32) NOT NULL default '',
-        ordering smallint(2) NOT NULL default 0,
-        PRIMARY KEY (vid)
-      );");
-    break;
-  }
+function uc_product_schema() {
+  $schema = array();
+
+  $schema['uc_product_classes'] = array(
+    'description' => t('The list of product node types.'),
+    'fields' => array(
+      'pcid' => array(
+        'description' => t('The node type identifier.'),
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'name' => array(
+        'description' => t('The human-readable name.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'description' => array(
+        'type' => 'text',
+      ),
+    ),
+    'primary key' => array('pcid'),
+  );
+  $schema['uc_product_features'] = array(
+    'fields' => array(
+      'pfid' => array(
+        'description' => t('The product feature id.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'description' => t('The identifier of the node that has a feature.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'fid' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'description' => array(
+        'type' => 'text',
+      ),
+    ),
+    'indexes' => array(
+      'uc_product_features_nid' => array('nid'),
+    ),
+    'primary key' => array('pfid'),
+  );
+  $schema['uc_products'] = array(
+    'description' => t('Product information for nodes.'),
+    'fields' => array(
+      'vid' => array(
+        'description' => t('Revision id of the product node.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'nid' => array(
+        'description' => t('The product node id.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'model' => array(
+        'description' => t('SKU or model number.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'list_price' => array(
+        'description' => t('Suggested retail price.'),
+        'type' => 'numeric',
+        'precision' => 10,
+        'scale' => 2,
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0.0,
+      ),
+      'cost' => array(
+        'description' => t('The amount the store pays to sell the product.'),
+        'type' => 'numeric',
+        'precision' => 10,
+        'scale' => 2,
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0.0,
+      ),
+      'sell_price' => array(
+        'description' => t('The amount the customer pays for the product.'),
+        'type' => 'numeric',
+        'precision' => 10,
+        'scale' => 2,
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0.0,
+      ),
+      'weight' => array(
+        'description' => t('Physical weight.'),
+        'type' => 'float',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0.0,
+      ),
+      'weight_units' => array(
+        'description' => t('Unit of measure for the weight field.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => 'lb',
+      ),
+      'length' => array(
+        'description' => t('Physical length of the product or its packaging.'),
+        'type' => 'float',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0.0,
+      ),
+      'width' => array(
+        'description' => t('Physical width of the product or its packaging.'),
+        'type' => 'float',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0.0,
+      ),
+      'height' => array(
+        'description' => t('Physical height of the product or its packaging.'),
+        'type' => 'float',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0.0,
+      ),
+      'length_units' => array(
+        'description' => t('Unit of measure for the length, width, and height.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => 'in',
+      ),
+      'pkg_qty' => array(
+        'description' => t('The number of this product that fit in one package.'),
+        'type' => 'int',
+        'size' => 'small',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'default_qty' => array(
+        'description' => t('The default value for the quantity field in the "Add to Cart" form.'),
+        'type' => 'int',
+        'size' => 'small',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'unique_hash' => array(
+        'description' => t('A multi-site unique identifier for a product.'),
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => md5(''),
+      ),
+      'ordering' => array(
+        'description' => t('The sort criteria for products.'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'shippable' => array(
+        'description' => t('Boolean flag signifying that the product can be shipped.'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+    ),
+    'primary key' => array('vid'),
+  );
+
+  return $schema;
 }
 
-function uc_product_uninstall(){
-  db_query("DROP TABLE {uc_product_classes}");
-  db_query("DROP TABLE {uc_product_features}");
-  db_query("DROP TABLE {uc_products}");
+function uc_product_install() {
+  drupal_install_schema('uc_product');
+}
+
+function uc_product_uninstall() {
+  drupal_uninstall_schema('uc_product');
+
   variable_del('uc_product_nodes_per_page');
   variable_del('uc_product_add_to_cart_qty');
   variable_del('uc_product_add_to_cart_teaser');
@@ -99,9 +219,9 @@ function uc_product_uninstall(){
   variable_del('uc_product_field_weight');
 }
 
-function uc_product_update_1(){
+function uc_product_update_1() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_class_choices} CHANGE name name varchar(255) NOT NULL");
@@ -121,16 +241,16 @@ function uc_product_update_1(){
     break;
   }
 
-  if ($max_id = db_result(db_query("SELECT cfid FROM {uc_class_fields} ORDER BY cfid DESC LIMIT 1"))){
+  if ($max_id = db_result(db_query_range("SELECT cfid FROM {uc_class_fields} ORDER BY cfid DESC", 0, 1))) {
     $ret[] = update_sql("INSERT INTO {sequences} (name, id) VALUES ('{uc_class_fields}_cfid', %d)", $max_id);
   }
 
   return $ret;
 }
 
-function uc_product_update_2(){
+function uc_product_update_2() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_product_class_choices} DROP PRIMARY KEY");
@@ -146,9 +266,9 @@ function uc_product_update_2(){
   return $ret;
 }
 
-function uc_product_update_3(){
+function uc_product_update_3() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_products} ADD COLUMN units varchar(255) NOT NULL default 'lbs' AFTER weight");
@@ -160,11 +280,11 @@ function uc_product_update_3(){
   return $ret;
 }
 
-function uc_product_update_4(){
+function uc_product_update_4() {
   $ret = array();
-  
+
   $ret[] = update_sql("UPDATE {node} AS n, {uc_products} AS p, {uc_product_classes} AS pc SET n.type = REPLACE(LOWER(pc.name), ' ', '_') WHERE n.nid = p.nid AND p.pcid = pc.pcid");
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("DROP TABLE {uc_class_choices}");
@@ -185,10 +305,10 @@ function uc_product_update_4(){
     break;
   }
   $ret[] = update_sql("UPDATE {uc_product_classes} SET pcid = REPLACE(LOWER(name), ' ', '_')");
-  if ($vid = variable_get('uc_catalog_vid', 0)){
-    $types = array_keys(uc_product_node_info());
+  if ($vid = variable_get('uc_catalog_vid', 0)) {
+    $types = module_invoke_all('product_types');
     unset($types['product']);
-    foreach ($types as $type){
+    foreach ($types as $type) {
       $placeholders[] = "(%d, '%s')";
       $values[] = $vid;
       $values[] = $type;
@@ -196,16 +316,16 @@ function uc_product_update_4(){
     $result = db_query("INSERT INTO {vocabulary_node_types} (vid, type) VALUES ". implode(',', $placeholders), $values);
     $ret[] = array('success' => $result, 'query' => t('Added the following node types to the Catalog vocabulary: %list', array('%list' => implode(', ', $values))));
   }
-  
+
   node_types_rebuild();
-  
+
   return $ret;
 }
 
-function uc_product_update_5(){
+function uc_product_update_5() {
   $ret = array();
-  
-  switch ($GLOBALS['db_type']){
+
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_products} ADD COLUMN default_qty smallint(5) unsigned NOT NULL default '1' AFTER units");
@@ -214,14 +334,14 @@ function uc_product_update_5(){
       db_add_column($ret, 'uc_products', 'default_qty', 'smallint unsigned', array('not null' => true, 'default' => 1));
     break;
   }
-  
+
   return $ret;
 }
 
-function uc_product_update_6(){
+function uc_product_update_6() {
   $ret = array();
-  
-  switch ($GLOBALS['db_type']){
+
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_products} ADD COLUMN ordering smallint(2) NOT NULL default 0");
@@ -230,13 +350,13 @@ function uc_product_update_6(){
       db_add_column($ret, 'uc_products', 'default_qty', 'smallint(2)', array('not null' => true, 'default' => 0));
     break;
   }
-  
+
   return $ret;
 }
 
-function uc_product_update_7(){
+function uc_product_update_7() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_products} CHANGE units weight_units varchar(255) NOT NULL default 'lb'");
@@ -258,15 +378,15 @@ function uc_product_update_7(){
   return $ret;
 }
 
-function uc_product_update_8(){
+function uc_product_update_8() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_products} ADD vid mediumint(9) NOT NULL default 0 FIRST");
       $ret[] = update_sql("ALTER TABLE {uc_products} DROP PRIMARY KEY");
       $result = db_query("SELECT nid, vid FROM {node}");
-      while ($product = db_fetch_object($result)){
+      while ($product = db_fetch_object($result)) {
         db_query("UPDATE {uc_products} SET vid = %d WHERE nid = %d", $product->vid, $product->nid);
       }
       $ret[] = update_sql("ALTER TABLE {uc_products} ADD PRIMARY KEY (vid)");
@@ -275,7 +395,7 @@ function uc_product_update_8(){
       db_add_column($ret, 'uc_products', 'vid', 'integer', array('not null' => true, 'default' => 0));
       $ret[] = update_sql("ALTER TABLE {uc_products} DROP CONSTRAINT {uc_products}_pkey");
       $result = db_query("SELECT nid, vid FROM {node}");
-      while ($product = db_fetch_object($result)){
+      while ($product = db_fetch_object($result)) {
         db_query("UPDATE {uc_products} SET vid = %d WHERE nid = %d", $product->vid, $product->nid);
       }
       $ret[] = update_sql("ALTER TABLE {uc_products} ADD PRIMARY KEY (vid)");
@@ -307,7 +427,7 @@ function uc_product_update_9() {
 // Update to add the shippable column to the product table.
 function uc_product_update_10() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_products} ADD shippable tinyint(2) NOT NULL default 1");
@@ -316,5 +436,32 @@ function uc_product_update_10() {
       db_add_column($ret, 'uc_products', 'shippable', 'tinyint', array('not null' => true, 'default' => 1));
     break;
   }
+  return $ret;
+}
+
+function uc_product_update_11() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'pgsql':
+      db_change_column($ret, 'uc_products', 'pkg_qty', 'pkg_qty', 'smallint_unsigned', array('not null' => true, 'default' => 1));
+      db_change_column($ret, 'uc_products', 'default_qty', 'defautl_qty', 'smallint_unsigned', array('not null' => true, 'default' => 1));
+    break;
+  }
+  return $ret;
+}
+
+function uc_product_update_12() {
+  $ret = array();
+
+  if (module_exists('imagecache')) {
+    $preset_id = db_next_id('{imagecache_preset}_presetid');
+    $action_id = db_next_id('{imagecache_action}_actionid');
+    db_query("INSERT INTO {imagecache_preset} (presetid, presetname) VALUES (%d, 'uc_thumbnail')", $preset_id);
+    db_query("INSERT INTO {imagecache_action} (actionid, presetid, weight, data) VALUES (%d, %d, 0, '%s')", $action_id, $preset_id, 'a:4:{s:8:"function";s:5:"scale";s:3:"fit";s:6:"inside";s:5:"width";s:2:"35";s:6:"height";s:2:"35";}');
+    cache_clear_all('imagecache:presets', 'cache');
+    $ret[] = array('success' => TRUE, 'query' => "INSERT INTO {imagecache_preset} (presetid, presetname) VALUES (". $preset_id .", 'uc_thumbnail')");
+    $ret[] = array('success' => TRUE, 'query' => "INSERT INTO {imagecache_action} (actionid, presetid, weight, data) VALUES (". $action_id .", ". $preset_id .", 0, '". 'a:4:{s:8:"function";s:5:"scale";s:3:"fit";s:6:"inside";s:5:"width";s:2:"35";s:6:"height";s:2:"35";}' ."')");
+  }
+
   return $ret;
 }

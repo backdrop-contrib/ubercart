@@ -30,7 +30,7 @@ function uc_line_item_subtotal($op, $arg1) {
         $subtotal += $total;
       }
       if (module_exists('uc_payment') && variable_get('uc_pane_payment_enabled', TRUE)) {
-        drupal_add_js("\$(document).ready( function() { if (set_line_item != undefined) { set_line_item('subtotal', '". t('Subtotal') ."', ". $subtotal .", -10); } } );", 'inline');
+        uc_add_js("\$(document).ready( function() { set_line_item('subtotal', '". t('Subtotal') ."', ". $subtotal .", -10); } );", 'inline');
       }
       break;
   }
@@ -54,30 +54,13 @@ function uc_line_item_total($op, $arg1) {
 /**
  * Calculate the total value of line items of types that should be calculated.
  */
-function uc_line_items_calculate($order, $taxable_only = FALSE) {
-  if ($taxable_only == TRUE) {
-    $total = array();
-  }
-  else {
-    $total = 0;
-  }
+function uc_line_items_calculate($order) {
+  $total = 0;
 
   if (is_array($order->line_items)) {
     foreach ($order->line_items as $item) {
       if (_line_item_data($item['type'], 'calculated') == TRUE) {
-        if ($taxable_only == TRUE) {
-          if (($rate = _line_item_data($item['type'], 'tax_rate')) > 0) {
-            if (!isset($total[$rate])) {
-              $total[$rate] = $item['amount'];
-            }
-            else {
-              $total[$rate] += $item['amount'];
-            }
-          }
-        }
-        else {
-          $total += $item['amount'];
-        }
+        $total += $item['amount'];
       }
     }
   }
@@ -113,9 +96,7 @@ function uc_order_line_item_add($order_id, $type, $title, $amount, $weight = NUL
     $weight = _line_item_data($type, 'weight');
   }
 
-  db_query("INSERT INTO {uc_order_line_items} (order_id, type, title, "
-        ."amount, weight) VALUES (%d, '%s', '%s', %f, %d)",
-         $order_id, $type, $title, $amount, $weight);
+  db_query("INSERT INTO {uc_order_line_items} (order_id, type, title, amount, weight) VALUES (%d, '%s', '%s', %f, %d)", $order_id, $type, $title, $amount, $weight);
 
   return TRUE;
 }
@@ -131,7 +112,7 @@ function _line_item_list($action = NULL) {
   }
 
   $items = module_invoke_all('line_item', NULL);
-  for ($i = 0; $i < count($items); $i++) {
+  foreach ($items as $i => $value) {
     $items[$i]['enabled'] = variable_get('uc_li_'. $items[$i]['id'] .'_enabled', (!isset($items[$i]['enabled']) ? TRUE : $items[$i]['enabled']));
     $items[$i]['weight'] = variable_get('uc_li_'. $items[$i]['id'] .'_weight', (!isset($items[$i]['weight']) ? 1 : $items[$i]['weight']));
   }

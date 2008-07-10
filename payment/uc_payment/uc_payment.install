@@ -1,109 +1,83 @@
 <?php
 // $Id$
 
-function uc_payment_install(){
-  $t = get_t();
+function uc_payment_schema() {
+  $schema = array();
 
-  switch($GLOBALS['db_type']){
-    case 'mysql':
-    case 'mysqli':
-      db_query("CREATE TABLE {uc_payment_check} (
-        check_id mediumint(9) NOT NULL,
-        order_id mediumint(9) NOT NULL,
-        clear_date int(11) NOT NULL,
-        PRIMARY KEY (check_id),
-        KEY order_id (order_id)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-      db_query("CREATE TABLE {uc_payment_cod} (
-        order_id mediumint(9) NOT NULL,
-        delivery_month smallint(6) NOT NULL,
-        delivery_day smallint(6) NOT NULL,
-        delivery_year smallint(6) NOT NULL,
-        PRIMARY KEY (order_id)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-      db_query("CREATE TABLE {uc_payment_other} (
-        order_id mediumint(9) NOT NULL,
-        description varchar(64) NOT NULL,
-        PRIMARY KEY order_id (order_id)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-      db_query("CREATE TABLE {uc_payment_receipts} (
-        receipt_id mediumint(9) NOT NULL,
-        order_id mediumint(9) NOT NULL,
-        method varchar(32) NOT NULL,
-        amount decimal(10,2) NOT NULL,
-        uid mediumint(9) NOT NULL,
-        data text NOT NULL,
-        comment tinytext NOT NULL,
-        received int(11) NOT NULL,
-        PRIMARY KEY (receipt_id),
-        KEY order_id (order_id)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-      db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('payment_received', '". $t('Payment received') ."', 'payment_received', 10, 1);");
-      break;
-    case 'pgsql':
-      db_query("CREATE TABLE {uc_payment_check} (
-        check_id mediumint(9) NOT NULL,
-        order_id mediumint(9) NOT NULL,
-        clear_date int(11) NOT NULL,
-        PRIMARY KEY (check_id),
-        KEY order_id (order_id)
-      )");
-      db_query("CREATE TABLE {uc_payment_cod} (
-        order_id mediumint(9) NOT NULL,
-        delivery_month smallint(6) NOT NULL,
-        delivery_day smallint(6) NOT NULL,
-        delivery_year smallint(6) NOT NULL,
-        PRIMARY KEY  (order_id)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-      db_query("CREATE TABLE {uc_payment_other} (
-        order_id mediumint(9) NOT NULL,
-        description varchar(64) NOT NULL,
-        PRIMARY KEY order_id (order_id)
-      )");
-      db_query("CREATE TABLE {uc_payment_receipts} (
-        receipt_id mediumint(9) NOT NULL,
-        order_id mediumint(9) NOT NULL,
-        method varchar(32) NOT NULL,
-        amount decimal(10,2) NOT NULL,
-        uid mediumint(9) NOT NULL,
-        data text NOT NULL,
-        comment tinytext NOT NULL,
-        received int(11) NOT NULL,
-        PRIMARY KEY (receipt_id),
-        KEY order_id (order_id)
-      )");
-      db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('payment_received', '". $t('Payment received') ."', 'payment_received', 10, 1);");
-      break;
-  }
+  $schema['uc_payment_receipts'] = array(
+    'fields' => array(
+      'receipt_id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'order_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'method' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'amount' => array(
+        'type' => 'numeric',
+        'precision' => 10,
+        'scale' => 2,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'data' => array(
+        'type' => 'text',
+      ),
+      'comment' => array(
+        'type' => 'text',
+        'size' => 'tiny',
+      ),
+      'received' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'uc_payment_receipts_order_id' => array('order_id'),
+    ),
+    'primary key' => array('receipt_id'),
+  );
+
+  return $schema;
+}
+
+function uc_payment_install() {
+  drupal_install_schema('uc_payment');
+  $t = get_t();
+  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('payment_received', '". $t('Payment received') ."', 'payment_received', 10, 1);");
 }
 
 function uc_payment_uninstall() {
-  db_query("DROP TABLE IF EXISTS {uc_payment_check}");
-  db_query("DROP TABLE IF EXISTS {uc_payment_cod}");
-  db_query("DROP TABLE IF EXISTS {uc_payment_other}");
-  db_query("DROP TABLE IF EXISTS {uc_payment_receipts}");
+  drupal_uninstall_schema('uc_payment');
+
   db_query("DELETE FROM {variable} WHERE name LIKE 'uc_pg_%%'");
   db_query("DELETE FROM {variable} WHERE name LIKE 'uc_payment_method_%%'");
-  db_query("DELETE FROM {sequences} WHERE name LIKE '{uc_payment_receipts}_receipt_id'");
-  db_query("DELETE FROM {sequences} WHERE name LIKE '{uc_payment_check}_check_id'");
   variable_del('uc_payment_tracking');
   variable_del('uc_payment_deleting');
   variable_del('uc_payment_logging');
   variable_del('uc_default_payment_msg');
-  variable_del('uc_check_mailing_company');
-  variable_del('uc_check_mailing_name');
-  variable_del('uc_check_mailing_street1');
-  variable_del('uc_check_mailing_street2');
-  variable_del('uc_check_mailing_city');
-  variable_del('uc_check_mailing_zone');
-  variable_del('uc_check_mailing_postal_code');
-  variable_del('uc_check_mailing_country');
-  variable_del('uc_check_policy');
 }
 
 function uc_payment_update_1() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("CREATE TABLE {uc_payment_cod} (
@@ -145,9 +119,9 @@ function uc_payment_update_2() {
 
   // Clean out the old order status table and redefine its structure.
   if ($_SESSION['statuses'] !== TRUE) {
-    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE order_status_id order_status_id VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL default ''");
-    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE title title VARCHAR(48) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL default ''");
-    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE notify state VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL default ''");
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE order_status_id order_status_id VARCHAR(32) CHARACTER SET utf8 NOT NULL default ''");
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE title title VARCHAR(48) CHARACTER SET utf8 NOT NULL default ''");
+    $ret[] = update_sql("ALTER TABLE {uc_order_statuses} CHANGE notify state VARCHAR(32) CHARACTER SET utf8 NOT NULL default ''");
     $ret[] = update_sql("ALTER TABLE {uc_order_statuses} ADD weight MEDIUMINT(9) NOT NULL");
     $ret[] = update_sql("ALTER TABLE {uc_order_statuses} ADD locked TINYINT NOT NULL DEFAULT '0'");
     $ret[] = update_sql("DELETE FROM {uc_order_statuses} WHERE order_status_id LIKE '_'");

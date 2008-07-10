@@ -34,28 +34,41 @@ function uc_cart_next_button_click(button, pane_id, current) {
  * Copy the delivery information to the payment information on the checkout
  * screen if corresponding fields exist.
  */
-function uc_cart_copy_delivery_to_billing(checked) {
+function uc_cart_copy_address(checked, source, target) {
   if (!checked) {
-    $('#billing-pane div.address-pane-table').slideDown();
+    $('#' + target + '-pane div.address-pane-table').slideDown();
     copy_box_checked = false;
     return false;
   }
 
-  // Hide the billing information fields.
-  $('#billing-pane div.address-pane-table').slideUp();
+  if (target == 'billing') {
+    var x = 28;
+  }
+  else {
+    var x = 26;
+  }
+
+  // Hide the target information fields.
+  $('#' + target + '-pane div.address-pane-table').slideUp();
   copy_box_checked = true;
 
   // Copy over the zone options manually.
-  if ($('#edit-panes-billing-billing-zone').html() != $('#edit-panes-delivery-delivery-zone').html()) {
-    $('#edit-panes-billing-billing-zone').empty().append($('#edit-panes-delivery-delivery-zone').children().clone());
+  if ($('#edit-panes-' + target + '-' + target + '-zone').html() != $('#edit-panes-' + source + '-' + source + '-zone').html()) {
+    $('#edit-panes-' + target + '-' + target + '-zone').empty().append($('#edit-panes-' + source + '-' + source + '-zone').children().clone());
+    $('#edit-panes-' + target + '-' + target + '-zone').attr('disabled', $('#edit-panes-' + source + '-' + source + '-zone').attr('disabled'));
   }
 
   // Copy over the information and set it to update if delivery info changes.
-  $('#delivery-pane input, select, textarea').each(
+  $('#' + source + '-pane input, select, textarea').each(
     function() {
-      if (this.id.substring(0, 28) == 'edit-panes-delivery-delivery') {
-        $('#edit-panes-billing-billing' + this.id.substring(28)).val($(this).val());
-        $(this).change(function () { update_billing_field(this); });
+      if (this.id.substring(0, x) == 'edit-panes-' + source + '-' + source) {
+        $('#edit-panes-' + target + '-' + target + this.id.substring(x)).val($(this).val());
+        if (target == 'billing') {
+          $(this).change(function () { update_billing_field(this); });
+        }
+        else {
+          $(this).change(function () { update_delivery_field(this); });
+        }
       }
     }
   );
@@ -66,6 +79,12 @@ function uc_cart_copy_delivery_to_billing(checked) {
 function update_billing_field(field) {
   if (copy_box_checked) {
     $('#edit-panes-billing-billing' + field.id.substring(28)).val($(field).val());
+  }
+}
+
+function update_delivery_field(field) {
+  if (copy_box_checked) {
+    $('#edit-panes-delivery-delivery' + field.id.substring(26)).val($(field).val());
   }
 }
 

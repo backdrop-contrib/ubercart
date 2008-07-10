@@ -15,8 +15,7 @@
 
 require_once('uc_payment_checkout_pane.inc');
 require_once('uc_payment_order_pane.inc');
-require_once('uc_payment_payment_method.inc');
-require_once('uc_payment_workflow.inc');
+require_once('uc_payment.ca.inc');
 
 /*******************************************************************************
  * Hook Functions (Drupal)
@@ -25,138 +24,101 @@ require_once('uc_payment_workflow.inc');
 /**
  * Implementation of hook_menu().
  */
-function uc_payment_menu($may_cache) {
-  if ($may_cache) {
-    $items[] = array(
-      'path' => 'admin/store/settings/payment',
-      'title' => t('Payment settings'),
-      'callback' => 'uc_payment_settings_overview',
-      'access' => user_access('administer store'),
-      'description' => t('Configure the payment settings.'),
-    );
-    $items[] = array(
-      'path' => 'admin/store/settings/payment/overview',
-      'title' => t('Overview'),
-      'access' => user_access('administer store'),
-      'description' => t('View the payment settings.'),
-      'type' => MENU_DEFAULT_LOCAL_TASK,
-      'weight' => -10,
-    );
-    $items[] = array(
-      'path' => 'admin/store/settings/payment/edit',
-      'title' => t('Edit'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('uc_payment_settings_form'),
-      'access' => user_access('administer store'),
-      'description' => t('Edit the payment settings.'),
-      'type' => MENU_LOCAL_TASK,
-      'weight' => -5,
-    );
-    $items[] = array(
-      'path' => 'admin/store/settings/payment/edit/basic',
-      'title' => t('Payment settings'),
-      'access' => user_access('administer store'),
-      'description' => t('Edit the basic payment settings.'),
-      'type' => MENU_DEFAULT_LOCAL_TASK,
-      'weight' => -10,
-    );
-    $items[] = array(
-      'path' => 'admin/store/settings/payment/edit/methods',
-      'title' => t('Payment methods'),
-      'access' => user_access('administer store'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('uc_payment_methods_form'),
-      'description' => t('Edit the payment method settings.'),
-      'type' => MENU_LOCAL_TASK,
-      'weight' => -5,
-    );
-    $items[] = array(
-      'path' => 'admin/store/settings/payment/edit/gateways',
-      'title' => t('Payment gateways'),
-      'access' => user_access('administer store'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('uc_payment_gateways_form'),
-      'description' => t('Edit the payment gateway settings.'),
-      'type' => MENU_LOCAL_TASK,
-      'weight' => 0,
-    );
+function uc_payment_menu() {
+  $items['admin/store/settings/payment'] = array(
+    'title' => 'Payment settings',
+    'description' => 'Configure the payment settings.',
+    'page callback' => 'uc_payment_settings_overview',
+    'access arguments' => array('administer store'),
+  );
+  $items['admin/store/settings/payment/overview'] = array(
+    'title' => 'Overview',
+    'description' => 'View the payment settings.',
+    'access arguments' => array('administer store'),
+    'weight' => -10,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/store/settings/payment/edit'] = array(
+    'title' => 'Edit',
+    'description' => t('Edit the payment settings.'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_payment_settings_form'),
+    'access arguments' => array('administer store'),
+    'weight' => -5,
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/store/settings/payment/edit/basic'] = array(
+    'title' => 'Payment settings',
+    'description' => 'Edit the basic payment settings.',
+    'access arguments' => array('administer store'),
+    'weight' => -10,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/store/settings/payment/edit/methods'] = array(
+    'title' => 'Payment methods',
+    'description' => 'Edit the payment method settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_payment_methods_form'),
+    'access arguments' => array('administer store'),
+    'weight' => -5,
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/store/settings/payment/edit/gateways'] = array(
+    'title' => 'Payment gateways',
+    'description' => 'Edit the payment gateway settings.',
+    'access arguments' => array('administer store'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_payment_gateways_form'),
+    'weight' => 0,
+    'type' => MENU_LOCAL_TASK,
+  );
 
-    $items[] = array(
-      'path' => 'admin/store/payment_methods',
-      'title' => t('Payment methods autocomplete'),
-      'callback' => '_uc_payment_methods_autocomplete',
-      'access' => user_access('edit orders'),
-      'type' => MENU_CALLBACK,
-    );
-    $items[] = array(
-      'path' => 'cart/checkout/line_items',
-      'title' => t('Return order totals'),
-      'callback' => 'uc_payment_get_totals',
-      'access' => user_access('access content'),
-      'type' => MENU_CALLBACK,
-    );
-  }
-  else {
-    $items[] = array(
-      'path' => 'cart/checkout/payment_details/'. arg(3),
-      'title' => t('Payment details'),
-      'description' => t('Add the payment details to the checkout pane.'),
-      'callback' => 'uc_payment_get_details',
-      'callback arguments' => array(arg(3)),
-      'access' => user_access('access content'),
-      'type' => MENU_CALLBACK,
-    );
-   
-    if (is_numeric(arg(3))) {
-      $items[] = array(
-        'path' => 'admin/store/orders/'. arg(3) .'/payment_details/'. arg(5),
-        'title' => t('Payment details'),
-        'description' => t('Add the payment details to the order pane.'),
-        'callback' => 'uc_payment_get_details',
-        'callback arguments' => array(arg(5), 'order'),
-        'access' => user_access('edit orders'),
-        'type' => MENU_CALLBACK,
-      );
-      $items[] = array(
-        'path' => 'admin/store/orders/'. arg(3) .'/receive_check',
-        'title' => t('Receive Check'),
-        'callback' => 'drupal_get_form',
-        'callback arguments' => array('uc_payment_receive_check_form', arg(3)),
-        'access' => user_access('view all orders'),
-        'type' => MENU_CALLBACK,
-      );
-      $items[] = array(
-        'path' => 'admin/store/orders/'. arg(3) .'/payments/select/'. arg(6),
-        'title' => t('Select Payment Gateway'),
-        'callback' => 'uc_payment_gateway_select',
-        'callback arguments' => array(arg(3), arg(6)),
-        'access' => user_access('view all orders'),
-        'type' => MENU_CALLBACK,
-      );        
-      if (variable_get('uc_payment_tracking', TRUE)) {
-        $items[] = array(
-          'path' => 'admin/store/orders/'. arg(3) .'/payments',
-          'title' => t('payments'),
-          'callback' => 'uc_payment_by_order',
-          'callback arguments' => array(arg(3)),
-          'access' => user_access('view payments'),
-          'weight' => 5,
-          'type' => MENU_LOCAL_TASK
-        );
-      }
-      if (is_numeric(arg(5)) && arg(6) == 'delete' && variable_get('uc_payment_deleting', TRUE)) {
-        $items[] = array(
-          'path' => 'admin/store/orders/'. arg(3) .'/payments/'. arg(5) .'/delete',
-          'title' => t('Delete payment?'),
-          'description' => t('Delete payment?'),
-          'callback' => 'uc_payment_delete_confirm',
-          'callback arguments' => array(arg(3), arg(5)),
-          'access' => user_access('delete payments'),
-          'type' => MENU_CALLBACK,
-        );
-      }
-    }
-  }
+  $items['cart/checkout/line_items'] = array(
+    'title' => 'Return order totals',
+    'page callback' => 'uc_payment_get_totals',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['cart/checkout/payment_details/%'] = array(
+    'title' => 'Payment details',
+    'description' => 'Add the payment details to the checkout pane.',
+    'page callback' => 'uc_payment_get_details',
+    'page arguments' => array(3),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/store/orders/%uc_order/payment_details/%'] = array(
+    'title' => 'Payment details',
+    'description' => 'Add the payment details to the order pane.',
+    'page callback' => 'uc_payment_get_details',
+    'page arguments' => array(5, 'order', 3),
+    'access arguments' => array('edit orders'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/store/orders/%uc_order/payments/select/%'] = array(
+    'title' => 'Select payment gateway',
+    'page callback' => 'uc_payment_gateway_select',
+    'access arguments' => array('view all orders'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/store/orders/%uc_order/payments'] = array(
+    'title' => 'Payments',
+    'page callback' => 'uc_payment_by_order',
+    'page arguments' => array(3),
+    'access callback' => 'uc_payment_tracking_access',
+    'weight' => 5,
+    'type' => MENU_LOCAL_TASK
+  );
+  $items['admin/store/orders/%uc_order/payments/%uc_payment/delete'] = array(
+    'title' => 'Delete payment?',
+    'description' => 'Delete payment?',
+    'page callback' => 'uc_payment_delete_confirm',
+    'page arguments' => array(3, 5),
+    'access callback' => 'uc_payment_delete_access',
+    'type' => MENU_CALLBACK,
+  );
 
   return $items;
 }
@@ -166,12 +128,13 @@ function uc_payment_menu($may_cache) {
  */
 function uc_payment_token_values($type, $object = NULL) {
   switch ($type) {
-    case 'uc_order':
+    case 'order':
       $order = $object;
       $values['order-payment-method'] = _payment_method_data($order->payment_method, 'review');
       if (empty($values['order-payment-method'])) {
         $values['order-payment-method'] = _payment_method_data($order->payment_method, 'name');
       }
+      $values['order-payment-balance'] = uc_currency_format(uc_payment_balance($order));
       break;
   }
 
@@ -182,8 +145,9 @@ function uc_payment_token_values($type, $object = NULL) {
  * Implementation of hook_token_list(). (token.module)
  */
 function uc_payment_token_list($type = 'all') {
-  if ($type == 'uc_order' || $type == 'ubercart' || $type == 'all') {
-    $tokens['uc_order']['order-payment-method'] = t('The payment method of the order.');
+  if ($type == 'order' || $type == 'ubercart' || $type == 'all') {
+    $tokens['order']['order-payment-method'] = t('The payment method of the order.');
+    $tokens['order']['order-payment-balance'] = t('The payment balance of the order');
   }
 
   return $tokens;
@@ -197,12 +161,43 @@ function uc_payment_perm() {
 }
 
 /**
+ * Access callback to view list of payments.
+ */
+function uc_payment_tracking_access() {
+  return user_access('view payments') && variable_get('uc_payment_tracking', TRUE);
+}
+
+/**
+ * Access callback to delete a payment.
+ */
+function uc_payment_delete_access() {
+  return user_access('delete payments') && variable_get('uc_payment_deleting', TRUE);
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function uc_payment_theme() {
+  return array(
+    'uc_payment_method_table' => array(
+      'arguments' => array('form' => NULL),
+    ),
+    'uc_payment_by_order_form' => array(
+      'arguments' => array('form' => NULL),
+    ),
+    'uc_payment_method_select' => array(
+      'arguments' => array('form' => NULL),
+    ),
+  );
+}
+
+/**
  * Implementation of hook_form_alter().
  */
-function uc_payment_form_alter($form_id, &$form) {
+function uc_payment_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'uc_cart_checkout_form') {
-    drupal_add_js('misc/progress.js');
-    drupal_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
+    uc_add_js('misc/progress.js');
+    uc_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
   }
 }
 
@@ -222,7 +217,7 @@ function uc_payment_table_settings() {
     'access' => 'view all orders',
     'preview' => FALSE,
   );
-  
+
   return $tables;
 }
 
@@ -282,7 +277,7 @@ function uc_payment_order($op, &$arg1) {
 function uc_payment_checkout_pane() {
   $panes[] = array(
     'id' => 'payment',
-    'title' => t('Payment Method'),
+    'title' => t('Payment method'),
     'desc' => t('Select a payment method from the enabled payment modules.'),
     'callback' => 'uc_checkout_pane_payment',
     'weight' => 6,
@@ -322,43 +317,6 @@ function uc_payment_order_state() {
   return $states;
 }
 
-/**
- * Implementation of hook_payment_method().
- */
-function uc_payment_payment_method() {
-  $methods[] = array(
-    'id' => 'check',
-    'name' => t('Check'),
-    'title' => t('Check or Money Order'),
-    'desc' => t('Pay by mailing a check or money order.'),
-    'callback' => 'uc_payment_method_check',
-    'weight' => 1,
-    'checkout' => TRUE,
-    'backend' => TRUE,
-  );
-  $methods[] = array(
-    'id' => 'cod',
-    'name' => t('COD'),
-    'title' => t('Cash on Delivery'),
-    'desc' => t('Pay cash on delivery on pick-up.'),
-    'callback' => 'uc_payment_method_cod',
-    'weight' => 1,
-    'checkout' => FALSE,
-    'backend' => TRUE,
-  );
-  $methods[] = array(
-    'id' => 'other',
-    'name' => t('Other'),
-    'title' => t('Other'),
-    'desc' => t('A generic payment method type.'),
-    'callback' => 'uc_payment_method_other',
-    'weight' => 10,
-    'checkout' => FALSE,
-    'backend' => TRUE,
-  );
-
-  return $methods;
-}
 
 /*******************************************************************************
  * Callback Functions, Forms, and Tables
@@ -375,6 +333,7 @@ function uc_payment_settings_overview() {
       t('Payment tracking is !status.', array('!status' => variable_get('uc_payment_tracking', TRUE) ? t('enabled') : t('disabled'))),
       t('Payments !status be deleted by approved users.', array('!status' => variable_get('uc_payment_deleting', TRUE) ? t('may') : t('may not'))),
       t('Payments are !status in the order logs.', array('!status' => variable_get('uc_payment_logging', TRUE) ? t('tracked') : t('not tracked'))),
+      t('Default payment details message:<br/>%message', array('%message' => variable_get('uc_default_payment_msg', t('Continue with checkout to complete payment.')))),
     ),
   );
 
@@ -435,23 +394,17 @@ function uc_payment_methods_form() {
   $methods = _payment_method_list();
 
   $form['methods_info'] = array(
-    '#value' => '<div><strong>'. t('Payment Methods') .'</strong><br />'
+    '#value' => '<div><strong>'. t('Payment methods') .'</strong><br />'
               . t('The settings forms below are for the payment methods defined by enabled modules. Click a name to expand its options and adjust the settings accordingly. Methods are listed in order of appearance on the checkout screen, determined by the weight setting (current value shown in parentheses).') .'</div><br />',
   );
 
-  $form['pmtable'] = array(
-    '#theme' => 'uc_payment_method_table',
-  );
+  $form['pmtable'] = array('#theme' => 'uc_payment_method_table');
 
   if (is_array($methods) && count($methods) > 0) {
     foreach ($methods as $method) {
       $form['pmtable'][$method['id']]['uc_payment_method_'. $method['id'] .'_checkout'] = array(
         '#type' => 'checkbox',
         '#default_value' => variable_get('uc_payment_method_'. $method['id'] .'_checkout', $method['checkout']),
-      );
-      $form['pmtable'][$method['id']]['uc_payment_method_'. $method['id'] .'_backend'] = array(
-        '#type' => 'checkbox',
-        '#default_value' => variable_get('uc_payment_method_'. $method['id'] .'_backend', $method['backend']),
       );
       $form['pmtable'][$method['id']]['name'] = array(
         '#value' => $method['name'],
@@ -461,26 +414,34 @@ function uc_payment_methods_form() {
         '#default_value' => variable_get('uc_payment_method_'. $method['id'] .'_weight', $method['weight']),
       );
 
-      $gateways = _payment_gateway_list($method['id'], TRUE);
-      $options = array();
-      $default = FALSE;
-      if (is_array($gateways)) {
-        foreach ($gateways as $gateway) {
-          if (!$default) {
-            $default = $gateway['id'];
+      if ($method['no_gateway'] === TRUE) {
+        $form['pmtable'][$method['id']]['uc_payment_'. $method['id'] .'_gateway'] = array(
+          '#value' => '-',
+        );
+      }
+      else {
+        $gateways = _payment_gateway_list($method['id'], TRUE);
+        $options = array();
+        $default = FALSE;
+        if (is_array($gateways)) {
+          foreach ($gateways as $gateway) {
+            if (!$default) {
+              $default = $gateway['id'];
+            }
+            $options[$gateway['id']] = $gateway['title'];
           }
-          $options[$gateway['id']] = $gateway['title'];
         }
+        if (!$default) {
+          $options = array('none' => t('None available.'));
+        }
+        $form['pmtable'][$method['id']]['uc_payment_'. $method['id'] .'_gateway'] = array(
+          '#type' => 'select',
+          '#options' => $options,
+          '#default_value' => variable_get('uc_payment_'. $method['id'] .'_gateway', 'none'),
+        );
       }
-      if (!$default) {
-        $options = array('none' => t('None available.'));
-      }
-      $form['pmtable'][$method['id']]['uc_payment_'. $method['id'] .'_gateway'] = array(
-        '#type' => 'select',
-        '#options' => $options,
-        '#default_value' => variable_get('uc_payment_'. $method['id'] .'_gateway', 'none'),
-      );
 
+      $null = NULL;
       $method_settings = $method['callback']('settings', $null);
       if (is_array($method_settings)) {
         $form['method_'. $method['id']] = array(
@@ -498,12 +459,11 @@ function uc_payment_methods_form() {
 }
 
 function theme_uc_payment_method_table($form) {
-  $header = array(t('Checkout'), t('Admin'), t('Payment method'), t('Weight'), t('Default gateway'));
+  $header = array(t('Enabled'), t('Payment method'), t('Weight'), t('Default gateway'));
 
   foreach (element_children($form) as $method) {
     $rows[] = array(
       array('data' => drupal_render($form[$method]['uc_payment_method_'. $method .'_checkout']), 'align' => 'center'),
-      array('data' => drupal_render($form[$method]['uc_payment_method_'. $method .'_backend']), 'align' => 'center'),
       drupal_render($form[$method]['name']),
       drupal_render($form[$method]['uc_payment_method_'. $method .'_weight']),
       drupal_render($form[$method]['uc_payment_'. $method .'_gateway']),
@@ -516,7 +476,7 @@ function theme_uc_payment_method_table($form) {
     );
   }
 
-  return theme('table', $header, $rows) .'<br/>';
+  return theme('table', $header, $rows);
 }
 
 function uc_payment_gateways_form() {
@@ -525,7 +485,7 @@ function uc_payment_gateways_form() {
 
   if (is_array($gateways) && count($gateways) > 0) {
     $form['gateways_info'] = array(
-      '#value' => '<div><strong>'. t('Payment Gateways') .'</strong><br />'
+      '#value' => '<div><strong>'. t('Payment gateways') .'</strong><br />'
                 . t('Payment gateways are web services that allow you to process various types of payments remotely.  The settings forms below are for the payment gateways you have installed.  Click a name to expand its options and adjust the settings accordingly.') .'</div>',
     );
     foreach ($gateways as $gateway) {
@@ -563,19 +523,16 @@ function uc_payment_gateways_form() {
   return system_settings_form($form);
 }
 
-function uc_payment_get_details($method_id, $view = 'cart') {
+function uc_payment_get_details($method_id, $view = 'cart', $order = NULL) {
   if ($view == 'cart') {
     if (!($order = uc_order_load($_SESSION['cart_order']))) {
       $_SESSION['cart_order'] = NULL;
       $order = NULL;
     }
-  
+
     if ($order->order_status != 0 || ($user->uid && $user->uid != $order->uid)) {
       $order = NULL;
     }
-  }
-  elseif ($view == 'order') {
-    $order = uc_order_load(arg(3));
   }
 
   $func = _payment_method_data($method_id, 'callback');
@@ -588,23 +545,33 @@ function uc_payment_get_details($method_id, $view = 'cart') {
 }
 
 function uc_payment_get_totals() {
-  foreach($_POST as $key => $value) {
-    $totals[$key] = explode(';', $value);
-  }
-  usort($totals, '_total_sort');
-
-  $output = t('Order total preview:') .'<table>';
-  $grand_total = 0;
-
-  foreach($totals as $line) {
-    $output .= '<tr><td align="right"><b>'. $line[2] .':</b></td>'
-              .'<td align="right">'. uc_currency_format($line[1]) .'</td></tr>';
-    $grand_total += $line[1];
+  if (is_array($_POST)) {
+    foreach ($_POST as $key => $value) {
+      $totals[$key] = explode(';', $value);
+    }
   }
 
-  $output .= '<tr><td align="right"><b>'. t('Order total:') .'</b></td>'
-            .'<td align="right">'. uc_currency_format($grand_total)
-            .'</td></tr></table>';
+  if (is_array($totals) && count($totals) > 0) {
+    usort($totals, '_total_sort');
+
+    $output = t('Order total preview:')
+             .' <span id="order-total-throbber"></span><table>';
+    $grand_total = 0;
+
+    foreach ($totals as $line) {
+      if (!empty($line[2])) {
+        $output .= '<tr><td align="right"><b>'. $line[2] .':</b></td>'
+                  .'<td align="right">'. uc_currency_format($line[1]) .'</td></tr>';
+        if ($line[3]) {
+          $grand_total += round($line[1], 2);
+        }
+      }
+    }
+
+    $output .= '<tr><td align="right"><b>'. t('Order total:') .'</b></td>'
+              .'<td align="right">'. uc_currency_format($grand_total)
+              .'</td></tr></table>';
+  }
 
   print $output;
   exit();
@@ -621,28 +588,21 @@ function _total_sort($a, $b) {
 /**
  * View a list of payments attached to an order.
  */
-function uc_payment_by_order($order_id) {
-  $output = '<p>'. drupal_get_form('uc_payment_by_order_form', $order_id) .'</p>';
+function uc_payment_by_order($order) {
+  $output = '<p>'. drupal_get_form('uc_payment_by_order_form', $order) .'</p>';
   return $output;
 }
 
-function uc_payment_by_order_form($order_id) {
-  $order = uc_order_load($order_id);
-
-  if ($order === FALSE) {
-    drupal_set_message(t('Order %id does not exist.', array('%id' => $order_id)));
-    drupal_goto('admin/store/orders');
-  }
-
+function uc_payment_by_order_form($form_state, $order) {
   $total = $order->order_total;
-  $payments = uc_payment_load_payments($order_id);
+  $payments = uc_payment_load_payments($order->order_id);
 
   $form['order_total'] = array('#value' => uc_currency_format($total));
   $form['payments'] = array('#tree' => TRUE);
   if ($payments !== FALSE) {
     foreach ($payments as $payment) {
       $form['payments'][$payment->receipt_id]['received'] = array(
-        '#value' => date('m/d/Y<b\r>H:i:s', $payment->received),
+        '#value' => format_date($payment->received, 'custom', variable_get('uc_date_format_default', 'm/d/Y') .'<b\r>H:i:s'),
       );
       $form['payments'][$payment->receipt_id]['user'] = array(
         '#value' => uc_get_initials($payment->uid),
@@ -658,10 +618,10 @@ function uc_payment_by_order_form($order_id) {
         '#value' => uc_currency_format($total),
       );
       $form['payments'][$payment->receipt_id]['comment'] = array(
-        '#value' => ($payment->comment == '') ? '-' : $payment->comment,
+        '#value' => ($payment->comment == '') ? '-' : filter_xss_admin($payment->comment),
       );
       if (variable_get('uc_payment_deleting', TRUE) && user_access('delete payments')) {
-        $action_value = l(t('Delete'), 'admin/store/orders/'. $order_id .'/payments/'
+        $action_value = l(t('Delete'), 'admin/store/orders/'. $order->order_id .'/payments/'
                           . $payment->receipt_id .'/delete');
       }
       else {
@@ -675,7 +635,7 @@ function uc_payment_by_order_form($order_id) {
   $form['balance'] = array('#value' => uc_currency_format($total));
   $form['order_id'] = array(
     '#type' => 'hidden',
-    '#value' => $order_id,
+    '#value' => $order->order_id,
   );
 
   if (user_access('manual payments')) {
@@ -714,26 +674,9 @@ function uc_payment_by_order_form($order_id) {
   return $form;
 }
 
-function uc_payment_by_order_form_validate($form_id, $form_values) {
-  if (!is_numeric($form_values['payments']['new']['amount'])) {
-    form_set_error('payments][new][amount', t('You must enter a number for the amount.'));
-  }
-  return TRUE;
-}
-
-function uc_payment_by_order_form_submit($form_id, $form_values) {
-  global $user;
-
-  $payment = $form_values['payments']['new'];
-  uc_payment_enter($form_values['order_id'], $payment['method'], $payment['amount'],
-                   $user->uid, '', $payment['comment']);
-
-  drupal_set_message(t('Payment entered.'));
-}
-
 function theme_uc_payment_by_order_form($form) {
   $output = '<p><strong>'. t('Order total:') .'</strong> '. drupal_render($form['order_total'])
-           .'<br /><strong>'. t('Current Balance:') .'</strong> '
+           .'<br /><strong>'. t('Current balance:') .'</strong> '
           . drupal_render($form['balance']) .'</p>';
   $output .= '<p>'. tapir_get_table('uc_payments_table', $form) .'</p>'
            . '<p>'. drupal_render($form['form_id'])
@@ -741,54 +684,104 @@ function theme_uc_payment_by_order_form($form) {
   return $output;
 }
 
-function uc_payments_table($op, $form) {
-  switch ($op) {
-    case 'fields':
-      $fields[] = array('name' => 'received', 'title' => t('Received'), 'weight' => 0, 'enabled' => TRUE);
-      $fields[] = array('name' => 'user', 'title' => t('User'), 'weight' => 1, 'enabled' => TRUE);
-      $fields[] = array('name' => 'method', 'title' => t('Method'), 'weight' => 2, 'enabled' => TRUE);
-      $fields[] = array('name' => 'amount', 'title' => t('Amount'), 'weight' => 3, 'enabled' => TRUE);
-      $fields[] = array('name' => 'balance', 'title' => t('Balance'), 'weight' => 4, 'enabled' => TRUE);
-      $fields[] = array('name' => 'comment', 'title' => t('Comment'), 'weight' => 5, 'enabled' => TRUE);
-      $fields[] = array('name' => 'action', 'title' => t('Action'), 'weight' => 6, 'enabled' => TRUE);
-      return $fields;
-
-    case 'data':
-      foreach (element_children($form['payments']) as $i) {
-        $data['received'][] = drupal_render($form['payments'][$i]['received']);
-        $data['user'][] = drupal_render($form['payments'][$i]['user']);
-        $data['method'][] = drupal_render($form['payments'][$i]['method']);
-        $data['amount'][] = drupal_render($form['payments'][$i]['amount']);
-        $data['balance'][] = drupal_render($form['payments'][$i]['balance']);
-        $data['comment'][] = drupal_render($form['payments'][$i]['comment']);
-        $data['action'][] = drupal_render($form['payments'][$i]['action']);
-      }
-      return $data;
+function uc_payment_by_order_form_validate($form, &$form_state) {
+  if (!is_numeric($form_state['values']['payments']['new']['amount'])) {
+    form_set_error('payments][new][amount', t('You must enter a number for the amount.'));
   }
+  return TRUE;
+}
+
+function uc_payment_by_order_form_submit($form, &$form_state) {
+  global $user;
+
+  $payment = $form_state['values']['payments']['new'];
+  uc_payment_enter($form_state['values']['order_id'], $payment['method'], $payment['amount'],
+                   $user->uid, '', $payment['comment']);
+
+  drupal_set_message(t('Payment entered.'));
+}
+
+function uc_payments_table($form_state, $cells) {
+  $table = array();
+
+  $fields[] = array(
+    'id' => 'received',
+    'cell' => t('Received'),
+    'weight' => 0,
+  );
+  $fields[] = array(
+    'id' => 'user',
+    'cell' => t('User'),
+    'weight' => 1,
+  );
+  $fields[] = array(
+    'id' => 'method',
+    'cell' => t('Method'),
+    'weight' => 2,
+  );
+  $fields[] = array(
+    'id' => 'amount',
+    'cell' => t('Amount'),
+    'weight' => 3,
+  );
+  $fields[] = array(
+    'id' => 'balance',
+    'cell' => t('Balance'),
+    'weight' => 4,
+  );
+  $fields[] = array(
+    'id' => 'comment',
+    'cell' => t('Comment'),
+    'weight' => 5,
+  );
+  $fields[] = array(
+    'id' => 'action',
+    'cell' => t('Action'),
+    'weight' => 6,
+  );
+  $table['columns'] = $fields;
+
+  foreach (element_children($cells['payments']) as $i) {
+    $data = array();
+    $data['received']['cell'] = drupal_render($cells['payments'][$i]['received']);
+    $data['user']['cell'] = drupal_render($cells['payments'][$i]['user']);
+    $data['method']['cell'] = drupal_render($cells['payments'][$i]['method']);
+    $data['amount']['cell'] = drupal_render($cells['payments'][$i]['amount']);
+    $data['balance']['cell'] = drupal_render($cells['payments'][$i]['balance']);
+    $data['comment']['cell'] = drupal_render($cells['payments'][$i]['comment']);
+    $data['action']['cell'] = drupal_render($cells['payments'][$i]['action']);
+    $table['rows'][] = $data;
+  }
+
+  $form['table'] = array(
+    '#value' => $table,
+    '#theme' => 'tapir_table',
+  );
+
+  return $form;
 }
 
 /**
  * Delete a payment from an order.
  */
-function uc_payment_delete_confirm($order_id, $receipt_id) {
-  $payment = uc_payment_load($receipt_id);
-  if ($payment->order_id != $order_id) {
+function uc_payment_delete_confirm($order, $payment) {
+  if ($payment->order_id != $order->order_id) {
     drupal_set_message(t('An error loading the payment information occurred.'));
-    drupal_goto('admin/store/orders/'. $order_id .'/payments');
+    drupal_goto('admin/store/orders/'. $order->order_id .'/payments');
   }
 
   $output = '<p><strong>'. t('Payment information:') .'</strong><br />'
           . t('!method payment of !amount received on !date.',
               array('!method' => $payment->method,
                     '!amount' => uc_currency_format($payment->amount),
-                    '!date' => date('m/d/Y', $payment->received))) .'</p>';
+                    '!date' => format_date($payment->received, 'custom', variable_get('uc_date_format_default', 'm/d/Y')))) .'</p>';
   $output .= t('Are you sure you want to delete this payment?') .'<p>'
-           . drupal_get_form('uc_payment_delete_confirm_form', $order_id, $receipt_id);
+           . drupal_get_form('uc_payment_delete_confirm_form', $order->order_id, $payment->receipt_id);
 
   return $output;
 }
 
-function uc_payment_delete_confirm_form($order_id, $receipt_id) {
+function uc_payment_delete_confirm_form($form_state, $order_id, $receipt_id) {
   $form['order_id'] = array(
     '#type' => 'hidden',
     '#value' => $order_id
@@ -809,21 +802,21 @@ function uc_payment_delete_confirm_form($order_id, $receipt_id) {
   return $form;
 }
 
-function uc_payment_delete_confirm_form_submit($form_id, $form_values) {
-  if ($form_values['op'] == t('Delete')) {
-    uc_payment_delete($form_values['receipt_id']);
+function uc_payment_delete_confirm_form_submit($form, &$form_state) {
+  if ($form_state['values']['op'] == t('Delete')) {
+    uc_payment_delete($form_state['values']['receipt_id']);
     drupal_set_message(t('Payment deleted.'));
   }
-  drupal_goto('admin/store/orders/'. $form_values['order_id'] .'/payments');
+  $form_state['redirect'] = 'admin/store/orders/'. $form_state['values']['order_id'] .'/payments';
 }
 
 /**
  * Select a payment gateway to process a payment when multiple gateways
  * exist for a given payment method.
  */
-function uc_payment_gateway_select($url_order_id) {
+function uc_payment_gateway_select() {
   $gateways = _payment_gateway_list($_SESSION['uc_payment_method'], TRUE);
-  foreach($gateways as $gateway) {
+  foreach ($gateways as $gateway) {
     $options[$gateway['id']] = $gateway['title'];
   }
 
@@ -836,7 +829,7 @@ function uc_payment_gateway_select($url_order_id) {
   return $output;
 }
 
-function uc_payment_gateway_select_form($options, $method, $order_id, $amount, $data) {
+function uc_payment_gateway_select_form($form_state, $options, $method, $order_id, $amount, $data) {
   $form['method'] = array(
     '#type' => 'hidden',
     '#value' => $method,
@@ -855,7 +848,7 @@ function uc_payment_gateway_select_form($options, $method, $order_id, $amount, $
   );
   $form['p_selected'] = array(
     '#type' => 'select',
-    '#title' => t('Use Gateway'),
+    '#title' => t('Use gateway'),
     '#options' => $options,
     '#default_value' => variable_get('uc_payment_'. $method .'_gateway', ''),
   );
@@ -867,17 +860,17 @@ function uc_payment_gateway_select_form($options, $method, $order_id, $amount, $
   return $form;
 }
 
-function uc_payment_gateway_select_form_submit($form_id, $form_values) {
+function uc_payment_gateway_select_form_submit($form, &$form_state) {
   unset($_SESSION['uc_payment_method']);
   unset($_SESSION['uc_payment_order_id']);
   unset($_SESSION['uc_payment_amount']);
   unset($_SESSION['uc_payment_data']);
 
-  uc_payment_process($form_values['method'], $form_values['order_id'],
-    $form_values['amount'], unserialize($form_values['p_data']), FALSE,
-    $form_values['p_selected']);
+  uc_payment_process($form_state['values']['method'], $form_state['values']['order_id'],
+    $form_state['values']['amount'], unserialize($form_state['values']['p_data']), FALSE,
+    $form_state['values']['p_selected']);
 
-  drupal_goto('admin/store/orders/'. $form_values['order_id']);
+  $form_state['redirect'] = 'admin/store/orders/'. $form_state['values']['order_id'];
 }
 
 /*******************************************************************************
@@ -909,7 +902,7 @@ function uc_payment_process($method, $order_id, $amount, $data = NULL, $default 
   }
   else {
     $func = FALSE;
-    foreach($gateways as $gateway) {
+    foreach ($gateways as $gateway) {
       if ($default && $gateway['id'] == variable_get('uc_payment_'. $method .'_gateway', '')) {
         $func = $gateway[$method];
       }
@@ -937,12 +930,15 @@ function uc_payment_process($method, $order_id, $amount, $data = NULL, $default 
   }
 
   if ($result['success'] === TRUE) {
-    if (!empty($result['uid'])) {
+    if (empty($result['uid'])) {
       $result['uid'] = 0;
     }
-    uc_payment_enter($order_id, $method, $amount, $result['uid'], 
-                     $result['data'], $result['comment']);
+    uc_payment_enter($order_id, $method, $amount, $result['uid'], $result['data'], $result['comment']);
   }
+  else {
+    watchdog('uc_payment', 'Payment failed: !message', array('!message' => $result['message']), WATCHDOG_WARNING);
+  }
+
   if (!empty($result['message']) && !$default) {
     drupal_set_message($result['message']);
   }
@@ -978,14 +974,12 @@ function uc_payment_enter($order_id, $method, $amount, $uid, $data, $comment) {
     uc_order_log_changes($order_id, array($log_message));
   }
 
-  db_query("INSERT INTO {uc_payment_receipts} (receipt_id, order_id, method, "
-          ."amount, uid, data, comment, received) VALUES (%d, %d, '%s', %f, "
-          ."%d, '%s', '%s', %d)", db_next_id('{uc_payment_receipts}_receipt_id'),
+  db_query("INSERT INTO {uc_payment_receipts} (order_id, method, "
+          ."amount, uid, data, comment, received) VALUES (%d, '%s', %f, "
+          ."%d, '%s', '%s', %d)",
           $order_id, $method_name, $amount, $uid, $data, $comment, time());
 
-  if (module_exists('workflow_ng')) {
-    workflow_ng_invoke_event('payment_entered', uc_order_load($order_id));
-  }
+  ca_pull_trigger('uc_payment_entered', uc_order_load($order_id));
 }
 
 /**
@@ -1052,7 +1046,7 @@ function uc_payment_load_payments($order_id, $action = NULL) {
   while ($payment = db_fetch_object($result)) {
     $payments[] = $payment;
   }
-  
+
   if (count($payments) == 0) {
     $payments = FALSE;
   }
@@ -1071,9 +1065,8 @@ function _payment_method_list($action = NULL) {
   }
 
   $methods = module_invoke_all('payment_method');
-  for ($i = 0; $i < count($methods); $i++) {
+  foreach ($methods as $i => $value) {
     $methods[$i]['checkout'] = variable_get('uc_payment_method_'. $methods[$i]['id'] .'_checkout', $methods[$i]['checkout']);
-    $methods[$i]['backend'] = variable_get('uc_payment_method_'. $methods[$i]['id'] .'_backend', $methods[$i]['backend']);
     $methods[$i]['weight'] = variable_get('uc_payment_method_'. $methods[$i]['id'] .'_weight', $methods[$i]['weight']);
   }
   usort($methods, 'uc_weight_sort');
@@ -1099,7 +1092,7 @@ function _payment_method_data($method_id, $key) {
 function _payment_gateway_list($filter = NULL, $enabled_only = FALSE) {
   $gateways = module_invoke_all('payment_gateway');
 
-  for ($i = 0, $j = count($gateways); $i < $j; $i++) {
+  foreach ($gateways as $i => $value) {
     $gateways[$i]['enabled'] = variable_get('uc_pg_'. $gateways[$i]['id'] .'_enabled', TRUE);
     if ($filter != NULL) {
       if (!isset($gateways[$i][$filter]) || !function_exists($gateways[$i][$filter])) {
@@ -1126,22 +1119,5 @@ function _payment_gateway_data($method_id, $key) {
       return $gateway[$key];
     }
   }
-}
-
-/**
- * Retrieve a pipe delimited string of autocomplete suggestions for payment methods
- */
-function _uc_payment_methods_autocomplete($string = '') {
-  $matches = array();
-  $methods = _payment_method_list();
-
-  foreach($methods as $method) {
-    if ($method['backend'] == TRUE) {
-      $matches[$method['name']] = check_plain($method['name']);
-    }
-  }
-
-  print drupal_to_js($matches);
-  exit();
 }
 

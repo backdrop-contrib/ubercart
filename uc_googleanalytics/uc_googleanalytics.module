@@ -29,13 +29,13 @@ function uc_googleanalytics_footer($main = 0) {
   $checkout_page = variable_get('uc_cart_checkout_complete_page', '');
 
   // check to see if we are at the order complete page
-  if((arg(0) == 'cart' && arg(1) == 'checkout' && arg(2) == 'complete') ||
-      !empty($checkout_page) && $checkout_page == $_GET['q']){
-    if($order = uc_order_load($_SESSION['uc_googleanalytics_order_id'])) {
+  if ((arg(0) == 'cart' && arg(1) == 'checkout' && arg(2) == 'complete') ||
+      !empty($checkout_page) && $checkout_page == $_GET['q']) {
+    if ($order = uc_order_load($_SESSION['uc_googleanalytics_order_id'])) {
       $script .= _uc_googleanalytics_ecommerce_form($order);
       $_SESSION['uc_googleanalytics_order_id'] = NULL;
       unset($_SESSION['uc_googleanalytics_order_id']);
-      drupal_add_js('$(document).ready(function() { __utmSetTrans(); });', 'inline');
+      uc_add_js('$(document).ready(function() { __utmSetTrans(); });', 'inline');
     }
   }
   return $script;
@@ -47,13 +47,13 @@ function uc_googleanalytics_footer($main = 0) {
  ******************************************************************************/
 
 function uc_googleanalytics_order($op, &$arg1, $arg2) {
-  switch ($op) {    
+  switch ($op) {
     case 'new':
       if (variable_get('uc_googleanalytics_commercetracking', TRUE)) {
         // store the order id for later use. We won't be able to pick up the order id at cart/checkout/complete
         $_SESSION['uc_googleanalytics_order_id'] = $arg1->order_id;
       }
-      break;  
+      break;
   }
 }
 
@@ -64,48 +64,58 @@ function uc_googleanalytics_order($op, &$arg1, $arg2) {
 
 function _uc_googleanalytics_ecommerce_form(&$order) {
   $script = '';
-  $UTM_T  = ''; 
+  $UTM_T  = '';
   $UTM_I  = '';
   $tax    = 0;
   $shipping_cost = 0;
-  
+
   // Finding name of country, if not use the country code from ubercart
-  if($country_data = uc_get_country_data(array("country_id" => $order->billing_country))) {
+  if ($country_data = uc_get_country_data(array("country_id" => $order->billing_country))) {
     $country = $country_data[0]['country_name'];
   } else {
     $country = $order->billing_country;
   }
 
-  foreach($order->products as $product) {
-    // Try to find a category (term) for the product
-    // Since products most often only have one category, the first one returned (based on tid) is chosen
-    $terms = taxonomy_node_get_terms($product->nid);
-    if(count($terms)) {
-      $term = array_shift($terms);
-      $category = $term->name;
+  foreach ($order->products as $product) {
+    $category = '';
+
+    // Try to find a category (term) for the product. Since products most often
+    // only have one category, the first one returned (based on tid) is chosen.
+    if (module_exists('taxonomy')) {
+      $terms = taxonomy_node_get_terms($product->nid);
+      if (count($terms)) {
+        $term = array_shift($terms);
+        $category = $term->name;
+      }
     }
-    else {
+    if (empty($category)) {
       $category = t('No category');
     }
+
     // using the model field as SKU
-    $UTM_I .= 'UTM:I|' . $product->order_id
-             .'|' . $product->model
-             .'|' . $product->title
-             .'|' . $category
-             .'|' . $product->price
-             .'|' . $product->qty . " \n";
+    $UTM_I .= 'UTM:I|' . $product->order_id .'|'. $product->model .'|'
+            . $product->title .'|'. $category .'|'. $product->price .'|'
+            . $product->qty ." \n";
   }
 
-  // postal code is more interesting than state/region (at least in Norway)
+  foreach ($order->line_items as $line_item) {
+    if ($line_item['type'] == 'tax') {
+      $tax += $line_item['amount'];
+    }
+    if ($line_item['type'] == 'shipping') {
+      $shipping_cost += $line_item['amount'];
+    }
+  }
+
   $UTM_T = 'UTM:T|' . $order->order_id
           .'|' . variable_get('uc_store_name', 'Ubercart')
           .'|' . $order->order_total
           .'|' . $tax
           .'|' . $shipping_cost
-          .'|' . $order->billing_city
-          .'|' . $order->billing_postal_code
+          .'|' . check_plain($order->billing_city)
+          .'|' . check_plain($order->billing_postal_code)
           .'|' . $country . " \n";
-  
+
   $script .= "<form style=\"display:none;\" name=\"utmform\">\n";
   $script .= "<textarea id=\"utmtrans\">\n";
   $script .= $UTM_T;

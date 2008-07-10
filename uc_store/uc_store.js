@@ -1,19 +1,5 @@
 // $Id$
 
-// Add the mouseover and mouseout functions for the store links block.
-sfHover = function() {
-    $('#store-links li, #store-links li li, #store-links li li li, #store-links li li li li').mouseover(
-      function(){
-        $(this).addClass('sfhover');
-      }
-    ).mouseout(
-      function(){
-        $(this).removeClass('sfhover');
-      }
-    );
-  }
-if (window.attachEvent) window.attachEvent("onload", sfHover); 
-
 // Add the show more link on the store admin display.
 $(document).ready(
   function() {
@@ -44,7 +30,7 @@ $(document).ready(
       function() {
         $(this).dblclick(
           function() {
-            window.location = Drupal.settings['base_path'] + 'admin/store/customers/orders/' + this.id.substring(9);
+            window.location = Drupal.settings.basePath + 'admin/store/customers/orders/' + this.id.substring(9);
           }
         );
       }
@@ -59,7 +45,7 @@ $(document).ready(
       function() {
         $(this).dblclick(
           function() {
-            window.location = Drupal.settings['base_path'] + 'admin/store/orders/' + this.id.substring(6);
+            window.location = Drupal.settings.basePath + 'admin/store/orders/' + this.id.substring(6);
           }
         );
       }
@@ -74,7 +60,7 @@ $(document).ready(
       function() {
         $(this).click(
           function() {
-            window.location = Drupal.settings['base_path'] + this.id;
+            window.location = Drupal.settings.basePath + this.id;
           }
         );
       }

@@ -170,7 +170,7 @@ function uc_paypal_payment_method() {
     'callback' => 'uc_payment_method_paypal_wps',
     'weight' => 1,
     'checkout' => FALSE,
-    'backend' => TRUE,
+    'no_gateway' => TRUE,
   );
 
   $methods[] = array(
@@ -182,7 +182,7 @@ function uc_paypal_payment_method() {
     'callback' => 'uc_payment_method_paypal_ec',
     'weight' => 1,
     'checkout' => FALSE,
-    'backend' => TRUE,
+    'no_gateway' => TRUE,
   );
 
   return $methods;
@@ -195,16 +195,24 @@ function uc_paypal_payment_method() {
 
 // Settings for Website Payments Pro on the Payment gateways form.
 function uc_paypal_wpp_settings_form() {
+  // The DoDirectPayment API call allows fewer currencies than PayPal in general.
   $form['paypal_wpp']['uc_paypal_wpp_currency'] = array(
     '#type' => 'select',
     '#title' => t('Currency code'),
     '#description' => t('Transactions can only be processed in one of the listed currencies.'),
-    '#options' => _uc_paypal_currency_array(),
+    '#options' => drupal_map_assoc(array(
+      'AUD',
+      'CAD',
+      'EUR',
+      'GBP',
+      'JPY',
+      'USD',
+    )),
     '#default_value' => variable_get('uc_paypal_wpp_currency', 'USD'),
   );
   $form['paypal_wpp']['uc_paypal_wpp_server'] = array(
     '#type' => 'select',
-    '#title' => t('API Server'),
+    '#title' => t('API server'),
     '#description' => t('Sign up for and use a Sandbox account for testing.'),
     '#options' => array(
       'https://api-3t.sandbox.paypal.com/nvp' => t('Sandbox'),
@@ -215,9 +223,9 @@ function uc_paypal_wpp_settings_form() {
   $form['paypal_wpp']['uc_paypal_wpp_payment_action'] = array(
     '#type' => 'select',
     '#title' => t('Payment action'),
-    '#description' => t('Complete Sale will authorize and capture the funds at the time the payment is processed.<br>Authorization will only reserve funds on the card to be captured later through your PayPal account.'), 
+    '#description' => t('"Complete sale" will authorize and capture the funds at the time the payment is processed.<br>"Authorization" will only reserve funds on the card to be captured later through your PayPal account.'),
     '#options' => array(
-      'Sale' => t('Complete Sale'),
+      'Sale' => t('Complete sale'),
       'Authorization' => t('Authorization'),
     ),
     '#default_value' => variable_get('uc_paypal_wpp_payment_action', 'Sale'),
@@ -256,19 +264,19 @@ function uc_paypal_wpp_settings_form() {
   );
   $form['paypal_wpp']['api'] = array(
     '#type' => 'fieldset',
-    '#title' => t('API Credentials'),
+    '#title' => t('API credentials'),
     '#description' => t('!link for information on obtaining credentials.  You need to acquire an API Signature.  If you have already requested API credentials, you can review your settings under the API Access section of your PayPal profile.', array('!link' => l(t('Click here'), 'https://www.paypal.com/IntegrationCenter/ic_certificate.html'))),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
   $form['paypal_wpp']['api']['uc_paypal_api_username'] = array(
     '#type' => 'textfield',
-    '#title' => t('API Username'),
+    '#title' => t('API username'),
     '#default_value' => variable_get('uc_paypal_api_username', ''),
   );
   $form['paypal_wpp']['api']['uc_paypal_api_password'] = array(
     '#type' => 'textfield',
-    '#title' => t('API Password'),
+    '#title' => t('API password'),
     '#default_value' => variable_get('uc_paypal_api_password', ''),
   );
   $form['paypal_wpp']['api']['uc_paypal_api_signature'] = array(
@@ -281,7 +289,7 @@ function uc_paypal_wpp_settings_form() {
 }
 
 // Process a credit card payment through Website Payments Pro.
-function uc_paypal_wpp_charge($order_id, $amount, $data){
+function uc_paypal_wpp_charge($order_id, $amount, $data) {
   global $user, $response;
 
   if (!function_exists('curl_init')) {
@@ -293,7 +301,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data){
 
   list($desc, $subtotal) = _uc_paypal_product_details($order->products);
 
-  if (intval($order->payment_details['cc_exp_month']) < 10){
+  if (intval($order->payment_details['cc_exp_month']) < 10) {
     $expdate = '0'. $order->payment_details['cc_exp_month']
              . $order->payment_details['cc_exp_year'];
   }
@@ -330,13 +338,17 @@ function uc_paypal_wpp_charge($order_id, $amount, $data){
     }
   }
 
-  $country = uc_get_country_data(array('country_id' => $order->billing_country));
-  if ($country === FALSE) {
-    $country = array(0 => array('country_iso_code_2' => 'US'));
+  $billing_country = uc_get_country_data(array('country_id' => $order->billing_country));
+  if ($billing_country === FALSE) {
+    $billing_country = array(0 => array('country_iso_code_2' => 'US'));
+  }
+  $delivery_country = uc_get_country_data(array('country_id' => $order->delivery_country));
+  if ($delivery_country === FALSE) {
+    $delivery_country = array(0 => array('country_iso_code_2' => 'US'));
   }
 
   $nvp_request = array(
-    'METHOD' => 'doDirectPayment',
+    'METHOD' => 'DoDirectPayment',
     'PAYMENTACTION' => variable_get('uc_paypal_wpp_payment_action', 'Sale'),
     'IPADDRESS' => $_SERVER['REMOTE_ADDR'],
     'AMT' => uc_currency_format($amount, FALSE, FALSE, '.'),
@@ -351,8 +363,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data){
     'CITY' => substr($order->billing_city, 0, 40),
     'STATE' => uc_get_zone_code($order->billing_zone),
     'ZIP' => $order->billing_postal_code,
-    // 'COUNTRYCODE' => ($country[0]['country_iso_code_2'] == 'GB') ? 'UK' : $country[0]['country_iso_code_2'],
-    'COUNTRYCODE' => $country[0]['country_iso_code_2'],
+    'COUNTRYCODE' => $billing_country[0]['country_iso_code_2'],
     'CURRENCYCODE' => variable_get('uc_paypal_wpp_currency', 'USD'),
     'DESC' => substr($desc, 0, 127),
     'INVNUM' => $order_id .'-'. time(),
@@ -362,6 +373,19 @@ function uc_paypal_wpp_charge($order_id, $amount, $data){
     'PHONENUM' => substr($order->billing_phone, 0, 20),
   );
 
+  if (uc_order_is_shippable($order) && !empty($order->delivery_first_name)) {
+    $shipdata = array(
+      'SHIPTONAME' => substr($order->delivery_first_name .' '. $order->delivery_last_name, 0, 25),
+      'SHIPTOSTREET' => substr($order->delivery_street1, 0, 100),
+      'SHIPTOSTREET2' => substr($order->delivery_street2, 0, 100),
+      'SHIPTOCITY' => substr($order->delivery_city, 0, 40),
+      'SHIPTOSTATE' => uc_get_zone_code($order->delivery_zone),
+      'SHIPTOZIP' => $order->delivery_postal_code,
+      'SHIPTOCOUNTRYCODE' => $delivery_country[0]['country_iso_code_2'],
+    );
+    $nvp_request += $shipdata;
+  }
+
   if (variable_get('uc_credit_cvv_enabled', TRUE)) {
     $nvp_request['CVV2'] = $order->payment_details['cc_cvv'];
   }
@@ -369,7 +393,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data){
   $nvp_response = uc_paypal_api_request($nvp_request, variable_get('uc_paypal_wpp_server', 'https://api-3t.sandbox.paypal.com/nvp'));
 
   if ($nvp_response['ACK'] != 'Success') {
-    $message = t('<b>Payment failed.</b><br><b>!severity:</b> !error', array('!severity' => check_plain($nvp_response['L_SEVERITYCODE0']), '!error' => check_plain($nvp_response['L_LONGMESSAGE0'])));
+    $message = t('<b>Payment failed.</b><br><b>!severity:</b> !error', array('!severity' => check_plain($nvp_response['L_SEVERITYCODE0']), '!error' => check_plain($nvp_response['L_ERRORCODE0'] .'. '. $nvp_response['L_LONGMESSAGE0'])));
     $message .= '<br>'. t('<b>Address:</b> !avscode', array('!avscode' => _uc_paypal_avscode_message($nvp_response['AVSCODE'])));
     if (variable_get('uc_credit_cvv_enabled', TRUE)) {
       $message .= '<br>'. t('<b>CVV2:</b> !cvvmatch', array('!cvvmatch' => _uc_paypal_cvvmatch_message($nvp_response['CVV2MATCH'])));
@@ -448,9 +472,9 @@ function uc_payment_method_paypal_wps($op, &$arg1) {
       $form['uc_paypal_wps_payment_action'] = array(
         '#type' => 'select',
         '#title' => t('Payment action'),
-        '#description' => t('Complete Sale will authorize and capture the funds at the time the payment is processed.<br>Authorization will only reserve funds on the card to be captured later through your PayPal account.'), 
+        '#description' => t('"Complete sale" will authorize and capture the funds at the time the payment is processed.<br>"Authorization" will only reserve funds on the card to be captured later through your PayPal account.'),
         '#options' => array(
-          'Sale' => t('Complete Sale'),
+          'Sale' => t('Complete sale'),
           'Authorization' => t('Authorization'),
         ),
         '#default_value' => variable_get('uc_paypal_wps_payment_action', 'Sale'),
@@ -471,10 +495,30 @@ function uc_payment_method_paypal_wps($op, &$arg1) {
         ),
         '#default_value' => variable_get('uc_paypal_wbs_submit_method', 'single'),
       );
+      $form['uc_paypal_wps_no_shipping'] = array(
+        '#type' => 'radios',
+        '#title' => t('Shipping address prompt in PayPal'),
+        '#options' => array(
+          '1' => t('Do not show shipping address prompt at PayPal.'),
+          '0' => t('Prompt customer to include a shipping address.'),
+          '2' => t('Require customer to provide a shipping address.'),
+        ),
+        '#default_value' => variable_get('uc_paypal_wps_no_shipping', '1'),
+      );
       $form['uc_paypal_wps_address_override'] = array(
         '#type' => 'checkbox',
         '#title' => t('Submit address information to PayPal to override PayPal stored addresses.'),
+        '#description' => t('Works best with the first option above.'),
         '#default_value' => variable_get('uc_paypal_wps_address_override', TRUE),
+      );
+      $form['uc_paypal_wps_address_selection'] = array(
+        '#type' => 'radios',
+        '#title' => t('Sent address selection'),
+        '#options' => array(
+          'billing' => t('Send billing address to PayPal.'),
+          'delivery' => t('Send shipping address to PayPal.'),
+        ),
+        '#default_value' => variable_get('uc_paypal_wps_address_selection', 'billing'),
       );
       $form['uc_paypal_wps_debug_ipn'] = array(
         '#type' => 'checkbox',
@@ -498,7 +542,7 @@ function uc_payment_method_paypal_ec($op, &$arg1) {
 
     case 'settings':
       $form['redirect'] = array(
-        '#value' => '<div>'. t('For Express Checkout, you need to !cp_link and !wpp_link.', array('!cp_link' => l(t('enable the cart pane'), 'admin/store/settings/cart/edit/panes'), '!wpp_link' => l(t('configure the Website Payments Pro settings'), 'admin/store/settings/payment/edit/gateways'))) .'</div>',
+        '#value' => '<div>'. t('For Express Checkout, you need to <a href="!cp_link">enable the cart pane</a> and <a href="!wpp_link">configure the Website Payments Pro settings</a>.', array('!cp_link' => url('admin/store/settings/cart/edit/panes'), '!wpp_link' => url('admin/store/settings/payment/edit/gateways'))) .'</div>',
       );
       return $form;
   }
@@ -511,9 +555,9 @@ function uc_paypal_ipn($order_id = 0) {
   }
   watchdog('uc_paypal', t('Receiving IPN at URL for order !order_id.', array('!order_id' => check_plain($order_id))) . $debug);
 
-  if(!isset($_POST['invoice'])) {
-	  watchdog('uc_paypal', t('IPN attempted with invalid order ID.'), WATCHDOG_ERROR);
-  	return;
+  if (!isset($_POST['invoice'])) {
+    watchdog('uc_paypal', t('IPN attempted with invalid order ID.'), WATCHDOG_ERROR);
+    return;
   }
 
   if (($len = strpos($_POST['invoice'], '-')) > 0) {
@@ -539,7 +583,6 @@ function uc_paypal_ipn($order_id = 0) {
   $txn_id = check_plain($_POST['txn_id']);
   $txn_type = check_plain($_POST['txn_type']);
   $payer_email = check_plain($_POST['payer_email']);
-  $receiver_email = check_plain($_POST['receiver_email']);
 
   $req = 'cmd=_notify-validate';
 
@@ -559,24 +602,32 @@ function uc_paypal_ipn($order_id = 0) {
 
   // Post back to PayPal to validate
   $header = "POST /cgi-bin/webscr HTTP/1.0\r\n";
-  $header .= "Host: ".$host[0].":80\r\n";
+  $header .= 'Host: '. $host[0] ."\r\n";
   $header .= "Content-Type: application/x-www-form-urlencoded\r\n";
-  $header .= "Content-Length: ". strlen($req) ."\r\n\r\n";
+  $header .= 'Content-Length: '. strlen($req) ."\r\n\r\n";
 
-  $fp = fsockopen($host[0], 80, $errno, $errstr, 30);
+  // Address a screw-up on PayPal's Sandbox that prevents normal validation.
+  if (strpos($host[0], 'sandbox') !== FALSE && function_exists('openssl_open')) {
+    $fp = fsockopen('ssl://www.sandbox.paypal.com', 443, $errno, $errstr, 30);
+  }
+  else {
+    // The old "normal" way of validating an IPN.
+    $fp = fsockopen($host[0], 80, $errno, $errstr, 30);
+  }
+
 
   if (!$fp) {
     watchdog('uc_paypal', t('IPN failed with HTTP error.'), WATCHDOG_ERROR);
-	  return;
+    return;
   }
 
-  fputs ($fp, $header . $req);
+  fputs($fp, $header . $req);
   while (!feof($fp)) {
     $res = fgets($fp, 1024);
     if (strcmp ($res, 'VERIFIED') == 0) {
       watchdog('uc_paypal', t('IPN transaction verified.'));
 
-      $duplicate = db_result(db_query("SELECT COUNT(*) FROM {uc_payment_paypal_ipn} WHERE txn_id = '%s'", $txn_id));
+      $duplicate = db_result(db_query("SELECT COUNT(*) FROM {uc_payment_paypal_ipn} WHERE txn_id = '%s' AND status != 'Pending'", $txn_id));
       if ($duplicate > 0) {
         if ($order->payment_method != 'credit') {
           watchdog('uc_paypal', t('IPN transaction ID has been processed before.'), WATCHDOG_NOTICE);
@@ -590,9 +641,9 @@ function uc_paypal_ipn($order_id = 0) {
               $payment_amount, $payment_status, $receiver_email, $payer_email,
               time());
 
-      if (variable_get('uc_paypal_wps_email', '')) {
+      /*if (variable_get('uc_paypal_wps_email', '') != $receiver_email) {
         watchdog('uc_paypal', t('IPN received for an e-mail that is not your primary e-mail: !email', array('!email' => $receiver_email)));
-      }
+      }*/
 
       switch ($payment_status) {
         case 'Canceled_Reversal':
@@ -600,11 +651,10 @@ function uc_paypal_ipn($order_id = 0) {
           break;
 
         case 'Completed':
-          $comment = t('PayPal transaction ID: !txn_id', array('!txn_id' => $txn_id));
+          $comment = t('PayPal transaction ID: @txn_id', array('@txn_id' => $txn_id));
           uc_payment_enter($order_id, 'paypal_wps', $payment_amount, $order->uid, NULL, $comment);
           uc_cart_complete_sale($order);
-          uc_order_update_status($order_id, 'payment_received');
-          uc_order_comment_save($order_id, 0, t('Payment of !amount !currency submitted through PayPal.', array('!amount' => uc_currency_format($payment_amount, FALSE), '!currency' => $payment_currency)), 'customer', 'payment_received');
+          uc_order_comment_save($order_id, 0, t('Payment of !amount !currency submitted through PayPal.', array('!amount' => uc_currency_format($payment_amount, FALSE), '!currency' => $payment_currency)), 'order', 'payment_received');
           uc_order_comment_save($order_id, 0, t('PayPal IPN reported a payment of !amount !currency.', array('!amount' => uc_currency_format($payment_amount, FALSE), '!currency' => $payment_currency)));
           break;
 
@@ -627,7 +677,7 @@ function uc_paypal_ipn($order_id = 0) {
 
         // You, the merchant, refunded the payment.
         case 'Refunded':
-          $comment = t('PayPal transaction ID: !txn_id', array('!txn_id' => $txn_id));
+          $comment = t('PayPal transaction ID: @txn_id', array('@txn_id' => $txn_id));
           uc_payment_enter($order_id, 'paypal_wps', $payment_amount, $order->uid, NULL, $comment);
           break;
 
@@ -656,17 +706,11 @@ function uc_paypal_ipn($order_id = 0) {
 
 // Handles a complete Website Payments Standard sale.
 function uc_paypal_complete($order_id = 0) {
-  /*  if (intval($order_id) < 1) {
-    drupal_goto('cart');
-  }*/
-
   if (intval($_SESSION['cart_order']) != $order_id) {
     $_SESSION['cart_order'] = $order_id;
   }
 
-  $order = uc_order_load($order_id);
-
-  if ($order === FALSE || (uc_order_status_data($order->order_status, 'state') != 'in_checkout' && uc_order_status_data($order->order_status, 'state') != 'payment_received')) {
+  if (!($order = uc_order_load($order_id))) {
     drupal_goto('cart');
   }
 
@@ -777,7 +821,7 @@ function uc_paypal_ec_submit() {
   }
 
   drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
-  $output = '<div style="border: solid 1px #bbb;">'. theme('cart_review_table', FALSE) .'</div>';
+  $output = '<div>'. theme('cart_review_table', FALSE) .'</div>';
   $output .= uc_order_pane_line_items('customer', $order);
   $output .= '<p>'. t("Your order is not complete until you click the 'Submit order' button below. Your PayPal account will be charged for the amount shown above once your order is placed. You will receive confirmation once your payment is complete.") .'</p>';
   $output .= drupal_get_form('uc_paypal_ec_submit_form');
@@ -830,11 +874,15 @@ function uc_paypal_ec_checkout($form_id, $form_values) {
     'SHIPTOSTREET2' => substr($order->delivery_street2, 0, 100),
     'SHIPTOCITY' => substr($order->delivery_city, 0, 40),
     'SHIPTOSTATE' => uc_get_zone_code($order->delivery_zone),
-    //'SHIPTOCOUNTRYCODE' => ($country[0]['country_iso_code_2'] == 'GB') ? 'UK' : $country[0]['country_iso_code_2'],
     'SHIPTOCOUNTRYCODE' => $country[0]['country_iso_code_2'],
     'SHIPTOZIP' => substr($order->delivery_postal_code, 0, 20),
     'PHONENUM' => substr($order->delivery_phone, 0, 20),
   );
+
+  if (!uc_cart_is_shippable()) {
+    $nvp_request['NOSHIPPING'] = 1;
+    unset($nvp_request['ADDROVERRIDE']);
+  }
 
   $nvp_response = uc_paypal_api_request($nvp_request, variable_get('uc_paypal_wpp_server', 'https://api-3t.sandbox.paypal.com/nvp'));
 
@@ -855,6 +903,10 @@ function uc_paypal_ec_checkout($form_id, $form_values) {
 
 // Returns the form for Express Checkout Shortcut Flow.
 function uc_paypal_ec_form() {
+  if (!variable_get('uc_cap_uc_paypal_ec_enabled', FALSE)) {
+    return;
+  }
+
   if (!function_exists('curl_init')) {
     drupal_set_message(t('PayPal Express Checkout requires curl for PHP.  Please talk to your system administrator to get this.'));
     return;
@@ -920,15 +972,21 @@ function uc_paypal_ec_form_submit($form_id, $form_values) {
 
 // Returns the form for the custom Review Payment screen for Express Checkout.
 function uc_paypal_ec_review_form($order) {
-  if (module_exists('uc_quote') && variable_get('uc_paypal_ec_review_shipping', TRUE)) {
-    // Remove once line items are out of checkout. -RS
-    drupal_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
-
+  if (module_exists('uc_quote') && variable_get('uc_paypal_ec_review_shipping', TRUE) && uc_order_is_shippable($order)) {
     $result = uc_checkout_pane_quotes('view', $order, NULL);
-    $form['panes']['quotes'] = $result['contents'];
-    $form['panes']['quotes']['#type'] = 'fieldset';
-    $form['panes']['quotes']['#collapsible'] = FALSE;
-    $form['panes']['quotes']['#title'] = t('Calculate shipping');
+    $form['panes']['quotes'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Calculate shipping'),
+      '#collapsible' => FALSE,
+    );
+    $form['panes']['quotes'] += $result['contents'];
+    $form['panes']['quotes']['quote_button']['#value'] = t('Click to refresh shipping options');
+
+    $form['panes']['quotes']['quote_div'] = array(
+      '#value' => '<div id="quote"></div>',
+    );
+
+    uc_add_js("\$(document).ready(function() { \$(' #edit-quote-button').click(); });", 'inline');
 
     // Fake the checkout form delivery information.
     $form['delivery_first_name'] = array('#type' => 'hidden', '#value' => $order->delivery_first_name);
@@ -951,13 +1009,15 @@ function uc_paypal_ec_review_form($order) {
       '#default_value' => $order->delivery_country,
       '#attributes' => array('style' => 'display: none;'),
     );
+
+    $form['shippable'] = array('#type' => 'hidden', '#value' => 'true');
   }
 
   if (variable_get('uc_paypal_ec_review_company', TRUE)) {
     $form['delivery_company'] = array(
       '#type' => 'textfield',
       '#title' => uc_get_field_name('company'),
-      '#description' => t('Leave blank if shipping to a residence.'),
+      '#description' => uc_order_is_shippable($order) ? t('Leave blank if shipping to a residence.') : '',
       '#default_value' => $order->delivery_company,
     );
   }
@@ -992,7 +1052,7 @@ function uc_paypal_ec_review_form($order) {
 }
 
 function uc_paypal_ec_review_form_validate($form_id, $form_values) {
-  if (module_exists('uc_quote') && variable_get('uc_paypal_ec_review_shipping', TRUE)) {
+  if ($form_values['shippable'] == 'true') {
     if (!isset($_POST['quote-option'])) {
       form_set_error('shipping', t('You must calculate and select a shipping option.'));
     }
@@ -1002,7 +1062,7 @@ function uc_paypal_ec_review_form_validate($form_id, $form_values) {
 function uc_paypal_ec_review_form_submit($form_id, $form_values) {
   $order = uc_order_load($_SESSION['cart_order']);
 
-  if (module_exists('uc_quote') && variable_get('uc_paypal_ec_review_shipping', TRUE)) {
+  if ($form_values['shippable'] == 'true') {
     $method_accessorials= split("---", isset($_POST['quote-option']) ? strval($_POST['quote-option']) : 0);
     $order->quote['method'] = $method_accessorials[0];
     $order->quote['accessorials'] = $method_accessorials[1];
@@ -1050,6 +1110,11 @@ function uc_paypal_ec_submit_form() {
 }
 
 function uc_paypal_ec_submit_form_submit($form_id, $form_values) {
+  if ($form_values['op'] == t('Back')) {
+    unset($_SESSION['TOKEN'], $_SESSION['PAYERID']);
+    return;
+  }
+
   $order = uc_order_load($_SESSION['cart_order']);
 
   list($desc, $subtotal) = _uc_paypal_product_details($order->products);
@@ -1070,6 +1135,8 @@ function uc_paypal_ec_submit_form_submit($form_id, $form_values) {
       }
     }
   }
+
+  $subtotal = $order->order_total - $tax - $shipping;
 
   $country = uc_get_country_data(array('country_id' => $order->billing_country));
   if ($country === FALSE) {
@@ -1119,14 +1186,16 @@ function uc_paypal_wps_form($order) {
     }
   }
 
-  $country = uc_get_country_data(array('country_id' => $order->billing_country));
+  $address = variable_get('uc_paypal_wps_address_selection', 'billing');
+
+  $country = uc_get_country_data(array('country_id' => $order->{$address .'_country'}));
   if ($country === FALSE) {
     $country = array(0 => array('country_iso_code_2' => 'US'));
   }
 
-  for ($i = 0; $i < strlen($order->billing_phone); $i++) {
-    if (is_numeric($order->billing_phone[$i])) {
-      $phone .= $order->billing_phone[$i];
+  for ($i = 0; $i < strlen($order->{$address .'_phone'}); $i++) {
+    if (is_numeric($order->{$address .'_phone'}[$i])) {
+      $phone .= $order->{$address .'_phone'}[$i];
     }
   }
 
@@ -1156,7 +1225,7 @@ function uc_paypal_wps_form($order) {
     // Display information
     'cancel_return' => url('uc_paypal/wps/cancel', NULL, NULL, TRUE),
     'no_note' => 1,
-    'no_shipping' => 1,
+    'no_shipping' => variable_get('uc_paypal_wps_no_shipping', 1),
     'return' => url('uc_paypal/wps/complete/'. $order->order_id, NULL, NULL, TRUE),
     'rm' => 2,
 
@@ -1171,32 +1240,28 @@ function uc_paypal_wps_form($order) {
     'upload' => 1,
 
     'lc' => variable_get('uc_paypal_wps_language', 'US'),
+
+    // Prepopulating forms/address overriding
+    'address1' => substr($order->{$address .'_street1'}, 0, 100),
+    'address2' => substr($order->{$address .'_street2'}, 0, 100),
+    'city' => substr($order->{$address .'_city'}, 0, 40),
+    'country' => $country[0]['country_iso_code_2'],
+    'email' => $order->primary_email,
+    'first_name' => substr($order->{$address .'_first_name'}, 0, 32),
+    'last_name' => substr($order->{$address .'_last_name'}, 0, 64),
+    'state' => uc_get_zone_code($order->{$address .'_zone'}),
+    'zip' => $order->{$address .'_postal_code'},
+    'night_phone_a' => $phone_a,
+    'night_phone_b' => $phone_b,
+    'night_phone_c' => $phone_c,
   );
 
   if (variable_get('uc_paypal_wps_address_override', TRUE)) {
-    $address_info = array(
-      'address_override' => 1,
-  
-      // Prepopulating forms/address overriding
-      'address1' => substr($order->billing_street1, 0, 100),
-      'address2' => substr($order->billing_street2, 0, 100),
-      'city' => substr($order->billing_city, 0, 40),
-      //'country' => ($country[0]['country_iso_code_2'] == 'GB') ? 'UK' : $country[0]['country_iso_code_2'],
-      'country' => $country[0]['country_iso_code_2'],
-      'email' => $order->primary_email,
-      'first_name' => substr($order->billing_first_name, 0, 32),
-      'last_name' => substr($order->billing_last_name, 0, 64),
-      'state' => uc_get_zone_code($order->billing_zone),
-      'zip' => $order->billing_postal_code,
-      'night_phone_a' => $phone_a,
-      'night_phone_b' => $phone_b,
-      'night_phone_c' => $phone_c,
-    );
-    $data = array_merge($data, $address_info);
+    $data['address_override'] = 1;
   }
 
   // Account for stores that just want to authorize funds instead of capture.
-  if (variable_get('uc_paypal_wps_payment_action', 'Sale') == 'Authorize') {
+  if (variable_get('uc_paypal_wps_payment_action', 'Sale') == 'Authorization') {
     $data['paymentaction'] = 'authorization';
   }
 
@@ -1213,7 +1278,7 @@ function uc_paypal_wps_form($order) {
       // PayPal will only display the first two...
       if (is_array($item->data['attributes']) && count($item->data['attributes']) > 0) {
         $o = 0;
-        foreach ($item->data['attributes'] as $name => $setting) { 
+        foreach ($item->data['attributes'] as $name => $setting) {
           $data['on'. $o .'_'. $i] = $name;
           $data['os'. $o .'_'. $i] = $setting;
           $o++;
@@ -1268,6 +1333,9 @@ function uc_paypal_api_request($request, $server) {
   curl_setopt($ch, CURLOPT_NOPROGRESS, 1);
   curl_setopt($ch, CURLOPT_FOLLOWLOCATION,0);
   $response = curl_exec($ch);
+  if ($error = curl_error($ch)) {
+    watchdog('uc_paypal', $error, WATCHDOG_ERROR);
+  }
   curl_close($ch);
 
   return _uc_paypal_nvp_to_array($response);
@@ -1291,7 +1359,7 @@ function _uc_paypal_product_details($items) {
 
 // Returns the PayPal approved credit card type for a card number.
 function _uc_paypal_card_type($cc_number) {
-  switch(substr(strval($cc_number), 0, 1)) {
+  switch (substr(strval($cc_number), 0, 1)) {
     case '3':
       return 'Amex';
     case '4':

@@ -72,11 +72,19 @@
                       <td valign="top" width="50%">
                         <b><?php echo t('Billing Address:'); ?></b><br />
                         [order-billing-address]<br />
+                        <br />
+                        <b><?php echo t('Billing Phone:'); ?></b><br />
+                        [order-billing-phone]<br />
                       </td>
+                      <?php if (uc_order_is_shippable($order)) { ?>
                       <td valign="top" width="50%">
                         <b><?php echo t('Shipping Address:'); ?></b><br />
                         [order-shipping-address]<br />
+                        <br />
+                        <b><?php echo t('Shipping Phone:'); ?></b><br />
+                        [order-shipping-phone]<br />
                       </td>
+                      <?php } ?>
                     </tr>
                   </table>
 
@@ -105,11 +113,13 @@
                 </td>
               </tr>
 
+              <?php if (uc_order_is_shippable($order)) { ?>
               <tr>
                 <td colspan="2" bgcolor="#EEEEEE">
                   <font color="#CC6600"><b><?php echo t('Shipping Details:'); ?></b></font>
                 </td>
               </tr>
+              <?php } ?>
 
               <tr>
                 <td colspan="2">
@@ -124,7 +134,7 @@
                       </td>
                     </tr>
 
-                    <?php if ($shipping_method) { ?>
+                    <?php if ($shipping_method && uc_order_is_shippable($order)) { ?>
                     <tr>
                       <td nowrap="nowrap">
                         <b><?php echo t('Shipping Method:'); ?></b>

@@ -1,8 +1,8 @@
 <?php
 // $Id$
 
-function uc_ups_install(){
-  switch ($GLOBALS['db_type']){
+function uc_ups_install() {
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       db_query("CREATE TABLE {uc_ups_products} (
@@ -14,8 +14,8 @@ function uc_ups_install(){
     break;
     case 'pgsql':
       db_query("CREATE TABLE {uc_ups_products} (
-        vid integer unsigned NOT NULL default 0,
-        nid integer unsigned NOT NULL default 0,
+        vid int_unsigned NOT NULL default 0,
+        nid int_unsigned NOT NULL default 0,
         pkg_type varchar(2) NOT NULL default '',
         PRIMARY KEY (vid)
       );");
@@ -23,7 +23,7 @@ function uc_ups_install(){
   }
 }
 
-function uc_ups_uninstall(){
+function uc_ups_uninstall() {
   db_query("DROP TABLE {uc_ups_products}");
   variable_del('uc_ups_access_license');
   variable_del('uc_ups_shipper_number');
@@ -39,9 +39,9 @@ function uc_ups_uninstall(){
   variable_del('uc_ups_unit_system');
 }
 
-function uc_ups_update_1(){
+function uc_ups_update_1() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_ups_products} ADD COLUMN units varchar(255) NOT NULL default 'in' AFTER height");
@@ -53,9 +53,9 @@ function uc_ups_update_1(){
   return $ret;
 }
 
-function uc_ups_update_2(){
+function uc_ups_update_2() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_ups_products} ADD COLUMN qty smallint unsigned NOT NULL default '1' AFTER pkg_type");
@@ -67,9 +67,9 @@ function uc_ups_update_2(){
   return $ret;
 }
 
-function uc_ups_update_3(){
+function uc_ups_update_3() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
     case 'pgsql':
@@ -83,15 +83,15 @@ function uc_ups_update_3(){
   return $ret;
 }
 
-function uc_ups_update_4(){
+function uc_ups_update_4() {
   $ret = array();
-  switch ($GLOBALS['db_type']){
+  switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {uc_ups_products} ADD COLUMN vid mediumint(9) unsigned NOT NULL default 0 FIRST");
       $ret[] = update_sql("ALTER TABLE {uc_ups_products} DROP INDEX nid");
       $result = db_query("SELECT nid, vid FROM {node}");
-      while ($product = db_fetch_object($result)){
+      while ($product = db_fetch_object($result)) {
         db_query("UPDATE {uc_ups_products} SET vid = %d WHERE nid = %d", $product->vid, $product->nid);
       }
       $ret[] = update_sql("ALTER TABLE {uc_ups_products} ADD PRIMARY KEY (vid)");
@@ -100,10 +100,40 @@ function uc_ups_update_4(){
       db_add_column($ret, 'uc_ups_products', 'vid', 'integer unsigned', array('not null' => true, 'default' => 0));
       $ret[] = update_sql("ALTER TABLE {uc_ups_products} DROP CONSTRAINT {uc_ups_products}_nid_key");
       $result = db_query("SELECT nid, vid FROM {node}");
-      while ($product = db_fetch_object($result)){
+      while ($product = db_fetch_object($result)) {
         db_query("UPDATE {uc_ups_products} SET vid = %d WHERE nid = %d", $product->vid, $product->nid);
       }
       $ret[] = update_sql("ALTER TABLE {uc_ups_products} ADD PRIMARY KEY (vid)");
+    break;
+  }
+  return $ret;
+}
+
+function uc_ups_update_5() {
+  $ret = array();
+  $markup = variable_get('uc_ups_markup', '0%');
+  if (strpos($markup, '%') !== false) {
+    variable_set('uc_ups_markup_type', 'percentage');
+    variable_set('uc_ups_markup', floatval(rtrim($markup, '%')));
+  }
+  else if (strpos($markup, '$') !== false) {
+    variable_set('uc_ups_markup_type', 'currency');
+    variable_set('uc_ups_markup', floatval(ltrim($markup, '$')));
+  }
+  else if (floatval($markup)) {
+    variable_set('uc_ups_markup_type', 'multiplier');
+    variable_set('uc_ups_markup', floatval($markup));
+  }
+  $ret[] = array('success' => true, 'query' => 'Added UPS markup type.');
+  return $ret;
+}
+
+function uc_ups_update_6() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'pgsql':
+      db_change_column($ret, 'uc_ups_prodcts', 'vid', 'vid', 'int_unsigned', array('not null' => true, 'default' => 0));
+      db_change_column($ret, 'uc_ups_prodcts', 'nid', 'nid', 'int_unsigned', array('not null' => true, 'default' => 0));
     break;
   }
   return $ret;

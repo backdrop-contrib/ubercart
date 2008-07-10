@@ -4,34 +4,54 @@
 /**
  * Ubercart uc_cart.module schema
  */
+function uc_cart_schema() {
+  $schema = array();
+
+  $schema['uc_cart_products'] = array(
+    'fields' => array(
+      'cart_id' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '0',
+      ),
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'qty' => array(
+        'type' => 'int',
+        'size' => 'small',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'data' => array(
+        'type' => 'text',
+      ),
+    ),
+    'indexes' => array(
+      'uc_cart_products_cart_id' => array('cart_id'),
+    ),
+  );
+
+  return $schema;
+}
+
 function uc_cart_install() {
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-      db_query("CREATE TABLE {uc_cart_products} (
-        cart_id varchar(32) NOT NULL default '0',
-        nid int(10) NOT NULL default '0',
-        qty int(10) NOT NULL default '0',
-        changed int(11) NOT NULL default '0',
-        data text,
-        KEY cart_id (cart_id)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-      break;
-    case 'pgsql':
-       db_query("CREATE TABLE {uc_cart_products} (
-        cart_id varchar(32) NOT NULL default 0,
-        nid integer NOT NULL default 0,
-        qty integer NOT NULL default 0,
-        changed integer NOT NULL default 0,
-        data text
-      )");
-      db_query("CREATE INDEX {uc_cart_products}_cart_id ON {uc_cart_products} (cart_id)");
-      break;
-  }
+  drupal_install_schema('uc_cart');
 }
 
 function uc_cart_uninstall() {
-  db_query("DROP TABLE {uc_cart_products}");
+  drupal_uninstall_schema('uc_cart');
+
   db_query("DELETE FROM {variable} WHERE name LIKE 'uc_pane_%%'");
   db_query("DELETE FROM {variable} WHERE name LIKE 'uc_cap_%%'");
   variable_del('uc_cart_empty_hide');

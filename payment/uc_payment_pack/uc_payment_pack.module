@@ -9,19 +9,27 @@
  * Hook Functions (Drupal)
  ******************************************************************************/
 
-function uc_payment_pack_menu($may_cache) {
-  if (!$may_cache) {
-    $items[] = array(
-      'path' => 'admin/store/orders/'. arg(3) .'/receive_check',
-      'title' => t('Receive Check'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('uc_payment_pack_receive_check_form', arg(3)),
-      'access' => user_access('view all orders'),
-      'type' => MENU_CALLBACK,
-    );
-  }
+function uc_payment_pack_menu() {
+  $items['admin/store/orders/%uc_order/receive_check'] = array(
+    'title' => 'Receive Check',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_payment_pack_receive_check_form', 3),
+    'access arguments' => array('view all orders'),
+    'type' => MENU_CALLBACK,
+  );
 
   return $items;
+}
+
+function uc_payment_pack_theme() {
+  return array(
+    'uc_payment_method_other_form' => array(
+      'arguments' => array('form' => NULL),
+    ),
+    'uc_payment_pack_receive_check_form' => array(
+      'arguments' => array('form' => NULL),
+    ),
+  );
 }
 
 /**
@@ -106,7 +114,7 @@ function uc_payment_method_other($op, &$arg1) {
   }
 }
 
-function uc_payment_method_other_form($order) {
+function uc_payment_method_other_form($form_state, $order) {
   $form['pm_other_description'] = array(
     '#type' => 'textfield',
     '#size' => 32,
@@ -220,7 +228,7 @@ function uc_payment_method_cod($op, &$arg1) {
   }
 }
 
-function uc_payment_method_cod_form($order) {
+function uc_payment_method_cod_form($form_state, $order) {
   $form['table1'] = array('#value' => '<style>.cod-table div, .cod-table { display: inline; }</style><table class="cod-table"><tr><td class="form-item" colspan="3"><label>'. t('Enter a desired delivery date:') .'</label></td></tr><tr><td>');
   $month = (!empty($order->payment_details['delivery_month'])) ? $order->payment_details['delivery_month'] : format_date(time(), 'custom', 'n');
   $form['cod_delivery_month'] = uc_select_month(NULL, $month);
@@ -355,18 +363,12 @@ function uc_payment_method_check($op, &$arg1) {
 /**
  * Receive a check for an order and put in a clear date.
  */
-function uc_payment_pack_receive_check_form($order_id) {
-  $order = uc_order_load($order_id);
-
-  if ($order === FALSE) {
-    drupal_set_message(t('Order !order_id does not exist.', array('!order_id' => $order_id)));
-    drupal_goto('admin/store/orders');
-  }
+function uc_payment_pack_receive_check_form($form_state, $order) {
   $balance = uc_payment_balance($order);
   $form['balance'] = array('#value' => uc_currency_format($balance));
   $form['order_id'] = array(
     '#type' => 'hidden',
-    '#value' => $order_id,
+    '#value' => $order->order_id,
   );
   $form['check_exists'] = array(
     '#type' => 'checkbox',
@@ -429,27 +431,27 @@ function theme_uc_payment_pack_receive_check_form($form) {
   return $output;
 }
 
-function uc_payment_pack_receive_check_form_validate($form_id, $form_values) {
-  if (!$form_values['check_exists'] && !is_numeric($form_values['amount'])) {
+function uc_payment_pack_receive_check_form_validate($form, &$form_state) {
+  if (!$form_state['values']['check_exists'] && !is_numeric($form_state['values']['amount'])) {
     form_set_error('amount', t('The amount must be a number.'));
   }
 }
 
-function uc_payment_pack_receive_check_form_submit($form_id, $form_values) {
+function uc_payment_pack_receive_check_form_submit($form, &$form_state) {
   global $user;
 
-  uc_payment_enter($form_values['order_id'], _payment_method_data('check', 'name'),
-                   $form_values['amount'], $user->uid, '', $form_values['comment']);
+  uc_payment_enter($form_state['values']['order_id'], _payment_method_data('check', 'name'),
+                   $form_state['values']['amount'], $user->uid, '', $form_state['values']['comment']);
 
-  db_query("INSERT INTO {uc_payment_check} (check_id, order_id, clear_date) "
-          ."VALUES (%d, %d, %d)", db_next_id('{uc_payment_check}_check_id'),
-           $form_values['order_id'], mktime(12, 0, 0, $form_values['clear_month'], $form_values['clear_day'], $form_values['clear_year']));
+  db_query("INSERT INTO {uc_payment_check} (order_id, clear_date) "
+          ."VALUES (%d, %d)", $form_state['values']['order_id'],
+           mktime(12, 0, 0, $form_state['values']['clear_month'], $form_state['values']['clear_day'], $form_state['values']['clear_year']));
 
   drupal_set_message(t('Check received, expected clear date of !date.',
-                     array('!date' => $form_values['clear_month'] .'/'
-                                    . $form_values['clear_day'] .'/'
-                                    . $form_values['clear_year'])));
+                     array('!date' => $form_state['values']['clear_month'] .'/'
+                                    . $form_state['values']['clear_day'] .'/'
+                                    . $form_state['values']['clear_year'])));
 
-  drupal_goto('admin/store/orders/'. $form_values['order_id']);
+  drupal_goto('admin/store/orders/'. $form_state['values']['order_id']);
 }
 

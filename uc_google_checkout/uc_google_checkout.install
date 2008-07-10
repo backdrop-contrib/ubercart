@@ -1,0 +1,78 @@
+<?php
+// $Id$
+
+function uc_google_checkout_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {uc_gc_products} (
+        `vid` mediumint(9) unsigned NOT NULL default 0,
+        `nid` mediumint(9) unsigned NOT NULL default 0,
+        `gc_salable` tinyint NOT NULL default 1,
+        PRIMARY KEY (`vid`)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
+      db_query("CREATE TABLE {uc_gc_orders} (
+        `order_id` mediumint(9) unsigned NOT NULL default 0,
+        `gc_order_number` varchar(255) NOT NULL default '0',
+        `financial_state` enum(
+          'REVIEWING',
+          'CHARGEABLE',
+          'CHARGING',
+          'CHARGED',
+          'PAYMENT_DECLINED',
+          'CANCELLED',
+          'CANCELLED_BY_GOOGLE'
+        ) NOT NULL default 'REVIEWING',
+        `fulfillment_state` enum(
+          'NEW',
+          'PROCESSING',
+          'DELIVERED',
+          'WILL_NOT_DELIVER'
+        ) NOT NULL default 'NEW',
+        `gc_total` decimal(10,2) NOT NULL default 0.00,
+        PRIMARY KEY (`order_id`),
+        KEY `gc_order_number` (`gc_order_number`(20))
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
+    break;
+    case 'pgsql':
+      db_query("CREATE TABLE {uc_gc_products} (
+        vid int_unsigned NOT NULL default 0,
+        nid int_unsigned NOT NULL default 0,
+        gc_salable smallint_unsigned NOT NULL default 1,
+        PRIMARY KEY (vid)
+      );");
+      db_query("CREATE TABLE {uc_gc_orders} (
+        order_id int_unsigned NOT NULL default 0,
+        gc_order_number varchar(255) NOT NULL default '0',
+        financial_state enum(
+          'REVIEWING',
+          'CHARGEABLE',
+          'CHARGING',
+          'CHARGED',
+          'PAYMENT_DECLINED',
+          'CANCELLED',
+          'CANCELLED_BY_GOOGLE'
+        ) NOT NULL default 'REVIEWING',
+        fulfillment_state enum(
+          'NEW',
+          'PROCESSING',
+          'DELIVERED',
+          'WILL_NOT_DELIVER'
+        ) NOT NULL default 'NEW',
+        gc_total decimal(10,2) NOT NULL default 0.00,
+        PRIMARY KEY (order_id)
+      );");
+      db_query("CREATE INDEX {uc_gc_orders}_gc_order_number_idx ON {uc_gc_orders} (gc_order_number (20))");
+    break;
+  }
+  $t = get_t();
+  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('in_google_checkout', '". $t('In Google Checkout') ."', 'in_checkout', -7, 1);");
+  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('chargeable', '". $t('Chargeable') ."', 'post_checkout', 2, 1);");
+}
+
+function uc_google_checkout_uninstall() {
+  db_query("DROP TABLE {uc_gc_products}");
+  variable_del('uc_google_merchant_id');
+  variable_del('uc_google_merchant_key');
+  db_query("UPDATE {uc_order_statuses} SET locked = 0 WHERE order_status_id = 'in_google_checkout' OR order_status_id = 'chargeable'");
+}
