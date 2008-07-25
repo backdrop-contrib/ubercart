@@ -110,6 +110,12 @@ function uc_recurring_form_alter($form_id, &$form) {
     }
   }
 
+  // Wipe any existing recurring fees on the review form load to prevent
+  // duplicate or unexpected fees.
+  if ($form_id == 'uc_cart_checkout_review_form') {
+    db_query("DELETE FROM {uc_recurring_users} WHERE order_id = %d", $_SESSION['cart_order']);
+  }
+
   if ($form_id == 'uc_order_view_update_form') {
     // Load the order object based on the form value for the order ID.
     $order = uc_order_load($form['order_id']['#value']);
@@ -632,7 +638,7 @@ function uc_recurring_admin_charge_form() {
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Charge'),
-    '#suffix' => l(t('Cancel'), referer_uri()),
+    '#suffix' => l(t('Cancel'), uc_referer_uri()),
   );
   return $form;
 }
@@ -710,7 +716,7 @@ function uc_recurring_admin_edit_form() {
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
-    '#suffix' => l(t('Cancel'), referer_uri()),
+    '#suffix' => l(t('Cancel'), uc_referer_uri()),
   );
 
   return $form;
@@ -738,7 +744,7 @@ function uc_recurring_admin_delete_form() {
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Delete'),
-    '#suffix' => l(t('Cancel'), referer_uri()),
+    '#suffix' => l(t('Cancel'), uc_referer_uri()),
   );
   return $form;
 }
