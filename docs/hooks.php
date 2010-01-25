@@ -3,7 +3,7 @@
 
 /**
  * @file
- * These are the hooks that are invoked by the Übercart core.
+ * These are the hooks that are invoked by the Ubercart core.
  *
  * Core hooks are typically called in all modules at once using
  * module_invoke_all().
@@ -74,6 +74,90 @@ function hook_add_to_cart_data($form_values) {
 }
 
 /**
+ * Calculate tax line items for an order.
+ *
+ * @param $order
+ *   An order object or an order id.
+ * @return
+ *   An array of tax line item objects keyed by a module-specific id.
+ */
+function hook_calculate_tax($order) {
+  global $user;
+  if (is_numeric($order)) {
+    $order = uc_order_load($order);
+    $account = user_load(array('uid' => $order->uid));
+  }
+  elseif ((int)$order->uid) {
+    $account = user_load(array('uid' => intval($order->uid)));
+  }
+  else {
+    $account = $user;
+  }
+  if (!is_object($order)) {
+    return array();
+  }
+  if (empty($order->delivery_postal_code)) {
+    $order->delivery_postal_code = $order->billing_postal_code;
+  }
+  if (empty($order->delivery_zone)) {
+    $order->delivery_zone = $order->billing_zone;
+  }
+  if (empty($order->delivery_country)) {
+    $order->delivery_country = $order->billing_country;
+  }
+
+  $order->taxes = array();
+
+  if (isset($order->order_status)) {
+    $state = uc_order_status_data($order->order_status, 'state');
+    $use_same_rates = in_array($state, array('payment_received', 'completed'));
+  }
+  else {
+    $use_same_rates = FALSE;
+  }
+
+  $arguments = array(
+    'order' => array(
+      '#entity' => 'uc_order',
+      '#title' => t('Order'),
+      '#data' => $order,
+    ),
+    'tax' => array(
+      '#entity' => 'tax',
+      '#title' => t('Tax rule'),
+      // #data => each $tax in the following foreach() loop;
+    ),
+    'account' => array(
+      '#entity' => 'user',
+      '#title' => t('User'),
+      '#data' => $account,
+    ),
+  );
+
+  $predicates = ca_load_trigger_predicates('calculate_taxes');
+  foreach (uc_taxes_rate_load() as $tax) {
+    if ($use_same_rates) {
+      foreach ((array)$order->line_items as $old_line) {
+        if ($old_line['type'] == 'tax' && $old_line['data']['tax_id'] == $tax->id) {
+          $tax->rate = $old_line['data']['tax_rate'];
+          break;
+        }
+      }
+    }
+
+    $arguments['tax']['#data'] = $tax;
+    if (ca_evaluate_conditions($predicates['uc_taxes_'. $tax->id], $arguments)) {
+      $line_item = uc_taxes_action_apply_tax($order, $tax);
+      if ($line_item) {
+        $order->taxes[$line_item->id] = $line_item;
+      }
+    }
+  }
+
+  return $order->taxes;
+}
+
+/**
  * Control the display of an item in the cart.
  *
  * Product type modules allow the creation of nodes that can be added to the
@@ -95,7 +179,7 @@ function hook_add_to_cart_data($form_values) {
  *   - "remove"
  *     - #type: checkbox
  *     - #value: If selected, removes the $item from the cart.
- *   - "options"
+ *   - "description"
  *     - #type: markup
  *     - #value: Themed markup (usually an unordered list) displaying extra information.
  *   - "title"
@@ -119,26 +203,37 @@ function hook_cart_display($item) {
   $element['nid'] = array('#type' => 'value', '#value' => $node->nid);
   $element['module'] = array('#type' => 'value', '#value' => 'uc_product');
   $element['remove'] = array('#type' => 'checkbox');
-  $op_names = '';
-  if (module_exists('uc_attribute')){
-    $op_names = "<ul class=\"cart-options\">\n";
-    foreach ($item->options as $option){
-      $op_names .= '<li>'. $option['attribute'] .': '. $option['name'] ."</li>\n";
-    }
-    $op_names .= "</ul>\n";
-  }
-  $element['options'] = array('#value' => $op_names);
+
   $element['title'] = array(
-    '#value' => l($node->title, 'node/'. $node->nid),
+    '#value' => node_access('view', $node) ? l($item->title, 'node/'. $node->nid) : check_plain($item->title),
   );
-  $element['#total'] = $item->price * $item->qty;
+
+  $context = array(
+    'revision' => 'altered',
+    'type' => 'cart_item',
+    'subject' => array(
+      'cart_item' => $item,
+      'node' => $node,
+    ),
+  );
+  $price_info = array(
+    'price' => $item->price,
+    'qty' => $item->qty,
+  );
+
+  $element['#total'] = uc_price($price_info, $context);
   $element['data'] = array('#type' => 'hidden', '#value' => serialize($item->data));
   $element['qty'] = array(
     '#type' => 'textfield',
     '#default_value' => $item->qty,
-    '#size' => 3,
-    '#maxlength' => 3
+    '#size' => 5,
+    '#maxlength' => 6
   );
+
+  if ($description = uc_product_get_description($item)) {
+    $element['description'] = array('#value' => $description);
+  }
+
   return $element;
 }
 
@@ -542,6 +637,41 @@ function hook_line_item() {
 }
 
 /**
+ * Alter a line item on an order when the order is loaded.
+ *
+ * @param &$item
+ *   The line item array.
+ * @param $order
+ *   The order object containing the line item.
+ */
+function hook_line_item_alter(&$item, $order) {
+  $account = user_load($order->uid);
+  ca_pull_trigger('calculate_line_item_discounts', $item, $account);
+}
+
+/**
+ * Alter the line item definitions declared in hook_line_item().
+ *
+ * @param &$items
+ *   The combined return value of hook_line_item().
+ */
+function hook_line_item_data_alter(&$items) {
+  foreach ($items as &$item) {
+    // Tax amounts are added in to other line items, so the actual tax line
+    // items should not be added to the order total.
+    if ($item['id'] == 'tax') {
+      $item['calculated'] = FALSE;
+    }
+    // Taxes are included already, so the subtotal without taxes doesn't
+    // make sense.
+    elseif ($item['id'] == 'tax_subtotal') {
+      $item['callback'] = NULL;
+    }
+  }
+}
+
+
+/**
  * Perform actions on orders.
  *
  * An order in Übercart represents a single transaction. Orders are created
@@ -680,6 +810,67 @@ function hook_order_pane() {
 }
 
 /**
+ * Allows modules to alter ordered products when they're loaded with an order.
+ *
+ * @param &$product
+ *   The product object as found in the $order object.
+ * @param $order
+ *   The order object to which the product belongs.
+ * @return
+ *   Nothing should be returned. Hook implementations should receive the
+ *     $product object by reference and alter it directly.
+ */
+function hook_order_product_alter(&$product, $order) {
+  drupal_set_message('hook_order_product_alter(&$product, $order):');
+  drupal_set_message('&$product: <pre>'. print_r($product, TRUE) .'</pre>');
+  drupal_set_message('$order: <pre>'. print_r($order, TRUE) .'</pre>');
+}
+
+/**
+ * Register static order states.
+ *
+ * Order states are module-defined categories for order statuses. Each state
+ * will have a default status that is used when modules need to move orders to
+ * new state, but don't know which status to use.
+ *
+ * @return
+ *   An array of order state definitions. Each definition is an array with the
+ *   following keys:
+ *   - id: The machine-readable name of the order state.
+ *   - title: The human-readable, translated name.
+ *   - weight: The list position of the state.
+ *   - scope: Either "specific" or "general".
+ */
+function hook_order_state() {
+  $states[] = array(
+    'id' => 'canceled',
+    'title' => t('Canceled'),
+    'weight' => -20,
+    'scope' => 'specific',
+  );
+  $states[] = array(
+    'id' => 'in_checkout',
+    'title' => t('In checkout'),
+    'weight' => -10,
+    'scope' => 'specific',
+  );
+  $states[] = array(
+    'id' => 'post_checkout',
+    'title' => t('Post checkout'),
+    'weight' => 0,
+    'scope' => 'general',
+  );
+  $states[] = array(
+    'id' => 'completed',
+    'title' => t('Completed'),
+    'weight' => 20,
+    'scope' => 'general',
+  );
+
+  return $states;
+}
+
+/**
  * Register payment gateway callbacks.
  *
  * @see @link http://www.ubercart.org/docs/api/hook_payment_gateway @endlink
@@ -757,6 +948,74 @@ function hook_product_class($type, $op) {
       db_query("DELETE FROM {uc_class_attribute_options} WHERE pcid = '%s'", $type);
     break;
   }
+}
+
+/**
+ * Return a structured array representing the given product's description.
+ *
+ * Modules that add data to cart items when they are selected should display it
+ * with this hook. The return values from each implementation will be
+ * sent through to hook_product_description_alter() implementations and then
+ * all descriptions are rendered using drupal_render().
+ *
+ * @param $product
+ *   Product. Usually one of the values of the array returned by
+ *   uc_cart_get_contents().
+ * @return
+ *   A structured array that can be fed into drupal_render().
+ */
+function hook_product_description($product) {
+  $description = array(
+    'attributes' => array(
+      '#product' => array(
+        '#type' => 'value',
+        '#value' => $product,
+      ),
+      '#theme' => 'uc_product_attributes',
+      '#weight' => 1,
+    ),
+  );
+
+  $desc =& $description['attributes'];
+
+  // Cart version of the product has numeric attribute => option values so we
+  // need to retrieve the right ones
+  $weight = 0;
+  if (empty($product->order_id)) {
+    foreach (_uc_cart_product_get_options($product) as $option) {
+      if (!isset($desc[$option['aid']])) {
+        $desc[$option['aid']]['#attribute_name'] = $option['attribute'];
+        $desc[$option['aid']]['#options'] = array($option['name']);
+      }
+      else {
+        $desc[$option['aid']]['#options'][] = $option['name'];
+      }
+      $desc[$option['aid']]['#weight'] = $weight++;
+    }
+  }
+  else {
+    foreach ((array)$product->data['attributes'] as $attribute => $option) {
+      $desc[] = array(
+        '#attribute_name' => $attribute,
+        '#options' => $option,
+        '#weight' => $weight++,
+      );
+    }
+  }
+
+  return $description;
+}
+
+/**
+ * Alters the given product description.
+ *
+ * @param $description
+ *   Description array reference.
+ * @param $product
+ *   The product being described.
+ */
+function hook_product_description_alter(&$description, $product) {
+  $description['attributes']['#weight'] = 2;
 }
 
 /**
@@ -884,10 +1143,10 @@ function hook_shipment($op, &$shipment) {
  *       drupal_to_js() is very useful for this.
  *       @code
  *         return array(
- *           '03' => array('rate' => 15.75, 'format' => uc_currency_format(15.75) 'option_label' => t('UPS Ground'),
+ *           '03' => array('rate' => 15.75, 'format' => uc_price(15.75, $context) 'option_label' => t('UPS Ground'),
  *                         'error' => 'Additional handling charge automatically applied.'),
  *           '14' => array('error' => 'Invalid package type.'),
- *           '59' => array('rate' => 26.03, 'format' => uc_currency_format(26.03), 'option_label' => t('UPS 2nd Day Air A.M.'))
+ *           '59' => array('rate' => 26.03, 'format' => uc_price(26.03, $context), 'option_label' => t('UPS 2nd Day Air A.M.'))
  *         );
  *       @endcode
  *   - "pkg_types": The list of package types that the shipping method can handle.
@@ -899,7 +1158,7 @@ function hook_shipment($op, &$shipment) {
 function hook_shipping_method() {
   $methods = array();
 
-  $enabled = variable_get('uc_quote_enabled', array('ups' => true));
+  $enabled = variable_get('uc_quote_enabled', array('ups' => TRUE));
   $weight = variable_get('uc_quote_method_weight', array('ups' => 0));
   $methods['ups'] = array(
     'id' => 'ups',
@@ -999,6 +1258,137 @@ function hook_store_status() {
 }
 
 /**
+ * Allow modules to alter the TAPIr table after the rows are populated.
+ *
+ * The example below adds a value for the custom 'designer' column to the table
+ * rows. Each table row has a numeric key in $table and these keys can be
+ * accessed using element_children() from the Form API.
+ *
+ * @param $table Table declaration containing header and populated rows.
+ * @param $table_id Table ID. Also the function called to build the table
+ *   declaration.
+ */
+function hook_tapir_table_alter(&$table, $table_id) {
+  if ($table_id == 'uc_product_table') {
+    foreach (element_children($table) as $key) {
+      $node = node_load($table['#parameters'][1][$key]);
+
+      $table[$key]['designer'] = array(
+        '#value' => l($node->designer, 'collections/'.$node->designer_tid),
+        '#cell_attributes' => array(
+          'nowrap' => 'nowrap',
+        ),
+      );
+    }
+  }
+}
+
+/**
+ * Allow modules to alter TAPIr table headers.
+ *
+ * This is most often done when a developer wants to add a sortable field to
+ * the table. A sortable field is one where the header can be clicked to sort
+ * the table results. This cannot be done using hook_tapir_table_alter() as
+ * once that is called the query has already executed.
+ *
+ * The example below adds a 'designer' column to the catalog product table. The
+ * example module would also have added joins to the query using
+ * hook_db_rewrite_sql() in order for table 'td2' to be valid. The 'name' field
+ * is displayed in the table and the header has the title 'Designer'.
+ *
+ * Also shown are changes made to the header titles for list_price and
+ * price fields.
+ *
+ * @see hook_db_rewrite_sql()
+ *
+ * @param $header Reference to the array header declaration
+ *   (i.e $table['#header']).
+ * @param $table_id Table ID. Also the function called to build the table
+ *   declaration.
+ */
+function hook_tapir_table_header_alter(&$header, $table_id) {
+  if ($table_id == 'uc_product_table') {
+    $header['designer'] = array(
+      'weight' => 2,
+      'cell' => array(
+        'data' => t('Designer'),
+        'field' => 'td2.name',
+      ),
+    );
+
+    $header['list_price']['cell']['data'] = t('RRP');
+    $header['price']['cell']['data'] = t('Sale');
+    $header['add_to_cart']['cell']['data'] = '';
+  }
+}
+
+/**
+ * Take action when checkout is completed.
+ *
+ * @param $order
+ *   The resulting order object from the completed checkout.
+ * @param $account
+ *   The customer that completed checkout, either the current user, or the
+ *   account created for an anonymous customer.
+ */
+function hook_uc_checkout_complete($order, $account) {
+  // Get previous records of customer purchases.
+  $nids = array();
+  $result = db_query("SELECT uid, nid, qty FROM {uc_customer_purchases} WHERE uid = %d", $account->uid);
+  while ($record = db_fetch_object($result)) {
+    $nids[$record->nid] = $record->qty;
+  }
+
+  // Update records with new data.
+  $record = array('uid' => $account->uid);
+  foreach ($order->products as $product) {
+    $record['nid'] = $product->nid;
+    if (isset($nids[$product->nid])) {
+      $record['qty'] = $nids[$product->nid] + $product->qty;
+      db_write_record($record, 'uc_customer_purchases', array('uid', 'nid'));
+    }
+    else {
+      $record['qty'] = $product->qty;
+      db_write_record($record, 'uc_customer_purchases');
+    }
+  }
+}
+
+/**
+ * Allow modules to modify forms before Drupal invokes hook_form_alter().
+ *
+ * This hook will normally be used by core modules so any form modifications
+ * they make can be further modified by contrib modules using a normal
+ * hook_form_alter(). At this point, drupal_prepare_form() has not been called,
+ * so none of the automatic form data (e.g.: #parameters, #build_id, etc.) has
+ * been added yet.
+ *
+ * For a description of the hook parameters:
+ * @see hook_form_alter()
+ */
+function hook_uc_form_alter(&$form, &$form_state, $form_id) {
+  // If the node has a product list, add attributes to them
+  if (isset($form['products']) && count(element_children($form['products']))) {
+    foreach (element_children($form['products']) as $key) {
+      $form['products'][$key]['attributes'] = _uc_attribute_alter_form(node_load($key));
+      if (is_array($form['products'][$key]['attributes'])) {
+        $form['products'][$key]['attributes']['#tree'] = TRUE;
+        $form['products'][$key]['#type'] = 'fieldset';
+      }
+    }
+  }
+  // If not, add attributes to the node.
+  else {
+    $form['attributes'] = _uc_attribute_alter_form($node);
+
+    if (is_array($form['attributes'])) {
+      $form['attributes']['#tree'] = TRUE;
+      $form['attributes']['#weight'] = -1;
+    }
+  }
+}
+
+/**
  * Convenience function to display large blocks of text in several places.
  *
  * There are many instances where Ubercart modules have configurable blocks of
@@ -1030,6 +1420,194 @@ function hook_uc_message() {
 }
 
 /**
+ * Take action when a payment is entered for an order.
+ *
+ * @param $order
+ *   The order object.
+ * @param $method
+ *   The name of the payment method used.
+ * @param $amount
+ *   The value of the payment.
+ * @param $account
+ *   The user account that entered the order. When the payment is entered
+ *   during checkout, this is probably the order's user. Otherwise, it is
+ *   likely a store administrator.
+ * @param $data
+ *   Extra data associated with the transaction.
+ * @param $comment
+ *   Any comments from the user about the transaction.
+ */
+function hook_uc_payment_entered($order, $method, $amount, $account, $data, $comment) {
+  drupal_set_message(t('User @uid entered a @method payment of @amount for order @order_id.',
+    array(
+      '@uid' => $account->uid,
+      '@method' => $method,
+      '@amount' => uc_price($amount, array('location' => 'hook-payment', 'revision' => 'formatted-original')),
+      '@order_id' => $order->order_id,
+    ))
+  );
+}
+
+/**
+ * Use this hook to define price handlers for your module. You may define one
+ * price alterer and one price formatter. You may also define options that are
+ * merged into the options array in order of each price alterer's weight.
+ */
+function hook_uc_price_handler() {
+  return array(
+    'alter' => array(
+      'title' => t('My price handler'),
+      'description' => t('Handles my price alteration needs.'),
+      'callback' => 'my_price_handler_alter',
+    ),
+    'format' => array(
+      'title' => t('My price handler'),
+      'description' => t('Handles my price formatting needs.'),
+      'callback' => 'my_price_handler_format',
+    ),
+    'options' => array(
+      'sign' => variable_get('uc_currency_sign', '*'),
+      'sign_after' => TRUE,
+      'prec' => 4,
+      'dec' => ',',
+      'thou' => '.',
+      'label' => FALSE,
+      'my_option_that_my_formatter_recognizes' => 1337,
+    )
+  );
+}
+
+/**
+ * Notify core of any SKUs your module adds to a given node.
+ *
+ * NOTE: DO NOT map the array keys, as the possibility for numeric SKUs exists, and
+ * this will conflict with the behavior of module_invoke_all(), specifically
+ * array_merge_recursive().
+ *
+ * Code lifted from uc_attribute.module.
+ */
+function hook_uc_product_models($node) {
+  $models = array();
+
+  // Get all the SKUs for all the attributes on this node.
+  $adjustments = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = %d", $node->nid);
+  while ($adjustment = db_fetch_object($adjustments)) {
+    if (!in_array($adjustment->model, $models)) {
+      $models[] = $adjustment->model;
+    }
+  }
+
+  return $models;
+}
+
+/**
+ * Allow modules to take action when a stock level is changed.
+ *
+ * @param $sku
+ *   The SKU whose stock level is being changed.
+ * @param $stock
+ *   The stock level before the adjustment.
+ * @param $qty
+ *   The amount by which the stock level was changed.
+ */
+function hook_uc_stock_adjusted($sku, $stock, $qty) {
+  $params = array(
+    'sku' => $sku,
+    'stock' => $stock,
+    'qty' => $qty,
+  );
+
+  drupal_mail('uc_stock_notify', 'stock-adjusted', uc_store_email_from(), language_default(), $params);
+}
+
+/**
+ * Used to determine whether or not UC Google Analytics should add e-commerce
+ *   tracking code to the bottom of the page.
+ *
+ * The Google Analytics module takes care of adding the necessary .js file from
+ * Google for tracking general statistics.  The UC Google Analytics module works
+ * in conjunction with this code to add e-commerce specific code.  However, the
+ * e-commerce code should only be added on appropriate pages.  Generally, the
+ * correct page will be the checkout completion page at cart/checkout/complete.
+ * However, because modules can change the checkout flow as necessary, it must
+ * be possible for alternate pages to be used.
+ *
+ * This hook allows other modules to tell the UC Google Analytics module that
+ * it should go ahead and add the e-commerce tracking code to the current page.
+ * A module simply needs to implement this hook and return TRUE on the proper
+ * order completion page to let UC Google Analytics know it should add the
+ * e-commerce tracking code to the current page.
+ *
+ * The implementation below comes from the 2Checkout.com module which uses an
+ * alternate checkout completion page.
+ *
+ * @return
+ *   TRUE if e-commerce tracking code should be added to the current page.
+ */
+function hook_ucga_display() {
+  // Tell UC Google Analytics to display the e-commerce JS on the custom
+  // order completion page for this module.
+  if (arg(0) == 'cart' && arg(1) == '2checkout' && arg(2) == 'complete') {
+    return TRUE;
+  }
+}
+
+/**
+ * Allows modules to alter items before they're added to the UC Google Analytics
+ *   e-commerce tracking code.
+ *
+ * The UC Google Analytics module constructs function calls that work through
+ * the Google Analytics JS API to report purchased items for e-commerce tracking
+ * purposes.  The module builds the argument list for each product on an order
+ * and uses this hook to give other modules a chance to alter what gets reported
+ * to Google Analytics.  Additional arguments passed to implementations of this
+ * hook are provided for context.
+ *
+ * @param $item
+ *   An array of arguments being passed to Google Analytics representing an item
+ *   on the order, including order_id, sku, name, category, price, and qty.
+ * @param $product
+ *   The product object as found in the $order object.
+ * @param $trans
+ *   The array of arguments that were passed to Google Analytics to represent
+ *     the transaction.
+ * @param $order
+ *   The order object being reported to Google Analytics.
+ * @return
+ *   Nothing should be returned. Hook implementations should receive the $item
+ *     array by reference and alter it directly.
+ */
+function hook_ucga_item_alter(&$item, $product, $trans, $order) {
+  // Example implementation: always set the category to "UBERCART".
+  $item['category'] = 'UBERCART';
+}
+
+/**
+ * Allows modules to alter transaction info before it's added to the UC Google
+ *   Analytics e-commerce tracking code.
+ *
+ * The UC Google Analytics module constructs function calls that work through
+ * the Google Analytics JS API to report order information for e-commerce
+ * tracking purposes.  The module builds the argument list for the transaction
+ * and uses this hook to give other modules a chance to alter what gets reported
+ * to Google Analytics.
+ *
+ * @param $trans
+ *   An array of arguments being passed to Google Analytics representing the
+ *     transaction, including order_id, store, total, tax, shipping, city,
+ *     state, and country.
+ * @param $order
+ *   The order object being reported to Google Analytics.
+ * @return
+ *   Nothing should be returned. Hook implementations should receive the $trans
+ *     array by reference and alter it directly.
+ */
+function hook_ucga_trans_alter(&$trans, $order) {
+  // Example implementation: prefix all orders with "UC-".
+  $trans['order_id'] = 'UC-'. $trans['order_id'];
+}
+
+/**
  * Handle requests to update a cart item.
  *
  * @param $nid
@@ -1050,12 +1628,11 @@ function hook_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
   }
   else {
     db_query("UPDATE {uc_cart_products} SET qty = %d, changed = %d WHERE nid = %d AND cart_id = '%s' AND data = '%s'", $qty, time(), $nid, $cid, serialize($data));
-    cache_clear_all();
   }
 
   // Rebuild the items hash
   uc_cart_get_contents(NULL, 'rebuild');
-  if (!substr(request_uri(), 'cart', -4)) {
+  if (!strpos(request_uri(), 'cart', -4)) {
     drupal_set_message(t('Your item(s) have been updated.'));
   }
 }

@@ -1,6 +1,11 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * Install hooks for uc_payment_pack.module.
+ */
+
 function uc_payment_pack_schema() {
   $schema = array();
 
@@ -8,6 +13,7 @@ function uc_payment_pack_schema() {
     'fields' => array(
       'check_id' => array(
         'type' => 'serial',
+        'unsigned' => TRUE,
         'not null' => TRUE,
       ),
       'order_id' => array(
@@ -23,7 +29,7 @@ function uc_payment_pack_schema() {
       ),
     ),
     'indexes' => array(
-      'uc_payment_check_order_id' => array('order_id'),
+      'order_id' => array('order_id'),
     ),
     'primary key' => array('check_id'),
   );
@@ -89,13 +95,26 @@ function uc_payment_pack_install() {
 function uc_payment_pack_uninstall() {
   drupal_uninstall_schema('uc_payment_pack');
 
-  variable_del('uc_check_mailing_company');
-  variable_del('uc_check_mailing_name');
-  variable_del('uc_check_mailing_street1');
-  variable_del('uc_check_mailing_street2');
-  variable_del('uc_check_mailing_city');
-  variable_del('uc_check_mailing_zone');
-  variable_del('uc_check_mailing_postal_code');
-  variable_del('uc_check_mailing_country');
-  variable_del('uc_check_policy');
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_check_%%'");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_cod_%%'");
+}
+
+function uc_payment_pack_update_6000() {
+  $ret = array();
+
+  db_drop_primary_key($ret, 'uc_payment_check');
+  db_drop_index($ret, 'uc_payment_check', 'order_id');
+  db_change_field($ret, 'uc_payment_check', 'check_id', 'check_id', array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE), array('primary key' => array('check_id')));
+  db_change_field($ret, 'uc_payment_check', 'order_id', 'order_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0), array('indexes' => array('order_id' => array('order_id'))));
+
+  db_drop_primary_key($ret, 'uc_payment_cod');
+  db_change_field($ret, 'uc_payment_cod', 'order_id', 'order_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0), array('primary key' => array('order_id')));
+  db_change_field($ret, 'uc_payment_cod', 'delivery_month', 'delivery_month', array('type' => 'int', 'unsigned' => TRUE, 'size' => 'small', 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_payment_cod', 'delivery_day', 'delivery_day', array('type' => 'int', 'unsigned' => TRUE, 'size' => 'small', 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_payment_cod', 'delivery_year', 'delivery_year', array('type' => 'int', 'unsigned' => TRUE, 'size' => 'small', 'not null' => TRUE, 'default' => 0));
+
+  db_drop_primary_key($ret, 'uc_payment_other');
+  db_change_field($ret, 'uc_payment_other', 'order_id', 'order_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0), array('primary key' => array('order_id')));
+
+  return $ret;
 }

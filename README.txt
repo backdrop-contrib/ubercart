@@ -22,7 +22,7 @@ User's and Developer's Guides:
 http://www.ubercart.org/docs
 
 Installation Manual (with module descriptions):
-http://www.ubercart.org/docs/user/90/installing_ubercart
+http://www.ubercart.org/docs/user/8075/installing_ubercart
 
 Support forums:
 http://www.ubercart.org/forum

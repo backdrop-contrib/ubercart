@@ -1,95 +1,89 @@
-// -*- js-var: set_line_item, base_path, li_titles, li_values, tax_weight; -*-
 // $Id$
 
+/**
+ * @file
+ * Handle asynchronous requests to calculate taxes.
+ */
+
 var pane = '';
-if ($("input[@name*=delivery_]").length) {
+if ($("input[name*=delivery_]").length) {
   pane = 'delivery'
 }
-else if ($("input[@name*=billing_]").length) {
+else if ($("input[name*=billing_]").length) {
   pane = 'billing'
 }
 
 $(document).ready(function() {
   getTax();
-  $("select[@name*=delivery_country], "
-    + "select[@name*=delivery_zone], "
-    + "input[@name*=delivery_postal_code], "
-    + "select[@name*=billing_country], "
-    + "select[@name*=billing_zone], "
-    + "input[@name*=billing_postal_code]").change(getTax);
+  $("select[name*=delivery_country], "
+    + "select[name*=delivery_zone], "
+    + "input[name*=delivery_city], "
+    + "input[name*=delivery_postal_code], "
+    + "select[name*=billing_country], "
+    + "select[name*=billing_zone], "
+    + "input[name*=billing_city], "
+    + "input[name*=billing_postal_code]").change(getTax);
+  $("input[name*=copy_address]").click(getTax);
+  $('#edit-panes-payment-current-total').click(getTax);
 });
 
+/**
+ * Get tax calculations for the current cart and line items.
+ */
 function getTax() {
-  var products = $("[@name=cart_contents]").val();
-  var s_zone = $("select[@name*=delivery_zone]").val();
-  if (!s_zone) {
-    s_zone = "0";
-  }
-  var s_code = $("input[@name*=delivery_postal_code]").val();
-  if (!s_code) {
-    s_code = '';
-  }
-  var s_country = $("select[@name*=delivery_country]").val();
-  if (!s_country) {
-    s_country = "0";
-  }
-  var b_zone = $("select[@name*=billing_zone]").val();
-  if (!b_zone) {
-    b_zone = "0";
-  }
-  var b_code = $("input[@name*=billing_postal_code]").val();
-  if (!b_code) {
-    b_code = '';
-  }
-  var b_country = $("select[@name*=billing_country]").val();
-  if (!b_country) {
-    b_country = "0";
-  }
-  var order_size = 8;
-  var line_item = '';
-  var key;
-  var i = 0;
-  for (key in li_titles) {
-    if (key != 'subtotal') {
-      line_item = line_item + 'i:' + i + ';a:3:{s:5:"title";s:' + li_titles[key].length + ':"' + li_titles[key] + '";s:4:"type";s:'+ key.length + ':"'+ key + '";s:6:"amount";d:' + li_values[key] + ';}';
-      i++;
-    }
-  }
-  line_item = 's:10:"line_items";a:' + i + ':{' + line_item + '}';
-  var order = 'O:8:"stdClass":' + order_size + ':{s:8:"products";' + encodeURIComponent(products)
-    + 's:13:"delivery_zone";i:' + s_zone
-    + ';s:20:"delivery_postal_code";s:' + s_code.length +':"' + encodeURIComponent(s_code)
-    + '";s:16:"delivery_country":i:' + s_country + ';'
-    + 's:12:"billing_zone";i:' + b_zone
-    + ';s:19:"billing_postal_code";s:' + b_code.length +':"' + encodeURIComponent(b_code)
-    + '";s:15:"billing_country":i:' + b_country + ';'
-    + line_item + '}';
-  if (!!products) {
+  var order = serializeOrder();
+
+  if (!!order) {
     $.ajax({
       type: "POST",
-      url: Drupal.settings.basePath + "taxes/calculate",
-      data: 'order=' + order,
+      url: Drupal.settings.ucURL.calculateTax,
+      data: 'order=' + Drupal.encodeURIComponent(order),
       dataType: "json",
       success: function(taxes) {
         var key;
-        for (key in li_titles) {
-          if (key.substr(0, 4) == 'tax_') {
-            delete li_titles[key];
-            delete li_values[key];
-            delete li_weight[key];
-          }
-        }
+        var render = false;
+        var i;
         var j;
         for (j in taxes) {
-          if (taxes[j].id == 'subtotal') {
-            summed = 0;
+          key = 'tax_' + taxes[j].id;
+          // Check that this tax is a new line item, or updates its amount.
+          if (li_values[key] == undefined || li_values[key] != taxes[j].amount) {
+            set_line_item(key, taxes[j].name, taxes[j].amount, Drupal.settings.ucTaxWeight + taxes[j].weight / 10, taxes[j].summed, false);
+
+            // Set flag to render all line items at once.
+            render = true;
           }
-          else {
-            summed = 1;
-          }
-          set_line_item("tax_" + taxes[j].id, taxes[j].name, taxes[j].amount, tax_weight + taxes[j].weight / 10, summed, false);
         }
-        render_line_items();
+        var found;
+        // Search the existing tax line items and match them to a returned tax.
+        for (key in li_titles) {
+          // The tax id is the second part of the line item id if the first
+          // part is "tax".
+          keytype = key.substring(0, key.indexOf('_'));
+          if (keytype == 'tax') {
+            found = false;
+            li_id = key.substring(key.indexOf('_') + 1);
+            for (j in taxes) {
+              if (taxes[j].id == li_id) {
+                found = true;
+                break;
+              }
+            }
+            // No tax was matched this time, so remove the line item.
+            if (!found) {
+              delete li_titles[key];
+              delete li_values[key];
+              delete li_weight[key];
+              delete li_summed[key];
+              // Even if no taxes were added earlier, the display must be
+              // updated.
+              render = true;
+            }
+          }
+        }
+        if (render) {
+          render_line_items();
+        }
       }
     });
   }

@@ -1,6 +1,14 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * Install hooks for uc_catalog.module.
+ */
+
+/**
+ * Implementation of hook_schema().
+ */
 function uc_catalog_schema() {
   $schema = array();
 
@@ -49,6 +57,11 @@ function uc_catalog_schema() {
   return $schema;
 }
 
+/**
+ * Implementation of hook_install().
+ *
+ * Creates a Catalog vocabulary or uses one by that name that may already exist.
+ */
 function uc_catalog_install() {
   $t = get_t();
   //Find possible Product Catalog vocabulary.
@@ -58,41 +71,24 @@ function uc_catalog_install() {
   }
   else { //If none, create one.
     db_query("INSERT INTO {vocabulary} (name, description, help, relations, hierarchy, multiple, required, tags, module, weight)
-      VALUES ('%s', '', '%s', 0, 2, 1, 0, 0, 'uc_catalog', 0)", $t('Catalog'), $t('Hold Ctrl while clicking to select multiple categories.'));
+      VALUES ('%s', '', '%s', 0, 1, 1, 0, 0, 'uc_catalog', 0)", $t('Catalog'), $t('Hold Ctrl while clicking to select multiple categories.'));
     $vid = db_last_insert_id('vocabulary', 'vid');
-    db_query("INSERT INTO {vocabulary_node_types} (vid, type) VALUES (%d, 'product')", $vid);
   }
   variable_set('uc_catalog_vid', $vid);
-  variable_set('uc_catalog_name', t('Catalog'));
-
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-      // Initially allow everyone to view the catalog.
-      db_query("UPDATE {permission} SET perm = CONCAT_WS(', ', perm, 'view catalog')");
-    case 'pgsql':
-      // Initially allow everyone to view the catalog.
-      db_query("UPDATE {permission} SET perm = perm || ', view catalog'");
-    break;
-  }
+  variable_set('uc_catalog_name', $t('Catalog'));
 
   drupal_install_schema('uc_catalog');
 }
 
+/**
+ * Implementation of hook_uninstall().
+ */
 function uc_catalog_uninstall() {
   drupal_uninstall_schema('uc_catalog');
   if ($vid = variable_get('uc_catalog_vid', 0)) {
     taxonomy_del_vocabulary($vid);
   }
-  variable_del('uc_catalog_vid');
-  variable_del('uc_catalog_name');
-  variable_del('uc_catalog_description');
-  variable_del('uc_catalog_breadcrumb');
-  variable_del('uc_catalog_block_nodecount');
-  variable_del('uc_catalog_breadcrumb_nodecount');
-  variable_del('uc_catalog_show_subcategories');
-  variable_del('uc_catalog_expand_categories');
-  variable_del('uc_catalog_category_columns');
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_catalog_%%'");
 }
 
 function uc_catalog_update_1() {
@@ -134,9 +130,9 @@ function uc_catalog_update_3() {
   $ret = array();
   switch ($GLOBALS['db_type']) {
     case 'pgsql':
-      db_change_column($ret, 'uc_catalog_images', 'fid', 'fid', 'int_unsigned', array('not null' => true, 'default' => 0));
-      db_change_column($ret, 'uc_catalog_images', 'tid', 'tid', 'int_unsigned', array('not null' => true, 'default' => 0));
-      db_change_column($ret, 'uc_catalog_images', 'filesize', 'filesize', 'int_unsigned', array('not null' => true, 'default' => 0));
+      db_change_column($ret, 'uc_catalog_images', 'fid', 'fid', 'int_unsigned', array('not null' => TRUE, 'default' => 0));
+      db_change_column($ret, 'uc_catalog_images', 'tid', 'tid', 'int_unsigned', array('not null' => TRUE, 'default' => 0));
+      db_change_column($ret, 'uc_catalog_images', 'filesize', 'filesize', 'int_unsigned', array('not null' => TRUE, 'default' => 0));
     break;
   }
   return $ret;
@@ -206,6 +202,22 @@ function uc_catalog_update_7() {
         _imagecache_get_presets(TRUE);
       }
     }
+  }
+
+  return $ret;
+}
+
+function uc_catalog_update_8() {
+  $ret = array();
+
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("UPDATE {url_alias} SET src = SUBSTRING_INDEX(src, '/', 2) WHERE src LIKE 'catalog/%%';");
+      break;
+    case 'pgsql':
+      $ret[] = update_sql("UPDATE {url_alias} SET src = substring(src from '^catalog/\d*') WHERE src LIKE 'catalog/%%';");
+      break;
   }
 
   return $ret;

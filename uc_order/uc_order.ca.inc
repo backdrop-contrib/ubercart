@@ -3,10 +3,9 @@
 
 /**
  * @file
- * This file contains the Conditional Actions hooks and functions necessary to make the
- * order related entity, conditions, events, and actions work.
+ * This file contains the Conditional Actions hooks and functions necessary to
+ * make the order related entity, conditions, events, and actions work.
  */
-
 
 /******************************************************************************
  * Conditional Actions Hooks                                                  *
@@ -22,6 +21,10 @@ function uc_order_ca_entity() {
     '#load' => 'uc_order_load',
     '#save' => 'uc_order_save',
   );
+  $entities['uc_line_item'] = array(
+    '#title' => t('Order line item'),
+    '#type' => 'array',
+  );
 
   return $entities;
 }
@@ -36,16 +39,76 @@ function uc_order_ca_trigger() {
     '#arguments' => array(
       'order' => array(
         '#entity' => 'uc_order',
-        '#title' => t('Order'),
+        '#title' => t('Original order'),
       ),
       'updated_order' => array(
         '#entity' => 'uc_order',
-        '#label' => t('Updated order'),
+        '#title' => t('Updated order'),
+      ),
+    ),
+  );
+
+  $triggers['uc_order_status_email_update'] = array(
+    '#title' => t('E-mail requested for order status update'),
+    '#category' => t('Order'),
+    '#arguments' => array(
+      'order' => array(
+        '#entity' => 'uc_order',
+        '#title' => t('Order'),
       ),
     ),
   );
 
   return $triggers;
+}
+
+/**
+ * Implementation of hook_ca_predicate().
+ */
+function uc_order_ca_predicate() {
+  $predicates = array();
+
+  $predicates['uc_order_update_email_customer'] = array(
+    '#title' => t('E-mail an order update notification'),
+    '#description' => t('Notify the customer when the order status is changed.'),
+    '#class' => 'notification',
+    '#status' => 1,
+    '#trigger' => 'uc_order_status_email_update',
+    '#conditions' => array(
+      '#operator' => 'AND',
+      '#conditions' => array(
+        array(
+          '#name' => 'uc_order_status_condition',
+          '#title' => t('If the order status is not still In Checkout.'),
+          '#argument_map' => array(
+            'order' => 'order',
+          ),
+          '#settings' => array(
+            'negate' => TRUE,
+            'order_status' => 'in_checkout',
+          ),
+        ),
+      ),
+    ),
+    '#actions' => array(
+      array(
+        '#name' => 'uc_order_email',
+        '#title' => t('Send an e-mail to the customer'),
+        '#argument_map' => array(
+          'order' => 'order',
+        ),
+        '#settings' => array(
+          'from' => uc_store_email_from(),
+          'addresses' => '[order-email]',
+          'subject' => t('Order #[order-id] Update'),
+          'message' => uc_get_message('order_update_email'),
+          'format' => 1,
+        ),
+      ),
+    ),
+  );
+
+  return $predicates;
 }
 
 /**
@@ -58,6 +121,7 @@ function uc_order_ca_condition() {
 
   $conditions['uc_order_status_condition'] = array(
     '#title' => t('Check the order status'),
+    '#description' => t('Returns TRUE if the current order status matches the status specified below.'),
     '#category' => t('Order'),
     '#callback' => 'uc_order_condition_check_order_status',
     '#arguments' => array(
@@ -67,6 +131,7 @@ function uc_order_ca_condition() {
 
   $conditions['uc_order_condition_total'] = array(
     '#title' => t('Check the order total'),
+    '#description' => t('Returns TRUE if the current order total is within the parameters below.'),
     '#category' => t('Order'),
     '#callback' => 'uc_order_condition_total',
     '#arguments' => array(
@@ -84,9 +149,9 @@ function uc_order_ca_condition() {
     ),
   );
   $conditions['uc_order_condition_delivery_zone'] = array(
-    '#title' => t("Check an order's shipping zone"),
+    '#title' => t("Check an order's shipping @zone", array('@zone' => uc_get_field_name('zone'))),
     '#category' => t('Order: Shipping address'),
-    '#description' => t('Returns TRUE if the shipping zone is in the specified list.'),
+    '#description' => t('Returns TRUE if the shipping @zone is in the specified list.', array('@zone' => uc_get_field_name('zone'))),
     '#callback' => 'uc_order_condition_delivery_zone',
     '#arguments' => array(
       'order' => $order_arg,
@@ -111,9 +176,9 @@ function uc_order_ca_condition() {
     ),
   );
   $conditions['uc_order_condition_billing_zone'] = array(
-    '#title' => t("Check an order's billing zone"),
+    '#title' => t("Check an order's billing @zone", array('@zone' => uc_get_field_name('zone'))),
     '#category' => t('Order: Billing address'),
-    '#description' => t('Returns TRUE if the billing zone is in the specified list.'),
+    '#description' => t('Returns TRUE if the billing @zone is in the specified list.', array('@zone' => uc_get_field_name('zone'))),
     '#callback' => 'uc_order_condition_billing_zone',
     '#arguments' => array(
       'order' => $order_arg,
@@ -165,6 +230,61 @@ function uc_order_ca_condition() {
     ),
   );
 
+  $conditions['uc_order_condition_user_name'] = array(
+    '#title' => t('Check the user name.'),
+    '#category' => t('Order: User'),
+    '#description' => t('Returns TRUE if the user name matches the condition.'),
+    '#callback' => 'uc_order_condition_user_name',
+    '#arguments' => array(
+      'order' => $order_arg,
+    ),
+  );
+  $conditions['uc_order_condition_user_mail'] = array(
+    '#title' => t('Check the user email address.'),
+    '#category' => t('Order: User'),
+    '#description' => t('Returns TRUE if the user email addresses matches the condition.'),
+    '#callback' => 'uc_order_condition_user_mail',
+    '#arguments' => array(
+      'order' => $order_arg,
+    ),
+  );
+  $conditions['uc_order_condition_user_created'] = array(
+    '#title' => t('Check the user creation date.'),
+    '#category' => t('Order: User'),
+    '#description' => t('Returns TRUE if the user creation date matches the condition.'),
+    '#callback' => 'uc_order_condition_user_created',
+    '#arguments' => array(
+      'order' => $order_arg,
+    ),
+  );
+  $conditions['uc_order_condition_user_login'] = array(
+    '#title' => t('Check the user last login date.'),
+    '#category' => t('Order: User'),
+    '#description' => t('Returns TRUE if the user last login date matches the condition.'),
+    '#callback' => 'uc_order_condition_user_login',
+    '#arguments' => array(
+      'order' => $order_arg,
+    ),
+  );
+  $conditions['uc_order_condition_user_language'] = array(
+    '#title' => t('Check the user language setting.'),
+    '#category' => t('Order: User'),
+    '#description' => t('Returns TRUE if the user language setting matches the condition.'),
+    '#callback' => 'uc_order_condition_user_language',
+    '#arguments' => array(
+      'order' => $order_arg,
+    ),
+  );
+  $conditions['uc_order_condition_user_roles'] = array(
+    '#title' => t('Check the role of the user.'),
+    '#category' => t('Order: User'),
+    '#description' => t('Returns TRUE if the user roles match your settings.'),
+    '#callback' => 'uc_order_condition_user_roles',
+    '#arguments' => array(
+      'order' => $order_arg,
+    ),
+  );
+
   return $conditions;
 }
 
@@ -193,6 +313,22 @@ function uc_order_ca_action() {
       'order' => $order_arg,
     ),
   );
+  $actions['uc_order_email'] = array(
+    '#title' => t('Send an order email'),
+    '#category' => t('Order'),
+    '#callback' => 'uc_order_action_email',
+    '#arguments' => array(
+      'order' => $order_arg,
+    ),
+  );
+  $actions['uc_order_email_invoice'] = array(
+    '#title' => t('Email an order invoice'),
+    '#category' => t('Order'),
+    '#callback' => 'uc_order_action_email_invoice',
+    '#arguments' => array(
+      'order' => $order_arg,
+    ),
+  );
 
   return $actions;
 }
@@ -202,13 +338,19 @@ function uc_order_ca_action() {
  * Condition Callbacks and Forms                                              *
  ******************************************************************************/
 
-// Check the current order status.
+/**
+ * Check the current order status.
+ *
+ * @see uc_order_condition_check_order_status_form()
+ */
 function uc_order_condition_check_order_status($order, $settings) {
   // Return TRUE if the order status matches.
-  $status = db_result(db_query("SELECT order_status FROM {uc_orders} WHERE order_id = %d", $order->order_id));
-  return $status == $settings['order_status'];
+  return $order->order_status == $settings['order_status'];
 }
 
+/**
+ * @see uc_order_condition_check_order_status()
+ */
 function uc_order_condition_check_order_status_form($form_state, $settings = array()) {
   foreach (uc_order_status_list('general') as $status) {
     $options[$status['id']] = $status['title'];
@@ -226,11 +368,11 @@ function uc_order_condition_check_order_status_form($form_state, $settings = arr
   return $form;
 }
 
-function uc_order_condition_check_order_status_submit($form_id, &$form_state) {
-  return array('order_status' => $form_state['values']['order_status']);
-}
-
-// Check the current order balance.
+/**
+ * Check the current order balance.
+ *
+ * @see uc_order_condition_total_form()
+ */
 function uc_order_condition_total($order, $settings) {
   switch ($settings['order_total_comparison']) {
     case 'less':
@@ -246,6 +388,9 @@ function uc_order_condition_total($order, $settings) {
   }
 }
 
+/**
+ * @see uc_order_condition_total()
+ */
 function uc_order_condition_total_form($form_state, $settings = array()) {
   $form['order_total_value'] = array(
     '#type' => 'textfield',
@@ -274,15 +419,11 @@ function uc_order_condition_total_form($form_state, $settings = array()) {
   return $form;
 }
 
-function uc_order_condition_total_submit($form_id, &$form_state) {
-  $array = array(
-    'order_total_comparison' => $form_state['values']['order_total_comparison'],
-    'order_total_value' => $form_state['values']['order_total_value'],
-  );
-  return $array;
-}
-
-// Check an order's delivery postal code.
+/**
+ * Check an order's delivery postal code.
+ *
+ * @see uc_order_condition_delivery_postal_code_form()
+ */
 function uc_order_condition_delivery_postal_code($order, $settings) {
   // Trim the wildcard off the pattern.
   $pattern = rtrim($settings['pattern'], '*');
@@ -291,6 +432,9 @@ function uc_order_condition_delivery_postal_code($order, $settings) {
   return strpos($order->delivery_postal_code, $pattern) === 0;
 }
 
+/**
+ * @see uc_order_condition_delivery_postal_code()
+ */
 function uc_order_condition_delivery_postal_code_form($form_state, $settings = array()) {
   $form['pattern'] = array(
     '#type' => 'textfield',
@@ -298,21 +442,24 @@ function uc_order_condition_delivery_postal_code_form($form_state, $settings = a
     '#default_value' => $settings['pattern'],
     '#description' => t('Specify a postal code or postal code pattern. Use "*" as a wild card to specify a range of postal codes.<br /><b>Example:</b> In the US, 402* represents all areas from 40200 to 40299.'),
     '#size' => 15,
-    '#required' => TRUE,
+    // '#required' => TRUE,
   );
 
   return $form;
 }
 
-function uc_order_condition_delivery_postal_code_submit($form_id, &$form_state) {
-  return array('pattern' => $form_state['values']['pattern']);
-}
-
-// Check an order's delivery zone.
+/**
+ * Check an order's delivery zone.
+ *
+ * @see uc_order_condition_delivery_zone_form()
+ */
 function uc_order_condition_delivery_zone($order, $settings) {
   return in_array($order->delivery_zone, $settings['zones']);
 }
 
+/**
+ * @see uc_order_condition_delivery_zone_form()
+ */
 function uc_order_condition_delivery_zone_form($form_state, $settings = array()) {
   $result = db_query("SELECT z.*, c.country_name FROM {uc_zones} AS z LEFT JOIN {uc_countries} AS c ON z.zone_country_id = c.country_id ORDER BY c.country_name, z.zone_name");
   while ($zone = db_fetch_object($result)) {
@@ -325,35 +472,38 @@ function uc_order_condition_delivery_zone_form($form_state, $settings = array())
     '#options' => $options,
     '#default_value' => $settings['zones'],
     '#multiple' => TRUE,
-    '#required' => TRUE,
+    // '#required' => TRUE,
   );
 
   return $form;
 }
 
-function uc_order_condition_delivery_zone_submit($form_id, &$form_state) {
-  return array('zones' => $form_state['values']['zones']);
-}
-
-// Check an order's delivery country.
+/**
+ * Check an order's delivery country.
+ *
+ * @see uc_order_condition_delivery_country_form()
+ */
 function uc_order_condition_delivery_country($order, $settings) {
   return in_array($order->delivery_country, $settings['countries']);
 }
 
+/**
+ * @see uc_order_condition_delivery_country()
+ */
 function uc_order_condition_delivery_country_form($form_state, $settings = array()) {
   $form['countries'] = uc_country_select(uc_get_field_name('country'));
   $form['countries']['#default_value'] = $settings['countries'];
   $form['countries']['#multiple'] = TRUE;
-  $form['countries']['#required'] = TRUE;
+  // $form['countries']['#required'] = TRUE;
 
   return $form;
 }
 
-function uc_order_condition_delivery_country_submit($form_id, &$form_state) {
-  return array('countries' => $form_state['values']['countries']);
-}
-
-// Check an order's billing postal code.
+/**
+ * Check an order's billing postal code.
+ *
+ * @see uc_order_condition_billing_postal_code_form()
+ */
 function uc_order_condition_billing_postal_code($order, $settings) {
   // Trim the wildcard off the pattern.
   $pattern = rtrim($settings['pattern'], '*');
@@ -362,6 +512,9 @@ function uc_order_condition_billing_postal_code($order, $settings) {
   return strpos($order->billing_postal_code, $pattern) === 0;
 }
 
+/**
+ * @see uc_order_condition_billing_postal_code()
+ */
 function uc_order_condition_billing_postal_code_form($form_state, $settings = array()) {
   $form['pattern'] = array(
     '#type' => 'textfield',
@@ -369,21 +522,24 @@ function uc_order_condition_billing_postal_code_form($form_state, $settings = ar
     '#default_value' => $settings['pattern'],
     '#description' => t('Specify a postal code or postal code pattern. Use "*" as a wild card to specify a range of postal codes.<br /><b>Example:</b> In the US, 402* represents all areas from 40200 to 40299.'),
     '#size' => 15,
-    '#required' => TRUE,
+    // '#required' => TRUE,
   );
 
   return $form;
 }
 
-function uc_order_condition_billing_postal_code_submit($form_id, &$form_state) {
-  return array('pattern' => $form_state['values']['pattern']);
-}
-
-// Check an order's billing zone.
+/**
+ * Check an order's billing zone.
+ *
+ * @see uc_order_condition_billing_zone_form()
+ */
 function uc_order_condition_billing_zone($order, $settings) {
   return in_array($order->billing_zone, $settings['zones']);
 }
 
+/**
+ * @see uc_order_condition_billing_zone()
+ */
 function uc_order_condition_billing_zone_form($form_state, $settings = array()) {
   $result = db_query("SELECT z.*, c.country_name FROM {uc_zones} AS z LEFT JOIN {uc_countries} AS c ON z.zone_country_id = c.country_id ORDER BY c.country_name, z.zone_name");
   while ($zone = db_fetch_object($result)) {
@@ -396,38 +552,42 @@ function uc_order_condition_billing_zone_form($form_state, $settings = array()) 
     '#options' => $options,
     '#default_value' => $settings['zones'],
     '#multiple' => TRUE,
-    '#required' => TRUE,
+    // '#required' => TRUE,
   );
 
   return $form;
 }
 
-function uc_order_condition_billing_zone_submit($form_id, &$form_state) {
-  return array('zones' => $form_state['values']['zones']);
-}
-
-// Check an order's billing country.
+/**
+ * Check an order's billing country.
+ *
+ * @see uc_order_condition_billing_country_form()
+ */
 function uc_order_condition_billing_country($order, $settings) {
   return in_array($order->billing_country, $settings['countries']);
 }
 
+/**
+ * @see uc_order_condition_billing_country()
+ */
 function uc_order_condition_billing_country_form($form_state, $settings = array()) {
   $form['countries'] = uc_country_select(uc_get_field_name('country'));
   $form['countries']['#default_value'] = $settings['countries'];
   $form['countries']['#multiple'] = TRUE;
-  $form['countries']['#required'] = TRUE;
+  // $form['countries']['#required'] = TRUE;
 
   return $form;
 }
 
-function uc_order_condition_billing_country_submit($form_id, &$form_state) {
-  return array('countries' => $form_state['values']['countries']);
-}
-
+/**
+ * Check that the order has the selected combination of products.
+ *
+ * @see uc_order_condition_has_products_form()
+ */
 function uc_order_condition_has_products($order, $settings) {
   $products = array();
   foreach ($order->products as $product) {
-    $products[] = $product->nid;
+    $products[] = $product->model;
   }
   $required = array_intersect($settings['products'], $products);
   if ($settings['required']) {
@@ -441,19 +601,22 @@ function uc_order_condition_has_products($order, $settings) {
     $forbidden_check = (bool)count($forbidden);
   }
   else {
-    $forbidden_check = false;
+    $forbidden_check = FALSE;
   }
   return $required_check && !$forbidden_check;
 }
 
-function uc_order_condition_has_products_form($form_state, $settings = array('required' => 0, 'forbidden' => 0)) {
+/**
+ * @see uc_order_condition_has_products()
+ */
+function uc_order_condition_has_products_form($form_state, $settings) {
   $form['required'] = array('#type' => 'radios',
     '#title' => t('Require selected products'),
     '#options' => array(
       0 => t('Order has any of these products.'),
       1 => t('Order has all of these products.'),
     ),
-    '#default_value' => $settings['required'],
+    '#default_value' => isset($settings['required']) ? $settings['required'] : 0,
   );
   $form['forbidden'] = array('#type' => 'radios',
     '#title' => t('Forbid other products'),
@@ -461,36 +624,35 @@ function uc_order_condition_has_products_form($form_state, $settings = array('re
       0 => t('Order may have other products.'),
       1 => t('Order has only these products.'),
     ),
-    '#default_value' => $settings['forbidden'],
+    '#default_value' => isset($settings['forbidden']) ? $settings['forbidden'] : 0,
   );
+
   $options = array();
-  $result = db_query("SELECT nid, model FROM {uc_products}");
+  $result = db_query("SELECT nid FROM {uc_products}");
   while ($product = db_fetch_object($result)) {
-    $options[$product->nid] = $product->model;
+    $options += uc_product_get_models(node_load($product->nid), FALSE);
   }
+
   $form['products'] = array('#type' => 'select',
-    '#title' => t('Products'),
+    '#title' => t('Product models'),
     '#options' => $options,
     '#default_value' => $settings['products'],
-    '#multiple' => true,
+    '#multiple' => TRUE,
   );
   return $form;
 }
 
-function uc_order_condition_has_products_submit($form_id, &$form_state) {
-  return array(
-    'required' => $form_state['values']['required'],
-    'forbidden' => $form_state['values']['forbidden'],
-    'products' => $form_state['values']['products'],
-  );
-}
-
+/**
+ * Check that the order has the selected number of products.
+ *
+ * @see uc_order_condition_count_products_form()
+ */
 function uc_order_condition_count_products($order, $settings) {
   $totals = array('all' => 0);
   $total = 0;
   foreach ($order->products as $product) {
     $totals['all'] += $product->qty;
-    $totals[$product->nid] = $product->qty;
+    $totals[$product->nid] += $product->qty;
   }
   if (in_array('all', $settings['products'])) {
     $total = $totals['all'];
@@ -514,8 +676,11 @@ function uc_order_condition_count_products($order, $settings) {
   }
 }
 
+/**
+ * @see uc_order_condition_count_products()
+ */
 function uc_order_condition_count_products_form($form_state, $settings = array()) {
-  $options = array('all' => t('<All products>'));
+  $options = array('all' => t('- All products -'));
   $result = db_query("SELECT nid, model FROM {uc_products} ORDER BY model");
   while ($product = db_fetch_object($result)) {
     $options[$product->nid] = $product->model;
@@ -524,8 +689,8 @@ function uc_order_condition_count_products_form($form_state, $settings = array()
     '#title' => t('Products'),
     '#options' => $options,
     '#default_value' => $settings['products'],
-    '#description' => check_plain(t('Selecting "<All products>" will override any other selections and returns the total number of products in the order.')),
-    '#multiple' => true,
+    '#description' => check_plain(t('Selecting "- All products -" will override any other selections and returns the total number of products in the order.')),
+    '#multiple' => TRUE,
   );
   $form['product_count_value'] = array(
     '#type' => 'textfield',
@@ -552,14 +717,11 @@ function uc_order_condition_count_products_form($form_state, $settings = array()
   return $form;
 }
 
-function uc_order_condition_count_products_submit($form_id, &$form_state) {
-  return array(
-    'products' => $form_state['values']['products'],
-    'product_count_value' => $form_state['values']['product_count_value'],
-    'product_count_comparison' => $form_state['values']['product_count_comparison'],
-  );
-}
-
+/**
+ * Checkt the weight of the order's products.
+ *
+ * @see uc_order_condition_products_weight_form()
+ */
 function uc_order_condition_products_weight($order, $settings) {
   $totals = array('all' => 0);
   $total = 0;
@@ -590,8 +752,11 @@ function uc_order_condition_products_weight($order, $settings) {
   }
 }
 
+/**
+ * @see uc_order_condition_products_weight()
+ */
 function uc_order_condition_products_weight_form($form_state, $settings = array()) {
-  $options = array('all' => t('<All products>'));
+  $options = array('all' => t('- All products -'));
   $result = db_query("SELECT nid, model FROM {uc_products}");
   while ($product = db_fetch_object($result)) {
     $options[$product->nid] = $product->model;
@@ -600,12 +765,12 @@ function uc_order_condition_products_weight_form($form_state, $settings = array(
     '#title' => t('Products'),
     '#options' => $options,
     '#default_value' => $settings['products'],
-    '#description' => check_plain(t('Selecting "<All products>" will override any other selections and returns the total number of products in the order.')),
-    '#multiple' => true,
+    '#description' => check_plain(t('Selecting "- All products -" will override any other selections and returns the total number of products in the order.')),
+    '#multiple' => TRUE,
   );
   $form['weight_units'] = array('#type' => 'select',
     '#title' => t('Unit of measurement'),
-    '#default_value' => variable_get('uc_weight_unit', 'lb'),
+    '#default_value' => $settings['weight_units'] ? $settings['weight_units'] : variable_get('uc_weight_unit', 'lb'),
     '#options' => array(
       'lb' => t('Pounds'),
       'kg' => t('Kilograms'),
@@ -638,29 +803,280 @@ function uc_order_condition_products_weight_form($form_state, $settings = array(
   return $form;
 }
 
-function uc_order_condition_products_weight_submit($form_id, &$form_state) {
-  return array(
-    'products' => $form_state['values']['products'],
-    'product_weight_value' => $form_state['values']['product_weight_value'],
-    'product_weight_comparison' => $form_state['values']['product_weight_comparison'],
-  );
-}
-
+/**
+ * Check that the order is shippable.
+ */
 function uc_order_condition_is_shippable($order, $settings) {
   return uc_order_is_shippable($order);
+}
+
+/**
+ * Check a user name.
+ *
+ * @see uc_order_condition_user_name()
+ */
+function uc_order_condition_user_name($order, $settings) {
+  if (empty($order->uid)) {
+    // Anonymous users have no names.
+    return empty($settings['name']);
+  }
+  else {
+    // Load from the order.
+    if ($account = uc_order_user_load($order)) {
+      return $account->name == $settings['name'];
+    }
+    // Or, if the user doesn't exist anymore, return FALSE
+    else {
+      return FALSE;
+    }
+  }
+}
+
+/**
+ * @see uc_order_condition_user_name()
+ */
+function uc_order_condition_user_name_form($form_state, $settings = array()) {
+  $form['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('User name'),
+    '#default_value' => isset($settings['name']) ? $settings['name'] : '',
+    '#autocomplete_path' => 'user/autocomplete',
+    '#description' => t('Leave blank for %anonymous.', array('%anonymous' => variable_get('anonymous', t('Anonymous')))),
+  );
+
+  return $form;
+}
+
+/**
+ * Check an user email.
+ *
+ * @see uc_order_condition_user_email_form()
+ */
+function uc_order_condition_user_mail($order, $settings) {
+  $account = uc_order_user_load($order);
+  return $account->mail == $settings['mail'];
+}
+
+/**
+ * @see uc_order_condition_user_mail()
+ */
+function uc_order_condition_user_mail_form($form_state, $settings = array()) {
+  $form['mail'] = array(
+    '#type' => 'textfield',
+    '#title' => t('User email'),
+    '#default_value' => isset($settings['mail']) ? $settings['mail'] : '',
+  );
+
+  return $form;
+}
+
+/**
+ * Check an user creation date.
+ *
+ * @see uc_order_condition_user_created_form()
+ */
+function uc_order_condition_user_created($order, $settings) {
+  $account = uc_order_user_load($order);
+
+  // Get the beginning of the day the user registered.
+  $user_created = $account->created - ($account->created % 86400);
+  $settings_created = gmmktime(0, 0, 0, $settings['created']['month'], $settings['created']['day'], $settings['created']['year']);
+
+  switch ($settings['operator']) {
+    case 'less':
+      return $user_created < $settings_created;
+    case 'less_equal':
+      return $user_created <= $settings_created;
+    case 'equal':
+      return $user_created == $settings_created;
+    case 'not_equal':
+      return $user_created != $settings_created;
+    case 'greater_equal':
+      return $user_created >= $settings_created;
+    case 'greater':
+      return $user_created > $settings_created;
+  }
+}
+
+/**
+ * @see uc_order_condition_user_created()
+ */
+function uc_order_condition_user_created_form($form_state, $settings = array()) {
+  $form['operator'] = array(
+    '#type' => 'radios',
+    '#title' => t('Operator'),
+    '#options' => array(
+      'less' => t('User was created before the specified date.'),
+      'less_equal' => t('User was created on or before the specified date.'),
+      'equal' => t('User was created on the specified date.'),
+      'not_equal' => t('User was not created on the specified date.'),
+      'greater_equal' => t('User was created on or after the specified date.'),
+      'greater' => t('User was created after the specified date.'),
+    ),
+    '#default_value' => isset($settings['operator']) ? $settings['operator'] : 'equal',
+  );
+  $form['created'] = array(
+    '#type' => 'date',
+    '#title' => t('User creation date'),
+    '#default_value' => isset($settings['created']) ? $settings['created'] : '',
+  );
+
+  return $form;
+}
+
+/**
+ * Check an user last login date.
+ *
+ * @see uc_order_condition_user_login_form()
+ */
+function uc_order_condition_user_login($order, $settings) {
+  $account = uc_order_user_load($order);
+
+  // Get the beginning of the day the user last logged in.
+  $user_login = $account->login - ($account->login % 86400);
+  $settings_login = gmmktime(0, 0, 0, $settings['login']['month'], $settings['login']['day'], $settings['login']['year']);
+
+  switch ($settings['operator']) {
+    case 'less':
+      return $user_login < $settings_login;
+    case 'less_equal':
+      return $user_login <= $settings_login;
+    case 'equal':
+      return $user_login == $settings_login;
+    case 'not_equal':
+      return $user_login != $settings_login;
+    case 'greater_equal':
+      return $user_login >= $settings_login;
+    case 'greater':
+      return $user_login > $settings_login;
+  }
+}
+
+/**
+ * @see uc_order_condition_user_login()
+ */
+function uc_order_condition_user_login_form($form_state, $settings = array()) {
+  $form['operator'] = array(
+    '#type' => 'radios',
+    '#title' => t('Operator'),
+    '#options' => array(
+      'less' => t('User last logged in before the specified date.'),
+      'less_equal' => t('User last logged in on, or before the specified date.'),
+      'equal' => t('User last logged in on the specified date.'),
+      'not_equal' => t('User did not log in last on the specified date.'),
+      'greater_equal' => t('User last logged in on or after the specified date.'),
+      'greater' => t('User last logged after the specified date.'),
+    ),
+    '#default_value' => isset($settings['operator']) ? $settings['operator'] : 'equal',
+  );
+  $form['login'] = array(
+    '#type' => 'date',
+    '#title' => t('User last login date'),
+    '#default_value' => isset($settings['created']) ? $settings['created'] : '',
+  );
+
+  return $form;
+}
+
+/**
+ * Check an user language setting.
+ *
+ * @see uc_order_condition_user_language_form()
+ */
+function uc_order_condition_user_language($order, $settings) {
+  $account = uc_order_user_load($order);
+  $user_prefered_language = user_preferred_language($account);
+  return $user_prefered_language->language == $settings['language'];
+}
+
+/**
+ * @see uc_order_condition_user_language()
+ */
+function uc_order_condition_user_language_form($form_state, $settings = array()) {
+  $languages = language_list();
+  $options = array();
+  foreach ($languages as $language) {
+    $options[$language->language] = $language->name.' ('.$language->native.')';
+  }
+  $form['language'] = array(
+    '#type' => 'select',
+    '#title' => t('User language setting'),
+    '#options' => $options,
+    '#default_value' => isset($settings['language']) ? $settings['language'] : '',
+  );
+
+  return $form;
+}
+
+/**
+ * Check an user roles.
+ *
+ * @see uc_order_condition_user_roles_form()
+ */
+function uc_order_condition_user_roles($order, $settings) {
+  $account = uc_order_user_load($order);
+  $settings['roles'] = array_filter($settings['roles']);
+
+  if ($settings['operator'] == 'AND') {
+    foreach ($settings['roles'] as $key) {
+      if (!isset($account->roles[$key])) {
+        return FALSE;
+      }
+    }
+    return TRUE;
+  }
+  else {
+    foreach ($settings['roles'] as $key) {
+      if (isset($account->roles[$key])) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+}
+
+/**
+ * @see uc_order_condition_user_roles()
+ */
+function uc_order_condition_user_roles_form($form_state, $settings = array()) {
+  $form['operator'] = array(
+    '#type' => 'radios',
+    '#title' => t('Operator'),
+    '#description' => t('If you use an <em>AND</em> case and want to check a custom role, make sure <em>authenticated user</em> is checked too or the condition will return FALSE.'),
+    '#options' => array(
+      'AND' => t('AND: If the user has all of these roles.'),
+      'OR' => t('OR: If the user has any of these roles.'),
+    ),
+    '#default_value' => isset($settings['operator']) ? $settings['operator'] : 'AND',
+  );
+  $form['roles'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Roles'),
+    '#options' => user_roles(),
+    '#default_value' => isset($settings['roles']) ? $settings['roles'] : array(),
+  );
+
+  return $form;
 }
 
 /******************************************************************************
  * Action Callbacks and Forms                                                 *
  ******************************************************************************/
 
-// Update an order's status.
+/**
+ * Update an order's status.
+ *
+ * @see uc_order_action_update_status_form()
+ */
 function uc_order_action_update_status(&$order, $settings) {
   if (uc_order_update_status($order->order_id, $settings['order_status'])) {
     $order->order_status = $settings['order_status'];
   }
 }
 
+/**
+ * @see uc_order_action_update_status()
+ */
 function uc_order_action_update_status_form($form_state, $settings = array()) {
   foreach (uc_order_status_list('general') as $status) {
     $options[$status['id']] = $status['title'];
@@ -678,11 +1094,11 @@ function uc_order_action_update_status_form($form_state, $settings = array()) {
   return $form;
 }
 
-function uc_order_action_update_status_submit($form_id, &$form_state) {
-  return array('order_status' => $form_state['values']['order_status']);
-}
-
-// Add a comment to an order.
+/**
+ * Add a comment to an order.
+ *
+ * @see uc_order_action_add_comment_form()
+ */
 function uc_order_action_add_comment($order, $settings) {
   uc_order_comment_save($order->order_id, 0,
     token_replace_multiple($settings['comment'], array('global' => NULL, 'order' => $order)),
@@ -690,6 +1106,9 @@ function uc_order_action_add_comment($order, $settings) {
     $order->order_status, $settings['comment_type'] == 'notified');
 }
 
+/**
+ * @see uc_order_action_add_comment()
+ */
 function uc_order_action_add_comment_form($form_state, $settings = array()) {
   $form['comment_type'] = array(
     '#type' => 'radios',
@@ -711,7 +1130,195 @@ function uc_order_action_add_comment_form($form_state, $settings = array()) {
   return $form;
 }
 
-function uc_order_action_add_comment_submit($form_id, &$form_state) {
-  return array('comment_type' => $form_state['values']['comment_type'], 'comment' => $form_state['values']['comment']);
+/**
+ * Send an email concerning an order.
+ *
+ * The recipients, subject, and message fields take order token replacements.
+ *
+ * @see uc_order_action_email_form()
+ */
+function uc_order_action_email($order, $settings) {
+  $account = uc_order_user_load($order);
+
+  // Token replacements for the subject and body
+  $settings['replacements'] = array(
+    'global' => NULL,
+    'order' => $order,
+    'user' => $account,
+  );
+
+  // Apply token replacements to from and recipient e-mail addressses.
+  $from = token_replace_multiple($settings['from'], $settings['replacements']);
+  $addresses = token_replace_multiple($settings['addresses'], $settings['replacements']);
+
+  // Split up our recipient e-mail addresses.
+  $recipients = array();
+  foreach (explode("\n", $addresses) as $address) {
+    $recipients[] = trim($address);
+  }
+
+  foreach ($recipients as $email) {
+    $sent = drupal_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, empty($settings['from']) ? uc_store_email_from() : $settings['from']);
+
+    if (!$sent['result']) {
+      watchdog('ca', 'Attempt to e-mail @email concerning order @order_id failed.', array('@email' => $email, '@order_id' => $order->order_id), WATCHDOG_ERROR);
+    }
+  }
 }
 
+/**
+ * @see uc_order_action_email()
+ */
+function uc_order_action_email_form($form_state, $settings = array()) {
+  $form['from'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Sender'),
+    '#default_value' => isset($settings['from']) ? $settings['from'] : uc_store_email_from(),
+    '#description' => t('The "From" address.'),
+    '#required' => TRUE,
+  );
+  $form['addresses'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Recipients'),
+    '#default_value' => isset($settings['addresses']) ? $settings['addresses'] : '[order-email]',
+    '#description' => t('Enter the email addresses to receive the notifications, one on each line. You may use order tokens for dynamic email addresses.'),
+    '#required' => TRUE,
+  );
+  $form['subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Subject'),
+    '#default_value' => $settings['subject'],
+    '#required' => TRUE,
+  );
+  $form['message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Message'),
+    '#default_value' => $settings['message'],
+  );
+
+  // We add the #is_format element to allow us to locate and configure the filters.
+  $form['format'] = filter_form($settings['format']) + array('#is_format' => TRUE);
+
+  $form['token_help'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Replacement patterns'),
+    '#description' => t('You can make use of the replacement patterns in the e-mail from and recipients fields, the subject, and the message body.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  foreach (array('global', 'order') as $name) {
+    $form['token_help'][$name] = array(
+      '#type' => 'fieldset',
+      '#title' => t('@name replacement patterns', array('@name' => drupal_ucfirst($name))),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $form['token_help'][$name]['content'] = array(
+      '#value' => theme('token_help', $name),
+    );
+  }
+
+  return $form;
+}
+
+/**
+ * Email an invoice.
+ *
+ * The subject and addresses fields take order token replacements.
+ *
+ * @see uc_order_action_email_invoice_form()
+ */
+function uc_order_action_email_invoice($order, $settings) {
+  // Token replacements for the subject and body
+  $settings['replacements'] = array(
+    'global' => NULL,
+    'order' => $order,
+  );
+
+  $recipients = array();
+  $addresses = token_replace_multiple($settings['addresses'], $settings['replacements']);
+
+  foreach (explode("\n", $addresses) as $address) {
+    $recipients[] = trim($address);
+  }
+
+  $settings['message'] = uc_order_load_invoice($order, $settings['view'], $settings['template']);
+
+  if (empty($recipients)) {
+    watchdog('ca', 'Attempted to e-mail an invoice with no recipient.', array(), WATCHDOG_ERROR);
+    return;
+  }
+
+  foreach ($recipients as $email) {
+    $sent = drupal_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, empty($settings['from']) ? uc_store_email_from() : $settings['from']);
+
+    if (!$sent['result']) {
+      watchdog('ca', 'Attempt to e-mail invoice for order @order_id to @email failed.', array('@email' => $email, '@order_id' => $order->order_id), WATCHDOG_ERROR);
+    }
+  }
+}
+
+/**
+ * @see uc_order_action_email_invoice()
+ */
+function uc_order_action_email_invoice_form($form_state, $settings = array()) {
+  $form['from'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Sender'),
+    '#default_value' => isset($settings['from']) ? $settings['from'] : uc_store_email_from(),
+    '#description' => t('The "From" address.'),
+    '#required' => TRUE,
+  );
+  $form['addresses'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Recipients'),
+    '#default_value' => isset($settings['addresses']) ? $settings['addresses'] : '[order-email]',
+    '#description' => t('Enter the email addresses to receive the notifications, one on each line. You may use order tokens for dynamic email addresses.'),
+    '#required' => TRUE,
+  );
+  $form['subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Subject'),
+    '#default_value' => $settings['subject'],
+    '#required' => TRUE,
+  );
+
+  $form['token_help'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Replacement patterns'),
+    '#description' => t('You can make use of the replacement patterns in the recipients, the subject, and the template file.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  foreach (array('global', 'order') as $name) {
+    $form['token_help'][$name] = array(
+      '#type' => 'fieldset',
+      '#title' => t('@name replacement patterns', array('@name' => drupal_ucfirst($name))),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $form['token_help'][$name]['content'] = array(
+      '#value' => theme('token_help', $name),
+    );
+  }
+
+  $form['template'] = array(
+    '#type' => 'select',
+    '#title' => t('Invoice template'),
+    '#description' => t('Select the invoice template to use for this email.'),
+    '#options' => uc_order_template_options(),
+    '#default_value' => $settings['template'],
+  );
+  $form['view'] = array(
+    '#type' => 'radios',
+    '#title' => t('Included information'),
+    '#options' => array(
+      'print' => t('Show the business header and shipping method.'),
+      'admin-mail' => t('Show all of the above plus the help text, email text, and store footer.'),
+      'checkout-mail' => t('Show all of the above plus the "thank you" message.'),
+    ),
+    '#default_value' => $settings['view'],
+  );
+
+  return $form;
+}

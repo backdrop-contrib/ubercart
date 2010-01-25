@@ -16,6 +16,7 @@ function uc_payment_pack_menu() {
     'page arguments' => array('uc_payment_pack_receive_check_form', 3),
     'access arguments' => array('view all orders'),
     'type' => MENU_CALLBACK,
+    'file' => 'uc_payment_pack.admin.inc',
   );
 
   return $items;
@@ -28,8 +29,18 @@ function uc_payment_pack_theme() {
     ),
     'uc_payment_pack_receive_check_form' => array(
       'arguments' => array('form' => NULL),
+      'file' => 'uc_payment_pack.admin.inc',
     ),
   );
+}
+
+/**
+ * Implementation of hook_init().
+ */
+function uc_payment_pack_init() {
+  global $conf;
+  $conf['i18n_variables'][] = 'uc_cod_policy';
+  $conf['i18n_variables'][] = 'uc_check_policy';
 }
 
 /**
@@ -77,15 +88,11 @@ function uc_payment_method_other($op, &$arg1) {
   switch ($op) {
     case 'order-view':
     case 'customer-view':
-      $result = db_query("SELECT description FROM {uc_payment_other} WHERE "
-                        ."order_id = %d", $arg1->order_id);
-      if ($row = db_fetch_object($result)) {
-        $output = t('Type:') .' '. $row->description;
+      // Fetch the description for the payment entered by the administrator.
+      if ($description = db_result(db_query("SELECT description FROM {uc_payment_other} WHERE order_id = %d", $arg1->order_id))) {
+        return t('Description: @desc', array('@desc' => $description));
       }
-      else {
-        $output = t('Type:') .' '. t('Unknown');
-      }
-      return $output;
+      break;
 
     case 'order-details':
       $details = drupal_get_form('uc_payment_method_other_form', $arg1);
@@ -96,19 +103,15 @@ function uc_payment_method_other($op, &$arg1) {
       return $changes;
 
     case 'order-load':
-      $result = db_query("SELECT description FROM {uc_payment_other} WHERE "
-                        ."order_id = %d", $arg1->order_id);
-      if ($row = db_fetch_object($result)) {
-        $arg1->payment_details['description'] = $row->description;
+      if ($description = db_result(db_query("SELECT description FROM {uc_payment_other} WHERE order_id = %d", $arg1->order_id))) {
+        $arg1->payment_details['description'] = $description;
       }
       break;
 
     case 'order-save':
       db_query("DELETE FROM {uc_payment_other} WHERE order_id = %d", $arg1->order_id);
-      if (strlen($arg1->payment_details['pm_other_description']) > 0) {
-        db_query("INSERT INTO {uc_payment_other} (order_id, description) VALUES "
-                ."(%d, '%s')", $arg1->order_id,
-                $arg1->payment_details['pm_other_description']);
+      if (!empty($arg1->payment_details['pm_other_description'])) {
+        db_query("INSERT INTO {uc_payment_other} (order_id, description) VALUES (%d, '%s')", $arg1->order_id, $arg1->payment_details['pm_other_description']);
       }
       break;
   }
@@ -141,7 +144,11 @@ function uc_payment_method_cod($op, &$arg1) {
     case 'cart-details':
       $details = variable_get('uc_cod_policy', t('Full payment is expected upon delivery or prior to pick-up.'));
       if (($max = variable_get('uc_cod_max_order', 0)) > 0 && is_numeric($max)) {
-        $details .= '<p>'. t('Orders totalling more than !number are <b>not eligible</b> for COD.', array('!number' => uc_currency_format($max))) .'</p>';
+        $context = array(
+          'revision' => 'formatted-original',
+          'type' => 'amount',
+        );
+        $details .= '<p>'. t('Orders totalling more than !number are <b>not eligible</b> for COD.', array('!number' => uc_price($max, $context))) .'</p>';
       }
       if (variable_get('uc_cod_delivery_date', FALSE)) {
         $details .= uc_strip_form(drupal_get_form('uc_payment_method_cod_form', $arg1));
@@ -166,6 +173,7 @@ function uc_payment_method_cod($op, &$arg1) {
       return $review;
 
     case 'order-view':
+    case 'customer-view':
       if (variable_get('uc_cod_delivery_date', FALSE)) {
         $output = t('Desired delivery date:') .'<br />'
                 . uc_date_format($arg1->payment_details['delivery_month'],
@@ -179,6 +187,18 @@ function uc_payment_method_cod($op, &$arg1) {
         $details .= uc_strip_form(drupal_get_form('uc_payment_method_cod_form', $arg1));
       }
       return $details;
+
+    case 'edit-process':
+      if (variable_get('uc_cod_delivery_date', FALSE)) {
+        return array(
+          'payment_details' => array(
+            'delivery_month' => intval($_POST['cod_delivery_month']),
+            'delivery_day' => intval($_POST['cod_delivery_day']),
+            'delivery_year' => intval($_POST['cod_delivery_year']),
+          ),
+        );
+      }
+      return;
 
     case 'order-load':
       $result = db_query("SELECT * FROM {uc_payment_cod} WHERE order_id = %d", $arg1->order_id);
@@ -213,6 +233,12 @@ function uc_payment_method_cod($op, &$arg1) {
       break;
 
     case 'settings':
+      $form['uc_cod_policy'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Policy message'),
+        '#default_value' => variable_get('uc_cod_policy', t('Full payment is expected upon delivery or prior to pick-up.')),
+        '#description' => t('Help message shown at checkout.'),
+      );
       $form['uc_cod_max_order'] = array(
         '#type' => 'textfield',
         '#title' => t('Maximum order total eligible for COD'),
@@ -229,7 +255,7 @@ function uc_payment_method_cod($op, &$arg1) {
 }
 
 function uc_payment_method_cod_form($form_state, $order) {
-  $form['table1'] = array('#value' => '<style>.cod-table div, .cod-table { display: inline; }</style><table class="cod-table"><tr><td class="form-item" colspan="3"><label>'. t('Enter a desired delivery date:') .'</label></td></tr><tr><td>');
+  $form['table1'] = array('#value' => '<style>.cod-table div, .cod-table { display: inline; }.cod-table tbody { border-top: 0px; }</style><table class="cod-table"><tr><td class="form-item" colspan="3"><label>'. t('Enter a desired delivery date:') .'</label></td></tr><tr><td>');
   $month = (!empty($order->payment_details['delivery_month'])) ? $order->payment_details['delivery_month'] : format_date(time(), 'custom', 'n');
   $form['cod_delivery_month'] = uc_select_month(NULL, $month);
   $form['table2'] = array('#value' => '</td><td>');
@@ -323,8 +349,7 @@ function uc_payment_method_check($op, &$arg1) {
       if (!variable_get('uc_payment_tracking', TRUE)) {
         return '';
       }
-      $result = db_query("SELECT clear_date FROM {uc_payment_check} WHERE "
-                        ."order_id = %d ", $arg1->order_id);
+      $result = db_query("SELECT clear_date FROM {uc_payment_check} WHERE order_id = %d ", $arg1->order_id);
       if ($check = db_fetch_object($result)) {
         $output = t('Check received') .'<br />'
                 . t('Expected clear date:') .'<br />'. format_date($check->clear_date, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
@@ -340,12 +365,12 @@ function uc_payment_method_check($op, &$arg1) {
       $form['uc_check_mailing_street1'] = uc_textfield(uc_get_field_name('street1'), variable_get('uc_check_mailing_street1', ''), FALSE, NULL, 128);
       $form['uc_check_mailing_street2'] = uc_textfield(uc_get_field_name('street2'), variable_get('uc_check_mailing_street2', ''), FALSE, NULL, 128);
       $form['uc_check_mailing_city'] = uc_textfield(uc_get_field_name('city'), variable_get('uc_check_mailing_city', ''), FALSE);
-      $form['uc_check_mailing_country'] = uc_country_select(uc_get_field_name('country'), variable_get('uc_check_mailing_country', 840));
+      $form['uc_check_mailing_country'] = uc_country_select(uc_get_field_name('country'), variable_get('uc_check_mailing_country', uc_store_default_country()));
       if (isset($_POST['uc_check_mailing_country'])) {
         $country_id = intval($_POST['uc_check_mailing_country']);
       }
       else {
-        $country_id = variable_get('uc_check_mailing_country', 840);
+        $country_id = variable_get('uc_check_mailing_country', uc_store_default_country());
       }
       $form['uc_check_mailing_zone'] = uc_zone_select(uc_get_field_name('zone'), variable_get('uc_check_mailing_zone', ''), FALSE, $country_id);
       $form['uc_check_mailing_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), variable_get('uc_check_mailing_postal_code', ''), FALSE, NULL, 10, 10);
@@ -358,100 +383,5 @@ function uc_payment_method_check($op, &$arg1) {
       );
       return $form;
   }
-}
-
-/**
- * Receive a check for an order and put in a clear date.
- */
-function uc_payment_pack_receive_check_form($form_state, $order) {
-  $balance = uc_payment_balance($order);
-  $form['balance'] = array('#value' => uc_currency_format($balance));
-  $form['order_id'] = array(
-    '#type' => 'hidden',
-    '#value' => $order->order_id,
-  );
-  $form['check_exists'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Check has already been received.'),
-    '#attributes' => array('onclick' => 'receive_check_toggle(this.checked);'),
-  );
-  $form['amount'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Amount'),
-    '#default_value' => uc_currency_format($balance, FALSE, FALSE),
-    '#size' => 10,
-    '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
-    '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
-  );
-  $form['comment'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Comment'),
-    '#description' => t('Any notes about the check, like type or check number.'),
-    '#size' => 64,
-    '#maxlength' => 256,
-  );
-  $form['clear'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Expected clear date'),
-    '#collapsible' => FALSE,
-  );
-  $form['clear']['clear_month'] = uc_select_month(NULL, format_date(time(), 'custom', 'n'));
-  $form['clear']['clear_day'] = uc_select_day(NULL, format_date(time(), 'custom', 'j'));
-  $form['clear']['clear_year'] = uc_select_year(NULL, format_date(time(), 'custom', 'Y'), format_date(time(), 'custom', 'Y'), format_date(time(), 'custom', 'Y') + 1);
-  foreach (array('clear_month', 'clear_day', 'clear_year') as $key) {
-    $form['clear'][$key]['#prefix'] = '<div style="float: left; margin-right: 1em;">';
-    $form['clear'][$key]['#suffix'] = '</div>';
-  }
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Receive check'),
-  );
-
-  return $form;
-}
-
-function theme_uc_payment_pack_receive_check_form($form) {
-  uc_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
-
-  $output = '<p>'. t('Use the form to enter the check into the payments system and set the expected clear date.') .'</p>';
-  $output .= '<p><strong>'. t('Order balance:') .'</strong> '
-           . drupal_render($form['balance']) .'</p>';
-
-/*  $output .= drupal_render($form['check_exists'])
-           . drupal_render($form['amount'])
-           . drupal_render($form['comment']);
-
-  $output .= '<table><tr><td colspan="3"><strong>'. t('Expected clear date:')
-            .'</strong></td></tr><tr><td>'. drupal_render($form['clear_month'])
-            .'</td><td>'. drupal_render($form['clear_day']) . '</td><td>'
-           . drupal_render($form['clear_year']) .'</td></tr></table>';*/
-
-  $output .= drupal_render($form);
-
-  return $output;
-}
-
-function uc_payment_pack_receive_check_form_validate($form, &$form_state) {
-  if (!$form_state['values']['check_exists'] && !is_numeric($form_state['values']['amount'])) {
-    form_set_error('amount', t('The amount must be a number.'));
-  }
-}
-
-function uc_payment_pack_receive_check_form_submit($form, &$form_state) {
-  global $user;
-
-  uc_payment_enter($form_state['values']['order_id'], _payment_method_data('check', 'name'),
-                   $form_state['values']['amount'], $user->uid, '', $form_state['values']['comment']);
-
-  db_query("INSERT INTO {uc_payment_check} (order_id, clear_date) "
-          ."VALUES (%d, %d)", $form_state['values']['order_id'],
-           mktime(12, 0, 0, $form_state['values']['clear_month'], $form_state['values']['clear_day'], $form_state['values']['clear_year']));
-
-  drupal_set_message(t('Check received, expected clear date of !date.',
-                     array('!date' => $form_state['values']['clear_month'] .'/'
-                                    . $form_state['values']['clear_day'] .'/'
-                                    . $form_state['values']['clear_year'])));
-
-  drupal_goto('admin/store/orders/'. $form_state['values']['order_id']);
 }
 

@@ -2,7 +2,12 @@
 // $Id$
 
 /**
- * Implementation of hook_install().
+ * @file
+ * Install hooks for uc_order.module.
+ */
+
+/**
+ * Implementation of hook_schema().
  */
 function uc_order_schema() {
   $schema = array();
@@ -33,10 +38,17 @@ function uc_order_schema() {
       'order_total' => array(
         'description' => t('The total amount to be paid for the order.'),
         'type' => 'numeric',
-        'precision' => 10,
-        'scale' => 2,
+        'precision' => 16,
+        'scale' => 5,
         'not null' => TRUE,
         'default' => 0.0,
+      ),
+      'product_count' => array(
+        'description' => t('The total product quantity of the order.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
       ),
       'primary_email' => array(
         'description' => t('The email address of the customer.'),
@@ -48,49 +60,49 @@ function uc_order_schema() {
       'delivery_first_name' => array(
         'description' => t('The first name of the person receiving shipment.'),
         'type' => 'varchar',
-        'length' => 32,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'delivery_last_name' => array(
         'description' => t('The last name of the person receiving shipment.'),
         'type' => 'varchar',
-        'length' => 32,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'delivery_phone' => array(
         'description' => t('The phone number at the delivery location.'),
         'type' => 'varchar',
-        'length' => 32,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'delivery_company' => array(
         'description' => t('The company at the delivery location.'),
         'type' => 'varchar',
-        'length' => 64,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'delivery_street1' => array(
         'description' => t('The street address of the delivery location.'),
         'type' => 'varchar',
-        'length' => 64,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'delivery_street2' => array(
         'description' => t('The second line of the street address.'),
         'type' => 'varchar',
-        'length' => 64,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'delivery_city' => array(
         'description' => t('The city of the delivery location.'),
         'type' => 'varchar',
-        'length' => 32,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
@@ -105,7 +117,7 @@ function uc_order_schema() {
       'delivery_postal_code' => array(
         'description' => t('The postal code of the delivery location.'),
         'type' => 'varchar',
-        'length' => 10,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
@@ -120,49 +132,49 @@ function uc_order_schema() {
       'billing_first_name' => array(
         'description' => t('The first name of the person paying for the order.'),
         'type' => 'varchar',
-        'length' => 32,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'billing_last_name' => array(
         'description' => t('The last name of the person paying for the order.'),
         'type' => 'varchar',
-        'length' => 32,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'billing_phone' => array(
         'description' => t('The phone number for the billing address.'),
         'type' => 'varchar',
-        'length' => 32,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'billing_company' => array(
         'description' => t('The company of the billing address.'),
         'type' => 'varchar',
-        'length' => 64,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'billing_street1' => array(
         'description' => t('The street address where the bill will be sent.'),
         'type' => 'varchar',
-        'length' => 64,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'billing_street2' => array(
         'description' => t('The second line of the street address.'),
         'type' => 'varchar',
-        'length' => 64,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'billing_city' => array(
         'description' => t('The city where the bill will be sent.'),
         'type' => 'varchar',
-        'length' => 32,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
@@ -177,7 +189,7 @@ function uc_order_schema() {
       'billing_postal_code' => array(
         'description' => t('The postal code where the bill will be sent.'),
         'type' => 'varchar',
-        'length' => 10,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
@@ -199,6 +211,7 @@ function uc_order_schema() {
       'data' => array(
         'description' => t('Serialized array of extra data.'),
         'type' => 'text',
+        'serialize' => TRUE,
       ),
       'created' => array(
         'description' => t('Timestamp of when the order was created.'),
@@ -212,10 +225,17 @@ function uc_order_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'host' => array(
+        'description' => t('Host IP address of the person paying for the order.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
     ),
     'indexes' => array(
-      'uc_orders_uid' => array('uid'),
-      'uc_orders_order_status' => array('order_status'),
+      'uid' => array('uid'),
+      'order_status' => array('order_status'),
     ),
     'primary key' => array('order_id'),
   );
@@ -255,7 +275,7 @@ function uc_order_schema() {
       ),
     ),
     'indexes' => array(
-      'uc_order_admin_comments_order_id' => array('order_id'),
+      'order_id' => array('order_id'),
     ),
     'primary key' => array('comment_id'),
   );
@@ -308,7 +328,7 @@ function uc_order_schema() {
       ),
     ),
     'indexes' => array(
-      'uc_order_comments_order_id' => array('order_id'),
+      'order_id' => array('order_id'),
     ),
     'primary key' => array('comment_id'),
   );
@@ -346,8 +366,8 @@ function uc_order_schema() {
       'amount' => array(
         'description' => t("The amount of the line item in the store's currency."),
         'type' => 'numeric',
-        'precision' => 10,
-        'scale' => 2,
+        'precision' => 16,
+        'scale' => 5,
         'not null' => TRUE,
         'default' => 0.0,
       ),
@@ -358,9 +378,14 @@ function uc_order_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'data' => array(
+        'description' => t('Serialized array of extra data.'),
+        'type' => 'text',
+        'serialize' => TRUE,
+      ),
     ),
     'indexes' => array(
-      'uc_order_line_items_order_id' => array('order_id'),
+      'order_id' => array('order_id'),
     ),
     'primary key' => array('line_item_id'),
   );
@@ -400,7 +425,7 @@ function uc_order_schema() {
       ),
     ),
     'indexes' => array(
-      'uc_order_log_order_id' => array('order_id'),
+      'order_id' => array('order_id'),
     ),
     'primary key' => array('order_log_id'),
   );
@@ -460,35 +485,33 @@ function uc_order_schema() {
       'cost' => array(
         'description' => t('The cost to the store for the product.'),
         'type' => 'numeric',
-        'precision' => 10,
-        'scale' => 2,
-        'unsigned' => TRUE,
+        'precision' => 16,
+        'scale' => 5,
         'not null' => TRUE,
         'default' => 0.0,
       ),
       'price' => array(
         'description' => t('The price paid for the ordered product.'),
         'type' => 'numeric',
-        'precision' => 10,
-        'scale' => 2,
-        'unsigned' => TRUE,
+        'precision' => 16,
+        'scale' => 5,
         'not null' => TRUE,
         'default' => 0.0,
       ),
       'weight' => array(
         'description' => t('The physical weight.'),
         'type' => 'float',
-        'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0.0,
       ),
       'data' => array(
         'description' => t('Serialized array of extra data.'),
         'type' => 'text',
+        'serialize' => TRUE,
       ),
     ),
     'indexes' => array(
-      'uc_order_products_order_id' => array('order_id'),
+      'order_id' => array('order_id'),
     ),
     'primary key' => array('order_product_id'),
   );
@@ -539,17 +562,23 @@ function uc_order_schema() {
   return $schema;
 }
 
+/**
+ * Implementation of hook_install().
+ */
 function uc_order_install() {
   drupal_install_schema('uc_order');
 
   $t = get_t();
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('canceled', '". $t('Canceled') ."', 'canceled', -20, 1);");
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('in_checkout', '". $t('In checkout') ."', 'in_checkout', -10, 1);");
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('pending', '". $t('Pending') ."', 'post_checkout', 0, 1);");
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('processing', '". $t('Processing') ."', 'post_checkout', 5, 1);");
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('completed', '". $t('Completed') ."', 'completed', 20, 1);");
+  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('canceled', '%s', 'canceled', -20, 1);", $t('Canceled'));
+  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('in_checkout', '%s', 'in_checkout', -10, 1);", $t('In checkout'));
+  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('pending', '%s', 'post_checkout', 0, 1);", $t('Pending'));
+  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('processing', '%s', 'post_checkout', 5, 1);", $t('Processing'));
+  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('completed', '%s', 'completed', 20, 1);", $t('Completed'));
 }
 
+/**
+ * Implementation of hook_uninstall().
+ */
 function uc_order_uninstall() {
   drupal_uninstall_schema('uc_order');
 
@@ -571,14 +600,14 @@ function uc_order_update_1() {
       $ret[] = update_sql("ALTER TABLE {uc_orders} CHANGE billing_zip billing_postal_code VARCHAR(10) CHARACTER SET utf8 NOT NULL");
       break;
     case 'pgsql':
-      db_change_column($ret, 'uc_orders', 'delivery_zip', 'delivery_postal_code', 'varchar(10) CHARACTER SET utf8', array('not null' => true, 'default' => ''));
-      db_change_column($ret, 'uc_orders', 'billing_zip', 'billing_postal_code', 'varchar(10) CHARACTER SET utf8', array('not null' => true, 'default' => ''));
+      db_change_column($ret, 'uc_orders', 'delivery_zip', 'delivery_postal_code', 'varchar(10) CHARACTER SET utf8', array('not null' => TRUE, 'default' => "''"));
+      db_change_column($ret, 'uc_orders', 'billing_zip', 'billing_postal_code', 'varchar(10) CHARACTER SET utf8', array('not null' => TRUE, 'default' => "''"));
       break;
   }
   $result = db_query("SELECT order_id FROM {uc_orders} ORDER BY order_id DESC LIMIT 1");
   if ($data = db_fetch_object($result)) {
     $result = db_query("INSERT INTO {sequences} (name, id) VALUES ('{uc_orders}_order_id', %d)", $data->order_id);
-    $ret[] = array('success' => $result !== false, 'query' => "INSERT INTO {sequences} (name, id) VALUES ('{uc_orders}_order_id'. ". $data->order_id .")");
+    $ret[] = array('success' => $result !== FALSE, 'query' => "INSERT INTO {sequences} (name, id) VALUES ('{uc_orders}_order_id'. ". $data->order_id .")");
   }
   return $ret;
 }
@@ -590,7 +619,7 @@ function uc_order_update_2() {
       $ret[] = update_sql("ALTER TABLE {uc_order_products} CHANGE weight weight FLOAT NOT NULL DEFAULT 0.0");
       break;
     case 'pgsql':
-      db_change_column($ret, 'uc_order_products', 'weight', 'weight', 'float', array('not null' => true, 'default' => 0.0));
+      db_change_column($ret, 'uc_order_products', 'weight', 'weight', 'float', array('not null' => TRUE, 'default' => 0.0));
       break;
   }
   return $ret;
@@ -606,8 +635,8 @@ function uc_order_update_3() {
       $ret[] = update_sql("ALTER TABLE {uc_order_comments} CHANGE order_status order_status VARCHAR(32) NOT NULL");
     break;
     case 'pgsql':
-      db_change_column($ret, 'uc_orders', 'order_status', 'order_status', 'varchar(32)', array('not null' => true, 'default' => ''));
-      db_change_column($ret, 'uc_order_comments', 'order_status', 'order_status', 'varchar(32)', array('not null' => true, 'default' => ''));
+      db_change_column($ret, 'uc_orders', 'order_status', 'order_status', 'varchar(32)', array('not null' => TRUE, 'default' => "''"));
+      db_change_column($ret, 'uc_order_comments', 'order_status', 'order_status', 'varchar(32)', array('not null' => TRUE, 'default' => "''"));
     break;
   }
   $ret[] = update_sql("UPDATE {uc_orders} SET order_status = 'in_checkout' WHERE order_status = '0'");
@@ -632,11 +661,11 @@ function uc_order_update_3() {
         $ret[] = update_sql("ALTER TABLE {uc_order_statuses} ADD locked TINYINT NOT NULL DEFAULT '0'");
       break;
       case 'pgsql':
-        db_change_column($ret, 'uc_order_statuses', 'order_status_id', 'order_status_id', 'varchar(32) CHARACTER SET utf8', array('not null' => true, 'default' => ''));
-        db_change_column($ret, 'uc_order_statuses', 'title', 'title', 'varchar(48) CHARACTER SET utf8', array('not null' => true, 'default' => ''));
-        db_change_column($ret, 'uc_order_statuses', 'notify', 'state', 'varchar(32) CHARACTER SET utf8', array('not null' => true, 'default' => ''));
-        db_add_column($ret, 'uc_order_statuses', 'weight', 'integer', array('not null' => true, 'default' => 0));
-        db_add_column($ret, 'uc_order_statuses', 'locked', 'smallint', array('not null' => true, 'default' => 0));
+        db_change_column($ret, 'uc_order_statuses', 'order_status_id', 'order_status_id', 'varchar(32) CHARACTER SET utf8', array('not null' => TRUE, 'default' => "''"));
+        db_change_column($ret, 'uc_order_statuses', 'title', 'title', 'varchar(48) CHARACTER SET utf8', array('not null' => TRUE, 'default' => "''"));
+        db_change_column($ret, 'uc_order_statuses', 'notify', 'state', 'varchar(32) CHARACTER SET utf8', array('not null' => TRUE, 'default' => "''"));
+        db_add_column($ret, 'uc_order_statuses', 'weight', 'integer', array('not null' => TRUE, 'default' => 0));
+        db_add_column($ret, 'uc_order_statuses', 'locked', 'smallint', array('not null' => TRUE, 'default' => 0));
       break;
     }
     $ret[] = update_sql("DELETE FROM {uc_order_statuses} WHERE order_status_id LIKE '_'");
@@ -664,7 +693,7 @@ function uc_order_update_4() {
       $ret[] = update_sql("ALTER TABLE {uc_order_comments} CHANGE order_status order_status VARCHAR(32) NOT NULL");
     break;
     case 'pgsql':
-      db_change_column($ret, 'uc_order_comments', 'order_status', 'order_status', 'varchar(32)', array('not null' => true, 'default' => ''));
+      db_change_column($ret, 'uc_order_comments', 'order_status', 'order_status', 'varchar(32)', array('not null' => TRUE, 'default' => "''"));
     break;
   }
 
@@ -702,10 +731,410 @@ function uc_order_update_7() {
       $ret[] = update_sql("ALTER TABLE {uc_order_products} CHANGE model model VARCHAR(255) CHARACTER SET utf8 NOT NULL");
     break;
     case 'pgsql':
-      db_change_column($ret, 'uc_order_products', 'model', 'model', 'varchar(255)', array('not null' => TRUE, 'default' => ''));
+      db_change_column($ret, 'uc_order_products', 'model', 'model', 'varchar(255)', array('not null' => TRUE, 'default' => "''"));
     break;
   }
 
   return $ret;
 }
 
+function uc_order_update_8() {
+
+  $ret = array();
+
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {uc_orders} ADD host VARCHAR(16) NOT NULL DEFAULT ''");
+    break;
+    case 'pgsql':
+      db_add_column($ret, 'uc_orders', 'host', 'VARCHAR(16)', array('not null' => TRUE, 'default' => "''"));
+    break;
+  }
+
+  return $ret;
+}
+
+function uc_order_update_6000() {
+  $ret = array();
+
+  // Standardize database definitions during upgrade to Drupal 6.
+  // ID fields are unsigned, regular-sized ints.
+  // "Boolean" flags are unsigned tiny ints.
+  // Postgres tables will have the necessary default values, and MySQL
+  // doesn't need them, so the schema can just be mismatched for that.
+
+  // Some id columns are already auto-incremented, so we can't remove the
+  // primary key beforehand in MySQL. So we add it later for Postgres.
+
+  db_drop_primary_key($ret, 'uc_orders');
+  db_drop_index($ret, 'uc_orders', 'uid');
+  db_change_field($ret, 'uc_orders', 'order_id', 'order_id', array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE), array('primary key' => array('order_id')));
+  db_change_field($ret, 'uc_orders', 'uid', 'uid', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0), array('indexes' => array('uid' => array('uid'))));
+  db_change_field($ret, 'uc_orders', 'delivery_first_name', 'delivery_first_name', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'delivery_last_name', 'delivery_last_name', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'delivery_phone', 'delivery_phone', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'delivery_company', 'delivery_company', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'delivery_street1', 'delivery_street1', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'delivery_street2', 'delivery_street2', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'delivery_city', 'delivery_city', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'delivery_zone', 'delivery_zone', array('type' => 'int', 'unsigned' => TRUE, 'size' => 'medium', 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_orders', 'delivery_postal_code', 'delivery_postal_code', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'delivery_country', 'delivery_country', array('type' => 'int', 'unsigned' => TRUE, 'size' => 'medium', 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_orders', 'billing_first_name', 'billing_first_name', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'billing_last_name', 'billing_last_name', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'billing_phone', 'billing_phone', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'billing_company', 'billing_company', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'billing_street1', 'billing_street1', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'billing_street2', 'billing_street2', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'billing_city', 'billing_city', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'billing_zone', 'billing_zone', array('type' => 'int', 'unsigned' => TRUE, 'size' => 'medium', 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_orders', 'billing_postal_code', 'billing_postal_code', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+  db_change_field($ret, 'uc_orders', 'billing_country', 'billing_country', array('type' => 'int', 'unsigned' => TRUE, 'size' => 'medium', 'not null' => TRUE, 'default' => 0));
+
+  db_drop_index($ret, 'uc_order_admin_comments', 'order_id');
+  db_change_field($ret, 'uc_order_admin_comments', 'comment_id', 'comment_id', array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE));
+  db_change_field($ret, 'uc_order_admin_comments', 'order_id', 'order_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0), array('indexes' => array('order_id' => array('order_id'))));
+  db_change_field($ret, 'uc_order_admin_comments', 'uid', 'uid', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+  if ($GLOBALS['db_type'] == 'pgsql') {
+    db_add_primary_key($ret, 'uc_order_admin_comments', array('comment_id'));
+  }
+
+  db_drop_index($ret, 'uc_order_comments', 'order_id');
+  db_change_field($ret, 'uc_order_comments', 'comment_id', 'comment_id', array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE));
+  db_change_field($ret, 'uc_order_comments', 'order_id', 'order_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0), array('indexes' => array('order_id' => array('order_id'))));
+  db_change_field($ret, 'uc_order_comments', 'uid', 'uid', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+  if ($GLOBALS['db_type'] == 'pgsql') {
+    db_add_primary_key($ret, 'uc_order_comments', array('comment_id'));
+  }
+
+  db_drop_index($ret, 'uc_order_line_items', 'order_id');
+  db_change_field($ret, 'uc_order_line_items', 'line_item_id', 'line_item_id', array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE));
+  db_change_field($ret, 'uc_order_line_items', 'order_id', 'order_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0), array('indexes' => array('order_id' => array('order_id'))));
+  if ($GLOBALS['db_type'] == 'pgsql') {
+    db_add_primary_key($ret, 'uc_order_line_items', array('line_item_id'));
+  }
+
+  db_drop_index($ret, 'uc_order_log', 'order_id');
+  db_change_field($ret, 'uc_order_log', 'order_log_id', 'order_log_id', array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE));
+  db_change_field($ret, 'uc_order_log', 'order_id', 'order_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0), array('indexes' => array('order_id' => array('order_id'))));
+  db_change_field($ret, 'uc_order_log', 'uid', 'uid', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+  if ($GLOBALS['db_type'] == 'pgsql') {
+    db_add_primary_key($ret, 'uc_order_log', array('order_log_id'));
+  }
+
+  db_drop_index($ret, 'uc_order_products', 'order_id');
+  db_change_field($ret, 'uc_order_products', 'order_product_id', 'order_product_id', array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE));
+  db_change_field($ret, 'uc_order_products', 'order_id', 'order_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0), array('indexes' => array('order_id' => array('order_id'))));
+  db_change_field($ret, 'uc_order_products', 'nid', 'nid', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_order_products', 'qty', 'qty', array('type' => 'int', 'unsigned' => TRUE, 'size' => 'small', 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_order_products', 'cost', 'cost', array('type' => 'numeric', 'precision' => 10, 'scale' => 2,'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_order_products', 'price', 'price', array('type' => 'numeric', 'precision' => 10, 'scale' => 2, 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_order_products', 'weight', 'weight', array('type' => 'float', 'not null' => TRUE, 'default' => 0));
+  if ($GLOBALS['db_type'] == 'pgsql') {
+    db_add_primary_key($ret, 'uc_order_products', array('order_product_id'));
+  }
+
+  db_change_field($ret, 'uc_order_statuses', 'weight', 'weight', array('type' => 'int', 'size' => 'small', 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_order_statuses', 'locked', 'locked', array('type' => 'int', 'unsigned' => TRUE, 'size' => 'tiny', 'not null' => TRUE, 'default' => 0));
+
+  return $ret;
+}
+
+/**
+ * Make sure that those who had the faulty 6000 update have the right precision
+ * and scale.
+ */
+function uc_order_update_6001() {
+  $ret = array();
+
+  db_change_field($ret, 'uc_order_products', 'cost', 'cost', array('type' => 'numeric', 'precision' => 10, 'scale' => 2, 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_order_products', 'price', 'price', array('type' => 'numeric', 'precision' => 10, 'scale' => 2,'not null' => TRUE, 'default' => 0));
+
+  return $ret;
+}
+
+/**
+ * Add the ability to log IPs with each order taken.
+ */
+function uc_order_update_6002() {
+  $ret = array();
+
+  $host_schema = array(
+    'description' => t('Host IP address of the person paying for the order.'),
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => TRUE,
+    'default' => '',
+  );
+
+  if (!db_column_exists('uc_orders', 'host')) {
+    db_add_field($ret, 'uc_orders', 'host', $host_schema);
+  }
+
+  return $ret;
+}
+
+/**
+ * Make the numeric fields signed for Postgres compatibility.
+ */
+function uc_order_update_6003() {
+  $ret = array();
+
+  db_change_field($ret, 'uc_order_products', 'cost', 'cost', array('type' => 'numeric', 'precision' => 10, 'scale' => 2, 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_order_products', 'price', 'price', array('type' => 'numeric', 'precision' => 10, 'scale' => 2, 'not null' => TRUE, 'default' => 0));
+
+  return $ret;
+}
+
+function uc_order_update_6004() {
+  $ret = array();
+
+  db_change_field($ret, 'uc_orders', 'order_total', 'order_total', array('type' => 'numeric', 'precision' => 15, 'scale' => 3, 'not null' => TRUE, 'default' => 0.0));
+  db_change_field($ret, 'uc_order_line_items', 'amount', 'amount', array('type' => 'numeric', 'precision' => 15, 'scale' => 3, 'not null' => TRUE, 'default' => 0.0));
+  db_change_field($ret, 'uc_order_products', 'cost', 'cost', array('type' => 'numeric', 'precision' => 15, 'scale' => 3, 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_order_products', 'price', 'price', array('type' => 'numeric', 'precision' => 15, 'scale' => 3, 'not null' => TRUE, 'default' => 0));
+
+  return $ret;
+}
+
+/**
+ * Replace all instances of 'delete any order' with 'unconditionally delete orders' in the permissions table.
+ */
+function uc_order_update_6005() {
+  $ret = array();
+
+  $result = db_query("SELECT * FROM {permission}");
+  while($perm = db_fetch_object($result)) {
+    $perm->perm = str_replace("delete any order", "unconditionally delete orders", $perm->perm);
+    drupal_write_record('permission', $perm, 'pid');
+  }
+  $ret[] = array('success' => TRUE, 'query' => "Replaced all instances of 'delete any order' with 'unconditionally delete orders' in the permissions table.");
+
+  return $ret;
+}
+
+/**
+ * Change to signed floats.
+ */
+function uc_order_update_6006() {
+  $ret = array();
+
+  $schema = array(
+    'weight' => array(
+      'description' => t('The physical weight.'),
+      'type' => 'float',
+      'not null' => TRUE,
+      'default' => 0.0,
+    ),
+  );
+  db_change_field($ret, 'uc_order_products', 'weight', 'weight', $schema['weight']);
+
+  return $ret;
+}
+
+/**
+ * Add data field to uc_order_line_items.
+ */
+function uc_order_update_6007() {
+
+  $ret = array();
+
+  if (!db_column_exists('uc_order_line_items', 'data')) {
+    db_add_field($ret, 'uc_order_line_items', 'data', array('type' => 'text'));
+  }
+
+  return $ret;
+}
+
+/**
+ * Moved to 6010 to take care of a broken release.
+ */
+function uc_order_update_6008() {
+  return array();
+}
+
+function uc_order_update_6009() {
+  $ret = array();
+
+  $count = 0;
+  $result = db_query("SELECT pid, actions FROM {ca_predicates} WHERE actions LIKE '%%uc_order_email_invoice%%'");
+  while ($predicate = db_fetch_object($result)) {
+    $save = FALSE;
+    $actions = unserialize($predicate->actions);
+    foreach ($actions as $key => $action) {
+      if ($action['#name'] == 'uc_order_email_invoice') {
+        unset($actions[$key]['#settings']['format']);
+        $save = TRUE;
+      }
+    }
+    if ($save) {
+      db_query("UPDATE {ca_predicates} SET actions = '%s' WHERE pid = %d", serialize($actions), $predicate->pid);
+      $count++;
+    }
+  }
+
+  $t = get_t();
+  $ret[] = array('success' => TRUE, 'query' => $t('Fixed %count predicates with the action "uc_order_email_invoice".', array('%count' => $count)));
+
+  return $ret;
+}
+
+/**
+ * Remove new users' passwords from order data.
+ */
+function uc_order_update_6010(&$sandbox) {
+  $ret = array();
+
+  if (!isset($sandbox['progress'])) {
+    $sandbox['progress'] = 0;
+    $sandbox['current_order_id'] = 0;
+    $sandbox['max'] = db_result(db_query("SELECT COUNT(order_id) FROM {uc_orders} WHERE data LIKE '%%new_user%%'"));
+  }
+
+  $limit = 100;
+
+  $result = db_query_range("SELECT order_id, data FROM {uc_orders} WHERE data LIKE '%%new_user%%' AND order_id > %d ORDER BY order_id", $sandbox['current_order_id'], 0, $limit);
+  while ($order = db_fetch_object($result)) {
+    $order->data = unserialize($order->data);
+    if (isset($order->data['new_user']['pass'])) {
+      unset($order->data['new_user']['pass']);
+      db_query("UPDATE {uc_orders} SET data = '%s' WHERE order_id = %d", serialize($order->data), $order->order_id);
+    }
+
+    $sandbox['progress']++;
+    $sandbox['current_order_id'] = $order->order_id;
+  }
+
+  $t = get_t();
+  $ret[] = array('success' => TRUE, 'query' => $t("Removed new users' passwords from order data."));
+
+  $ret['#finished'] = empty($sandbox['max']) ? 1 : ($sandbox['progress'] / $sandbox['max']);
+
+  return $ret;
+}
+
+/**
+ * Add a total product quantity column to {uc_orders}.
+ */
+function uc_order_update_6011() {
+  $ret = array();
+
+  $spec = array(
+    'description' => t('The total product quantity of the order.'),
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  );
+  db_add_field($ret, 'uc_orders', 'product_count', $spec);
+
+  return $ret;
+}
+
+/**
+ * Populate the total product quantity.
+ */
+function uc_order_update_6012(&$sandbox) {
+  $ret = array();
+
+  if (!isset($sandbox['progress'])) {
+    $sandbox['progress'] = 0;
+    $sandbox['current_order_id'] = 0;
+    $sandbox['max'] = db_result(db_query("SELECT COUNT(DISTINCT order_id) FROM {uc_order_products} WHERE order_id <> 0"));
+  }
+
+  $limit = 100;
+
+  $result = db_query_range("SELECT order_id, SUM(qty) AS product_count FROM {uc_order_products} WHERE order_id > %d GROUP BY order_id", $sandbox['current_order_id'], 0, $limit);
+  while ($row = db_fetch_object($result)) {
+    db_query("UPDATE {uc_orders} SET product_count = %d WHERE order_id = %d", $row->product_count, $row->order_id);
+
+    $sandbox['progress']++;
+    $sandbox['current_order_id'] = $row->order_id;
+  }
+
+
+  $ret['#finished'] = empty($sandbox['max']) ? 1 : ($sandbox['progress'] / $sandbox['max']);
+
+  if ($ret['#finished'] == 1) {
+    $t = get_t();
+    $ret[] = array('success' => TRUE, 'query' => $t("Populated the product count column for {uc_orders}."));
+  }
+
+  return $ret;
+}
+
+/**
+ * Convert the settings for the uc_order_condition_has_products to models.
+ */
+function uc_order_update_6013() {
+  $ret = array();
+
+  $models = array();
+  $count = 0;
+
+  $result = db_query("SELECT pid, conditions FROM {ca_predicates} WHERE conditions LIKE '%%uc_order_condition_has_products%%'");
+  while ($predicate = db_fetch_object($result)) {
+    $conditions = unserialize($predicate->conditions);
+
+    $save = uc_order_6013_condition_helper($conditions['#conditions'], $predicate->pid);
+
+    if ($save) {
+      db_query("UPDATE {ca_predicates} SET conditions = '%s' WHERE pid = '%s'", serialize($conditions), $predicate->pid);
+      $count++;
+    }
+  }
+
+  $t = get_t();
+  $ret[] = array('success' => TRUE, 'query' => $t('Fixed %count predicates with the condition "uc_order_condition_has_products".', array('%count' => $count)));
+
+  return $ret;
+}
+
+function uc_order_6013_condition_helper(&$conditions, $pid, $save = FALSE) {
+  foreach ($conditions as $key => &$condition) {
+    if (isset($condition['#conditions'])) {
+      $save = uc_order_6013_condition_helper($condition['#conditions'], $pid, $save);
+    }
+    else {
+      if ($condition['#name'] == 'uc_order_condition_has_products' && isset($condition['#settings']['products'])) {
+        $save = TRUE;
+        $products = array();
+
+        foreach ($condition['#settings']['products'] as $x => $nid) {
+          // The "Any" setting will be an empty string.
+          if (is_numeric($nid)) {
+            if (!isset($models[$nid])) {
+              // Get the latest revision's model.
+              $models[$nid] = db_result(db_query("SELECT p.model FROM {uc_products} AS p LEFT JOIN {node} AS n ON n.vid = p.vid WHERE n.nid = %d", $nid));
+            }
+
+            $model = $models[$nid];
+          }
+          else {
+            $model = $nid;
+          }
+
+          $condition['#settings']['products'][$x] = $model;
+        }
+      }
+    }
+  }
+
+  return $save;
+}
+
+/**
+ * Change currency fields to numeric(16,5).
+ */
+function uc_order_update_6014() {
+  $ret = array();
+
+  db_change_field($ret, 'uc_orders', 'order_total', 'order_total', array('type' => 'numeric', 'precision' => 16, 'scale' => 5, 'not null' => TRUE, 'default' => 0.0));
+  db_change_field($ret, 'uc_order_line_items', 'amount', 'amount', array('type' => 'numeric', 'precision' => 16, 'scale' => 5, 'not null' => TRUE, 'default' => 0.0));
+  db_change_field($ret, 'uc_order_products', 'cost', 'cost', array('type' => 'numeric', 'precision' => 16, 'scale' => 5, 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_order_products', 'price', 'price', array('type' => 'numeric', 'precision' => 16, 'scale' => 5, 'not null' => TRUE, 'default' => 0));
+
+  return $ret;
+}

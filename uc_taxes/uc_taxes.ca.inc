@@ -29,18 +29,17 @@ function uc_taxes_ca_entity() {
  */
 function uc_taxes_ca_trigger() {
   $triggers = array();
-  $taxes = uc_taxes_get_rates();
-  foreach ($taxes as $tax) {
-    $triggers['calculate_tax_'. $tax->id] = array(
-      '#title' => t('Calculate @name', array('@name' => $tax->name)),
-      '#category' => 'uc_taxes',
-      '#arguments' => array(
-        'order' => array('#entity' => 'order', '#title' => t('Order')),
-        'tax' => array('#entity' => 'tax', '#title' => t('Tax rule')),
-        'user' => array('#entity' => 'user', '#title' => t('User account')),
-      ),
-    );
-  }
+
+  $triggers['calculate_taxes'] = array(
+    '#title' => t('Calculate taxes'),
+    '#category' => t('Taxes'),
+    '#arguments' => array(
+      'order' => array('#entity' => 'uc_order', '#title' => t('Order')),
+      'tax' => array('#entity' => 'tax', '#title' => t('Tax rule')),
+      'account' => array('#entity' => 'user', '#title' => t('User account')),
+    ),
+  );
+
   return $triggers;
 }
 
@@ -49,19 +48,25 @@ function uc_taxes_ca_trigger() {
  */
 function uc_taxes_ca_action() {
   $actions = array();
-  $actions['uc_taxes_action_apply_tax'] = array(
-    '#title' => t('Charge a tax'),
-    '#category' => t('Taxes'),
-    '#arguments' => array(
-      'order' => array('#entity' => 'order', '#title' => t('Order')),
-      'tax' => array('#entity' => 'tax', '#title' => t('Tax')),
-    ),
-  );
+
+  // Loop through all the defined tax rates.
+  foreach (uc_taxes_rate_load() as $rate) {
+    $actions['uc_taxes_action_apply_tax_'. $rate->id] = array(
+      '#title' => t('Apply !name', array('!name' => $rate->name)),
+      '#category' => t('Taxes'),
+      '#callback' => 'uc_taxes_action_apply_tax',
+      '#arguments' => array(
+        'order' => array('#entity' => 'uc_order', '#title' => t('Order')),
+        'tax' => array('#entity' => 'tax', '#title' => t('Tax')),
+      ),
+    );
+  }
+
   return $actions;
 }
 
 /**
- * Workflow-ng action callback to calculate a tax.
+ * Action callback to calculate a tax.
  *
  * @param $order
  *   The order object being considered.
@@ -71,36 +76,7 @@ function uc_taxes_ca_action() {
  *   The line item array representing the amount of tax.
  */
 function uc_taxes_action_apply_tax($order, $tax) {
-  $amount = 0;
-  if (is_array($order->products)) {
-    foreach ($order->products as $item) {
-      $node = node_load($item->nid);
-      if (in_array($node->type, $tax->taxed_product_types)) {
-        $amount += $item->price * $item->qty * $tax->rate;
-      }
-    }
-  }
-  $taxed_line_items = $tax->taxed_line_items;
-  if (is_array($order->line_items) && is_array($taxed_line_items)) {
-    foreach ($order->line_items as $key => $line_item) {
-      if ($line_item['type'] == 'tax' && $line_item['title'] == $tax->name) {
-        // Don't tax yourself.
-        continue;
-      }
-      if (in_array($line_item['type'], $taxed_line_items)) {
-        $amount += $line_item['amount'] * $tax->rate;
-      }
-    }
-  }
-  if (isset($taxed_line_items['tax'])) {
-    foreach ($_SESSION['taxes'] as $other_tax) {
-      $amount += $other_tax['amount'] * $tax->rate;
-    }
-  }
-  if ($amount) {
-    $line_item = (object)array('id' => $tax->id, 'name' => $tax->name, 'amount' => $amount, 'weight' => $tax->weight);
-    return $line_item;
-  }
+  return uc_taxes_apply_tax($order, $tax);
 }
 
 /**
@@ -111,17 +87,17 @@ function uc_taxes_action_apply_tax($order, $tax) {
 function uc_taxes_ca_predicate() {
   $predicates = array();
 
-  $taxes = uc_taxes_get_rates();
-  foreach ($taxes as $tax) {
-    $predicates['uc_taxes_'. $tax->id] = array(
-      '#title' => $tax->name,
-      '#class' => 'uc_taxes',
-      '#trigger' => 'calculate_tax_'. $tax->id,
+  // Loop through all the defined tax rates.
+  foreach (uc_taxes_rate_load() as $rate) {
+    $predicates['uc_taxes_'. $rate->id] = array(
+      '#title' => $rate->name,
+      '#class' => 'taxes',
+      '#trigger' => 'calculate_taxes',
       '#status' => 1,
       '#actions' => array(
         array(
-          '#name' => 'uc_taxes_action_apply_tax',
-          '#title' => t('Apply @tax', array('@tax' => $tax->name)),
+          '#name' => 'uc_taxes_action_apply_tax_'. $rate->id,
+          '#title' => t('Apply !name', array('!name' => $rate->name)),
           '#argument_map' => array(
             'order' => 'order',
             'tax' => 'tax',
