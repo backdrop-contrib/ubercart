@@ -1,6 +1,11 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * Install hooks for uc_payment.module.
+ */
+
 function uc_payment_schema() {
   $schema = array();
 
@@ -25,8 +30,8 @@ function uc_payment_schema() {
       ),
       'amount' => array(
         'type' => 'numeric',
-        'precision' => 10,
-        'scale' => 2,
+        'precision' => 16,
+        'scale' => 5,
         'not null' => TRUE,
         'default' => 0,
       ),
@@ -38,6 +43,7 @@ function uc_payment_schema() {
       ),
       'data' => array(
         'type' => 'text',
+        'serialize' => TRUE,
       ),
       'comment' => array(
         'type' => 'text',
@@ -50,7 +56,7 @@ function uc_payment_schema() {
       ),
     ),
     'indexes' => array(
-      'uc_payment_receipts_order_id' => array('order_id'),
+      'order_id' => array('order_id'),
     ),
     'primary key' => array('receipt_id'),
   );
@@ -68,10 +74,7 @@ function uc_payment_uninstall() {
   drupal_uninstall_schema('uc_payment');
 
   db_query("DELETE FROM {variable} WHERE name LIKE 'uc_pg_%%'");
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_payment_method_%%'");
-  variable_del('uc_payment_tracking');
-  variable_del('uc_payment_deleting');
-  variable_del('uc_payment_logging');
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_payment_%%'");
   variable_del('uc_default_payment_msg');
 }
 
@@ -129,6 +132,31 @@ function uc_payment_update_2() {
   }
 
   $ret[] = update_sql("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('payment_received', '". $t('Payment received') ."', 'payment_received', 10, 1);");
+
+  return $ret;
+}
+
+function uc_payment_update_6000() {
+  $ret = array();
+
+  db_drop_primary_key($ret, 'uc_payment_receipts');
+  db_drop_index($ret, 'uc_payment_receipts', 'order_id');
+  db_change_field($ret, 'uc_payment_receipts', 'receipt_id', 'receipt_id', array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE), array('primary key' => array('receipt_id')));
+  db_change_field($ret, 'uc_payment_receipts', 'order_id', 'order_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0), array('indexes' => array('order_id' => array('order_id'))));
+  db_change_field($ret, 'uc_payment_receipts', 'uid', 'uid', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+
+  return $ret;
+}
+
+// Removed obsolete update 6001.
+
+/**
+ * Change currency fields to numeric(16,5).
+ */
+function uc_payment_update_6002() {
+  $ret = array();
+
+  db_change_field($ret, 'uc_payment_receipts', 'amount', 'amount', array('type' => 'numeric', 'precision' => 16, 'scale' => 5, 'not null' => TRUE, 'default' => 0));
 
   return $ret;
 }

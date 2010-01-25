@@ -5,12 +5,7 @@
  * @file
  * Provides summaries of forms and fieldsets to give "at-a-glance" settings
  * information.
- *
- * This is a work in progress.
- *
- * -Ryan
  */
-
 
 /**
  * Summarizes the elements in a form array, recursively building summaries of
@@ -25,10 +20,16 @@ function summarize_form($form) {
   $items = array();
 
   // Loop through each element in $form.
-  foreach(element_children($form) as $key) {
+  foreach (element_children($form) as $key) {
     // Set the callback for the summary to the default if not specified.
     if (!isset($form[$key]['#summary callback'])) {
-      $form[$key]['#summary callback'] = 'summarize_element';
+      // Default filter forms to have no summary.
+      if (in_array('filter_form_validate', (array) $form[$key]['#element_validate'])) {
+        $form[$key]['#summary callback'] = 'summarize_null';
+      }
+      else {
+        $form[$key]['#summary callback'] = 'summarize_element';
+      }
     }
 
     // Setup the arguments array, always passing in the form array.
@@ -67,7 +68,7 @@ function summarize_form($form) {
  * @return
  *   A summary string for the element or a summary array for a fieldset.
  */
-function summarize_element($form, $title = TRUE) {
+function summarize_element($form, $title = FALSE) {
   // Check to see if the form array contained a #summary.
   if (isset($form['#summary'])) {
     // If so, decide whether to display it with or without the element's #title.
@@ -83,14 +84,30 @@ function summarize_element($form, $title = TRUE) {
     switch ($form['#type']) {
       case 'fieldset':
         return array(
-          'data' => $form['#title'],
-          'children' => summarize_form($form),
+          array(
+            'data' => $form['#title'] .':',
+            'children' => summarize_form($form),
+          ),
         );
-  
+
       case 'textfield':
         return $form['#title'] .': '. check_plain($form['#default_value']);
-  
+
       case 'select':
+        if (!empty($form['#multiple']) and is_array($form['#default_value'])) {
+          $options = array();
+          foreach ($form['#default_value'] as $value) {
+            if (isset($form['#options'][$value])) {
+              $options[] = $form['#options'][$value];
+            }
+          }
+          // Return an item list of the selected options.
+          return array(array(
+            'data' => $form['#title'].':',
+            'children' => $options,
+          ));
+        }
+        // Else, fall through.
       case 'radios':
         return $form['#title'] .': '. $form['#options'][$form['#default_value']];
 
@@ -112,6 +129,24 @@ function summarize_element($form, $title = TRUE) {
   }
 }
 
+/**
+ * Return an empty summary string.
+ */
+function summarize_null($form) {
+  return array();
+}
+
+/**
+ * Return the correct summary string for a checkbox element based on its
+ *   current value.
+ *
+ * @param $true
+ *   The summary string to use if the checkbox has been checked.
+ * @param $false
+ *   The summary string to use if the checkbox has not been checked.
+ * @return
+ *   The correct supplied string based on the current value of the checkbox.
+ */
 function summarize_checkbox($form, $true, $false) {
   if ($form['#default_value']) {
     return $true;
@@ -122,25 +157,39 @@ function summarize_checkbox($form, $true, $false) {
 }
 
 /**
- * Summarizes the form pages that are children of the specified path.
+ * Summarize the form pages that are children of the specified path.
  *
  * @param $path
  *   The menu path to start from when checking for children forms.
  * @param $trim
  *   When set to TRUE, summary data will only be included in the return array
  *   when the summary actually has items.
+ * @param $only_parent
+ *   When set to TRUE, forms will only be included from the given $path,
+ *   no recursion will be done
  * @return
  *   An array of data representing a form page summary including keys for the
  *   page's 'path', and edit 'href', a summary 'title' and 'items'.
  */
-function summarize_child_form_pages($path, $trim = FALSE) {
+function summarize_child_form_pages($path, $trim = FALSE, $only_parent = FALSE) {
   $summaries = array();
 
   // Fetch and loop through any child menu items from the database.
-  $result = db_query("SELECT path FROM {menu_router} WHERE path LIKE '%s/%%' ORDER BY weight", $path);
+  $accessor = "LIKE '%s/%%'";
+
+  // If no_recur is TRUE, only look for the parent
+  if ($only_parent) {
+    $accessor = "= '%s'";
+  }
+
+  $result = db_query("SELECT path FROM {menu_router} WHERE path ". $accessor ." ORDER BY weight", $path);
 
   while ($row = db_fetch_array($result)) {
     $item = menu_get_item($row['path']);
+    // Only allow items the user can access.
+    if ($item['access'] === FALSE) {
+      continue;
+    }
 
     if ($item['page_callback'] == 'drupal_get_form') {
       if ($item['type'] == MENU_DEFAULT_LOCAL_TASK) {
@@ -165,7 +214,7 @@ function summarize_child_form_pages($path, $trim = FALSE) {
 
       if (!$trim || $trim && count($summary_items) > 0) {
         $summaries[] = array(
-          'path' => $item['path'],
+          'path' => url($item['path']),
           'href' => $href,
           'title' => $item['title'],
           'items' => $summary_items,
@@ -177,7 +226,27 @@ function summarize_child_form_pages($path, $trim = FALSE) {
   return $summaries;
 }
 
+/**
+ * Theme a summaries array into a handy div for use with some JS enhancement.
+ *
+ * @param $summaries
+ *   An array of summary arrays each containing the following keys:
+ *   - path - the path of the settings form the array is summarizing.
+ *   - title - the title of the settings form.
+ *   - href - the actual URL of the summary's form page.
+ *   - items - an array of items formatted for theme_item_list().
+ * @param $link
+ *   TRUE or FALSE indicating whether or not to display an edit icon linking to
+ *     the settings form the summary represents.
+ * @return
+ *   The HTML output of the summary.
+ * @ingroup themeable
+ */
 function theme_summary_overview($summaries, $link = TRUE) {
+  // Add some Ubercart specific JS for modifying summaries.
+  drupal_add_js(drupal_get_path('module', 'uc_store') .'/includes/summaries.js');
+  drupal_add_js(array('editIconPath' => base_path() . drupal_get_path('module', 'uc_store') .'/images/order_edit.gif'), 'setting');
+
   $output = '';
 
   foreach ($summaries as $summary) {
@@ -186,7 +255,7 @@ function theme_summary_overview($summaries, $link = TRUE) {
 
     // Add a div for the header containing the title and edit link.
     $output .= '<div class="summary-header"><span class="summary-title">'
-             . $summary['title'] .'</span>';
+             . check_plain($summary['title']) .': </span>';
 
     if ($link) {
       $output .= ' <span class="summary-link">'. l(t('edit'), $summary['href'])

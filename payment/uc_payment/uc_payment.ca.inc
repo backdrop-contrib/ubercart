@@ -16,9 +16,11 @@
  * Implementation of hook_ca_predicate().
  */
 function uc_payment_ca_predicate() {
+  $predicates = array();
+
   // Set the order status to "Payment Received" when a payment is received
   // and the balance is less than or equal to 0.
-  $configurations['uc_payment_received'] = array(
+  $predicates['uc_payment_received'] = array(
     '#title' => t('Update order status on full payment'),
     '#description' => t('Only happens when a payment is entered and the balance is <= $0.00.'),
     '#class' => 'payment',
@@ -67,9 +69,9 @@ function uc_payment_ca_predicate() {
 
   // Set the order status to "Completed" when checkout is complete, none
   // of the products are shippable, and the balance is less than or equal to 0.
-  $configurations['uc_checkout_complete'] = array(
-    '#title' => t('Update order status on completed checkout of non-shippable items'),
-    '#trigger' => 'uc_payment_entered',
+  $predicates['uc_checkout_complete_paid'] = array(
+    '#title' => t('Update order status upon checkout completion with full payment'),
+    '#trigger' => 'uc_checkout_complete',
     '#class' => 'payment',
     '#status' => 1,
     '#weight' => 1,
@@ -113,7 +115,7 @@ function uc_payment_ca_predicate() {
     ),
   );
 
-  return $configurations;
+  return $predicates;
 }
 
 /**
@@ -127,6 +129,10 @@ function uc_payment_ca_trigger() {
       'order' => array(
         '#entity' => 'uc_order',
         '#title' => t('Order'),
+      ),
+      'account' => array(
+        '#entity' => 'user',
+        '#title' => t('User'),
       ),
     ),
   );
@@ -169,14 +175,18 @@ function uc_payment_condition_order_balance($order, $settings) {
     case 'less_equal':
       return $balance <= .01;
     case 'equal':
-      return $balance < .01 and $balance > -.01;
+      return $balance < .01 && $balance > -.01;
     case 'greater':
       return $balance >= .01;
   }
 }
 
 function uc_payment_condition_order_balance_form($form_state, $settings = array()) {
-  $zero = array('!zero' => uc_currency_format(0));
+  $context = array(
+    'revision' => 'formatted',
+    'type' => 'amount',
+  );
+  $zero = array('!zero' => uc_price(0, $context));
   $options = array(
     'less' => t('Balance is less than !zero.', $zero),
     'less_equal' => t('Balance is less than or equal to !zero.', $zero),
@@ -192,10 +202,6 @@ function uc_payment_condition_order_balance_form($form_state, $settings = array(
   );
 
   return $form;
-}
-
-function uc_payment_condition_order_balance_submit($form, &$form_state) {
-  return array('balance_comparison' => $form_state['values']['balance_comparison']);
 }
 
 // Check the order payment method.
@@ -216,8 +222,4 @@ function uc_order_condition_payment_method_form($form_state, $settings = array()
   );
 
   return $form;
-}
-
-function uc_order_condition_payment_method_submit($form, &$form_state) {
-  return array('payment_method' => $form_state['values']['payment_method']);
 }

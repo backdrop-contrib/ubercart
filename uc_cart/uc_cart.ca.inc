@@ -3,17 +3,16 @@
 
 /**
  * @file
- * This file contains the Conditional Actions hooks and functions necessary to make the
- * cart related entity, conditions, events, and actions work.
+ * This file contains the Conditional Actions hooks and functions necessary to
+ * make the cart related entity, conditions, events, and actions work.
  */
-
 
 /******************************************************************************
  * Conditional Actions Hooks                                                  *
  ******************************************************************************/
 
 /**
- * Implmentation of hook_ca_condition().
+ * Implementation of hook_ca_condition().
  */
 function uc_cart_ca_condition() {
   $conditions['uc_cart_condition_product_class'] = array(
@@ -53,11 +52,74 @@ function uc_cart_ca_trigger() {
   return $triggers;
 }
 
+/**
+ * Implementation of hook_ca_predicate().
+ */
+function uc_cart_ca_predicate() {
+  $predicates = array();
+
+  // Setup a default predicate for customer checkout notifications.
+  $predicates['uc_checkout_customer_notification'] = array(
+    '#title' => t('E-mail customer checkout notification'),
+    '#description' => t('E-mail the customer an invoice from their recent order.'),
+    '#class' => 'notification',
+    '#status' => 1,
+    '#trigger' => 'uc_checkout_complete',
+    '#actions' => array(
+      array(
+        '#name' => 'uc_order_email_invoice',
+        '#title' => t('Send an e-mail to the customer'),
+        '#argument_map' => array(
+          'order' => 'order',
+        ),
+        '#settings' => array(
+          'from' => uc_store_email_from(),
+          'addresses' => '[order-email]',
+          'subject' => t('Your Order at [store-name]'),
+          'template' => 'customer',
+          'view' => 'checkout-mail',
+        ),
+      ),
+    ),
+  );
+
+  // Setup a default predicate for admin checkout notifications.
+  $predicates['uc_checkout_admin_notification'] = array(
+    '#title' => t('E-mail admin checkout notification'),
+    '#description' => t('E-mail a short order summary to an administrator when a customer checks out.'),
+    '#class' => 'notification',
+    '#status' => 1,
+    '#trigger' => 'uc_checkout_complete',
+    '#actions' => array(
+      array(
+        '#name' => 'uc_order_email_invoice',
+        '#title' => t('Send an e-mail to the administrator(s)'),
+        '#argument_map' => array(
+          'order' => 'order',
+        ),
+        '#settings' => array(
+          'from' => uc_store_email_from(),
+          'addresses' => variable_get('uc_store_email', ''),
+          'subject' => t('New Order at [store-name]'),
+          'template' => 'admin',
+          'view' => 'admin-mail',
+        ),
+      ),
+    ),
+  );
+
+  return $predicates;
+}
 
 /******************************************************************************
  * Condition Callbacks and Forms                                              *
  ******************************************************************************/
 
+/**
+ * Check that an order has a product of the selected class.
+ *
+ * @see uc_cart_condition_product_class_form()
+ */
 function uc_cart_condition_product_class($order, $settings) {
   $result = FALSE;
   $types = array();
@@ -83,23 +145,17 @@ function uc_cart_condition_product_class($order, $settings) {
   return $result;
 }
 
-function uc_cart_condition_product_class_form($settings = array()) {
-  $options = array();
-  $types = module_invoke_all('node_info');
-  $product_types = module_invoke_all('product_types');
-  foreach ($product_types as $id) {
-    $options[$id] = $types[$id]['name'];
-  }
+/**
+ * @see uc_cart_condition_product_class()
+ */
+function uc_cart_condition_product_class_form($form_state, $settings = array()) {
+  $form = array();
+
   $form['class'] = array('#type' => 'select',
     '#title' => t('Product class'),
-    '#options' => $options,
+    '#options' => uc_product_type_names(),
     '#default_value' => $settings['class'],
   );
 
   return $form;
 }
-
-function uc_cart_condition_product_class_submit($form_id, $form_values) {
-  return array('class' => $form_values['class']);
-}
-

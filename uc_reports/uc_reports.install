@@ -1,29 +1,31 @@
 <?php
 // $Id$
 
-function uc_reports_install() {
-  switch ($GLOBALS['db_type']) {
-    case 'mysqli':
-    case 'mysql':
-      break;
-    case 'pgsql':
-      db_query("CREATE OR REPLACE FUNCTION from_unixtime(integer) RETURNS timestamp AS 'SELECT $1::abstime::timestamp without time zone AS result' LANGUAGE 'SQL';");
-      db_query("CREATE OR REPLACE FUNCTION unix_timestamp() RETURNS integer AS 'SELECT ROUND(EXTRACT( EPOCH FROM abstime(now()) ))::int4 AS result;' LANGUAGE 'SQL';");
-      db_query("CREATE OR REPLACE FUNCTION unix_timestamp(timestamp with time zone) RETURNS integer AS 'SELECT ROUND(EXTRACT( EPOCH FROM ABSTIME($1) ))::int4 AS result;' LANGUAGE 'SQL';");
-      break;
-  }
-}
+/**
+ * @file
+ * Install hooks for uc_reports.module.
+ */
 
+/**
+ * Implementation of hook_uninstall().
+ */
 function uc_reports_uninstall() {
-  switch ($GLOBALS['db_type']) {
-    case 'mysqli':
-    case 'mysql':
-      break;
-    case 'pgsql':
-      db_query("DROP FUNCTION from_unixtime(integer);");
-      db_query("DROP FUNCTION unix_timestamp();");
-      db_query("DROP FUNCTION unix_timestamp(timestamp with time zone);");
-      break;
-  }
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_reports_%%'");
 }
 
+/**
+ * Drop the nasty pgsql-specific functions added for no discernible reason
+ * whatsoever!
+ */
+function uc_reports_update_6000() {
+  $ret = array();
+  if ($GLOBALS['db_type'] == 'pgsql') {
+    $ret[] = update_sql("DROP FUNCTION from_unixtime(integer);");
+    $ret[] = update_sql("DROP FUNCTION unix_timestamp();");
+    $ret[] = update_sql("DROP FUNCTION unix_timestamp(timestamp with time zone);");
+  }
+  else {
+    $ret[] = array('success' => TRUE, 'query' => 'Not using pgsql, skipping this update.');
+  }
+  return $ret;
+}

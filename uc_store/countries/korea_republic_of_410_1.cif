@@ -10,27 +10,28 @@ function korea_republic_of_install() {
   // VALUES = Country ID, Country Name, 2-digit Code, 3-digit Code, File Version
   db_query("INSERT INTO {uc_countries} VALUES (410, 'Korea, Republic of', 'KR', 'KOR', 1)");
 
-  // Make the entries in the zones table.  Use %d for the zone_id and the
-  // function uc_get_zone_ids($num) as the second argument for db_query() where
-  // $num is the number of zones in the INSERT query.
-  // VALUES = %d for ID, Parent Country ID, Zone Abbreviation, Zone Name
-  db_query("INSERT INTO {uc_zones} VALUES "
-          ."(%d, 410, 'CO', 'Ch''ungch''ong-bukto'),"
-          ."(%d, 410, 'CH', 'Ch''ungch''ong-namdo'),"
-          ."(%d, 410, 'CD', 'Cheju-do'),"
-          ."(%d, 410, 'CB', 'Cholla-bukto'),"
-          ."(%d, 410, 'CN', 'Cholla-namdo'),"
-          ."(%d, 410, 'IG', 'Inch''on-gwangyoksi'),"
-          ."(%d, 410, 'KA', 'Kangwon-do'),"
-          ."(%d, 410, 'KG', 'Kwangju-gwangyoksi'),"
-          ."(%d, 410, 'KD', 'Kyonggi-do'),"
-          ."(%d, 410, 'KB', 'Kyongsang-bukto'),"
-          ."(%d, 410, 'KN', 'Kyongsang-namdo'),"
-          ."(%d, 410, 'PG', 'Pusan-gwangyoksi'),"
-          ."(%d, 410, 'SO', 'Soul-t''ukpyolsi'),"
-          ."(%d, 410, 'TA', 'Taegu-gwangyoksi'),"
-          ."(%d, 410, 'TG', 'Taejon-gwangyoksi')",
-          uc_get_zone_ids(15));
+  // Make the entries in the zones table.
+  $zones = array(
+    array(410, 'CO', "Ch'ungch'ong-bukto"),
+    array(410, 'CH', "Ch'ungch'ong-namdo"),
+    array(410, 'CD', 'Cheju-do'),
+    array(410, 'CB', 'Cholla-bukto'),
+    array(410, 'CN', 'Cholla-namdo'),
+    array(410, 'IG', "Inch'on-gwangyoksi"),
+    array(410, 'KA', 'Kangwon-do'),
+    array(410, 'KG', 'Kwangju-gwangyoksi'),
+    array(410, 'KD', 'Kyonggi-do'),
+    array(410, 'KB', 'Kyongsang-bukto'),
+    array(410, 'KN', 'Kyongsang-namdo'),
+    array(410, 'PG', 'Pusan-gwangyoksi'),
+    array(410, 'SO', "Soul-t'ukpyolsi"),
+    array(410, 'TA', 'Taegu-gwangyoksi'),
+    array(410, 'TG', 'Taejon-gwangyoksi'),
+  );
+
+  foreach ($zones as $zone) {
+    db_query("INSERT INTO {uc_zones} (zone_country_id, zone_code, zone_name) VALUES (%d, '%s', '%s')", $zone);
+  }
 
   // Use uc_set_address_format() with the country ID as the first argument and
   // an address format string as the second.  Documentation on address formats
@@ -41,20 +42,3 @@ function korea_republic_of_install() {
    ."\r\n!city !zone_code !postal_code\r\n!country_name_if");
 }
 
-/**
- * If necessary, implement hook_update() with $version being the only argument.
- * Add a new case for each version update, and be sure to always include the
- * latest changes in the install function.
- */
-function austria_update($version) {
-}
-
-/**
- * If necessary, implement hook_uninstall().  This requires no argument.  The
- * store module automatically removes rows from the country and zones tables
- * related to the country, and it unsets the address format.  This function is
- * only necessary for other things you may have included in your country's
- * installation process.
- */
-function austria_uninstall() {
-}

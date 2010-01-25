@@ -1,26 +1,52 @@
 // $Id$
 
 /**
+ * @file
+ * Adds effects and behaviors to the cart block.
+ */
+
+/**
+ * Set the behavior to (un)collapse the cart block on a click
+ */
+Drupal.behaviors.ucCollapseBlock = function(context) {
+  $('.cart-block-title-bar:not(.ucCollapseBlock-processed)', context).addClass('ucCollapseBlock-processed').click(
+    function() {
+      cart_block_toggle();
+    }
+  );
+}
+
+/**
  * Collapse the shopping cart block at page load.
  */
-$(document).ready(function() {
-  if (collapsed_block == true) {
-    $('#block-cart-contents').hide(0);
+$(document).ready(
+  function() {
+    if (Drupal.settings.ucCollapsedBlock == true) {
+      // Add the appropriate title bar class.
+      $('.cart-block-title-bar').addClass('cart-block-toggle');
+
+      // Add the appropriate arrow class.
+      $('.cart-block-arrow').removeClass('arrow-down').addClass('arrow-up');
+    }
+    else {
+      // Add the appropriate arrow class.
+      $('.cart-block-arrow').removeClass('arrow-up').addClass('arrow-down');
+    }
   }
-  $('.cart-block-toggle').click(function() { cart_block_toggle(); } );
-});
+);
 
 /**
  * Toggle the shopping cart block open and closed.
  */
 function cart_block_toggle() {
-  $('#block-cart-contents').toggle();
+  // Toggle the display of the cart contents table.
+  $('#cart-block-contents').toggle();
 
-  isrc = $('#block-cart-title-arrow').attr('src');
-  if (isrc.toLowerCase().match("up") != null) {
-    $('#block-cart-title-arrow').attr('src', uc_cart_path + '/images/bullet-arrow-down.gif');
+  // Toggle the class of the cart block arrow.
+  if ($('.cart-block-arrow').hasClass('arrow-up')) {
+    $('.cart-block-arrow').removeClass('arrow-up').addClass('arrow-down');
   }
   else {
-    $('#block-cart-title-arrow').attr('src', uc_cart_path + '/images/bullet-arrow-up.gif');
+    $('.cart-block-arrow').removeClass('arrow-down').addClass('arrow-up');
   }
-}                                                                             
+}

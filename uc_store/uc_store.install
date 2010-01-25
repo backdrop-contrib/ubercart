@@ -1,13 +1,21 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * Install hooks for uc_store.module.
+ */
+
+/**
+ * Implementation of hook_schema().
+ */
 function uc_store_schema() {
   $schema = array();
 
   $schema['uc_countries'] = array(
     'fields' => array(
       'country_id' => array(
-        'type' => 'serial',
+        'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
@@ -40,10 +48,11 @@ function uc_store_schema() {
       ),
     ),
     'indexes' => array(
-      'uc_countries_country_name' => array('country_name'),
+      'country_name' => array('country_name'),
     ),
     'primary key' => array('country_id'),
   );
+
   $schema['uc_zones'] = array(
     'fields' => array(
       'zone_id' => array(
@@ -72,11 +81,12 @@ function uc_store_schema() {
       ),
     ),
     'indexes' => array(
-      'uc_zones_zone_code' => array('zone_code'),
-      'uc_zones_zone_country_id' => array('zone_country_id'),
+      'zone_code' => array('zone_code'),
+      'zone_country_id' => array('zone_country_id'),
     ),
     'primary key' => array('zone_id'),
   );
+
   $schema['uc_store_footers'] = array(
     'fields' => array(
       'path_hash' => array(
@@ -92,9 +102,15 @@ function uc_store_schema() {
     'primary key' => array('path_hash'),
   );
 
+  $schema['cache_uc_price'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_uc_price']['description'] = t('Cache table for Ubercart store prices.');
+
   return $schema;
 }
 
+/**
+ * Implementation of hook_install().
+ */
 function uc_store_install() {
   drupal_install_schema('uc_store');
   // Install United States and Canada by default.
@@ -105,57 +121,26 @@ function uc_store_install() {
   canada_install();
 }
 
+/**
+ * Implementation of hook_uninstall().
+ */
 function uc_store_uninstall() {
   drupal_uninstall_schema('uc_store');
 
   db_query("DELETE FROM {variable} WHERE name LIKE 'user_initials_%%'");
   db_query("DELETE FROM {variable} WHERE name LIKE 'uc_address_format_%%'");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_currency_%%'");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_store_%%'");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_weight_%%'");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_length_%%'");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_field_%%'");
 
-  variable_del('uc_store_prev_time');
-  variable_del('uc_store_site_id');
-  variable_del('uc_store_name');
-  variable_del('uc_store_owner');
-  variable_del('uc_store_email');
-  variable_del('uc_store_phone');
-  variable_del('uc_store_fax');
-  variable_del('uc_store_street1');
-  variable_del('uc_store_street2');
-  variable_del('uc_store_city');
-  variable_del('uc_store_zone');
-  variable_del('uc_store_postal_code');
-  variable_del('uc_store_country');
-  variable_del('uc_store_admin_page_display');
   variable_del('uc_customer_list_address');
-  variable_del('uc_currency_sign');
   variable_del('uc_sign_after_amount');
-  variable_del('uc_currency_thou');
-  variable_del('uc_currency_dec');
-  variable_del('uc_currency_prec');
-  variable_del('uc_weight_unit');
-  variable_del('uc_weight_format');
-  variable_del('uc_weight_format_lb');
-  variable_del('uc_weight_format_kg');
-  variable_del('uc_weight_format_oz');
-  variable_del('uc_weight_format_g');
-  variable_del('uc_length_unit');
-  variable_del('uc_length_format_in');
-  variable_del('uc_length_format_cm');
   variable_del('uc_date_format_default');
-  variable_del('uc_field_first_name');
-  variable_del('uc_field_last_name');
-  variable_del('uc_field_email');
-  variable_del('uc_field_phone');
-  variable_del('uc_field_company');
-  variable_del('uc_field_address');
-  variable_del('uc_field_street');
-  variable_del('uc_field_street1');
-  variable_del('uc_field_street2');
-  variable_del('uc_field_city');
-  variable_del('uc_field_zone');
-  variable_del('uc_field_country');
-  variable_del('uc_field_postal_code');
   variable_del('uc_address_fields');
   variable_del('uc_address_fields_required');
+  variable_del('uc_footer_message');
 }
 
 function uc_store_update_1() {
@@ -187,9 +172,9 @@ function uc_store_update_2() {
       $ret[] = update_sql("ALTER TABLE {uc_countries} CHANGE country_id country_id MEDIUMINT(11) NOT NULL");
     break;
     case 'pgsql':
-      db_change_column($ret, 'uc_zones', 'zone_id', 'zone_id', 'integer', array('not null' => true, 'default' => 0));
-      db_change_column($ret, 'uc_zones', 'zone_name', 'zone_name', 'varchar(255) CHARACTER SET utf8', array('not null' => true, 'default' => ''));
-      db_change_column($ret, 'uc_countries', 'country_id', 'country_id', 'integer', array('not null' => true, 'default' => 0));
+      db_change_column($ret, 'uc_zones', 'zone_id', 'zone_id', 'integer', array('not null' => TRUE, 'default' => 0));
+      db_change_column($ret, 'uc_zones', 'zone_name', 'zone_name', 'varchar(255) CHARACTER SET utf8', array('not null' => TRUE, 'default' => "''"));
+      db_change_column($ret, 'uc_countries', 'country_id', 'country_id', 'integer', array('not null' => TRUE, 'default' => 0));
     break;
   }
 
@@ -248,3 +233,91 @@ function uc_store_update_4() {
 
   return array();
 }
+
+function uc_store_update_6000() {
+  $ret = array();
+
+  db_drop_primary_key($ret, 'uc_countries');
+  db_change_field($ret, 'uc_countries', 'country_id', 'country_id', array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE), array('primary key' => array('country_id')));
+
+  db_drop_primary_key($ret, 'uc_zones');
+  db_drop_index($ret, 'uc_zones', 'zone_country_id');
+  db_change_field($ret, 'uc_zones', 'zone_id', 'zone_id', array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE), array('primary key' => array('zone_id')));
+  db_change_field($ret, 'uc_zones', 'zone_country_id', 'zone_country_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0), array('indexes' => array('zone_country_id' => array('zone_country_id'))));
+
+  return $ret;
+}
+
+function uc_store_update_6001() {
+  $ret = array();
+
+  $schema['cache_uc_price'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_uc_price']['description'] = t('Cache table for Ubercart store prices.');
+
+  db_create_table($ret, 'cache_uc_price', $schema['cache_uc_price']);
+  return $ret;
+}
+
+/**
+ * Disable uc_recurring.
+ */
+function uc_store_update_6002() {
+  $ret = array();
+
+  // UC Recurring was moved from core to http://drupal.org/project/uc_recurring.
+  // This will check for its existence and disable it, instructing the user to
+  // download and install the module from there.
+  module_disable(array('uc_recurring'));
+  $ret[] = array('success' => TRUE, 'query' => t("The Recurring Fees module was removed from core between Ubercart 2.0-rc1 and 2.0-rc2. If you were using it, it has been disabled and should be removed from your ubercart/payment directory if the old verion remains. You may continue using the module by downloading and installing the latest <a href=\"http://drupal.org/project/uc_recurring\">UC Recurring 6.x-1.x</a> release from drupal.org.  New features for the module will be developed in the contributed version of the module starting with the 6.x-2.x branch."));
+
+  return $ret;
+}
+
+function uc_store_update_6003() {
+  $ret = array();
+
+  // Copy value of uc_notify_store_help_page into uc_store_help_page
+  variable_set('uc_store_help_page', variable_get('uc_notify_store_help_page', ''));
+
+  // Remove old variable uc_notify_store_help_page
+  variable_del('uc_notify_store_help_page');
+
+  $ret[] = array('success' => TRUE, 'query' => t("'uc_notify_store_help_page' renamed to 'uc_store_help_page' in variable table"));
+  return $ret;
+}
+
+/**
+ * Remove broken statistics reporting.
+ */
+function uc_store_update_6004() {
+  $ret = array();
+
+  variable_del('uc_store_last_report');
+  variable_del('uc_store_report');
+  variable_del('uc_store_site_id');
+
+  $ret[] = array('success' => TRUE, 'query' => 'Removed broken statistics reporting.');
+
+  return $ret;
+}
+
+/**
+ * Remove auto-increment from uc_countries.country_id.
+ */
+function uc_store_update_6005() {
+  $ret = array();
+
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_change_field($ret, 'uc_countries', 'country_id', 'country_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE));
+      break;
+    case 'pgsql':
+      db_drop_primary_key($ret, 'uc_countries');
+      db_change_field($ret, 'uc_countries', 'country_id', 'country_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE), array('primary key' => array('country_id')));
+      break;
+  }
+
+  return $ret;
+}
+

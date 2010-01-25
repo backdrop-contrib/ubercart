@@ -27,14 +27,25 @@ function uc_checkout_pane_cart($op) {
     case 'review':
       $items = uc_cart_get_contents();
       $output = '<table>';
+      $context = array(
+        'revision' => 'themed',
+        'type' => 'cart_item',
+        'subject' => array(),
+      );
       foreach ($items as $item) {
-        $rows = array();
-        foreach ($item->options as $option) {
-          $rows[] = t('@attribute: @option', array('@attribute' => $option['attribute'], '@option' => $option['name']));
-        }
-        $desc = check_plain($item->title) . theme('item_list', $rows, NULL, 'ul', array('class' => 'product-options'));
-        $output .= '<tr valign="top"><td>'. $item->qty .'x</td><td width="100%">'. $desc
-                  .'</td><td nowrap="nowrap">'. uc_currency_format($item->price * $item->qty) .'</td></tr>';
+        $desc = check_plain($item->title) . uc_product_get_description($item);
+
+        $price_info = array(
+          'price' => $item->price,
+          'qty' => $item->qty,
+        );
+        $context['subject'] = array(
+          'cart' => $items,
+          'cart_item' => $item,
+          'node' => node_load($item->nid),
+        );
+        $output .= '<tr valign="top"><td>'. $item->qty .'&times;</td><td width="100%">'. $desc
+                  .'</td><td nowrap="nowrap">'. uc_price($price_info, $context) .'</td></tr>';
       }
       $output .= '</table>';
       $review[] = $output;
@@ -124,7 +135,7 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
       return array('description' => $description, 'contents' => $contents);
 
     case 'process':
-      if (!valid_email_address($arg2['primary_email'])) {
+      if (!empty($arg2['primary_email']) && !valid_email_address($arg2['primary_email'])) {
         drupal_set_message(t('You must enter a valid e-mail address.'), 'error');
         return FALSE;
       }
@@ -163,7 +174,7 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
           }
           // Validate the password.
           if (variable_get('uc_cart_new_account_password', FALSE)) {
-            if ($arg2['new_account']['pass'] != $arg2['new_account']['pass_confirm']) {
+            if (strcmp($arg2['new_account']['pass'], $arg2['new_account']['pass_confirm'])) {
               drupal_set_message(t('The passwords you entered did not match. Please try again.'), 'error');
               return FALSE;
             }
@@ -184,7 +195,7 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
     case 'settings':
       $form['uc_cart_email_validation'] = array(
         '#type' => 'checkbox',
-        '#title' => t('Require e-mail validation for anonymous customers.'),
+        '#title' => t('Require e-mail confirmation in checkout for anonymous customers.'),
         '#default_value' => variable_get('uc_cart_email_validation', FALSE),
       );
       $form['uc_cart_new_account_name'] = array(
@@ -423,7 +434,14 @@ function uc_checkout_pane_comments($op, &$arg1, $arg2) {
   }
 }
 
-// Theme the delivery/billing address forms in tables.
+/**
+ * Theme the delivery/billing address forms in tables.
+ *
+ * @ingroup themeable
+ * @see
+ *   uc_checkout_pane_delivery()
+ *   uc_checkout_pane_billing()
+ */
 function theme_address_pane($form) {
   $req = '<span class="form-required">*</span>';
 
@@ -538,48 +556,72 @@ function _checkout_pane_data($pane_id, $key) {
   }
 }
 
+/**
+ * Format the cart contents table on the checkout page.
+ *
+ * @param $show_subtotal
+ *   TRUE or FALSE indicating if you want a subtotal row displayed in the table.
+ * @return
+ *   The HTML output for the cart review table.
+ *
+ * @ingroup themeable
+ */
 function theme_cart_review_table($show_subtotal = TRUE) {
-  $items = uc_cart_get_contents();
   $subtotal = 0;
 
-  $output = '<table class="cart-review"><thead>'
-           .'<tr class="first last odd"><td class="first odd qty">'. t('Qty')
-           .'</td><td class="even products">'. t('Products')
-           .'</td><td class="last odd price">'. t('Price')
-           .'</td></tr></thead><tbody>';
+  // Set up table header.
+  $header = array(
+    array('data' => t('Qty'), 'class' => 'qty'),
+    array('data' => t('Products'), 'class' => 'products'),
+    array('data' => t('Price'), 'class' => 'price'),
+  );
 
-  $row = 1;
-  for ($i = 0; $i < count($items); $i++) {
-    $item = $items[$i];
+  $context = array();
 
-    $rows = array();
-    foreach ($item->options as $option) {
-      // $rows[] = $option['attribute'] .': '. $option['name'];
-      $rows[] = t('@attribute: @option', array('@attribute' => $option['attribute'], '@option' => $option['name']));
-    }
-    $desc = check_plain($item->title) . theme('item_list', $rows, NULL, 'ul', array('class' => 'product-options'));
+  // Set up table rows.
+  $contents = uc_cart_get_contents();
+  foreach ($contents as $item) {
+    $price_info = array(
+      'price' => $item->price,
+      'qty' => $item->qty,
+    );
 
-    $total = ($item->qty) ? $item->qty * $item->price : $item->price;
+    $context['revision'] = 'altered';
+    $context['type'] = 'cart_item';
+    $context['subject'] = array(
+      'cart' => $contents,
+      'cart_item' => $item,
+      'node' => node_load($item->nid),
+    );
+
+    $total = uc_price($price_info, $context);
     $subtotal += $total;
-    $qty = ($item->qty) ? $item->qty : '';
-    $tr_class = ($i % 2 == 0) ? 'even' : 'odd';
-    if ($show_subtotal && $i == count($items)) {
-      $tr_class .= ' last';
-    }
 
-    $output .= '<tr class="'. $tr_class .'"><td class="qty">'
-             . t('!qtyx', array('!qty' => $qty)) .'</td><td class="products">'
-             . $desc .'</td><td class="price">'. uc_currency_format($total)
-              .'</td></tr>';
+    $description = check_plain($item->title) . uc_product_get_description($item);
+
+    // Remove node from context to prevent the price from being altered.
+    $context['revision'] = 'themed-original';
+    $context['type'] = 'amount';
+    unset($context['subject']);
+    $rows[] = array(
+      array('data' => t('@qty&times;', array('@qty' => $item->qty)), 'class' => 'qty'),
+      array('data' => $description, 'class' => 'products'),
+      array('data' => uc_price($total, $context), 'class' => 'price'),
+    );
   }
+
+  // Add the subtotal as the final row.
   if ($show_subtotal) {
-    $tr_class = ($tr_class == 'even') ? 'odd' : 'even';
-    $output .= '<tr class="'. $tr_class .' last"><td class="subtotal" '
-              .'colspan="4"><span id="subtotal-title">'. t('Subtotal:')
-              .'</span> '. uc_currency_format($subtotal) .'</td></tr>';
+    $context = array(
+      'revision' => 'themed-original',
+      'type' => 'amount',
+    );
+    $rows[] = array(
+      'data' => array(array('data' => '<span id="subtotal-title">' . t('Subtotal:') . '</span> ' . uc_price($subtotal, $context), 'colspan' => 3, 'class' => 'subtotal')),
+      'class' => 'subtotal',
+    );
   }
-  $output .= '</tbody></table>';
 
-  return $output;
+  return theme('table', $header, $rows, array('class' => 'cart-review'));
 }
 

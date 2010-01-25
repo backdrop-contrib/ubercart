@@ -1,6 +1,14 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * Install hooks for uc_shipping.module.
+ */
+
+/**
+ * Implementation of hook_schema().
+ */
 function uc_shipping_schema() {
   $schema = array();
 
@@ -171,8 +179,8 @@ function uc_shipping_schema() {
       ),
       'cost' => array(
         'type' => 'numeric',
-        'precision' => 10,
-        'scale' => 2,
+        'precision' => 16,
+        'scale' => 5,
         'not null' => TRUE,
         'default' => 0.0,
       ),
@@ -207,17 +215,14 @@ function uc_shipping_schema() {
       ),
       'length' => array(
         'type' => 'float',
-        'unsigned' => TRUE,
         'not null' => FALSE,
       ),
       'width' => array(
         'type' => 'float',
-        'unsigned' => TRUE,
         'not null' => FALSE,
       ),
       'height' => array(
         'type' => 'float',
-        'unsigned' => TRUE,
         'not null' => FALSE,
       ),
       'length_units' => array(
@@ -227,10 +232,10 @@ function uc_shipping_schema() {
       ),
       'value' => array(
         'type' => 'numeric',
-        'precision' => 10,
-        'scale' => 2,
-        'unsigned' => TRUE,
+        'precision' => 16,
+        'scale' => 5,
         'not null' => FALSE,
+        'default' => 0.0,
       ),
       'sid' => array(
         'type' => 'int',
@@ -278,10 +283,16 @@ function uc_shipping_schema() {
   return $schema;
 }
 
+/**
+ * Implementation of hook_install().
+ */
 function uc_shipping_install() {
   drupal_install_schema('uc_shipping');
 }
 
+/**
+ * Implementation of hook_uninstall().
+ */
 function uc_shipping_uninstall() {
   drupal_uninstall_schema('uc_shipping');
 }
@@ -294,7 +305,7 @@ function uc_shipping_update_1() {
       $ret[] = update_sql("ALTER TABLE {uc_packages} CHANGE units length_units varchar(255) NULL");
     break;
     case 'pgsql':
-      db_change_column($ret, 'uc_packages', 'units', 'length_units', 'varchar(255)', array('not null' => false));
+      db_change_column($ret, 'uc_packages', 'units', 'length_units', 'varchar(255)', array('not null' => FALSE));
     break;
   }
   return $ret;
@@ -304,3 +315,90 @@ function uc_shipping_update_1() {
   // Abortive attempt at rearranging package_ids and order_product_ids.
   // Leaving this here as a reminder to start the next update at "3".
 //}
+
+function uc_shipping_update_6000() {
+  $ret = array();
+
+  db_drop_primary_key($ret, 'uc_shipments');
+  db_change_field($ret, 'uc_shipments', 'sid', 'sid', array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE), array('primary key' => array('sid')));
+  db_change_field($ret, 'uc_shipments', 'order_id', 'order_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+
+  db_drop_primary_key($ret, 'uc_packages');
+  db_change_field($ret, 'uc_packages', 'package_id', 'package_id', array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE), array('primary key' => array('package_id')));
+  db_change_field($ret, 'uc_packages', 'order_id', 'order_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_packages', 'value', 'value', array('type' => 'numeric', 'precision' => 10, 'scale' => 2, 'unsigned' => TRUE, 'not null' => FALSE));
+  db_change_field($ret, 'uc_packages', 'sid', 'sid', array('type' => 'int', 'unsigned' => TRUE, 'not null' => FALSE));
+
+  db_drop_primary_key($ret, 'uc_packaged_products');
+  db_change_field($ret, 'uc_packaged_products', 'package_id', 'package_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_packaged_products', 'order_product_id', 'order_product_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+  db_add_primary_key($ret, 'uc_packaged_products', array('package_id', 'order_product_id'));
+
+  return $ret;
+}
+
+function uc_shipping_update_6001() {
+  $ret = array();
+
+  if (db_column_exists('uc_packages', 'values')) {
+    if ($GLOBALS['db_type'] == 'mysql' || $GLOBALS['db_type'] == 'mysqli') {
+      $field = '`values`';
+    }
+    else {
+      $field = 'values';
+    }
+    db_change_field($ret, 'uc_packages', $field, 'value', array('type' => 'numeric', 'precision' => 10, 'scale' => 2, 'unsigned' => TRUE, 'not null' => FALSE));
+  }
+
+  return $ret;
+}
+
+function uc_shipping_update_6002() {
+  $ret = array();
+
+  db_change_field($ret, 'uc_packages', 'value', 'value', array('type' => 'numeric', 'precision' => 10, 'scale' => 2, 'not null' => FALSE));
+
+  return $ret;
+}
+
+function uc_shipping_update_6003() {
+  $ret = array();
+
+  db_change_field($ret, 'uc_shipments', 'cost', 'cost', array('type' => 'numeric', 'precision' => 15, 'scale' => 3, 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_packages', 'value', 'value', array('type' => 'numeric', 'precision' => 15, 'scale' => 3, 'not null' => FALSE));
+
+  return $ret;
+}
+
+/**
+ * Change to signed floats for package dimensions.
+ */
+function uc_shipping_update_6004() {
+  $ret = array();
+
+  $schema = array(
+    'float_spec' => array(
+      'type' => 'float',
+      'not null' => TRUE,
+      'default' => 0.0,
+    ),
+  );
+  db_change_field($ret, 'uc_packages', 'length', 'length', $schema['float_spec'] + array('description' => t('Physical length of the packaging.')));
+  db_change_field($ret, 'uc_packages', 'width', 'width', $schema['float_spec'] + array('description' => t('Physical width of the packaging.')));
+  db_change_field($ret, 'uc_packages', 'height', 'height', $schema['float_spec'] + array('description' => t('Physical height of the packaging.')));
+
+  return $ret;
+}
+
+/**
+ * Change currency fields to numeric(16,5).
+ */
+function uc_shipping_update_6005() {
+  $ret = array();
+
+  db_change_field($ret, 'uc_shipments', 'cost', 'cost', array('type' => 'numeric', 'precision' => 16, 'scale' => 5, 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_packages', 'value', 'value', array('type' => 'numeric', 'precision' => 16, 'scale' => 5, 'not null' => FALSE));
+
+  return $ret;
+}
+

@@ -1,12 +1,31 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * Checkout pane functions for uc_payment.module.
+ *
+ * The checkout pane holds form to select the payment method. It also shows a
+ * preview of the line items and order total.
+ */
+
 function uc_checkout_pane_payment($op, &$arg1, $arg2) {
   switch ($op) {
     case 'view':
+      // Add the default payment message as a JS variable.
+      // Add URL paths as JS variables (be nice to i18n, allow URL rewrite).
+      drupal_add_js(array(
+        'defPaymentMsg' => addslashes(variable_get('uc_default_payment_msg', t('Continue with checkout to complete payment.'))),
+        'ucURL' => array(
+          'adminOrders' => url('admin/store/orders/'),
+          'checkoutPaymentDetails' => url('cart/checkout/payment_details/'),
+          'checkoutLineItems' => url('cart/checkout/line_items'),
+          'creditCardCVVInfo' => url('cart/checkout/credit/cvv_info'),
+        ),
+      ), 'setting');
+
       if (variable_get('uc_payment_show_order_total_preview', TRUE)) {
-        uc_add_js('misc/progress.js');
-        uc_add_js("var def_payment_msg = '". addslashes(variable_get('uc_default_payment_msg', t('Continue with checkout to complete payment.'))) ."';", 'inline');
+        drupal_add_js('misc/progress.js');
 
         $contents['current_total'] = array(
           '#type' => 'hidden',
@@ -16,10 +35,10 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
           '#value' => '<div style="padding: .5em 1em; margin-bottom: 1em; border: dashed 1px #bbb;" id="line-items-div"><em>'. t('Javascript must be enabled to view the order total preview.') .'</em></div>',
           '#weight' => -20,
         );
-        uc_add_js("\$(document).ready(function() { show_progressBar('#line-items-div'); } );", 'inline');
-      }
 
-      $description = t('Select a payment method from the following options.');
+        // let the script know we need to show a progressbar
+        drupal_add_js(array('ucShowProgressBar' => TRUE), 'setting');
+      }
 
       $methods = _payment_method_list();
 
@@ -38,6 +57,13 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
         }
       }
 
+      if (count($options) > 1) {
+        $description = t('Select a payment method from the following options.');
+      }
+      else {
+        $description = '';
+      }
+
       $contents['payment_method'] = array(
         '#type' => 'radios',
         '#title' => t('Payment method'),
@@ -45,7 +71,7 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
         '#default_value' => $default,
         '#disabled' => count($options) == 1 ? TRUE : FALSE,
         '#required' => TRUE,
-        '#attributes' => array('onclick' => "get_payment_details('cart/checkout/payment_details/' + this.value);"),
+        '#attributes' => array('onclick' => "get_payment_details(Drupal.settings.ucURL.checkoutPaymentDetails + this.value);"),
         '#theme' => 'uc_payment_method_select',
       );
       $contents['details'] = array(
@@ -83,8 +109,17 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
         }
       }
       usort($line_items, 'uc_weight_sort');
+
+      $context = array(
+        'revision' => 'themed',
+        'type' => 'line_item',
+        'subject' => array(
+          'order' => $arg1,
+        ),
+      );
       foreach ($line_items as $line_item) {
-        $review[] = array('title' => $line_item['title'], 'data' => uc_currency_format($line_item['amount']));
+        $context['subject']['line_item'] = $line_item;
+        $review[] = array('title' => $line_item['title'], 'data' => uc_price($line_item['amount'], $context));
       }
       $review_data = _payment_method_data($arg1->payment_method, 'review');
       if (empty($review_data)) {
@@ -123,7 +158,7 @@ function theme_uc_payment_method_select($form) {
 
   // Perhaps instead this should be a normal JS function and we just print the
   // default payment method to a JS variable or use a selector.  -RS
-  uc_add_js("\$(document).ready( function () { init_payment_details('". $form['#default_value'] ."'); } );", 'inline');
+  drupal_add_js(array('ucDefaultPayment' => $form['#default_value']), 'setting');
 
   return drupal_render($form);
 }

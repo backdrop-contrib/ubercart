@@ -40,12 +40,16 @@ function test_gateway_charge($order_id, $amount, $data) {
     $success = TRUE;
   }
 
-  // Uncomment this lines to see the order object.  The information for the 
+  // Uncomment this lines to see the order object.  The information for the
   // payment is in the $order->payment_details array.
-  // drupal_set_message('<pre>'. print_r($order->payment_details, true) .'</pre>');
+  // drupal_set_message('<pre>'. print_r($order->payment_details, TRUE) .'</pre>');
 
   if ($success) {
-    $message = t('Credit card charged: !amount', array('!amount' => uc_currency_format($amount)));
+    $context = array(
+      'revision' => 'formatted-original',
+      'type' => 'amount',
+    );
+    $message = t('Credit card charged: !amount', array('!amount' => uc_price($amount, $context)));
     uc_order_comment_save($order_id, $user->uid, $message, 'admin');
   }
   else {

@@ -6,7 +6,12 @@
  * This is a demonstration module for the new conditional actions API.
  */
 
-require_once('ca.inc');
+/**
+ * The Drupal menu path to Conditional Actions pages.
+ */
+define('CA_UI_PATH', 'admin/store/ca');
+
+require_once('ca.ca.inc');
 
 /*******************************************************************************
  * Drupal Hooks
@@ -16,58 +21,108 @@ require_once('ca.inc');
  * Implementation of hook_menu().
  */
 function ca_menu() {
-  $items['admin/settings/ca'] = array(
+  $items = array();
+
+  $items[CA_UI_PATH] = array(
     'title' => 'Conditional actions',
     'description' => 'Administer the predicates setup to automate your store.',
     'page callback' => 'ca_admin',
     'access arguments' => array('administer conditional actions'),
     'file' => 'ca.admin.inc',
+    'weight' => 5,
   );
-  $items['admin/settings/ca/overview'] = array(
+  $items[CA_UI_PATH .'/overview'] = array(
     'title' => 'Overview',
     'weight' => 0,
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  $items['admin/settings/ca/add'] = array(
+  $items[CA_UI_PATH .'/overview/trigger'] = array(
+    'title' => 'By trigger',
+    'description' => 'Administer the predicates setup to automate your store.',
+    'weight' => 0,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items[CA_UI_PATH .'/overview/class'] = array(
+    'title' => 'By class',
+    'description' => 'Administer the predicates setup to automate your store.',
+    'page callback' => 'ca_admin',
+    'page arguments' => array('class'),
+    'access arguments' => array('administer conditional actions'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 5,
+    'file' => 'ca.admin.inc',
+  );
+  $items[CA_UI_PATH .'/add'] = array(
     'title' => 'Add a predicate',
     'description' => 'Allows an administrator to create a new predicate.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ca_predicate_meta_form', '0'),
     'access arguments' => array('administer conditional actions'),
+    'type' => MENU_LOCAL_TASK,
     'weight' => 5,
     'file' => 'ca.admin.inc',
-    'type' => MENU_LOCAL_TASK,
   );
-  $items['admin/settings/ca/%/edit'] = array(
-    'title' => 'Edit predicate meta data',
+  $items[CA_UI_PATH .'/convert'] = array(
+    'title' => 'Convert configurations',
+    'description' => 'Convert Workflow-ng configurations into Conditional Actions predicates.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ca_conversion_form'),
+    'access callback' => 'ca_convert_configurations_access',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 10,
+    'file' => 'ca.admin.inc',
+  );
+  $items[CA_UI_PATH .'/%/edit'] = array(
+    'title' => 'Edit predicate',
+    'description' => "Edit a predicate's meta data, conditions, and actions.",
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ca_predicate_meta_form', 3),
+    'access arguments' => array('administer conditional actions'),
+    'file' => 'ca.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+  $items[CA_UI_PATH .'/%/edit/meta'] = array(
+    'title' => 'Meta data',
     'description' => 'Edit the meta data for a predicate like title, trigger, etc.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ca_predicate_meta_form', 3),
     'access arguments' => array('administer conditional actions'),
     'file' => 'ca.admin.inc',
-    'type' => MENU_CALLBACK,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
   );
-  $items['admin/settings/ca/%/reset'] = array(
-    'title' => t('Reset a predicate'),
+  $items[CA_UI_PATH .'/%/edit/conditions'] = array(
+    'title' => 'Conditions',
+    'description' => 'Edit the conditions for a predicate.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ca_conditions_form', 3),
+    'access arguments' => array('administer conditional actions'),
+    'file' => 'ca.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -5,
+  );
+  $items[CA_UI_PATH .'/%/edit/actions'] = array(
+    'title' => 'Actions',
+    'description' => 'Edit the actions for a predicate.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ca_actions_form', 3),
+    'access arguments' => array('administer conditional actions'),
+    'file' => 'ca.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 0,
+  );
+  $items[CA_UI_PATH .'/%/reset'] = array(
+    'title' => 'Reset a predicate',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ca_predicate_delete_form', 3),
     'access arguments' => array('administer conditional actions'),
     'file' => 'ca.admin.inc',
     'type' => MENU_CALLBACK,
   );
-  $items['admin/settings/ca/%/delete'] = array(
+  $items[CA_UI_PATH .'/%/delete'] = array(
     'title' => 'Delete a predicate',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ca_predicate_delete_form', 3),
-    'access arguments' => array('administer conditional actions'),
-    'file' => 'ca.admin.inc',
-    'type' => MENU_CALLBACK,
-  );
-  $items['admin/settings/ca/%/conditions'] = array(
-    'title' => 'Edit predicate conditions',
-    'description' => "Edit a predicate's conditions.",
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('ca_predicate_meta_form', 3),
     'access arguments' => array('administer conditional actions'),
     'file' => 'ca.admin.inc',
     'type' => MENU_CALLBACK,
@@ -77,122 +132,17 @@ function ca_menu() {
 }
 
 /**
+ * Determine access to the configuration conversion form.
+ */
+function ca_convert_configurations_access() {
+  return user_access('administer conditional actions') && variable_get('ca_show_conversion_tab', TRUE);
+}
+
+/**
  * Implementation of hook_perm().
  */
 function ca_perm() {
   return array('administer conditional actions');
-}
-
-/*******************************************************************************
- * Conditional Actions Hooks
- ******************************************************************************/
-
-function ca_ca_entity() {
-  $entities = array();
-
-  $entities['user'] = array(
-    '#title' => t('Drupal user'),
-    '#type' => 'object',
-    '#load' => 'user_load',
-    '#save' => 'user_save',
-  );
-
-  return $entities;
-}
-
-/**
- * Implementation of hook_ca_action().
- */
-function ca_ca_action() {
-  $actions['ca_drupal_set_message'] = array(
-    '#title' => t('Display a message to the user'),
-    '#category' => t('Drupal'),
-    '#callback' => 'ca_action_drupal_set_message',
-    '#arguments' => array(),
-  );
-
-  return $actions;
-}
-
-/**
- * Implementation of hook_ca_predicate().
- */
-function ca_ca_predicate() {
-  $predicates = array();
-
-  $predicates['complain_payment_not_enough'] = array(
-    '#title' => t('Ask for more money.'),
-    '#description' => t('Displays a message when a payment is recieved, but the total is > $0.00.'),
-    '#class' => 'payment',
-    '#status' => 0,
-    '#trigger' => 'uc_payment_entered',
-    '#conditions' => array(
-      '#operator' => 'AND',
-      '#conditions' => array(
-        array(
-          '#name' => 'uc_order_balance',
-          '#title' => 'If the balance is greater than $0.00.',
-          '#argument_map' => array(
-            'order' => 'order',
-          ),
-          '#settings' => array(
-            'negate' => FALSE,
-            'balance_comparison' => 'greater',
-          ),
-        ),
-        array(
-          '#name' => 'uc_order_status',
-          '#title' => 'If the order status is not already Payment Received.',
-          '#argument_map' => array(
-            'order' => 'order',
-          ),
-          '#settings' => array(
-            'negate' => TRUE,
-            'order_status' => 'payment_received',
-          ),
-        ),
-        array(
-          '#operator' => 'OR',
-          '#conditions' => array(
-            array(
-              '#name' => 'uc_order_payment_method',
-              '#title' => 'If the payment method is not Check.',
-              '#argument_map' => array(
-                'order' => 'order',
-              ),
-              '#settings' => array(
-                'negate' => FALSE,
-                'payment_method' => 'check',
-              ),
-            ),
-            array(
-              '#name' => 'uc_order_payment_method',
-              '#title' => 'If the payment method is not COD.',
-              '#argument_map' => array(
-                'order' => 'order',
-              ),
-              '#settings' => array(
-                'negate' => FALSE,
-                'payment_method' => 'cod',
-              ),
-            ),
-          ),
-        ),
-      ),
-    ),
-    '#actions' => array(
-      array(
-        '#name' => 'ca_drupal_set_message',
-        '#title' => 'Ask the customer to pay more money.',
-        '#settings' => array(
-          'message_type' => 'status',
-          'message_text' => 'Pay more money, yo!',
-        ),
-      ),
-    ),
-  );
-
-  return $predicates;
 }
 
 
@@ -201,12 +151,12 @@ function ca_ca_predicate() {
  ******************************************************************************/
 
 /**
- * Pulls a trigger and evaluates any predicates associated with that trigger.
+ * Pull a trigger and evaluate any predicates associated with that trigger.
  *
  * @param ...
- *   Accepts a variable number of arguments.  The first should always be the
- *     string name of the trigger to pull with any additional arguments being
- *     the arguments expected by the trigger and used for evaluation.
+ *   Accepts a variable number of arguments. The first should always be the
+ *   string name of the trigger to pull with any additional arguments being
+ *   the arguments expected by the trigger and used for evaluation.
  * @return
  *   TRUE or FALSE indicating if at least one predicate was evaluated.
  */
@@ -214,11 +164,11 @@ function ca_pull_trigger() {
   $args = func_get_args();
   $trigger = array_shift($args);
 
-  // Load all the triggers.
-  $triggers = module_invoke_all('ca_trigger');
+  // Load the data for the specified trigger.
+  $trigger_data = ca_load_trigger($trigger);
 
   // Fail if the specified trigger doesn't exist.
-  if (!is_array($triggers[$trigger])) {
+  if (!$trigger_data) {
     return FALSE;
   }
 
@@ -231,7 +181,7 @@ function ca_pull_trigger() {
   }
 
   // Prepare the arguments for evaluation.
-  $arguments = ca_parse_trigger_args($triggers[$trigger], $args);
+  $arguments = ca_parse_trigger_args($trigger_data, $args);
 
   // Fail if we didn't receive the right type of or enough arguments.
   if (!$arguments) {
@@ -251,7 +201,7 @@ function ca_pull_trigger() {
 }
 
 /**
- * Parses the argument array into a CA friendly array for the trigger.
+ * Parse the argument array into a CA friendly array for the trigger.
  *
  * @param $trigger
  *   The name of the trigger for which we are parsing the arguments.
@@ -291,21 +241,17 @@ function ca_parse_trigger_args($trigger, $args) {
 }
 
 /**
- * Loads predicates based on the specified parameters.
+ * Load predicates based on the specified parameters.
  *
  * @param $trigger
  *   The name of the trigger for which to search when loading the predicates.
  * @param $all
  *   FALSE by default, specifies whether we want to load all possible predicates
- *     or only those that are active (status > 0).
+ *   or only those that are active (status > 0).
  * @return
  *   An array of predicates.
  */
 function ca_load_trigger_predicates($trigger, $all = FALSE) {
-  // Trigger actions can pull other triggers. Lock predicates when they are
-  // marked for evaluation so they can't be evaluated again.
-  static $locked = array();
-
   // Load all the module defined predicates.
   $predicates = module_invoke_all('ca_predicate');
 
@@ -321,18 +267,8 @@ function ca_load_trigger_predicates($trigger, $all = FALSE) {
     if (!$all && $value['#status'] <= 0) {
       unset($predicates[$key]);
     }
-    else {
-      // Prevent predicates from being evaluated more than once in a page load.
-      if (in_array($key, $locked)) {
-        unset($predicates[$key]);
-      }
-      else {
-        $locked[$key] = $key;
-      }
-
-      if (!isset($value['#weight'])) {
-        $predicates[$key]['#weight'] = 0;
-      }
+    elseif (!isset($value['#weight'])) {
+      $predicates[$key]['#weight'] = 0;
     }
   }
 
@@ -348,11 +284,17 @@ function ca_load_trigger_predicates($trigger, $all = FALSE) {
     // Add predicates from the database to our return array if $all == TRUE or
     // if the predicate is active.
     if ($all || $data['status'] > 0) {
-      // Prevent predicates from being evaluated more than once in a page load.
-      if (!in_array($data['pid'], $locked)) {
-        $predicates[$data['pid']] = ca_prepare_db_predicate($data);
-        $locked[$key] = $data['pid'];
+      $predicate = ca_prepare_db_predicate($data);
+
+      // Set the actions' weight if necessary and sort actions by their weight.
+      for ($i = 0; $i < count($predicate['#actions']); $i++) {
+        if (!isset($predicate['#actions'][$i]['#weight'])) {
+          $predicate['#actions'][$i]['#weight'] = 0;
+        }
       }
+      usort($predicate['#actions'], 'ca_weight_sort');
+
+      $predicates[$data['pid']] = $predicate;
     }
   }
 
@@ -362,7 +304,7 @@ function ca_load_trigger_predicates($trigger, $all = FALSE) {
 }
 
 /**
- * Prepares predicate data from the database into a full predicate array.
+ * Prepare predicate data from the database into a full predicate array.
  *
  * @param $data
  *   An array of data representing a row in the predicates table.
@@ -392,7 +334,7 @@ function ca_prepare_db_predicate($data) {
 }
 
 /**
- * Evaluates a predicate's conditions.
+ * Evaluate a predicate's conditions.
  *
  * @param $predicate
  *   A fully loaded predicate array.
@@ -420,8 +362,14 @@ function ca_evaluate_conditions($predicate, $arguments) {
   return $result;
 }
 
+/**
+ * Recursively evaluate conditions to accommodate nested logical groups.
+ */
 function _ca_evaluate_conditions_tree($condition, $arguments, $condition_data) {
   if (isset($condition['#operator']) && is_array($condition['#conditions'])) {
+    // Default to TRUE for cases of empty conditions arrays.
+    $result = TRUE;
+
     foreach ($condition['#conditions'] as $sub_condition) {
       $result = _ca_evaluate_conditions_tree($sub_condition, $arguments, $condition_data);
 
@@ -433,7 +381,7 @@ function _ca_evaluate_conditions_tree($condition, $arguments, $condition_data) {
       if ($condition['#operator'] == 'OR' && $result) {
         return TRUE;
       }
-      else if ($condition['#operator'] == 'AND' && !$result) {
+      elseif ($condition['#operator'] == 'AND' && !$result) {
         return FALSE;
       }
     }
@@ -444,6 +392,9 @@ function _ca_evaluate_conditions_tree($condition, $arguments, $condition_data) {
   }
 }
 
+/**
+ * Evaluate a single condition.
+ */
 function _ca_evaluate_condition($condition, $arguments, $condition_data) {
   $args = array();
 
@@ -461,12 +412,18 @@ function _ca_evaluate_condition($condition, $arguments, $condition_data) {
   }
 
   // Loop through the expected arguments for a condition.
-  foreach ($condition_data[$condition['#name']]['#arguments'] as $key => $value) {
+  // Cast to an array to accommodate conditions that need no arguments.
+  foreach ((array) $condition_data[$condition['#name']]['#arguments'] as $key => $value) {
     // Using the argument map for the condition on this predicate, fetch the
     // argument that was passed to the trigger that matches to the argument
     // needed to evaluate this condition.
     if (isset($condition['#argument_map'][$key])) {
-      $args[] = $arguments[$condition['#argument_map'][$key]]['#data'];
+      if ($value['#entity'] == 'arguments') {
+        $args[] = $arguments;
+      }
+      else {
+        $args[] = $arguments[$condition['#argument_map'][$key]]['#data'];
+      }
     }
     else {
       // Skip this condition of the predicate didn't map the arguments needed.
@@ -482,19 +439,21 @@ function _ca_evaluate_condition($condition, $arguments, $condition_data) {
 
   // If the negate operator is TRUE, then switch the result!
   if ($condition['#settings']['negate']) {
-
     $result = !$result;
   }
+
   return $result;
 }
 
 /**
- * Performs a predicate's actions in order, preserving changes to the arguments.
+ * Perform a predicate's actions in order, preserving changes to the arguments.
  *
  * @param $predicate
  *   A fully loaded predicate array.
  * @param $arguments
  *   The array of parsed arguments for the trigger.
+ * @return
+ *   An array of results, if any, that were returned by the actions.
  */
 function ca_perform_actions($predicate, $arguments) {
   // Exit now if we don't have any actions.
@@ -502,18 +461,12 @@ function ca_perform_actions($predicate, $arguments) {
     return;
   }
 
-  // Set the actions' weight if necessary and sort actions by their weight.
-  for ($i = 0; $i < count($predicate['#actions']); $i++) {
-    if (!isset($predicate['#actions'][$i]['#weight'])) {
-      $predicate['#actions'][$i]['#weight'] = 0;
-    }
-  }
-  usort($predicate['#actions'], 'ca_weight_sort');
+  $results = array();
 
   // Load the data for the actions as defined by modules.
   $action_data = module_invoke_all('ca_action');
 
-  foreach ($predicate['#actions'] as $action) {
+  foreach ($predicate['#actions'] as $i => $action) {
     $args = array();
 
     // Get the callback function for the current action.
@@ -524,7 +477,7 @@ function ca_perform_actions($predicate, $arguments) {
       continue;
     }
 
-    // Loop through the expected arguments for a condition.
+    // Loop through the expected arguments for an action.
     foreach ($action_data[$action['#name']]['#arguments'] as $key => $value) {
       // Using the argument map for the action on this predicate, fetch the
       // argument that was passed to the trigger that matches to the argument
@@ -532,7 +485,12 @@ function ca_perform_actions($predicate, $arguments) {
       if (isset($action['#argument_map'][$key])) {
         // Adding the arguments as references so action functions can update the
         // arguments here when they make changes to the argument data.
-        $args[] = &$arguments[$action['#argument_map'][$key]]['#data'];
+        if ($value['#entity'] == 'arguments') {
+          $args[] = &$arguments;
+        }
+        else {
+          $args[] = &$arguments[$action['#argument_map'][$key]]['#data'];
+        }
       }
       else {
         // Skip this action of the predicate didn't map the arguments needed.
@@ -541,15 +499,455 @@ function ca_perform_actions($predicate, $arguments) {
     }
 
     // Add the condition settings to the argument list.
-    $args[] = $action['#settings'];
+    $args[] = is_array($action['#settings']) ? $action['#settings'] : array();
 
     // Call the action's function with the appropriate arguments.
-    call_user_func_array($callback, $args);
+    $results[$i] = call_user_func_array($callback, $args);
   }
+
+  return $results;
 }
 
 /**
- * Loads a predicate by its ID.
+ * Load triggers defined in modules via hook_ca_trigger().
+ *
+ * @param $trigger
+ *   Defaults to 'all'; may instead be the name of the trigger to load.
+ * @return
+ *   An array of data for the specified trigger or an array of all the trigger
+ *   data if 'all' was specified.  Returns FALSE if a specified trigger is
+ *   non-existent.
+ */
+function ca_load_trigger($trigger = 'all') {
+  static $triggers;
+
+  // Load the triggers defined in enabled modules to a cached variable.
+  if (empty($triggers)) {
+    $triggers = module_invoke_all('ca_trigger');
+  }
+
+  // Return the whole array if the trigger specified is 'all'.
+  if ($trigger === 'all') {
+    return $triggers;
+  }
+
+  // If the specified trigger is non-existent, return FALSE.
+  if (!isset($triggers[$trigger])) {
+    return FALSE;
+  }
+
+  return $triggers[$trigger];
+}
+
+/**
+ * Return a trigger's arguments formatted for select element options.
+ *
+ * @param $trigger
+ *   The name of the trigger to load arguments for.
+ * @param $entity
+ *   The name of the entity type we must restrict our returned arguments to.
+ * @return
+ *   An array of arguments in FAPI options format.
+ */
+function ca_load_trigger_arguments($trigger, $entity) {
+  static $arguments = array();
+
+  // Load the arguments if we can't find a cached version.
+  if (!isset($arguments[$trigger][$entity])) {
+    $arguments[$trigger][$entity] = array();
+
+    // Handle the arguments entity specially, as it should never be specified
+    // in a trigger.
+    if ($entity == 'arguments') {
+      $arguments[$trigger][$entity]['arguments'] = t('Arguments');
+    }
+    else {
+      // Load the trigger data.
+      $trigger_data = ca_load_trigger($trigger);
+
+      // Add the trigger's arguments to the options array if the entity matches.
+      foreach ((array) $trigger_data['#arguments'] as $key => $value) {
+        if ($value['#entity'] == $entity) {
+          $arguments[$trigger][$entity][$key] = $value['#title'];
+        }
+      }
+    }
+  }
+
+  return $arguments[$trigger][$entity];
+}
+
+/**
+ * Load conditions defined in modules via hook_ca_condition().
+ *
+ * @param $condition
+ *   Defaults to 'all'; may instead be the name of the condition to load.
+ * @return
+ *   An array of data for the specified condition or an array of all the
+ *     condition data if 'all' was specified.  Returns FALSE if a specified
+ *     condition is non-existent.
+ */
+function ca_load_condition($condition = 'all') {
+  static $conditions;
+
+  // Load the conditions defined in enabled modules to a cached variable.
+  if (empty($conditions)) {
+    $conditions = module_invoke_all('ca_condition');
+  }
+
+  // Return the whole array if the trigger specified is 'all'.
+  if ($condition === 'all') {
+    return $conditions;
+  }
+
+  // If the specified trigger is non-existent, return FALSE.
+  if (!isset($conditions[$condition])) {
+    return FALSE;
+  }
+
+  return $conditions[$condition];
+}
+
+/**
+ * Return an array of conditions available for the specified trigger.
+ *
+ * @param $trigger
+ *   The name of a trigger to find conditions for; if left empty, the function
+ *   returns conditions for the previously specified trigger.
+ * @return
+ *   A nested array of names/titles for the conditions available for the
+ *   trigger; in the format required by select elements in FAPI.
+ */
+function ca_load_trigger_conditions($trigger = '') {
+  static $options = array();
+
+  if (!empty($trigger)) {
+    // Load the specified trigger.
+    $trigger = ca_load_trigger($trigger);
+    $trigger_entities = array();
+
+    // Organize trigger arguments by entity.
+    foreach ($trigger['#arguments'] as $argument) {
+      $trigger_entities[$argument['#entity']] = $argument;
+    }
+
+    // Load and loop through all the conditions defined by modules.
+    $conditions = ca_load_condition();
+
+    foreach ($conditions as $name => $condition) {
+      // Check through each argument needed for the condition.
+      // Cast to an array to accommodate conditions that need no arguments.
+      foreach ((array) $condition['#arguments'] as $argument) {
+        $entity = $argument['#entity'];
+        // If the condition requires an entity the trigger doesn't provide,
+        // then skip to the next condition.
+        if ($entity != 'arguments' && !$trigger_entities[$entity]) {
+          continue 2;
+        }
+      }
+
+      // Getting this far means that all of the condition's arguments have
+      // the same entity types as the trigger's. Add it to the options,
+      // and group them by category for usability.
+      $options[$condition['#category']][$name] = $condition['#title'];
+    }
+
+    // Alphabetically sort the groups and their options.
+    foreach ($options as $group => $conditions) {
+      asort($conditions);
+      $options[$group] = $conditions;
+    }
+    ksort($options);
+  }
+
+  return $options;
+}
+
+/**
+ * Load actions defined in modules via hook_ca_action().
+ *
+ * @param $action
+ *   Defaults to 'all'; may instead be the name of the action to load.
+ * @return
+ *   An array of data for the specified action or an array of all the action
+ *   data if 'all' was specified.  Returns FALSE if a specified action is
+ *   non-existent.
+ */
+function ca_load_action($action = 'all') {
+  static $actions;
+
+  // Load the actions defined in enabled modules to a cached variable.
+  if (empty($actions)) {
+    $actions = module_invoke_all('ca_action');
+  }
+
+  // Return the whole array if the trigger specified is 'all'.
+  if ($action === 'all') {
+    return $actions;
+  }
+
+  // If the specified trigger is non-existent, return FALSE.
+  if (!isset($actions[$action])) {
+    return FALSE;
+  }
+
+  return $actions[$action];
+}
+
+/**
+ * Return an array of actions available for the specified trigger.
+ *
+ * @param $trigger
+ *   The name of a trigger to find actions for; if left empty, the function
+ *   returns conditions for the previously specified trigger.
+ * @return
+ *   A nested array of names/titles for the actions available for the trigger;
+ *   in the format required by select elements in FAPI.
+ */
+function ca_load_trigger_actions($trigger = '') {
+  static $options = array();
+
+  if (!empty($trigger)) {
+    // Load the specified trigger.
+    $trigger = ca_load_trigger($trigger);
+    $trigger_entities = array();
+
+    // Organize trigger arguments by entity.
+    foreach ($trigger['#arguments'] as $argument) {
+      $trigger_entities[$argument['#entity']] = $argument;
+    }
+
+    // Load and loop through all the actions defined by modules.
+    $actions = ca_load_action();
+
+    foreach ($actions as $name => $action) {
+      // Check through each argument needed for the condition.
+      foreach ($action['#arguments'] as $argument) {
+        $entity = $argument['#entity'];
+        // If the action requires an entity the trigger doesn't provide,
+        // then skip to the next action.
+        if ($entity != 'arguments' && !$trigger_entities[$entity]) {
+          continue 2;
+        }
+      }
+
+      // Getting this far means that all of the condition's arguments have
+      // the same entity types as the trigger's. Add it to the options,
+      // and group them by category for usability.
+      $options[$action['#category']][$name] = $action['#title'];
+    }
+
+    // Alphabetically sort the groups and their options.
+    foreach ($options as $group => $actions) {
+      asort($actions);
+      $options[$group] = $actions;
+    }
+    ksort($options);
+  }
+
+  return $options;
+}
+
+/**
+ * Return a default conditions array for use on new predicates or in the UI.
+ */
+function ca_new_conditions() {
+  return array(
+    '#operator' => 'AND',
+    '#conditions' => array(
+      array(
+        '#operator' => 'AND',
+        '#conditions' => array(),
+      ),
+    ),
+  );
+}
+
+/**
+ * Add a new condition group to a predicate.
+ *
+ * @param $pid
+ *   The ID of the predicate to add the condition group to.
+ * @return
+ *   An array representing the full, updated predicate.
+ */
+function ca_add_condition_group($pid) {
+  // Load the predicate.
+  $predicate = ca_load_predicate($pid);
+
+  // Add the condition group to the conditions array in the appropriate place.
+  if (empty($predicate['#conditions'])) {
+    $predicate['#conditions'] = ca_new_conditions();
+  }
+  else {
+    $predicate['#conditions']['#conditions'][] = array(
+      '#operator' => 'AND',
+      '#conditions' => array(),
+    );
+  }
+
+  // Save the changes.
+  ca_save_predicate($predicate);
+
+  return $predicate;
+}
+
+/**
+ * Remove a condition group from a predicate.
+ *
+ * @param $pid
+ *   The ID of the predicate to remove the condition group from.
+ * @param $group_key
+ *   The key of the condition group to remove.
+ * @return
+ *   An array representing the full, updated predicate.
+ */
+function ca_remove_condition_group($pid, $group_key) {
+  // Load the predicate as it is now.
+  $predicate = ca_load_predicate($pid);
+
+  // Update, save, and return the predicate.
+  unset($predicate['#conditions']['#conditions'][$group_key]);
+  ca_save_predicate($predicate);
+
+  return $predicate;
+}
+
+/**
+ * Add a new condition to a predicate.
+ *
+ * @param $pid
+ *   The ID of the predicate to add the condition to.
+ * @param $name
+ *   The name of the condition to add.
+ * @param $group_key
+ *   The key of the condition group we're adding the condition to.
+ * @param $mark_expanded
+ *   If set to TRUE marks the condition so that it will be expanded next time it
+ *   displays in the UI so the user can adjust its settings.
+ * @return
+ *   An array representing the full, updated predicate.
+ */
+function ca_add_condition($pid, $name, $group_key, $mark_expanded = TRUE) {
+  // Load the predicate.
+  $predicate = ca_load_predicate($pid);
+
+  // Load the condition we want to add to the predicate.
+  $data = ca_load_condition($name);
+
+  // If the condition exists...
+  if ($data) {
+    // Build the condition array.
+    $condition = array(
+      '#name' => $name,
+      '#title' => $data['#title'],
+      '#argument_map' => array(),
+      '#settings' => array(),
+    );
+
+    // Mark it for expansion in the form if specified.
+    if ($mark_expanded) {
+      $condition['#expanded'] = TRUE;
+    }
+
+    // Add the condition to the predicate.
+    $predicate['#conditions']['#conditions'][$group_key]['#conditions'][] = $condition;
+  }
+
+  ca_save_predicate($predicate);
+
+  return $predicate;
+}
+
+/**
+ * Remove a condition from a predicate.
+ *
+ * @param $pid
+ *   The ID of the predicate to remove the condition group from.
+ * @param $group_key
+ *   The key of the condition group the condition is in.
+ * @param $cond_key
+ *   The key of the condition to remove.
+ * @return
+ *   An array representing the full, updated predicate.
+ */
+function ca_remove_condition($pid, $group_key, $cond_key) {
+  // Load the predicate as it is now.
+  $predicate = ca_load_predicate($pid);
+
+  // Update, save, and return the predicate.
+  unset($predicate['#conditions']['#conditions'][$group_key]['#conditions'][$cond_key]);
+  ca_save_predicate($predicate);
+
+  return $predicate;
+}
+
+/**
+ * Add a new action to a predicate.
+ *
+ * @param $pid
+ *   The ID of the predicate to add the action to.
+ * @param $name
+ *   The name of the action to add.
+ * @return
+ *   An array representing the full, updated predicate.
+ */
+function ca_add_action($pid, $name) {
+  // Load the predicate as it is now.
+  $predicate = ca_load_predicate($pid);
+
+  // Load the action.
+  $action = ca_load_action($name);
+
+  // Abort if it did not exist.
+  if (empty($action)) {
+    return $predicate;
+  }
+
+  // Add the name to the action array so it's saved in the predicate.
+  $action['#name'] = $name;
+
+  // Add the action to the predicate's actions array.
+  $predicate['#actions'][] = $action;
+
+  // Save and return the updated predicate.
+  ca_save_predicate($predicate);
+
+  return $predicate;
+}
+
+/**
+ * Remove an action from a predicate.
+ *
+ * @param $pid
+ *   The ID of the predicate to remove the action from.
+ * @param $index
+ *   The index of the action to remove.
+ * @return
+ *   An array representing the full, updated predicate.
+ */
+function ca_remove_action($pid, $index) {
+  $actions = array();
+
+  // Load the predicate as it is now.
+  $predicate = ca_load_predicate($pid);
+
+  // Build a new actions array, leaving out the one marked for removal.
+  foreach ($predicate['#actions'] as $key => $action) {
+    if ($key != $index) {
+      $actions[] = $action;
+    }
+  }
+
+  // Update, save, and return the predicate.
+  $predicate['#actions'] = $actions;
+  ca_save_predicate($predicate);
+
+  return $predicate;
+}
+
+/**
+ * Load a predicate by its ID.
  *
  * @param $pid
  *   The ID of the predicate to load.
@@ -573,11 +971,16 @@ function ca_load_predicate($pid) {
     }
   }
 
+  // Add the pid to the predicate so it can be resaved later.
+  if (!empty($predicate)) {
+    $predicate['#pid'] = $pid;
+  }
+
   return $predicate;
 }
 
 /**
- * Saves a predicate array to the database.
+ * Save a predicate array to the database.
  *
  * @param $predicate
  *   A fully loaded predicate array.
@@ -599,7 +1002,7 @@ function ca_save_predicate($predicate) {
 }
 
 /**
- * Deletes a predicate from the database.
+ * Delete a predicate from the database.
  *
  * @param $pid
  *   The ID of the predicate to delete.
@@ -608,7 +1011,9 @@ function ca_delete_predicate($pid) {
   db_query("DELETE FROM {ca_predicates} WHERE pid = '%s'", $pid);
 }
 
-// Compares two conditional action arrays to sort them by #weight.
+/**
+ * Compare two conditional action arrays to sort them by #weight.
+ */
 function ca_weight_sort($a, $b) {
   if ($a['#weight'] == $b['#weight']) {
     return 0;
@@ -617,91 +1022,40 @@ function ca_weight_sort($a, $b) {
   return ($a['#weight'] > $b['#weight']) ? 1 : -1;
 }
 
-function _ca_convert_configurations() {
-  global $user;
+/**
+ * Configure the #parents and #id field of any child filter_forms.
+ *
+ * Unfortunately, FAPI doesn't give us any way to know we have a filter
+ * element, so we require all filters to have an #is_format element.
+ */
+function filter_configure_form(&$form) {
+  // Grab all the filters, and search for the formats.
+  $formats = filter_formats();
+  _filter_configure_form_recur($form, $formats, array());
+}
 
-  if (db_table_exists('workflow_ng_cfgs')) {
-    $result = db_query("SELECT name, data FROM {workflow_ng_cfgs} WHERE altered = 1");
-    $predicates = array();
-    while ($configuration_row = db_fetch_object($result)) {
-      $predicate = array('#pid' => $configuration_row->name);
-      $conditions = array();
-      $actions = array();
-      if ($configuration = unserialize($configuration_row->data)) {
-        $predicate['#class'] = $configuration['#module'];
-        $predicate['#title'] = $configuration['#label'];
-        switch ($configuration['#event']) {
-          case 'order_status_update':
-            $trigger = 'uc_order_status_update';
-          break;
-          case 'payment_entered':
-            $trigger = 'uc_payment_entered';
-          break;
-          case 'checkout_complete':
-            $trigger = 'uc_checkout_complete';
-          break;
-          default:
-            $trigger = $configuration['#event'];
-          break;
-        }
-        $predicate['#trigger'] = $trigger;
-        $predicate['#weight'] = $configuration['#weight'];
-        $predicate['#status'] = $configuration['#active'];
-        for ($i = 0; isset($configuration[$i]); $i++) {
-          if ($configuration[$i]['#type'] == 'action') {
-            $action = $configuration[$i];
-            if (isset($action[$i]['#label'])) {
-              $action['#title'] = $action['#label'];
-              unset($action['#label']);
-            }
-            else {
-              $action['#title'] = $action['#name'];
-            }
-            $actions[] = $action;
-          }
-          else {
-            $condition = _ca_convert_conditions($configuration[$i]);
-            if ($condition) {
-              $conditions[] = $condition;
-            }
-          }
-        }
-        if ($conditions) {
-          $predicate['#conditions'] = array(
-            '#operator' => 'AND',
-            '#conditions' => $conditions,
-          );
-        }
-        $predicate['#uid'] = $user->uid;
-        ca_save_predicate($predicate);
+/**
+ * Recursive filter configuration.
+ */
+function _filter_configure_form_recur(&$form, &$formats, $parents) {
+  // Look for our special element, then search the children.
+  if (isset($form['#is_format']) ? $form['#is_format'] : FALSE) {
+    foreach (element_children($form) as $key) {
+      // Found a filter.
+      if (array_key_exists($key, $formats)) {
+        // Configure the parents and ID so FAPI is happy.
+        $form[$key] = array(
+          '#parents' => $parents,
+          '#id' => form_clean_id('edit-'. implode('-', array_merge($parents, array($key)))),
+        ) + $form[$key];
+
       }
     }
   }
-}
-
-function _ca_convert_conditions($condition_tree) {
-  $ca_condition = array();
-
-  if ($condition_tree['#type'] == 'AND' || $condition_tree['#type'] == 'OR') {
-    $ca_condition['#operator'] = $condition_tree['#type'];
-    $ca_condition['#conditions'] = array();
-    for ($i = 0; isset($condition_tree[$i]); $i++) {
-      $condition = _ca_convert_conditions($condition_tree[$i]);
-      if ($condition) {
-        $ca_condition['#conditions'][] = $condition;
-      }
+  else {
+    // Keep looking.
+    foreach (element_children($form) as $key) {
+      _filter_configure_form_recur($form[$key], $formats, array_merge($parents, array($key)));
     }
   }
-  else if ($condition_tree['#type'] == 'condition') {
-    $ca_condition['#name'] = $condition_tree['#name'];
-    $ca_condition['#title'] = $condition_tree['#label'];
-    $ca_condition['#argument_map'] = $condition_tree['#argument map'];
-    $ca_condition['#settings'] = $condition_tree['#settings'];
-    if (isset($condition_tree['#negate'])) {
-      $ca_condition['#settings']['negate'] = $condition_tree['#negate'];
-    }
-  }
-
-  return $ca_condition;
 }
-

@@ -5,846 +5,204 @@
  * @file
  * Displays reports on sales, customers, and products to store admin
  *
- * The reports module creates a few table-based reports for an ubercart store.
+ * The reports module creates a few table-based reports for an Ubercart store.
  * Store admins can view reports for sales between different dates, customers
  * by the products purchased and money spent, and products by their views,
  * number sold, and revenue produced.
- *
- * Development sponsored by the Ubercart project.  http://www.ubercart.org
  */
 
+/**
+ * The maximum number of records.
+ */
 define('UC_REPORTS_MAX_RECORDS', PHP_INT_MAX);
 
-/* ************************************************************************* *
- *  Hook Functions (Drupal)                                                  *
- * ************************************************************************* */
+/*******************************************************************************
+ *  Hook Functions (Drupal)                                                    *
+ ******************************************************************************/
 
 /**
  * Implementation of hook_help().
  */
-function uc_reports_help($section) {
-  if (!strncmp($section, 'admin/store/reports/', 20)) {
-    $statuses = array();
-    foreach (variable_get('uc_reports_reported_statuses', array('completed')) as $status) {
-      $statuses[] = db_result(db_query("SELECT title FROM {uc_order_statuses} WHERE order_status_id = '%s'", $status));
-    }
-    $order_statuses = t('<b>Order statuses used:</b> @statuses', array('@statuses' => implode(', ', $statuses)));
+function uc_reports_help($path, $arg) {
+  $output =  '';
 
-    switch ($section) {
+  if (strncmp($path, 'admin/store/reports/', 20) === 0) {
+    $include_statuses = $include_offset = FALSE;
+
+    // Include order status info?
+    if (strpos($path, 'admin/store/reports/sales/year') === 0) {
+      $include_statuses = TRUE;
+    }
+    else {
+      switch ($path) {
+        case 'admin/store/reports/customers':
+        case 'admin/store/reports/products':
+        case 'admin/store/reports/sales':
+          $include_statuses = TRUE;
+          break;
+      }
+    }
+
+    // Include timezone offset info?
+    if (!strncmp($path, 'admin/store/reports/sales', 25)) {
+      $include_offset = TRUE;
+    }
+
+    // Generate message for the path we're at.
+    $output .= '<p>';
+    switch ($path) {
       case 'admin/store/reports/customers':
-        return '<p>'. t("The following are total orders, products, sales, and average order totals for each store customer. Clicking on the header links will toggle a descending or ascending order for that column. Clicking on a customer's name will take you to a detailed list of orders that customer has made. Clicking on a customers username will take you to their account page.") .'</p><p>'. $order_statuses .'</p>';
+        $output .= t("The following are total orders, products, sales, and average order totals for each store customer. Clicking on the header links will toggle a descending or ascending order for that column. Clicking on a customer's name will take you to a detailed list of orders that customer has made. Clicking on a customers username will take you to their account page.");
+        break;
       case 'admin/store/reports/products':
-        return '<p>'. t('The table lists each product listed in the store, its amount sold, how many times it has been viewed, revenue it has produced, and gross profit it has generated. If you do not see the number of views you must enable the Statistics module on the <a href="!url">module administration page</a>.', array('!url' => url('admin/build/modules'))) .'</p><p>'. $order_statuses .'</p>';
+        $output .= t('The table lists each product listed in the store, its amount sold, how many times it has been viewed, revenue it has produced, and gross profit it has generated. If you do not see the number of views you must enable the Statistics module on the <a href="!url">module administration page</a>.', array('!url' => url('admin/build/modules')));
+        break;
       case 'admin/store/reports/sales':
-        return '<p>'. t('These are the sales for the last two days, average sales for the month, and the projected sales for the rest of the month. Further down the list you will see other sales statistics.') .'</p><p>'. $order_statuses .'</p>';
+        $output .= t('These are the sales for the last two days, average sales for the month, and the projected sales for the rest of the month. Further down the list you will see other sales statistics.');
+        break;
       case 'admin/store/reports/sales/custom':
-        return t('Expand the fieldset below to customize the date range of this report, the statuses of orders displayed, and product display options.');
+        $output .= t('Expand the fieldset below to customize the date range of this report, the statuses of orders displayed, and product display options.');
+        break;
     }
-
-    if (strpos($section, 'admin/store/reports/sales/year') === 0) {
+    if (strpos($path, 'admin/store/reports/sales/year') === 0) {
       $year = (is_null($_GET['year'])) ? format_date(time(), 'custom', "Y") : $_GET['year'];
-      return '<p>'. t('This is the monthly break down of sales for the year @year. Clicking on each link will take you to a list of orders during that month.', array('@year' => $year)) .'</p><p>'. $order_statuses .'</p>';
+      $output .= t('This is the monthly break down of sales for the year @year. Clicking on each link will take you to a list of orders during that month.', array('@year' => $year));
+    }
+    $output .= '</p>';
+
+    // Include the statuses/offset as needed.
+    if ($include_offset) {
+      $output .= "<p>". t('All sales reports are <b>GMT !offset</b> (Default site timezone)', array('!offset' => variable_get('date_default_timezone', 0) / 36)) ."</p>";
+    }
+    if ($include_statuses) {
+      $statuses = array();
+      foreach (variable_get('uc_reports_reported_statuses', array('completed')) as $status) {
+        $statuses[] = db_result(db_query("SELECT title FROM {uc_order_statuses} WHERE order_status_id = '%s'", $status));
+      }
+      $order_statuses = t('<b>Order statuses used:</b> @statuses', array('@statuses' => implode(', ', $statuses)));
+
+      $output .= "<p>$order_statuses</p>";
     }
   }
+  return $output;
 }
 
 /**
  * Implementation of hook_menu().
  */
-function uc_reports_menu($may_cache) {
+function uc_reports_menu() {
   global $user;
   $items = array();
 
-  if ($may_cache) {
-    $items[] = array(
-      'path' => 'admin/store/settings/reports',
-      'title' => t('Report settings'),
-      'description' => t('View the report settings.'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('uc_reports_settings_overview'),
-      'access' => user_access('administer store'),
-      'type' => MENU_NORMAL_ITEM,
-    );
-    $items[] = array(
-      'path' => 'admin/store/reports/customers',
-      'title' => t('Customer reports'),
-      'description' => t('View reports for store customers'),
-      'callback' => 'uc_reports_customers',
-      'access' => user_access('view reports'),
-      'type' => MENU_NORMAL_ITEM,
-    );
-    $items[] = array(
-      'path' => 'admin/store/reports/products',
-      'title' => t('Product reports'),
-      'description' => t('View reports for store products'),
-      'callback' => 'uc_reports_products',
-      'access' => user_access('view reports'),
-      'type' => MENU_NORMAL_ITEM,
-    );
-    $items[] = array(
-      'path' => 'admin/store/reports/sales',
-      'title' => t('Sales reports'),
-      'description' => t('View reports for store sales'),
-      'callback' => 'uc_reports_sales_summary',
-      'access' => user_access('view reports'),
-      'type' => MENU_NORMAL_ITEM,
-    );
-    $items[] = array(
-      'path' => 'admin/store/reports/sales/summary',
-      'title' => t('Sales summary'),
-      'description' => t('View summary of all store sales'),
-      'access' => user_access('view reports'),
-      'type' => MENU_DEFAULT_LOCAL_TASK,
-      'weight' => -10,
-    );
-    $items[] = array(
-      'path' => 'admin/store/reports/sales/year',
-      'title' => t('Sales per year'),
-      'description' => t('View store sales for a particular year'),
-      'callback' => 'uc_reports_sales_year',
-      'access' => user_access('view reports'),
-      'type' => MENU_LOCAL_TASK,
-      'weight' => -7,
-    );
-    $items[] = array(
-      'path' => 'admin/store/reports/sales/custom',
-      'title' => t('Custom sales summary'),
-      'description' => t('View a customized sales summary'),
-      'callback' => 'uc_reports_sales_custom',
-      'access' => user_access('view reports'),
-      'type' => MENU_LOCAL_TASK,
-      'weight' => -1,
-    );
-  }
-  else {
-    $items[] = array(
-      'path' => 'admin/store/reports/getcsv/'. arg(4) .'/'. arg(5),
-      'callback' => '_uc_reports_get_csv',
-      'callback arguments' => array(arg(4), arg(5)),
-      'access' => user_access('view reports'),
-      'type' => MENU_CALLBACK,
-    );
-    drupal_add_css(drupal_get_path('module', 'uc_reports') .'/uc_reports.css');
-  }
+  $items['admin/store/settings/reports'] = array(
+    'title' => 'Report settings',
+    'description' => 'View the report settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_reports_settings_form'),
+    'access arguments' => array('administer store'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'uc_reports.admin.inc',
+  );
+  $items['admin/store/reports/customers'] = array(
+    'title' => 'Customer reports',
+    'description' => 'View reports for store customers',
+    'page callback' => 'uc_reports_customers',
+    'access arguments' => array('view reports'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'uc_reports.admin.inc',
+  );
+  $items['admin/store/reports/products'] = array(
+    'title' => 'Product reports',
+    'description' => 'View reports for store products',
+    'page callback' => 'uc_reports_products',
+    'access arguments' => array('view reports'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'uc_reports.admin.inc',
+  );
+  $items['admin/store/reports/products/summary'] = array(
+    'title' => 'Product report',
+    'access arguments' => array('view reports'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+    'file' => 'uc_reports.admin.inc',
+  );
+  $items['admin/store/reports/products/custom'] = array(
+    'title' => 'Custom product report',
+    'description' => 'View a customized product report',
+    'page callback' => 'uc_reports_products_custom',
+    'access arguments' => array('view reports'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -5,
+    'file' => 'uc_reports.admin.inc',
+  );
+  $items['admin/store/reports/sales'] = array(
+    'title' => 'Sales reports',
+    'description' => 'View reports for store sales',
+    'page callback' => 'uc_reports_sales_summary',
+    'access arguments' => array('view reports'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'uc_reports.admin.inc',
+  );
+  $items['admin/store/reports/sales/summary'] = array(
+    'title' => 'Sales summary',
+    'description' => 'View summary of all store sales',
+    'access arguments' => array('view reports'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/store/reports/sales/year'] = array(
+    'title' => 'Sales per year',
+    'description' => 'View store sales for a particular year',
+    'page callback' => 'uc_reports_sales_year',
+    'access arguments' => array('view reports'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -7,
+    'file' => 'uc_reports.admin.inc',
+  );
+  $items['admin/store/reports/sales/custom'] = array(
+    'title' => 'Custom sales summary',
+    'description' => 'View a customized sales summary',
+    'page callback' => 'uc_reports_sales_custom',
+    'access arguments' => array('view reports'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -1,
+    'file' => 'uc_reports.admin.inc',
+  );
+  $items['admin/store/reports/getcsv/%/%'] = array(
+    'page callback' => '_uc_reports_get_csv',
+    'page arguments' => array(4, 5),
+    'access arguments' => array('view reports'),
+    'type' => MENU_CALLBACK,
+  );
 
   return $items;
 }
 
 /**
- * Implementation of hook_perm
+ * Implementation of hook_theme().
+ */
+function uc_reports_theme() {
+  return array(
+    'uc_reports_product_table' => array(
+      'arguments' => array('header' => NULL, 'rows' => NULL, 'attributes' => array(), 'caption' => NULL),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_init().
+ */
+function uc_reports_init() {
+  if (arg(0) == 'admin' && arg(1) == 'store' && arg(2) == 'reports') {
+    drupal_add_css(drupal_get_path('module', 'uc_reports') .'/uc_reports.css');
+  }
+}
+
+/**
+ * Implementation of hook_perm().
  */
 function uc_reports_perm() {
   return array('view reports');
-}
-
-/* ************************************************************************* *
- *  Callback Functions, Forms, and Tables                                    *
- * ************************************************************************* */
-
-/**
- * Display the customer report
- */
-function uc_reports_customers() {
-  $address_preference = variable_get('uc_customer_list_address', 'billing');
-  $first_name = ($address_preference == 'billing') ? 'billing_first_name' : 'delivery_first_name';
-  $last_name = ($address_preference == 'billing') ? 'billing_last_name' : 'delivery_last_name';
-  $page = (!is_null($_GET['page'])) ? intval($_GET['page']) : 0;
-  $page_size = (!is_null($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
-  $order_statuses = _uc_reports_order_statuses();
-  $csv_rows = array();
-
-  $header = array(
-    array('data' => t('#')),
-    array('data' => t('Customer'), 'field' => "ou.$last_name"),
-    array('data' => t('Username'), 'field' => "u.name"),
-    array('data' => t('Orders'), 'field' => 'orders'),
-    array('data' => t('Products'), 'field' => 'products'),
-    array('data' => t('Total'), 'field' => 'total', 'sort' => 'desc'),
-    array('data' => t('Average'), 'field' => 'average'),
-  );
-  $csv_rows[] = array(t('#'), t('Customer'), t('Username'), t('Orders'), t('Products'), t('Total'), t('Average'));
-
-  $sql = '';
-  $sql_count = '';
-
-  switch ($GLOBALS['db_type']) {
-    case 'mysqli':
-    case 'mysql':
-      $sql = "SELECT u.uid, u.name, ou.$first_name, ou.$last_name, (SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN $order_statuses) as orders, (SELECT SUM(qty) FROM {uc_order_products} as ps LEFT JOIN {uc_orders} as os ON ps.order_id = os.order_id WHERE os.order_status IN $order_statuses AND os.uid = u.uid) as products, (SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN $order_statuses) as total, ROUND((SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN $order_statuses)/(SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN $order_statuses), 2) as average FROM {users} as u LEFT JOIN {uc_orders} as ou ON u.uid = ou.uid WHERE u.uid > 0 GROUP BY u.uid";
-      $sql_count = "SELECT COUNT(DISTINCT(u.uid)) FROM {users} as u LEFT JOIN {uc_orders} as ou ON u.uid = ou.uid WHERE u.uid > 0";
-      break;
-    case 'pgsql':
-      $sql = "SELECT u.uid, u.name, ou.$first_name, ou.$last_name, (SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN $order_statuses) as orders, (SELECT SUM(qty) FROM {uc_order_products} as ps LEFT JOIN {uc_orders} as os ON ps.order_id = os.order_id WHERE os.order_status IN $order_statuses AND os.uid = u.uid) as products, (SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN $order_statuses) as total, ROUND((SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN $order_statuses)/(SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN $order_statuses), 2) as average FROM {users} as u LEFT JOIN {uc_orders} as ou ON u.uid = ou.uid WHERE u.uid > 0 GROUP BY u.uid, u.name, ou.$first_name, ou.$last_name";
-      $sql_count = "SELECT COUNT(DISTINCT(u.uid)) FROM {users} as u LEFT JOIN {uc_orders} as ou ON u.uid = ou.uid WHERE u.uid > 0";
-      break;
-  }
-
-  $customers = pager_query($sql . tablesort_sql($header), $page_size, 0, $sql_count);
-
-  while ($customer = db_fetch_array($customers)) {
-    $name = (!empty($customer[$last_name]) || !empty($customer[$first_name])) ? l($customer[$last_name] .', '. $customer[$first_name], 'admin/store/customers/orders/'. $customer['uid']) : l($customer['name'], 'admin/store/customers/orders/'. $customer['uid']);
-    $customer_number = ($page * variable_get('uc_reports_table_size', 30)) + (count($rows) + 1);
-    $customer_order_name = (!empty($customer[$last_name]) || !empty($customer[$first_name])) ? $customer[$last_name] .', '. $customer[$first_name] : $customer['name'];
-    $customer_name = $customer['name'];
-    $orders = (!empty($customer['orders']) ? $customer['orders'] : 0);
-    $products = (!empty($customer['products']) ? $customer['products'] : 0);
-    $total_revenue = uc_currency_format($customer['total']);
-    $average_revenue = uc_currency_format($customer['average']);
-    $rows[] = array(
-      array('data' => $customer_number),
-      array('data' => $name, 'nowrap' => 'nowrap'),
-      array('data' => l($customer_name, 'user/'. $customer['uid']), 'nowrap' => 'nowrap'),
-      array('data' => $orders),
-      array('data' => $products),
-      array('data' => $total_revenue, 'nowrap' => 'nowrap'),
-      array('data' => $average_revenue, 'nowrap' => 'nowrap'),
-    );
-    $csv_rows[] = array($customer_number, $customer_order_name, $customer_name, $orders, $products, $total_revenue, $average_revenue);
-  }
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No customers found'), 'colspan' => count($header)));
-  }
-  $csv_data = uc_reports_store_csv('uc_customers', $csv_rows);
-
-  $output = theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'));
-  $output .= theme_pager(NULL, $page_size);
-  $output .= '<div class="uc-reports-links">'. l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']) .'&nbsp;&nbsp;&nbsp;'. ((!is_null($_GET['nopage'])) ? l(t('Show paged records'), 'admin/store/reports/customers') : l(t('Show all records'), 'admin/store/reports/customers', array(), 'nopage=1')) .'</div>';
-
-  return $output;
-}
-
-/**
- * Display the product reports
- */
-function uc_reports_products() {
-  $statistics = db_result(db_query("SELECT status FROM {system} WHERE name = 'statistics'"));
-  $count_views = variable_get('statistics_count_content_views', FALSE);
-  $page = (!is_null($_GET['page'])) ? intval($_GET['page']) : 0;
-  $page_size = (!is_null($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
-  $order_statuses = _uc_reports_order_statuses();
-  $product_types = array("'product'");
-  $types = db_query("SELECT DISTINCT(pcid) FROM {uc_product_classes}");
-  $csv_rows = array();
-  while ($type = db_fetch_object($types)) {
-    $product_types[] = "'". $type->pcid ."'";
-  }
-
-  if ($statistics && $count_views) {
-    $header = array(
-      array('data' => t('#')),
-      array('data' => t('Product'), 'field' => 'n.title'),
-      array('data' => t('Views'), 'field' => 'c.totalcount'),
-      array('data' => t('Sold'), 'field' => 'sold'),
-      array('data' => t('Revenue'), 'field' => 'revenue', 'sort' => 'desc'),
-      array('data' => t('Gross'), 'field' => 'gross'),
-    );
-    $csv_rows[] = array(t('#'), t('Product'), t('Views'), t('Sold'), t('Revenue'), t('Gross'));
-
-    $sql = '';
-    switch ($GLOBALS['db_type']) {
-      case 'mysqli':
-      case 'mysql':
-        $sql = "SELECT n.nid, n.title, c.totalcount, (SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.nid = n.nid) AS sold, (SELECT (SUM(p2.price * p2.qty)) FROM {uc_order_products} AS p2 LEFT JOIN {uc_orders} AS o2 ON p2.order_id = o2.order_id WHERE o2.order_status IN $order_statuses AND p2.nid = n.nid) AS revenue, (SELECT (SUM(p3.price * p3.qty) - SUM(p3.cost * p3.qty)) FROM {uc_order_products} AS p3 LEFT JOIN {uc_orders} AS o3 ON p3.order_id = o3.order_id WHERE o3.order_status IN $order_statuses AND p3.nid = n.nid) AS gross FROM {node} AS n LEFT JOIN {node_counter} AS c ON n.nid = c.nid WHERE type IN (". implode(", ", $product_types) .") GROUP BY n.nid DESC";
-        break;
-      case 'pgsql':
-        $sql = "SELECT n.nid, n.title, c.totalcount, (SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.nid = n.nid) AS sold, (SELECT (SUM(p2.price * p2.qty)) FROM {uc_order_products} AS p2 LEFT JOIN {uc_orders} AS o2 ON p2.order_id = o2.order_id WHERE o2.order_status IN $order_statuses AND p2.nid = n.nid) AS revenue, (SELECT (SUM(p3.price * p3.qty) - SUM(p3.cost * p3.qty)) FROM {uc_order_products} AS p3 LEFT JOIN {uc_orders} AS o3 ON p3.order_id = o3.order_id WHERE o3.order_status IN $order_statuses AND p3.nid = n.nid) AS gross FROM {node} AS n LEFT JOIN {node_counter} AS c ON n.nid = c.nid WHERE type IN (". implode(", ", $product_types) .") GROUP BY n.nid";
-        break;
-    }
-  }
-  else {
-    $header = array(
-      array('data' => t('#')),
-      array('data' => t('Product'), 'field' => 'n.title'),
-      array('data' => t('Sold'), 'field' => 'sold'),
-      array('data' => t('Revenue'), 'field' => 'revenue', 'sort' => 'desc'),
-      array('data' => t('Gross'), 'field' => 'gross'),
-    );
-    $csv_rows[] = array(t('#'), t('Product'), t('Sold'), t('Revenue'), t('Gross'));
-
-
-    switch ($GLOBALS['db_type']) {
-      case 'mysqli':
-      case 'mysql':
-        $sql = "SELECT n.nid, n.title, (SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.nid = n.nid) AS sold, (SELECT (SUM(p2.price * p2.qty)) FROM {uc_order_products} AS p2 LEFT JOIN {uc_orders} AS o2 ON p2.order_id = o2.order_id WHERE o2.order_status IN $order_statuses AND p2.nid = n.nid) AS revenue, (SELECT (SUM(p3.price * p3.qty) - SUM(p3.cost * p3.qty)) FROM {uc_order_products} AS p3 LEFT JOIN {uc_orders} AS o3 ON p3.order_id = o3.order_id WHERE o3.order_status IN $order_statuses AND p3.nid = n.nid) AS gross FROM {node} AS n WHERE type IN (". implode(', ', $product_types) .') GROUP BY n.nid DESC';
-        break;
-      case 'pgsql':
-        $sql = "SELECT n.nid, n.title, (SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.nid = n.nid) AS sold, (SELECT (SUM(p2.price * p2.qty)) FROM {uc_order_products} AS p2 LEFT JOIN {uc_orders} AS o2 ON p2.order_id = o2.order_id WHERE o2.order_status IN $order_statuses AND p2.nid = n.nid) AS revenue, (SELECT (SUM(p3.price * p3.qty) - SUM(p3.cost * p3.qty)) FROM {uc_order_products} AS p3 LEFT JOIN {uc_orders} AS o3 ON p3.order_id = o3.order_id WHERE o3.order_status IN $order_statuses AND p3.nid = n.nid) AS gross FROM {node} AS n WHERE type IN (". implode(', ', $product_types) .') GROUP BY n.nid, n.title';
-        break;
-    }
-  }
-
-  $sql_count = "SELECT COUNT(nid) FROM {node} WHERE type IN (". implode(", ", $product_types) .")";
-  $products = pager_query($sql . tablesort_sql($header), $page_size, 0, $sql_count);
-
-  while ($product = db_fetch_array($products)) {
-    $row_cell = ($page * variable_get('uc_reports_table_size', 30)) + count($rows) + 1;
-    $product_cell = l($product['title'], 'node/'. ($product['nid']));
-    $product_csv = $product['title'];
-    $sold_cell = (empty($product['sold'])) ? 0 : $product['sold'];
-    $sold_csv = $sold_cell;
-    $revenue_cell = uc_currency_format((empty($product['revenue'])) ? 0 : $product['revenue']);
-    $revenue_csv = $revenue_cell;
-    $gross_cell = uc_currency_format((empty($product['gross'])) ? 0 : $product['gross']);
-    $gross_csv = $gross_cell;
-
-    if (module_exists('uc_attribute')) {
-      $product_models = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = %d", $product['nid']);
-      $models = array(db_result(db_query("SELECT model FROM {uc_products} WHERE nid = %d", $product['nid'])));
-      unset($breakdown_product, $breakdown_sold, $breakdown_revenue, $breakdown_gross);
-      while ($product_model = db_fetch_object($product_models)) {
-        $models[] = $product_model->model;
-      }
-      foreach ($models as $model) {
-        $sold = db_result(db_query("SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.model = '%s' AND p.nid = %d", $model, $product['nid']));
-        $revenue = db_result(db_query("SELECT SUM(p.price * p.qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.model = '%s' AND p.nid = %d", $model, $product['nid']));
-        $gross = db_result(db_query("SELECT (SUM(p.price * p.qty) - SUM(p.cost * p.qty)) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN $order_statuses AND p.model = '%s' AND p.nid = %d", $model, $product['nid']));
-        $breakdown_product .= "<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$model";
-        $product_csv .= "\n     $model";
-        $breakdown_sold .= "<br/>". ((!empty($sold)) ? $sold : 0);
-        $sold_csv .= "\n     ". ((!empty($sold)) ? $sold : 0);
-        $breakdown_revenue .= "<br/>". (uc_currency_format((!empty($revenue)) ? $revenue : 0));
-        $revenue_csv .= "\n     ". (uc_currency_format((!empty($revenue)) ? $revenue : 0));
-        $breakdown_gross .= "<br/>". (uc_currency_format((!empty($gross)) ? $gross : 0));
-        $gross_csv .= "\n     ". (uc_currency_format((!empty($gross)) ? $gross : 0));
-      }
-      $product_cell = $product_cell . $breakdown_product;
-      $sold_cell = '<strong>'. $sold_cell .'</strong>'. $breakdown_sold;
-      $revenue_cell = '<strong>'. $revenue_cell .'</strong>'. $breakdown_revenue;
-      $gross_cell = '<strong>'. $gross_cell .'</strong>'. $breakdown_gross;
-    }
-    if ($statistics && $count_views) {
-      $views = (empty($product['totalcount'])) ? 0 : $product['totalcount'];
-      $rows[] = array(
-        array('data' => $row_cell),
-        array('data' => $product_cell),
-        array('data' => $views),
-        array('data' => $sold_cell),
-        array('data' => $revenue_cell, 'nowrap' => 'nowrap'),
-        array('data' => $gross_cell, 'nowrap' => 'nowrap'),
-      );
-      $csv_rows[] = array($row_cell, $product_csv, $views, $sold_csv, $revenue_csv, $gross_csv);
-    }
-    else {
-      $rows[] = array(
-        array('data' => $row_cell),
-        array('data' => $product_cell),
-        array('data' => $sold_cell),
-        array('data' => $revenue_cell, 'nowrap' => 'nowrap'),
-        array('data' => $gross_cell, 'nowrap' => 'nowrap'),
-      );
-      $csv_rows[] = array($row_cell, $product_csv, $sold_csv, $revenue_csv, $gross_csv);
-    }
-  }
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No products found'), 'colspan' => count($header)));
-  }
-  $csv_data = uc_reports_store_csv('uc_products', $csv_rows);
-
-  $output = theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'));
-  $output .= theme_pager(NULL, $page_size);
-  $output .= '<div class="uc-reports-links">'. l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']) .'&nbsp;&nbsp;&nbsp;'. (!is_null($_GET['nopage']) ? l(t('Show paged records'), 'admin/store/reports/products') : l(t('Show all records'), 'admin/store/reports/products', array(), 'nopage=1')) .'</div>';
-  $output .= '<small>*'. t('Make sure %setting_name is set to %state in the <a href="!url">access log settings page</a> to enable views column.', array('%setting_name' => 'count content views', '%state' => 'enabled', '!url' => url('admin/logs/settings', 'destination=admin/store/reports/products'))) .'</small>';
-
-  return $output;
-}
-
-// Displays the sales summary report.
-function uc_reports_sales_summary() {
-  $timezone_offset = _uc_reports_timezone_offset();
-  $order_statuses = _uc_reports_order_statuses();
-  $format = variable_get('uc_date_format_default', 'm/d/Y');
-
-  $today_start = gmmktime(0, 0, 0, date('n'), date('j'), date('Y')) - $timezone_offset;
-  $today_end = gmmktime(23, 59, 59, date('n'), date('j'), date('Y')) - $timezone_offset;
-
-  // Build the report table header.
-  $header = array(t('Sales data'), t('Number of orders'), t('Total revenue'), t('Average order'));
-
-  // Calculate and add today's sales summary to the report table.
-  $today = _uc_reports_get_sales($today_start);
-
-  $rows[] = array(
-    l(t('Today, !date', array('!date' => format_date($today_start, 'custom', $format))), 'admin/store/orders/search/results/0/0/0/0/0/0/'. $today_start .'/'. $today_end),
-    $today['total'],
-    uc_currency_format($today['income']),
-    uc_currency_format($today['average']),
-  );
-
-  // Calculate and add yesterday's sales summary to the report table.
-  $yesterday = _uc_reports_get_sales($today_start - 86400);
-
-  $rows[] = array(
-    l(t('Yesterday, !date', array('!date' => format_date($today_start - 86400, 'custom', $format))), 'admin/store/orders/search/results/0/0/0/0/0/0/'. ($today_start - 86400) .'/'. ($today_end - 86400)),
-    $yesterday['total'],
-    uc_currency_format($yesterday['income']),
-    uc_currency_format($yesterday['average']),
-  );
-
-  // Get the sales report for the month.
-  $month = _uc_reports_get_sales($today_start, 'month');
-  $month_title = format_date($today_start, 'custom', 'M Y');
-
-  // Calculate the daily averages for the month.
-  $daily_orders = round($month['total'] / format_date(time(), 'custom', 'j'), 2);
-  $daily_revenue = round($month['income'] / format_date(time(), 'custom', 'j'), 2);
-
-  if ($daily_orders > 0) {
-    $daily_average = round($daily_revenue / $daily_orders, 2);
-  }
-  else {
-    $daily_average = 0;
-  }
-
-  // Add the daily averages for the month to the report table.
-  $rows[] = array(
-    t('Daily average for @month', array('@month' => $month_title)),
-    $daily_orders,
-    uc_currency_format($daily_revenue),
-    uc_currency_format($daily_average),
-  );
-
-  // Store the number of days remaining in the month.
-  $remaining_days = format_date($today_start, 'custom', 't') - format_date($today_start, 'custom', 'j');
-
-  // Add the projected totals for the month to the report table.
-  $rows[] = array(
-    t('Projected totals for @date', array('@date' => $month_title)),
-    round($month['total'] + ($daily_orders * $remaining_days), 2),
-    uc_currency_format(round($month['income'] + ($daily_revenue * $remaining_days), 2)),
-    '',
-  );
-
-  // Add the sales data report table to the output.
-  $output = theme('table', $header, $rows, array('class' => 'uc-sales-table'));
-
-  // Build the header statistics table header.
-  $header = array(array('data' => t('Statistics'), 'width' => '50%'), '');
-
-  $rows = array(
-    array(array('data' => t('Grand total sales')), array('data' => uc_currency_format(db_result(db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE order_status IN $order_statuses"))))),
-    array(array('data' => t('Customers total')), array('data' => db_result(db_query("SELECT COUNT(DISTINCT uid) FROM {uc_orders} WHERE order_status IN $order_statuses")))),
-    array(array('data' => t('New customers today')), array('data' => db_result(db_query("SELECT COUNT(DISTINCT uid) FROM {uc_orders} WHERE order_status IN $order_statuses AND %d >= created AND created >= %d", $today_end, $today_start)))),
-    array(array('data' => t('Online customers')), array('data' => db_result(db_query("SELECT COUNT(DISTINCT s.uid) FROM {sessions} as s LEFT JOIN {uc_orders} as o ON s.uid = o.uid WHERE s.uid > 0 AND o.order_status IN $order_statuses")))),
-  );
-
-  // Add the statistics table to the output.
-  $output .= theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'));
-
-  // Build the total orders by status table header.
-  $header = array(array('data' => t('Total orders by status'), 'width' => '50%'), '');
-  $rows = array();
-  $unknown = 0;
-
-  // Loop through the order statuses with their total number of orders.
-  $result = db_query("SELECT s.order_status_id, s.title, s.weight, COUNT(o.order_status) as order_count FROM {uc_orders} as o LEFT JOIN {uc_order_statuses} as s ON s.order_status_id = o.order_status GROUP BY order_status, s.title, s.weight ORDER BY s.weight DESC");
-  while ($status = db_fetch_array($result)) {
-    if (!empty($status['title'])) {
-      // Add the total number of orders with this status to the table.
-      $rows[] = array(
-        l($status['title'], 'admin/store/orders/sort/'. $status['order_status_id']),
-        $status['order_count'],
-      );
-    }
-    else {
-      // Keep track of the count of orders with an unknown status.
-      $unknown += $status['order_count'];
-    }
-  }
-
-  // Add the unknown status count to the table.
-  if ($unknown > 0) {
-    $rows[] = array(
-      t('Unknown status'),
-      $unknown,
-    );
-  }
-
-  // Add the total orders by status table to the output.
-  $output .= theme('table', $header, $rows, array('class' => 'uc-sales-table'));
-
-  return $output;
-}
-
-// Displays the yearly sales report form and table.
-function uc_reports_sales_year() {
-  $timezone_offset = _uc_reports_timezone_offset();
-  $order_statuses = _uc_reports_order_statuses();
-
-  // Get the year for the report from the URL.
-  if (intval(arg(5)) == 0) {
-    $year = format_date(time(), 'custom', 'Y');
-  }
-  else {
-    $year = arg(5);
-  }
-
-  // Build the header for the report table.
-  $header = array(t('Month'), t('Number of orders'), t('Total revenue'), t('Average order'));
-
-  // Build the header to the CSV export.
-  $csv_rows = array(array(t('Month'), t('Number of orders'), t('Total revenue'), t('Average order')));
-
-  // For each month of the year...
-  for ($i = 1; $i <= 12; $i++) {
-    // Calculate the start and end timestamps for the month in local time.
-    $month_start = gmmktime(0, 0, 0, $i, 1, $year) - $timezone_offset;
-    $month_end = gmmktime(23, 59, 59, $i + 1, 0, $year) - $timezone_offset;
-
-    // Get the sales report for the month.
-    $month_sales = _uc_reports_get_sales($month_start, 'month');
-
-    // Calculate the average order total for the month.
-    if ($month_sales['total'] != 0) {
-      $month_average = round($month_sales['income'] / $month_sales['total'], 2);
-    }
-    else {
-      $month_average = 0;
-    }
-
-    // Add the month's row to the report table.
-    $rows[] = array(
-      l(gmdate('M Y', $month_start), 'admin/store/orders/search/results/0/0/0/0/0/0/'. $month_start .'/'. $month_end),
-      $month_sales['total'],
-      uc_currency_format($month_sales['income']),
-      uc_currency_format($month_average),
-    );
-
-    // Add the data to the CSV export.
-    $csv_rows[] = array(
-      gmdate('M Y', $month_start),
-      $month_sales['total'],
-      uc_currency_format($month_sales['income']),
-      uc_currency_format($month_average),
-    );
-  }
-
-  // Calculate the start and end timestamps for the year in local time.
-  $year_start = gmmktime(0, 0, 0, 1, 1, $year) - $timezone_offset;
-  $year_end = gmmktime(23, 59, 59, 1, 0, $year + 1) - $timezone_offset;
-
-  // Get the sales report for the year.
-  $year_sales = _uc_reports_get_sales($year_start, 'year');
-
-  // Calculate the average order total for the year.
-  if ($year_sales['total'] != 0) {
-    $year_average = round($year_sales['income'] / $year_sales['total'], 2);
-  }
-  else {
-    $year_average = 0;
-  }
-
-  // Add the total row to the report table.
-  $rows[] = array(
-    l(t('Total @year', array('@year' => $year)), 'admin/store/orders/search/results/0/0/0/0/0/0/'. $year_start .'/'. $year_end),
-    $year_sales['total'],
-    uc_currency_format($year_sales['income']),
-    uc_currency_format($year_average),
-  );
-
-  // Add the total data to the CSV export.
-  $csv_rows[] = array(
-    t('Total @year', array('@year' => $year)),
-    $year_sales['total'],
-    uc_currency_format($year_sales['income']),
-    uc_currency_format($year_average),
-  );
-
-  // Cache the CSV export.
-  $csv_data = uc_reports_store_csv('uc_sales_yearly', $csv_rows);
-
-  // Build the page output holding the form, table, and CSV export link.
-  $output = drupal_get_form('uc_reports_sales_year_form', $year)
-          . theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'))
-           .'<div class="uc-reports-links">'. l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']) .'</div>';
-
-  return $output;
-}
-
-// Form to specify a year for the yearly sales report.
-function uc_reports_sales_year_form($year) {
-  $form['year'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Sales year'),
-    '#default_value' => $year,
-    '#maxlength' => 4,
-    '#size' => 4,
-    '#prefix' => '<div class="sales-year">',
-    '#suffix' => '</div>',
-  );
-
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('View'),
-    '#prefix' => '<div class="sales-year">',
-    '#suffix' => '</div>',
-  );
-
-  return $form;
-}
-
-function uc_reports_sales_year_form_submit($form_id, $form_values) {
-  drupal_goto('admin/store/reports/sales/year/'. $form_values['year']);
-}
-
-// Displays the custom sales report form and table.
-function uc_reports_sales_custom() {
-  $timezone_offset = _uc_reports_timezone_offset();
-  $format = variable_get('uc_date_format_default', 'm/d/Y');
-
-  // Use default report parameters if we don't detect values in the URL.
-  if (arg(5) == '') {
-    $args = array(
-      'start_date' => gmmktime(0, 0, 0, format_date(time(), 'custom', 'n'), 1, format_date(time(), 'custom', 'Y') - 1) - $timezone_offset,
-      'end_date' => time() - $timezone_offset,
-      'length' => 'month',
-      'status' => FALSE,
-      'detail' => FALSE,
-    );
-  }
-  else {
-    $args = array(
-      'start_date' => arg(5),
-      'end_date' => arg(6),
-      'length' => arg(7),
-      'status' => explode(',', urldecode(arg(8))),
-      'detail' => arg(9),
-    );
-  }
-
-  // Pull the order statuses into a SQL friendly array.
-  if ($args['status'] === FALSE) {
-    $order_statuses = _uc_reports_order_statuses();
-  }
-  else {
-    $order_statuses = "('". implode("', '", $args['status']) ."')";
-  }
-
-  // Build the header for the report table.
-  $header = array(t('Date'), t('Number of orders'), t('Products sold'), t('Total revenue'));
-
-  // Build the header to the CSV export.
-  $csv_rows = array(array(t('Date'), t('Number of orders'), t('Products sold'), t('Total revenue')));
-
-  // Grab the subreports based on the date range and the report breakdown.
-  $subreports = _uc_reports_subreport_intervals($args['start_date'], $args['end_date'], $args['length']);
-
-  // Loop through the subreports and build the report table.
-  foreach ($subreports as $subreport) {
-    $product_data = '';
-    $product_csv = '';
-    $order_data = '';
-    $order_csv = '';
-
-    // Create the date title for the subreport.
-    if ($args['length'] == 'day') {
-      $date = format_date($subreport['start'] - $timezone_offset, 'custom', $format .' - D');
-    }
-    else {
-      $date = format_date($subreport['start'] - $timezone_offset, 'custom', $format) .' - '. format_date($subreport['end'], 'custom', $format);
-    }
-
-    // Build the order data for the subreport.
-    $result = db_query("SELECT COUNT(*) as count, title FROM {uc_orders} LEFT JOIN {uc_order_statuses} ON order_status_id = order_status WHERE %d <= created AND created <= %d AND order_status IN $order_statuses GROUP BY order_status ORDER BY weight ASC", $subreport['start'], $subreport['end']);
-    $statuses = array();
-
-    // Put the order counts into an array by status.
-    while ($status = db_fetch_object($result)) {
-      $statuses[] = t('!count - @title', array('!count' => $status->count, '@title' => $status->title));
-    }
-
-    $order_data = implode('<br />', $statuses);
-    $order_csv = implode("\n", $statuses);
-
-    // Build the product data for the subreport.
-    if ($args['detail']) {
-      // Grab the detailed product breakdown if selected.
-      $result = db_query("SELECT SUM(op.qty) as count, n.title, n.nid FROM {uc_order_products} as op LEFT JOIN {uc_orders} as o ON o.order_id = op.order_id LEFT JOIN {node} as n ON n.nid = op.nid WHERE %d <= o.created AND o.created <= %d AND o.order_status IN $order_statuses GROUP BY n.nid ORDER BY count DESC, n.title ASC", $subreport['start'], $subreport['end']);
-      while ($product_breakdown = db_fetch_object($result)) {
-        $product_data .= $product_breakdown->count .' x '. l($product_breakdown->title, 'node/'. $product_breakdown->nid) ."<br/>\n";
-        $product_csv .= $product_breakdown->count .' x '. $product_breakdown->title ."\n";
-      }
-    }
-    else {
-      // Otherwise just display the total number of products sold.
-      $product_data = db_result(db_query("SELECT SUM(qty) FROM {uc_orders} as o LEFT JOIN {uc_order_products} as op ON o.order_id = op.order_id WHERE %d <= created AND created <= %d AND order_status IN $order_statuses", $subreport['start'], $subreport['end']));
-      $product_csv = $product_data;
-    }
-
-    // Tally up the revenue from the orders.
-    $revenue_count = db_result(db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE %d <= created AND created <= %d AND order_status IN $order_statuses", $subreport['start'], $subreport['end']));
-
-    // Add the subreport's row to the report table.
-    $rows[] = array(
-      array('data' => $date, 'nowrap' => 'nowrap'),
-      empty($order_data) ? '0' : $order_data,
-      empty($product_data) ? '0' : $product_data,
-      uc_currency_format($revenue_count),
-    );
-
-    // Add the data to the CSV export.
-    $csv_rows[] = array(
-      $date,
-      empty($order_csv) ? '0' : $order_csv,
-      empty($product_csv) ? '0' : $product_csv,
-      uc_currency_format($revenue_count),
-    );
-  }
-
-  // Calculate the totals for the report.
-  $order_total = db_result(db_query("SELECT COUNT(*) FROM {uc_orders} WHERE %d <= created AND created <= %d AND order_status IN $order_statuses", $args['start_date'], $args['end_date']));
-  $product_total = db_result(db_query("SELECT SUM(qty) FROM {uc_orders} AS o LEFT JOIN {uc_order_products} AS op ON o.order_id = op.order_id WHERE %d <= created AND created <= %d AND order_status IN $order_statuses", $args['start_date'], $args['end_date']));
-  $revenue_total = db_result(db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE %d <= created AND created <= %d AND order_status IN $order_statuses", $args['start_date'], $args['end_date']));
-
-  // Add the total row to the report table.
-  $rows[] = array(
-    t('Total'),
-    $order_total,
-    $product_total,
-    uc_currency_format($revenue_total),
-  );
-
-  // Add the total data to the CSV export.
-  $csv_rows[] = array(
-    t('Total'),
-    $order_total,
-    $product_total,
-    uc_currency_format($revenue_total),
-  );
-
-  // Cache the CSV export.
-  $csv_data = uc_reports_store_csv('uc_sales_custom', $csv_rows);
-
-  // Build the page output holding the form, table, and CSV export link.
-  $output = drupal_get_form('uc_reports_sales_custom_form', $args, $args['status'])
-          . theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'))
-           .'<div class="uc-reports-links">'. l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']) .'</div>';
-
-  return $output;
-}
-
-// Form builder for the custom sales report.
-function uc_reports_sales_custom_form($values, $statuses) {
-  $form['search'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Customize sales report parameters'),
-    '#description' => t('Adjust these values and update the report to build your custom sales summary. Once submitted, the report may be bookmarked for easy reference in the future.'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-
-  $form['search']['start_date'] = array(
-    '#type' => 'date',
-    '#title' => t('Start date'),
-    '#default_value' => array(
-      'month' => format_date($values['start_date'], 'custom', 'n'),
-      'day' => format_date($values['start_date'], 'custom', 'j'),
-      'year' => format_date($values['start_date'], 'custom', 'Y'),
-    ),
-  );
-  $form['search']['end_date'] = array(
-    '#type' => 'date',
-    '#title' => t('End date'),
-    '#default_value' => array(
-      'month' => format_date($values['end_date'], 'custom', 'n'),
-      'day' => format_date($values['end_date'], 'custom', 'j'),
-      'year' => format_date($values['end_date'], 'custom', 'Y'),
-    ),
-  );
-
-  $form['search']['length'] = array(
-    '#type' => 'select',
-    '#title' => t('Results breakdown'),
-    '#description' => t('Large daily reports may take a long time to display.'),
-    '#options' => array(
-      'day' => t('daily'),
-      'week' => t('weekly'),
-      'month' => t('monthly'),
-      'year' => t('yearly'),
-    ),
-    '#default_value' => $values['length'],
-  );
-
-  $options = array();
-  foreach (uc_order_status_list() as $status) {
-    $options[$status['id']] = $status['title'];
-  }
-
-  if ($statuses === FALSE) {
-    $statuses = variable_get('uc_reports_reported_statuses', array('completed'));
-  }
-
-  $form['search']['status'] = array(
-    '#type' => 'select',
-    '#title' => t('Order statuses'),
-    '#description' => t('Only orders with selected statuses will be included in the report.') .'<br />'. t('Hold Ctrl + click to select multiple statuses.'),
-    '#options' => $options,
-    '#default_value' => $statuses,
-    '#multiple' => TRUE,
-    '#size' => 5,
-  );
-
-  $form['search']['detail'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Show a detailed list of products ordered.'),
-    '#default_value' => $values['detail'],
-  );
-
-  $form['search']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Update report'),
-  );
-
-  return $form;
-}
-
-function uc_reports_sales_custom_form_validate($form_id, $form_values) {
-  if (empty($form_values['status'])) {
-    form_set_error('status', t('You must select at least one order status.'));
-  }
-}
-
-function uc_reports_sales_custom_form_submit($form_id, $form_values) {
-  $timezone_offset = _uc_reports_timezone_offset();
-
-  // Build the start and end dates from the form.
-  $start_date = gmmktime(0, 0, 0, $form_values['start_date']['month'], $form_values['start_date']['day'], $form_values['start_date']['year']) - $timezone_offset;
-  $end_date = gmmktime(23, 59, 59, $form_values['end_date']['month'], $form_values['end_date']['day'], $form_values['end_date']['year']) - $timezone_offset;
-
-  $args = array(
-    $start_date,
-    $end_date,
-    $form_values['length'],
-    urlencode(implode(',', array_keys($form_values['status']))),
-    $form_values['detail'],
-  );
-
-  drupal_goto('admin/store/reports/sales/custom/'. implode('/', $args));
-}
-
-// Form builder for the admin settings.
-function uc_reports_settings_overview() {
-  $form['uc_reports_table_size'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Paged table size'),
-    '#description' => t('The maximum number of rows displayed on one page for a report table.'),
-    '#default_value' => variable_get('uc_reports_table_size', 30),
-  );
-
-  $options = array();
-  foreach (uc_order_status_list() as $status) {
-    $options[$status['id']] = $status['title'];
-  }
-
-  $form['uc_reports_reported_statuses'] = array(
-    '#type' => 'select',
-    '#title' => t('Reported statuses'),
-    '#description' => t('Only orders with selected statuses will be included in reports.'),
-    '#options' => $options,
-    '#default_value' => variable_get('uc_reports_reported_statuses', array('completed')),
-    '#multiple' => TRUE,
-  );
-
-  return system_settings_form($form);
 }
 
 /******************************************************************************
@@ -866,11 +224,11 @@ function uc_reports_store_csv($report_id, $rows) {
   $user_id = (empty($user->uid)) ? session_id() : $user->uid;
   foreach ($rows as $row) {
     foreach ($row as $index => $column) {
-      $row[$index] = '"'. str_replace('"','""', $column) .'"';
+      $row[$index] = '"'. str_replace('"', '""', $column) .'"';
     }
     $csv_output .= implode(',', $row) ."\n";
   }
-  cache_set('uc_reports_'. $report_id .'_'. $user_id, 'cache', $csv_output, time() + 86400);
+  cache_set('uc_reports_'. $report_id .'_'. $user_id, $csv_output, 'cache', time() + 86400);
   return array('user' => $user_id, 'report' => $report_id, 'csv' => $csv_output);
 }
 
@@ -932,71 +290,62 @@ function _uc_reports_get_csv($report_id, $user_id) {
  *   - "average" => The average revenue produced for each order
  */
 function _uc_reports_get_sales($time, $period = 'day') {
-  $output = array();
-  $output['income'] = 0;
+  $timezone = _uc_reports_timezone_offset();
+
+  // Get the current date markers.
+  $date = array(
+    'day' => format_date($time, 'custom', 'j', 0),
+    'month' => format_date($time, 'custom', 'n', 0),
+    'year' => format_date($time, 'custom', 'Y', 0),
+  );
+
+  // Add one to the granularity chosen, and use it to calc the new time.
+  $date[$period] += 1;
+  $new_time = gmmktime(0, 0, 0, $date['month'], $date['day'], $date['year']);
+
+  // Set up the default SQL for getting orders with the proper status
+  // within this period.
   $order_statuses = _uc_reports_order_statuses();
+  $sql_frag = " FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND created >= $time and created < $new_time";
 
-  switch ($GLOBALS['db_type']) {
-    case 'mysqli':
-    case 'mysql':
-      switch ($period) {
-        default:
-        case 'day':
-          $output['date'] = format_date($time, 'custom', 'n') .'-'. format_date($time, 'custom', 'j');
-          $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE \"". format_date($time, 'custom', 'Y') .'-'. format_date($time, 'custom', 'm') .'-'. format_date($time, 'custom', 'd') ."%%\"");
-          break;
-        case 'month':
-          $output['date'] = format_date($time, 'custom', 'n');
-          $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE \"". format_date($time, 'custom', 'Y') .'-'. format_date($time, 'custom', 'm') ."%%\"");
-          break;
-        case 'year':
-          $output['date'] = format_date($time, 'custom', 'Y');
-          $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE \"". format_date($time, 'custom', 'Y') ."-%%\"");
-          break;
-    }
-    case 'pgsql':
-      switch ($period) {
-        default:
-        case 'day':
-          $output['date'] = format_date($time, 'custom', 'n') .'-'. format_date($time, 'custom', 'j');
-          $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE '". format_date($time, 'custom', 'Y') .'-'. format_date($time, 'custom', 'm') .'-'. format_date($time, 'custom', 'd') ."%%'");
-          break;
-        case 'month':
-          $output['date'] = format_date($time, 'custom', 'n');
-          $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE '". format_date($time, 'custom', 'Y') .'-'. format_date($time, 'custom', 'm') ."%%'");
-          break;
-        case 'year':
-          $output['date'] = format_date($time, 'custom', 'Y');
-          $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND FROM_UNIXTIME(created) LIKE '". format_date($time, 'custom', 'Y') ."-%%'");
-          break;
-      }
-      break;
-  }
-
+  // Get the total value of the orders.
+  $output = array('income' => 0);
+  $orders = db_query("SELECT o.order_total ". $sql_frag);
   while ($order = db_fetch_object($orders)) {
     $output['income'] += $order->order_total;
   }
-  $output['total'] = db_num_rows($orders);
-  $output['total'] = (!empty($output['total'])) ? $output['total'] : 0;
-  $output['average'] = ($output['total'] != 0) ? round($output['income'] / $output['total'], 2) : 0;
+
+  // Get the total amount of orders.
+  $count = db_result(db_query("SELECT COUNT(o.order_total) ". $sql_frag));
+  $output['total'] = $count;
+
+  // Average for this period.
+  $output['average'] = ($count != 0) ? round($output['income'] / $count, 2) : 0;
+
   return $output;
 }
 
-// Returns a SQL friendly array of order statuses for orders used in reports.
+/**
+ * Return a SQL friendly array of order statuses for orders used in reports.
+ */
 function _uc_reports_order_statuses() {
   $statuses = variable_get('uc_reports_reported_statuses', array('completed'));
 
   return "('". implode("', '", $statuses) ."')";
 }
 
-// Returns the sitewide timezone offset for use in reports.
+/**
+ * Return the sitewide timezone offset for use in reports.
+ */
 function _uc_reports_timezone_offset() {
   return variable_get('date_default_timezone', 0);
 }
 
 /**
- * With a given time span for a report and specified interval for subreports,
- * return a list of timespans for subreports over that report's time span.
+ * Return a list of timespans for subreports over that report's time span.
+ *
+ * To be used with a given time span for a report and specified interval for
+ * subreports.
  *
  * @param $start
  *   A UNIX time stamp representing the time to start the report.
@@ -1024,12 +373,13 @@ function _uc_reports_subreport_intervals($report_start, $report_end, $interval) 
 
 /**
  * Given a timestamp and a length of time, return the offset timestamp
+ *
  * @param $time
  *   A UNIX timestamp
  * @param $interval
  *   The text representing the amount of time (e.g. 'day', 'week')
  * @return:
- * The offset UNIX timestamp
+ *   The offset UNIX timestamp
  */
 function _uc_reports_end_interval($time, $interval = 'month') {
   if (empty($time)) {
@@ -1038,12 +388,19 @@ function _uc_reports_end_interval($time, $interval = 'month') {
 
   $temp = strtotime('+1 '. $interval, $time) - 1;
 
-  //if (format_date($time, 'custom', 'H') != format_date($temp, 'custom', 'H')) {
-  if (format_date($time, 'custom', 'H') == format_date($temp, 'custom', 'H')) {
-    //$temp = (format_date($time, 'custom', 'm') == 3) ? $temp + 3600 : $temp - 3600;
-    if (format_date($temp, 'custom', 'H') == '00') {
-      $temp -= 3600;
-    }
+  switch ($interval) {
+    case 'day':
+      $temp = gmmktime(0, 0, -1, gmdate('n', $time), gmdate('j', $time) + 1, gmdate('Y', $time));
+      break;
+    case 'week':
+      $temp = gmmktime(0, 0, -1, gmdate('n', $time), gmdate('j', $time) + 7, gmdate('Y', $time));
+      break;
+    case 'month':
+      $temp = gmmktime(23, 59, 59, gmdate('n', $time) + 1, 0, gmdate('Y', $time));
+      break;
+    case 'year':
+      $temp = gmmktime(23, 59, 59, gmdate('n', $time), 0, gmdate('Y', $time) + 1);
+      break;
   }
 
   return $temp;

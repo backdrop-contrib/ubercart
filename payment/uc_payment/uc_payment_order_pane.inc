@@ -18,7 +18,11 @@ function uc_order_pane_payment($op, $arg1) {
   switch ($op) {
     case 'view':
       if (variable_get('uc_payment_tracking', TRUE)) {
-        $output = t('Balance: @balance', array('@balance' => uc_currency_format(uc_payment_balance($arg1))));
+        $context = array(
+          'revision' => 'formatted-original',
+          'type' => 'amount',
+        );
+        $output = t('Balance: @balance', array('@balance' => uc_price(uc_payment_balance($arg1), $context)));
         $output .= ' ('. l(t('View'), 'admin/store/orders/'. $arg1->order_id .'/payments') .')<br />';
       }
       $method_name = _payment_method_data($arg1->payment_method, 'review');
@@ -51,9 +55,9 @@ function uc_order_pane_payment($op, $arg1) {
       return $output;
 
     case 'edit-form':
-      uc_add_js('misc/progress.js');
-      uc_add_js("var def_payment_msg = '';", 'inline');
-      
+      drupal_add_js('misc/progress.js');
+      drupal_add_js(array('defPaymentMsg' => ''), 'setting');
+
       $form['payment'] = array(
         '#type' => 'fieldset',
         '#title' => t("Modify 'Payment info'"),
@@ -69,21 +73,25 @@ function uc_order_pane_payment($op, $arg1) {
         '#title' => t('Payment method'),
         '#default_value' => $arg1->payment_method,
         '#options' => (is_array($options)) ? $options : array(t('None available')),
-        '#attributes' => array('onchange' => "add_order_save_hold(); get_payment_details('admin/store/orders/". $arg1->order_id ."/payment_details/' + this.value);"),
+        '#attributes' => array('onchange' => "add_order_save_hold(); get_payment_details(Drupal.settings.ucURL.adminOrders + '". $arg1->order_id ."/payment_details/' + this.value);"),
         '#disabled' => (is_array($options)) ? FALSE : TRUE,
       );
       return $form;
 
     case 'edit-theme':
-      uc_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
+      drupal_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
+
+      // build a JS array of our payment methods
       $methods = _payment_method_list();
-      $js = 'var methods = {';
+      $method_array_js = array();
       foreach ($methods as $method) {
-        $js .= '"'. $method['name'] .'": "' . $method['id'] .'", ';
+        $method_array_js[$method['name']] = $method['id'];
       }
-      $js = rtrim($js, ' ,') .'};';
-      uc_add_js($js, 'inline');
-      uc_add_js("\$(document).ready( function () { add_order_save_hold(); get_payment_details('admin/store/orders/' + \$('#edit-order-id').val() + '/payment_details/' + \$('#edit-payment-method').val()); } );", 'inline');
+      drupal_add_js(array('methods' => $method_array_js), 'setting');
+
+      // begin the order lock, also get payment details
+      drupal_add_js(array('ucOrderInitiate' => TRUE), 'setting');
+
       $output = '<table class="order-edit-table">';
       foreach (element_children($arg1['payment']) as $field) {
         $title = $arg1['payment'][$field]['#title'];
@@ -98,7 +106,7 @@ function uc_order_pane_payment($op, $arg1) {
       $changes['payment_method'] = $arg1['payment_method'];
       $func = _payment_method_data($arg1['payment_method'], 'callback');
       if (function_exists($func) && ($return = $func('edit-process', $arg1)) != NULL && is_array($return)) {
-         $changes = array_merge($changes, $return);
+        $changes = array_merge($changes, $return);
       }
       return $changes;
   }

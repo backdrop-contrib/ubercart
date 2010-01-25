@@ -1,20 +1,36 @@
 // $Id$
 
-var copy_box_checked = false;
-
 /**
- * Scan the DOM and display the cancel and continue buttons.
+ * @file
+ * Adds effects and behaviors to elements on the checkout page.
  */
-$(document).ready(
-  function() {
-    $('.show-onload').show();
-  }
-);
+
+var copy_box_checked = false;
+var uc_ce_submit_disable = false;
 
 /**
+ * Scan the DOM and displays the cancel and continue buttons.
+ */
+Drupal.behaviors.ucShowOnLoad = function(context) {
+  $('.show-onload:not(.ucShowOnLoad-processed)', context).addClass('ucShowOnLoad-processed').show();
+}
+
+/**
+ * Add a throbber to the submit order button on the review order form.
+ */
+Drupal.behaviors.ucSubmitOrderThrobber = function(context) {
+  $('form#uc-cart-checkout-review-form input#edit-submit:not(.ucSubmitOrderThrobber-processed)', context).addClass('ucSubmitOrderThrobber-processed').click(function() {
+    $(this).clone().insertAfter(this).attr('disabled', true).after('<span class="ubercart-throbber">&nbsp;&nbsp;&nbsp;&nbsp;</span>').end().hide();
+    $('#uc-cart-checkout-review-form #edit-back').attr('disabled', true);
+  });
+}
+
+/**
+ * Behavior for hte Next buttons.
+ *
  * When a customer clicks a Next button, expand the next pane, remove the
  * button, and don't let it collapse again.
- */                             
+ */
 function uc_cart_next_button_click(button, pane_id, current) {
   if (current !== 'false') {
     $('#' + current + '-pane legend a').click();
@@ -31,6 +47,8 @@ function uc_cart_next_button_click(button, pane_id, current) {
 }
 
 /**
+ * Behavior for the copy address checkbox.
+ *
  * Copy the delivery information to the payment information on the checkout
  * screen if corresponding fields exist.
  */
@@ -76,15 +94,31 @@ function uc_cart_copy_address(checked, source, target) {
   return false;
 }
 
+/**
+ * Copy a value from the delivery address to the billing address.
+ */
 function update_billing_field(field) {
   if (copy_box_checked) {
-    $('#edit-panes-billing-billing' + field.id.substring(28)).val($(field).val());
+    if (field.id.substring(29) == 'zone') {
+      $('#edit-panes-billing-billing-zone').empty().append($('#edit-panes-delivery-delivery-zone').children().clone());
+      $('#edit-panes-billing-billing-zone').attr('disabled', $('#edit-panes-delivery-delivery-zone').attr('disabled'));
+    }
+
+    $('#edit-panes-billing-billing' + field.id.substring(28)).val($(field).val()).change();
   }
 }
 
+/**
+ * Copy a value from the billing address to the delivery address.
+ */
 function update_delivery_field(field) {
   if (copy_box_checked) {
-    $('#edit-panes-delivery-delivery' + field.id.substring(26)).val($(field).val());
+    if (field.id.substring(27) == 'zone') {
+      $('#edit-panes-delivery-delivery-zone').empty().append($('#edit-panes-billing-billing-zone').children().clone());
+      $('#edit-panes-delivery-delivery-zone').attr('disabled', $('#edit-panes-billing-billing-zone').attr('disabled'));
+    }
+
+    $('#edit-panes-delivery-delivery' + field.id.substring(26)).val($(field).val()).change();
   }
 }
 
@@ -98,7 +132,7 @@ function apply_address(type, address_str) {
 
   eval('var address = ' + address_str + ';');
   var temp = type + '-' + type;
-  
+
   $('#edit-panes-' + temp + '-first-name').val(address.first_name).trigger('change');
   $('#edit-panes-' + temp + '-last-name').val(address.last_name).trigger('change');
   $('#edit-panes-' + temp + '-phone').val(address.phone).trigger('change');
@@ -109,7 +143,7 @@ function apply_address(type, address_str) {
   $('#edit-panes-' + temp + '-postal-code').val(address.postal_code).trigger('change');
 
   if ($('#edit-panes-' + temp + '-country').val() != address.country) {
-    $('#edit-panes-' + temp + '-country').val(address.country);
+    $('#edit-panes-' + temp + '-country').val(address.country).trigger('change');
     try {
       uc_update_zone_select('edit-panes-' + temp + '-country', address.zone);
     }
@@ -117,4 +151,21 @@ function apply_address(type, address_str) {
   }
 
   $('#edit-panes-' + temp + '-zone').val(address.zone).trigger('change');
+}
+
+/**
+ * Behavior for the Review Order button.
+ *
+ * This function adds a cloned, disabled submit button, and appends a throbber
+ * after it. This prevents multiple clicks on the submit button, and also gives
+ * it that slick Web 2.0 feel :). The back button is also disabled upon submission.
+ * This code was improved by quicksketch.
+ */
+Drupal.behaviors.ucDisableNav = function(context) {
+  $('form#uc-cart-checkout-review-form input#edit-submit:not(.ucDisableNav-processed)', context).addClass('ucDisableNav-processed').click(function() {
+    if (uc_ce_submit_disable) {
+      $(this).clone().insertAfter(this).attr('disabled', true).after('<span id=\"submit-throbber\" style=\"background: url(' + Drupal.settings.basePath + 'misc/throbber.gif) no-repeat 100% -20px;\">&nbsp;&nbsp;&nbsp;&nbsp;</span>').end().hide();
+      $('#uc-cart-checkout-review-form #edit-back').attr('disabled', true);
+    }
+  });
 }

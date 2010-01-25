@@ -1,30 +1,76 @@
 <?php
 // $Id$
 
-function uc_ups_install() {
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-      db_query("CREATE TABLE {uc_ups_products} (
-        `vid` mediumint(9) unsigned NOT NULL default 0,
-        `nid` mediumint(9) unsigned NOT NULL default 0,
-        `pkg_type` varchar(2) NOT NULL,
-        PRIMARY KEY (`vid`)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ;");
-    break;
-    case 'pgsql':
-      db_query("CREATE TABLE {uc_ups_products} (
-        vid int_unsigned NOT NULL default 0,
-        nid int_unsigned NOT NULL default 0,
-        pkg_type varchar(2) NOT NULL default '',
-        PRIMARY KEY (vid)
-      );");
-    break;
+/**
+ * @file
+ * Install hooks for uc_ups.module.
+ */
+
+/**
+ * Implementation of hook_requirements().
+ */
+function uc_ups_requirements($phase) {
+  $t = get_t();
+
+  $has_simplexml = class_exists('SimpleXMLElement');
+  $requirements['uc_ups_simplexml'] = array(
+    'title' => $t('SimpleXML'),
+    'value' => $has_simplexml ? $t('Enabled') : $t('Not found'),
+  );
+  if (!$has_simplexml) {
+    $requirements['uc_ups_simplexml']['severity'] = REQUIREMENT_ERROR;
+    $requirements['uc_ups_simplexml']['description'] = $t('UPS requires the PHP <a href="!simplexml_url">SimpleXML</a> library.', array('!simplexml_url' => 'http://php.net/manual/en/simplexml.setup.php'));
   }
+
+  return $requirements;
 }
 
+/**
+ * Implementation of hook_schema().
+ */
+function uc_ups_schema() {
+  $schema = array();
+
+  $schema['uc_ups_products'] = array(
+    'fields' => array(
+      'vid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'pkg_type' => array(
+        'type' => 'varchar',
+        'length' => 2,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('vid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function uc_ups_install() {
+  drupal_install_schema('uc_ups');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
 function uc_ups_uninstall() {
-  db_query("DROP TABLE {uc_ups_products}");
+  drupal_uninstall_schema('uc_ups');
+
   variable_del('uc_ups_access_license');
   variable_del('uc_ups_shipper_number');
   variable_del('uc_ups_user_id');
@@ -37,6 +83,7 @@ function uc_ups_uninstall() {
   variable_del('uc_ups_markup');
   variable_del('uc_ups_all_in_one');
   variable_del('uc_ups_unit_system');
+  variable_del('uc_ups_insurance');
 }
 
 function uc_ups_update_1() {
@@ -47,7 +94,7 @@ function uc_ups_update_1() {
       $ret[] = update_sql("ALTER TABLE {uc_ups_products} ADD COLUMN units varchar(255) NOT NULL default 'in' AFTER height");
     break;
     case 'pgsql':
-      db_add_column($ret, 'uc_ups_products', 'units', 'varchar(255)', array('not null' => true, 'default' => 'in'));
+      db_add_column($ret, 'uc_ups_products', 'units', 'varchar(255)', array('not null' => TRUE, 'default' => 'in'));
     break;
   }
   return $ret;
@@ -61,7 +108,7 @@ function uc_ups_update_2() {
       $ret[] = update_sql("ALTER TABLE {uc_ups_products} ADD COLUMN qty smallint unsigned NOT NULL default '1' AFTER pkg_type");
     break;
     case 'pgsql':
-      db_add_column($ret, 'uc_ups_products', 'qty', 'smallint unsigned', array('not null' => true, 'default' => 1));
+      db_add_column($ret, 'uc_ups_products', 'qty', 'smallint unsigned', array('not null' => TRUE, 'default' => 1));
     break;
   }
   return $ret;
@@ -97,7 +144,7 @@ function uc_ups_update_4() {
       $ret[] = update_sql("ALTER TABLE {uc_ups_products} ADD PRIMARY KEY (vid)");
     break;
     case 'pgsql':
-      db_add_column($ret, 'uc_ups_products', 'vid', 'integer unsigned', array('not null' => true, 'default' => 0));
+      db_add_column($ret, 'uc_ups_products', 'vid', 'integer unsigned', array('not null' => TRUE, 'default' => 0));
       $ret[] = update_sql("ALTER TABLE {uc_ups_products} DROP CONSTRAINT {uc_ups_products}_nid_key");
       $result = db_query("SELECT nid, vid FROM {node}");
       while ($product = db_fetch_object($result)) {
@@ -112,19 +159,19 @@ function uc_ups_update_4() {
 function uc_ups_update_5() {
   $ret = array();
   $markup = variable_get('uc_ups_markup', '0%');
-  if (strpos($markup, '%') !== false) {
+  if (strpos($markup, '%') !== FALSE) {
     variable_set('uc_ups_markup_type', 'percentage');
     variable_set('uc_ups_markup', floatval(rtrim($markup, '%')));
   }
-  else if (strpos($markup, '$') !== false) {
+  elseif (strpos($markup, '$') !== FALSE) {
     variable_set('uc_ups_markup_type', 'currency');
     variable_set('uc_ups_markup', floatval(ltrim($markup, '$')));
   }
-  else if (floatval($markup)) {
+  elseif (floatval($markup)) {
     variable_set('uc_ups_markup_type', 'multiplier');
     variable_set('uc_ups_markup', floatval($markup));
   }
-  $ret[] = array('success' => true, 'query' => 'Added UPS markup type.');
+  $ret[] = array('success' => TRUE, 'query' => 'Added UPS markup type.');
   return $ret;
 }
 
@@ -132,9 +179,19 @@ function uc_ups_update_6() {
   $ret = array();
   switch ($GLOBALS['db_type']) {
     case 'pgsql':
-      db_change_column($ret, 'uc_ups_prodcts', 'vid', 'vid', 'int_unsigned', array('not null' => true, 'default' => 0));
-      db_change_column($ret, 'uc_ups_prodcts', 'nid', 'nid', 'int_unsigned', array('not null' => true, 'default' => 0));
+      db_change_column($ret, 'uc_ups_prodcts', 'vid', 'vid', 'int_unsigned', array('not null' => TRUE, 'default' => 0));
+      db_change_column($ret, 'uc_ups_prodcts', 'nid', 'nid', 'int_unsigned', array('not null' => TRUE, 'default' => 0));
     break;
   }
+  return $ret;
+}
+
+function uc_ups_update_6000() {
+  $ret = array();
+
+  db_drop_primary_key($ret, 'uc_ups_products');
+  db_change_field($ret, 'uc_ups_products', 'vid', 'vid', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0), array('primary key' => array('vid')));
+  db_change_field($ret, 'uc_ups_products', 'nid', 'nid', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+
   return $ret;
 }
