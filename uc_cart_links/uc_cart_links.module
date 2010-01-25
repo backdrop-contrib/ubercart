@@ -17,45 +17,40 @@
 /**
  * Implementation of hook_menu().
  */
-function uc_cart_links_menu($may_cache) {
-  if ($may_cache) {
-    $items[] = array(
-      'path' => 'admin/store/settings/cart_links',
-      'title' => t('Cart links settings'),
-      'description' => t('Configure and craft special product add to cart links.'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('uc_cart_links_settings_form'),
-      'access' => user_access('administer cart links'),
-      'type' => MENU_NORMAL_ITEM,
-    );
-    $items[] = array(
-      'path' => 'admin/store/reports/cart_links',
-      'title' => t('Cart links clicks'),
-      'description' => t('Track clicks through cart links.'),
-      'callback' => 'uc_cart_links_report',
-      'access' => user_access('view cart links report'),
-      'type' => MENU_NORMAL_ITEM,
-    );
-    $items[] = array(
-      'path' => 'admin/store/help/cart_links',
-      'title' => t('Creating cart links'),
-      'description' => t('Learn how to create cart links for your products.'),
-      'callback' => 'uc_cart_links_creation_help',
-      'access' => user_access('administer store'),
-      'type' => MENU_NORMAL_ITEM,
-    );
-  }
-  else {
-    $items[] = array(
-      'path' => 'cart/add/'. arg(2),
-      'title' => t('Add to cart'),
-      'callback' => 'uc_cart_links_process',
-      'callback arguments' => array(arg(2)),
-      'access' => user_access('access content'),
-      'type' => MENU_CALLBACK,
-    );
-
-  }
+function uc_cart_links_menu() {
+  $items['admin/store/settings/cart_links'] = array(
+    'title' => 'Cart links settings',
+    'description' => 'Configure and craft special product add to cart links.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_cart_links_settings_form'),
+    'access arguments' => array('administer cart links'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'uc_cart_links.admin.inc',
+  );
+  $items['admin/store/reports/cart_links'] = array(
+    'title' => 'Cart links clicks',
+    'description' => 'Track clicks through cart links.',
+    'page callback' => 'uc_cart_links_report',
+    'access arguments' => array('view cart links report'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'uc_cart_links.admin.inc',
+  );
+  $items['admin/store/help/cart_links'] = array(
+    'title' => 'Creating cart links',
+    'description' => 'Learn how to create cart links for your products.',
+    'page callback' => 'uc_cart_links_creation_help',
+    'access arguments' => array('administer store'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'uc_cart_links.admin.inc',
+  );
+  $items['cart/add/%'] = array(
+    'title' => 'Add to cart',
+    'page callback' => 'uc_cart_links_process',
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    'file' => 'uc_cart_links.pages.inc',
+  );
 
   return $items;
 }
@@ -72,7 +67,7 @@ function uc_cart_links_perm() {
  */
 function uc_cart_links_add_to_cart($nid, $qty, $data) {
   if (user_access('administer cart links') &&
-      variable_get('uc_cart_links_add_show', TRUE)) {
+      variable_get('uc_cart_links_add_show', FALSE)) {
     $cart_link = 'p'. $nid .'_q'. $qty;
     if (!empty($data['attributes'])) {
       foreach ($data['attributes'] as $attribute => $option) {
@@ -81,216 +76,4 @@ function uc_cart_links_add_to_cart($nid, $qty, $data) {
     }
     drupal_set_message(t('Cart link product action: @cart_link', array('@cart_link' => $cart_link)));
   }
-}
-
-
-/*******************************************************************************
- * Callback Functions, Forms, and Tables
- ******************************************************************************/
-
-function uc_cart_links_settings_form() {
-  $form['instructions'] = array(
-    '#value' => '<div>'. t('<a href="!url">View the help page</a> to learn how to create cart links.', array('!url' => url('admin/store/help/cart_links'))) .'</div>',
-  );
-
-  $form['uc_cart_links_add_show'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Display the cart link product action when you add a product to your cart.'),
-    '#default_value' => variable_get('uc_cart_links_add_show', TRUE),
-  );
-  $form['uc_cart_links_track'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Track clicks through cart links that specify tracking IDs.'),
-    '#default_value' => variable_get('uc_cart_links_track', TRUE),
-  );
-  $form['uc_cart_links_messages'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Cart links messages'),
-    '#description' => t('Enter in messages available to the cart links API for display through a link. Separate messages with a line break.<br />Messages should have a numeric key and text value. Example: 1337|Message text.'),
-    '#default_value' => variable_get('uc_cart_links_messages', ''),
-  );
-  $form['uc_cart_links_empty'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Allow cart links to empty customer carts.'),
-    '#default_value' => variable_get('uc_cart_links_empty', TRUE),
-  );
-  $form['uc_cart_links_restrictions'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Cart links restrictions'),
-    '#description' => t('To restrict what cart links may be used on your site, enter valid cart links in this textbox.  Separate links with a line break. Leave blank to permit any cart link.'),
-    '#default_value' => variable_get('uc_cart_links_restrictions', ''),
-  );
-  $form['uc_cart_links_invalid_page'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Invalid link redirect page'),
-    '#description' => t('Enter the URL to redirect to when an invalid cart link is used.'),
-    '#default_value' => variable_get('uc_cart_links_invalid_page', ''),
-    '#size' => 32,
-    '#field_prefix' => url(NULL, NULL, NULL, TRUE) . (variable_get('clean_url', 0) ? '' : '?q='),
-  );
-
-  return system_settings_form($form);
-}
-
-// Displays the cart links report.
-function uc_cart_links_report() {
-  $header = array(
-    array('data' => t('ID'), 'field' => 'cart_link_id'),
-    array('data' => t('Clicks'), 'field' => 'clicks'),
-    array('data' => t('Last click'), 'field' => 'last_click', 'sort' => 'desc'),
-  );
-
-  $rows = array();
-  $result = pager_query("SELECT * FROM {uc_cart_link_clicks}". tablesort_sql($header), 25, 1);
-  while ($data = db_fetch_object($result)) {
-    $rows[] = array(
-      check_plain($data->cart_link_id),
-      $data->clicks,
-      format_date($data->last_click, 'short'),
-    );
-  }
-
-  if (empty($rows)) {
-    $rows[] = array(
-      array('data' => t('No cart links have been tracked yet.'), 'colspan' => 3),
-    );
-  }
-
-  return theme('table', $header, $rows) . theme('pager', array(), 25, 1);
-}
-
-// Processes a cart link to fiddle with the cart and redirect the user.
-function uc_cart_links_process($arg1) {
-  $messages = array();
-
-  // Fail if the link is restricted.
-  $data = variable_get('uc_cart_links_restrictions', '');
-  if (!empty($data)) {
-    $restrictions = explode("\n", variable_get('uc_cart_links_restrictions', ''));
-    if (!empty($restrictions) && !in_array($arg1, $restrictions)) {
-      $url = variable_get('uc_cart_links_invalid_page', '');
-      if (empty($url)) {
-        $url = '<front>';
-      }
-      unset($_REQUEST['destination']);
-      drupal_goto($url);
-    }
-  }
-
-  // Split apart the cart link on the -.
-  $actions = explode('-', strtolower($arg1));
-
-  foreach ($actions as $action) {
-    switch (substr($action, 0, 1)) {
-      // Set the ID of the cart link.
-      case 'i':
-        $id = substr($action, 1);
-        break;
-
-      // Add a product to the cart.
-      case 'p':
-        // Set the default product variables.
-        $p = array('nid' => 0, 'qty' => 1, 'data' => array());
-        $msg = TRUE;
-
-        // Parse the product action to adjust the product variables.
-        $parts = explode('_', $action);
-        foreach ($parts as $part) {
-          switch (substr($part, 0, 1)) {
-            // Set the product node ID: p23
-            case 'p':
-              $p['nid'] = intval(substr($part, 1));
-              break;
-            // Set the quantity to add to cart: q2
-            case 'q':
-              $p['qty'] = intval(substr($part, 1));
-              break;
-            // Set an attribute/option for the product: a3o6
-            case 'a':
-              $attribute = intval(substr($part, 1, strpos($part, 'o') - 1));
-              $option = intval(substr($part, strpos($part, 'o') + 1));
-              $p['attributes'][$attribute] = (string) $option;
-              break;
-            // Suppress the add to cart message: m0
-            case 'm':
-              $msg = intval(substr($part, 1)) == 1 ? TRUE : FALSE;
-              break;
-          }
-        }
-
-        // Add the item to the cart, suppressing the default redirect.
-        if ($p['nid'] > 0 && $p['qty'] > 0) {
-          uc_cart_add_item($p['nid'], $p['qty'], $p['data'] + module_invoke_all('add_to_cart_data', $p), NULL, $msg, FALSE);
-        }
-        break;
-
-      // Empty the shopping cart.
-      case 'e':
-        if (variable_get('uc_cart_links_empty', TRUE)) {
-          uc_cart_empty(uc_cart_get_id());
-        }
-        break;
-
-      // Display a pre-configured message.
-      case 'm':
-        // Load the messages if they haven't been loaded yet.
-        if (empty($messages)) {
-          $data = explode("\n", variable_get('uc_cart_links_messages', ''));
-          foreach ($data as $message) {
-            $mdata = explode('|', $message);
-            $messages[$mdata[0]] = $mdata[1];
-          }
-        }
-
-        // Parse the message key and display it if it exists.
-        $mkey = intval(substr($action, 1));
-        if (!empty($messages[$mkey])) {
-          drupal_set_message($messages[$mkey]);
-        }
-        break;
-    }
-  }
-
-  if (variable_get('uc_cart_links_track', TRUE)) {
-    $exists = db_result(db_query("SELECT clicks FROM {uc_cart_link_clicks} WHERE cart_link_id = '%s'", $id));
-    if (intval($exists) == 0) {
-      db_query("INSERT INTO {uc_cart_link_clicks} (cart_link_id, clicks, last_click) VALUES ('%s', 1, %d)", $id, time());
-    }
-    else {
-      db_query("UPDATE {uc_cart_link_clicks} SET clicks = clicks + 1, last_click = %d WHERE cart_link_id = '%s'", time(), $id);
-    }
-  }
-
-  drupal_goto();
-}
-
-function uc_cart_links_creation_help() {
-  $items = array(
-    t('The cart link should be /cart/add/cart_link_content.'),
-    t('Chain together as many actions as you want with dashes.'),
-    t('Do not put any spaces or use dashes in any action arguments.'),
-    t('Use the table below to learn about actions and their arguments.'),
-    t('Arguments come directly after their action letters.'),
-    t('Specify the redirection by adding ?destination=url where url is the page to go to.'),
-  );
-  $header = array(t('Action'), t('Description'), t('Argument'));
-  $rows = array(
-    array('i', t('Sets the ID of the cart link.'), t('A custom text ID for the link.')),
-    array('e', t("Empties the customer's cart."), t('None.')),
-    array('m', t('Displays a preset message to the customer.'), t('A message ID.')),
-    array('p', t('Adds a product to the cart.'), t('A product string using the rules below...')),
-  );
-  $items2 = array(
-    t("You must at least specify a node ID immediately after the 'p'."),
-    t('Add additional specifications separated by underscores.'),
-    t('Specify the quantity with q followed by the number to add.'),
-    t('Specify attributes/options using a#o#, replacing # with the ID of the attribute and option.'),
-    t('Turn off the add to cart message with m0.'),
-  );
-
-  $output = '<div>'. t('There is currently no user interface for creating cart links, but this section includes some basic instructions.<br />Cart links are simple to form using a few actions and arguments with the following rules:')
-           .'<p>'. theme('item_list', $items) .'</p><p>'. theme('table', $header, $rows) .'</p><p>'. theme('item_list', $items2) .'</p><p>'. t('<b>Example:</b> /cart/add/e-p1_q5-imonday_special?destination=cart<br /><br />This example will empty the cart, add 5 of product 1 to the cart, track clicks with the ID "monday_special", and redirect the user to the cart. To use this on your site, simply create an HTML link to the URL you create:')
-           .'</p><p>&lt;a href="http://www.example.com/cart/add/e-p1_q5-imonday_special?destination=cart">'. t('Link text.') .'&lt;/a></p></div>';
-
-  return $output;
 }

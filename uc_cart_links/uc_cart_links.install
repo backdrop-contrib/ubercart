@@ -1,31 +1,59 @@
 <?php
 // $Id$
 
-function uc_cart_links_install() {
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-      db_query("CREATE TABLE {uc_cart_link_clicks} (
-        cart_link_id varchar(32) NOT NULL default '0',
-        clicks int(10) NOT NULL default '0',
-        last_click int(10) NOT NULL default '0',
-        PRIMARY KEY cart_link_id (cart_link_id)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-      break;
-    case 'pgsql':
-      db_query("CREATE TABLE {uc_cart_link_clicks} (
-        cart_link_id varchar(32) NOT NULL default 0,
-        clicks integer NOT NULL default 0,
-        last_click integer NOT NULL default 0,
-        PRIMARY KEY (cart_link_id)
-      )");
-      db_query("CREATE INDEX {uc_cart_link_clicks}_cart_link_id ON {uc_cart_link_clicks} (cart_link_id)");
-      break;
-  }
+/**
+ * @file
+ * uc_cart_links module install file.
+ */
+
+/**
+ * Implementation of hook_schema().
+ */
+function uc_cart_links_schema() {
+  $schema['uc_cart_link_clicks'] = array(
+    'description' => t('A table containing tracking information for cart links, including the number of times they were clicked and the time of the last click.'),
+    'fields' => array(
+      'cart_link_id' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '0',
+        'description' => t('The cart link identifier.'),
+      ),
+      'clicks' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t('The number of times this cart link was clicked.'),
+      ),
+      'last_click' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t('The time of the last click on this cart link, stored as a UNIX timestamp.'),
+      ),
+    ),
+    'primary key' => array(
+      'cart_link_id'
+    ),
+  );
+
+  return $schema;
 }
 
+
+/**
+ * Implementation of hook_install().
+ */
+function uc_cart_links_install() {
+  drupal_install_schema('uc_cart_links');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
 function uc_cart_links_uninstall() {
-  db_query("DROP TABLE {uc_cart_link_clicks}");
+  drupal_uninstall_schema('uc_cart_links');
   db_query("DELETE FROM {variable} WHERE name LIKE 'uc_cart_links_%%'");
   cache_clear_all('variables', 'cache');
 }
