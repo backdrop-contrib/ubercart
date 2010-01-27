@@ -106,6 +106,16 @@ function uc_shipping_menu() {
     'page arguments' => array('uc_shipping_shipment_edit', 3, 5),
     'access callback' => 'uc_shipping_order_access',
     'access arguments' => array(3),
+    'weight' => -1,
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'uc_shipping.admin.inc',
+  );
+  $items['admin/store/orders/%uc_order/shipments/%uc_shipping_shipment/print'] = array(
+    'title' => 'Print',
+    'page callback' => 'theme',
+    'page arguments' => array('uc_shipping_shipment_print', 3, 5),
+    'access callback' => 'uc_shipping_order_access',
+    'access arguments' => array(3),
     'type' => MENU_LOCAL_TASK,
     'file' => 'uc_shipping.admin.inc',
   );
@@ -175,7 +185,43 @@ function uc_shipping_theme() {
     'uc_shipping_address' => array(
       'arguments' => array('address' => NULL),
     ),
+    'uc_shipping_shipment_print' => array(
+      'arguments' => array('order' => NULL, 'shipment' => NULL),
+    ),
+    'uc_packing_slip' => array(
+      'arguments' => array('order' => NULL, 'shipment' => NULL),
+      'template' => 'uc-packing-slip',
+    ),
   );
+}
+
+function template_preprocess_uc_packing_slip(&$variables) {
+  $tokens = uc_store_token_values('global');
+  $variables['site_logo'] = $tokens['site-logo'];
+  $variables['store_name'] = $tokens['store-name'];
+  $variables['store_address'] = $tokens['store-address'];
+  $variables['store_phone'] = $tokens['store-phone'];
+
+  $order = $variables['order'];
+  $variables['order_link'] = l($order->order_id, url('user/'. $order->uid .'/order/'. $order->order_id, array('absolute' => TRUE)));
+  $variables['order_email'] = check_plain($order->primary_email);
+  $variables['billing_address'] = uc_order_address($order, 'billing');
+  $variables['billing_phone'] = check_plain($order->billing_phone);
+  $variables['shipping_address'] = uc_order_address($order, 'delivery');
+  $variables['shipping_phone'] = check_plain($order->delivery_phone);
+
+  if (module_exists('uc_payment')) {
+    $tokens = uc_payment_token_values('order', $order);
+    $variables['payment_method'] = $tokens['order-payment-method'];
+  }
+  else {
+    $variables['payment_method'] = '';
+  }
+
+  $shipment = $variables['shipment'];
+  $variables['carrier'] = check_plain($shipment->carrier);
+  $variables['tracking_number'] = check_plain($shipment->tracking_number);
+  $variables['packages'] = $shipment->packages;
 }
 
 /******************************************************************************
@@ -347,7 +393,7 @@ function uc_shipping_package_load($package_id) {
       $weight = 0;
       $units = variable_get('uc_weight_unit', 'lb');
       $addresses = array();
-      $result = db_query("SELECT op.order_product_id, pp.qty, pp.qty * op.weight AS weight, p.weight_units, op.nid, op.title, op.model, op.price FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id LEFT JOIN {uc_products} AS p ON op.nid = p.nid WHERE pp.package_id = %d", $package_id);
+      $result = db_query("SELECT op.order_product_id, pp.qty, pp.qty * op.weight AS weight, p.weight_units, op.nid, op.title, op.model, op.price, op.data FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id LEFT JOIN {uc_products} AS p ON op.nid = p.nid WHERE pp.package_id = %d", $package_id);
       while ($product = db_fetch_object($result)) {
         $address = uc_quote_get_default_shipping_address($product->nid);
         // TODO: Lodge complaint that array_unique() compares as strings.
@@ -357,6 +403,7 @@ function uc_shipping_package_load($package_id) {
         $description .= ', '. $product->qty .' x '. $product->model;
         // Normalize all weights to default units.
         $weight += $product->weight * uc_weight_conversion($product->weight_units, $units);
+        $product->data = unserialize($product->data);
         $products[$product->order_product_id] = $product;
       }
       $package->addresses = $addresses;

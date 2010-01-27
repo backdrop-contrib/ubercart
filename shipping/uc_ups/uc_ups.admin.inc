@@ -350,12 +350,17 @@ function uc_ups_request_pickup($digest, $order_id = 0, $packages = array()) {
 function theme_uc_ups_label_image() {
   $args = func_get_args();
   $image_path = file_create_url(implode('/', $args));
-  print '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 3.2//EN">
-<html><head><title>
-View/Print Label</title></head><style>
-    .small-text {font-size: 80%;}
-    .large-text {font-size: 115%;}
+
+  $output = <<<EOLABEL
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 3.2//EN">
+<html>
+<head>
+<title>View/Print Label</title>
+<style>
+  .small-text {font-size: 80%;}
+  .large-text {font-size: 115%;}
 </style>
+</head>
 <body bgcolor="#FFFFFF">
 <table border="0" cellpadding="0" cellspacing="0" width="600"><tr>
 <td height="410" align="left" valign="top">
@@ -390,12 +395,14 @@ FOLD HERE</td>
 
 <table border="0" cellpadding="0" cellspacing="0" width="650" ><tr>
 <td align="left" valign="top">
-<img src="'. $image_path .'" height="392" width="672">
+<img src="$image_path" height="392" width="672">
 </td>
 </tr></table>
 </body>
-</html>';
+</html>
+EOLABEL;
 
+  print $output;
   exit();
 }
 

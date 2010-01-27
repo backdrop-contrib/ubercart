@@ -392,7 +392,7 @@ function uc_shipping_package_delete_confirm_submit($form, &$form_state) {
  */
 function uc_shipping_order_shipments($order) {
   $result = db_query("SELECT * FROM {uc_shipments} WHERE order_id = %d", $order->order_id);
-  $header = array(t('Shipment ID'), t('Name'), t('Company'), t('Destination'), t('Ship date'), t('Estimated delivery'), t('Tracking number'), array('data' => t('Actions'), 'colspan' => 3));
+  $header = array(t('Shipment ID'), t('Name'), t('Company'), t('Destination'), t('Ship date'), t('Estimated delivery'), t('Tracking number'), array('data' => t('Actions'), 'colspan' => 4));
   $rows = array();
   while ($shipment = db_fetch_object($result)) {
     $row = array();
@@ -405,11 +405,12 @@ function uc_shipping_order_shipments($order) {
     $row[] = is_null($shipment->tracking_number) ? t('n/a') : check_plain($shipment->tracking_number);
     $row[] = l(t('view'), 'admin/store/orders/'. $order->order_id .'/shipments/'. $shipment->sid .'/view');
     $row[] = l(t('edit'), 'admin/store/orders/'. $order->order_id .'/shipments/'. $shipment->sid .'/edit');
+    $row[] = l(t('print'), 'admin/store/orders/'. $order->order_id .'/shipments/'. $shipment->sid .'/print');
     $row[] = l(t('delete'), 'admin/store/orders/'. $order->order_id .'/shipments/'. $shipment->sid .'/delete');
     $rows[] = $row;
   }
   if (empty($rows)) {
-    $rows[] = array(array('data' => t('No shipments have been made for this order.'), 'colspan' => 10));
+    $rows[] = array(array('data' => t('No shipments have been made for this order.'), 'colspan' => 11));
   }
   $output = theme('table', $header, $rows);
   $packages = db_result(db_query("SELECT COUNT(*) FROM {uc_packages} WHERE order_id = %d AND sid IS NULL", $order->order_id));
@@ -836,6 +837,45 @@ function uc_shipping_shipment_edit_submit($form, &$form_state) {
   uc_shipping_shipment_save($shipment);
 
   $form_state['redirect'] = 'admin/store/orders/'. $form_state['values']['order_id'] .'/shipments';
+}
+
+/**
+ * Display the packing slip and shipping labels for printing.
+ */
+function theme_uc_shipping_shipment_print($order, $shipment) {
+  $language = $GLOBALS['language'];
+  $output = <<<EOHTML
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="{$language->language}" lang="{$language->language}" dir="{$language->direction}">
+<head>
+  <title>Packing slip and labels</title>
+  <style>
+    .page-break {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+EOHTML;
+
+  $output .= theme('uc_packing_slip', $order, $shipment);
+
+  foreach ($shipment->packages as $id => $package) {
+    if ($package->label_image && ($path = file_create_path($package->label_image)) && file_exists($path)) {
+      // TODO: Find a way to store these magic numbers specifically for UPS.
+      list($width, $height) = array(672, 392);
+      $output .= '<br class="page-break" />' . "\n";;
+      $output .= theme('image', file_create_url($package->label_image), '', '', array('width' => $width, 'height' => $height), FALSE) ."\n";
+    }
+  }
+
+  //$output .= dpr($order, TRUE, 'order');
+  //$output .= dpr($shipment, TRUE, 'shipment');
+
+  $output .= '</body></html>';
+
+  print $output;
+  exit();
 }
 
 /**
