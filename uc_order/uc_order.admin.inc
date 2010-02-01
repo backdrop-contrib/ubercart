@@ -18,7 +18,9 @@ function uc_order_settings_overview() {
   $summaries = array_merge($summaries, summarize_child_form_pages('admin/store/settings/orders/edit/panes', FALSE, TRUE));
 
   // Theme it all up in a summaries overview.
-  return theme('summary_overview', $summaries);
+  return array(
+    '#markup' => theme('summary_overview', $summaries),
+  );
 }
 
 /**
@@ -523,14 +525,32 @@ function uc_order_admin($sql = NULL, $args = NULL, $search = FALSE) {
   ), 'setting');
   drupal_add_js(drupal_get_path('module', 'uc_order') .'/uc_order.js');
 
+  $build = array();
+
   if ($search === FALSE) {
-    $output = '<div class="order-overview-form">'. drupal_get_form('uc_order_select_form') .'</div>'
-             .'<div class="order-overview-form">'. drupal_get_form('uc_order_admin_sort_form') .'</div>';
+    $build['order_overview_select_form'] = drupal_get_form('uc_order_select_form') + array(
+      '#prefix' => '<div class="order-overview-form">',
+      '#suffix' => '</div>',
+    );
+    $build['order_overview_admin_sort_form'] = drupal_get_form('uc_order_admin_sort_form') + array(
+      '#prefix' => '<div class="order-overview-form">',
+      '#suffix' => '</div>',
+    );
   }
 
-  $output .= theme('table', $header, $rows, array('class' => 'uc-orders-table'));
-  $output .= theme('pager', NULL, variable_get('uc_order_number_displayed', 30), 0);
-  return $output;
+  $build['orders'] = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows,
+    '#attributes' => array('class' => 'uc-orders-table'),
+  );
+  $build['pager'] = array(
+    '#theme' => 'pager',
+    '#element' => 0,
+    '#weight' => 5,
+  );
+
+  return $build;
 }
 
 /**
@@ -625,18 +645,21 @@ function uc_order_create() {
   drupal_add_js(array('ucURL' => array('adminOrders' => url('admin/store/orders/'))), 'setting');
   drupal_add_js(drupal_get_path('module', 'uc_order') .'/uc_order.js');
 
-  $output = '<div id="customer-search-link" style="position: relative; top: 2px; cursor: pointer;" '
-           .'onclick="load_customer_search();">'
-          . uc_store_get_icon('file:order_view') .' '
-          . t('Search for an existing customer.') .'</div>';
-  $output .= '<div id="customer-create-link" style="position: relative; top: 2px; cursor: pointer;" '
-            .'onclick="load_new_customer_form();">'
-           . uc_store_get_icon('file:menu_customers_small') .' '
-           . t('Create a new customer.') .'</div>';
-  $output .= '<div id="customer-select"></div><br />'
-           . drupal_get_form('uc_order_create_form');
+  $build = array();
+  $build['search_button'] = array(
+    '#markup' => uc_store_get_icon('file:order_view') . ' ' . t('Search for an existing customer.'),
+    '#prefix' => '<div id="customer-search-link" style="position: relative; top: 2px; cursor: pointer;" onclick="load_customer_search();">',
+    '#suffix' => '</div>',
+  );
+  $build['create_button'] = array(
+    '#markup' => uc_store_get_icon('file:menu_customers_small') .' ' . t('Create a new customer.'),
+    '#prefix' => '<div id="customer-create-link" style="position: relative; top: 2px; cursor: pointer;" onclick="load_new_customer_form();">',
+    '#suffix' => '</div>',
+  );
+  $build['customer_select'] = array('#markup' => '<div id="customer-select"></div><br />');
+  $build['create_form'] = drupal_get_form('uc_order_create_form');
 
-  return $output;
+  return $build;
 }
 
 /**
@@ -701,10 +724,11 @@ function uc_order_create_form_submit($form, &$form_state) {
  * Display a search form to browse all received orders.
  */
 function uc_order_usearch() {
-  $output = drupal_get_form('uc_order_search_form');
+  $build = array();
+  $build['search_form'] = drupal_get_form('uc_order_search_form');
 
   if (arg(4) == 'results') {
-    $output .= '<p>'. t('Search returned the following results:') .'</p>';
+    $build['description'] = array('#markup' => '<p>'. t('Search returned the following results:') .'</p>');
 
     $billing_first_name = strtolower(str_replace('*', '%', check_plain(arg(5))));
     $billing_last_name = strtolower(str_replace('*', '%', check_plain(arg(6))));
@@ -755,10 +779,10 @@ function uc_order_usearch() {
           .'ON o.order_status = os.order_status_id WHERE o.order_status NOT IN '. uc_order_status_list('specific', TRUE)
          . $where .' ORDER BY o.created DESC';
 
-    $output .= uc_order_admin($sql, $args, TRUE);
+    $build += uc_order_admin($sql, $args, TRUE);
   }
 
-  return $output;
+  return $build;
 }
 
 /**
@@ -771,7 +795,7 @@ function uc_order_address_book() {
   $type = $_POST['type'];
   $func = $_POST['func'];
 
-  print drupal_get_form('uc_order_address_book_form', $uid, $type, $func);
+  print drupal_render(drupal_get_form('uc_order_address_book_form', $uid, $type, $func));
   exit();
 }
 
@@ -811,6 +835,7 @@ function uc_order_address_book_form($form_state, $uid = 0, $type = 'billing', $f
  * @see uc_order_select_customer_form()
  */
 function uc_order_select_customer($email = NULL) {
+  $build = array();
   $options = NULL;
 
   // Return the search results and let them pick one!
@@ -849,27 +874,28 @@ function uc_order_select_customer($email = NULL) {
     }
 
     if (count($options) == 0) {
-      $output .= '<p>'. t('Search returned no results.') .'</p>';
+      $build['description'] = array('#markup' => '<p>'. t('Search returned no results.') .'</p>');
       $options = NULL;
     }
     else {
-      $output .= '<p>'. t('Search returned the following:') .'</p>';
+      $build['description'] = array('<p>'. t('Search returned the following:') .'</p>');
     }
   }
 
   // Check to see if the e-mail address for a new user is unique.
   if (arg(5) == 'check') {
     $email = check_plain(arg(6));
+    $build['email'] = array('#markup' => '');
     if (!valid_email_address($email)) {
-      $output .= t('Invalid e-mail address.') .'<br />';
+      $build['email']['#markup'] .= t('Invalid e-mail address.') .'<br />';
     }
     $result = db_query("SELECT uid, mail FROM {users} WHERE mail = '%s'", $email);
     if ($user = db_fetch_object($result)) {
-      $output .= t('An account already exists for that e-mail.') .'<br /><br />';
-      $output .= '<b>'. t('Use this account now?') .'</b><br />'
-               . t('User !uid - !mail', array('!uid' => $user->uid, '!mail' => $user->mail)) .' <input type="button" '
-                .'onclick="select_existing_customer('. $user->uid .', \''
-               . $user->mail .'\');" value="'. t('Apply') .'" /><br /><br /><hr><br/>';
+      $build['email']['#markup'] .= t('An account already exists for that e-mail.') .'<br /><br />';
+      $build['email']['#markup'] .= '<b>'. t('Use this account now?') .'</b><br />'
+        . t('User !uid - !mail', array('!uid' => $user->uid, '!mail' => $user->mail)) .' <input type="button" '
+        . 'onclick="select_existing_customer('. $user->uid .', \''
+        . $user->mail .'\');" value="'. t('Apply') .'" /><br /><br /><hr><br/>';
     }
     else {
       $name = uc_store_email_to_username($email);
@@ -890,19 +916,21 @@ function uc_order_select_customer($email = NULL) {
         // Send the e-mail through the user module.
         drupal_mail('user', 'register_no_approval_required', $email, NULL, array('account' => $account), uc_store_email_from());
 
-        $output .= t('Account details sent to e-mail provided.<br /><br /><strong>Username:</strong> @username<br /><strong>Password:</strong> @password', array('@username' => $fields['name'], '@password' => $fields['pass'])) .'<br /><br />';
+        $build['email']['#markup'] .= t('Account details sent to e-mail provided.<br /><br /><strong>Username:</strong> @username<br /><strong>Password:</strong> @password', array('@username' => $fields['name'], '@password' => $fields['pass'])) .'<br /><br />';
       }
 
-      $output .= '<strong>'. t('Use this account now?') .'</strong><br />'
-               . t('User @uid - @mail', array('@uid' => $account->uid, '@mail' => $account->mail)) .' <input type="button" '
-                .'onclick="select_existing_customer('. $account->uid .', \''
-               . $account->mail .'\');" value="'. t('Apply') .'" /><br /><br /><hr><br/>';
+      $build['result'] = array(
+        '#markup' => '<strong>'. t('Use this account now?') .'</strong><br />'
+          . t('User @uid - @mail', array('@uid' => $account->uid, '@mail' => $account->mail)) .' <input type="button" '
+          . 'onclick="select_existing_customer('. $account->uid .', \''
+          . $account->mail .'\');" value="'. t('Apply') .'" /><br /><br /><hr><br/>',
+      );
     }
   }
 
-  $output .= drupal_get_form('uc_order_select_customer_form', $options);
+  $build['customer_select_form'] = drupal_get_form('uc_order_select_customer_form', $options);
 
-  print $output;
+  print drupal_render($build);
   exit();
 }
 
@@ -1056,14 +1084,27 @@ function uc_order_history($user) {
     $rows[] = array(array('data' => t('No orders available.'), 'colspan' => 5));
   }
 
-  return theme('table', $header, $rows, array('class' => 'uc-order-history'))
-       . theme('pager', NULL, 20, 0);
+  $build = array();
+  $build['orders'] = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows,
+    '#attributes' => array('class' => 'uc-order-history'),
+  );
+  $build['pager'] = array(
+    '#theme' => 'pager',
+    '#element' => 0,
+    '#weight' => 5,
+  );
+
+  return $build;
 }
 
 /**
  * Display the order view screen, constructed via hook_order_pane().
  */
 function uc_order_view($order, $view = 'view') {
+  $build = array();
   if ($view == 'customer') {
     $breadcrumb = drupal_get_breadcrumb();
     $breadcrumb[2] = l(t('Order history'), 'user/'. arg(1) .'/orders');
@@ -1078,18 +1119,31 @@ function uc_order_view($order, $view = 'view') {
     exit();
   }
 
+  $build = array(
+    'order_panes' => array(),
+  );
+
   $panes = _order_pane_list($view);
   foreach ($panes as $pane) {
-    if (in_array($view, $pane['show']) &&
-        variable_get('uc_order_pane_'. $pane['id'] .'_show_'. $view, $pane['enabled'])) {
+    if (in_array($view, $pane['show']) && variable_get('uc_order_pane_'. $pane['id'] .'_show_'. $view, $pane['enabled'])) {
       $func = $pane['callback'];
       if (function_exists($func) && ($contents = $func($view, $order)) != NULL) {
-        $output .= '<div class="order-pane '. $pane['class'] .'">';
+        $build['order_panes'][$pane] = array(
+          '#markup' => '',
+          '#prefix' => '<div class="order-pane '. $pane['class'] .'">',
+          '#suffix' => '</div>',
+        );
+
         if ($func('show-title', NULL) !== FALSE) {
-          $output .= '<div class="order-pane-title">'. $pane['title'] .': '
-                   . $func('view-title', $order) .'</div>';
+          // TODO: Make sure the title and contents are being displayed in the correct order.
+          $build['order_panes'][$pane]['title'] = array(
+            '#markup' => $pane['title'] .': '. $func('view-title', $order),
+            '#prefix' => '<div class="order-pane-title">',
+            '#suffix' => '</div>',
+          );
         }
-        $output .= $contents .'</div>';
+
+        $build['order_panes'][$pane]['#markup'] .= $contents;
       }
     }
   }
@@ -1100,10 +1154,14 @@ function uc_order_view($order, $view = 'view') {
     $contents = '<a href="#" onclick="open_invoice();">'
                . uc_store_get_icon('file:print') .' '
                . t('Click to open a window with a printable invoice.') .'</a>';
-    $output .= '<div class="order-pane">'. $contents .'</div>';
+    $build['print_button'] = array(
+      '#markup' => $contents,
+      '#prefix' => '<div class="order-pane">',
+      '#suffix' => '</div>',
+    );
   }
 
-  return $output;
+  return $build;
 }
 
 /**
@@ -1358,7 +1416,7 @@ function uc_order_edit_products($order) {
     $products[] = $product;
   }
 
-  print uc_strip_form(drupal_get_form('uc_order_edit_products_form', $products));
+  print uc_strip_form(drupal_render(drupal_get_form('uc_order_edit_products_form', $products)));
   exit();
 }
 
@@ -1582,7 +1640,7 @@ function uc_order_load_product_select($order) {
 
   $output = drupal_get_form('uc_order_product_select_form', $order->order_id, $options);
 
-  print $output;
+  print drupal_render($output);
   exit();
 }
 
@@ -1631,10 +1689,13 @@ function uc_order_product_select_form($form_state, $order_id, $options = array()
  * @see uc_order_add_product_form()
  */
 function uc_order_add_product($order, $product) {
-  $output = '<div style="margin: 1em;"><strong>Add '. check_plain($product->title) .'</strong>'
-          . drupal_get_form('uc_order_add_product_form', $order, $product) .'</div>';
+  $build = array();
+  $build['form'] = drupal_get_form('uc_order_add_product_form', $order, $product) + array(
+    '#prefix' => '<div style="margin: 1em;"><strong>Add '. check_plain($product->title) .'</strong>',
+    '#suffix' => '</div>',
+  );
 
-  print $output;
+  print drupal_render($build);
   exit();
 }
 
@@ -1686,7 +1747,7 @@ function uc_order_invoice($order, $op = 'view') {
     exit();
   }
 
-  return $output;
+  return array('#markup' => $output);
 }
 
 /**
@@ -1764,15 +1825,21 @@ function uc_order_log($order) {
     $rows[] = array('data' => array(format_date($change->created, 'short'), $user == '-' ? $user : l($user, 'user/'. $change->uid), $change->changes), 'valign' => 'top');
   }
 
+  $build = array();
+
   if (count($rows)) {
     $header = array(t('Time'), t('User'), t('Changes'));
-    $output = theme('table', $header, $rows);
+    $build['log'] = array(
+      '#theme' => 'table',
+      '#header' => $header,
+      '#rows' => $rows,
+    );
   }
   else {
-    $output = t('No changes have been logged for this order.');
+    $build['log'] = array('#markup' => t('No changes have been logged for this order.'));
   }
 
-  return $output;
+  return $build;
 }
 
 /**

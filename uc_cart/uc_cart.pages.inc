@@ -16,7 +16,7 @@ function uc_cart_view() {
   // Failsafe so that this function only works when called with no arguments.
   // This prevents the accidental wiping of the cart_order session variable.
   if (func_num_args() > 0) {
-    return drupal_not_found();
+    return MENU_NOT_FOUND;
   }
 
   // Clear the cart order session variable if it exists.
@@ -29,15 +29,20 @@ function uc_cart_view() {
 
   // Display the empty cart page if there are no items in the cart.
   if (empty($items)) {
-    return theme('uc_empty_cart');
+    return array(
+      '#theme' => 'uc_empty_cart',
+    );
   }
 
+  $build = array();
   // Load through the cart panes...
   foreach (uc_cart_cart_pane_list($items) as $pane) {
     // If the pane is enabled...
     if ($pane['enabled']) {
       // Add its output to the cart view.
-      $output .= $pane['body'];
+      $build[$pane['id']] = array(
+        '#markup' => $pane['body'],
+      );
     }
   }
 
@@ -47,7 +52,7 @@ function uc_cart_view() {
     drupal_set_breadcrumb(array($link));
   }
 
-  return $output;
+  return $build;
 }
 
 /**
@@ -76,6 +81,7 @@ function uc_cart_checkout() {
         }
       }
     }
+
     if ($subtotal < $min) {
       $context = array(
         'revision' => 'formatted-original',
@@ -386,9 +392,13 @@ function uc_cart_checkout_review() {
     }
   }
 
-  $output = theme('uc_cart_checkout_review', $data, $form);
+  $build = array(
+    '#theme' => 'uc_cart_checkout_review',
+    '#panes' => $data,
+    '#form' => $form,
+  );
 
-  return $output;
+  return $build;
 }
 
 /**
@@ -437,7 +447,7 @@ function theme_uc_cart_checkout_review($panes, $form) {
     }
   }
 
-  $output .= '<tr class="review-button-row"><td colspan="2">'. $form
+  $output .= '<tr class="review-button-row"><td colspan="2">'. drupal_render($form)
             .'</td></tr></table>';
 
   return $output;
@@ -541,7 +551,7 @@ function uc_cart_checkout_complete() {
     drupal_goto('cart');
   }
 
-  $output = uc_cart_complete_sale($order, variable_get('uc_new_customer_login', FALSE));
+  $build = uc_cart_complete_sale($order, variable_get('uc_new_customer_login', FALSE));
 
   // Add a comment to let sales team know this came in through the site.
   uc_order_comment_save($order->order_id, 0, t('Order created through website.'), 'admin');
@@ -551,5 +561,5 @@ function uc_cart_checkout_complete() {
     drupal_goto(variable_get('uc_cart_checkout_complete_page', ''));
   }
 
-  return $output;
+  return $build;
 }

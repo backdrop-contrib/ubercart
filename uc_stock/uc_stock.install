@@ -13,7 +13,7 @@ function uc_stock_schema() {
   $schema = array();
 
   $schema['uc_product_stock'] = array(
-    'description' => t('Stock levels for Ubercart products'),
+    'description' => 'Stock levels for Ubercart products',
     'fields' => array(
       'sku' => array(
         'description' => t('SKU of a product'),
@@ -23,7 +23,7 @@ function uc_stock_schema() {
         'default' => '',
       ),
       'nid' => array(
-        'description' => t('Node ID of a product'),
+        'description' => 'Node ID of a product',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -37,14 +37,14 @@ function uc_stock_schema() {
         'default' => 0,
       ),
       'stock' => array(
-        'description' => t('Level of stock'),
+        'description' => 'Level of stock',
         'type' => 'int',
         'size' => 'medium',
         'not null' => TRUE,
         'default' => 0,
       ),
       'threshold' => array(
-        'description' => t('Threshold level'),
+        'description' => 'Threshold level',
         'type' => 'int',
         'size' => 'medium',
         'not null' => TRUE,
@@ -55,37 +55,22 @@ function uc_stock_schema() {
       'nid' => array('nid'),
     ),
     'primary key' => array('sku'),
+    'foreign keys' => array(
+      'nid' => array('uc_products' => 'nid'),
+    ),
   );
 
   return $schema;
 }
 
 /**
- * Implementation of hook_install().
- */
-function uc_stock_install() {
-  drupal_install_schema('uc_stock');
-}
-
-/**
  * Implementation of hook_uninstall().
  */
 function uc_stock_uninstall() {
-  drupal_uninstall_schema('uc_stock');
   db_query("DELETE FROM {variable} WHERE name LIKE 'uc_stock_%%'");
   variable_del('uc_stock_threshold_notification');
   variable_del('uc_stock_threshold_notification_recipients');
   variable_del('uc_stock_threshold_notification_subject');
   variable_del('uc_stock_threshold_notification_message');
   variable_del('uc_stock_threshold_notification_format');
-}
-
-function uc_stock_update_6000() {
-  $ret = array();
-
-  db_drop_index($ret, 'uc_product_stock', 'nid');
-  db_change_field($ret, 'uc_product_stock', 'nid', 'nid', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0), array('indexes' => array('nid' => array('nid'))));
-  db_change_field($ret, 'uc_product_stock', 'active', 'active', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
-
-  return $ret;
 }

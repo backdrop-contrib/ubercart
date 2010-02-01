@@ -8,12 +8,14 @@
 /**
  * Set the select box change behavior for the country selector
  */
-Drupal.behaviors.ucCountrySelect = function(context) {
-  $('select[id$=-country]:not(.ucCountrySelect-processed)', context).addClass('ucCountrySelect-processed').change(
-    function() {
-      uc_update_zone_select(this.id, '');
-    }
-  );
+Drupal.behaviors.ucCountrySelect = {
+  attach: function(context) {
+    $('select[id$=-country]:not(.ucCountrySelect-processed)', context).addClass('ucCountrySelect-processed').change(
+      function() {
+        uc_update_zone_select(this.id, '');
+      }
+    );
+  }
 }
 
 /**

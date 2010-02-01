@@ -10,7 +10,7 @@
  * List all products.
  */
 function uc_product_administration() {
-  $output = '';
+  $build = array();
 
   $header = array();
   $tbl_columns = uc_product_table_header();
@@ -29,12 +29,14 @@ function uc_product_administration() {
     $nids[] = $product->nid;
   }
 
-  $table = tapir_get_table('uc_product_table', $nids);
-
   // Display the product table and pager if necessary.
-  $output .= drupal_render($table) . theme('pager');
+  $build['table'] += tapir_get_table('uc_product_table', $nids);
+  $build['pager'] = array(
+    '#theme' => 'pager',
+    '#weight' => 5,
+  );
 
-  return $output;
+  return $build;
 }
 
 /**
@@ -60,11 +62,18 @@ function uc_product_class_default() {
     $rows[] = array(array('data' => t('No product classes have been defined yet.'), 'colspan' => '5'));
   }
 
-  $output = theme('table', $header, $rows);
-  $output .= '<h2>'. t('Add a class') .'</h2>';
-  $output .= drupal_get_form('uc_product_class_form');
+  $build = array();
+  $build['product_classes'] = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows,
+  );
+  $build['header'] = array(
+    '#markup' => '<h2>' . t('Add a class') . '</h2>',
+  );
+  $build['form'] = drupal_get_form('uc_product_class_form');
 
-  return $output;
+  return $build;
 }
 
 /**
@@ -79,8 +88,9 @@ function uc_product_settings_overview() {
   $summaries = summarize_child_form_pages('admin/store/settings/products/edit');
 
   // Theme it all up in a summaries overview.
-  return theme('summary_overview', $summaries);
-
+  return array(
+    '#markup' => theme('summary_overview', $summaries),
+  );
 }
 
 /**
@@ -386,6 +396,7 @@ function _uc_product_features_summarize($form, $titles) {
 function uc_product_features($node) {
   drupal_set_title(check_plain($node->title));
 
+  $build = array();
   if (arg(4)) {
     // First check to see if we're trying to remove a feature.
     if (intval(arg(5)) > 0 && arg(6) == 'delete') {
@@ -422,12 +433,12 @@ function uc_product_features($node) {
     $func = uc_product_feature_data(arg(4), 'callback');
     if (function_exists($func)) {
       if (arg(5) == 'add') {
-        $output = drupal_get_form($func, $node, array());
+        $build = drupal_get_form($func, $node, array());
       }
       elseif (intval(arg(5)) > 0) {
         $result = db_query("SELECT * FROM {uc_product_features} WHERE pfid = %d AND fid = '%s'", intval(arg(5)), arg(4));
         if ($feature = db_fetch_array($result)) {
-          $output = drupal_get_form($func, $node, $feature);
+          $build = drupal_get_form($func, $node, $feature);
         }
       }
     }
@@ -436,12 +447,12 @@ function uc_product_features($node) {
       drupal_goto('node/'. $node->nid .'/edit/features');
     }
 
-    if (empty($output)) {
+    if (empty($build)) {
       drupal_set_message(t('Error: No form data was returned for that operation.'), 'error');
       drupal_goto('node/'. $node->nid .'/edit/features');
     }
 
-    return $output;
+    return $build;
   }
 
   $header = array(t('Type'), t('Description'), t('Operations'));
@@ -468,10 +479,14 @@ function uc_product_features($node) {
     );
   }
 
-  $output = theme('table', $header, $rows)
-          . drupal_get_form('uc_product_feature_add_form');
+  $build['features'] = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows,
+  );
+  $build['add_form'] = drupal_get_form('uc_product_feature_add_form');
 
-  return $output;
+  return $build;
 }
 
 /**

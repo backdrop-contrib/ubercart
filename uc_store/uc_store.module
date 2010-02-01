@@ -362,7 +362,7 @@ function uc_store_elements() {
     '#tree' => TRUE,
     '#value' => NULL,
     '#pre_render' => array('tapir_gather_rows'),
-    '#process' => 'form_expand_ahah',
+    '#process' => 'form_process_ahah',
   );
 
   return $types;
@@ -490,14 +490,24 @@ function uc_store_help($path, $arg) {
 /**
  * Implementation of hook_perm().
  */
-function uc_store_perm() {
-  return array('administer store', 'view customers', 'view store reports');
+function uc_store_permission() {
+  return array(
+    'administer store' => array(
+        'title' => t('Administer Store'),
+    ),
+    'view customers' => array(
+        'title' => t('View Customers'),
+    ),
+    'view store reports' => array(
+        'title' => t('View Store Reports'),
+    ),
+  );
 }
 
 /**
- * Implementation of hook_footer().
+ * Implementation of hook_page_alter().
  */
-function uc_store_footer() {
+function uc_store_page_alter(&$page) {
   // Exit if the store footer is turned off.
   if (variable_get('uc_footer_message', 0) === 'none') {
     return;
@@ -544,7 +554,10 @@ function uc_store_footer() {
         }
       }
 
-      return theme('uc_store_footer', $message);
+      $page['page_bottom']['ubercart_footer']= array(
+        '#type' => 'markup',
+        '#markup' => theme('uc_store_footer', $message),
+      );
   }
 }
 
@@ -554,9 +567,10 @@ function uc_store_footer() {
 function uc_store_exit() {
   // Save the current request for tracking paths on subsequent page requests.
   // When HTTP_REFERER is set, the session version is not; and vice versa.
-  if (referer_uri() == '') {
+  // @todo PORT_7:  D7 seems to still be up in the air about drupal_set_session()  make sure this works.
+  if ($_SERVER['HTTP_REFERER'] == '') {
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') ? 'https' : 'http';
-    $_SESSION['uc_referer_uri'] = $protocol .'://'. $_SERVER['SERVER_NAME'] . $GLOBALS['base_path'] . $_GET['q'];
+    drupal_set_session('uc_referer_uri', $protocol .'://'. $_SERVER['SERVER_NAME'] . $GLOBALS['base_path'] . $_GET['q']);
   }
   else {
     if (isset($_SESSION['uc_referer_uri'])) {
@@ -571,10 +585,8 @@ function uc_store_exit() {
 /**
  * Implementation of hook_form_alter().
  */
-function uc_store_form_alter(&$form, $form_state, $form_id) {
-  if ($form_id == 'uc_product_table') {
+function uc_store_form_uc_product_table_alter(&$form, &$form_state, $form_id) {
     unset($form['table']['#value']['columns']['list_price']);
-  }
 }
 
 /******************************************************************************
@@ -1989,9 +2001,10 @@ function uc_store_default_country() {
  *
  * Deprecated! Use drupal_add_js() instead.
  */
+ // @todo PORT_7  make rule for coder module to report this and remove this function
 function uc_add_js($data = NULL, $type = 'module', $scope = 'header', $defer = FALSE, $cache = TRUE) {
   watchdog('uc_store', 'uc_add_js() has been deprecated. Use drupal_add_js() in your code.', array(), WATCHDOG_ERROR);
-  drupal_add_js($data, $type, $scope, $defer, $cache);
+  drupal_add_js($data, array('type' => $type, 'scope' => $scope, 'defer' => $defer, 'cache'=>$cache));
 }
 
 /**
@@ -2026,12 +2039,13 @@ function uc_referer_check($urls) {
 /**
  * Provide a more reliable referrer for Ubercart.
  */
+ //@todo PORT_7  figure out what is going on with sessions and adjust this...
 function uc_referer_uri() {
-  if (referer_uri() == '') {
+  if ($_SERVER['HTTP_REFERER'] == '') {
     return $_SESSION['uc_referer_uri'];
   }
   else {
-    return referer_uri();
+    return $_SERVER['HTTP_REFERER'];
   }
 }
 
@@ -2115,7 +2129,7 @@ function uc_store_image_widget_lightbox2($rel_count) {
  */
 function uc_store_mail_recipient_language($address) {
   // See if any user exists for this address.
-  $account = user_load(array('mail' => trim($address)));
+  $account = user_load_by_mail(trim($address));
   if ($account) {
     $lang_object = user_preferred_language($account);
   }
