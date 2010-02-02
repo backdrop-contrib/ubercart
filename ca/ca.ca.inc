@@ -122,15 +122,13 @@ function ca_condition_date($settings) {
   $set_date_start = gmmktime(0, 0, 0, $settings['date']['month'], $settings['date']['day'], $settings['date']['year']);
   $set_date_end = gmmktime(23, 59, 59, $settings['date']['month'], $settings['date']['day'], $settings['date']['year']);
 
-  $curr_time = time();
-
   switch ($settings['operator']) {
     case 'before':
-      return $curr_time < $set_date_start;
+      return REQUEST_TIME < $set_date_start;
     case 'only':
-      return ($set_date_start < $curr_time) && ($curr_time < $set_date_end);
+      return ($set_date_start < REQUEST_TIME) && (REQUEST_TIME < $set_date_end);
     case 'after':
-      return $set_date_end < $curr_time;
+      return $set_date_end < REQUEST_TIME;
     default:
       return FALSE;
   }

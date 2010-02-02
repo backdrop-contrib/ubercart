@@ -51,9 +51,9 @@ function uc_payment_pack_receive_check_form($form_state, $order) {
     '#title' => t('Expected clear date'),
     '#collapsible' => FALSE,
   );
-  $form['clear']['clear_month'] = uc_select_month(NULL, format_date(time(), 'custom', 'n'));
-  $form['clear']['clear_day'] = uc_select_day(NULL, format_date(time(), 'custom', 'j'));
-  $form['clear']['clear_year'] = uc_select_year(NULL, format_date(time(), 'custom', 'Y'), format_date(time(), 'custom', 'Y'), format_date(time(), 'custom', 'Y') + 1);
+  $form['clear']['clear_month'] = uc_select_month(NULL, format_date(REQUEST_TIME, 'custom', 'n'));
+  $form['clear']['clear_day'] = uc_select_day(NULL, format_date(REQUEST_TIME, 'custom', 'j'));
+  $form['clear']['clear_year'] = uc_select_year(NULL, format_date(REQUEST_TIME, 'custom', 'Y'), format_date(REQUEST_TIME, 'custom', 'Y'), format_date(REQUEST_TIME, 'custom', 'Y') + 1);
   foreach (array('clear_month', 'clear_day', 'clear_year') as $key) {
     $form['clear'][$key]['#prefix'] = '<div style="float: left; margin-right: 1em;">';
     $form['clear'][$key]['#suffix'] = '</div>';

@@ -623,7 +623,11 @@ function uc_google_checkout_send_request($api, $request) {
 
   // Google's XML parser doesn't like named entities apparently.
   str_replace(array('&amp;', '&lt;', '&gt;'), array('&#x26;', '&#x3c;', '&#x3e;'), $request);
-  $response_obj = drupal_http_request($checkout_url .'/api/checkout/v2/'. $api .'/Merchant/'. $merchant_id, uc_google_checkout_headers(), 'POST', $request);
+  $response_obj = drupal_http_request($checkout_url .'/api/checkout/v2/'. $api .'/Merchant/'. $merchant_id, array(
+    'headers' =>uc_google_checkout_headers(),
+    'method' => 'POST',
+    'data' => $request,
+  ));
   if ($response_obj->error) {
     watchdog('google', '@error', array('@error' => $response_obj->error), WATCHDOG_ERROR);
   }
@@ -1024,7 +1028,7 @@ function uc_google_checkout_cancel_order($order) {
 }
 
 function uc_google_checkout_notification_acknowledgement($serial_number) {
-  drupal_set_header('HTTP/1.1 200 OK');
+  drupal_set_header('200 OK');
   print '<?xml version="1.0" encoding="UTF-8"?>';
   print "\n";
   print '<notification-acknowledgment xmlns="http://checkout.google.com/schema/2" serial-number="'. $serial_number .'" />';
@@ -1035,7 +1039,7 @@ function uc_google_checkout_notification_error($message = NULL) {
   if (is_null($message)) {
     $message = t('Unknown order id or malformed XML.');
   }
-  drupal_set_header('HTTP/1.1 400 Bad Request');
+  drupal_set_header('400 Bad Request');
   watchdog('google', '!message', array('!message' => $message), WATCHDOG_ERROR);
   exit();
 }

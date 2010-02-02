@@ -879,7 +879,7 @@ function uc_order_search_form() {
 
   $form['search']['table9'] = array('#value' => '</td><td>');
 
-  $timestamp = arg(11) == 0 ? time() : arg(11);
+  $timestamp = arg(11) == 0 ? REQUEST_TIME : arg(11);
   $form['search']['start_date'] = array(
     '#type' => 'date',
     '#title' => t('Start date'),
@@ -888,7 +888,7 @@ function uc_order_search_form() {
 
   $form['search']['table10'] = array('#value' => '</td><td>');
 
-  $timestamp = arg(12) == 0 ? time() : arg(12);
+  $timestamp = arg(12) == 0 ? REQUEST_TIME : arg(12);
   $form['search']['end_date'] = array(
     '#type' => 'date',
     '#title' => t('End date'),
@@ -1015,7 +1015,7 @@ function uc_order_new($uid = 0, $state = 'in_checkout') {
           ."billing_country, payment_method, data, created, modified) VALUES "
           ."(%d, '%s', 0, '%s', '', '', '', '', '', '', '', 0, '', 0, '', "
           ."'', '', '', '', '', '', 0, 0, 0, '', '', %d, %d)",
-           $uid, $order->order_status, $email, time(), time());
+           $uid, $order->order_status, $email, REQUEST_TIME, REQUEST_TIME);
   $order->order_id = db_last_insert_id('uc_orders', 'order_id');
 
   uc_order_module_invoke('new', $order, NULL);
@@ -1048,7 +1048,7 @@ function uc_order_save($order) {
            $order->billing_company, $order->billing_street1, $order->billing_street2,
            $order->billing_city, $order->billing_zone, $order->billing_postal_code,
            ((is_null($order->billing_country) || $order->billing_country == 0) ? variable_get('uc_store_country', 840) : $order->billing_country),
-           $order->payment_method, serialize($order->data), ip_address(), time(), $order->order_id);
+           $order->payment_method, serialize($order->data), ip_address(), REQUEST_TIME, $order->order_id);
 
   if (is_array($order->products)) {
     foreach ($order->products as $product) {
@@ -1188,10 +1188,10 @@ function uc_order_comments_load($order_id, $admin = FALSE) {
  */
 function uc_order_comment_save($order_id, $uid, $message, $type = 'admin', $status = 'pending', $notify = FALSE) {
   if ($type == 'admin') {
-    db_query("INSERT INTO {uc_order_admin_comments} (order_id, uid, message, created) VALUES (%d, %d, '%s', %d)", $order_id, $uid, $message, time());
+    db_query("INSERT INTO {uc_order_admin_comments} (order_id, uid, message, created) VALUES (%d, %d, '%s', %d)", $order_id, $uid, $message, REQUEST_TIME);
   }
   elseif ($type == 'order') {
-    db_query("INSERT INTO {uc_order_comments} (order_id, uid, message, order_status, notified, created) VALUES (%d, %d, '%s', '%s', %d, %d)", $order_id, $uid, $message, $status, $notify ? 1 : 0, time());
+    db_query("INSERT INTO {uc_order_comments} (order_id, uid, message, order_status, notified, created) VALUES (%d, %d, '%s', '%s', %d, %d)", $order_id, $uid, $message, $status, $notify ? 1 : 0, REQUEST_TIME);
   }
 }
 
@@ -1280,7 +1280,7 @@ function uc_order_update_status($order_id, $status) {
   // Attempt the update if the order exists.
   if ($order !== FALSE) {
     // Return false if any module says the update is not good to go.
-    foreach (module_list() as $module) {
+    foreach (module_implements('order') as $module) {
       $function = $module .'_order';
       // $order must be passed by reference.
       if (function_exists($function) && ($return = $function('can_update', $order, $status))){
@@ -1293,7 +1293,7 @@ function uc_order_update_status($order_id, $status) {
     }
 
     // Otherwise perform the update and log the changes.
-    db_query("UPDATE {uc_orders} SET order_status = '%s', modified = %d WHERE order_id = %d", $status, time(), $order_id);
+    db_query("UPDATE {uc_orders} SET order_status = '%s', modified = %d WHERE order_id = %d", $status, REQUEST_TIME, $order_id);
     uc_order_module_invoke('update', $order, $status);
 
     $change = array(t('Order status') => array('old' => uc_order_status_data($order->order_status, 'title'), 'new' => uc_order_status_data($status, 'title')));
@@ -1341,7 +1341,7 @@ function uc_order_log_changes($order_id, $changes) {
   }
 
   db_query("INSERT INTO {uc_order_log} (order_id, uid, changes, created) VALUES (%d, %d, '%s', %d)",
-    $order_id, $user->uid, theme('item_list', $items), time());
+    $order_id, $user->uid, theme('item_list', $items), REQUEST_TIME);
 
   return TRUE;
 }
@@ -1382,7 +1382,7 @@ function uc_order_address($order, $type) {
  * be passed by reference.
  */
 function uc_order_module_invoke($op, &$order, $edit) {
-  foreach (module_list() as $module) {
+  foreach (module_implements('order') as $module) {
     $function = $module .'_order';
     if (function_exists($function)) {
       $function($op, $order, $edit);
@@ -1443,7 +1443,7 @@ function uc_order_get_total($order, $products_only = FALSE) {
 
   $total += uc_line_items_calculate($order);
 
-  foreach (module_list() as $module) {
+  foreach (module_implements('order') as $module) {
     $function = $module .'_order';
     // $order must be passed by reference. Since hook_order() may be
     // unknowingly implemented (see date_order() in date_api.module), we verify
@@ -1487,7 +1487,7 @@ function uc_order_is_shippable($order) {
     }
 
     // See if any other modules have a say in the matter...
-    foreach (module_list() as $module) {
+    foreach (module_implements('cart_item') as $module) {
       $function = $module .'_cart_item';
       if (function_exists($function) && $function('can_ship', $product)) {
         // $product must be passed by reference.
@@ -1827,7 +1827,7 @@ function uc_order_actions($order, $icon_html = FALSE) {
       }
       else {
         // See if any modules have a say in this order's eligibility for deletion
-        foreach (module_list() as $module) {
+        foreach (module_implements('order') as $module) {
           $function = $module .'_order';
           // $order must be passed by reference.
           if (function_exists($function) && ($response = $function('can_delete', $order, NULL))) {

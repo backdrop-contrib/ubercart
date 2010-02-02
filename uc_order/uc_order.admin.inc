@@ -1177,7 +1177,7 @@ function uc_order_edit_form($form_state, $order) {
   $form['order_id'] = array('#type' => 'hidden', '#value' => $order->order_id);
   $form['order_uid'] = array('#type' => 'hidden', '#value' => $order->uid);
 
-  $modified = isset($form_state['post']['order_modified']) ? $form_state['post']['order_modified'] : time();
+  $modified = isset($form_state['post']['order_modified']) ? $form_state['post']['order_modified'] : REQUEST_TIME;
   $form['order_modified'] = array('#type' => 'hidden', '#value' => $modified);
 
   $panes = _order_pane_list('edit');
@@ -1365,7 +1365,7 @@ function uc_order_edit_products($order) {
       $product->price = $product->sell_price;
       $product->data = module_invoke_all('add_to_cart_data', $form_state['values']);
 
-      foreach (module_list() as $module) {
+      foreach (module_implements('cart_item') as $module) {
         $function = $module .'_cart_item';
         if (function_exists($function)) {
           // $product must be passed by reference.

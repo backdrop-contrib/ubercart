@@ -308,7 +308,7 @@ function _uc_reports_product_get_skus($nid) {
  */
 function uc_reports_products_custom() {
   $timezone = _uc_reports_timezone_offset();
-  $timezone_offset = time() + $timezone;
+  $timezone_offset = REQUEST_TIME + $timezone;
   $statistics = db_result(db_query("SELECT status FROM {system} WHERE name = 'statistics'"));
   $count_views = variable_get('statistics_count_content_views', FALSE);
   $page = (!is_null($_GET['page'])) ? intval($_GET['page']) : 0;
@@ -324,7 +324,7 @@ function uc_reports_products_custom() {
   if (arg(5) == '') {
     $args = array(
       'start_date' => gmmktime(0, 0, 0, gmdate('n', $timezone_offset), 1, gmdate('Y', $timezone_offset) - 1),
-      'end_date' => time(),
+      'end_date' => REQUEST_TIME,
       'status' => FALSE,
     );
   }
@@ -638,7 +638,7 @@ function theme_uc_reports_product_table($header, $rows, $attributes = array(), $
  * Display the sales summary report.
  */
 function uc_reports_sales_summary() {
-  $timezone_offset = time() + _uc_reports_timezone_offset();
+  $timezone_offset = REQUEST_TIME + _uc_reports_timezone_offset();
   $order_statuses = _uc_reports_order_statuses();
   $format = variable_get('uc_date_format_default', 'm/d/Y');
 
@@ -778,7 +778,7 @@ function uc_reports_sales_summary() {
  * Display the yearly sales report form and table.
  */
 function uc_reports_sales_year() {
-  $timezone_offset = time() + _uc_reports_timezone_offset();
+  $timezone_offset = REQUEST_TIME + _uc_reports_timezone_offset();
   $order_statuses = _uc_reports_order_statuses();
 
   // Get the year for the report from the URL.
@@ -915,14 +915,14 @@ function uc_reports_sales_year_form_submit($form, &$form_state) {
  */
 function uc_reports_sales_custom() {
   $timezone = _uc_reports_timezone_offset();
-  $timezone_offset = time() + $timezone;
+  $timezone_offset = REQUEST_TIME + $timezone;
   $format = variable_get('uc_date_format_default', 'm/d/Y');
 
   // Use default report parameters if we don't detect values in the URL.
   if (arg(5) == '') {
     $args = array(
       'start_date' => gmmktime(0, 0, 0, gmdate('n', $timezone_offset), 1, gmdate('Y', $timezone_offset) - 1),
-      'end_date' => time(),
+      'end_date' => REQUEST_TIME,
       'length' => 'month',
       'status' => FALSE,
       'detail' => FALSE,

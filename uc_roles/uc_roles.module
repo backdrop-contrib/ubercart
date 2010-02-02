@@ -54,7 +54,7 @@ function uc_roles_cron() {
     }
 
     // Role expired.
-    elseif ($expiration->expiration <= time()) {
+    elseif ($expiration->expiration <= REQUEST_TIME) {
       uc_roles_revoke($account, $expiration->rid);
       ca_pull_trigger('uc_roles_notify_revoke', $account, $expiration);
     }
@@ -68,7 +68,7 @@ function uc_roles_cron() {
 
       // If we're past the expiration time minus the reminder time.
       $threshold = _uc_roles_get_expiration(-$reminder_qty, $reminder_granularity, $expiration->expiration);
-      if ($threshold <= time()) {
+      if ($threshold <= REQUEST_TIME) {
         ca_pull_trigger('uc_roles_notify_reminder', $account, $expiration);
         db_query("UPDATE {uc_roles_expirations} SET notified = 1 WHERE uid = %d AND rid = %d", $account->uid, $expiration->rid);
       }
@@ -423,7 +423,7 @@ function uc_roles_user_validate(&$edit, &$account, $category) {
     $qty *= $value['polarity'] == 'add' ? 1 : -1;
 
     $new_expiration = _uc_roles_get_expiration($qty, $value['granularity'], $value['expiration']);
-    if (time() > $new_expiration) {
+    if (REQUEST_TIME > $new_expiration) {
       form_set_error('qty', t("The new expiration date, %date, has already occurred.", array('%date' => format_date($new_expiration, 'small'))));
     }
   }
@@ -789,7 +789,7 @@ function uc_roles_feature_form_validate($form, &$form_state) {
       $form_state['values']['uc_roles_expire_absolute']['year']
     );
 
-    if ($form_state['values']['uc_roles_expire_absolute'] <= time()) {
+    if ($form_state['values']['uc_roles_expire_absolute'] <= REQUEST_TIME) {
       form_set_error('uc_roles_expire_absolute', t('The specified date !date has already occurred. Please choose another.', array('!date' => format_date($form_state['values']['uc_roles_expire_absolute']))));
     }
   }
@@ -1375,7 +1375,7 @@ function _uc_roles_get_expiration($duration, $granularity, $start_time = NULL) {
     return NULL;
   }
 
-  $start_time = (!is_null($start_time)) ? $start_time : time();
+  $start_time = (!is_null($start_time)) ? $start_time : REQUEST_TIME;
   $operator = ($duration < 0) ? '' : '+';
 
   return strtotime($operator . $duration .' '. $granularity, $start_time);

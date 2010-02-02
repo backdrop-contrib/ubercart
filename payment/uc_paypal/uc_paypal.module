@@ -373,7 +373,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
       'COUNTRYCODE' => $billing_country[0]['country_iso_code_2'],
       'CURRENCYCODE' => variable_get('uc_paypal_wpp_currency', 'USD'),
       'DESC' => substr($desc, 0, 127),
-      'INVNUM' => $order_id .'-'. time(),
+      'INVNUM' => $order_id .'-'. REQUEST_TIME,
       'BUTTONSOURCE' => 'Ubercart_ShoppingCart_DP_US',
       'NOTIFYURL' => url('uc_paypal/ipn/'. $order->order_id, array('absolute' => TRUE)),
       'EMAIL' => substr($order->primary_email, 0, 127),
@@ -439,7 +439,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
 
       // Log the IPN to the database.
       db_query("INSERT INTO {uc_payment_paypal_ipn} (order_id, txn_id, txn_type, mc_gross, status, receiver_email, payer_email, received) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', %d)",
-      $order->order_id, $nvp_response['TRANSACTIONID'], 'web_accept', $amount, 'Completed', '', $order->primary_email, time());
+      $order->order_id, $nvp_response['TRANSACTIONID'], 'web_accept', $amount, 'Completed', '', $order->primary_email, REQUEST_TIME);
 
       break;
     case 'FailureWithWarning':
@@ -665,7 +665,7 @@ function uc_paypal_ec_checkout($form, &$form_state) {
     'CURRENCYCODE' => variable_get('uc_paypal_wpp_currency', 'USD'),
     'PAYMENTACTION' => variable_get('uc_paypal_wpp_payment_action', 'Sale'),
     'DESC' => substr($desc, 0, 127),
-    'INVNUM' => $order->order_id .'-'. time(),
+    'INVNUM' => $order->order_id .'-'. REQUEST_TIME,
     'REQCONFIRMSHIPPING' => variable_get('uc_paypal_ec_rqconfirmed_addr', 0),
     'ADDROVERRIDE' => 1,
     'BUTTONSOURCE' => 'Ubercart_ShoppingCart_EC_US',
@@ -754,7 +754,7 @@ function uc_paypal_ec_form_submit($form, &$form_state) {
     'CURRENCYCODE' => variable_get('uc_paypal_wpp_currency', 'USD'),
     'PAYMENTACTION' => variable_get('uc_paypal_wpp_payment_action', 'Sale'),
     'DESC' => substr($desc, 0, 127),
-    'INVNUM' => $order->order_id .'-'. time(),
+    'INVNUM' => $order->order_id .'-'. REQUEST_TIME,
     'REQCONFIRMSHIPPING' => variable_get('uc_paypal_ec_rqconfirmed_addr', 0),
     'BUTTONSOURCE' => 'Ubercart_ShoppingCart_EC_US',
     'NOTIFYURL' => url('uc_paypal/ipn/'. $order->order_id, array('absolute' => TRUE)),
@@ -824,7 +824,7 @@ function uc_paypal_ec_submit_form_submit($form, &$form_state) {
     'PAYERID' => $_SESSION['PAYERID'],
     'AMT' => uc_price($order->order_total, $context, $options),
     'DESC' => substr($desc, 0, 127),
-    'INVNUM' => $order->order_id .'-'. time(),
+    'INVNUM' => $order->order_id .'-'. REQUEST_TIME,
     'BUTTONSOURCE' => 'Ubercart_ShoppingCart_EC_US',
     'NOTIFYURL' => url('uc_paypal/ipn/'. $order->order_id, array('absolute' => TRUE)),
     'ITEMAMT' => uc_price($subtotal, $context, $options),
@@ -916,7 +916,7 @@ function uc_paypal_wps_form($form_state, $order) {
     // Transaction information
     'currency_code' => variable_get('uc_paypal_wps_currency', 'USD'),
     'handling_cart' => uc_price($shipping, $context, $options),
-    'invoice' => $order->order_id .'-'. time(),
+    'invoice' => $order->order_id .'-'. REQUEST_TIME,
     'tax_cart' => uc_price($tax, $context, $options),
 
     // Shopping cart specific variables

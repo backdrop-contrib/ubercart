@@ -65,7 +65,7 @@ function uc_reports_help($path, $arg) {
         break;
     }
     if (strpos($path, 'admin/store/reports/sales/year') === 0) {
-      $year = (is_null($_GET['year'])) ? format_date(time(), 'custom', "Y") : $_GET['year'];
+      $year = (is_null($_GET['year'])) ? format_date(REQUEST_TIME, 'custom', "Y") : $_GET['year'];
       $output .= t('This is the monthly break down of sales for the year @year. Clicking on each link will take you to a list of orders during that month.', array('@year' => $year));
     }
     $output .= '</p>';
@@ -228,7 +228,7 @@ function uc_reports_store_csv($report_id, $rows) {
     }
     $csv_output .= implode(',', $row) ."\n";
   }
-  cache_set('uc_reports_'. $report_id .'_'. $user_id, $csv_output, 'cache', time() + 86400);
+  cache_set('uc_reports_'. $report_id .'_'. $user_id, $csv_output, 'cache', REQUEST_TIME + 86400);
   return array('user' => $user_id, 'report' => $report_id, 'csv' => $csv_output);
 }
 
@@ -255,18 +255,18 @@ function _uc_reports_get_csv($report_id, $user_id) {
   else {
     ob_end_clean();
     $http_headers = array(
-      'Pragma: no-cache',
-      'Expires: 0',
-      'Cache-Control: no-cache, must-revalidate',
-      'Cache-Control: private',
-      'Content-Transfer-Encoding: binary',
-      'Content-Length:'. strlen($csv_data->data),
-      'Content-Disposition: attachment; filename="'. $report_id .'.csv"',
-      'Content-Type: text/csv'
+      'Pragma' => 'no-cache',
+      'Expires' => '0',
+      'Cache-Control' => 'no-cache, must-revalidate',
+      'Cache-Control' => 'private',
+      'Content-Transfer-Encoding' => 'binary',
+      'Content-Length' => strlen($csv_data->data),
+      'Content-Disposition' => 'attachment; filename="'. $report_id .'.csv"',
+      'Content-Type' => 'text/csv'
     );
-    foreach ($http_headers as $header) {
-      $header = preg_replace('/\r?\n(?!\t| )/', '', $header);
-      drupal_set_header($header);
+    foreach ($http_headers as $header => $value) {
+      $value = preg_replace('/\r?\n(?!\t| )/', '', $value);
+      drupal_set_header($header, $value);
     }
 
     print $csv_data->data;
@@ -383,7 +383,7 @@ function _uc_reports_subreport_intervals($report_start, $report_end, $interval) 
  */
 function _uc_reports_end_interval($time, $interval = 'month') {
   if (empty($time)) {
-    $time = time();
+    $time = REQUEST_TIME;
   }
 
   $temp = strtotime('+1 '. $interval, $time) - 1;

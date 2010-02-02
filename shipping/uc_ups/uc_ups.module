@@ -805,7 +805,10 @@ function uc_ups_quote($products, $details) {
     $orig->email = variable_get('uc_store_email', '');
     foreach (array_keys(array_filter(variable_get('uc_ups_services', array()))) as $ups_service) {
       $request = uc_ups_shipping_quote($ship_packages, $orig, $dest, $ups_service);
-      $resp = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') .'Rate', array(), 'POST', $request);
+      $resp = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') .'Rate', array(
+        'method' => 'POST',
+        'data' => $request,
+      ));
       if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
         $quotes[$ups_service]['debug'] .= /* '<pre>'. print_r($ship_packages, TRUE) .'</pre>' . */ htmlentities($request) .' <br /><br /> '. htmlentities($resp->data);
       }
@@ -1063,7 +1066,10 @@ function uc_ups_fulfill_order_validate($form, &$form_state) {
 
   $request = uc_ups_shipment_request($_SESSION['ups']['packages'], $origin, $destination, $form_state['values']['service']);
   //print htmlentities($request);
-  $response_obj = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') .'ShipConfirm', array(), 'POST', $request);
+  $response_obj = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') .'ShipConfirm', array(
+    'method' => 'POST',
+    'data' => $request,
+  ));
   $response = new SimpleXMLElement($response_obj->data);
   //drupal_set_message('<pre>'. htmlentities($response->asXML()) .'</pre>');
   if (isset($response->Response->Error)) {
@@ -1154,7 +1160,10 @@ function uc_ups_void_shipment_request($shipment_number, $tracking_numbers = arra
 function uc_ups_void_shipment($shipment_number, $tracking_numbers = array()) {
   $success = FALSE;
   $request = uc_ups_void_shipment_request($shipment_number, $tracking_numbers);
-  $resp = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') .'Void', array(), 'POST', $request);
+  $resp = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') .'Void', array(
+    'method' => 'POST',
+    'data' => $request,
+  ));
   $response = new SimpleXMLElement($resp->data);
   if (isset($response->Response)) {
     if (isset($response->Response->ResponseStatusCode)) {

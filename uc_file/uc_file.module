@@ -317,7 +317,7 @@ function uc_file_user_validate(&$edit) {
     // Either use the current expiration, or if there's none, start from right now.
     $new_expiration = _uc_file_expiration_date($download_modification, $download_modification['expiration']);
 
-    if ($new_expiration <= time()) {
+    if ($new_expiration <= REQUEST_TIME) {
       form_set_error('file_download]['. $key .'][time_quantity', t('The date %date has already occurred.', array('%date' => format_date($new_expiration, 'small'))));
     }
 
@@ -369,7 +369,7 @@ function uc_file_user_submit(&$edit, &$account) {
       'time_polarity' => '+',
       'time_quantity' => variable_get('uc_file_download_limit_duration_qty', NULL),
       'time_granularity' => variable_get('uc_file_download_limit_duration_granularity', 'never'),
-    ), time());
+    ), REQUEST_TIME);
 
     // Renew. (Explicit overwrite)
     uc_file_user_renew($fid, $account, NULL, $download_modification, TRUE);
@@ -1232,7 +1232,7 @@ function _uc_file_expiration_date($file_limits, $timestamp) {
   }
 
   if (!$timestamp) {
-    $timestamp = time();
+    $timestamp = REQUEST_TIME;
   }
 
   // Return the new expiration time.
@@ -1701,7 +1701,7 @@ function uc_file_user_renew($fid, $user, $pfid, $file_limits, $force_overwrite) 
     $key = NULL;
     if (!$file_user) {
       $file_user = array(
-        'granted' => time(),
+        'granted' => REQUEST_TIME,
         'accessed' => 0,
         'addresses' => array(),
       );

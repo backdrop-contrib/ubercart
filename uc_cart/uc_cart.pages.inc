@@ -502,7 +502,7 @@ function uc_cart_checkout_review_form_submit($form, &$form_state) {
   $error = FALSE;
 
   // Invoke it on a per-module basis instead of all at once.
-  foreach (module_list() as $module) {
+  foreach (module_implements('order') as $module) {
     $function = $module .'_order';
     if (function_exists($function)) {
       // $order must be passed by reference.

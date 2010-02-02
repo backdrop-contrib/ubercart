@@ -105,7 +105,7 @@ function uc_file_user_downloads($account) {
     }
 
     // Expired.
-    elseif (time() > $file->expiration) {
+    elseif (REQUEST_TIME > $file->expiration) {
       $file_link = basename($file->filename);
     }
 
@@ -200,7 +200,7 @@ function _uc_file_download_validate($file_download, &$user, $ip) {
 
   // Must be a valid file.
   if (!$file_download || !is_file($file_download->full_path)) {
-    cache_set('uc_file_'. $ip, $requests, 'cache', time() + 86400);
+    cache_set('uc_file_'. $ip, $requests, 'cache', REQUEST_TIME + 86400);
     if ($requests == UC_FILE_REQUEST_LIMIT) {
       watchdog('uc_file', '%username has been temporarily banned from file downloads.', array('%username' => $message_user), WATCHDOG_WARNING);
     }
@@ -225,7 +225,7 @@ function _uc_file_download_validate($file_download, &$user, $ip) {
   }
 
   // Check if it's expired.
-  if ($file_download->expiration && time() >= $file_download->expiration) {
+  if ($file_download->expiration && REQUEST_TIME >= $file_download->expiration) {
     watchdog('uc_file', '%username has been denied an expired file download.', array('%username' => $message_user), WATCHDOG_WARNING);
 
     return UC_FILE_ERROR_EXPIRED;
@@ -305,23 +305,23 @@ function _uc_file_download_transfer($file_user, $ip) {
 
   //Only send partial content header if downloading a piece of the file (IE workaround)
   if ($seek_start > 0 || $seek_end < ($size - 1)) {
-    drupal_set_header('HTTP/1.1 206 Partial Content');
+    drupal_set_header('206 Partial Content');
   }
 
   // Standard headers, including content-range and length
-  drupal_set_header('Pragma: public');
-  drupal_set_header('Cache-Control: cache, must-revalidate');
-  drupal_set_header('Accept-Ranges: bytes');
-  drupal_set_header('Content-Range: bytes '. $seek_start .'-'. $seek_end .'/'. $size);
-  drupal_set_header('Content-Type: '. $mimetype);
-  drupal_set_header('Content-Disposition: attachment; filename="'. $filename .'"');
-  drupal_set_header('Content-Length: '. ($seek_end - $seek_start + 1));
+  drupal_set_header('Pragma', 'public');
+  drupal_set_header('Cache-Control', 'cache, must-revalidate');
+  drupal_set_header('Accept-Ranges', 'bytes');
+  drupal_set_header('Content-Range', 'bytes ' . $seek_start . '-' . $seek_end . '/' . $size);
+  drupal_set_header('Content-Type', $mimetype);
+  drupal_set_header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+  drupal_set_header('Content-Length', $seek_end - $seek_start + 1);
 
   // Last-Modified is required for content served dynamically
-  drupal_set_header('Last-Modified: '. gmdate("D, d M Y H:i:s", filemtime($file_user->full_path)) ." GMT");
+  drupal_set_header('Last-Modified', gmdate("D, d M Y H:i:s", filemtime($file_user->full_path)) ." GMT");
 
   // Etag header is required for Firefox3 and other managers
-  drupal_set_header('ETag: '. md5($file_user->full_path));
+  drupal_set_header('ETag', md5($file_user->full_path));
 
   // Open the file and seek to starting byte
   $fp = fopen($file_user->full_path, 'rb');
@@ -331,7 +331,7 @@ function _uc_file_download_transfer($file_user, $ip) {
   while (!feof($fp)) {
 
     // Reset time limit for large files
-    set_time_limit(0);
+    drupal_set_time_limit(0);
 
     // Push the data to the client.
     print(fread($fp, UC_FILE_BYTE_SIZE));

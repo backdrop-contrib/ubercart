@@ -162,7 +162,7 @@ function uc_credit_terminal_form($form_state, $order, $lock_amount = FALSE) {
   $options = array();
 
   // Log a reference to the order for testing.
-  // $order->data = uc_credit_log_reference($order->order_id, substr(md5(time()), 0, 16), '4111111111111111');
+  // $order->data = uc_credit_log_reference($order->order_id, substr(md5(REQUEST_TIME), 0, 16), '4111111111111111');
 
   foreach ((array) $order->data['cc_txns']['references'] as $ref_id => $data) {
     $options[$ref_id] = t('@ref_id - @date - (Last 4) @card', array('@ref_id' => strtoupper($ref_id), '@date' => format_date($data['created'], 'small'), '@card' => $data['card']));

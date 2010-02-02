@@ -900,7 +900,7 @@ function uc_credit_settings_form_submit($form, &$form_state) {
         }
         else {
           // Replacement key generation suggested by Barry Jaspan for increased security.
-          fwrite($file, md5(drupal_get_token(serialize($_REQUEST) . serialize($_SERVER) . time())));
+          fwrite($file, md5(drupal_get_token(serialize($_REQUEST) . serialize($_SERVER) . REQUEST_TIME)));
           fclose($file);
 
           drupal_set_message(t('Credit card encryption key file generated. Card data will now be encrypted.'));
@@ -1506,7 +1506,7 @@ function uc_credit_log_authorization($order_id, $auth_id, $amount) {
   // Add the authorization to the cc_txns.
   $data['cc_txns']['authorizations'][$auth_id] = array(
     'amount' => $amount,
-    'authorized' => time(),
+    'authorized' => REQUEST_TIME,
   );
 
   // Save the updated data array to the database.
@@ -1537,7 +1537,7 @@ function uc_credit_log_prior_auth_capture($order_id, $auth_id) {
   }
 
   // Otherwise log the capture timestamp to the authorization.
-  $data['cc_txns']['authorizations'][$auth_id]['captured'] = time();
+  $data['cc_txns']['authorizations'][$auth_id]['captured'] = REQUEST_TIME;
 
   // Save the updated data array to the database.
   db_query("UPDATE {uc_orders} SET data = '%s' WHERE order_id = %d", serialize($data), $order_id);
@@ -1566,7 +1566,7 @@ function uc_credit_log_reference($order_id, $ref_id, $cc_number) {
 
   $data['cc_txns']['references'][$ref_id] = array(
     'card' => substr($cc_number, -4),
-    'created' => time(),
+    'created' => REQUEST_TIME,
   );
 
   // Save the updated data array to the database.

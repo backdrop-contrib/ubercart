@@ -56,7 +56,10 @@ function uc_paypal_ipn($order_id = 0) {
     $host = variable_get('uc_paypal_wps_server', 'https://www.sandbox.paypal.com/cgi-bin/webscr');
   }
 
-  $response = drupal_http_request($host, array(), 'POST', $req);
+  $response = drupal_http_request($host, array(
+    'method' => 'POST',
+    'data' => $req,
+  ));
 
   // TODO: Change this to property_exists when we have a PHP requirement >= 5.1.
   if (array_key_exists('error', $response)) {
@@ -76,7 +79,7 @@ function uc_paypal_ipn($order_id = 0) {
     }
 
     db_query("INSERT INTO {uc_payment_paypal_ipn} (order_id, txn_id, txn_type, mc_gross, status, receiver_email, payer_email, received) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', %d)",
-      $order_id, $txn_id, $txn_type, $payment_amount, $payment_status, $receiver_email, $payer_email, time());
+      $order_id, $txn_id, $txn_type, $payment_amount, $payment_status, $receiver_email, $payer_email, REQUEST_TIME);
 
     $context = array(
       'revision' => 'formatted-original',
