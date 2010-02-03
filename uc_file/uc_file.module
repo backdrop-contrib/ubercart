@@ -115,20 +115,20 @@ function uc_file_perm() {
 function uc_file_theme() {
   return array(
     'uc_file_downloads_token' => array(
-      'arguments' => array('file_downloads' => NULL),
+      'variables' => array('file_downloads' => NULL),
     ),
     'uc_file_admin_files_form_show' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
       'file' => 'uc_file.admin.inc',
     ),
     'uc_file_hook_user_file' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
     ),
     'uc_file_hook_user_file_downloads' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
     ),
     'uc_file_user_downloads' => array(
-      'arguments' => array('files' => NULL),
+      'variables' => array('files' => NULL),
       'file' => 'uc_file.pages.inc',
     ),
   );
@@ -439,7 +439,7 @@ function _uc_file_download_table_behavior($id, $fid) {
 
   drupal_add_js( "
 Drupal.behaviors.ucUserAccountFileDownload". $id ." = function(context) {
-  $('#edit-file-download-". $fid ."-time-granularity:not(.ucUserAccountFileDownload-processed)', context).addClass('ucUserAccountFileDownload-processed').change(
+  \$('#edit-file-download-". $fid ."-time-granularity:not(.ucUserAccountFileDownload-processed)', context).addClass('ucUserAccountFileDownload-processed').change(
     function() {
       _uc_file_expiration_disable_check('#edit-file-download-". $fid ."-time-granularity', '#edit-file-download-". $fid ."-time-quantity');
       _uc_file_expiration_disable_check('#edit-file-download-". $fid ."-time-granularity', '#edit-file-download-". $fid ."-time-polarity');
@@ -455,7 +455,8 @@ Drupal.behaviors.ucUserAccountFileDownload". $id ." = function(context) {
  *
  * @ingroup themeable
  */
-function theme_uc_file_hook_user_file_downloads($form) {
+function theme_uc_file_hook_user_file_downloads($variables) {
+  $form = $variables['form'];
 
   $header = array(
     array('data' => t('Remove'    )),
@@ -504,7 +505,7 @@ function theme_uc_file_hook_user_file_downloads($form) {
             '</div>',
         ),
       ),
-      'class' => 'download-table-row',
+      'class' => array('download-table-row'),
     );
   }
 
@@ -512,8 +513,8 @@ function theme_uc_file_hook_user_file_downloads($form) {
     $rows[] = array(array('data' => t('No files can be downloaded by this user.'), 'colspan' => 5));
   }
 
-  $output .= theme('table', $header, $rows, array('id' => 'download-table'), t('Below is a list of downloads this user can access.'));
-  $output .= drupal_render($form);
+  $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'download-table'), 'caption' => t('Below is a list of downloads this user can access.')));
+  $output .= drupal_render_children($form);
 
   return $output;
 }
@@ -523,7 +524,8 @@ function theme_uc_file_hook_user_file_downloads($form) {
  *
  * @ingroup themeable
  */
-function theme_uc_file_hook_user_file($form) {
+function theme_uc_file_hook_user_file($variables) {
+  $form = $variables['form'];
 
   // Enclose this in <p> so it won't fall out of the fieldset if there are no downloads.
   $output .= '<p>'. drupal_render($form['file_message']) .'</p>';
@@ -531,7 +533,7 @@ function theme_uc_file_hook_user_file($form) {
   // Ensure the current files are above the new file dialog.
   $output .= drupal_render($form['download']);
 
-  $output .= drupal_render($form);
+  $output .= drupal_render_children($form);
 
   return $output;
 }
@@ -680,7 +682,7 @@ function uc_file_token_values($type, $object = NULL) {
   switch ($type) {
     case 'uc_file':
       if (!empty($object)) {
-        $values['file-downloads'] = theme('uc_file_downloads_token', $object);
+        $values['file-downloads'] = theme('uc_file_downloads_token', array('file_downloads' => $object));
       }
       break;
   }
@@ -693,18 +695,20 @@ function uc_file_token_values($type, $object = NULL) {
  *
  * @ingroup themeable
  */
-function theme_uc_file_downloads_token($user_files) {
+function theme_uc_file_downloads_token($file_downloads) {
+  $file_downloads = $variables['file_downloads'];
+
   $output = '';
 
-  foreach ($user_files as $user_file) {
-
+  foreach ($file_downloads as $file_download) {
     // Let's only notify of them of the files, not the directories.
-    if (is_dir($user_file->filename)) {
+    if (is_dir($file_download->filename)) {
       continue;
     }
 
-    $output .= l($user_file->filename, 'download/'. $user_file->fid .'/'. $user_file->file_key, array('absolute' => TRUE)) ."\n";
+    $output .= l($file_download->filename, 'download/'. $file_download->fid .'/'. $file_download->file_key, array('absolute' => TRUE)) ."\n";
   }
+
   return $output;
 }
 

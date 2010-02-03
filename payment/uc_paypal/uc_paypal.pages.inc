@@ -372,7 +372,7 @@ function uc_paypal_ec_submit() {
   }
 
   drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
-  $output = '<div>'. theme('cart_review_table', FALSE) .'</div>';
+  $output = '<div>'. theme('cart_review_table', array('show_subtotal' => FALSE)) .'</div>';
   $output .= uc_order_pane_line_items('customer', $order);
   $output .= '<p>'. t("Your order is not complete until you click the 'Submit order' button below. Your PayPal account will be charged for the amount shown above once your order is placed. You will receive confirmation once your payment is complete.") .'</p>';
   $output .= drupal_get_form('uc_paypal_ec_submit_form');

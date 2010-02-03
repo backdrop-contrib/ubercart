@@ -1209,9 +1209,6 @@ function uc_order_action_email_form($form_state, $settings = array()) {
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
     );
-    $form['token_help'][$name]['content'] = array(
-      '#value' => theme('token_help', $name),
-    );
   }
 
   return $form;
@@ -1292,9 +1289,6 @@ function uc_order_action_email_invoice_form($form_state, $settings = array()) {
       '#title' => t('@name replacement patterns', array('@name' => drupal_ucfirst($name))),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
-    );
-    $form['token_help'][$name]['content'] = array(
-      '#value' => theme('token_help', $name),
     );
   }
 

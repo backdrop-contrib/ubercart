@@ -182,7 +182,9 @@ function uc_file_admin_files_form_show_submit($form, &$form_state) {
  * @ingroup themeable
  * @see uc_file_admin_files_form_show_files()
  */
-function theme_uc_file_admin_files_form_show($form) {
+function theme_uc_file_admin_files_form_show($variables) {
+  $form = $variables['form'];
+
   $output = '';
 
   $header = $form['#header'];
@@ -203,7 +205,7 @@ function theme_uc_file_admin_files_form_show($form) {
 
     $rows[] = array(
       array('data' => drupal_render($form['file_select'][$fid]['check'])),
-      array('data' => $filename, 'class' => $class),
+      array('data' => $filename, 'class' => array($class)),
       array('data' => l(drupal_render($form['file_select'][$fid]['title']), 'node/'. drupal_render($form['file_select'][$fid]['nid']))),
       array('data' => drupal_render($form['file_select'][$fid]['model']))
     );
@@ -217,9 +219,9 @@ function theme_uc_file_admin_files_form_show($form) {
   $output .= '<p>'. t('File downloads can be attached to any Ubercart product as a product feature. For security reasons the <a href="!download_url">file downloads directory</a> is separated from the Drupal <a href="!file_url">file system</a>. Here are the list of files (and their associated Ubercart products) that can be used for file downloads.', array('!download_url' => url('admin/store/settings/products/edit/features', array('query' => 'destination=admin/store/products/files')), '!file_url' => url('admin/settings/file-system'))) .'</p>';
   $output .= drupal_render($form['uc_file_action']);
   $output .= drupal_render($form['uc_file_select']);
-  $output .= theme('table', $header, $rows);
-  $output .= theme('pager', NULL, UC_FILE_PAGER_SIZE, 0);
-  $output .= drupal_render($form);
+  $output .= theme('table', array('header' => $header, 'rows' => $rows));
+  $output .= theme('pager');
+  $output .= drupal_render_children($form);
 
   return $output;
 }
@@ -270,7 +272,7 @@ function uc_file_admin_files_form_action($form_state) {
       // Base files/dirs the user selected.
       $form['selected_files'] = array(
         '#type' => 'markup',
-        '#value' => theme_item_list($file_list, NULL, 'ul', array('class' => 'selected-file-name')),
+        '#value' => theme('item_list', array('items' => $file_list, 'attributes' => array('class' => array('selected-file-name')))),
       );
 
       $form = confirm_form(
@@ -292,7 +294,7 @@ function uc_file_admin_files_form_action($form_state) {
         // don't have JS enabled over not defaulting to any info.
         $form['affected_files'] = array(
           '#type' => 'markup',
-          '#value' => theme_item_list($affected_list[FALSE], 'Affected file(s)', 'ul', array('class' => 'affected-file-name')),
+          '#value' => theme('item_list', array('items' => $affected_list[FALSE], 'title' => 'Affected file(s)', 'attributes' => array('class' => array('affected-file-name')))),
         );
       }
 
@@ -332,7 +334,7 @@ function uc_file_admin_files_form_action($form_state) {
         '#description' => t('The maximum file size that can be uploaded is %size bytes. You will need to use a different method to upload the file to the directory (e.g. (S)FTP, SCP) if your file exceeds this size.<br />The module will automatically detect files you upload using an alternate method.', array('%size' => number_format($max_bytes))),
       );
 
-      $form['#attributes']['class'] .= 'foo';
+      $form['#attributes']['class'][] = 'foo';
       $form = confirm_form(
         $form, t('Upload file'),
         'admin/store/products/files',

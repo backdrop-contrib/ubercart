@@ -138,14 +138,14 @@ function uc_roles_perm() {
 function uc_roles_theme() {
   return array(
     'uc_roles_expiration' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
       'file' => 'uc_roles.admin.inc',
     ),
     'uc_roles_user_expiration' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
     ),
     'uc_roles_user_new' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
     ),
   );
 }
@@ -279,11 +279,11 @@ function uc_roles_user_form(&$edit, &$account, $category = NULL) {
 /**
  * Theme the roles dialog on the account edit page.
  */
-function theme_uc_roles_user_new($form) {
-  $output = '';
+function theme_uc_roles_user_new($variables) {
+  $form = $variables['form'];
 
   // Render the expiration tables first.
-  $output .= drupal_render($form['expirations']);
+  $output = drupal_render($form['expirations']);
 
   $output .= '<div class="expiration">';
   $output .=   drupal_render($form['new_role']);
@@ -301,8 +301,8 @@ function theme_uc_roles_user_new($form) {
  *
  * @ingroup themeable
  */
-function theme_uc_roles_user_expiration($form) {
-  $output = '';
+function theme_uc_roles_user_expiration($variables) {
+  $form = $variables['form'];
 
   $header = array(
     array('data' => t('Make permanent')),
@@ -340,8 +340,8 @@ function theme_uc_roles_user_expiration($form) {
     );
   }
 
-  $output .= theme('table', $header, $rows, array(), t('Below you can add or remove time to the expiration dates of the following roles.'));
-  $output .= drupal_render($form);
+  $output = theme('table', array('header' => $header, 'rows' => $rows, 'caption' => t('Below you can add or remove time to the expiration dates of the following roles.')));
+  $output .= drupal_render_children($form);
 
   return $output;
 }

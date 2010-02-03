@@ -86,7 +86,7 @@ function uc_cart_links_report() {
     );
   }
 
-  return theme('table', $header, $rows) . theme('pager', array(), 25, 1);
+  return theme('table', array('header' => $header, 'rows' => $rows)) . theme('pager', array('element' => 1));
 }
 
 /**
@@ -120,7 +120,7 @@ function uc_cart_links_creation_help() {
   );
 
   $output = '<div>'. t('There is currently no user interface for creating cart links, but this section includes some basic instructions.<br />Cart links are simple to form using a few actions and arguments with the following rules:')
-    .'<p>'. theme('item_list', $items) .'</p><p>'. theme('table', $header, $rows) .'</p><p>'. theme('item_list', $items2) .'</p><p>'. t('<b>Example:</b> /cart/add/e-p1_q5-imonday_special?destination=cart<br /><br />This example will empty the cart, add 5 of product 1 to the cart, track clicks with the ID "monday_special", and redirect the user to the cart. To use this on your site, simply create an HTML link to the URL you create:')
+    .'<p>'. theme('item_list', array('items' => $items)) .'</p><p>'. theme('table', array('header' => $header, 'rows' => $rows)) .'</p><p>'. theme('item_list', array('items' => $items2)) .'</p><p>'. t('<b>Example:</b> /cart/add/e-p1_q5-imonday_special?destination=cart<br /><br />This example will empty the cart, add 5 of product 1 to the cart, track clicks with the ID "monday_special", and redirect the user to the cart. To use this on your site, simply create an HTML link to the URL you create:')
     .'</p><p>&lt;a href="http://www.example.com/cart/add/e-p1_q5-imonday_special?destination=cart">'. t('Link text.') .'&lt;/a></p></div>';
 
   return $output;

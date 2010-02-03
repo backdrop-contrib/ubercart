@@ -242,7 +242,10 @@ function summarize_child_form_pages($path, $trim = FALSE, $only_parent = FALSE) 
  *   The HTML output of the summary.
  * @ingroup themeable
  */
-function theme_summary_overview($summaries, $link = TRUE) {
+function theme_summary_overview($variables) {
+  $summaries = $variables['summaries'];
+  $link = $variables['link'];
+
   // Add some Ubercart specific JS for modifying summaries.
   drupal_add_js(drupal_get_path('module', 'uc_store') .'/includes/summaries.js');
   drupal_add_js(array('editIconPath' => base_path() . drupal_get_path('module', 'uc_store') .'/images/order_edit.gif'), 'setting');
@@ -265,7 +268,7 @@ function theme_summary_overview($summaries, $link = TRUE) {
     $output .= '</div>';
 
     // Add in the list for the summary items.
-    $output .= theme('item_list', $summary['items']);
+    $output .= theme('item_list', array('items' => $summary['items']));
 
     // Close out the summary overview div.
     $output .= '</div>';

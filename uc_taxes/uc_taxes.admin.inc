@@ -42,7 +42,7 @@ function uc_taxes_admin_settings() {
   }
 
   // Build the output including the table and a link to add a new rate.
-  $output = theme('table', $header, $rows)
+  $output = theme('table', array('header' => $header, 'rows' => $rows))
           . l(t('Add a tax rate'), 'admin/store/settings/taxes/add');
 
   return $output;

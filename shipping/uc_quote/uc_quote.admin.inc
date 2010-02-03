@@ -17,7 +17,7 @@ function uc_quote_overview() {
   $summaries = array_merge($summaries, summarize_child_form_pages('admin/store/settings/quotes/methods', FALSE, TRUE));
 
   // Theme it all up in a summaries overview.
-  return theme('summary_overview', $summaries);
+  return theme('summary_overview', array('summaries' => $summaries));
 }
 
 /**
@@ -250,7 +250,9 @@ function uc_quote_method_settings() {
  * @ingroup themeable
  * @see uc_quote_method_settings()
  */
-function theme_uc_quote_method_settings($form) {
+function theme_uc_quote_method_settings($variables) {
+  $form = $variables['form'];
+
   $methods = uc_quote_shipping_method_options();
   $output = '';
 
@@ -263,9 +265,9 @@ function theme_uc_quote_method_settings($form) {
     $row[] = drupal_render($form['methods'][$method]['uc_quote_method_weight']);
     $rows[] = $row;
   }
-  $output .= theme('table', $header, $rows);
+  $output .= theme('table', array('header' => $header, 'rows' => $rows));
 
-  $output .= drupal_render($form);
+  $output .= drupal_render_children($form);
   return $output;
 }
 

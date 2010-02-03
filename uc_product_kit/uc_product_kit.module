@@ -396,7 +396,7 @@ function uc_product_kit_load(&$node) {
 function uc_product_kit_theme() {
   return array(
     'uc_product_kit_add_to_cart' => array(
-      'arguments' => array('node' => NULL),
+      'variables' => array('node' => NULL),
       ),
     );
 }
@@ -507,7 +507,7 @@ function uc_product_kit_form(&$node) {
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     '#weight' => -1,
-    '#attributes' => array('class' => 'product-field'),
+    '#attributes' => array('class' => array('product-field')) ,
   );
   $form['base']['mutable'] = array('#type' => 'radios',
     '#title' => t('How is this product kit handled by the cart?'),
@@ -653,7 +653,7 @@ function uc_product_kit_view($node, $teaser = 0, $page = 0) {
   );
 
   if (module_exists('imagecache') && ($field = variable_get('uc_image_product_kit', '')) && isset($node->$field) && file_exists($node->{$field}[0]['filepath'])) {
-    $node->content['image'] = array('#value' => theme('uc_product_image', $node->$field),
+    $node->content['image'] = array('#value' => theme('uc_product_image', array('images' => $node->$field)),
       '#access' => $enabled['image'],
       '#weight' => $weight['image'],
     );
@@ -665,7 +665,7 @@ function uc_product_kit_view($node, $teaser = 0, $page = 0) {
     '#weight' => $weight['display_price'],
   );
   if (!$teaser) {
-    $node->content['model'] = array('#value' => theme('uc_product_model', $node->model),
+    $node->content['model'] = array('#value' => theme('uc_product_model', array('model' => $node->model)),
       '#access' => $enabled['model'],
       '#weight' => $weight['model'],
     );
@@ -697,7 +697,7 @@ function uc_product_kit_view($node, $teaser = 0, $page = 0) {
   );
 
   if (!$teaser) {
-    $node->content['weight'] = array('#value' => theme('uc_product_weight', $node->weight, $node->weight_units),
+    $node->content['weight'] = array('#value' => theme('uc_product_weight', array('weight' => $node->weight, 'units' => $node->weight_units)),
       '#access' => $enabled['weight'],
       '#weight' => $weight['weight'],
     );
@@ -718,13 +718,13 @@ function uc_product_kit_view($node, $teaser = 0, $page = 0) {
       }
     }
     if (module_exists('uc_cart')) {
-      $node->content['add_to_cart'] = array('#value' => theme('uc_product_kit_add_to_cart', $node),
+      $node->content['add_to_cart'] = array('#value' => theme('uc_product_kit_add_to_cart', array('node' => $node)),
         '#weight' => 10,
       );
     }
   }
   elseif (module_exists('uc_cart') && variable_get('uc_product_add_to_cart_teaser', TRUE)) {
-    $node->content['add_to_cart'] = array('#value' => theme('uc_product_kit_add_to_cart', $node),
+    $node->content['add_to_cart'] = array('#value' => theme('uc_product_kit_add_to_cart', array('node' => $node)),
       '#weight' => 10,
     );
   }
@@ -738,6 +738,8 @@ function uc_product_kit_view($node, $teaser = 0, $page = 0) {
  * @ingroup themeable
  */
 function theme_uc_product_kit_add_to_cart($node) {
+  $node = $variables['nodes'];
+
   $output = '<div class="add-to-cart" title="'. t('Click to add to cart.') .'">';
   if ($node->nid) {
     $output .= drupal_get_form('uc_product_kit_add_to_cart_form_'. $node->nid, $node);
@@ -746,6 +748,7 @@ function theme_uc_product_kit_add_to_cart($node) {
     $output .= drupal_get_form('uc_product_kit_add_to_cart_form', $node);
   }
   $output .= '</div>';
+
   return $output;
 }
 
@@ -784,7 +787,7 @@ function uc_product_kit_add_to_cart_form($form_state, $node) {
     '#value' =>  variable_get('uc_product_add_to_cart_text', t('Add to cart')),
     '#id' => 'edit-submit-'. $node->nid,
     '#attributes' => array(
-      'class' => 'node-add-to-cart',
+      'class' => array('node-add-to-cart'),
     ),
   );
 
@@ -838,7 +841,7 @@ function uc_product_kit_buy_it_now_form($form_state, $node) {
     '#value' =>  variable_get('uc_teaser_add_to_cart_text', t('Add to cart')),
     '#id' => 'edit-submit-'. $node->nid,
     '#attributes' => array(
-      'class' => 'list-add-to-cart',
+      'class' => array('list-add-to-cart'),
     ),
   );
 
@@ -1106,7 +1109,7 @@ function uc_product_kit_cart_display($item) {
       $title = $item->title;
     }
     if ($kit->mutable == UC_PRODUCT_KIT_UNMUTABLE_WITH_LIST) {
-      $elements[$unique_id]['#extra'][] = array('data' => $item->qty .' x '. $title . $extra, 'class' => 'kit-component-cart-desc');
+      $elements[$unique_id]['#extra'][] = array('data' => $item->qty .' x '. $title . $extra, 'class' => array('kit-component-cart-desc'));
     }
 
     $context = array(
@@ -1142,7 +1145,7 @@ function uc_product_kit_cart_display($item) {
 
       $elements[$unique_id]['data'] = array('#type' => 'value', '#value' => serialize($elements[$unique_id]['data']));
       if ($kit->mutable == UC_PRODUCT_KIT_UNMUTABLE_WITH_LIST) {
-        $elements[$unique_id]['description']['#value'] .= theme('item_list', $elements[$unique_id]['#extra'], NULL, 'ul', array('class' => 'product-description'));
+        $elements[$unique_id]['description']['#value'] .= theme('item_list', array('items' => $elements[$unique_id]['#extra'], 'attributes' => array('class' => array('product-description'))));
       }
       $element = $elements[$unique_id];
       unset($products[$unique_id]);

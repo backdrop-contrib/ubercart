@@ -65,7 +65,9 @@ function tapir_gather_rows($element) {
  *   The table output rendered in HTML.
  * @ingroup themeable
  */
-function theme_tapir_table($element) {
+function theme_tapir_table($variables) {
+  $element = $variables['element'];
+
   $header = array();
   $rows = array();
 
@@ -128,7 +130,7 @@ function theme_tapir_table($element) {
   }
 
   // Return the rendered table.
-  return theme('table', $header, $rows, (array)$element['#attributes'], $element['#title']) . (isset($element['#children']) ? $element['#children'] : '');
+  return theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => (array)$element['#attributes'], 'caption' => $element['#title'])) . drupal_render_children($element);
 }
 
 /**

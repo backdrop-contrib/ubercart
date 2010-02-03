@@ -57,15 +57,15 @@ function uc_ups_init() {
 function uc_ups_theme() {
   return array(
     'uc_ups_confirm_shipment' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
       'file' => 'uc_ups.admin.inc',
     ),
     'uc_ups_label_image' => array(
-      'arguments' => array(),
+      'variables' => array(),
       'file' => 'uc_ups.admin.inc',
     ),
     'uc_ups_option_label' => array(
-      'arguments' => array('service' => NULL),
+      'variables' => array('service' => NULL),
     ),
   );
 }
@@ -851,7 +851,7 @@ function uc_ups_quote($products, $details) {
       $quotes[$key]['rate'] = uc_price($quote['rate'], $context);
       $context['revision'] = 'formatted';
       $quotes[$key]['format'] = uc_price($quote['rate'], $context);
-      $quotes[$key]['option_label'] = theme('uc_ups_option_label', $method['ups']['quote']['accessorials'][$key]);
+      $quotes[$key]['option_label'] = theme('uc_ups_option_label', array('service' => $method['ups']['quote']['accessorials'][$key]));
     }
   }
 
@@ -887,7 +887,9 @@ function uc_ups_quote($products, $details) {
  *   The UPS service name.
  * @ingroup themeable
  */
-function theme_uc_ups_option_label($service) {
+function theme_uc_ups_option_label($variables) {
+  $service = $variables['service'];
+
   // Start with logo as required by the UPS terms of service.
   $output = '<img class="ups-logo" src="'. url(drupal_get_path('module', 'uc_ups')) .'/uc_ups_logo.gif" alt="'. t('UPS Logo') .'" /> ';
 
@@ -938,7 +940,7 @@ function uc_ups_fulfill_order($form_state, $order, $package_ids) {
       $pkg_form = array('#type' => 'fieldset',
         '#title' => t('Package !id', array('!id' => $id)),
       );
-      $pkg_form['products'] = array('#value' => theme('item_list', $product_list));
+      $pkg_form['products'] = array('#value' => theme('item_list', array('items' => $product_list)));
       $pkg_form['package_id'] = array('#type' => 'hidden', '#value' => $id);
       $pkg_form['pkg_type'] = array('#type' => 'select',
         '#title' => t('Package type'),
@@ -954,7 +956,7 @@ function uc_ups_fulfill_order($form_state, $order, $package_ids) {
       $pkg_type['dimensions'] = array('#type' => 'fieldset',
         '#title' => t('Dimensions'),
         '#description' => t('Physical dimensions of the package.'),
-        '#theme' => 'uc_ups_dimensions',
+        '#theme' => 'uc_shipping_package_dimensions',
       );
       $pkg_form['dimensions']['units'] = array('#type' => 'select',
         '#title' => t('Units of measurement'),

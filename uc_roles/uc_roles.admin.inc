@@ -32,7 +32,9 @@ function uc_roles_expiration() {
 
   // Stick the expirations into the form.
   while ($row = db_fetch_object($result)) {
-    $form['name'][$row->uid .' '. $row->rid] = array('#value' => theme('username', $row));
+    $account = user_load($row->uid);
+    $name = check_plain(format_username($account));
+    $form['name'][$row->uid .' '. $row->rid] = array('#value' => theme('username', array('account' => $account, 'name' => $name)));
     $form['role'][$row->uid .' '. $row->rid] = array('#value' => _uc_roles_get_name($row->rid));
     $form['expiration'][$row->uid .' '. $row->rid] = array('#value' => format_date($row->expiration, 'small'));
     $form['operations'][$row->uid .' '. $row->rid] = array('#value' => l(t('delete'), 'admin/user/user/expiration/delete/'. $row->uid .'/'. $row->rid) .' '. l(t('edit'), 'user/'. $row->uid .'/edit', array('fragment' => 'role-expiration-'. $row->rid, 'query' => 'destination=admin%2Fuser%2Fuser%2Fexpiration')));
@@ -46,7 +48,9 @@ function uc_roles_expiration() {
  *
  * @ingroup themeable
  */
-function theme_uc_roles_expiration($form) {
+function theme_uc_roles_expiration($variables) {
+  $form = $variables['form'];
+
   $header = _uc_roles_expiration_header();
 
   if (is_array($form['name'])) {
@@ -64,9 +68,9 @@ function theme_uc_roles_expiration($form) {
   }
 
   // Render everything.
-  $output .= theme('table', $header, $rows);
-  $output .= theme('pager', NULL, 50, 0);
-  $output .= drupal_render($form);
+  $output .= theme('table', array('header' => $header, 'rows' => $rows));
+  $output .= theme('pager');
+  $output .= drupal_render_children($form);
 
   return $output;
 }

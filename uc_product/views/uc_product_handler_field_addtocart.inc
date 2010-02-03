@@ -28,10 +28,10 @@ class uc_product_handler_field_addtocart extends views_handler_field {
       $module = $type->module;
       $product = node_load($values->{$this->aliases['nid']});
       if (function_exists('theme_'. $module .'_add_to_cart')) {
-        return theme($module .'_add_to_cart', $product);
+        return theme($module .'_add_to_cart', array('node' => $product));
       }
       elseif (function_exists('theme_uc_product_add_to_cart')) {
-        return theme('uc_product_add_to_cart', $product);
+        return theme('uc_product_add_to_cart', array('node' => $product));
       }
     }
   }

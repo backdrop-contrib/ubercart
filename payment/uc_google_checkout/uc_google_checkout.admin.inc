@@ -156,7 +156,9 @@ function uc_google_checkout_shipping_settings() {
   return $form;
 }
 
-function theme_uc_google_checkout_shipping_settings($form) {
+function theme_uc_google_checkout_shipping_settings($variables) {
+  $form = $variables['form'];
+
   $header = array(t('Enable'), t('Service'), t('Default price'), t('Pickup type'), t('Handling charge'), t('Percentage markup/discount'));
 
   $companies = uc_google_checkout_shipping_companies();
@@ -174,7 +176,7 @@ function theme_uc_google_checkout_shipping_settings($form) {
     }
     $rows[] = $row;
   }
-  $output = theme('table', $header, $rows) . drupal_render($form);
+  $output = theme('table', array('header' => $header, 'rows' => $rows)) . drupal_render_children($form);
 
   return $output;
 }
@@ -252,7 +254,9 @@ function uc_google_checkout_taxes_settings() {
   return $form;
 }
 
-function theme_uc_google_checkout_taxes_settings($form) {
+function theme_uc_google_checkout_taxes_settings($variables) {
+  $form = $variables['form'];
+
   $header = array(t('Delete'), uc_get_field_name('zone'), t('Rate'), t('Tax shipping?'));
 
   $rows = array();
@@ -271,8 +275,8 @@ function theme_uc_google_checkout_taxes_settings($form) {
     $rows[] = $row;
   }
 
-  $output = theme('table', $header, $rows);
-  $output .= drupal_render($form);
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  $output .= drupal_render_children($form);
 
   return $output;
 }

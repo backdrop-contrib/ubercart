@@ -36,7 +36,7 @@ function uc_weightquote_admin_methods() {
   }
   if (count($rows)) {
     $header = array(t('Title'), t('Label'), t('Base rate'), t('Default product rate'), array('data' => t('Operations'), 'colspan' => 2));
-    $output .= theme('table', $header, $rows);
+    $output .= theme('table', array('header' => $header, 'rows' => $rows));
   }
   $output .= l(t('Add a new weight quote shipping method.'), 'admin/store/settings/quotes/methods/weightquote/add');
   return $output;

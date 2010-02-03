@@ -78,7 +78,7 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
       if (variable_get('uc_cart_email_validation', FALSE) && !$user->uid) {
         $contents['primary_email_confirm'] = uc_textfield(t('Confirm e-mail address'), $_SESSION['email_match'] === FALSE ? '' : $email, TRUE, NULL, 64);
         if ($_SESSION['email_match'] === FALSE) {
-          $contents['primary_email_confirm']['#attributes'] = array('class' => 'error');
+          $contents['primary_email_confirm']['#attributes'] = array('class' => array('error'));
           unset($_SESSION['email_match']);
         }
       }
@@ -444,7 +444,9 @@ function uc_checkout_pane_comments($op, &$arg1, $arg2) {
  *   uc_checkout_pane_delivery()
  *   uc_checkout_pane_billing()
  */
-function theme_address_pane($form) {
+function theme_address_pane($variables) {
+  $form = $variables['form'];
+
   $req = '<span class="form-required">*</span>';
 
   if (isset($form['copy_address'])) {
@@ -472,9 +474,7 @@ function theme_address_pane($form) {
   }
   $output .= '</table></div>';
 
-  foreach (element_children($form) as $element) {
-    $output .= drupal_render($form[$element]);
-  }
+  $output .= drupal_render_children($form);
 
   return $output;
 }
@@ -568,14 +568,16 @@ function _checkout_pane_data($pane_id, $key) {
  *
  * @ingroup themeable
  */
-function theme_cart_review_table($show_subtotal = TRUE) {
+function theme_cart_review_table($variables) {
+  $show_subtotal = $variables['show_subtotal'];
+
   $subtotal = 0;
 
   // Set up table header.
   $header = array(
-    array('data' => t('Qty'), 'class' => 'qty'),
-    array('data' => t('Products'), 'class' => 'products'),
-    array('data' => t('Price'), 'class' => 'price'),
+    array('data' => t('Qty'), 'class' => array('qty')),
+    array('data' => t('Products'), 'class' => array('products')),
+    array('data' => t('Price'), 'class' => array('price')),
   );
 
   $context = array();
@@ -606,9 +608,9 @@ function theme_cart_review_table($show_subtotal = TRUE) {
     $context['type'] = 'amount';
     unset($context['subject']);
     $rows[] = array(
-      array('data' => t('@qty&times;', array('@qty' => $item->qty)), 'class' => 'qty'),
-      array('data' => $description, 'class' => 'products'),
-      array('data' => uc_price($total, $context), 'class' => 'price'),
+      array('data' => t('@qty&times;', array('@qty' => $item->qty)), 'class' => array('qty')),
+      array('data' => $description, 'class' => array('products')),
+      array('data' => uc_price($total, $context), 'class' => array('price')),
     );
   }
 
@@ -619,11 +621,11 @@ function theme_cart_review_table($show_subtotal = TRUE) {
       'type' => 'amount',
     );
     $rows[] = array(
-      'data' => array(array('data' => '<span id="subtotal-title">' . t('Subtotal:') . '</span> ' . uc_price($subtotal, $context), 'colspan' => 3, 'class' => 'subtotal')),
-      'class' => 'subtotal',
+      'data' => array(array('data' => '<span id="subtotal-title">' . t('Subtotal:') . '</span> ' . uc_price($subtotal, $context), 'colspan' => 3, 'class' => array('subtotal'))),
+      'class' => array('subtotal'),
     );
   }
 
-  return theme('table', $header, $rows, array('class' => 'cart-review'));
+  return theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('cart-review'))));
 }
 

@@ -362,6 +362,7 @@ function uc_store_elements() {
     '#tree' => TRUE,
     '#value' => NULL,
     '#pre_render' => array('tapir_gather_rows'),
+    '#theme' => 'tapir_table',
     '#process' => 'form_process_ahah',
   );
 
@@ -381,28 +382,28 @@ function uc_store_flush_caches() {
 function uc_store_theme() {
   return array(
     'uc_admin_dashboard' => array(
-      'arguments' => array('type' => NULL, 'menus' => NULL),
+      'variables' => array('type' => NULL, 'menus' => NULL),
     ),
     'uc_store_footer' => array(
-      'arguments' => array('message' => ''),
+      'variables' => array('message' => ''),
     ),
     'uc_store_address_fields_form' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
     ),
     'uc_pane_sort_table' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
     ),
     'tapir_table' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'element',
     ),
     'uc_price_settings_form' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
     ),
     'summary_overview' => array(
-      'arguments' => array(),
+      'variables' => array('summaries' => NULL, 'link' => TRUE),
     ),
     'uc_price' => array(
-      'arguments' => array('value' => 0, 'context' => array(), 'options' => array()),
+      'variables' => array('value' => 0, 'context' => array(), 'options' => array()),
     ),
   );
 }
@@ -561,7 +562,7 @@ function uc_store_page_alter(&$page) {
 
       $page['page_bottom']['ubercart_footer']= array(
         '#type' => 'markup',
-        '#markup' => theme('uc_store_footer', $message),
+        '#markup' => theme('uc_store_footer', array('message' => $message)),
       );
   }
 }
@@ -603,7 +604,11 @@ function uc_store_form_uc_product_table_alter(&$form, &$form_state, $form_id) {
  *
  * @ingroup themeable
  */
-function theme_uc_price($value, $context, $options) {
+function theme_uc_price($variables) {
+  $value = $variables['value'];
+  $context = $variables['context'];
+  $options = $variables['options'];
+
   // Fixup class names.
   if (!is_array($context['class'])) {
     $context['class'] = array();
@@ -635,6 +640,9 @@ function theme_uc_price($value, $context, $options) {
  * @ingroup themeable
  */
 function theme_uc_admin_dashboard($type, $menus) {
+  $type = $variables['type'];
+  $menu = $variables['menus'];
+
   if ($type == 1) {
     drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_store.js', 'module');
     drupal_add_js(array('ucTextShow' => t('- Show links -'), 'ucTextHide' => t('- Hide links -')), 'setting');
@@ -654,7 +662,7 @@ function theme_uc_admin_dashboard($type, $menus) {
         $panel_links = '';
       }
       else {
-        $panel_links = theme('admin_block_content', system_admin_menu_block(menu_get_item($menu['href'])));
+        $panel_links = theme('admin_block_content', array('content' => system_admin_menu_block(menu_get_item($menu['href']))));
       }
       $panel_table = '<table width="100%"><tr>'
                     .'<td>'. l(uc_store_get_icon($menu['href']), $menu['href'],
@@ -703,8 +711,8 @@ function _store_footer_options() {
  *
  * @ingroup themeable
  */
-function theme_uc_store_footer($message) {
-  return '<div id="store-footer">'. $message .'</div>';
+function theme_uc_store_footer($variables) {
+  return '<div id="store-footer">'. $variables['message'] .'</div>';
 }
 
 /**
@@ -788,7 +796,9 @@ function uc_store_address_fields_form() {
  * @ingroup themeable
  * @see uc_store_address_fields_form()
  */
-function theme_uc_store_address_fields_form($form) {
+function theme_uc_store_address_fields_form($variables) {
+  $form = $variables['form'];
+
   $header = array(t('Enabled'), t('Field'), t('Title'), t('Required'));
 
   foreach (element_children($form['fields']) as $field) {
@@ -800,7 +810,7 @@ function theme_uc_store_address_fields_form($form) {
     );
   }
 
-  $output = theme('table', $header, $rows) .'<br />'. drupal_render($form);
+  $output = theme('table', array('header' => $header, 'rows' => $rows)) .'<br />'. drupal_render_children($form);
 
   return $output;
 }
@@ -860,7 +870,7 @@ function uc_store_js_util($func) {
       $select['#parents'] = array();
       $match = array('`<[/]*div[^>]*>`', '`<[/]*select[^>]*>`', '`\n|\r`');
       $replace = array('', '', '');
-      $output = preg_replace($match, $replace, theme('select', $select));
+      $output = preg_replace($match, $replace, theme('select', array('element' => $select)));
   }
 
   print $output;
@@ -1632,7 +1642,9 @@ function uc_get_message($message_id) {
  *
  * @ingroup themeable
  */
-function theme_uc_pane_sort_table($form) {
+function theme_uc_pane_sort_table($variables) {
+  $form = $variables['form'];
+
   $prefix = $form['#pane_prefix'];
   if (isset($form['#table_attributes']) && is_array($form['#table_attributes'])) {
     $attributes = $form['#table_attributes'];
@@ -1654,7 +1666,7 @@ function theme_uc_pane_sort_table($form) {
     );
   }
 
-  return theme('table', $header, $rows, $attributes) .'<br />';
+  return theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => $attributes)) .'<br />';
 }
 
 /**
@@ -1962,7 +1974,7 @@ function uc_store_encryption_errors(&$crypt, $module) {
     foreach ($crypt->errors as $message) {
       $items[] = $message;
     }
-    watchdog('encryption', 'Encryption failed. !messages', array('!messages' => theme('item_list', $items)), WATCHDOG_ERROR);
+    watchdog('encryption', 'Encryption failed. !messages', array('!messages' => theme('item_list', array('items' => $items))), WATCHDOG_ERROR);
   }
 }
 

@@ -389,7 +389,7 @@ function uc_order_pane_line_items($op, $arg1) {
       $form['add_line_item']['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Add line'),
-        '#attributes' => array('class' => 'save-button'),
+        '#attributes' => array('class' => array('save-button')),
         '#disabled' => TRUE,
       );
       $form['li_delete_id'] = array(
@@ -526,7 +526,7 @@ function uc_order_pane_order_comments($op, $arg1) {
           );
         }
       }
-      $output = theme('table', $header, $rows);
+      $output = theme('table', array('header' => $header, 'rows' => $rows));
 
       return $output;
   }
@@ -564,7 +564,7 @@ function uc_order_pane_admin_comments($op, $arg1) {
       else {
         $items = array(t('No admin comments have been entered for this order.'));
       }
-      $output = theme('item_list', $items) . drupal_render($arg1['admin_comment_field']);
+      $output = theme('item_list', array('items' => $items)) . drupal_render($arg1['admin_comment_field']);
       return $output;
 
     case 'edit-process':
@@ -666,8 +666,8 @@ function uc_order_view_update_form($form_state, $order) {
  * @ingroup themeable
  * @see uc_order_view_update_form()
  */
-function theme_uc_order_view_update_controls($form) {
-  return '<div class="update-controls">'. drupal_render($form) .'</div>';
+function theme_uc_order_view_update_controls($variables) {
+  return '<div class="update-controls">'. drupal_render($variables['form']) .'</div>';
 }
 
 /**
@@ -707,27 +707,27 @@ function uc_order_view_update_form_submit($form, &$form_state) {
 function op_products_view_table($order) {
   $table = array(
     '#type' => 'tapir_table',
-    '#attributes' => array('class' => 'order-pane-table'),
+    '#attributes' => array('class' => array('order-pane-table')),
   );
 
   $table['#columns']['qty'] = array(
     'cell' => array(
       'data' => t('Qty'),
-      'class' => 'text-right',
+      'class' => array('text-right'),
     ),
     'weight' => 0,
   );
   $table['#columns']['product'] = array(
     'cell' => array(
       'data' => t('Product'),
-      'class' => 'header-wide',
+      'class' => array('header-wide'),
     ),
     'weight' => 1,
   );
   $table['#columns']['model'] = array(
     'cell' => array(
       'data' => t('SKU'),
-      'class' => 'text-center',
+      'class' => array('text-center'),
       'nowrap' => 'nowrap',
     ),
     'weight' => 2,
@@ -736,7 +736,7 @@ function op_products_view_table($order) {
     $table['#columns']['cost'] = array(
       'cell' => array(
         'data' => t('Cost'),
-        'class' => 'text-right',
+        'class' => array('text-right'),
       ),
       'weight' => 3,
     );
@@ -744,14 +744,14 @@ function op_products_view_table($order) {
   $table['#columns']['price'] = array(
     'cell' => array(
       'data' => t('Price'),
-      'class' => 'text-right',
+      'class' => array('text-right'),
     ),
     'weight' => 4,
   );
   $table['#columns']['total'] = array(
     'cell' => array(
       'data' => t('Total'),
-      'class' => 'text-right',
+      'class' => array('text-right'),
     ),
     'weight' => 5,
   );
@@ -823,27 +823,27 @@ function op_products_view_table($order) {
 function op_products_customer_table($order) {
   $table = array(
     '#type' => 'tapir_table',
-    '#attributes' => array('class' => 'order-pane-table'),
+    '#attributes' => array('class' => array('order-pane-table')),
   );
 
   $table['#columns']['qty'] = array(
     'cell' => array(
       'data' => t('Qty'),
-      'class' => 'text-right',
+      'class' => array('text-right'),
     ),
     'weight' => 0,
   );
   $table['#columns']['product'] = array(
     'cell' => array(
       'data' => t('Product'),
-      'class' => 'header-wide',
+      'class' => array('header-wide'),
     ),
     'weight' => 1,
   );
   $table['#columns']['model'] = array(
     'cell' => array(
       'data' => t('SKU'),
-      'class' => 'text-center',
+      'class' => array('text-center'),
       'nowrap' => 'nowrap',
     ),
     'weight' => 2,
@@ -852,7 +852,7 @@ function op_products_customer_table($order) {
     $table['#columns']['cost'] = array(
       'cell' => array(
         'data' => t('Cost'),
-        'class' => 'text-right',
+        'class' => array('text-right'),
       ),
       'weight' => 3,
     );
@@ -860,14 +860,14 @@ function op_products_customer_table($order) {
   $table['#columns']['price'] = array(
     'cell' => array(
       'data' => t('Price'),
-      'class' => 'text-right',
+      'class' => array('text-right'),
     ),
     'weight' => 4,
   );
   $table['#columns']['total'] = array(
     'cell' => array(
       'data' => t('Total'),
-      'class' => 'text-right',
+      'class' => array('text-right'),
     ),
     'weight' => 5,
   );
@@ -938,11 +938,11 @@ function op_products_customer_table($order) {
 function op_order_comments_view_table($comments) {
   $table = array(
     '#type' => 'tapir_table',
-    '#attributes' => array('class' => 'order-pane-table'),
+    '#attributes' => array('class' => array('order-pane-table')),
   );
 
   $table['#columns']['date'] = array(
-    'cell' => array('data' => t('Date'), 'class' => 'text-center'),
+    'cell' => array('data' => t('Date'), 'class' => array('text-center')),
     'weight' => 0,
   );
   $table['#columns']['user'] = array(
@@ -954,7 +954,7 @@ function op_order_comments_view_table($comments) {
     'weight' => 2,
   );
   $table['#columns']['status'] = array(
-    'cell' => array('data' => t('Status'), 'class' => 'text-center'),
+    'cell' => array('data' => t('Status'), 'class' => array('text-center')),
     'weight' => 3,
   );
   $table['#columns']['comment'] = array(
@@ -1006,15 +1006,15 @@ function op_order_comments_view_table($comments) {
 function op_admin_comments_view_table($comments) {
   $table = array(
     '#type' => 'tapir_table',
-    '#attributes' => array('class' => 'order-pane-table'),
+    '#attributes' => array('class' => array('order-pane-table')),
   );
 
   $table['#columns']['date'] = array(
-    'cell' => array('data' => t('Date'), 'class' => 'text-center'),
+    'cell' => array('data' => t('Date'), 'class' => array('text-center')),
     'weight' => 0,
   );
   $table['#columns']['user'] = array(
-    'cell' => array('data' => t('User'), 'class' => 'text-center'),
+    'cell' => array('data' => t('User'), 'class' => array('text-center')),
     'weight' => 1,
   );
   $table['#columns']['comment'] = array(

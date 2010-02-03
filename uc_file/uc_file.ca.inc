@@ -250,9 +250,6 @@ function uc_file_build_email_form($form_state, $settings, $token_filters) {
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
     );
-    $form['token_help'][$name]['content'] = array(
-      '#value' => theme('token_help', $name),
-    );
   }
 
   return $form;

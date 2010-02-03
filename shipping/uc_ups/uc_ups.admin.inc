@@ -176,10 +176,10 @@ function uc_ups_confirm_shipment($order) {
  * @ingroup themeable
  * @see uc_ups_confirm_shipment()
  */
-function theme_uc_ups_confirm_shipment($form) {
-  $output = '';
+function theme_uc_ups_confirm_shipment($variables) {
+  $form = $variables['form'];
 
-  $output .= '<div class="shipping-address"><b>'. t('Ship from:') .'</b><br />';
+  $output = '<div class="shipping-address"><b>'. t('Ship from:') .'</b><br />';
   $output .= uc_address_format(
     check_plain($_SESSION['ups']['origin']->first_name),
     check_plain($_SESSION['ups']['origin']->last_name),
@@ -221,7 +221,8 @@ function theme_uc_ups_confirm_shipment($form) {
   $exp_delivery = $_SESSION['ups']['expected_delivery'];
   $output .= '<br />Expected delivery: '. format_date(gmmktime(12, 0, 0, $exp_delivery['month'], $exp_delivery['day'], $exp_delivery['year']), 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
   $output .= "</div>\n<br style=\"clear: both;\" />";
-  $output .= drupal_render($form);
+  $output .= drupal_render_children($form);
+
   return $output;
 }
 
@@ -351,8 +352,12 @@ function uc_ups_request_pickup($digest, $order_id = 0, $packages = array()) {
  * @ingroup themeable
  */
 function theme_uc_ups_label_image() {
-  $args = func_get_args();
-  $image_path = file_create_url(implode('/', $args));
+  $args = explode('/', $_GET['q'], 7);
+  if (count($args) != 7) {
+    return MENU_NOT_FOUND;
+  }
+
+  $image_path = file_create_url($args[6]);
 
   $output = <<<EOLABEL
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 3.2//EN">

@@ -85,7 +85,7 @@ function uc_stock_report() {
         array('data' => $stock->threshold),
         array('data' => implode(' ', $op)),
       ),
-      'class' => ($stock->threshold >= $stock->stock) ? 'uc-stock-below-threshold' : 'uc-stock-above-threshold',
+      'class' => array(($stock->threshold >= $stock->stock) ? 'uc-stock-below-threshold' : 'uc-stock-above-threshold'),
     );
 
     // Add the data to the CSV contents for export.
@@ -95,8 +95,8 @@ function uc_stock_report() {
   $csv_data = uc_reports_store_csv('uc_stock', $csv_rows);
 
   $output = drupal_get_form('uc_stock_report_form')
-          . theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-stock-table'))
-          . theme_pager(NULL, $page_size);
+          . theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('width' => '100%', 'class' => array('uc-stock-table'))))
+          . theme('pager');
   $output .= '<div class="uc-reports-links">'. l(t('Export to CSV file'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']) .'&nbsp;&nbsp;&nbsp;'. ((!is_null($_GET['nopage'])) ? l(t('Show paged records'), 'admin/store/reports/stock') : l(t('Show all records'), 'admin/store/reports/stock', $options = array('query' => 'nopage=1'))) .'</div>';
   return $output;
 }
@@ -213,7 +213,9 @@ function uc_stock_edit_form($form_state, $node) {
  * @ingroup themeable
  * @see uc_stock_edit_form()
  */
-function theme_uc_stock_edit_form($form) {
+function theme_uc_stock_edit_form($variables) {
+  $form = $variables['form'];
+
   $header = array(
     array('data' => t('Active')),
     array('data' => t('SKU')),
@@ -230,7 +232,7 @@ function theme_uc_stock_edit_form($form) {
     );
   }
 
-  return theme('table', $header, $rows) . drupal_render($form);
+  return theme('table', array('header' => $header, 'rows' => $rows)) . drupal_render_children($form);
 }
 
 /**

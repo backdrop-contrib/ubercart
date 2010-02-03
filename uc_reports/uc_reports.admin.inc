@@ -106,8 +106,8 @@ function uc_reports_customers() {
   }
   $csv_data = uc_reports_store_csv('uc_customers', $csv_rows);
 
-  $output = theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'));
-  $output .= theme_pager(NULL, $page_size);
+  $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('width' => '100%', 'class' => array('uc-sales-table'))));
+  $output .= theme('pager');
   $output .= '<div class="uc-reports-links">'. l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']) .'&nbsp;&nbsp;&nbsp;'. ((!is_null($_GET['nopage'])) ? l(t('Show paged records'), 'admin/store/reports/customers') : l(t('Show all records'), 'admin/store/reports/customers', array('query' => 'nopage=1'))) .'</div>';
 
   return $output;
@@ -267,8 +267,8 @@ function uc_reports_products() {
   }
   $csv_data = uc_reports_store_csv('uc_products', $csv_rows);
 
-  $output = theme('uc_reports_product_table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'));
-  $output .= theme('pager', NULL, $page_size);
+  $output = theme('uc_reports_product_table', array('header' => $header, 'rows' => $rows, 'attributes' => array('width' => '100%', 'class' => array('uc-sales-table'))));
+  $output .= theme('pager');
   $output .= '<div class="uc-reports-links">'. l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']) .'&nbsp;&nbsp;&nbsp;'. (!is_null($_GET['nopage']) ? l(t('Show paged records'), 'admin/store/reports/products') : l(t('Show all records'), 'admin/store/reports/products', array('query' => 'nopage=1'))) .'</div>';
   $output .= '<small>*'. t('Make sure %setting_name is set to %state in the <a href="!url">access log settings page</a> to enable views column.', array('%setting_name' => 'count content views', '%state' => 'enabled', '!url' => url('admin/reports/settings', array('query' => 'destination=admin/store/reports/products')))) .'</small>';
 
@@ -454,10 +454,10 @@ function uc_reports_products_custom() {
 
   // Build the page output holding the form, table, and CSV export link.
   $output = drupal_get_form('uc_reports_products_custom_form', $args, $args['status'])
-          . theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'))
+          . theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('width' => '100%', 'class' => array('uc-sales-table'))))
            .'<div class="uc-reports-links">'. l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']) .'</div>';
 
-  $output .= theme('pager', NULL, $page_size);
+  $output .= theme('pager');
   $output .= '<small>*'. t('Make sure %setting_name is set to %state in the <a href="!url">access log settings page</a> to enable views column.', array('%setting_name' => 'count content views', '%state' => 'enabled', '!url' => url('admin/reports/settings', array('query' => 'destination=admin/store/reports/products/custom')))) .'</small>';
 
   return $output;
@@ -550,14 +550,18 @@ function uc_reports_products_custom_form_submit($form, &$form_state) {
  *
  * @ingroup themeable
  */
-function theme_uc_reports_product_table($header, $rows, $attributes = array(), $caption = NULL) {
+function theme_uc_reports_product_table($variables) {
+  $header = $variables['header'];
+  $rows = $variables['rows'];
+  $attributes = $variables['attributes'];
+  $caption = $variables['caption'];
 
   // Add sticky headers, if applicable.
   if (count($header)) {
     drupal_add_js('misc/tableheader.js');
     // Add 'sticky-enabled' class to the table to identify it for JS.
     // This is needed to target tables constructed by this function.
-    $attributes['class'] = empty($attributes['class']) ? 'sticky-enabled' : ($attributes['class'] .' sticky-enabled');
+    $attributes['class'][] = 'sticky-enabled';
   }
 
   $output = '<table'. drupal_attributes($attributes) .">\n";
@@ -610,12 +614,7 @@ function theme_uc_reports_product_table($header, $rows, $attributes = array(), $
       }
       if (count($cells)) {
         // Add odd/even class
-        if (isset($attributes['class'])) {
-          $attributes['class'] .= ' '. $class;
-        }
-        else {
-          $attributes['class'] = $class;
-        }
+        $attributes['class'][] = $class;
 
         // Build row
         $output .= ' <tr'. drupal_attributes($attributes) .'>';
@@ -724,7 +723,7 @@ function uc_reports_sales_summary() {
   );
 
   // Add the sales data report table to the output.
-  $output = theme('table', $header, $rows, array('class' => 'uc-sales-table'));
+  $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('uc-sales-table'))));
 
   // Build the header statistics table header.
   $header = array(array('data' => t('Statistics'), 'width' => '50%'), '');
@@ -737,7 +736,7 @@ function uc_reports_sales_summary() {
   );
 
   // Add the statistics table to the output.
-  $output .= theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'));
+  $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('width' => '100%', 'class' => array('uc-sales-table'))));
 
   // Build the total orders by status table header.
   $header = array(array('data' => t('Total orders by status'), 'width' => '50%'), '');
@@ -769,7 +768,7 @@ function uc_reports_sales_summary() {
   }
 
   // Add the total orders by status table to the output.
-  $output .= theme('table', $header, $rows, array('class' => 'uc-sales-table'));
+  $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('uc-sales-table'))));
 
   return $output;
 }
@@ -870,7 +869,7 @@ function uc_reports_sales_year() {
 
   // Build the page output holding the form, table, and CSV export link.
   $output = drupal_get_form('uc_reports_sales_year_form', $year)
-          . theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'))
+          . theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('width' => '100%', 'class' => array('uc-sales-table'))))
            .'<div class="uc-reports-links">'. l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']) .'</div>';
 
   return $output;
@@ -1048,7 +1047,7 @@ function uc_reports_sales_custom() {
 
   // Build the page output holding the form, table, and CSV export link.
   $output = drupal_get_form('uc_reports_sales_custom_form', $args, $args['status'])
-          . theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-sales-table'))
+          . theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('width' => '100%', 'class' => array('uc-sales-table'))))
            .'<div class="uc-reports-links">'. l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']) .'</div>';
 
   return $output;

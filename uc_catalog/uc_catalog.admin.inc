@@ -12,7 +12,7 @@
  */
 function uc_catalog_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
-  return theme('summary_overview', summarize_child_form_pages('admin/store/settings/catalog/edit'));
+  return theme('summary_overview', array('summaries' => summarize_child_form_pages('admin/store/settings/catalog/edit')));
 }
 
 /**
@@ -49,7 +49,7 @@ function uc_catalog_settings_form() {
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     '#summary callback' => 'summarize_form',
-    '#attributes' => array('class' => 'catalog-top-level'),
+    '#attributes' => array('class' => array('catalog-top-level')),
   );
   $form['catalog-top-level']['uc_catalog_vid'] = array('#type' => 'select',
     '#title' => t('Catalog vocabulary'),
@@ -97,7 +97,7 @@ function uc_catalog_settings_form() {
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     '#summary callback' => 'summarize_form',
-    '#attributes' => array('class' => 'catalog-products-list'),
+    '#attributes' => array('class' => array('catalog-products-list')),
   );
   $form['catalog-products-list']['uc_product_nodes_per_page'] = array(
     '#type' => 'textfield',
@@ -113,7 +113,7 @@ function uc_catalog_settings_form() {
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     '#summary callback' => '_uc_catalog_block_summarize',
-    '#attributes' => array('class' => 'block-display'),
+    '#attributes' => array('class' => array('block-display')),
   );
   $form['block-display']['uc_catalog_block_title'] = array(
     '#type' => 'checkbox',
@@ -235,7 +235,7 @@ function uc_catalog_orphaned_products() {
   }
 
   if (count($rows) > 0) {
-    $output .= theme('item_list', $rows);
+    $output .= theme('item_list', array('items' => $rows));
   }
   else {
     $output .= '<p>'. t('All products are currently listed in the catalog.') .'</p>';

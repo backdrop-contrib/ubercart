@@ -47,26 +47,26 @@ function ca_admin($groupby = 'trigger') {
   // Build the header for the predicate tables based on the grouping type.
   if ($groupby == 'trigger') {
     $header = array(
-      array('data' => t('Title'), 'class' => 'col-title'),
+      array('data' => t('Title'), 'class' => array('col-title')),
       t('Class'),
       t('Status'),
       t('Weight'),
       t('Operations'),
     );
 
-    $table_class = 'ca-predicate-trigger';
+    $table_class = array('ca-predicate-trigger');
     $table_label = '<strong>'. t('Trigger') .':</strong> ';
   }
   elseif ($groupby == 'class') {
     $header = array(
-      array('data' => t('Title'), 'class' => 'col-title'),
+      array('data' => t('Title'), 'class' => array('col-title')),
       t('Trigger'),
       t('Status'),
       t('Weight'),
       t('Operations'),
     );
 
-    $table_class = 'ca-predicate-class';
+    $table_class = array('ca-predicate-class');
     $table_label = '<strong>'. t('Class') .':</strong> ';
   }
 
@@ -94,8 +94,8 @@ function ca_admin($groupby = 'trigger') {
         check_plain($value['#title']),
         strpos($value['#class'], 'custom') === 0 ? check_plain(substr($value['#class'], 7)) : $value['#class'],
         $value['#status'] == 0 ? t('Disabled') : t('Enabled'),
-        array('data' => $value['#weight'], 'class' => 'ca-predicate-table-weight'),
-        array('data' => implode(' ', $ops), 'class' => 'ca-predicate-table-ops'),
+        array('data' => $value['#weight'], 'class' => array('ca-predicate-table-weight')),
+        array('data' => implode(' ', $ops), 'class' => array('ca-predicate-table-ops')),
       );
     }
     elseif ($groupby == 'class') {
@@ -105,8 +105,8 @@ function ca_admin($groupby = 'trigger') {
         check_plain($value['#title']),
         check_plain($triggers[$value['#trigger']]['#title']),
         $value['#status'] == 0 ? t('Disabled') : t('Enabled'),
-        array('data' => $value['#weight'], 'class' => 'ca-predicate-table-weight'),
-        array('data' => implode(' ', $ops), 'class' => 'ca-predicate-table-ops'),
+        array('data' => $value['#weight'], 'class' => array('ca-predicate-table-weight')),
+        array('data' => implode(' ', $ops), 'class' => array('ca-predicate-table-ops')),
       );
     }
   }
@@ -448,7 +448,7 @@ function ca_actions_form($form_state, $pid, $title = TRUE) {
         '#value' => t('Remove this action'),
         '#name' => 'ca_remove_action_'. $i,
         '#submit' => array('ca_actions_form_remove_action_submit'),
-        '#attributes' => array('class' => 'ca-remove-confirm'),
+        '#attributes' => array('class' => array('ca-remove-confirm')),
       );
 
       $i++;
@@ -733,7 +733,7 @@ function _ca_conditions_form_tree($condition, $trigger) {
       '#type' => 'submit',
       '#value' => t('Remove group'),
       '#submit' => array('ca_conditions_form_remove_condition_group_submit'),
-      '#attributes' => array('class' => 'ca-remove-confirm'),
+      '#attributes' => array('class' => array('ca-remove-confirm')),
       '#name' => 'remove_condition_group_'. $level,
     );
 
@@ -845,7 +845,7 @@ function _ca_conditions_form_condition($condition, $trigger) {
     '#type' => 'submit',
     '#value' => t('Remove this condition'),
     '#submit' => array('ca_conditions_form_remove_condition_submit'),
-    '#attributes' => array('class' => 'ca-remove-confirm'),
+    '#attributes' => array('class' => array('ca-remove-confirm')),
     '#name' => 'remove_condition_group_'. $identifier++,
   );
 

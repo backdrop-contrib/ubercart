@@ -50,7 +50,7 @@ function uc_attribute_admin() {
     );
   }
 
-  $output = theme('table', $header, $rows) . theme('pager', NULL, 30)
+  $output = theme('table', array('header' => $header, 'rows' => $rows)) . theme('pager')
           . l(t('Add an attribute'), 'admin/store/attributes/add');
 
   return $output;
@@ -242,7 +242,7 @@ function uc_attribute_options_form($form_state, $attribute) {
         '#type' => 'weight',
         '#delta' => 50,
         '#default_value' => $data->ordering,
-        '#attributes' => array('class' => 'uc-attribute-option-table-ordering'),
+        '#attributes' => array('class' => array('uc-attribute-option-table-ordering')),
       ),
       'ops' => array(
         '#value' => l(t('edit'), 'admin/store/attributes/'. $attribute->aid .'/options/'. $key .'/edit') .' '.
@@ -284,7 +284,8 @@ function uc_attribute_options_form_submit($form, &$form_state) {
  *
  * @ingroup themeable
  */
-function theme_uc_attribute_options_form($form) {
+function theme_uc_attribute_options_form($variables) {
+  $form = $variables['form'];
 
   $header = array(t('Name'), t('Default cost'), t('Default price'), t('Default weight'), array('data' => t('List position'), 'sort' => 'asc'), t('Operations'));
 
@@ -301,7 +302,7 @@ function theme_uc_attribute_options_form($form) {
 
       $rows[] = array(
         'data' => $row,
-        'class' => 'draggable',
+        'class' => array('draggable'),
       );
     }
   }
@@ -313,9 +314,9 @@ function theme_uc_attribute_options_form($form) {
 
   drupal_add_tabledrag('uc-attribute-option-table', 'order', 'sibling', 'uc-attribute-option-table-ordering');
 
-  $output = theme('table', $header, $rows, array('id' => 'uc-attribute-option-table'));
+  $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-attribute-option-table')));
 
-  $output .= drupal_render($form);
+  $output .= drupal_render_children($form);
 
   $output .= l(t('Add an option'), 'admin/store/attributes/'. $form['aid']['#value'] .'/options/add');
 
@@ -551,7 +552,7 @@ function uc_object_attributes_form($form_state, $object, $type, $view = 'overvie
           'ordering' => array(
             '#type' => 'weight',
             '#default_value' => $attribute->ordering,
-            '#attributes' => array('class' => 'uc-attribute-table-weight'),
+            '#attributes' => array('class' => array('uc-attribute-table-weight')),
           ),
           'display' => array(
             '#type' => 'select',
@@ -617,7 +618,9 @@ function uc_object_attributes_form($form_state, $object, $type, $view = 'overvie
  * @ingroup themeable
  * @see uc_object_attributes_form()
  */
-function theme_uc_object_attributes_form($form) {
+function theme_uc_object_attributes_form($variables) {
+  $form = $variables['form'];
+
   $output = '';
 
   if ($form['view']['#value'] == 'overview') {
@@ -637,7 +640,7 @@ function theme_uc_object_attributes_form($form) {
 
         $rows[] = array(
           'data' => $row,
-          'class' => 'draggable',
+          'class' => array('draggable'),
         );
       }
     }
@@ -648,7 +651,7 @@ function theme_uc_object_attributes_form($form) {
     }
 
     drupal_add_tabledrag('uc-attribute-table', 'order', 'sibling', 'uc-attribute-table-weight');
-    $output = theme('table', $header, $rows, array('id' => 'uc-attribute-table'));
+    $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-attribute-table')));
   }
   else {
     $output = '<div class="uc-attributes-add-link">';
@@ -656,7 +659,7 @@ function theme_uc_object_attributes_form($form) {
     $output .= '</div>';
   }
 
-  $output .= drupal_render($form);
+  $output .= drupal_render_children($form);
 
   return $output;
 }
@@ -817,7 +820,7 @@ function uc_object_options_form($form_state, $object, $type) {
           '#type' => 'weight',
           '#delta' => 50,
           '#default_value' => is_null($option->ordering) ? $option->default_ordering : $option->ordering,
-          '#attributes' => array('class' => 'uc-attribute-option-table-ordering'),
+          '#attributes' => array('class' => array('uc-attribute-option-table-ordering')),
         );
       }
 
@@ -863,7 +866,9 @@ function uc_object_options_form($form_state, $object, $type) {
  * @ingroup themeable
  * @see uc_object_options_form()
  */
-function theme_uc_object_options_form($form) {
+function theme_uc_object_options_form($variables) {
+  $form = $variables['form'];
+
   $header = array(array('data' => '&nbsp;&nbsp;'. t('Options')) + theme('table_select_header_cell'), t('Default'), t('Cost'), t('Price'), t('Weight'), t('List position'));
   $table_id_num = $tables = 0;
 
@@ -885,7 +890,7 @@ function theme_uc_object_options_form($form) {
 
         $rows[] = array(
           'data' => $row,
-          'class' => 'draggable',
+          'class' => array('draggable'),
         );
       }
       $table_id = 'uc-attribute-option-table-'. $table_id_num++;
@@ -902,7 +907,7 @@ function theme_uc_object_options_form($form) {
     }
 
 
-    $output .= theme('table', $header, $rows, array('class' => 'product_attributes', 'id' => $table_id), '<h2>'. drupal_render($form['attributes'][$key]['name']) .'</h2>');
+    $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('product_attributes'), 'id' => $table_id), 'caption' => '<h2>'. drupal_render($form['attributes'][$key]['name']) .'</h2>'));
 
     $tables++;
   }
@@ -918,7 +923,7 @@ function theme_uc_object_options_form($form) {
     }
   }
 
-  $output .= drupal_render($form);
+  $output .= drupal_render_children($form);
 
   return $output;
 }
@@ -933,13 +938,15 @@ function theme_uc_object_options_form($form) {
  *     #options - Array of option names
  * @return Themed set of attribute options.
  */
-function theme_uc_product_attributes($element) {
+function theme_uc_product_attributes($variables) {
+  $attributes = $variable['attributes'];
+
   $option_rows = array();
 
-  foreach (element_children($element) as $key) {
+  foreach (element_children($attributes) as $key) {
     $optionstr = '';
 
-    foreach ((array)$element[$key]['#options'] as $option) {
+    foreach ((array)$attributes[$key]['#options'] as $option) {
       // We only need to allow translation from the second option onward
       if (empty($optionstr)) {
         $optionstr .= $option;
@@ -948,11 +955,11 @@ function theme_uc_product_attributes($element) {
         $optionstr .= t(', !option', array('!option' => $option));
       }
     }
-    $option_rows[$key] = t('@attribute: @option', array('@attribute' => $element[$key]['#attribute_name'], '@option' => $optionstr));
+    $option_rows[$key] = t('@attribute: @option', array('@attribute' => $attributes[$key]['#attribute_name'], '@option' => $optionstr));
   }
 
   if (!empty($option_rows)) {
-    return theme('item_list', array_values($option_rows), NULL, 'ul', array('class' => 'product-description'));
+    return theme('item_list', array('items' => array_values($option_rows), 'attributes' => array('class' => array('product-description'))));
   }
 
   return '';

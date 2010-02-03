@@ -29,7 +29,16 @@ function uc_shipping_order_packages($order) {
     if ($package->sid && $package->label_image) {
       $method = db_result(db_query("SELECT shipping_method FROM {uc_shipments} WHERE sid = %d", $package->sid));
     }
-    $row[] = isset($package->label_image) ? l(theme('imagecache', 'uc_thumbnail', $package->label_image, t('Shipping Label'), t('Shipping Label')), 'admin/store/orders/'. $order->order_id .'/shipments/labels/'. $method .'/'. $package->label_image, array('html' => TRUE)) : '';
+    $row[] = isset($package->label_image)
+      ? l(theme('image_style', array(
+          'style_name' => 'uc_thumbnail',
+          'path' => $package->label_image,
+          'alt' => t('Shipping Label'),
+          'title' => t('Shipping Label'),
+        )),
+        'admin/store/orders/'. $order->order_id .'/shipments/labels/'. $method .'/'. $package->label_image,
+        array('html' => TRUE))
+      : '';
     $row[] = l(t('edit'), 'admin/store/orders/'. $order->order_id .'/packages/'. $package->package_id .'/edit');
     $row[] = l(t('delete'), 'admin/store/orders/'. $order->order_id .'/packages/'. $package->package_id .'/delete');
     if ($package->sid) {
@@ -44,7 +53,7 @@ function uc_shipping_order_packages($order) {
   if (empty($rows)) {
     $rows[][] = array('data' => t("This order's products have not been organized into packages."), 'colspan' => 10);
   }
-  $output = theme('table', $header, $rows);
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
   $result = db_query("SELECT op.order_product_id, CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = %d AND op.data LIKE '%%%s%%' GROUP BY op.order_product_id HAVING SUM(pp.qty) IS NULL OR CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END > SUM(pp.qty)", $order->order_id, 's:9:"shippable";s:1:"1";');
   if (db_fetch_object($result)) {
     $output .= l(t('Create packages.'), 'admin/store/orders/'. $order->order_id .'/packages/new');
@@ -133,7 +142,9 @@ function uc_shipping_new_package($form_state, $order) {
  *
  * @ingroup themeable
  */
-function theme_uc_shipping_new_package_fieldset($fieldset) {
+function theme_uc_shipping_new_package_fieldset($variables) {
+  $fieldset = $variables['fieldset'];
+
   $output = '';
   $header = array(theme('table_select_header_cell'), t('SKU'), t('Title'), t('Qty'), t('Package'));
   $rows = array();
@@ -146,8 +157,9 @@ function theme_uc_shipping_new_package_fieldset($fieldset) {
     $row[] = drupal_render($fieldset[$op_id]['package']);
     $rows[] = $row;
   }
-  $output .= theme('table', $header, $rows);
-  $output .= drupal_render($fieldset);
+  $output .= theme('table', array('header' => $header, 'rows' => $rows));
+  $output .= drupal_render_children($fieldset);
+
   return $output;
 }
 
@@ -291,7 +303,9 @@ function uc_shipping_package_edit($form_state, $order, $package) {
  *
  * @ingroup themeable
  */
-function theme_uc_shipping_edit_package_fieldset($fieldset) {
+function theme_uc_shipping_edit_package_fieldset($varibles) {
+  $fieldset = $variables['fieldset'];
+
   $output = '';
   $header = array(theme('table_select_header_cell'), t('SKU'), t('Title'), t('Qty'));
   $rows = array();
@@ -303,8 +317,9 @@ function theme_uc_shipping_edit_package_fieldset($fieldset) {
     $row[] = drupal_render($fieldset[$op_id]['qty']);
     $rows[] = $row;
   }
-  $output .= theme('table', $header, $rows);
-  $output .= drupal_render($fieldset);
+  $output .= theme('table', array('header' => $header, 'rows' => $rows));
+  $output .= drupal_render_children($fieldset);
+
   return $output;
 }
 
@@ -412,7 +427,7 @@ function uc_shipping_order_shipments($order) {
   if (empty($rows)) {
     $rows[] = array(array('data' => t('No shipments have been made for this order.'), 'colspan' => 11));
   }
-  $output = theme('table', $header, $rows);
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
   $packages = db_result(db_query("SELECT COUNT(*) FROM {uc_packages} WHERE order_id = %d AND sid IS NULL", $order->order_id));
   if ($packages) {
     $output .= l(t('Make a new shipment'), 'admin/store/orders/'. $order->order_id .'/shipments/new');
@@ -513,7 +528,9 @@ function uc_shipping_new_shipment($form_state, $order) {
  *
  * @ingroup themeable
  */
-function theme_uc_shipping_new_shipment($form) {
+function theme_uc_shipping_new_shipment($variables) {
+  $form = $variables['form'];
+
   $output = '';
   $header = array(theme('table_select_header_cell'), t('Package'), t('Products'), t('Weight'));
   foreach (element_children($form) as $shipping_type) {
@@ -527,11 +544,11 @@ function theme_uc_shipping_new_shipment($form) {
       $rows[] = $row;
     }
     if (count($rows)) {
-      $form[$shipping_type]['packages']['table'] = array('#value' => theme('table', $header, $rows));
+      $form[$shipping_type]['packages']['table'] = array('#value' => theme('table', array('header' => $header, 'rows' => $rows)));
     }
     //$output .= drupal_render($form[$shipping_type]['methods']);
   }
-  $output .= drupal_render($form);
+  $output .= drupal_render_children($form);
   return $output;
 }
 
@@ -578,7 +595,7 @@ function uc_shipping_shipment_view($order, $shipment) {
   $rows = array();
   $rows[] = array(t('Ship date:'), format_date($shipment->ship_date, 'custom', 'D, '. variable_get('uc_date_format_default', 'm/d/Y')));
   $rows[] = array(t('Expected delivery:'), format_date($shipment->expected_delivery, 'custom', 'D, '. variable_get('uc_date_format_default', 'm/d/Y')));
-  $output .= theme('table', array(), $rows, array('style' => 'width: auto'));
+  $output .= theme('table', array('rows' => $rows, 'attributes' => array('style' => 'width: auto')));
   $output .= '</div>';
   $output .= '<div class="order-pane abs-left"><div class="order-pane-title">'. t('Shipment Details:') .'</div>';
   $rows = array();
@@ -602,7 +619,7 @@ function uc_shipping_shipment_view($order, $shipment) {
     'type' => 'amount',
   );
   $rows[] = array(t('Cost:'), uc_price($shipment->cost, $context, array('label' => FALSE)));
-  $output .= theme('table', array(), $rows, array('style' => 'width:auto'));
+  $output .= theme('table', array('rows' => $rows, 'attributes' => array('style' => 'width:auto')));
   $output .= '</div>';
   foreach ($shipment->packages as $package) {
     $output .= uc_shipping_package_view($package);
@@ -658,7 +675,7 @@ function uc_shipping_shipment_edit($form_state, $order, $shipment) {
       '#title' => t('Package @id', array('@id' => $id)),
       '#collapsible' => TRUE,
     );
-    $form['packages'][$id]['products'] = array('#value' => theme('item_list', $product_list));
+    $form['packages'][$id]['products'] = array('#value' => theme('item_list', array('items' => $product_list)));
     $form['packages'][$id]['pkg_type'] = array('#type' => 'textfield',
       '#title' => t('Package type'),
       '#default_value' => $package->pkg_type,
@@ -840,9 +857,23 @@ function uc_shipping_shipment_edit_submit($form, &$form_state) {
 }
 
 /**
+ * Show a printer-friendly version of a shipment.
+ */
+function uc_shipping_shipment_print($order, $shipment) {
+  return array(
+    '#theme' => 'uc_shipping_shipment_print',
+    '#order' => $order,
+    '#shipment' => $shipment,
+  );
+}
+
+/**
  * Display the packing slip and shipping labels for printing.
  */
-function theme_uc_shipping_shipment_print($order, $shipment) {
+function theme_uc_shipping_shipment_print($variables) {
+  $order = $variables['order'];
+  $shipment = $variables['shipment'];
+
   $language = $GLOBALS['language'];
   $output = <<<EOHTML
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -858,14 +889,18 @@ function theme_uc_shipping_shipment_print($order, $shipment) {
 <body>
 EOHTML;
 
-  $output .= theme('uc_packing_slip', $order, $shipment);
+  $output .= theme('uc_packing_slip', array('order' => $order, 'shipment' => $shipment));
 
   foreach ($shipment->packages as $id => $package) {
     if ($package->label_image && ($path = file_create_path($package->label_image)) && file_exists($path)) {
       // TODO: Find a way to store these magic numbers specifically for UPS.
       list($width, $height) = array(672, 392);
       $output .= '<br class="page-break" />' . "\n";;
-      $output .= theme('image', file_create_url($package->label_image), '', '', array('width' => $width, 'height' => $height), FALSE) ."\n";
+      $output .= theme('image', array(
+        'path' => file_create_url($package->label_image),
+        'attributes' => array('width' => $width, 'height' => $height),
+        'getsize' => FALSE,
+      )) ."\n";
     }
   }
 

@@ -67,8 +67,7 @@ function uc_catalog_menu() {
   $items['catalog'] = array(
     'title callback' => 'variable_get',
     'title arguments' => array('uc_catalog_name', t('Catalog')),
-    'page callback' => 'theme',
-    'page arguments' => array('uc_catalog_browse'),
+    'page callback' => 'uc_catalog_browse',
     'access arguments' => array('view catalog'),
     'type' => MENU_SUGGESTED_ITEM,
     'file' => 'uc_catalog.pages.inc',
@@ -184,20 +183,20 @@ function uc_catalog_imagecache_default_presets() {
 function uc_catalog_theme() {
   return array(
     'uc_catalog_block' => array(
-      'arguments' => array('menu_tree' => NULL),
+      'variables' => array('menu_tree' => NULL),
     ),
     'uc_catalog_browse' => array(
-      'arguments' => array('tid' => 0),
+      'variables' => array('tid' => 0),
       'file' => 'uc_catalog.pages.inc',
     ),
     'uc_catalog_products' => array(
-      'arguments' => array('products' => NULL),
+      'variables' => array('products' => NULL),
     ),
     'uc_catalog_product_grid' => array(
-      'arguments' => array('products' => NULL),
+      'variables' => array('products' => NULL),
     ),
     'uc_catalog_item' => array(
-      'arguments' => array(
+      'variables' => array(
         'here' => NULL,
         'link' => NULL,
         'lis' => NULL,
@@ -356,10 +355,10 @@ function uc_catalog_form_alter(&$form, $form_state, $form_id) {
     $imagecache = module_exists('imagecache');
     if ($image) {
       if ($imagecache) {
-        $image_display = theme('imagecache', 'uc_category', $image->filepath);
+        $image_display = theme('image_style', array('style_name' => 'uc_category', 'path' => $image->filepath));
       }
       else {
-        $image_display = theme('image', $image->filepath, t('Term image'));
+        $image_display = theme('image', array('path' => $image->filepath, 'alt' => t('Term image')));
       }
       $form['identification']['image']['remove'] = array('#type' => 'checkbox',
         '#title' => t('Remove category image: !image', array('!image' => $image_display)),
@@ -428,7 +427,7 @@ function uc_catalog_block($op = 'list', $delta = 0, $edit = array()) {
             }
 
             // Now, create a structured menu, separate from Drupal's menu.
-            $content = theme('uc_catalog_block', $menu_tree);
+            $content = theme('uc_catalog_block', array('menu_tree' => $menu_tree));
 
             $subject = variable_get('uc_catalog_name', t('Catalog'));
             if (variable_get('uc_catalog_block_title', FALSE)) {
@@ -448,7 +447,9 @@ function uc_catalog_block($op = 'list', $delta = 0, $edit = array()) {
  * @ingroup themeable
  * @see theme_uc_catalog_item()
  */
-function theme_uc_catalog_block($menu_tree) {
+function theme_uc_catalog_block($variables) {
+  $menu_tree = $variables['menu_tree'];
+
   $output = '<ul class="catalog menu">';
 
   foreach ($menu_tree->children as $branch) {
@@ -684,14 +685,16 @@ function uc_catalog_get_page($tid) {
  *   An array of product nids.
  * @ingroup themeable
  */
-function theme_uc_catalog_products($products) {
+function theme_uc_catalog_products($variables) {
+  $products = $variables['products'];
+
   if (!$products) {
     $output .= '<div class="no-products">'. t('No products are available in this category.') .'</div>';
     return $output;
   }
   else {
     if (variable_get('uc_catalog_grid_display', FALSE)) {
-      return theme('uc_catalog_product_grid', $products);
+      return theme('uc_catalog_product_grid', array('products' => $products));
     }
     else {
       $table = tapir_get_table('uc_product_table', $products);
@@ -705,7 +708,9 @@ function theme_uc_catalog_products($products) {
  *
  * @ingroup themeable
  */
-function theme_uc_catalog_product_grid($products) {
+function theme_uc_catalog_product_grid($variables) {
+  $products = $variables['products'];
+
   $product_table = '<div class="category-grid-products"><table>';
   $count = 0;
   $context = array(
@@ -725,7 +730,13 @@ function theme_uc_catalog_product_grid($products) {
 
     $titlelink = l($product->title, "node/$nid", array('html' => TRUE));
     if (module_exists('imagecache') && ($field = variable_get('uc_image_'. $product->type, '')) && isset($product->$field) && file_exists($product->{$field}[0]['filepath'])) {
-      $imagelink = l(theme('imagecache', 'product_list', $product->{$field}[0]['filepath'], $product->title, $product->title), "node/$nid", array('html' => TRUE));
+      $imagelink = l(theme('image_style', array(
+          'style_name' => 'product_list',
+          'path' => $product->{$field}[0]['filepath'],
+          'alt' => $product->title,
+          'title' => $product->title,
+        )),
+        "node/$nid", array('html' => TRUE));
     }
     else {
       $imagelink = '';
@@ -744,7 +755,7 @@ function theme_uc_catalog_product_grid($products) {
     }
     if (module_exists('uc_cart') && variable_get('uc_catalog_grid_display_add_to_cart', TRUE)) {
       if (variable_get('uc_catalog_grid_display_attributes', TRUE)) {
-        $product_table .= theme('uc_product_add_to_cart', $product);
+        $product_table .= theme('uc_product_add_to_cart', array('node' => $product));
       }
       else {
         $product_table .= drupal_get_form('uc_catalog_buy_it_now_form_'. $product->nid, $product);
@@ -912,7 +923,14 @@ function _uc_catalog_navigation($branch) {
       }
     }
   }
-  $output = theme("uc_catalog_item", $here, $link, $lis, $expand, $inpath, count($branch->children));
+  $output = theme('uc_catalog_item', array(
+    'here' => $here,
+    'link' => $link,
+    'lis' => $lis,
+    'expand' => $expand,
+    'inpath' => $inpath,
+    'count' => count($branch->children),
+  ));
 
   // Tell parent category your status, and pass on output.
   return array($inpath, $output);
@@ -923,7 +941,14 @@ function _uc_catalog_navigation($branch) {
  *
  * @ingroup themeable
  */
-function theme_uc_catalog_item($here, $link, $lis, $expand, $inpath, $count_children ) {
+function theme_uc_catalog_item($variables) {
+  $here = $variables['here'];
+  $link = $variables['link'];
+  $lis = $variables['lis'];
+  $expand = $variables['expand'];
+  $inpath = $variables['inpath'];
+  $count_children = $variables['count_children'];
+
   $output = '';
 
   if ($expand || $count_children) {

@@ -11,7 +11,7 @@
 // Displays an overview of the payment settings.
 function uc_payment_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
-  return theme('summary_overview', summarize_child_form_pages('admin/store/settings/payment/edit'));
+  return theme('summary_overview', array('summaries' => summarize_child_form_pages('admin/store/settings/payment/edit')));
 }
 
 function uc_payment_settings_form() {
@@ -138,7 +138,9 @@ function uc_payment_methods_form() {
   return system_settings_form($form);
 }
 
-function theme_uc_payment_method_table($form) {
+function theme_uc_payment_method_table($variables) {
+  $form = $variables['form'];
+
   $header = array(t('Enabled'), t('Payment method'), t('List position'), t('Default gateway'));
 
   foreach (element_children($form) as $method) {
@@ -156,7 +158,7 @@ function theme_uc_payment_method_table($form) {
     );
   }
 
-  return theme('table', $header, $rows);
+  return theme('table', array('header' => $header, 'rows' => $rows));
 }
 
 function uc_payment_gateways_form() {
@@ -390,7 +392,9 @@ function uc_payment_by_order_form($form_state, $order) {
   return $form;
 }
 
-function theme_uc_payment_by_order_form($form) {
+function theme_uc_payment_by_order_form($variables) {
+  $form = $variables['form'];
+
   $output = '<p><strong>'. t('Order total:') .'</strong> '. drupal_render($form['order_total'])
            .'<br /><strong>'. t('Current balance:') .'</strong> '
           . drupal_render($form['balance']) .'</p>';

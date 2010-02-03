@@ -32,7 +32,9 @@ define('UC_FILE_ERROR_HOOK_ERROR'             , 7);
  * @param $files
  *   Array of the files.
  */
-function theme_uc_file_user_downloads($files) {
+function theme_uc_file_user_downloads($variables) {
+  $files = $variables['files'];
+
   // Create a header and the pager it belongs to.
   $header = array(
     array('data' => t('Purchased'  ), 'field' => 'u.granted', 'sort' => 'asc'),
@@ -46,11 +48,11 @@ function theme_uc_file_user_downloads($files) {
   $row = 0;
   foreach ($files as $file) {
     $rows[] = array(
-      array('data' => format_date($file['granted'], 'custom', variable_get('uc_date_format_default', 'm/d/Y')), 'class' => 'date-row', 'id' => 'date-'. $row),
-      array('data' => $file['link'], 'class' => 'filename-row', 'id' => 'filename-'. $row),
-      array('data' => $file['description'], 'class' => 'description-row', 'id' => 'description-'. $row),
-      array('data' => $file['accessed'] .'/'. ($file['download_limit'] ? $file['download_limit'] : t('Unlimited')), 'class' => 'download-row', 'id' => 'download-'. $row),
-      array('data' => count(unserialize($file['addresses'])) .'/'. ($file['address_limit'] ? $file['address_limit'] : t('Unlimited')), 'class' => 'addresses-row', 'id' => 'addresses-'. $row),
+      array('data' => format_date($file['granted'], 'custom', variable_get('uc_date_format_default', 'm/d/Y')), 'class' => array('date-row'), 'id' => 'date-'. $row),
+      array('data' => $file['link'], 'class' => array('filename-row'), 'id' => 'filename-'. $row),
+      array('data' => $file['description'], 'class' => array('description-row'), 'id' => 'description-'. $row),
+      array('data' => $file['accessed'] .'/'. ($file['download_limit'] ? $file['download_limit'] : t('Unlimited')), 'class' => array('download-row'), 'id' => 'download-'. $row),
+      array('data' => count(unserialize($file['addresses'])) .'/'. ($file['address_limit'] ? $file['address_limit'] : t('Unlimited')), 'class' => array('addresses-row'), 'id' => 'addresses-'. $row),
     );
     $row++;
   }
@@ -58,8 +60,8 @@ function theme_uc_file_user_downloads($files) {
     $rows[] = array(array('data' => t('No downloads found'), 'colspan' => 5));
   }
 
-  $output .= theme('table', $header, $rows);
-  $output .= theme('pager', NULL, UC_FILE_PAGER_SIZE, 0);
+  $output .= theme('table', array('header' => $header, 'rows' => $rows));
+  $output .= theme('pager');
   $output .= '<div class="form-item"><p class="description">'.
   t('Once your download is finished, you must refresh the page to download again. (Provided you have permission)') .
   '<br />'. t('Downloads will not be counted until the file is finished transferring, even though the number may increment when you click.') .
@@ -126,7 +128,7 @@ function uc_file_user_downloads($account) {
     $row++;
   }
 
-  return theme('uc_file_user_downloads', $files);
+  return theme('uc_file_user_downloads', array('files' => $files));
 }
 
 /**

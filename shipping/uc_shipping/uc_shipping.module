@@ -112,8 +112,8 @@ function uc_shipping_menu() {
   );
   $items['admin/store/orders/%uc_order/shipments/%uc_shipping_shipment/print'] = array(
     'title' => 'Print',
-    'page callback' => 'theme',
-    'page arguments' => array('uc_shipping_shipment_print', 3, 5),
+    'page callback' => 'uc_shipping_shipment_print',
+    'page arguments' => array(3, 5),
     'access callback' => 'uc_shipping_order_access',
     'access arguments' => array(3),
     'type' => MENU_LOCAL_TASK,
@@ -168,28 +168,28 @@ function uc_shipping_perm() {
 function uc_shipping_theme() {
   return array(
     'uc_shipping_new_package_fieldset' => array(
-      'arguments' => array('fieldset' => NULL),
+      'render element' => 'fieldset',
       'file' => 'uc_shipping.admin.inc',
     ),
     'uc_shipping_edit_package_fieldset' => array(
-      'arguments' => array('fieldset' => NULL),
+      'render element' => 'fieldset',
       'file' => 'uc_shipping.admin.inc',
     ),
     'uc_shipping_new_shipment' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
       'file' => 'uc_shipping.admin.inc',
     ),
     'uc_shipping_package_dimensions' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
     ),
     'uc_shipping_address' => array(
-      'arguments' => array('address' => NULL),
+      'render element' => 'address',
     ),
     'uc_shipping_shipment_print' => array(
-      'arguments' => array('order' => NULL, 'shipment' => NULL),
+      'variables' => array('order' => NULL, 'shipment' => NULL),
     ),
     'uc_packing_slip' => array(
-      'arguments' => array('order' => NULL, 'shipment' => NULL),
+      'variables' => array('order' => NULL, 'shipment' => NULL),
       'template' => 'uc-packing-slip',
     ),
   );
@@ -313,7 +313,7 @@ function uc_shipping_package_view($package) {
   else {
     $rows[] = array(t('Label:'), t('n/a'));
   }
-  $output .= theme('table', array(), $rows, array('style' => 'width:auto;'));
+  $output .= theme('table', array('rows' => $rows, 'attributes' => array('style' => 'width:auto;')));
   $output .= '</div>';
 
   return $output;
@@ -324,14 +324,15 @@ function uc_shipping_package_view($package) {
  *
  * @ingroup themeable
  */
-function theme_uc_shipping_package_dimensions($form) {
-  $output = '';
+function theme_uc_shipping_package_dimensions($variables) {
+  $form = $variables['form'];
+
   $row = array();
   foreach (element_children($form) as $dimension) {
     $row[] = drupal_render($form[$dimension]);
   }
-  $output .= theme('table', array(), array($row));
-  return $output;
+
+  return theme('table', array('rows' => array($row)));
 }
 
 /**
@@ -339,7 +340,9 @@ function theme_uc_shipping_package_dimensions($form) {
  *
  * @ingroup themeable
  */
-function theme_uc_shipping_address($address) {
+function theme_uc_shipping_address($variables) {
+  $address = $variables['address'];
+
   drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
   if ($address['#collapsed']) {
     $collapsed = ' collapsed';
@@ -369,9 +372,8 @@ function theme_uc_shipping_address($address) {
   }
   $output .= '</table>';
 
-  foreach (element_children($address) as $element) {
-    $output .= drupal_render($address[$element]);
-  }
+  $output .= drupal_render_children($address);
+
   return $output;
 }
 
@@ -598,7 +600,7 @@ function uc_shipping_order_pane_packages($op, $arg1) {
       }
       $output = '';
       foreach ($tracking as $carrier => $item) {
-        $output .= '<strong>'. $carrier .':</strong>'. theme('item_list', $item);
+        $output .= '<strong>'. $carrier .':</strong>'. theme('item_list', array('items' => $item));
       }
       return $output;
     break;

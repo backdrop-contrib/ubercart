@@ -247,7 +247,9 @@ function uc_cart_checkout_form() {
  * @ingroup themeable
  * @see uc_cart_checkout_form()
  */
-function theme_uc_cart_checkout_form($form) {
+function theme_uc_cart_checkout_form($variables) {
+  $form = $variables['form'];
+
   drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
 
   $output = '<div id="checkout-instructions">'. check_markup(variable_get('uc_checkout_instructions', ''), variable_get('uc_checkout_instructions_format', FILTER_FORMAT_DEFAULT), FALSE) .'</div>';
@@ -268,7 +270,7 @@ function theme_uc_cart_checkout_form($form) {
     }
   }
 
-  $output .= '<div id="checkout-form-bottom">'. drupal_render($form) .'</div>';
+  $output .= '<div id="checkout-form-bottom">'. drupal_render_children($form) .'</div>';
 
   return $output;
 }
@@ -417,7 +419,10 @@ function uc_cart_checkout_review() {
  *   A string of HTML for the page contents.
  * @ingroup themeable
  */
-function theme_uc_cart_checkout_review($panes, $form) {
+function theme_uc_cart_checkout_review($variables) {
+  $panes = $variables['panes'];
+  $form = $variables['form'];
+
   drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
 
   $output = check_markup(variable_get('uc_checkout_review_instructions', uc_get_message('review_instructions')), variable_get('uc_checkout_review_instructions_format', FILTER_FORMAT_DEFAULT), FALSE)
@@ -449,7 +454,7 @@ function theme_uc_cart_checkout_review($panes, $form) {
     }
   }
 
-  $output .= '<tr class="review-button-row"><td colspan="2">'. drupal_render($form)
+  $output .= '<tr class="review-button-row"><td colspan="2">'. drupal_render_children($form)
             .'</td></tr></table>';
 
   return $output;

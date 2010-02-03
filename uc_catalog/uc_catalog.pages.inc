@@ -7,6 +7,16 @@
  */
 
 /**
+ * Show the catalog page of the given category.
+ */
+function uc_catalog_browse($tid = 0) {
+  return array(
+    '#theme' => 'uc_catalog_browse',
+    '#tid' => $tid,
+  );
+}
+
+/**
  * Display a formatted catalog page.
  *
  * If the category has products in it, display them in a TAPIr table. Subcategories
@@ -19,7 +29,9 @@
  *   Formatted HTML of the catalog page.
  * @ingroup themeable
  */
-function theme_uc_catalog_browse($tid = 0) {
+function theme_uc_catalog_browse($variables) {
+  $tid = $variables['tid'];
+
   drupal_add_css(drupal_get_path('module', 'uc_catalog') .'/uc_catalog.css');
 
   $output = '';
@@ -38,10 +50,17 @@ function theme_uc_catalog_browse($tid = 0) {
     if (!empty($child->image)) {
       $image = '<div>';
       if (module_exists('imagecache')) {
-        $image .= l(theme('imagecache', 'uc_category', $child->image['filepath']), uc_catalog_path($child), array('html' => TRUE));
+        $image .= l(theme('image_style', array(
+            'style_name' => 'uc_category',
+            'path' => $child->image['filepath'],
+          )),
+          uc_catalog_path($child), array('html' => TRUE));
       }
       else {
-        $image .= l(theme('image', $child->image['filepath']), uc_catalog_path($child), array('html' => TRUE));
+        $image .= l(theme('image', array(
+            'path' => $child->image['filepath'],
+          )),
+          uc_catalog_path($child), array('html' => TRUE));
       }
       $image .= '</div>';
     }
@@ -60,13 +79,13 @@ function theme_uc_catalog_browse($tid = 0) {
         $g_child_nodes += taxonomy_term_count_nodes($grandchild->tid, $type);
       }
       if ($g_child_nodes) {
-        $grandchildren[$i] = l($grandchild->name, uc_catalog_path($grandchild), array('class' => 'subcategory'));
+        $grandchildren[$i] = l($grandchild->name, uc_catalog_path($grandchild), array('class' => array('subcategory')));
         $j++;
       }
     }
     //$grandchildren = array_slice($grandchildren, 0, intval(count($grandchildren) / 2) + 1, TRUE);
     if ($j > $max_gc_display) {
-      array_push($grandchildren, l(t('More...'), uc_catalog_path($child), array('class' => 'subcategory')));
+      array_push($grandchildren, l(t('More...'), uc_catalog_path($child), array('class' => array('subcategory'))));
     }
     if ($child->nodes) {
       $cell_link = $image .'<strong>'. l($child->name, uc_catalog_path($child)) .'</strong>';
@@ -78,10 +97,21 @@ function theme_uc_catalog_browse($tid = 0) {
   }
   if (!empty($catalog->image)) {
     if (module_exists('imagecache')) {
-      $output .= theme('imagecache', 'uc_thumbnail', $catalog->image['filepath'], $catalog->name, $catalog->name, array('class' => 'category'));
+      $output .= theme('image_style', array(
+        'style_name' => 'uc_thumbnail',
+        'path' => $catalog->image['filepath'],
+        'alt' => $catalog->name,
+        'title' => $catalog->name,
+        'attributes' => array('class' => array('category')),
+      ));
     }
     else {
-      $output .= theme('image', $catalog->image['filepath'], $catalog->name, $catalog->name, array('class' => 'category'));
+      $output .= theme('image', array(
+        'path' => $catalog->image['filepath'],
+        'alt' => $catalog->name,
+        'title' => $catalog->name,
+        'attributes' => array('class' => array('category')),
+      ));
     }
   }
 
@@ -121,10 +151,10 @@ function theme_uc_catalog_browse($tid = 0) {
   }
   if (count($catalog->products)) {
     if (count($links)) {
-      $output .= theme('links', $links, array('class' => 'links inline uc-categories')) ."<br />\n";
+      $output .= theme('links', array('links' => $links, 'attributes' => array('class' => array('links', 'inline', 'uc-categories')))) ."<br />\n";
     }
     $output .= $catalog->description;
-    $output .= theme('uc_catalog_products', $catalog->products);
+    $output .= theme('uc_catalog_products', array('products' => $catalog->products));
     $output .= theme('pager');
   }
   else {
@@ -134,7 +164,7 @@ function theme_uc_catalog_browse($tid = 0) {
     $row = array();
     $i = 1;
     foreach ($child_list as $cell) {
-      $row[] = array('data' => $cell, 'class' => 'category');
+      $row[] = array('data' => $cell, 'class' => array('category'));
       if ($i % $columns == 0) {
         $cat_rows[] = $row;
         $row = array();
@@ -143,12 +173,12 @@ function theme_uc_catalog_browse($tid = 0) {
     }
     if (count($row) > 0 && count($row) < $columns) {
       if (count($cat_rows) >= 1) {
-        $row = array_merge($row, array_fill(count($row), $columns - count($row), array('data' => '&nbsp;', 'class' => 'category')));
+        $row = array_merge($row, array_fill(count($row), $columns - count($row), array('data' => '&nbsp;', 'class' => array('category'))));
       }
       $cat_rows[] = $row;
     }
     $output .= $catalog->description;
-    $output .= theme('table', array(), $cat_rows, array('class' => 'category'));
+    $output .= theme('table', array('rows' => $cat_rows, 'attributes' => array('class' => array('category'))));
   }
 
   return $output;

@@ -92,11 +92,11 @@ function uc_quote_init() {
 function uc_quote_theme() {
   return array(
     'uc_quote_method_settings' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
       'file' => 'uc_quote.admin.inc',
     ),
     'uc_cart_pane_quotes' => array(
-      'arguments' => array('items' => NULL),
+      'render element' => 'form',
     ),
   );
 }
@@ -176,7 +176,7 @@ function uc_quote_form_alter(&$form, $form_state, $form_id) {
       '#title' => t('Shipping settings'),
       '#collapsible' => TRUE,
       '#weight' => module_exists('content') ? content_extra_field_weight($form['#node']->type, 'shipping') : 0,
-      '#attributes' => array('class' => 'product-shipping'),
+      '#attributes' => array('class' => array('product-shipping')),
     );
 
     // Build the options for the default shipping type.
@@ -742,14 +742,16 @@ function uc_cart_pane_quotes($items) {
  *
  * @ingroup themeable
  */
-function theme_uc_cart_pane_quotes($form) {
+function theme_uc_cart_pane_quotes($variables) {
+  $form = $variables['form'];
+
   $output = '<div class="solid-border">';
   $output .= '<strong>'. t('Estimated shipping cost:') .'</strong>';
   $output .= drupal_render($form['delivery_country']);
   $output .= drupal_render($form['delivery_zone']);
   $output .= drupal_render($form['delivery_postal_code']);
   $output .= drupal_render($form['get_quote']);
-  $output .= drupal_render($form);
+  $output .= drupal_render_children($form);
   $output .= '</div>';
 
   return $output;
@@ -948,7 +950,7 @@ function uc_order_pane_quotes($op, $arg1) {
       $form['quotes']['add_quote'] = array(
         '#type' => 'submit',
         '#value' => t('Apply to order'),
-        '#attributes' => array('class' => 'save-button'),
+        '#attributes' => array('class' => array('save-button')),
         '#disabled' => TRUE,
       );
 

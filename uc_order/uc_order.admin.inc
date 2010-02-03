@@ -19,7 +19,7 @@ function uc_order_settings_overview() {
 
   // Theme it all up in a summaries overview.
   return array(
-    '#markup' => theme('summary_overview', $summaries),
+    '#markup' => theme('summary_overview', array('summaries' => $summaries)),
   );
 }
 
@@ -566,7 +566,7 @@ function uc_order_admin($query = NULL, $args = NULL, $search = FALSE) {
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
-    '#attributes' => array('class' => 'uc-orders-table'),
+    '#attributes' => array('class' => array('uc-orders-table')),
   );
   $build['pager'] = array(
     '#theme' => 'pager',
@@ -1159,7 +1159,7 @@ function uc_order_history($user) {
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
-    '#attributes' => array('class' => 'uc-order-history'),
+    '#attributes' => array('class' => array('uc-order-history')),
   );
   $build['pager'] = array(
     '#theme' => 'pager',
@@ -1264,7 +1264,7 @@ function uc_order_edit_form($form_state, $order) {
   $form['submit-changes'] = array(
     '#type' => 'submit',
     '#value' => t('Submit changes'),
-    '#attributes' => array('class' => 'save-button'),
+    '#attributes' => array('class' => array('save-button')),
     '#disabled' => TRUE,
   );
 
@@ -1282,7 +1282,9 @@ function uc_order_edit_form($form_state, $order) {
  * @ingroup themeable
  * @see uc_order_edit_form()
  */
-function theme_uc_order_edit_form($form) {
+function theme_uc_order_edit_form($variables) {
+  $form = $variables['form'];
+
   $panes = _order_pane_list();
   foreach ($panes as $pane) {
     if (in_array('edit', $pane['show']) &&
@@ -1589,8 +1591,8 @@ function uc_order_edit_products_form($form_state, $products) {
  * @ingroup themeable
  * @see uc_order_edit_products_form()
  */
-function theme_uc_order_edit_products_form($form) {
-  return drupal_render($form);
+function theme_uc_order_edit_products_form($variables) {
+  return drupal_render($variables['form']);
 }
 
 /**
@@ -1599,14 +1601,16 @@ function theme_uc_order_edit_products_form($form) {
  * @ingroup themeable
  * @see op_products_edit_table()
  */
-function theme_uc_order_remove_product($form) {
+function theme_uc_order_remove_product($variables) {
+  $form = $variables['form'];
+
   return '<img id="'. $form['#img_id'] .'" src="'
     .  base_path() . drupal_get_path('module', 'uc_store')
     .'/images/error.gif" style="padding-top: 1px; padding-left: .8em; '
     .'padding-right: 2px; float: left; cursor: pointer;" '
     .'alt="'. t('Remove this product.') .'" onclick="'
     .'remove_product_button(\''. t('Remove product from order?') .'\', this.id);" />'
-    . drupal_render($form);
+    . drupal_render_children($form);
 }
 
 /**

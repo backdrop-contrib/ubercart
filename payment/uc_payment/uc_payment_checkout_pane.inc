@@ -150,7 +150,9 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
  * the default or available payment methods... we need the JS to grab the right
  * default payment details.
  */
-function theme_uc_payment_method_select($form) {
+function theme_uc_payment_method_select($variables) {
+  $form = $variables['form'];
+
   if (empty($form['#options'])) {
     drupal_set_message(t('Checkout cannot be completed without any payment methods enabled. Please contact an administrator to resolve the issue.'), 'error');
     return;
@@ -160,5 +162,5 @@ function theme_uc_payment_method_select($form) {
   // default payment method to a JS variable or use a selector.  -RS
   drupal_add_js(array('ucDefaultPayment' => $form['#default_value']), 'setting');
 
-  return drupal_render($form);
+  return drupal_render_children($form);
 }

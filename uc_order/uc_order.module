@@ -318,25 +318,25 @@ function uc_order_init() {
 function uc_order_theme() {
   return array(
     'uc_order_state_table' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
     ),
     'uc_order_status_table' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
     ),
     'uc_order_edit_form' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
       'file' => 'uc_order.admin.inc',
     ),
     'uc_order_edit_products_form' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
       'file' => 'uc_order.admin.inc',
     ),
     'uc_order_remove_product' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
       'file' => 'uc_order.admin.inc',
     ),
     'uc_order_view_update_controls' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
     ),
   );
 }
@@ -718,7 +718,9 @@ function uc_order_uc_message() {
  *
  * @ingroup themeable
  */
-function theme_uc_order_state_table($form) {
+function theme_uc_order_state_table($variables) {
+  $form = $variables['form'];
+
   $header = array(t('State'), t('Default order status'));
 
   foreach (element_children($form) as $state_id) {
@@ -728,13 +730,15 @@ function theme_uc_order_state_table($form) {
     );
   }
 
-  return theme('table', $header, $rows);
+  return theme('table', array('header' => $header, 'rows' => $rows));
 }
 
 /**
  * Theme the order state table in the order workflow settings.
  */
-function theme_uc_order_status_table($form) {
+function theme_uc_order_status_table($variables) {
+  $form = $variables['form'];
+
   $header = array(t('ID'), t('Title'), t('List position'), t('State'), t('Remove'));
 
   foreach (element_children($form) as $state_id) {
@@ -752,7 +756,7 @@ function theme_uc_order_status_table($form) {
     }
   }
 
-  return theme('table', $header, $rows) . $create;
+  return theme('table', array('header' => $header, 'rows' => $rows)) . $create;
 }
 
 /**
@@ -950,7 +954,7 @@ function op_products_edit_table() {
   $table = array(
     '#type' => 'tapir_table',
     '#tree' => TRUE,
-    '#attributes' => array('class' => 'order-pane-table'),
+    '#attributes' => array('class' => array('order-pane-table')),
   );
 
   $table['#columns']['remove'] = array(
@@ -1407,7 +1411,7 @@ function uc_order_log_changes($order_id, $changes) {
     ->fields(array(
       'order_id' => $order_id,
       'uid' => $user->uid,
-      'changes' => theme('item_list', $items),
+      'changes' => theme('item_list', array('items' => $items)),
       'created' => REQUEST_TIME,
     ))
     ->execute();

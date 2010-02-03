@@ -491,7 +491,7 @@ function _ca_custom_php_variables_table($arguments) {
     '#type' => 'fieldset',
     '#title' => t('Available PHP variables'),
     '#description' => t('You may use these variables in your custom PHP.')
-                    . theme('table', $header, $rows),
+                    . theme('table', array('header' => $header, 'rows' => $rows)),
     '#collapsible' => TRUE,
   );
 

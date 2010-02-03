@@ -91,7 +91,7 @@ function uc_product_settings_overview() {
 
   // Theme it all up in a summaries overview.
   return array(
-    '#markup' => theme('summary_overview', $summaries),
+    '#markup' => theme('summary_overview', array('summaries' => $summaries)),
   );
 }
 
@@ -290,7 +290,9 @@ function _uc_product_fields_summarize($form, $options, $enabled, $weight) {
  * @ingroup themeable
  * @see uc_product_field_settings_form()
  */
-function theme_uc_product_field_settings_form($form) {
+function theme_uc_product_field_settings_form($variables) {
+  $form = $variables['form'];
+
   $header = array(t('Enable'), t('Product field'), t('List position'));
   $rows = array();
   foreach (element_children($form['fields']) as $field) {
@@ -300,9 +302,9 @@ function theme_uc_product_field_settings_form($form) {
     $row[] = drupal_render($form['fields'][$field]['weight']);
     $rows[] = $row;
   }
-  $output .= theme('table', $header, $rows);
+  $output .= theme('table', array('header' => $header, 'rows' => $rows));
 
-  $output .= drupal_render($form);
+  $output .= drupal_render_children($form);
   return $output;
 }
 
@@ -531,9 +533,8 @@ function uc_product_feature_add_form() {
  * @ingroup themeable
  * @see uc_product_feature_add_form()
  */
-function theme_uc_product_feature_add_form($form) {
-  $output = '<table class="add-feature"><tr><td>'. drupal_render($form) .'</td></tr></table>';
-  return $output;
+function theme_uc_product_feature_add_form($variables) {
+  return '<table class="add-feature"><tr><td>'. drupal_render_children($variables['form']) .'</td></tr></table>';
 }
 
 /**
