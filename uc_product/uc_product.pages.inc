@@ -16,8 +16,19 @@ function uc_product_title_sku_autocomplete($string = '') {
   $matches = array();
 
   if ($string) {
-    $result = db_query_range(db_rewrite_sql("SELECT n.nid, n.title, p.model, p.unique_hash FROM {uc_products} AS p LEFT JOIN {node} AS n ON n.nid = p.nid WHERE p.unique_hash <> '' AND (LOWER(n.title) LIKE '%s%%' OR LOWER(p.model) LIKE '%s%%')"), strtolower($string), strtolower($string), 0, 10);
-    while ($node = db_fetch_object($result)) {
+    $string = db_like($string);
+
+    $query = db_select('uc_products', 'p')->addTag('node_access')
+      ->fields('n', array('nid', 'title'))
+      ->fields('p', array('model', 'unique_hash'))
+      ->condition('p.unique_hash', '', '<>')
+      ->condition(db_or()
+        ->condition('n.title', $string . '%', 'LIKE')
+        ->condition('p.model', $string . '%', 'LIKE'))
+      ->range(0, 10);
+    $n = $query->leftJoin('node', 'n', 'n.nid = p.nid');
+    $result = $query->execute();
+    foreach ($result as $node) {
       $matches[$node->nid] = t('@title [@sku]', array('@title' => $node->title, '@sku' => $node->model));
     }
   }

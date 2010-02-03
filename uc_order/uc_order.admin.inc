@@ -260,20 +260,26 @@ function uc_order_workflow_form_submit($form, &$form_state) {
 
   foreach ($form_state['values']['order_statuses'] as $key => $value) {
     if ($value['locked'] != TRUE && $value['remove'] == TRUE) {
-      db_query("DELETE FROM {uc_order_statuses} WHERE order_status_id = '%s'", $key);
+      db_delete('uc_order_statuses')
+        ->condition('order_status_id', $key)
+        ->execute();
       drupal_set_message(t('Order status %status removed.', array('%status' => $key)));
     }
     else {
-      if ($value['locked'] == TRUE) {
-        db_query("UPDATE {uc_order_statuses} SET title = '%s', weight = %d "
-                ."WHERE order_status_id = '%s'", $value['title'],
-                 $value['weight'], $key);
+      $fields = array(
+        'title' => $value['title'],
+        'weight' => $value['weight'],
+      );
+
+      // The state cannot be changed if the status is locked.
+      if ($value['locked'] == FALSE) {
+        $fields['state'] = $value['state'];
       }
-      else {
-        db_query("UPDATE {uc_order_statuses} SET title = '%s', state = '%s', "
-                ."weight = %d WHERE order_status_id = '%s'", $value['title'],
-                 $value['state'], $value['weight'], $key);
-      }
+
+      $query = db_update('uc_order_statuses')
+        ->fields($fields)
+        ->condition('order_status_id', $key)
+        ->execute();
     }
   }
 
@@ -423,10 +429,15 @@ function uc_order_status_create_form_validate($form, &$form_state) {
  * @see uc_order_status_create_form()
  */
 function uc_order_status_create_form_submit($form, &$form_state) {
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, "
-          ."weight, locked) VALUES ('%s', '%s', '%s', %d, 0)",
-           $form_state['values']['status_id'], $form_state['values']['status_title'],
-           $form_state['values']['status_state'], $form_state['values']['status_weight']);
+  db_insert('uc_order_statuses')
+    ->fields(array(
+      'order_status_id' => $form_state['values']['status_id'],
+      'title' => $form_state['values']['status_title'],
+      'state' => $form_state['values']['status_state'],
+      'weight' => $form_state['values']['status_weight'],
+      'locked' => 0,
+    ))
+    ->execute();
 
   drupal_set_message(t('Custom order status created.'));
 
@@ -436,7 +447,7 @@ function uc_order_status_create_form_submit($form, &$form_state) {
 /**
  * Display the main order admin screen, an overview of all received orders.
  */
-function uc_order_admin($sql = NULL, $args = NULL, $search = FALSE) {
+function uc_order_admin($query = NULL, $args = NULL, $search = FALSE) {
   $header = array(
     array('data' => t('Actions')),
     array('data' => t('Order ID'), 'field' => 'o.order_id', 'sort' => 'desc'),
@@ -446,38 +457,47 @@ function uc_order_admin($sql = NULL, $args = NULL, $search = FALSE) {
     array('data' => t('Status'), 'field' => 'os.title'),
   );
 
-  if (is_null($sql)) {
-    $args = array();
+  $address = variable_get('uc_customer_list_address', 'billing');
+  if ($address == 'shipping') {
+    $address = 'delivery';
+  }
+  else {
+    $address = 'billing';
+  }
+
+  if (is_null($query)) {
+    $query = db_select('uc_orders', 'o')
+      ->fields('o', array(
+        'order_id',
+        'uid',
+        'order_total',
+        'created',
+      ));
+    $o_first_name = $query->addField('o', $address . '_first_name', 'o_first_name');
+    $o_last_name = $query->addField('o', $address . '_last_name', 'o_last_name');
+    $o_order_status = $query->addField('o', 'order_status', 'o_order_status');
+
+    $os = $query->leftJoin('uc_order_statuses', 'os', 'o.order_status = os.order_status_id');
+
+    $query->fields($os, array('title'));
     $show_status = 1;
 
     if (arg(3) == 'sort' && !is_null(arg(4))) {
       $_SESSION['sort_status'] = arg(4);
-      $where = "WHERE o.order_status = '%s'";
-      $args[] = arg(4);
+      $query->condition($o_order_status, arg(4));
     }
     else {
       if (isset($_SESSION['sort_status']) && !is_null($_SESSION['sort_status'])) {
-        $where = "WHERE o.order_status = '%s'";
-        $args[] = $_SESSION['sort_status'];
+        $query->condition($o_order_status, $_SESSION['sort_status']);
       }
       else {
-        $where = 'WHERE o.order_status IN '. uc_order_status_list('general', TRUE);
+        $query->condition($o_order_status, uc_order_status_list('general', TRUE), 'IN');
       }
     }
     if ($_SESSION['sort_status'] == 'all') {
-      $where = '';
+      $conditions =& $query->conditions();
+      $conditions = array();
     }
-    $sql = 'SELECT o.order_id, o.uid, o.billing_first_name, o.billing_last_name, o.order_total, '
-          .'o.order_status, o.created, os.title FROM {uc_orders} o LEFT JOIN {uc_order_statuses} os '
-          .'ON o.order_status = os.order_status_id '. $where . tablesort_sql($header);
-  }
-
-  $address = variable_get('uc_customer_list_address', 'billing');
-  if ($address == 'shipping') {
-      $sql = str_replace('billing', 'delivery', $sql);
-  }
-  else {
-    $address = 'billing';
   }
 
   $context = array(
@@ -485,8 +505,12 @@ function uc_order_admin($sql = NULL, $args = NULL, $search = FALSE) {
     'type' => 'amount',
   );
 
-  $result = pager_query($sql, variable_get('uc_order_number_displayed', 30), 0, NULL, $args);
-  while ($order = db_fetch_object($result)) {
+  $query = $query->extend('PagerDefault')->extend('TableSort')
+    ->orderByHeader($header)
+    ->limit(variable_get('uc_order_number_displayed', 30));
+
+  $result = $query->execute();
+  foreach ($result as $order) {
     if ($address == 'shipping') {
       $order_name = $order->delivery_first_name .' '. $order->delivery_last_name;
     }
@@ -495,7 +519,7 @@ function uc_order_admin($sql = NULL, $args = NULL, $search = FALSE) {
     }
     if (trim($order_name) == '') {
       if ($order->uid !== 0) {
-        $account = db_result(db_query("SELECT name FROM {users} WHERE uid = %d", $order->uid));
+        $account = db_query("SELECT name FROM {users} WHERE uid = :uid", array(':uid' => $order->uid))->fetchField();
       }
       if (empty($account)) {
         $order_name = t('User: none');
@@ -730,56 +754,61 @@ function uc_order_usearch() {
   if (arg(4) == 'results') {
     $build['description'] = array('#markup' => '<p>'. t('Search returned the following results:') .'</p>');
 
-    $billing_first_name = strtolower(str_replace('*', '%', check_plain(arg(5))));
-    $billing_last_name = strtolower(str_replace('*', '%', check_plain(arg(6))));
-    $billing_company = strtolower(str_replace('*', '%', check_plain(arg(7))));
-    $shipping_first_name = strtolower(str_replace('*', '%', check_plain(arg(8))));
-    $shipping_last_name = strtolower(str_replace('*', '%', check_plain(arg(9))));
-    $shipping_company = strtolower(str_replace('*', '%', check_plain(arg(10))));
-    $start_date = check_plain(arg(11));
-    $end_date = check_plain(arg(12));
+    $billing_first_name = str_replace('*', '%', db_like(arg(5)));
+    $billing_last_name = str_replace('*', '%', db_like(arg(6)));
+    $billing_company = str_replace('*', '%', db_like(arg(7)));
+    $shipping_first_name = str_replace('*', '%', db_like(arg(8)));
+    $shipping_last_name = str_replace('*', '%', db_like(arg(9)));
+    $shipping_company = str_replace('*', '%', db_like(arg(10)));
+    $start_date = db_like(arg(11));
+    $end_date = db_like(arg(12));
 
-    $args = array();
+    $query = db_select('uc_orders', 'o');
+    $os = $query->leftJoin('uc_order_statuses', 'os', 'o.order_status = os.order_status_id');
+    $query->fields('o', array(
+        'order_id',
+        'order_total',
+        'created',
+      ))
+      ->fields($os, array('title'));
+    $ob_first_name = $query->addField('o', 'billing_first_name', 'ob_first_name');
+    $ob_last_name = $query->addField('o', 'billing_last_name', 'ob_last_name');
+    $ob_company = $query->addField('o', 'billing_company', 'ob_company');
+    $os_first_name = $query->addField('o', 'delivery_first_name', 'os_first_name');
+    $os_last_name = $query->addField('o', 'delivery_last_name', 'os_last_name');
+    $os_company = $query->addField('o', 'delivery_company', 'os_company');
+    $o_order_status = $query->addField('o', 'order_status', 'o_order_status');
+
+    $query->condition($o_order_status, uc_order_status_list('specific', TRUE), 'NOT IN')
+      ->orderBy('created', 'DESC');
+
     if ($billing_first_name !== '0' && $billing_first_name !== '%') {
-      $where .= " AND LOWER(o.billing_first_name) LIKE '%s'";
-      $args[] = $billing_first_name;
+      $query->condition($ob_first_name, $billing_first_name, 'LIKE');
     }
     if ($billing_last_name !== '0' && $billing_last_name !== '%') {
-      $where .= " AND LOWER(o.billing_last_name) LIKE '%s'";
-      $args[] = $billing_last_name;
+      $query->condition($ob_last_name, $billing_last_name, 'LIKE');
     }
     if ($billing_company !== '0' && $billing_company !== '%') {
-      $where .= " AND LOWER(o.billing_company) LIKE '%s'";
-      $args[] = $billing_company;
+      $query->condition($ob_company, $billing_company, 'LIKE');
     }
     if ($shipping_first_name !== '0' && $shipping_first_name !== '%') {
-      $where .= " AND LOWER(o.delivery_first_name) LIKE '%s'";
-      $args[] = $shipping_first_name;
+      $query->condition($os_first_name, $shipping_first_name, 'LIKE');
     }
     if ($shipping_last_name !== '0' && $shipping_last_name !== '%') {
-      $where .= " AND LOWER(o.delivery_last_name) LIKE '%s'";
-      $args[] = $shipping_last_name;
+      $query->condition($os_last_name, $shipping_last_name, 'LIKE');
     }
     if ($shipping_company !== '0' && $shipping_company !== '%') {
-      $where .= " AND LOWER(o.delivery_company) LIKE '%s'";
-      $args[] = $shipping_company;
+      $query->condition($os_company, $shipping_company, 'LIKE');
     }
 
     if ($start_date !== '0') {
-      $where .= " AND o.created >= %d";
-      $args[] = $start_date;
+      $query->condition('created', $start_date, '>=');
     }
     if ($end_date !== '0') {
-      $where .= " AND o.created <= %d";
-      $args[] = $end_date;
+      $query->condition('created', $end_date, '<=');
     }
 
-    $sql = 'SELECT o.order_id, o.billing_first_name, o.billing_last_name, o.order_total, '
-          .'o.order_status, o.created, os.title FROM {uc_orders} o LEFT JOIN {uc_order_statuses} os '
-          .'ON o.order_status = os.order_status_id WHERE o.order_status NOT IN '. uc_order_status_list('specific', TRUE)
-         . $where .' ORDER BY o.created DESC';
-
-    $build += uc_order_admin($sql, $args, TRUE);
+    $build += uc_order_admin($query, $args, TRUE);
   }
 
   return $build;
@@ -840,30 +869,44 @@ function uc_order_select_customer($email = NULL) {
 
   // Return the search results and let them pick one!
   if (arg(4) == 'search') {
-    $first_name = strtolower(str_replace('*', '%', check_plain(arg(5))));
-    $last_name = strtolower(str_replace('*', '%', check_plain(arg(6))));
-    $email = strtolower(str_replace('*', '%', check_plain(arg(7))));
+    $first_name = str_replace('*', '%', db_like(arg(5)));
+    $last_name = str_replace('*', '%', db_like(arg(6)));
+    $email = str_replace('*', '%', db_like(arg(7)));
+
+    $query = db_select('users', 'u')->distinct();
+    $o = $query->leftJoin('uc_orders', 'o', 'u.uid = o.uid');
+
+    $u_uid = $query->addField('u', 'uid', 'u_uid');
+    $u_mail = $query->addField('u', 'mail', 'u_mail');
+    $o_email = $query->addField('o', 'primary_email', 'o_email');
+    $ob_first_name = $query->addField('o', 'billing_first_name', 'ob_first_name');
+    $ob_last_name = $query->addField('o', 'billing_last_name', 'ob_last_name');
+    $o_order_status = $query->addField('o', 'order_status', 'o_order_status');
+
+    $query->condition($u_uid, 0, '>')
+      ->condition(db_or()
+        ->isNull($o_order_status)
+        ->condition($o_order_status, uc_order_status_list('general', TRUE), 'IN')
+      )
+      ->orderBy($ob_last_name);
 
     if ($first_name !== '0' && $first_name !== '%') {
-      $where .= " AND LOWER(o.billing_first_name) LIKE '". $first_name ."'";
+      $query->condition($ob_first_name, $first_name, 'LIKE');
     }
     if ($last_name !== '0' && $last_name !== '%') {
-      $where .= " AND LOWER(o.billing_last_name) LIKE '". $last_name ."'";
+      $query->condition($ob_last_name, $last_name, 'LIKE');
     }
     if ($email !== '0' && $email !== '%') {
-      $where .= " AND (LOWER(o.primary_email) LIKE '". $email ."' OR LOWER(u.mail) LIKE '"
-              . $email ."')";
+      $query->condition(db_or()
+        ->condition($o_email, $email, 'LIKE')
+        ->condition($u_mail, $email, 'LIKE')
+      );
     }
 
-    $query = "SELECT DISTINCT u.uid, u.mail, o.billing_first_name, "
-            ."o.billing_last_name FROM {users} AS u LEFT JOIN {uc_orders} "
-            ."AS o ON u.uid = o.uid WHERE u.uid > 0 AND (o.order_status "
-            ."IS NULL OR o.order_status IN ". uc_order_status_list('general', TRUE) .")". $where
-            ." ORDER BY o.billing_last_name ASC";
-    $result = db_query($query);
+    $result = $query->execute();
 
     $options = array();
-    while ($user = db_fetch_object($result)) {
+    foreach ($result as $user) {
       if (empty($user->billing_first_name) && empty($user->billing_last_name)) {
         $name = '';
       }
@@ -889,8 +932,8 @@ function uc_order_select_customer($email = NULL) {
     if (!valid_email_address($email)) {
       $build['email']['#markup'] .= t('Invalid e-mail address.') .'<br />';
     }
-    $result = db_query("SELECT uid, mail FROM {users} WHERE mail = '%s'", $email);
-    if ($user = db_fetch_object($result)) {
+    $result = db_query("SELECT uid, mail FROM {users} WHERE mail = :mail", array(':mail' => $email));
+    if ($user = $result->fetchObject()) {
       $build['email']['#markup'] .= t('An account already exists for that e-mail.') .'<br /><br />';
       $build['email']['#markup'] .= '<b>'. t('Use this account now?') .'</b><br />'
         . t('User !uid - !mail', array('!uid' => $user->uid, '!mail' => $user->mail)) .' <input type="button" '
@@ -1059,10 +1102,37 @@ function uc_order_history($user) {
     'type' => 'amount',
   );
 
-  $result = pager_query("SELECT o.order_id, o.created, os.title, SUM(op.qty) AS products, o.order_total AS total FROM {uc_orders} AS o LEFT JOIN {uc_order_statuses} AS os ON o.order_status = os.order_status_id LEFT JOIN {uc_order_products} AS op ON o.order_id = op.order_id WHERE o.uid = %d AND o.order_status IN ". uc_order_status_list('general', TRUE) ." GROUP BY o.order_id, o.created, os.title, o.order_total". tablesort_sql($header), 20, 0, "SELECT COUNT(*) FROM {uc_orders} WHERE uid = %d AND order_status NOT IN ". uc_order_status_list('specific', TRUE), $user->uid);
+  $query = db_select('uc_orders', 'o');
+  $o_order_id = $query->addField('o', 'order_id');
+  $o_created = $query->addField('o', 'created');
+  $o_status = $query->addField('o', 'order_status');
+  $o_total = $query->addField('o', 'total');
+  $o_uid = $query->addField('o', 'uid');
+
+  $query->condition($o_uid, $user->uid)
+    ->condition($o_status, uc_order_status_list('general', TRUE), 'IN');
+
+  $count_query = $query->countQuery();
+
+  $query = $query->extend('PagerDefault')->extend('TableSort');
+  $os = $query->leftJoin('uc_order_statuses', 'os', 'o.order_status = os.order_status_id');
+  $op = $query->leftJoin('uc_order_products', 'op', 'o.order_id = op.order_id');
+
+  $os_title = $query->addField('os', 'title');
+  $op_products = $query->addExpression('SUM(op.qty)', 'products');
+
+  $query->groupBy($o_order_id)
+    ->groupBy($o_created)
+    ->groupBy($os_title)
+    ->groupBy($o_total)
+    ->orderByHeader($header)
+    ->limit(20);
+  $query->setCountQuery($count_query);
+
+  $result = $query->execute;
 
   // Build a table based on the customer's orders.
-  while ($order = db_fetch_object($result)) {
+  foreach ($result as $order) {
     $context['subject'] = array('order' => $order);
 
     $link = l($order->order_id, 'user/'. $user->uid .'/order/'. $order->order_id);
@@ -1353,7 +1423,12 @@ function uc_order_edit_products($order) {
 
   switch ($_POST['action']) {
     case 'add_blank':
-      db_query("INSERT INTO {uc_order_products} (order_id, qty) VALUES (%d, 1)", $order->order_id);
+      db_insert('uc_order_products')
+        ->fields(array(
+          'order_id' => $order->order_id,
+          'qty' => 1,
+        ))
+        ->execute();
       if (variable_get('uc_order_logging', TRUE)) {
         uc_order_log_changes($order->order_id, array('add' => 'Added new product line to order.'));
       }
@@ -1404,17 +1479,16 @@ function uc_order_edit_products($order) {
       $order_product_id = intval($_POST['opid']);
       // Put back the stock?
       if (module_exists('uc_stock')) {
-        $product = db_fetch_object(db_query("SELECT model, qty FROM {uc_order_products} WHERE order_product_id = %d", $order_product_id));
+        $product = db_query("SELECT model, qty FROM {uc_order_products} WHERE order_product_id = :id", array(':id' => $order_product_id))->fetchObject();
         uc_stock_adjust($product->model, $product->qty);
       }
-      db_query("DELETE FROM {uc_order_products} WHERE order_product_id = %d", $order_product_id);
+      db_delete('uc_order_products')
+        ->condition('order_product_id', $order_product_id)
+        ->execute();
       break;
   }
 
-  $result = db_query("SELECT * FROM {uc_order_products} WHERE order_id = %d ORDER BY order_product_id", $order->order_id);
-  while ($product = db_fetch_object($result)) {
-    $products[] = $product;
-  }
+  $products = db_query("SELECT * FROM {uc_order_products} WHERE order_id = :id ORDER BY order_product_id", array(':id' => $order->order_id))->fetchAll();
 
   print uc_strip_form(drupal_render(drupal_get_form('uc_order_edit_products_form', $products)));
   exit();
@@ -1623,18 +1697,21 @@ function uc_order_load_product_select($order) {
 
   if (!empty($_POST['search'])) {
     $search = strtolower(str_replace('*', '%', check_plain($_POST['search'])));
-    $search_args = array_merge($types, array($search, $search));
+    $search_args = array(
+      ':types' => $types,
+      ':title' => $search,
+      ':model' => $search,
+    );
 
     $result = db_query("SELECT n.nid, n.title FROM {node} AS n LEFT JOIN "
                       ."{uc_products} AS p ON n.nid = p.nid WHERE n.type IN "
-                      ."(". db_placeholders($types, 'varchar') .") AND (LOWER(n.title) LIKE '%s' OR LOWER(p.model) LIKE '%s')"
+                      ."(:types) AND (n.title LIKE :title OR p.model LIKE :model)"
                       ." ORDER BY n.title", $search_args);
   }
   else {
-    $result = db_query("SELECT nid, title FROM {node} WHERE type IN (". db_placeholders($types, 'varchar') .") "
-                      ."ORDER BY title", $types);
+    $result = db_query("SELECT nid, title FROM {node} WHERE type IN (:types) ORDER BY title", array(':types' => $types));
   }
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     $options[$row->nid] = $row->title;
   }
 
@@ -1818,9 +1895,9 @@ function uc_order_mail_invoice_form_submit($form, &$form_state) {
  * Display a log of changes made to an order.
  */
 function uc_order_log($order) {
-  $result = db_query("SELECT * FROM {uc_order_log} WHERE order_id = %d ORDER BY created, order_log_id", $order->order_id);
+  $result = db_query("SELECT * FROM {uc_order_log} WHERE order_id = :id ORDER BY created, order_log_id", array(':id' => $order->order_id));
 
-  while ($change = db_fetch_object($result)) {
+  foreach ($result as $change) {
     $user = uc_get_initials($change->uid);
     $rows[] = array('data' => array(format_date($change->created, 'short'), $user == '-' ? $user : l($user, 'user/'. $change->uid), $change->changes), 'valign' => 'top');
   }

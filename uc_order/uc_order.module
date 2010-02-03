@@ -1006,17 +1006,38 @@ function uc_order_new($uid = 0, $state = 'in_checkout') {
   $order->primary_email = $email;
   $order->products = array();
 
-  db_query("INSERT INTO {uc_orders} (uid, order_status, order_total, "
-          ."primary_email, delivery_first_name, delivery_last_name, delivery_phone, "
-          ."delivery_company, delivery_street1, delivery_street2, delivery_city, "
-          ."delivery_zone, delivery_postal_code, delivery_country, billing_first_name, "
-          ."billing_last_name, billing_phone, billing_company, billing_street1, "
-          ."billing_street2, billing_city, billing_zone, billing_postal_code, "
-          ."billing_country, payment_method, data, created, modified) VALUES "
-          ."(%d, '%s', 0, '%s', '', '', '', '', '', '', '', 0, '', 0, '', "
-          ."'', '', '', '', '', '', 0, 0, 0, '', '', %d, %d)",
-           $uid, $order->order_status, $email, REQUEST_TIME, REQUEST_TIME);
-  $order->order_id = db_last_insert_id('uc_orders', 'order_id');
+  $order->order_id = db_insert('uc_orders')
+    ->fields(array(
+      'uid' => $uid,
+      'order_status' => $order->order_status,
+      'order_total' => 0,
+      'primary_email' => $email,
+      'delivery_first_name' => '',
+      'delivery_last_name' => '',
+      'delivery_phone' => '',
+      'delivery_company' => '',
+      'delivery_street1' => '',
+      'delivery_street2' => '',
+      'delivery_city' => '',
+      'delivery_zone' => 0,
+      'delivery_postal_code' => '',
+      'delivery_country' => 0,
+      'billing_first_name' => '',
+      'billing_last_name' => '',
+      'billing_phone' => '',
+      'billing_company' => '',
+      'billing_street1' => '',
+      'billing_street2' => '',
+      'billing_city' => '',
+      'billing_zone' => 0,
+      'billing_postal_code' => '',
+      'billing_country' => 0,
+      'payment_method' => '',
+      'data' => '',
+      'created' => REQUEST_TIME,
+      'modified' => REQUEST_TIME,
+    ))
+    ->execute();
 
   uc_order_module_invoke('new', $order, NULL);
 
@@ -1031,24 +1052,18 @@ function uc_order_save($order) {
     return FALSE;
   }
 
-  db_query("UPDATE {uc_orders} SET uid = %d, order_status = '%s', order_total = %f, product_count = %d, primary_email = '%s', "
-          ."delivery_first_name = '%s', delivery_last_name = '%s', delivery_phone = '%s', "
-          ."delivery_company = '%s', delivery_street1 = '%s', delivery_street2 = '%s', "
-          ."delivery_city = '%s', delivery_zone = %d, delivery_postal_code = '%s', delivery_country = %d, "
-          ."billing_first_name = '%s', billing_last_name = '%s', billing_phone = '%s', "
-          ."billing_company = '%s', billing_street1 = '%s', billing_street2 = '%s', "
-          ."billing_city = '%s', billing_zone = %d, billing_postal_code = '%s', billing_country = %d, "
-          ."payment_method = '%s', data = '%s', host = '%s', modified = %d WHERE order_id = %d",
-           $order->uid, $order->order_status, uc_order_get_total($order), uc_order_get_product_count($order),
-           $order->primary_email, $order->delivery_first_name, $order->delivery_last_name, $order->delivery_phone,
-           $order->delivery_company, $order->delivery_street1, $order->delivery_street2,
-           $order->delivery_city, $order->delivery_zone, $order->delivery_postal_code,
-           ((is_null($order->delivery_country) || $order->delivery_country == 0) ? variable_get('uc_store_country', 840) : $order->delivery_country),
-           $order->billing_first_name, $order->billing_last_name, $order->billing_phone,
-           $order->billing_company, $order->billing_street1, $order->billing_street2,
-           $order->billing_city, $order->billing_zone, $order->billing_postal_code,
-           ((is_null($order->billing_country) || $order->billing_country == 0) ? variable_get('uc_store_country', 840) : $order->billing_country),
-           $order->payment_method, serialize($order->data), ip_address(), REQUEST_TIME, $order->order_id);
+  $order->order_total = uc_order_get_total($order);
+  $order->product_count = uc_order_get_product_count($order);
+  if (is_null($order->delivery_country) || $order->delivery_country == 0) {
+    $order->delivery_country = variable_get('uc_store_country', 840);
+  }
+  if (is_null($order->billing_country) || $order->billing_country == 0) {
+    $order->billing_country = variable_get('uc_store_country', 840);
+  }
+  $order->host = ip_address();
+  $order->modified = REQUEST_TIME;
+
+  drupal_write_record('uc_orders', $order, 'order_id');
 
   if (is_array($order->products)) {
     foreach ($order->products as $product) {
@@ -1098,18 +1113,17 @@ function uc_order_load($order_id) {
     return FALSE;
   }
 
-  $result = db_query("SELECT * FROM {uc_orders} WHERE order_id = %d", $order_id);
+  $order = db_query("SELECT * FROM {uc_orders} WHERE order_id = :id", array(':id' => $order_id))->fetchObject();
 
-  $order = db_fetch_object($result);
   if ($order == FALSE) {
     return FALSE;
   }
 
   $order->data = unserialize($order->data);
 
-  $result = db_query("SELECT * FROM {uc_order_products} WHERE order_id = %d ORDER BY order_product_id", $order_id);
+  $result = db_query("SELECT * FROM {uc_order_products} WHERE order_id = :id ORDER BY order_product_id", array(':id' => $order_id));
   $order->products = array();
-  while ($product = db_fetch_object($result)) {
+  foreach ($result as $product) {
     $product->data = unserialize($product->data);
     $product->order_uid = $order->uid;
     $order->products[] = $product;
@@ -1124,17 +1138,25 @@ function uc_order_load($order_id) {
   $order->line_items = array_merge($order->line_items, uc_order_load_line_items($order, FALSE));
   usort($order->line_items, 'uc_weight_sort');
 
+  $fields = array();
+
   // Make sure the total still matches up...
   if (($total = uc_order_get_total($order)) !== $order->order_total) {
-    db_query("UPDATE {uc_orders} SET order_total = %f WHERE order_id = %d", $total, $order->order_id);
+    $fields['order_total'] = $total;
     $order->order_total = $total;
   }
 
   if (($count = uc_order_get_product_count($order)) !== $order->product_count) {
-    db_query("UPDATE {uc_orders} SET product_count = %d WHERE order_id = %d", $count, $order->order_id);
+    $fields['product_count'] = $count;
     $order->product_count = $count;
   }
 
+  if (count($fields)) {
+    $query = db_update('uc_orders')
+      ->fields($fields)
+      ->condition('order_id', $order->order_id)
+      ->execute();
+  }
   return $order;
 }
 
@@ -1154,11 +1176,21 @@ function uc_order_delete($order_id) {
     uc_order_module_invoke('delete', $order, NULL);
 
     // Delete data from the appropriate Ubercart order tables.
-    db_query("DELETE FROM {uc_orders} WHERE order_id = %d", $order_id);
-    db_query("DELETE FROM {uc_order_products} WHERE order_id = %d", $order_id);
-    db_query("DELETE FROM {uc_order_comments} WHERE order_id = %d", $order_id);
-    db_query("DELETE FROM {uc_order_admin_comments} WHERE order_id = %d", $order_id);
-    db_query("DELETE FROM {uc_order_log} WHERE order_id = %d", $order_id);
+    db_delete('uc_orders')
+      ->condition('order_id', $order_id)
+      ->execute();
+    db_delete('uc_order_products')
+      ->condition('order_id', $order_id)
+      ->execute();
+    db_delete('uc_order_comments')
+      ->condition('order_id', $order_id)
+      ->execute();
+    db_delete('uc_order_admin_comments')
+      ->condition('order_id', $order_id)
+      ->execute();
+    db_delete('uc_order_log')
+      ->condition('order_id', $order_id)
+      ->execute();
 
     // Delete line items for the order.
     uc_order_delete_line_item($order_id, TRUE);
@@ -1172,13 +1204,22 @@ function uc_order_delete($order_id) {
  * Return an array of comments or admin comments for an order.
  */
 function uc_order_comments_load($order_id, $admin = FALSE) {
+  $query = db_select(($admin) ? 'uc_order_admin_comments' : 'uc_order_comments', 'oc')
+    ->condition('oc_order_id', $order_id);
+
+  $oc_order_id = $query->addField('oc', 'order_id');
+  $oc_comment_id = $query->addField('oc', 'comment_id');
+  $oc_created = $query->addField('oc', 'created');
+
+  $query->fields()
+    ->orderBy($oc_created)
+    ->orderBy($oc_comment_id);
+
   if (!$admin) {
-    $join = " LEFT JOIN {uc_order_statuses} AS os ON oc.order_status = os.order_status_id";
+    $query->leftJoin('uc_order_statuses', 'os', 'oc.order_status = os.order_status_id');
   }
-  $result = db_query("SELECT * FROM {". (($admin) ? 'uc_order_admin_comments' : 'uc_order_comments') ."} AS oc". $join ." WHERE oc.order_id = %d ORDER BY oc.created, oc.comment_id", $order_id);
-  while ($comment = db_fetch_object($result)) {
-    $comments[] = $comment;
-  }
+
+  $comments = $query->execute()->fetchAll();
 
   return $comments;
 }
@@ -1188,10 +1229,26 @@ function uc_order_comments_load($order_id, $admin = FALSE) {
  */
 function uc_order_comment_save($order_id, $uid, $message, $type = 'admin', $status = 'pending', $notify = FALSE) {
   if ($type == 'admin') {
-    db_query("INSERT INTO {uc_order_admin_comments} (order_id, uid, message, created) VALUES (%d, %d, '%s', %d)", $order_id, $uid, $message, REQUEST_TIME);
+    db_insert('uc_order_admin_comments')
+      ->fields(array(
+        'order_id' => $order_id,
+        'uid' => $uid,
+        'message' => $message,
+        'created' => REQUEST_TIME,
+      ))
+      ->execute();
   }
   elseif ($type == 'order') {
-    db_query("INSERT INTO {uc_order_comments} (order_id, uid, message, order_status, notified, created) VALUES (%d, %d, '%s', '%s', %d, %d)", $order_id, $uid, $message, $status, $notify ? 1 : 0, REQUEST_TIME);
+    db_insert('uc_order_comments')
+      ->fields(array(
+        'order_id' => $order_id,
+        'uid' => $uid,
+        'message' => $message,
+        'order_status' => $status,
+        'notified' => $notify ? 1 : 0,
+        'created' => REQUEST_TIME,
+      ))
+      ->execute();
   }
 }
 
@@ -1217,8 +1274,8 @@ function uc_order_load_line_items($order, $stored) {
   $items = array();
 
   if ($stored) {
-    $result = db_query("SELECT * FROM {uc_order_line_items} WHERE order_id = %d", $order->order_id);
-    while ($row = db_fetch_object($result)) {
+    $result = db_query("SELECT * FROM {uc_order_line_items} WHERE order_id = :id", array(':id' => $order->order_id));
+    foreach ($result as $row) {
       $items[] = array(
         'line_item_id' => $row->line_item_id,
         'type' => $row->type,
@@ -1293,7 +1350,13 @@ function uc_order_update_status($order_id, $status) {
     }
 
     // Otherwise perform the update and log the changes.
-    db_query("UPDATE {uc_orders} SET order_status = '%s', modified = %d WHERE order_id = %d", $status, REQUEST_TIME, $order_id);
+    db_update('uc_orders')
+      ->fields(array(
+        'order_status' => $status,
+        'modified' => REQUEST_TIME,
+      ))
+      ->condition('order_id', $order_id)
+      ->execute();
     uc_order_module_invoke('update', $order, $status);
 
     $change = array(t('Order status') => array('old' => uc_order_status_data($order->order_status, 'title'), 'new' => uc_order_status_data($status, 'title')));
@@ -1340,8 +1403,14 @@ function uc_order_log_changes($order_id, $changes) {
     }
   }
 
-  db_query("INSERT INTO {uc_order_log} (order_id, uid, changes, created) VALUES (%d, %d, '%s', %d)",
-    $order_id, $user->uid, theme('item_list', $items), REQUEST_TIME);
+  db_insert('uc_order_log')
+    ->fields(array(
+      'order_id' => $order_id,
+      'uid' => $user->uid,
+      'changes' => theme('item_list', $items),
+      'created' => REQUEST_TIME,
+    ))
+    ->execute();
 
   return TRUE;
 }
@@ -1398,9 +1467,9 @@ function uc_order_exists($order_id) {
     return FALSE;
   }
 
-  $result = db_query("SELECT order_id FROM {uc_orders} WHERE order_id = %d", $order_id);
+  $order = db_query("SELECT order_id FROM {uc_orders} WHERE order_id = :id", array(':id' => $order_id))->fetchField();
 
-  if ($order = db_fetch_object($result)) {
+  if ($order) {
     return TRUE;
   }
 
@@ -1651,7 +1720,7 @@ function uc_order_state_list($scope = 'all', $sql = FALSE) {
     foreach ($states as $state) {
       $ids[] = $state['id'];
     }
-    return "('". implode("', '", $ids) ."')";
+    return $ids;
   }
 
   return $states;
@@ -1733,16 +1802,15 @@ function uc_order_status_list($scope = 'all', $sql = FALSE, $action = '') {
         break;
       case 'general':
       case 'specific':
-        $result = db_query("SELECT * FROM {uc_order_statuses} WHERE state IN "
-                         . uc_order_state_list($scope, TRUE));
+        $result = db_query("SELECT * FROM {uc_order_statuses} WHERE state IN (:states)", array(':states' => uc_order_state_list($scope, TRUE)));
         break;
       default:
-        $result = db_query("SELECT * FROM {uc_order_statuses} WHERE state = '%s'", $scope);
+        $result = db_query("SELECT * FROM {uc_order_statuses} WHERE state = :scope", array(':scope' => $scope));
         break;
     }
 
     $statuses[$scope] = array();
-    while ($status = db_fetch_array($result)) {
+    while ($status = $result->fetchAssoc()) {
       $status['id'] = $status['order_status_id'];
       unset($status['order_status_id']);
       $statuses[$scope][] = $status;
@@ -1754,7 +1822,7 @@ function uc_order_status_list($scope = 'all', $sql = FALSE, $action = '') {
     foreach ($statuses[$scope] as $status) {
       $ids[] = $status['id'];
     }
-    return "('". implode("', '", $ids) ."')";
+    return $ids;
   }
 
   return $statuses[$scope];

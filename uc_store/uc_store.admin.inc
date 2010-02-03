@@ -64,61 +64,34 @@ function uc_store_admin() {
 /**
  * Display customer administration page.
  */
-function uc_store_customers($message = NULL, $query = NULL, $count_query = NULL, $page_length = 25) {
+function uc_store_customers($message = NULL, $query = NULL, $page_length = 25) {
   if (!module_exists('uc_order')) {
     return t('You must enable the order module to track customers.');
   }
 
-  if (is_null($query)) {
-    $query = "SELECT DISTINCT o.uid, u.mail, o.billing_first_name, "
-            ."o.billing_last_name, o.billing_city, o.billing_zone, "
-            ."o.billing_country FROM {uc_orders} AS o LEFT JOIN "
-            ."{users} AS u ON o.uid = u.uid WHERE o.uid > 0 AND "
-            ."o.order_status IN ". uc_order_status_list('general', TRUE);
+  $address = variable_get('uc_customer_list_address', 'billing');
+  if ($address == 'shipping') {
+    $address = 'delivery';
+  }
 
-    $count_query = "";
-    switch ($GLOBALS['db_type']) {
-      case 'mysql':
-      case 'mysqli':
-        $count_query = "SELECT COUNT(DISTINCT o.uid, o.billing_first_name, "
-                      ."o.billing_last_name, u.mail) FROM {uc_orders} AS o "
-                      ."LEFT JOIN {users} AS u ON o.uid = u.uid WHERE o.uid > 0 "
-                      ."AND o.order_status IN ". uc_order_status_list('general', TRUE);
-        break;
-      case 'pgsql':
-        $count_query = "SELECT DISTINCT o.uid, o.billing_last_name, o.billing_first_name, "
-                      ."COUNT(*) "
-                      ."FROM {uc_orders} AS o "
-                      ."LEFT JOIN {users} AS u ON o.uid = u.uid WHERE o.uid > 0 "
-                      ."AND o.order_status IN ". uc_order_status_list('general', TRUE)
-                      ." GROUP BY o.uid, o.billing_last_name, o.billing_first_name ";
-        break;
-    }
+  if (is_null($query)) {
+    $query = uc_store_customer_query();
   }
 
   $header = array(
     t('View'),
-    array('data' => t('Name'), 'field' => 'o.billing_last_name', 'sort' => 'asc'),
+    array('data' => t('Name'), 'field' => 'o.' . $address . '_last_name', 'sort' => 'asc'),
     array('data' => t('E-mail'), 'field' => 'u.mail'),
-    array('data' => t('City'), 'field' => 'o.billing_city'),
+    array('data' => t('City'), 'field' => 'o.' . $address . '_city'),
     array('data' => t('ID'), 'field' => 'o.uid'),
   );
 
-  $query .= tablesort_sql($header);
-  $count_query .= tablesort_sql($header);
+  $query = $query->extend('TableSort')
+    ->orderByHeader($header);
 
-  $address = variable_get('uc_customer_list_address', 'billing');
-  if ($address == 'shipping') {
-    $query = str_replace('billing', 'delivery', $query);
-    $count_query = str_replace('billing', 'delivery', $count_query);
-  }
-  else {
-    $address = 'billing';
-  }
+  $result = $query->execute();
 
-  $result = pager_query($query, $page_length, 0, $count_query);
-
-  while ($customer = db_fetch_object($result)) {
+  foreach ($result as $customer) {
     $icons = l(uc_store_get_icon('admin/store/customers', TRUE),
                'user/'. $customer->uid,
                array('html' => TRUE, 'attributes' => array('title' => t('View user details.')))
@@ -127,7 +100,7 @@ function uc_store_customers($message = NULL, $query = NULL, $count_query = NULL,
                'admin/store/customers/orders/'. $customer->uid,
                array('html' => TRUE, 'attributes' => array('title' => t("View customer's order.")))
              );
-    if ($address == 'shipping') {
+    if ($address == 'delivery') {
       $name = ucfirst($customer->delivery_last_name) .', '
             . ucfirst($customer->delivery_first_name);
       $city = ucfirst($customer->delivery_city) .', '
@@ -140,7 +113,7 @@ function uc_store_customers($message = NULL, $query = NULL, $count_query = NULL,
             . uc_get_zone_code($customer->billing_zone);
     }
     if ($name == ', ') {
-      $name = db_result(db_query("SELECT name FROM {users} WHERE uid = %d", $customer->uid));
+      $name = db_query("SELECT name FROM {users} WHERE uid = :uid", array(':uid' => $customer->uid))->fetchField();
       $name = t('User: !name', array('!name' => $name));
     }
     $rows[] = array(
@@ -172,6 +145,46 @@ function uc_store_customers($message = NULL, $query = NULL, $count_query = NULL,
   return $build;
 }
 
+function uc_store_customer_query() {
+  $address = variable_get('uc_customer_list_address', 'billing');
+  if ($address == 'shipping') {
+    $address = 'delivery';
+  }
+
+  $query = db_select('uc_orders', 'o')
+    ->leftJoin('users', 'u', 'o.uid = u.uid');
+
+  $o_uid = $query->addField('o', 'uid');
+  $o_status = $query->addField('o', 'order_status');
+  $query->fields('o', array(
+      $address . '_first_name',
+      $address . '_last_name',
+      $address . '_city',
+      $address . '_zone',
+      $address . '_country'
+    ))
+    ->addField('u', 'mail');
+
+  $query->condition($o_uid, 0, '>')
+    ->condition($o_status, uc_order_status_list('general', TRUE), 'IN');
+
+  $sub_query = clone $query;
+  $sub_query->groupBy('o_' . $address . '_last_name')
+    ->groupBy('o_' . $address . '_first_name')
+    ->groupBy('u_mail')
+    ->groupBy('o_uid');
+
+  $count_query = db_select($sub_query)
+    ->addExpression('COUNT(*)');
+
+  $query = $query->extend('PagerDefault')
+    ->distinct()
+    ->setCountQuery($count_query)
+    ->limit($page_length);
+
+  return $query;
+}
+
 /**
  * Display the customer search page.
  */
@@ -180,53 +193,31 @@ function uc_store_customer_search() {
   $build['form'] = drupal_get_form('uc_store_customer_search_form');
 
   if (arg(4) == 'results') {
-    $first_name = strtolower(str_replace('*', '%', check_plain(arg(5))));
-    $last_name = strtolower(str_replace('*', '%', check_plain(arg(6))));
-    $email = strtolower(str_replace('*', '%', check_plain(arg(7))));
+    $address = variable_get('uc_customer_list_address', 'billing');
+    if ($address == 'shipping') {
+      $address = 'delivery';
+    }
+
+    $query = uc_store_customer_query();
+
+    $first_name = str_replace('*', '%', db_like(arg(5)));
+    $last_name = str_replace('*', '%', db_like(arg(6)));
+    $email = str_replace('*', '%', db_like(arg(7)));
 
     if ($first_name !== '0' && $first_name !== '%') {
-      $where .= " AND LOWER(o.billing_first_name) LIKE '". $first_name ."'";
+      $query->condition('o_' . $address . '_first_name', $first_name, 'LIKE');
     }
     if ($last_name !== '0' && $last_name !== '%') {
-      $where .= " AND LOWER(o.billing_last_name) LIKE '". $last_name ."'";
+      $query->condition('o_' . $address . '_last_name', $first_name, 'LIKE');
     }
     if ($email !== '0' && $email !== '%') {
-      $where .= " AND LOWER(o.primary_email) LIKE '". $email ."'";
-    }
-
-    $query = "SELECT DISTINCT o.uid, u.mail, o.billing_first_name,"
-            ."o.billing_last_name, o.billing_city, o.billing_zone, "
-            ."o.billing_country FROM {uc_orders} AS o LEFT JOIN "
-            ."{users} AS u ON o.uid = u.uid WHERE o.uid > 0 AND "
-            ."o.order_status IN ". uc_order_status_list('general', TRUE)
-           . $where;// ." ORDER BY o.billing_last_name ASC";
-
-
-    $count_query = '';
-    switch ($GLOBALS['db_type']) {
-      case 'mysql':
-      case 'mysqli':
-        $count_query = "SELECT COUNT(DISTINCT o.uid, o.billing_first_name, "
-                       ."o.billing_last_name, u.mail) FROM {uc_orders} AS o "
-                       ."LEFT JOIN {users} AS u ON o.uid = u.uid WHERE o.uid > 0 AND "
-                       ."o.order_status IN ". uc_order_status_list('general', TRUE)
-                       . $where;// ." ORDER BY o.billing_last_name ASC";
-        break;
-      case 'pgsql':
-        $count_query = "SELECT DISTINCT o.uid, o.billing_first_name, "
-                      ."o.billing_last_name, u.mail, COUNT(*) "
-                      ."FROM {uc_orders} AS o "
-                      ."LEFT JOIN {users} AS u ON o.uid = u.uid WHERE o.uid > 0 AND "
-                      ."o.order_status IN ". uc_order_status_list('general', TRUE)
-                      . $where
-                      ."GROUP BY o.uid, o.billing_first_name, o.billing_last_name, u.mail ";
-                      //."ORDER BY o.billing_last_name ASC";
-        break;
+      $query->addField('o', 'primary_email', 'o_primary_email');
+      $query->condition('o_primary_email', $email, 'LIKE');
     }
 
     $message = t('Search returned the following results:');
 
-    $build['results'] = uc_store_customers($message, $query, $count_query, 100);
+    $build['results'] = uc_store_customers($message, $query, 100);
   }
 
   return $build;
@@ -407,10 +398,7 @@ function uc_country_settings_overview() {
  * @see uc_country_import_form_submit()
  */
 function uc_country_import_form() {
-  $result = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC");
-  while ($country = db_fetch_object($result)) {
-    $countries[] = $country;
-  }
+  $countries = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC")->fetchAll(PDO::FETCH_ASSOC);
   $files = _country_import_list();
 
   $header = array(t('Country'), t('Code'), t('Version'), t('Operations'));
@@ -494,8 +482,7 @@ function _uc_country_summarize() {
   $items = array();
 
   $result = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC");
-  while ($country = db_fetch_object($result)) {
-
+  foreach ($result as $country) {
     $items[] = $country->version > 0
     ? t(
       '!country version !version is enabled.',
@@ -561,10 +548,7 @@ function uc_country_formats_form() {
               . theme('table', $header, $rows) .'</p><p>'. t('*Adding _if to any country variable will make it only display for addresses<br />whose country is different than the default store country.') .'</div>',
   );
 
-  $result = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC");
-  while ($country = db_fetch_object($result)) {
-    $countries[] = $country;
-  }
+  $countries = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC")->fetchAll();
 
   if (is_array($countries)) {
     $form['countries'] = array(
@@ -936,8 +920,8 @@ function uc_store_initials() {
  * @see uc_store_initials()
  */
 function uc_store_initials_submit($form, &$form_state) {
-  $result = db_query("SELECT uid FROM {users} WHERE name = '%s'", $form_state['values']['username']);
-  if ($user = db_fetch_object($result)) {
+  $result = db_query("SELECT uid FROM {users} WHERE name = :name", array(':name' => $form_state['values']['username']));
+  if ($user = $result->fetchObject()) {
     if ($form_state['values']['initials'] == '') {
       variable_del('user_initials_'. $user->uid);
       drupal_set_message(t('Initials for !username deleted.', array('!username' => $form_state['values']['username'])));
@@ -965,10 +949,13 @@ function uc_store_tables() {
  * Display a list of orders made by a customer.
  */
 function uc_store_customer_orders($uid) {
-  $result = pager_query("SELECT * FROM {uc_orders} WHERE uid = %d AND "
-                       ."order_status IN ". uc_order_status_list('general', TRUE)
-                       ." ORDER BY created DESC", 50, 0,
-                        NULL, $uid);
+  $result = db_select('uc_orders')->extend('PagerDefault')
+    ->fields()
+    ->condition('uid', $uid)
+    ->condition('order_status', uc_order_status_list('general', TRUE), 'IN')
+    ->orderBy('created', 'DESC')
+    ->limit(50)
+    ->execute();
 
   $header = array(t('View'), t('Order ID'), t('Date'), t('Billing name'),
                   t('Shipping name'), t('Items'), t('Total'));
@@ -981,7 +968,7 @@ function uc_store_customer_orders($uid) {
     ),
   );
   $totals = array('orders' => 0, 'items' => 0, 'total' => 0);
-  while ($order = db_fetch_object($result)) {
+  foreach ($result as $order) {
     $icons = l(uc_store_get_icon('file:order_view'),
                'admin/store/orders/'. $order->order_id,
                array('html' => TRUE, 'attributes' => array('title' => t("View order !order_id.", array('!order_id' => $order->order_id))))
@@ -1000,12 +987,10 @@ function uc_store_customer_orders($uid) {
            . ucfirst($order->billing_last_name);
     $sname = ucfirst($order->delivery_first_name) .' '
            . ucfirst($order->delivery_last_name);
-    $result2 = db_query("SELECT COUNT(*) FROM {uc_order_products} WHERE "
-                       ."order_id = %d", $order->order_id);
-    $item_count = db_fetch_array($result2);
+    $item_count = db_query("SELECT COUNT(*) FROM {uc_order_products} WHERE order_id = :order_id", array(':order_id' => $order->order_id))->fetchField();
 
     $totals['orders'] += 1;
-    $totals['items'] += $item_count['COUNT(*)'];
+    $totals['items'] += $item_count;
     $totals['total'] += $order->order_total;
 
     $rows[] = array(
@@ -1068,11 +1053,15 @@ function uc_store_customer_orders($uid) {
  * Disable a country so it remains installed but is no longer selectable.
  */
 function uc_country_disable($country_id) {
-  $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = %d", $country_id);
-  if (($country = db_fetch_object($result))) {
+  $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id));
+  if ($country = $result->fetchObject()) {
     if ($country->version > 0) {
-      db_query("UPDATE {uc_countries} SET version = %d WHERE country_id = %d",
-               0 - $country->version, $country_id);
+      db_update('uc_countries')
+        ->fields(array(
+          'version' => -$country->version,
+        ))
+        ->condition('country_id', $country_id)
+        ->execute();
       drupal_set_message(t('!country disabled.', array('!country' => $country->country_name)));
     }
     else {
@@ -1089,10 +1078,15 @@ function uc_country_disable($country_id) {
  * Enable a disabled country.
  */
 function uc_country_enable($country_id) {
-  $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = %d", $country_id);
-  if (($country = db_fetch_object($result))) {
+  $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id));
+  if ($country = $result->fetchObject()) {
     if ($country->version < 0) {
-      db_query("UPDATE {uc_countries} SET version = %d WHERE country_id = %d", abs($country->version), $country_id);
+      db_update('uc_countries')
+        ->fields(array(
+          'version' => abs($country->version),
+        ))
+        ->condition('country_id', $country_id)
+        ->execute();
       drupal_set_message(t('@country enabled.', array('@country' => $country->country_name)));
     }
     else {
@@ -1113,11 +1107,11 @@ function uc_country_enable($country_id) {
  */
 function uc_country_remove_form($form_state, $country_id) {
   // Fetch the country name from the database.
-  $country = db_result(db_query("SELECT country_name FROM {uc_countries} WHERE country_id = %d", $country_id));
+  $country = db_query("SELECT country_name FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id))->fetchField();
 
   // If orders exist for this country, show a warning message prior to removal.
   if ($_POST['op'] != t('Remove') && module_exists('uc_order')) {
-    $count = db_result(db_query("SELECT COUNT(order_id) FROM {uc_orders} WHERE delivery_country = %d OR billing_country = %d", $country_id, $country_id));
+    $count = db_query("SELECT COUNT(order_id) FROM {uc_orders} WHERE delivery_country = :delivery_country OR billing_country = :billing_country", array(':delivery_country' => $country_id, ':billing_country' => $country_id))->fetchField();
     if ($count > 0) {
       drupal_set_message(t('Warning: @count orders were found with addresses in this country. Removing this country now will cause errors to show on those order pages. You might consider simply disabling this country instead.', array('@count' => $count)), 'error');
     }
@@ -1138,14 +1132,18 @@ function uc_country_remove_form($form_state, $country_id) {
 function uc_country_remove_form_submit($form, &$form_state) {
   $country_id = $form_state['values']['country_id'];
 
-  $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = %d", $country_id);
-  if (!($country = db_fetch_object($result))) {
+  $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id));
+  if (!($country = $result->fetchObject())) {
     drupal_set_message(t('Attempted to remove an invalid country.'), 'error');
     drupal_goto('admin/store/settings/countries/edit');
   }
 
-  db_query("DELETE FROM {uc_countries} WHERE country_id = %d", $country_id);
-  db_query("DELETE FROM {uc_zones} WHERE zone_country_id = %d", $country_id);
+  db_delete('uc_countries')
+    ->condition('country_id', $country_id)
+    ->execute();
+  db_delete('uc_zones')
+    ->condition('country_id', $country_id)
+    ->execute();
   variable_del('uc_address_format_'. $country_id);
 
   $func_base = _country_import_include($country_id, $country->version);
@@ -1164,7 +1162,7 @@ function uc_country_remove_form_submit($form, &$form_state) {
  * Update a country to its latest version.
  */
 function uc_country_update($country_id, $version) {
-  $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = %d", $country_id);
+  $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id));
   if (!($country = db_fetch_object($result))) {
     drupal_set_message(t('Attempted to update an invalid country.'));
     drupal_goto('admin/store/settings/countries');
@@ -1183,7 +1181,13 @@ function uc_country_update($country_id, $version) {
         $func($i);
       }
     }
-    db_query("UPDATE {uc_countries} SET version = %d WHERE country_id = %d", $version, $country_id);
+
+    db_update('uc_countries')
+      ->fields(array(
+        'version' => $version,
+      ))
+      ->condition('country_id', $country_id)
+      ->execute();
     drupal_set_message(t('Country update complete.'));
   }
   else {

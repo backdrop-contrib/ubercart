@@ -155,7 +155,7 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
           variable_get('uc_cart_new_account_password', FALSE)) &&
           $user->uid == 0) {
         // Skip if an account already exists for this e-mail address.
-        if (db_fetch_object(db_query("SELECT uid FROM {users} WHERE LOWER(mail) = LOWER('%s')", $arg2['primary_email'])) > 0) {
+        if (db_query("SELECT uid FROM {users} WHERE mail LIKE :email", array(':email' => $arg2['primary_email']))->fetchField()) {
           drupal_set_message(t('An account already exists for your e-mail address. The new account details you entered will be disregarded.'));
         }
         else {
@@ -166,7 +166,7 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
               drupal_set_message($message, 'error');
               return FALSE;
             }
-            if (db_fetch_object(db_query("SELECT uid FROM {users} WHERE LOWER(name) = LOWER('%s')", $arg2['new_account']['name'])) > 0) {
+            if (db_query("SELECT uid FROM {users} WHERE name LIKE :name", array(':name' => $arg2['new_account']['name']))->fetchField()) {
               drupal_set_message(t('The username %name is already taken. Please enter a different name or leave the field blank for your username to be your e-mail address.', array('%name' => $arg2['new_account']['name'])), 'error');
               return FALSE;
             }
@@ -408,7 +408,7 @@ function uc_checkout_pane_comments($op, &$arg1, $arg2) {
       $description = t('Use this area for special instructions or questions regarding your order.');
 
       if (!empty($arg1->order_id)) {
-        $default = db_result(db_query("SELECT message FROM {uc_order_comments} WHERE order_id = %d", $arg1->order_id));
+        $default = db_query("SELECT message FROM {uc_order_comments} WHERE order_id = :id", array(':id' => $arg1->order_id))->fetchField();
       }
       $contents['comments'] = array(
         '#type' => 'textarea',
@@ -420,14 +420,16 @@ function uc_checkout_pane_comments($op, &$arg1, $arg2) {
 
     case 'process':
       if (strlen($arg2['comments']) > 0) {
-        db_query("DELETE FROM {uc_order_comments} WHERE order_id = %d", $arg1->order_id);
+        db_delete('uc_order_comments')
+          ->condition('order_id', $arg1->order_id)
+          ->execute();
         uc_order_comment_save($arg1->order_id, 0, $arg2['comments'], 'order', uc_order_state_default('post_checkout'), TRUE);
       }
       return TRUE;
 
     case 'review':
-      $result = db_query("SELECT message FROM {uc_order_comments} WHERE order_id = %d", $arg1->order_id);
-      if ($comment = db_fetch_object($result)) {
+      $result = db_query("SELECT message FROM {uc_order_comments} WHERE order_id = :id", array(':id' => $arg1->order_id));
+      if ($comment = $result->fetchObject()) {
         $review[] = array('title' => t('Comment'), 'data' => check_plain($comment->message));
       }
       return $review;

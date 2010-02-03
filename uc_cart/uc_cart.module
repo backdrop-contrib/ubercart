@@ -276,15 +276,15 @@ function uc_cart_init() {
 function uc_cart_cron() {
   // Empty anonymous carts.
   $time = strtotime(variable_get('uc_cart_anon_duration', '4') .' '. variable_get('uc_cart_anon_unit', 'hours') .' ago');
-  $result = db_query("SELECT DISTINCT cart_id FROM {uc_cart_products} WHERE changed <= %d AND CHAR_LENGTH(cart_id) > 8", $time);
-  while ($row = db_fetch_object($result)) {
+  $result = db_query("SELECT DISTINCT cart_id FROM {uc_cart_products} WHERE changed <= :changed AND CHAR_LENGTH(cart_id) > :strlen", array(':changed' => $time, ':strlen' => 8));
+  foreach ($result as $row) {
     uc_cart_empty($row->cart_id);
   }
 
   // Empty authenticated carts.
   $time = strtotime(variable_get('uc_cart_auth_duration', '1') .' '. variable_get('uc_cart_auth_unit', 'years') .' ago');
-  $result = db_query("SELECT DISTINCT cart_id FROM {uc_cart_products} WHERE changed <= %d AND CHAR_LENGTH(cart_id) <= 8", $time);
-  while ($row = db_fetch_object($result)) {
+  $result = db_query("SELECT DISTINCT cart_id FROM {uc_cart_products} WHERE changed <= :changed AND CHAR_LENGTH(cart_id) <= :strlen", array(':changed' => $time, ':strlen' => 8));
+  foreach ($result as $row) {
     uc_cart_empty($row->cart_id);
   }
 }
@@ -314,7 +314,9 @@ function uc_cart_nodeapi(&$node, $op, $arg3, $arg4) {
   if (uc_product_is_product($node->type)) {
     switch ($op) {
       case 'delete':
-        db_query("DELETE FROM {uc_cart_products} WHERE nid = %d", $node->nid);
+        db_delete('uc_cart_products')
+          ->condition('nid', $node->nid)
+          ->execute();
       break;
     }
   }
@@ -875,7 +877,12 @@ function uc_cart_login_update($uid) {
   $items = uc_cart_get_contents($uid);
 
   // Update the cart so the ID is switched from the session to user ID.
-  db_query("UPDATE {uc_cart_products} SET cart_id = %d WHERE cart_id = '%s'", $uid, $_SESSION['uc_cart_id']);
+  db_update('uc_cart_products')
+    ->fields(array(
+      'cart_id' => $uid,
+    ))
+    ->condition('cart_id', $_SESSION['uc_cart_id'])
+    ->execute();
 
   // If there were items before the update, we need to re-add them all to
   // take care of item consolidation.
@@ -885,7 +892,9 @@ function uc_cart_login_update($uid) {
 
     // Remove from the table all the items in the cart.
     // Should be a function call instead of a single query. -RS
-    db_query("DELETE FROM {uc_cart_products} WHERE cart_id = '%s'", $uid);
+    db_delete('uc_cart_products')
+      ->condition('cart_id', $uid)
+      ->execute();
 
     // Reset the cart item cache.
     uc_cart_get_contents($uid, 'rebuild');
@@ -1193,10 +1202,10 @@ function uc_cart_complete_sale($order, $login = FALSE) {
   // Logic to create new user if necessary:
   if ($order->uid == 0) {
     // Check for an existing user account with the e-mail address from checkout.
-    $result = db_query("SELECT uid FROM {users} WHERE mail = '%s'", $order->primary_email);
+    $result = db_query("SELECT uid FROM {users} WHERE mail = :email", array(':email' => $order->primary_email));
 
     // If it was found, update the order.
-    if ($account = db_fetch_object($result)) {
+    if ($account = $result->fetchObject()) {
       $order->uid = $account->uid;
       $account = user_load($account->uid);
       db_query("UPDATE {uc_orders} SET uid = %d WHERE order_id = %d", $order->uid, $order->order_id);
@@ -1237,7 +1246,13 @@ function uc_cart_complete_sale($order, $login = FALSE) {
       // Update the order's uid in this request and in the database.
       $order->uid = $account->uid;
       unset($order->data['new_user']['pass']);
-      db_query("UPDATE {uc_orders} SET uid = %d, data = '%s' WHERE order_id = %d", $order->uid, serialize($order->data), $order->order_id);
+      db_update('uc_orders')
+        ->fields(array(
+          'uid' => $order->uid,
+          'data' => serialize($order->data),
+        ))
+        ->condition('order_id', $order->order_id)
+        ->execute();
 
       // Login the user if specified.
       if ($login) {
@@ -1276,7 +1291,7 @@ function uc_cart_complete_sale($order, $login = FALSE) {
   $themed_output = theme('uc_cart_complete_sale', $output_message);
 
   // Move an order's status from "In Checkout" to "Pending"
-  $status = db_result(db_query("SELECT order_status FROM {uc_orders} WHERE order_id = %d", $order->order_id));
+  $status = db_result(db_query("SELECT order_status FROM {uc_orders} WHERE order_id = :id", array(':id' => $order->order_id)));
   if (uc_order_status_data($status, 'state') == 'in_checkout') {
     uc_order_update_status($order->order_id, uc_order_state_default('post_checkout'));
   }
@@ -1336,9 +1351,9 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
 
   if (!isset($items[$cid])) {
     $items[$cid] = array();
-    $result = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c ON n.nid = c.nid WHERE c.cart_id = '%s'", $cid);
+    $result = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c ON n.nid = c.nid WHERE c.cart_id = :id", array(':id' => $cid));
 
-    while ($item = db_fetch_object($result)) {
+    foreach ($result as $item) {
       for ($i = 0; $i < count($items[$cid]); $i++) {
         if ($items[$cid][$i]->nid == $item->nid && $items[$cid][$i]->data == $item->data) {
           $items[$cid][$i]->qty += $item->qty;
@@ -1409,8 +1424,8 @@ function uc_cart_get_total_qty($cid = NULL) {
  *   Fully loaded cart item or NULL if item not found
  */
 function uc_cart_get_item($cart_item_id) {
-  $result = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c ON n.nid = c.nid WHERE c.cart_item_id = '%d'", $cart_item_id);
-  $item = db_fetch_object($result);
+  $result = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c ON n.nid = c.nid WHERE c.cart_item_id = :id", array(':id' => $cart_item_id));
+  $item = $result->fetchObject();
   if (empty($item)) {
     return;
   }
@@ -1442,8 +1457,14 @@ function uc_cart_get_item($cart_item_id) {
  * @return unknown_type
  */
 function uc_cart_update_item($item) {
-  db_query("UPDATE {uc_cart_products} SET qty = %d, changed = UNIX_TIMESTAMP(), data = '%s' WHERE cart_item_id = %d",
-    $item->qty, serialize($item->data), $item->cart_item_id);
+  db_update('uc_cart_products')
+    ->fields(array(
+      'qty' => $item->qty,
+      'changed' => time(),
+      'data' => serialize($item->data),
+    ))
+    ->condition('cart_item_id', $item->cart_item_id)
+    ->execute();
 }
 
 /**
@@ -1502,11 +1523,19 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
     }
   }
 
-  $item = db_fetch_object(db_query("SELECT * FROM {uc_cart_products} WHERE cart_id = '%s' AND nid = %d AND data = '%s'", $cid, $node->nid, serialize($data)));
+  $item = db_query("SELECT * FROM {uc_cart_products} WHERE cart_id = :cart_id AND nid = :nid AND data = :data", array(':cart_id' => $cid, ':nid' => $node->nid, ':data' => serialize($data)))->fetchObject();
 
   // If the item isn't in the cart yet, add it.
   if (is_null($item) || $item === FALSE) {
-    db_query("INSERT INTO {uc_cart_products} (cart_id, nid, qty, changed, data) VALUES ('%s', %d, %d, %d, '%s')", $cid, $node->nid, $qty, REQUEST_TIME, serialize($data));
+    db_insert('uc_cart_products')
+      ->fields(array(
+        'cart_id' => $cid,
+        'nid' => $node->nid,
+        'qty' => $qty,
+        'changed' => REQUEST_TIME,
+        'data' => serialize($data),
+      ))
+      ->execute();
     if ($msg) {
       drupal_set_message(t('<strong>@product-title</strong> added to <a href="!url">your shopping cart</a>.', array('@product-title' => $node->title, '!url' => url('cart'))));
     }
@@ -1552,8 +1581,8 @@ function uc_cart_remove_item($nid, $cid = NULL, $data = array()) {
   $cart_id = !(is_null($cid) || empty($cid)) ? $cid : uc_cart_get_id();
 
   // Invoke hook_cart_item() with $op = 'remove' in enabled modules.
-  $result = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c ON n.nid = c.nid WHERE c.cart_id = '%s' AND c.nid = %d", $cart_id, $nid);
-  if ($item = db_fetch_object($result)) {
+  $result = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c ON n.nid = c.nid WHERE c.cart_id = :cart_id AND c.nid = :nid", array(':cart_id' => $cart_id, ':nid' => $nid));
+  if ($item = $result->fetchObject()) {
     foreach (module_implements('cart_item') as $module) {
       $func = $module .'_cart_item';
       if (function_exists($func)) {
@@ -1563,7 +1592,11 @@ function uc_cart_remove_item($nid, $cid = NULL, $data = array()) {
     }
   }
 
-  db_query("DELETE FROM {uc_cart_products} WHERE cart_id = '%s' AND nid = %d AND data = '%s'", $cart_id, $nid, serialize($data));
+  db_delete('uc_cart_products')
+    ->condition('cart_id', $cart_id)
+    ->condition('nid', $nid)
+    ->condition('data', serialize($data))
+    ->execute();
 }
 
 /**
@@ -1600,7 +1633,9 @@ function uc_cart_empty($cart_id) {
   }
 
   // Probably don't need this query, but it will ensure anything not removed with the above loop is removed here.
-  db_query("DELETE FROM {uc_cart_products} WHERE cart_id = '%s'", $cart_id);
+  db_delete('uc_cart_products')
+    ->condition('cart_id', $cart_id)
+    ->execute();
 
   // Remove cached cart.
   uc_cart_get_contents($cart_id, 'rebuild');

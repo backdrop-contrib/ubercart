@@ -127,13 +127,17 @@ function uc_store_install() {
  * Implementation of hook_uninstall().
  */
 function uc_store_uninstall() {
-  db_query("DELETE FROM {variable} WHERE name LIKE 'user_initials_%%'");
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_address_format_%%'");
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_currency_%%'");
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_store_%%'");
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_weight_%%'");
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_length_%%'");
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_field_%%'");
+  db_delete('variable')
+    ->condition(db_or()
+      ->condition('name', 'user_initials_%', 'LIKE')
+      ->condition('name', 'uc_address_format_%', 'LIKE')
+      ->condition('name', 'uc_currency_%', 'LIKE')
+      ->condition('name', 'uc_store_%', 'LIKE')
+      ->condition('name', 'uc_weight_%', 'LIKE')
+      ->condition('name', 'uc_length_%', 'LIKE')
+      ->condition('name', 'uc_field_%', 'LIKE')
+    )
+    ->execute();
 
   variable_del('uc_customer_list_address');
   variable_del('uc_sign_after_amount');

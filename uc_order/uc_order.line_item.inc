@@ -113,12 +113,19 @@ function uc_line_items_calculate($order) {
  * Update a line item.
  */
 function uc_order_update_line_item($id, $title, $amount, $data = NULL) {
-  db_query("UPDATE {uc_order_line_items} SET title = '%s', amount = %f "
-          ."WHERE line_item_id = %d", $title, $amount, $id);
+  $fields = array(
+    'title' => $title,
+    'amount' => $amount,
+  );
 
   if (!is_null($data)) {
-    db_query("UPDATE {uc_order_line_items} SET data = '%s' WHERE line_item_id = %d", serialize($data), $id);
+    $fields['data'] = serialize($data);
   }
+
+  db_update('uc_order_line_items')
+    ->fields($fields)
+    ->condition('line_item_id', $id)
+    ->execute();
 
   return TRUE;
 }
@@ -129,11 +136,16 @@ function uc_order_update_line_item($id, $title, $amount, $data = NULL) {
  */
 function uc_order_delete_line_item($id, $order = FALSE) {
   if ($order === FALSE) {
-    db_query("DELETE FROM {uc_order_line_items} WHERE line_item_id = %d", $id);
+    db_delete('uc_order_line_items')
+      ->condition('line_item_id', $id)
+      ->execute();
   }
   else {
-    db_query("DELETE FROM {uc_order_line_items} WHERE order_id = %d", $id);
+    db_delete('uc_order_line_items')
+      ->condition('order_id', $id)
+      ->execute();
   }
+
   return TRUE;
 }
 
@@ -145,7 +157,15 @@ function uc_order_line_item_add($order_id, $type, $title, $amount, $weight = NUL
     $weight = _line_item_data($type, 'weight');
   }
 
-  db_query("INSERT INTO {uc_order_line_items} (order_id, type, title, amount, weight, data) VALUES (%d, '%s', '%s', %f, %d, '%s')", $order_id, $type, $title, $amount, $weight, serialize($data));
+  $line_item = array(
+    'order_id' => $order_id,
+    'type' => $type,
+    'title' => $title,
+    'amount' => $amount,
+    'weight' => $weight,
+    'data' => $data,
+  );
+  drupal_write_record('uc_order_line_items', $line_item);
 
   return TRUE;
 }

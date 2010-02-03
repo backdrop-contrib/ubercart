@@ -25,7 +25,7 @@ function ca_admin($groupby = 'trigger') {
 
   // Load and loop through all the database stored predicates.
   $result = db_query("SELECT * FROM {ca_predicates}");
-  while ($predicate = db_fetch_array($result)) {
+  while ($predicate = $result->fetchAssoc()) {
     // Prepare the database data into a predicate.
     $predicate = ca_prepare_db_predicate($predicate);
 

@@ -22,12 +22,14 @@ function uc_product_administration() {
     $order = 'p.ordering, n.title, n.nid';
   }
 
-  $nids = array();
   // Display 50 products per page.
-  $result = pager_query("SELECT n.nid FROM {node} AS n INNER JOIN {uc_products} AS p ON n.vid = p.vid ORDER BY ". $order, 50, 0, NULL);
-  while ($product = db_fetch_object($result)) {
-    $nids[] = $product->nid;
-  }
+  $query = db_select('node', 'n')->extend('PagerDefault')->extend('TableSort')
+    ->fields('n', array('nid'))
+    ->orderByHeader($header)
+    ->limit(50);
+  $query->join('uc_products', 'p', 'n.vid = p.vid');
+
+  $nids = $query->execute()->fetchCol();
 
   // Display the product table and pager if necessary.
   $build['table'] += tapir_get_table('uc_product_table', $nids);
@@ -46,7 +48,7 @@ function uc_product_class_default() {
   $result = db_query("SELECT * FROM {uc_product_classes}");
   $header = array(t('Class ID'), t('Name'), t('Description'), t('Operations'));
   $rows = array();
-  while ($class = db_fetch_object($result)) {
+  foreach ($result as $class) {
     $ops = array(
       l(t('edit'), 'admin/store/products/classes/'. $class->pcid .'/edit'),
       l(t('delete'), 'admin/store/products/classes/'. $class->pcid .'/delete'),
@@ -400,8 +402,11 @@ function uc_product_features($node) {
   if (arg(4)) {
     // First check to see if we're trying to remove a feature.
     if (intval(arg(5)) > 0 && arg(6) == 'delete') {
-      $result = db_query("SELECT * FROM {uc_product_features} WHERE pfid = %d AND fid = '%s'", intval(arg(5)), arg(4));
-      if ($feature = db_fetch_array($result)) {
+      $result = db_query("SELECT * FROM {uc_product_features} WHERE pfid = :pfid AND fid = :fid", array(
+        ':pfid' => arg(5),
+        ':fid' => arg(4),
+      ));
+      if ($feature = $result->fetchAssoc()) {
         // If the user confirmed the delete, process it!
         if ($_POST['pf_delete']) {
           // Call the delete function for this product feature if it exists.
@@ -411,7 +416,9 @@ function uc_product_features($node) {
           }
 
           // Remove the product feature data from the database.
-          db_query("DELETE FROM {uc_product_features} WHERE pfid = %d", intval(arg(5)));
+          db_delete('uc_product_features')
+            ->condition('pfid', arg(5))
+            ->execute();
 
           drupal_set_message(t('The product feature has been deleted.'));
           drupal_goto('node/'. arg(1) .'/edit/features');
@@ -436,9 +443,12 @@ function uc_product_features($node) {
         $build = drupal_get_form($func, $node, array());
       }
       elseif (intval(arg(5)) > 0) {
-        $result = db_query("SELECT * FROM {uc_product_features} WHERE pfid = %d AND fid = '%s'", intval(arg(5)), arg(4));
-        if ($feature = db_fetch_array($result)) {
-          $build = drupal_get_form($func, $node, $feature);
+        $result = db_query("SELECT * FROM {uc_product_features} WHERE pfid = :pfid AND fid = :fid", array(
+          ':pfid' => arg(5),
+          ':fid' => arg(4),
+        ));
+        if ($feature = $result->fetchAssoc()) {
+          $output = drupal_get_form($func, $node, $feature);
         }
       }
     }
@@ -457,8 +467,8 @@ function uc_product_features($node) {
 
   $header = array(t('Type'), t('Description'), t('Operations'));
 
-  $result = db_query("SELECT * FROM {uc_product_features} WHERE nid = %d ORDER BY pfid ASC", $node->nid);
-  while ($feature = db_fetch_object($result)) {
+  $result = db_query("SELECT * FROM {uc_product_features} WHERE nid = :nid ORDER BY pfid ASC", array(':nid' => $node->nid));
+  foreach ($result as $feature) {
     $operations = array(
       l(t('edit'), 'node/'. $node->nid .'/edit/features/'. $feature->fid .'/'. $feature->pfid),
       l(t('delete'), 'node/'. $node->nid .'/edit/features/'. $feature->fid .'/'. $feature->pfid .'/delete'),
@@ -627,12 +637,20 @@ function uc_product_class_form_submit($form, &$form_state) {
 
   $pcid = $form_state['values']['pcid'];
 
-  if ($is_new) {
-    // Convert whitespace to underscores, and remove other non-alphanumeric characters.
-    $pcid = preg_replace(array('/\s+/', '/\W/'), array('_', ''), strtolower($pcid));
+  // Convert whitespace to underscores, and remove other non-alphanumeric characters.
+  $pcid = preg_replace(array('/\s+/', '/\W/'), array('_', ''), strtolower($pcid));
 
-    db_query("INSERT INTO {uc_product_classes} (pcid, name, description) VALUES ('%s', '%s', '%s')", $pcid, $form_state['values']['name'], $form_state['values']['description']);
-    uc_product_node_info(TRUE);
+  $result = db_merge('uc_product_classes')
+    ->key(array('pcid' => $pcid))
+    ->fields(array(
+      'name' => $form_state['values']['name'],
+      'description' => $form_state['values']['description'],
+    ))
+    ->execute();
+
+  uc_product_node_info(TRUE);
+
+  if ($result == MergeQuery::STATUS_INSERT) {
     variable_set('node_options_'. $pcid, variable_get('node_options_product', array('status', 'promote')));
 
     if (module_exists('comment')) {
@@ -642,9 +660,6 @@ function uc_product_class_form_submit($form, &$form_state) {
     module_invoke_all('product_class', $pcid, 'insert');
   }
   else {
-    db_query("UPDATE {uc_product_classes} SET name = '%s', description = '%s' WHERE pcid = '%s'", $form_state['values']['name'], $form_state['values']['description'], $pcid);
-    uc_product_node_info(TRUE);
-
     module_invoke_all('product_class', $pcid, 'update');
   }
 
@@ -674,7 +689,7 @@ function uc_product_class_delete_confirm($form_state, $class) {
   $description = t('The node type associated with this product class will revert to a standard node type.');
 
   // Find out how many nodes of this class exist and add to the description.
-  $count = db_result(db_query("SELECT COUNT(*) FROM {node} WHERE type = '%s'", $class->pcid));
+  $count = db_query("SELECT COUNT(*) FROM {node} WHERE type = :pcid", array(':pcid' => $class->pcid))->fetchField();
 
   if ($count > 0) {
     $description .= '<br />'. format_plural($count, 'There is @count node of this type.', 'There are @count nodes of this type.');
@@ -692,7 +707,9 @@ function uc_product_class_delete_confirm_submit($form, &$form_state) {
   $type->custom = 1;
   node_type_save($type);
 
-  db_query("DELETE FROM {uc_product_classes} WHERE pcid = '%s'", $form_state['values']['pcid']);
+  db_delete('uc_product_classes')
+    ->condition('pcid', $form_state['values']['pcid'])
+    ->execute();
   module_invoke_all('product_class', $form_state['values']['pcid'], 'delete');
   uc_product_node_info(TRUE);
   node_types_rebuild();

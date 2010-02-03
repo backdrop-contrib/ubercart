@@ -248,35 +248,9 @@ function uc_product_init() {
  * Set up default imagefield and imagecache settings.
  */
 function uc_product_enable() {
-  // For some time in Drupal 5, CCK would delete its field data if a node
-  // type was unavailable because its module was disabled. This function
-  // worked around that by giving the product classes to node.module when
-  // uc_product was disabled. This is no longer necessary as of CCK 5.x-1.9,
-  // but the workaround was left in to prevent accidents. This block of
-  // code is here to reclaim the product nodes after an upgrade to Drupal
-  // 6, and then should not be used again as the corresponding code in
-  // uc_product_disable() was removed.
-  if (variable_get('uc_product_enable_nodes', TRUE)) {
-    $node_types = node_get_types('types');
-    $product_classes = array('product');
-    $result = db_query("SELECT pcid, name, description FROM {uc_product_classes}");
-    while ($product_class = db_fetch_object($result)) {
-      $product_classes[] = $product_class->pcid;
-    }
-    foreach ($node_types as $type => $info) {
-      if ($info->module == 'node' && in_array($type, $product_classes)) {
-        $info->module = 'uc_product';
-        $info->custom = 0;
-        node_type_save($info);
-      }
-    }
-    variable_set('uc_product_enable_nodes', FALSE);
-  }
-
   if (module_exists('imagefield')) {
     uc_product_add_default_image_field();
   }
-
 }
 
 /**
@@ -346,7 +320,7 @@ function uc_product_node_info($reset = FALSE) {
     );
 
     $result = db_query("SELECT pcid, name, description FROM {uc_product_classes}");
-    while ($class = db_fetch_object($result)) {
+    foreach ($result as $class) {
       $types[$class->pcid] = array(
         'name' => $class->name,
         'module' => 'uc_product',
@@ -637,27 +611,31 @@ function uc_product_validate($node) {
  * Implementation of hook_insert().
  */
 function uc_product_insert($node) {
+  $node->length = $node->dim_length;
+  $node->width = $node->dim_width;
+  $node->height = $node->dim_height;
+
   if (!isset($node->unique_hash)) {
-    $node->unique_hash = md5($node->vid . $node->nid . $node->model . $node->list_price . $node->cost . $node->sell_price . $node->weight . $node->weight_units . $node->dim_length . $node->dim_width . $node->dim_height . $node->length_units . $node->pkg_qty . $node->default_qty . $node->shippable . REQUEST_TIME);
+    $node->unique_hash = md5($node->vid . $node->nid . $node->model . $node->list_price . $node->cost . $node->sell_price . $node->weight . $node->weight_units . $node->length . $node->width . $node->height . $node->length_units . $node->pkg_qty . $node->default_qty . $node->shippable . REQUEST_TIME);
   }
-  db_query("INSERT INTO {uc_products} (vid, nid, model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, unique_hash, ordering, shippable) VALUES (%d, %d, '%s', %f, %f, %f, %f, '%s', %f, %f, %f, '%s', %d, %d, '%s', %d, %d)",
-    $node->vid, $node->nid, $node->model, $node->list_price, $node->cost, $node->sell_price, $node->weight, $node->weight_units, $node->dim_length, $node->dim_width, $node->dim_height, $node->length_units, $node->pkg_qty, $node->default_qty, $node->unique_hash, $node->ordering, $node->shippable
-  );
+
+  drupal_write_record('uc_products', $node);
 }
 
 /**
  * Implementation of hook_update().
  */
 function uc_product_update($node) {
+  $node->length = $node->dim_length;
+  $node->width = $node->dim_width;
+  $node->height = $node->dim_height;
+
   if ($node->revision) {
-    db_query("INSERT INTO {uc_products} (vid, nid, model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, unique_hash, ordering, shippable) VALUES (%d, %d, '%s', %f, %f, %f, %f, '%s', %f, %f, %f, '%s', %d, %d, '%s', %d, %d)",
-      $node->vid, $node->nid, $node->model, $node->list_price, $node->cost, $node->sell_price, $node->weight, $node->weight_units, $node->dim_length, $node->dim_width, $node->dim_height, $node->length_units, $node->pkg_qty, $node->default_qty, $node->unique_hash, $node->ordering, $node->shippable
-    );
+    drupal_write_record('uc_products', $node);
   }
   else {
     //drupal_set_message('<pre>'. print_r($node, TRUE) .'</pre>');drupal_set_message('<pre>'. print_r($node, TRUE) .'</pre>');
-    db_query("UPDATE {uc_products} SET model = '%s', list_price = %f, cost = %f, sell_price = %f, weight = %f, weight_units = '%s', length = %f, width = %f, height = %f, length_units = '%s', pkg_qty = %d, default_qty = %d, ordering = %d, shippable = %d WHERE vid = %d",
-      $node->model, $node->list_price, $node->cost, $node->sell_price, $node->weight, $node->weight_units, $node->dim_length, $node->dim_width, $node->dim_height, $node->length_units, $node->pkg_qty, $node->default_qty, $node->ordering, $node->shippable, $node->vid);
+    drupal_write_record('uc_products', $node, 'vid');
   }
 }
 
@@ -665,14 +643,16 @@ function uc_product_update($node) {
  * Implementation of hook_load().
  */
 function uc_product_load(&$node) {
-  return db_fetch_object(db_query('SELECT model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, unique_hash, ordering, shippable FROM {uc_products} WHERE vid = %d', $node->vid));
+  return db_query('SELECT model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, unique_hash, ordering, shippable FROM {uc_products} WHERE vid = :vid', array(':vid' => $node->vid))->fetchObject();
 }
 
 /**
  * Implementation of hook_delete().
  */
 function uc_product_delete(&$node) {
-  db_query("DELETE from {uc_products} WHERE nid = %d", $node->nid);
+  db_delete('uc_products')
+    ->condition('nid', $node->nid)
+    ->execute();
 }
 
 /**
@@ -1205,7 +1185,15 @@ function uc_product_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
     uc_cart_remove_item($nid, $cid, $data);
   }
   else {
-    db_query("UPDATE {uc_cart_products} SET qty = %d, changed = %d WHERE nid = %d AND cart_id = '%s' AND data = '%s'", $qty, REQUEST_TIME, $nid, $cid, serialize($data));
+    db_update('uc_cart_products')
+      ->fields(array(
+        'qty' => $qty,
+        'changed' => REQUEST_TIME,
+      ))
+      ->condition('nid', $nid)
+      ->condition('cart_id', $cid)
+      ->condition('data', serialize($data))
+      ->execute();
   }
 }
 
@@ -1223,9 +1211,15 @@ function uc_product_add_to_cart_data($form_values) {
 function uc_product_product_class($pcid, $op) {
   switch ($op) {
     case 'insert':
-      db_query("UPDATE {node_type} SET module = 'uc_product', custom = 0 WHERE type = '%s'", $pcid);
-      $result = db_query("SELECT n.vid, n.nid, p.unique_hash FROM {node} AS n LEFT JOIN {uc_products} AS p ON n.vid = p.vid WHERE n.type = '%s'", $pcid);
-      while ($node = db_fetch_object($result)) {
+      db_update('node_type')
+        ->fields(array(
+          'module' => 'uc_product',
+          'custom' => 0,
+        ))
+        ->condition('type', $pcid)
+        ->execute();
+      $result = db_query("SELECT n.vid, n.nid, p.unique_hash FROM {node} AS n LEFT JOIN {uc_products} AS p ON n.vid = p.vid WHERE n.type = :pcid", array(':pcid' => $pcid));
+      foreach ($result as $node) {
         if (!$node->unique_hash) {
           $node->weight_units = variable_get('uc_weight_unit', 'lb');
           $node->length_units = variable_get('uc_length_unit', 'in');
@@ -1844,8 +1838,7 @@ function uc_product_class_load($class_id) {
   static $classes = array();
 
   if (empty($classes[$class_id])) {
-    $result = db_query("SELECT * FROM {uc_product_classes} WHERE pcid = '%s'", $class_id);
-    $class = db_fetch_object($result);
+    $class = db_query("SELECT * FROM {uc_product_classes} WHERE pcid = :pcid", array(':pcid' => $class_id))->fetchObject();
     $classes[$class_id] = $class;
   }
 
@@ -1932,12 +1925,18 @@ function uc_product_feature_save($data) {
   }
 
   // First attempt to update an existing row.
-  db_query("UPDATE {uc_product_features} SET description = '%s' WHERE pfid = %d", $data['description'], intval($data['pfid']));
+  $result = db_merge('uc_product_features')
+    ->key(array('pfid' => $data['pfid']))
+    ->fields(array(
+      'nid' => $data['nid'],
+      'fid' => $data['fid'],
+      'description' => $data['description'],
+    ))
+    ->update(array('description' => $data['description']))
+    ->execute();
 
   // Otherwise insert this feature as a new row.
-  if (db_affected_rows() == 0) {
-    db_query("INSERT INTO {uc_product_features} (nid, fid, description) VALUES (%d, '%s', '%s')",
-             $data['nid'], $data['fid'], $data['description']);
+  if ($result == MergeQuery::STATUS_INSERT) {
     drupal_set_message(t('The product feature has been added.'));
   }
   else {

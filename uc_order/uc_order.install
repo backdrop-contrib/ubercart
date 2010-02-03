@@ -590,19 +590,71 @@ function uc_order_schema() {
  */
 function uc_order_install() {
   $t = get_t();
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('canceled', '%s', 'canceled', -20, 1);", $t('Canceled'));
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('in_checkout', '%s', 'in_checkout', -10, 1);", $t('In checkout'));
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('pending', '%s', 'post_checkout', 0, 1);", $t('Pending'));
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('processing', '%s', 'post_checkout', 5, 1);", $t('Processing'));
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('completed', '%s', 'completed', 20, 1);", $t('Completed'));
+
+  $query = db_insert('uc_order_statuses')
+    ->fields(array(
+      'order_status_id',
+      'title',
+      'state',
+      'weight',
+      'locked',
+    ));
+
+  $values = array(
+    array(
+      'order_status_id' => 'canceled',
+      'title' => $t('Canceled'),
+      'status' => 'canceled',
+      'weight' => -20,
+      'locked' => 1,
+    ),
+    array(
+      'order_status_id' => 'in_checkout',
+      'title' => $t('In Checkout'),
+      'status' => 'in_checkout',
+      'weight' => -10,
+      'locked' => 1,
+    ),
+    array(
+      'order_status_id' => 'pending',
+      'title' => $t('Pending'),
+      'status' => 'post_checkout',
+      'weight' => 0,
+      'locked' => 1,
+    ),
+    array(
+      'order_status_id' => 'processing',
+      'title' => $t('Processing'),
+      'status' => 'post_checkout',
+      'weight' => 5,
+      'locked' => 1,
+    ),
+    array(
+      'order_status_id' => 'completed',
+      'title' => $t('Completed'),
+      'status' => 'completed',
+      'weight' => 20,
+      'locked' => 1,
+    ),
+  );
+
+  foreach ($values as $record) {
+    $query->values($record);
+  }
+  $query->execute();
 }
 
 /**
  * Implementation of hook_uninstall().
  */
 function uc_order_uninstall() {
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_order_pane_%'");
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_state_%'");
+  db_query('variable')
+    ->condition(db_or()
+      ->condition('name', 'uc_order_pane_%', 'LIKE')
+      ->condition('name', 'uc_state_%', 'LIKE')
+    )
+    ->execute();
+
   variable_del('uc_order_number_displayed');
   variable_del('uc_order_logging');
   variable_del('uc_order_capitalize_addresses');

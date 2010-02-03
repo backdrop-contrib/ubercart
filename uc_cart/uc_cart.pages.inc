@@ -290,7 +290,9 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
     $order->order_status = uc_order_state_default('in_checkout');
   }
 
-  db_query("DELETE FROM {uc_order_products} WHERE order_id = %d", $order->order_id);
+  db_delete('uc_order_products')
+    ->condition('order_id', $order->order_id)
+    ->execute();
   $order->products = unserialize($form_state['values']['cart_contents']);
 
   $context = array(

@@ -462,7 +462,7 @@ function uc_order_condition_delivery_zone($order, $settings) {
  */
 function uc_order_condition_delivery_zone_form($form_state, $settings = array()) {
   $result = db_query("SELECT z.*, c.country_name FROM {uc_zones} AS z LEFT JOIN {uc_countries} AS c ON z.zone_country_id = c.country_id ORDER BY c.country_name, z.zone_name");
-  while ($zone = db_fetch_object($result)) {
+  foreach ($result as $zone) {
     $options[$zone->country_name][$zone->zone_id] = $zone->zone_name;
   }
 
@@ -542,7 +542,7 @@ function uc_order_condition_billing_zone($order, $settings) {
  */
 function uc_order_condition_billing_zone_form($form_state, $settings = array()) {
   $result = db_query("SELECT z.*, c.country_name FROM {uc_zones} AS z LEFT JOIN {uc_countries} AS c ON z.zone_country_id = c.country_id ORDER BY c.country_name, z.zone_name");
-  while ($zone = db_fetch_object($result)) {
+  foreach ($result as $zone) {
     $options[$zone->country_name][$zone->zone_id] = $zone->zone_name;
   }
 
@@ -629,7 +629,7 @@ function uc_order_condition_has_products_form($form_state, $settings) {
 
   $options = array();
   $result = db_query("SELECT nid FROM {uc_products}");
-  while ($product = db_fetch_object($result)) {
+  foreach ($result as $product) {
     $options += uc_product_get_models(node_load($product->nid), FALSE);
   }
 
@@ -681,10 +681,8 @@ function uc_order_condition_count_products($order, $settings) {
  */
 function uc_order_condition_count_products_form($form_state, $settings = array()) {
   $options = array('all' => t('- All products -'));
-  $result = db_query("SELECT nid, model FROM {uc_products} ORDER BY model");
-  while ($product = db_fetch_object($result)) {
-    $options[$product->nid] = $product->model;
-  }
+  $options += db_query("SELECT nid, model FROM {uc_products} ORDER BY model")->fetchAllKeyed();
+
   $form['products'] = array('#type' => 'select',
     '#title' => t('Products'),
     '#options' => $options,
@@ -757,10 +755,8 @@ function uc_order_condition_products_weight($order, $settings) {
  */
 function uc_order_condition_products_weight_form($form_state, $settings = array()) {
   $options = array('all' => t('- All products -'));
-  $result = db_query("SELECT nid, model FROM {uc_products}");
-  while ($product = db_fetch_object($result)) {
-    $options[$product->nid] = $product->model;
-  }
+  $options += db_query("SELECT nid, model FROM {uc_products}")->fetchAllKeyed();
+
   $form['products'] = array('#type' => 'select',
     '#title' => t('Products'),
     '#options' => $options,

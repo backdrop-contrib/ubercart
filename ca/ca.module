@@ -273,8 +273,8 @@ function ca_load_trigger_predicates($trigger, $all = FALSE) {
   }
 
   // Load and loop through the predicates from the database for this trigger.
-  $result = db_query("SELECT * FROM {ca_predicates} WHERE ca_trigger = '%s'", $trigger);
-  while ($data = db_fetch_array($result)) {
+  $result = db_query("SELECT * FROM {ca_predicates} WHERE ca_trigger = :trigger", array(':trigger' => $trigger), array('fetch' => PDO::FETCH_ASSOC));
+  foreach ($result as $data) {
     // Module defined predicates have string IDs.  When a user modifies one of
     // these, we unset the module defined predicate and reconsider adding it in.
     if (!is_numeric($data['pid'])) {
@@ -958,8 +958,8 @@ function ca_load_predicate($pid) {
   $predicate = array();
 
   // First attempt to load the predicate from the database.
-  $result = db_query("SELECT * FROM {ca_predicates} WHERE pid = '%s'", $pid);
-  if ($predicate = db_fetch_array($result)) {
+  $result = db_query("SELECT * FROM {ca_predicates} WHERE pid = :pid", array(':pid' => $pid));
+  if ($predicate = $result->fetchAssoc()) {
     $predicate = ca_prepare_db_predicate($predicate);
   }
   else {
@@ -986,19 +986,23 @@ function ca_load_predicate($pid) {
  *   A fully loaded predicate array.
  */
 function ca_save_predicate($predicate) {
-  // Check to see if the predicate has been previously saved to the database.
-  $result = db_result(db_query("SELECT COUNT(*) FROM {ca_predicates} WHERE pid = '%s'", $predicate['#pid']));
-
-  if (!$result) {
-    // If not, then insert it.
-    db_query("INSERT INTO {ca_predicates} (pid, title, description, class, status, weight, uid, ca_trigger, conditions, actions, created, modified) VALUES ('%s', '%s', '%s', '%s', %d, %d, %d, '%s', '%s', '%s', %d, %d)",
-      $predicate['#pid'], $predicate['#title'], $predicate['#description'], $predicate['#class'], $predicate['#status'], $predicate['#weight'], $predicate['#uid'], $predicate['#trigger'], serialize($predicate['#conditions']), serialize($predicate['#actions']), REQUEST_TIME, REQUEST_TIME);
-  }
-  else {
-    // Otherwise, update it.
-    db_query("UPDATE {ca_predicates} SET title = '%s', description = '%s', class = '%s', status = %d, weight = %d, uid = %d, ca_trigger = '%s', conditions = '%s', actions = '%s', modified = %d WHERE pid = '%s'",
-      $predicate['#title'], $predicate['#description'], $predicate['#class'], $predicate['#status'], $predicate['#weight'], $predicate['#uid'], $predicate['#trigger'], serialize($predicate['#conditions']), serialize($predicate['#actions']), REQUEST_TIME, $predicate['#pid']);
-  }
+  db_merge('ca_predicates')
+    ->key(array('pid' => $predicate['#pid']))
+    ->fields(array(
+      'title' => $predicate['#title'],
+      'description' => $predicate['#description'],
+      'class' => $predicate['#class'],
+      'status' => $predicate['#status'],
+      'weight' => $predicate['#weight'],
+      'uid' => $predicate['#uid'],
+      'ca_trigger' => $predicate['#trigger'],
+      'conditions' => serialize($predicate['#conditions']),
+      'actions' => serialize($predicate['#actions']),
+      'created' => REQUEST_TIME,
+      'modified' => REQUEST_TIME,
+    ))
+    ->updateExcept('created')
+    ->execute();
 }
 
 /**
@@ -1008,7 +1012,9 @@ function ca_save_predicate($predicate) {
  *   The ID of the predicate to delete.
  */
 function ca_delete_predicate($pid) {
-  db_query("DELETE FROM {ca_predicates} WHERE pid = '%s'", $pid);
+  db_delete('ca_predicates')
+    ->condition('pid', $pid)
+    ->execute();
 }
 
 /**

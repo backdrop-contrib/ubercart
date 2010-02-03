@@ -546,11 +546,16 @@ function uc_store_page_alter(&$page) {
         $message = $messages[$message];
       }
       else {
-        $message = db_result(db_query("SELECT message FROM {uc_store_footers} WHERE path_hash = '%s'", md5($path)));
+        $message = db_query("SELECT message FROM {uc_store_footers} WHERE path_hash = :hash", array(':hash' => md5($path)))->fetchField();
         if (!$message) {
           unset($messages['none']);
           $message = $messages[array_rand($messages)];
-          db_query("INSERT INTO {uc_store_footers} (path_hash, message) VALUES ('%s', '%s')", md5($path), $message);
+          db_insert('uc_store_footers')
+            ->fields(array(
+              'path_hash' => md5($path),
+              'message' => $message,
+            ))
+            ->execute();
         }
       }
 
@@ -1065,12 +1070,12 @@ function uc_set_address_format($country_id, $format) {
  * Format an address for display based on a country's address format.
  */
 function uc_address_format($first_name, $last_name, $company, $street1, $street2, $city, $zone, $postal_code, $country) {
-  $result = db_query("SELECT * FROM {uc_zones} WHERE zone_id = %d", $zone);
-  if (!($zone_data = db_fetch_array($result))) {
+  $result = db_query("SELECT * FROM {uc_zones} WHERE zone_id = :id", array(':id' => $zone));
+  if (!($zone_data = $result->fetchAssoc())) {
     $zone_data = array('zone_code' => t('N/A'), 'zone_name' => t('Unknown'));
   }
-  $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = %d", $country);
-  if (!($country_data = db_fetch_array($result))) {
+  $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = :id", array(':id' => $country));
+  if (!($country_data = $result->fetchAssoc())) {
     $country_data = array(
       'country_name' => t('Unknown'),
       'country_iso_code_2' => t('N/A'),
@@ -1128,10 +1133,10 @@ function uc_get_zone_code($zone = NULL) {
   }
 
   if (is_numeric($zone)) {
-    $result = db_query("SELECT zone_code FROM {uc_zones} WHERE zone_id = %d", $zone);
+    $result = db_query("SELECT zone_code FROM {uc_zones} WHERE zone_id = :id", array(':id' => $zone));
   }
   else {
-    $result = db_query("SELECT zone_code FROM {uc_zones} WHERE zone_name = '%s'", $zone);
+    $result = db_query("SELECT zone_code FROM {uc_zones} WHERE zone_name = :name", array(':name' => $zone));
   }
 
   if ($row = db_fetch_object($result)) {
@@ -1155,29 +1160,20 @@ function uc_get_country_data($match = array(), $sort = 'country_name') {
     $sort = 'country_name';
   }
 
-  $query = 'SELECT * FROM {uc_countries}';
+  $query = db_select('uc_countries')
+    ->fields()
+    ->orderBy($sort);
   if (count($match) > 0) {
     $where = '';
     foreach ($match as $key => $value) {
       if (!in_array($key, $valid_fields)) {
         continue;
       }
-      if (strlen($where) == 0) {
-        $where = ' WHERE ';
-      }
-      if (strlen($where) > 7) {
-        $where .= ' AND ';
-      }
-      $where .= $key ." = '". check_plain($value) ."'";
+      $query->condition($key, $value);
     }
   }
-  $query .= $where .' ORDER BY '. check_plain($sort);
 
-  $result = db_query($query);
-
-  while ($row = db_fetch_array($result)) {
-    $countries[] = $row;
-  }
+  $countries = $query->execute()->fetchAll(PDO::FETCH_ASSOC);
 
   return empty($countries) ? FALSE : $countries;
 }
@@ -1268,7 +1264,7 @@ function uc_textfield($title, $default = NULL, $required = TRUE, $description = 
  *   The zone's ID.
  */
 function uc_zone_get_by_id($id) {
-  return db_result(db_query("SELECT zone_name FROM {uc_zones} WHERE zone_id = %d", $id));
+  return db_query("SELECT zone_name FROM {uc_zones} WHERE zone_id = :id", array(':id' => $id))->fetchField();
 }
 
 /**
@@ -1282,7 +1278,7 @@ function uc_zone_select($title, $default = NULL, $description = NULL, $country_i
     $country_id = uc_store_default_country();
   }
 
-  $result = db_query("SELECT * FROM {uc_zones} WHERE zone_country_id = %d ORDER BY %s", $country_id, ($display == 'code') ? 'zone_code' : 'zone_name');
+  $result = db_query("SELECT * FROM {uc_zones} WHERE zone_country_id = :id ORDER BY :sort", array(':id' => $country_id, ':sort' => ($display == 'code') ? 'zone_code' : 'zone_name'));
 
   $options[''] = t('Please select');
   while ($zone = db_fetch_object($result)) {
@@ -1314,7 +1310,7 @@ function uc_zone_select($title, $default = NULL, $description = NULL, $country_i
  *   The country's ID.
  */
 function uc_country_get_by_id($id) {
-  return db_result(db_query("SELECT country_name FROM {uc_countries} WHERE country_id = %d", $id));
+  return db_query("SELECT country_name FROM {uc_countries} WHERE country_id = :id", array(':id' => $id))->fetchField();
 }
 
 /**
@@ -1332,17 +1328,17 @@ function uc_country_select($title, $default = NULL, $description = NULL, $displa
     $order_by = 'country_name';
   }
 
-  $result = db_query("SELECT * FROM {uc_countries} WHERE version > 0 ORDER BY %s", $order_by);
+  $result = db_query("SELECT * FROM {uc_countries} WHERE version > :version ORDER BY :sort", array(':version' => 0, ':sort' => $order_by));
 
   $options = array();
-  while ($country = db_fetch_array($result)) {
+  while ($country = $result->fetchAssoc()) {
     $options[$country['country_id']] = $country[$order_by];
   }
   if (count($options) == 0) {
     $options[] = t('No countries found.');
   }
 
-  $default = db_result(db_query("SELECT country_id FROM {uc_countries} WHERE country_id = %d AND version > 0", empty($default) ? 0 : intval($default)));
+  $default = db_query("SELECT country_id FROM {uc_countries} WHERE country_id = :id AND version > :version", array(':id' => empty($default) ? 0 : intval($default), ':version' => 0))->fetchField();
 
   $select = array(
     '#type' => 'select',
@@ -1461,35 +1457,29 @@ function uc_get_addresses($uid, $type = 'billing') {
     $type = 'billing';
   }
 
-  switch ($GLOBALS['db_type']) {
-    case 'mysqli':
-    case 'mysql':
-      $result = db_query("SELECT DISTINCT ". $type ."_first_name AS first_name, "
-                   . $type ."_last_name AS last_name, ". $type ."_phone AS phone, "
-                   . $type ."_company AS company, ". $type ."_street1 AS street1, "
-                   . $type ."_street2 AS street2, ". $type ."_city AS city, "
-                   . $type ."_zone AS zone, ". $type ."_postal_code AS postal_code, "
-                   . $type ."_country AS country FROM {uc_orders} WHERE uid = %d "
-                   ."AND order_status IN ". uc_order_status_list('general', TRUE)
-                   ." ORDER BY created DESC", $uid);
-      break;
-    case 'pgsql':
-      // In pgsql, ORDER BY requires the field being sorted by to be in the SELECT list.
-      // But if we have the 'created' column in the SELECT list, the DISTINCT is
-      // rather useless. So for pgsql we will just sort addresses alphabetically.
-      $result = db_query("SELECT DISTINCT ". $type ."_first_name AS first_name, "
-                   . $type ."_last_name AS last_name, ". $type ."_phone AS phone, "
-                   . $type ."_company AS company, ". $type ."_street1 AS street1, "
-                   . $type ."_street2 AS street2, ". $type ."_city AS city, "
-                   . $type ."_zone AS zone, ". $type ."_postal_code AS postal_code, "
-                   . $type ."_country AS country FROM {uc_orders} WHERE uid = %d "
-                   ."AND order_status IN ". uc_order_status_list('general', TRUE)
-                   ." ORDER BY ". $type ."_street1 DESC", $uid);
-      break;
-  }
+  $query = db_select('uc_orders', 'o')->distinct();
+
+  $alias = array();
+  $alias['first_name'] = $query->addField('o', $type . '_first_name', 'first_name');
+  $alias['last_name'] = $query->addField('o', $type . '_last_name', 'last_name');
+  $alias['phone'] = $query->addField('o', $type . '_phone', 'phone');
+  $alias['company'] = $query->addField('o', $type . '_company', 'company');
+  $alias['street1'] = $query->addField('o', $type . '_street1', 'street1');
+  $alias['street2'] = $query->addField('o', $type . '_street2', 'street2');
+  $alias['city'] = $query->addField('o', $type . '_city', 'city');
+  $alias['zone'] = $query->addField('o', $type . '_zone', 'zone');
+  $alias['postal_code'] = $query->addField('o', $type . '_postal_code', 'postal_code');
+  $alias['country'] = $query->addField('o', $type . '_country', 'country');
+
+  // In pgsql, ORDER BY requires the field being sorted by to be in the SELECT
+  // list. But if we have the 'created' column in the SELECT list, the DISTINCT
+  // is rather useless. So we will just sort addresses alphabetically.
+  $query->condition('uid', $uid)
+    ->condition('order_status', uc_order_status_list('general', TRUE), 'IN')
+    ->orderBy($alias['street1']);
 
   $addresses = array();
-  while ($address = db_fetch_array($result)) {
+  while ($address = $result->fetchAssoc()) {
     if (!empty($address['street1']) || !empty($address['postal_code'])) {
       $addresses[] = $address;
     }
@@ -1988,9 +1978,9 @@ function uc_store_default_country() {
 
   $default = variable_get('uc_store_country', 840);
 
-  $result = db_result(db_query("SELECT COUNT(*) FROM {uc_countries} WHERE country_id = %d AND version > 0", $default));
+  $result = db_query("SELECT COUNT(*) FROM {uc_countries} WHERE country_id = :id AND version > :version", array(':id' => $default, ':version' => 0))->fetchField();
   if ($result == 0) {
-    $default = db_result(db_query_range("SELECT country_id FROM {uc_countries} WHERE version > 0 ORDER BY country_name", 0, 1));
+    $default = db_query_range("SELECT country_id FROM {uc_countries} WHERE version > :version ORDER BY country_name", 0, 1, array(':version' => 0))->fetchField();
   }
 
   return $default;
