@@ -135,6 +135,15 @@
                       </td>
                     </tr>
 
+                    <tr>
+                      <td nowrap="nowrap">
+                        <b><?php echo t('Order Date: '); ?></b>
+                      </td>
+                      <td width="98%">
+                        [order-date-created]
+                      </td>
+                    </tr>
+
                     <?php if ($shipping_method && uc_order_is_shippable($order)) { ?>
                     <tr>
                       <td nowrap="nowrap">

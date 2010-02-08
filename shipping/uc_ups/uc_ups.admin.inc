@@ -154,6 +154,10 @@ function uc_ups_admin_settings_validate($form, &$form_state) {
       form_set_error('uc_ups_password', t('Password field is required.'));
     }
   }
+
+  if (!is_numeric($form_state['values']['uc_ups_markup'])) {
+    form_set_error('uc_ups_markup', t('Rate markup must be a numeric value.'));
+  }
 }
 
 /**

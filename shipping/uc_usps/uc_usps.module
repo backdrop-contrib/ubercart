@@ -475,12 +475,13 @@ function theme_uc_usps_option_label($variables) {
 function uc_usps_rate_request($packages, $origin, $destination) {
   $request  = '<RateV3Request USERID="'. variable_get('uc_usps_user_id', '') .'">';
   $services_count = 0;
+  $rate_type = variable_get('uc_usps_online_rates', FALSE);
 
   foreach ($packages as $package) {
     $qty = $package->qty;
     for ($i = 0; $i < $qty; $i++) {
       $request .= '<Package ID="'. $services_count .'">'.
-        '<Service>ALL</Service>'.
+        '<Service>'. ($rate_type ? 'ONLINE' : 'ALL') .'</Service>'.
         '<ZipOrigination>'. substr($origin->postal_code, 0, 5) .'</ZipOrigination>'.
         '<ZipDestination>'. substr($destination->postal_code, 0, 5) .'</ZipDestination>'.
         '<Pounds>'. intval($package->pounds) .'</Pounds>'.

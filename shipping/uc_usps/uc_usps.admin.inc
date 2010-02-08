@@ -29,6 +29,13 @@ function uc_usps_admin_settings() {
     '#collapsed' => TRUE,
   );
 
+  $form['domestic']['uc_usps_online_rates'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Display USPS "online" rates'),
+    '#default_value' => variable_get('uc_usps_online_rates', FALSE),
+    '#description' => t('Show your customer standard USPS rates (default) or discounted "online" rates.  Online rates apply only if you, the merchant, pay for and print out postage from the USPS <a href="https://sss-web.usps.com/cns/landing.do">Click-N-Ship</a> web site.'),
+  );
+
   $form['domestic']['uc_usps_env_services'] = array(
     '#type' => 'checkboxes',
     '#title' => t('USPS envelope services'),
@@ -47,7 +54,7 @@ function uc_usps_admin_settings() {
 
   $form['international'] = array(
     '#type' => 'fieldset',
-    '#title' => t('USPS International.'),
+    '#title' => t('USPS International'),
     '#description' => l(t('Set the conditions that will return a USPS International quote.'), CA_UI_PATH .'/uc_usps_get_intl_quote/edit/conditions'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
@@ -97,5 +104,14 @@ function uc_usps_admin_settings() {
   );
 
   return system_settings_form($form);
+}
+
+/**
+ * Validation handler for uc_usps_admin_settings form.
+ */
+function uc_usps_admin_settings_validate($form, &$form_state) {
+  if (!is_numeric($form_state['values']['uc_usps_markup'])) {
+    form_set_error('uc_usps_markup', t('Rate markup must be a numeric value.'));
+  }
 }
 

@@ -359,7 +359,7 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
           }
           $package_schema .= "<Dimensions>";
             $package_schema .= "<UnitOfMeasurement>";
-            $conversion = uc_weight_conversion($package->length_units, variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in')));
+            $conversion = uc_length_conversion($package->length_units, variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in')));
             $package_schema .= "<Code>". strtoupper(variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in'))) ."</Code>";
             $package_schema .= "</UnitOfMeasurement>";
             $package_schema .= "<Length>". number_format($package->length * $conversion, 2, '.', '') ."</Length>";
@@ -537,7 +537,7 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
           }
           $package_schema .= "<Dimensions>";
             $package_schema .= "<UnitOfMeasurement>";
-            $conversion = constant(strtoupper($package->length_units) .'_TO_'. strtoupper(variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in'))));
+            $conversion = uc_length_conversion($package->length_units, variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in')));
             $package_schema .= "<Code>". strtoupper(variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in'))) ."</Code>";
             $package_schema .= "</UnitOfMeasurement>";
             $package_schema .= "<Length>". (floor($package->length * $conversion) + 1) ."</Length>";
@@ -730,7 +730,7 @@ function uc_ups_quote($products, $details) {
       $package->weight += $weight;
       $package->price += $product->price * $product->qty;
 
-      $conversion = uc_weight_conversion($product->length_units, 'in');
+      $conversion = uc_length_conversion($product->length_units, 'in');
       $package->length = max($product->length * $conversion, $package->length);
       $package->width = max($product->width * $conversion, $package->width);
       $package->height = max($product->height * $conversion, $package->height);
