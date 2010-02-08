@@ -46,6 +46,11 @@ function uc_cybersource_requirements($phase) {
 
 function uc_cybersource_uninstall() {
   // Delete related variables all at once.
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_cybersource_%%' OR name LIKE 'cs_ship_from_%%'");
+  db_delete('variable')
+    ->condition(db_or()
+      ->condition('name', 'uc_cybersource_%', 'LIKE')
+      ->condition('name', 'cs_ship_from_%', 'LIKE')
+    )
+    ->execute();
 }
 

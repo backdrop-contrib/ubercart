@@ -12,23 +12,28 @@
 function uc_shipping_order_packages($order) {
   $header = array(t('Package ID'), t('Products'), t('Shipping type'), t('Package type'), t('Shipment ID'), t('Tracking number'), t('Labels'), array('data' => t('Actions'), 'colspan' => 4));
   $rows = array();
-  $result = db_query("SELECT * FROM {uc_packages} WHERE order_id = %d", $order->order_id);
-  while ($package = db_fetch_object($result)) {
+  $result = db_query("SELECT * FROM {uc_packages} WHERE order_id = :id", array(':id' => $order->order_id));
+  foreach ($result as $package) {
     $row = array();
+
     $row[] = $package->package_id;
+
     $product_list = array();
-    $result2 = db_query("SELECT op.order_product_id, pp.qty, op.title, op.model FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id WHERE pp.package_id = %d", $package->package_id);
-    while ($product = db_fetch_object($result2)) {
+    $result2 = db_query("SELECT op.order_product_id, pp.qty, op.title, op.model FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id WHERE pp.package_id = :id", array(':id' => $package->package_id));
+    foreach ($result2 as $product) {
       $product_list[] = $product->qty .' x '. check_plain($product->model);
     }
+
     $row[] = '<ul><li>'. implode('</li><li>', $product_list) .'</li></ul>';
     $row[] = strtr($package->shipping_type, '_', ' ');
     $row[] = check_plain($package->pkg_type);
     $row[] = isset($package->sid) ? l($package->sid, 'admin/store/orders/'. $order->order_id .'/shipments/'. $package->sid .'/view') : '';
     $row[] = isset($package->tracking_number) ? check_plain($package->tracking_number) : '';
+
     if ($package->sid && $package->label_image) {
-      $method = db_result(db_query("SELECT shipping_method FROM {uc_shipments} WHERE sid = %d", $package->sid));
+      $method = db_query("SELECT shipping_method FROM {uc_shipments} WHERE sid = :sid", array(':sid' => $package->sid))->fetchField();
     }
+
     $row[] = isset($package->label_image)
       ? l(theme('image_style', array(
           'style_name' => 'uc_thumbnail',
@@ -42,6 +47,7 @@ function uc_shipping_order_packages($order) {
     $row[] = l(t('edit'), 'admin/store/orders/'. $order->order_id .'/packages/'. $package->package_id .'/edit');
     $row[] = l(t('ship'), 'admin/store/orders/'. $order->order_id .'/shipments/new', array('query' => 'pkgs[]='. $package->package_id));
     $row[] = l(t('delete'), 'admin/store/orders/'. $order->order_id .'/packages/'. $package->package_id .'/delete');
+
     if ($package->sid) {
       $row[] = l(t('cancel shipment'), 'admin/store/orders/'. $order->order_id .'/packages/'. $package->package_id .'/cancel');
     }
@@ -51,14 +57,17 @@ function uc_shipping_order_packages($order) {
 
     $rows[] = $row;
   }
+
   if (empty($rows)) {
     $rows[][] = array('data' => t("This order's products have not been organized into packages."), 'colspan' => 11);
   }
   $output = theme('table', array('header' => $header, 'rows' => $rows));
-  $result = db_query("SELECT op.order_product_id, CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = %d AND op.data LIKE '%%%s%%' GROUP BY op.order_product_id HAVING SUM(pp.qty) IS NULL OR CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END > SUM(pp.qty)", $order->order_id, 's:9:"shippable";s:1:"1";');
-  if (db_fetch_object($result)) {
+
+  $result = db_query("SELECT op.order_product_id, CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = :id AND op.data LIKE :data GROUP BY op.order_product_id HAVING SUM(pp.qty) IS NULL OR CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END > SUM(pp.qty)", array(':id' => $order->order_id, ':data' => '%s:9:"shippable";s:1:"1";%'));
+  if ($result->fetchObject()) {
     $output .= l(t('Create packages.'), 'admin/store/orders/'. $order->order_id .'/packages/new');
   }
+
   return $output;
 }
 
@@ -94,11 +103,10 @@ function uc_shipping_new_package($form_state, $order) {
   }
 
   $shipping_type_weights = variable_get('uc_quote_type_weight', array());
-  $packaged_products = array();
-  $result = db_query("SELECT op.order_product_id, SUM(pp.qty) AS quantity FROM {uc_packaged_products} AS pp LEFT JOIN {uc_packages} AS p ON pp.package_id = p.package_id LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id WHERE p.order_id = %d GROUP BY op.order_product_id", $order->order_id);
-  while ($boxed_product = db_fetch_object($result)) {
-    $packaged_products[$boxed_product->order_product_id] = $boxed_product->quantity;
-  }
+
+  $result = db_query("SELECT op.order_product_id, SUM(pp.qty) AS quantity FROM {uc_packaged_products} AS pp LEFT JOIN {uc_packages} AS p ON pp.package_id = p.package_id LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id WHERE p.order_id = :id GROUP BY op.order_product_id", array(':id' => $order->order_id));
+  $packaged_products = $result->fetchAllKeyed();
+
   $form['shipping_types'] = array();
   foreach ($shipping_types_products as $shipping_type => $products) {
     $form['shipping_types'][$shipping_type] = array('#type' => 'fieldset',
@@ -107,8 +115,10 @@ function uc_shipping_new_package($form_state, $order) {
       '#collapsed' => FALSE,
       '#weight' => $shipping_type_weights[$shipping_type],
     );
+
     foreach ($products as $product) {
       $unboxed_qty = $product->qty - $packaged_products[$product->order_product_id];
+
       if ($unboxed_qty > 0) {
         $product_row = array();
         $product_row['checked'] = array('#type' => 'checkbox', '#default_value' => 0);
@@ -118,6 +128,7 @@ function uc_shipping_new_package($form_state, $order) {
           '#options' => drupal_map_assoc(uc_range(1, $unboxed_qty)),
           '#default_value' => $unboxed_qty,
         );
+
         $options = drupal_map_assoc(uc_range(0, count($order->products)));
         $options[0] = t('Sep.');
         $product_row['package'] = array('#type' => 'select',
@@ -128,8 +139,10 @@ function uc_shipping_new_package($form_state, $order) {
         $form['shipping_types'][$shipping_type][$product->order_product_id] = $product_row;
       }
     }
+
     $form['shipping_types'][$shipping_type]['#theme'] = 'uc_shipping_new_package_fieldset';
   }
+
   $form['order_id'] = array('#type' => 'hidden', '#value' => $order->order_id);
   $form['create'] = array('#type' => 'submit', '#value' => t('Make packages'));
   $form['combine'] = array('#type' => 'submit', '#value' => t('Create one package'));
@@ -148,6 +161,7 @@ function theme_uc_shipping_new_package_fieldset($variables) {
 
   $output = '';
   $header = array(theme('table_select_header_cell'), t('SKU'), t('Title'), t('Qty'), t('Package'));
+
   $rows = array();
   foreach (element_children($fieldset) as $op_id) {
     $row = array();
@@ -158,6 +172,7 @@ function theme_uc_shipping_new_package_fieldset($variables) {
     $row[] = drupal_render($fieldset[$op_id]['package']);
     $rows[] = $row;
   }
+
   $output .= theme('table', array('header' => $header, 'rows' => $rows));
   $output .= drupal_render_children($fieldset);
 
@@ -172,6 +187,7 @@ function theme_uc_shipping_new_package_fieldset($variables) {
 function uc_shipping_new_package_validate($form, &$form_state) {
   if ($form_state['values']['op'] != t('Cancel')) {
     $empty = TRUE;
+
     foreach ($form_state['values']['shipping_types'] as $shipping_type => $products) {
       foreach ($products as $product) {
         if ($product['checked'] != 0) {
@@ -180,6 +196,7 @@ function uc_shipping_new_package_validate($form, &$form_state) {
         }
       }
     }
+
     if ($empty) {
       form_set_error($shipping_type, t('Packages should have at least one product in them.'));
     }
@@ -192,14 +209,17 @@ function uc_shipping_new_package_validate($form, &$form_state) {
 function uc_shipping_new_package_submit($form, &$form_state) {
   if ($form_state['values']['op'] != t('Cancel')) {
     $packages = array(0 => array());
+
     foreach ($form_state['values']['shipping_types'] as $shipping_type => $products) {
       foreach ($products as $id => $product) {
         if ($product['checked']) {
           if ($form_state['values']['op'] == t('Create one package')) {
             $product['package'] = 1;
           }
+
           if ($product['package'] != 0) {
             $packages[$product['package']]['products'][$id] = (object)$product;
+
             if (!isset($packages[$product['package']]['shipping_type'])) {
               $packages[$product['package']]['shipping_type'] = $shipping_type;
             }
@@ -218,16 +238,20 @@ function uc_shipping_new_package_submit($form, &$form_state) {
           }
         }
       }
+
       unset($packages[0][$shipping_type]);
     }
+
     if (empty($packages[0])) {
       unset($packages[0]);
     }
+
     foreach ($packages as $package) {
       $package['order_id'] = $form_state['values']['order_id'];
       uc_shipping_package_save($package);
     }
   }
+
   $form_state['redirect'] = 'admin/store/orders/'. $form_state['values']['order_id'] .'/packages';
 }
 
@@ -257,8 +281,8 @@ function uc_shipping_package_edit($form_state, $order, $package) {
     }
   }
 
-  $result = db_query("SELECT order_product_id, SUM(qty) AS quantity FROM {uc_packaged_products} AS pp LEFT JOIN {uc_packages} AS p ON pp.package_id = p.package_id WHERE p.order_id = %d GROUP BY order_product_id", $order->order_id);
-  while ($packaged_product = db_fetch_object($result)) {
+  $result = db_query("SELECT order_product_id, SUM(qty) AS quantity FROM {uc_packaged_products} AS pp LEFT JOIN {uc_packages} AS p ON pp.package_id = p.package_id WHERE p.order_id = :id GROUP BY order_product_id", array(':id' => $order->order_id));
+  foreach ($result as $packaged_product) {
     //Make already packaged products unavailable, except those in this package.
     $products[$packaged_product->order_product_id]->qty = $products[$packaged_product->order_product_id]->qty - $packaged_product->quantity + $package->products[$packaged_product->order_product_id]->qty;
   }
@@ -367,7 +391,15 @@ function uc_shipping_package_cancel_confirm_submit($form, &$form_state) {
   if (function_exists($methods[$shipment->shipping_method]['cancel'])) {
     $result = call_user_func($methods[$shipment->shipping_method]['cancel'], $shipment->tracking_number, array($package->tracking_number));
     if ($result) {
-      db_query("UPDATE {uc_packages} SET sid = NULL, label_image = NULL, tracking_number = NULL WHERE package_id = %d", $package->package_id);
+      db_update('uc_packages')
+        ->fields(array(
+          'sid' => NULL,
+          'label_image' => NULL,
+          'tracking_number' => NULL,
+        ))
+        ->condition('package_id', $package->package_id)
+        ->execute();
+
       unset($shipment->packages[$package->package_id]);
       if (!count($shipment->packages)) {
         uc_shipping_shipment_delete($shipment->sid);
@@ -407,7 +439,7 @@ function uc_shipping_package_delete_confirm_submit($form, &$form_state) {
  *   The order object.
  */
 function uc_shipping_order_shipments($order) {
-  $result = db_query("SELECT * FROM {uc_shipments} WHERE order_id = %d", $order->order_id);
+  $result = db_query("SELECT * FROM {uc_shipments} WHERE order_id = :id", array(':id' => $order->order_id));
   $header = array(t('Shipment ID'), t('Name'), t('Company'), t('Destination'), t('Ship date'), t('Estimated delivery'), t('Tracking number'), array('data' => t('Actions'), 'colspan' => 4));
   $rows = array();
   while ($shipment = db_fetch_object($result)) {
@@ -429,12 +461,12 @@ function uc_shipping_order_shipments($order) {
     $rows[] = array(array('data' => t('No shipments have been made for this order.'), 'colspan' => 11));
   }
   $output = theme('table', array('header' => $header, 'rows' => $rows));
-  $packages = db_result(db_query("SELECT COUNT(*) FROM {uc_packages} WHERE order_id = %d AND sid IS NULL", $order->order_id));
+  $packages = db_query("SELECT COUNT(*) FROM {uc_packages} WHERE order_id = :id AND sid IS NULL", array(':id' => $order->order_id))->fetchField();
   if ($packages) {
     $output .= l(t('Make a new shipment'), 'admin/store/orders/'. $order->order_id .'/shipments/new');
   }
   else {
-    $result = db_query("SELECT op.order_product_id, CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = %d AND op.data LIKE '%%%s%%' GROUP BY op.order_product_id HAVING SUM(pp.qty) IS NULL OR CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END > SUM(pp.qty)", $order->order_id, 's:9:"shippable";s:1:"1";');
+    $result = db_query("SELECT op.order_product_id, CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = :id AND op.data LIKE :data GROUP BY op.order_product_id HAVING SUM(pp.qty) IS NULL OR CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END > SUM(pp.qty)", array(':id' => $order->order_id, ':data' => '%s:9:"shippable";s:1:"1";%'));
     if (db_fetch_object($result)) {
       $output .= l(t('Put products into packages to make shipments.'), 'admin/store/orders/'. $order->order_id .'/packages/new');
     }
@@ -464,12 +496,12 @@ function uc_shipping_new_shipment($form_state, $order) {
   $form['order_id'] = array('#type' => 'hidden', '#value' => $order->order_id);
 
   $packages_by_type = array();
-  $result = db_query("SELECT * FROM {uc_packages} WHERE order_id = %d AND sid IS NULL", $order->order_id);
-  while ($package = db_fetch_object($result)) {
+  $result = db_query("SELECT * FROM {uc_packages} WHERE order_id = :id AND sid IS NULL", array(':id' => $order->order_id));
+  foreach ($result as $package) {
     $products = array();
     $weight = 0;
-    $result2 = db_query("SELECT pp.order_product_id, pp.qty, pp.qty * op.weight AS weight, op.title, op.model FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id WHERE pp.package_id = %d", $package->package_id);
-    while ($product = db_fetch_object($result2)) {
+    $result2 = db_query("SELECT pp.order_product_id, pp.qty, pp.qty * op.weight AS weight, op.title, op.model FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id WHERE pp.package_id = :id", array(':id' => $package->package_id));
+    foreach ($result2 as $product) {
       $weight += $product->weight;
       $products[$product->order_product_id] = $product;
     }

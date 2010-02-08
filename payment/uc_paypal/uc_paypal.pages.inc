@@ -70,7 +70,7 @@ function uc_paypal_ipn($order_id = 0) {
   if (strcmp($response->data, 'VERIFIED') == 0) {
     watchdog('uc_paypal', 'IPN transaction verified.');
 
-    $duplicate = db_result(db_query("SELECT COUNT(*) FROM {uc_payment_paypal_ipn} WHERE txn_id = '%s' AND status <> 'Pending'", $txn_id));
+    $duplicate = db_query("SELECT COUNT(*) FROM {uc_payment_paypal_ipn} WHERE txn_id = :id AND status <> :status", array(':id' => $txn_id, ':status' => 'Pending'))->fetchField();
     if ($duplicate > 0) {
       if ($order->payment_method != 'credit') {
         watchdog('uc_paypal', 'IPN transaction ID has been processed before.', array(), WATCHDOG_NOTICE);
@@ -78,8 +78,18 @@ function uc_paypal_ipn($order_id = 0) {
       return;
     }
 
-    db_query("INSERT INTO {uc_payment_paypal_ipn} (order_id, txn_id, txn_type, mc_gross, status, receiver_email, payer_email, received) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', %d)",
-      $order_id, $txn_id, $txn_type, $payment_amount, $payment_status, $receiver_email, $payer_email, REQUEST_TIME);
+    db_insert('uc_payment_paypal_ipn')
+      ->fields(array(
+        'order_id' => $order_id,
+        'txn_id' => $txn_id,
+        'txn_type' => $txn_type,
+        'mc_gross' => $payment_amount,
+        'status' => $payment_status,
+        'receiver_email' => $receiver_email,
+        'payer_email' => $payer_email,
+        'received' => REQUEST_TIME),
+      ))
+      ->execute();
 
     $context = array(
       'revision' => 'formatted-original',
@@ -197,12 +207,12 @@ function uc_paypal_ec_review() {
       $order->delivery_last_name = '';
     }
 
-    $country_id = db_result(db_query("SELECT country_id FROM {uc_countries} WHERE country_iso_code_2 = '%s'", $nvp_response['SHIPTOCOUNTRYCODE']));
+    $country_id = db_query("SELECT country_id FROM {uc_countries} WHERE country_iso_code_2 = :code", array(':code' => $nvp_response['SHIPTOCOUNTRYCODE']))->fetchField();
     $zone = $nvp_response['SHIPTOSTATE'];
     $zone_id = 0;
 
     if (!empty($country_id) && !empty($zone)) {
-      $zone_id = db_result(db_query("SELECT zone_id FROM {uc_zones} WHERE zone_country_id = '%s' AND (zone_code = '%s' OR zone_name = '%s')", $country_id, $zone, $zone));
+      $zone_id = db_query("SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :id AND (zone_code = :code OR zone_name = :name)", array(':id' => $country_id, ':code' => $zone, ':name' => $zone))->fetchField();
     }
 
     $order->delivery_street1 = check_plain($nvp_response['SHIPTOSTREET']);
@@ -335,8 +345,8 @@ function uc_paypal_ec_review_form_submit($form, &$form_state) {
     $methods = module_invoke_all('shipping_method');
     $method = $methods[$order->quote['method']];
     $label = is_null($_POST['quote-option']) ? t('Error calculating shipping') : $method['quote']['accessorials'][$order->quote['accessorials']];
-    $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = %d AND type = 'shipping'", $order->order_id);
-    if ($lid = db_result($result)) {
+    $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = :id AND type = :type", array(':id' => $order->order_id, ':type' => 'shipping'));
+    if ($lid = $result->fetchField()) {
       uc_order_update_line_item($lid, $label, $order->quote['rate']);
     }
     else {
@@ -353,7 +363,9 @@ function uc_paypal_ec_review_form_submit($form, &$form_state) {
   }
 
   if (variable_get('uc_paypal_ec_review_comment', TRUE)) {
-    db_query("DELETE FROM {uc_order_comments} WHERE order_id = %d", $order->order_id);
+    db_delete('uc_order_comments')
+      ->condition('order_id', $order->order_id)
+      ->execute();
     uc_order_comment_save($order->order_id, 0, $form_state['values']['order_comments'], 'order');
   }
 

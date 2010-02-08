@@ -115,40 +115,46 @@ function theme_uc_catalog_browse($variables) {
     }
   }
 
+  $query = db_select('node', 'n')->extend('PagerDefault')->extend('TableSort')->addTag('node_access');
+  $query->innerJoin('term_node', 'tn', 'n.vid = tn.vid');
+  $query->innerJoin('uc_products', 'p', 'n.vid = p.vid');
+
+  $query->condition('tn.tid', $catalog->tid)
+    ->condition('n.status', 1)
+    ->condition('n.type', $types, 'IN');
+
+  $count_query = clone $query;
+  $count_query->expression('COUNT(DISTINCT n.nid)');
+
+  $query->setCountQuery($count_query);
+
+  $query->fields('n', array(
+      'nid',
+      'title',
+      'sticky',
+      'created',
+    ))
+    ->fields('p', array(
+      'model',
+      'sell_price',
+      'ordering',
+    ))
+    ->groupBy('nid')
+    ->limit(variable_get('uc_product_nodes_per_page', 12));
+
   // Build an ORDER BY clause for the SELECT query based on table sort info.
   if (empty($_REQUEST['order'])) {
-    $order = 'ORDER BY p.ordering, n.title, n.nid';
+    $query->orderBy('ordering')
+      ->orderBy('title')
+      ->orderBy('nid');
   }
   else {
-    $order = tapirsort_sql(uc_product_table_header());
+    $query->orderByHeader(uc_product_table_header());
   }
 
-  $sql = "SELECT DISTINCT(n.nid), n.sticky, n.title, n.created, p.model, p.sell_price, p.ordering
-    FROM {node} n
-      INNER JOIN {term_node} tn ON n.vid = tn.vid
-      INNER JOIN {uc_products} AS p ON n.vid = p.vid
-    WHERE tn.tid = %d AND n.status = 1
-      AND n.type IN (". db_placeholders($types, 'varchar') .") ". $order;
+  // Get the selected nids.
+  $catalog->products = $query->execute()->fetchCol();
 
-  $sql_count = "SELECT COUNT(DISTINCT(n.nid))
-    FROM {node} n
-      INNER JOIN {term_node} tn ON n.vid = tn.vid
-      INNER JOIN {uc_products} AS p ON n.vid = p.vid
-    WHERE tn.tid = %d
-      AND n.status = 1
-      AND n.type IN (". db_placeholders($types, 'varchar') .")";
-
-  $sql = db_rewrite_sql($sql);
-  $sql_count = db_rewrite_sql($sql_count);
-  $sql_args = array($catalog->tid);
-  foreach ($types as $type) {
-    $sql_args[] = $type;
-  }
-  $catalog->products = array();
-  $result = pager_query($sql, variable_get('uc_product_nodes_per_page', 12), 0, $sql_count, $sql_args);
-  while ($node = db_fetch_object($result)) {
-    $catalog->products[] = $node->nid;
-  }
   if (count($catalog->products)) {
     if (count($links)) {
       $output .= theme('links', array('links' => $links, 'attributes' => array('class' => array('links', 'inline', 'uc-categories')))) ."<br />\n";

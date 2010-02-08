@@ -272,7 +272,10 @@ function uc_payment_order($op, &$arg1) {
       break;
 
     case 'delete':
-      db_query("DELETE FROM {uc_payment_receipts} WHERE order_id = %d", $arg1->order_id);
+      db_delete('uc_payment_receipts')
+        ->condition('order_id', $arg1->order_id)
+        ->execute();
+
       // Call each payment method to delete method specific data from the database.
       $methods = _payment_method_list();
       foreach ($methods as $method) {
@@ -628,8 +631,17 @@ function uc_payment_enter($order_id, $method, $amount, $uid, $data, $comment) {
     uc_order_log_changes($order_id, array($log_message));
   }
 
-  db_query("INSERT INTO {uc_payment_receipts} (order_id, method, amount, uid, data, comment, received) VALUES (%d, '%s', %f, %d, '%s', '%s', %d)",
-    $order_id, $method_name, $amount, $uid, $data, $comment, REQUEST_TIME);
+  db_insert('uc_payment_receipts')
+    ->fields(array(
+      'order_id' => $order_id,
+      'method' => $method_name,
+      'amount' => $amount,
+      'uid' => $uid,
+      'data' => $data,
+      'comment' => $comment,
+      'received' => REQUEST_TIME,
+    ))
+    ->execute();
 
   $order = uc_order_load($order_id);
   $account = user_load($uid);
@@ -660,7 +672,9 @@ function uc_payment_delete($receipt_id) {
     uc_order_log_changes($payment->order_id, array($log_message));
   }
 
-  db_query("DELETE FROM {uc_payment_receipts} WHERE receipt_id = %d", $receipt_id);
+  db_delete('uc_payment_receipts')
+    ->condition('receipt_id', $receipt_id)
+    ->execute();
 }
 
 /**
@@ -689,8 +703,7 @@ function uc_payment_load($receipt_id) {
     return FALSE;
   }
 
-  $result = db_query("SELECT * FROM {uc_payment_receipts} WHERE receipt_id = %d ", $receipt_id);
-  $payment = db_fetch_object($result);
+  $payment = db_query("SELECT * FROM {uc_payment_receipts} WHERE receipt_id = :id", array(':id' => $receipt_id))->fetchObject();
 
   return $payment;
 }
@@ -706,13 +719,7 @@ function uc_payment_load($receipt_id) {
  *   Array of payment objects or FALSE if there are none.
  */
 function uc_payment_load_payments($order_id, $action = NULL) {
-  $payments = array();
-
-  $result = db_query("SELECT * FROM {uc_payment_receipts} WHERE order_id = %d "
-                    ."ORDER BY received ASC", $order_id);
-  while ($payment = db_fetch_object($result)) {
-    $payments[] = $payment;
-  }
+  $payments = db_query("SELECT * FROM {uc_payment_receipts} WHERE order_id = :id ORDER BY received ASC", array(':id' => $order_id))->fetchAll();
 
   if (count($payments) == 0) {
     $payments = FALSE;

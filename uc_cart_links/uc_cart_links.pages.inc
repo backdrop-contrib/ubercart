@@ -122,13 +122,14 @@ function uc_cart_links_process($arg1) {
   }
 
   if (variable_get('uc_cart_links_track', TRUE)) {
-    $exists = db_result(db_query("SELECT clicks FROM {uc_cart_link_clicks} WHERE cart_link_id = '%s'", $id));
-    if (intval($exists) == 0) {
-      db_query("INSERT INTO {uc_cart_link_clicks} (cart_link_id, clicks, last_click) VALUES ('%s', 1, %d)", $id, REQUEST_TIME);
-    }
-    else {
-      db_query("UPDATE {uc_cart_link_clicks} SET clicks = clicks + 1, last_click = %d WHERE cart_link_id = '%s'", REQUEST_TIME, $id);
-    }
+    db_merge('uc_cart_link_clicks')
+      ->key(array('cart_link_id' => $id))
+      ->fields(array(
+        'clicks' => 1,
+        'last_click' => REQUEST_TIME,
+      ))
+      ->expression('clicks', 'clicks + :i', array(':i' => 1))
+      ->execute();
   }
 
   $_SESSION['uc_cart_last_url'] = uc_referer_uri();

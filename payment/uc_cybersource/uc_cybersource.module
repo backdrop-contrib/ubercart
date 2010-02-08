@@ -657,7 +657,10 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
         $order->data['cybersource'][$reply->requestID] = $reply->requestToken;
 
         // Save the updated data array to the database.
-        db_query("UPDATE {uc_orders} SET data = '%s' WHERE order_id = %d", serialize($order->data), $order->order_id);
+        db_update('uc_orders')
+          ->fields(array('data' => serialize($order->data)))
+          ->condition('order_id', $order->order_id)
+          ->execute();
       }
       elseif ($data['txn_type'] == UC_CREDIT_PRIOR_AUTH_CAPTURE) {
         uc_credit_log_prior_auth_capture($order->order_id, $data['auth_id']);

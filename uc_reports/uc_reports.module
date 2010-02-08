@@ -77,7 +77,7 @@ function uc_reports_help($path, $arg) {
     if ($include_statuses) {
       $statuses = array();
       foreach (variable_get('uc_reports_reported_statuses', array('completed')) as $status) {
-        $statuses[] = db_result(db_query("SELECT title FROM {uc_order_statuses} WHERE order_status_id = '%s'", $status));
+        $statuses[] = db_query("SELECT title FROM {uc_order_statuses} WHERE order_status_id = :id", array(':id' => $status))->fetchField();
       }
       $order_statuses = t('<b>Order statuses used:</b> @statuses', array('@statuses' => implode(', ', $statuses)));
 
@@ -310,17 +310,16 @@ function _uc_reports_get_sales($time, $period = 'day') {
   // Set up the default SQL for getting orders with the proper status
   // within this period.
   $order_statuses = _uc_reports_order_statuses();
-  $sql_frag = " FROM {uc_orders} as o WHERE o.order_status IN $order_statuses AND created >= $time and created < $new_time";
 
   // Get the total value of the orders.
   $output = array('income' => 0);
-  $orders = db_query("SELECT o.order_total ". $sql_frag);
-  while ($order = db_fetch_object($orders)) {
+  $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN :statuses AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $time, ':end' => $new_time));
+  while ($order = $orders->fetchObject()) {
     $output['income'] += $order->order_total;
   }
 
   // Get the total amount of orders.
-  $count = db_result(db_query("SELECT COUNT(o.order_total) ". $sql_frag));
+  $count = db_query("SELECT COUNT(o.order_total) FROM {uc_orders} as o WHERE o.order_status IN :statuses AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $time, ':end' => $new_time))->fetchField();
   $output['total'] = $count;
 
   // Average for this period.
@@ -335,7 +334,7 @@ function _uc_reports_get_sales($time, $period = 'day') {
 function _uc_reports_order_statuses() {
   $statuses = variable_get('uc_reports_reported_statuses', array('completed'));
 
-  return "('". implode("', '", $statuses) ."')";
+  return $statuses;
 }
 
 /**

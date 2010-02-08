@@ -40,7 +40,7 @@ function uc_roles_cron() {
   $reminder_qty = variable_get('uc_roles_reminder_length', NULL);
 
   $result = db_query("SELECT * FROM {uc_roles_expirations}");
-  while ($expiration = db_fetch_object($result)) {
+  foreach ($result as $expiration) {
     $account = user_load($expiration->uid);
 
     // User has to contain roles to manage.
@@ -70,7 +70,12 @@ function uc_roles_cron() {
       $threshold = _uc_roles_get_expiration(-$reminder_qty, $reminder_granularity, $expiration->expiration);
       if ($threshold <= REQUEST_TIME) {
         ca_pull_trigger('uc_roles_notify_reminder', $account, $expiration);
-        db_query("UPDATE {uc_roles_expirations} SET notified = 1 WHERE uid = %d AND rid = %d", $account->uid, $expiration->rid);
+
+        db_update('uc_roles_expirations')
+          ->fields(array('notified' => 1))
+          ->condition('uid', $account->uid)
+          ->condition('rid', $expiriation->rid)
+          ->execute();
       }
     }
   }
@@ -231,8 +236,8 @@ function uc_roles_user_form(&$edit, &$account, $category = NULL) {
   $form['uc_roles']['expirations']['table']['#tree'] = TRUE;
 
   // Create the expirations table.
-  $expirations = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = %d", $account->uid);
-  while ($expiration = db_fetch_object($expirations)) {
+  $expirations = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid", array(':uid' => $account->uid));
+  foreach ($expirations as $expiration) {
     $form['uc_roles']['expirations']['table'][$expiration->rid] = array(
       'name' => array(
         '#type' => 'value',
@@ -278,7 +283,7 @@ function uc_roles_user_form(&$edit, &$account, $category = NULL) {
   }
 
   return $form;
- }
+}
 
 /**
  * Theme the roles dialog on the account edit page.
@@ -456,8 +461,8 @@ function uc_roles_user_view(&$edit, &$account) {
   $items = array();
   $form = array();
 
-  $expirations = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = %d", $account->uid);
-  while ($expiration = db_fetch_object($expirations)) {
+  $expirations = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid", array(':uid' => $account->uid));
+  foreach ($expirations as $expiriation) {
     $substitution = array('!role_name' => _uc_roles_get_name($expiration->rid), '!date' => format_date($expiration->expiration, 'small'));
     $form[$expiration->rid] = array(
       '#type' => 'user_profile_item',
@@ -507,8 +512,8 @@ function uc_roles_user($op, &$edit, &$account, $category = NULL) {
 function uc_roles_cart_item($op, &$item) {
   switch ($op) {
     case 'can_ship':
-      $roles = db_query("SELECT * FROM {uc_roles_products} WHERE nid = %d", $item->nid);
-      while ($role = db_fetch_object($roles)) {
+      $roles = db_query("SELECT * FROM {uc_roles_products} WHERE nid = :nid", array(':nid' => $item->nid));
+      foreach ($roles as $role) {
         // If the model is empty, keep looking. (Everyone needs a role model...)
         if (empty($role->model)) {
           continue;
@@ -632,7 +637,7 @@ function uc_roles_feature_form($form_state, $node, $feature) {
 
   // Check if editing or adding to set default values.
   if (!empty($feature)) {
-    $product_role = db_fetch_object(db_query("SELECT * FROM {uc_roles_products} WHERE pfid = %d", $feature['pfid']));
+    $product_role = db_query("SELECT * FROM {uc_roles_products} WHERE pfid = :pfid", array(':pfid' => $feature['pfid']))->fetchObject();
 
     $default_model = $product_role->model;
     $default_role = $product_role->rid;
@@ -809,7 +814,7 @@ function uc_roles_feature_form_validate($form, &$form_state) {
   }
 
   // This role already set on this SKU?
-  if ($product_roles = db_fetch_object(db_query("SELECT * FROM {uc_roles_products} WHERE nid = %d AND model = '%s' AND rid = %d", $form_state['values']['nid'], $form_state['values']['uc_roles_model'], $form_state['values']['uc_roles_role'])) && $form_state['values']['pfid'] == 0) {
+  if ($form_state['values']['pfid'] == 0 && ($product_roles = db_query("SELECT * FROM {uc_roles_products} WHERE nid = :nid AND model = :model AND rid = :rid", array(':nid' => $form_state['values']['nid'], ':model' => $form_state['values']['uc_roles_model'], ':rid' => $form_state['values']['uc_roles_role']))->fetchObject())) {
     form_set_error('uc_roles_role', t('The combination of SKU and role already exists for this product.'));
     form_set_error('uc_roles_model', ' ');
   }
@@ -1102,7 +1107,9 @@ function _uc_roles_get_choices($exclude = array()) {
  *   A Drupal node ID.
  */
 function uc_roles_node_delete($nid) {
-  db_query("DELETE FROM {uc_roles_products} WHERE nid = %d", $nid);
+  db_delete('uc_roles_products')
+    ->condition('nid', $nid)
+    ->execute();
 }
 
 /**
@@ -1112,7 +1119,9 @@ function uc_roles_node_delete($nid) {
  *   An Ubercart product feature ID.
  */
 function uc_roles_feature_delete($pfid) {
-  db_query("DELETE FROM {uc_roles_products} WHERE pfid = %d", $pfid);
+  db_delete('uc_roles_products')
+    ->condition('pfid', $pfid)
+    ->execute();
 }
 
 /**
@@ -1135,16 +1144,15 @@ function uc_roles_feature_delete($pfid) {
 function uc_roles_delete($account, $rid = NULL, $silent = FALSE) {
   global $user;
 
-  $condition_list = 'uid = '. intval($account->uid);
+  $query = db_delete('uc_roles_expirations')
+    ->condition('uid', $account->uid);
 
   if ($rid) {
-    $condition_list .= ' AND rid = '. intval($rid);
+    $query->condition('rid', $rid);
   }
 
-  db_query("DELETE FROM {uc_roles_expirations} WHERE ". $condition_list);
-
   // Echo the deletion only if something was actually deleted.
-  if (db_affected_rows() && !$silent) {
+  if ($query->execute() && !$silent) {
     if ($user->uid == $account->uid) {
       drupal_set_message(t('The expiration of your %role_name role has been deleted.', array('%role_name' => _uc_roles_get_name($rid))));
     }
@@ -1232,7 +1240,13 @@ function uc_roles_grant(&$account, $rid, $timestamp, $save_user = TRUE, $silent 
 
   // If the role expires, keep a record.
   if (!is_null($timestamp)) {
-    db_query("INSERT INTO {uc_roles_expirations} (uid, rid, expiration) VALUES (%d, %d, %d)", $account->uid, $rid, $timestamp);
+    db_insert('uc_roles_expirations')
+      ->fields(array(
+        'uid' => $account->uid,
+        'rid' => $rid,
+        'expiration' => $timestamp,
+      ))
+      ->execute();
   }
 
   // Flush visible menu items, since our permissions could've changed.
@@ -1240,7 +1254,7 @@ function uc_roles_grant(&$account, $rid, $timestamp, $save_user = TRUE, $silent 
 
   // Display the message if appropriate.
   if (!$silent) {
-    $role_name = db_result(db_query('SELECT name FROM {role} WHERE rid = %d', $rid));
+    $role_name = db_query("SELECT name FROM {role} WHERE rid = :rid", array(':rid' => $rid))->fetchField();
 
     if ($user->uid == $account->uid) {
       $message = t('You have been granted the %role role.', array('%role' => $role_name));
@@ -1287,7 +1301,11 @@ function uc_roles_renew($account, $rid, $timestamp, $silent = FALSE) {
   }
 
   // Update the expiration date.
-  db_query("UPDATE {uc_roles_expirations} SET expiration = %d WHERE uid = %d AND rid = %d", $timestamp, $account->uid, $rid);
+  db_update('uc_roles_expirations')
+    ->fields(array('expiration' => $timestamp))
+    ->condition('uid', $account->uid)
+    ->condition('rid', $rid)
+    ->execute();
 
   if (!$silent) {
     $role_name = db_result(db_query('SELECT name FROM {role} WHERE rid = %d', $rid));

@@ -118,26 +118,48 @@ function uc_quote_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
         if (isset($node->shipping_type)) {
           uc_quote_set_shipping_type('product', $node->nid, $node->shipping_type);
         }
-        db_query("DELETE FROM {uc_quote_product_locations} WHERE nid = %d", $node->nid);
+
         if ($node->street1) {
-          db_query("INSERT INTO {uc_quote_product_locations} (nid, first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', %d, '%s')",
-            $node->nid, $node->first_name, $node->last_name, $node->company, $node->street1, $node->street2, $node->city, $node->zone, $node->postal_code, $node->country, $node->phone
-          );
+          db_merge('uc_quote_product_locations')
+            ->key(array('nid' => $node->nid))
+            ->fields(array(
+              'first_name' => $node->first_name,
+              'last_name' => $node->last_name,
+              'company' => $node->company,
+              'street1' => $node->street1,
+              'street2' => $node->street2,
+              'city' => $node->city,
+              'zone' => $node->zone,
+              'postal_code' => $node->postal_code,
+              'country' => $node->country,
+              'phone' => $node->phone,
+            ))
+            ->execute();
+        }
+        else {
+          db_delete('uc_quote_product_locations')
+            ->condition('nid', $node->nid)
+            ->execute();
         }
       break;
       case 'load':
         $shipping_type = uc_product_get_shipping_type($node);
 
-        $address = db_fetch_object(db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid = %d", $node->nid));
+        $address = db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid = :nid", array(':nid' => $node->nid))->fetchObject();
         if ($address === FALSE) {
           $address = variable_get('uc_quote_store_default_address', new stdClass());
         }
 
         return array('shipping_type' => $shipping_type, 'shipping_address' => $address);
-      break;
       case 'delete':
-        db_query("DELETE FROM {uc_quote_shipping_types} WHERE id_type = 'product' AND id = %d", $node->nid);
-        db_query("DELETE FROM {uc_quote_product_locations} WHERE nid = %d", $node->nid);
+        db_delete('uc_quote_shipping_types')
+          ->condition('id_type', 'product')
+          ->condition('id', $node->nid)
+          ->execute();
+
+        db_delete('uc_quote_product_locations')
+          ->condition('nid', $node->nid)
+          ->execute();
       break;
     }
   }
@@ -527,17 +549,25 @@ function uc_quote_order($op, &$arg1, $arg2) {
       unset($_SESSION['quote']);
     break;
     case 'save':
-      db_query("DELETE FROM {uc_order_quotes} WHERE order_id = %d", $arg1->order_id);
-      db_query("INSERT INTO {uc_order_quotes} (order_id, method, accessorials, rate, quote_form) VALUES (%d, '%s', '%s', %f, '%s')",
-        $arg1->order_id, $arg1->quote['method'], $arg1->quote['accessorials'], $arg1->quote['rate'], $arg1->quote['quote_form']);
+      db_merge('uc_order_quotes')
+        ->key(array('order_id' => $arg1->order_id))
+        ->fields(array(
+          'method' => $arg1->quote['method'],
+          'accessorials' => $arg1->quote['accessorials'],
+          'rate' => $arg1->quote['rate'],
+          'quote_form' => $arg1->quote['quote_form'],
+        ))
+        ->execute();
     break;
     case 'load':
-      $quote = db_fetch_array(db_query("SELECT method, accessorials, rate, quote_form FROM {uc_order_quotes} WHERE order_id = %d", $arg1->order_id));
+      $quote = db_query("SELECT method, accessorials, rate, quote_form FROM {uc_order_quotes} WHERE order_id = :id", array(':id' => $arg1->order_id))->fetchAssoc();
       $arg1->quote = $quote;
       $arg1->quote['accessorials'] = strval($quote['accessorials']);
     break;
     case 'delete':
-      db_query("DELETE FROM {uc_order_quotes} WHERE order_id = %d", $arg1->order_id);
+      db_delete('uc_order_quotes')
+        ->condition('order_id', $arg1->order_id)
+        ->execute();
     break;
   }
 }
@@ -593,10 +623,20 @@ function uc_quote_shipping_type() {
  *   The type of product that is fulfilled by various fulfillment modules.
  */
 function uc_quote_set_shipping_type($id_type, $id, $shipping_type) {
-  db_query("DELETE FROM {uc_quote_shipping_types} WHERE id_type = '%s' AND id = %d", $id_type, $id);
   if ($shipping_type !== '') {
-    db_query("INSERT INTO {uc_quote_shipping_types} (id_type, id, shipping_type) VALUES ('%s', %d, '%s')",
-      $id_type, $id, $shipping_type);
+    db_merge('uc_quote_shipping_types')
+      ->key(array(
+        'id_type' => $id_type,
+        'id' => $id,
+      ))
+      ->fields(array('shipping_type' => $shipping_type))
+      ->execute();
+  }
+  else {
+    db_delete('uc_quote_shipping_types')
+      ->condition('id_type', $id_type)
+      ->condition('id', $id)
+      ->execute();
   }
 }
 
@@ -613,7 +653,7 @@ function uc_quote_get_shipping_type($id_type, $id) {
   static $types = array();
 
   if (!isset($types[$id_type][$id])) {
-    $types[$id_type][$id] = db_result(db_query("SELECT shipping_type FROM {uc_quote_shipping_types} WHERE id_type = '%s' AND id = %d", $id_type, $id));
+    $types[$id_type][$id] = db_query("SELECT shipping_type FROM {uc_quote_shipping_types} WHERE id_type = :type AND id = :id", array(':type' => $id_type, ':id' => $id))->fetchField();
   }
 
   return $types[$id_type][$id];
@@ -646,10 +686,12 @@ function uc_product_get_shipping_type($product) {
  *   An address object.
  */
 function uc_quote_get_default_shipping_address($nid) {
-  $address = db_fetch_object(db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid = %d", $nid));
+  $address = db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid = :nid", array(':nid' => $nid))->fetchObject();
+
   if (empty($address)) {
     $address = variable_get('uc_quote_store_default_address', new stdClass());
   }
+
   return $address;
 }
 
@@ -906,8 +948,9 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2) {
 
       $label = $method['quote']['accessorials'][$quote_option[1]];
       $arg1->quote['rate'] = $quote_data[$quote_option[1]]['rate'];
-      $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = %d AND type = 'shipping'", $arg1->order_id);
-      if ($lid = db_result($result)) {
+
+      $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = :id AND type = :type", array(':id' => $arg1->order_id, ':type' => 'shipping'));
+      if ($lid = $result->fetchField()) {
         uc_order_update_line_item($lid,
           $label,
           $arg1->quote['rate']
@@ -919,19 +962,20 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2) {
           $arg1->quote['rate']
         );
       }
-    return TRUE;
 
+      return TRUE;
     case 'review':
       $context = array(
         'revision' => 'themed',
         'type' => 'line_item',
         'subject' => array('order' => $arg1),
       );
-      $result = db_query("SELECT * FROM {uc_order_line_items} WHERE order_id = %d AND type = '%s'", $arg1->order_id, 'shipping');
-      if ($line_item = db_fetch_array($result)) {
+      $result = db_query("SELECT * FROM {uc_order_line_items} WHERE order_id = :id AND type = :type", array(':id' => $arg1->order_id, ':type' => 'shipping'));
+      if ($line_item = $result->fetchAssoc()) {
         $context['subject']['line_item'] = $line_item;
         $review[] = array('title' => $line_item['title'], 'data' => uc_price($line_item['amount'], $context));
       }
+
       return $review;
   }
 }
@@ -1056,8 +1100,8 @@ function uc_order_pane_quotes($op, $arg1) {
           }
           $label = $method['quote']['accessorials'][$quote_option[1]];
           $order->quote['rate'] = $quote_data[$quote_option[1]]['rate'];
-          $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = %d AND type = 'shipping'", $arg1['order_id']);
-          if ($lid = db_result($result)) {
+          $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = :id AND type = :type", array(':id' => $arg1['order_id'], ':type' => 'shipping'));
+          if ($lid = $result->fetchField()) {
             uc_order_update_line_item($lid,
               $label,
               $order->quote['rate']

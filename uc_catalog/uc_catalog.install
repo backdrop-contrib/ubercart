@@ -65,15 +65,20 @@ function uc_catalog_schema() {
 function uc_catalog_install() {
   $t = get_t();
   //Find possible Product Catalog vocabulary.
-  $result = db_query("SELECT vid FROM {vocabulary} WHERE name = 'Catalog'");
-  if ($vocab = db_fetch_object($result)) {
-    $vid = $vocab->vid;
+  $vid = db_query("SELECT vid FROM {vocabulary} WHERE name = :name", array(':name' => $t('Catalog')))->fetchField();
+
+  // If none, create one.
+  if (!$vid) {
+    $vid = db_insert('vocabulary')
+      ->fields(array(
+        'name' => $t('Catalog'),
+        'description' => '',
+        'hierarchy' => 1,
+        'module' => 'uc_catalog',
+      ))
+      ->execute();
   }
-  else { //If none, create one.
-    db_query("INSERT INTO {vocabulary} (name, description, help, relations, hierarchy, multiple, required, tags, module, weight)
-      VALUES ('%s', '', '%s', 0, 1, 1, 0, 0, 'uc_catalog', 0)", $t('Catalog'), $t('Hold Ctrl while clicking to select multiple categories.'));
-    $vid = db_last_insert_id('vocabulary', 'vid');
-  }
+
   variable_set('uc_catalog_vid', $vid);
   variable_set('uc_catalog_name', $t('Catalog'));
 }
@@ -85,6 +90,9 @@ function uc_catalog_uninstall() {
   if ($vid = variable_get('uc_catalog_vid', 0)) {
     taxonomy_del_vocabulary($vid);
   }
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_catalog_%%'");
+
+  db_delete('variable')
+    ->condition('name', 'uc_catalog_%', 'LIKE')
+    ->execute();
 }
 

@@ -70,9 +70,15 @@ function uc_cart_links_report() {
     array('data' => t('Last click'), 'field' => 'last_click', 'sort' => 'desc'),
   );
 
+  $query = db_select('uc_cart_link_clicks')->extend('PagerDefault')->extend('TableSort')
+    ->fields()
+    ->limit(25)
+    ->element(1)
+    ->orderByHeader($header);
+
   $rows = array();
-  $result = pager_query("SELECT * FROM {uc_cart_link_clicks}". tablesort_sql($header), 25, 1);
-  while ($data = db_fetch_object($result)) {
+  $result = $query->execute();
+  foreach ($result as $data) {
     $rows[] = array(
       check_plain($data->cart_link_id),
       $data->clicks,

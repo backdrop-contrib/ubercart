@@ -20,8 +20,9 @@ function uc_flatrate_admin_methods() {
   $rows = array();
   $enabled = variable_get('uc_quote_enabled', array());
   $weight = variable_get('uc_quote_method_weight', array());
+
   $result = db_query("SELECT mid, title, label, base_rate, product_rate FROM {uc_flatrate_methods}");
-  while ($method = db_fetch_object($result)) {
+  foreach ($result as $method) {
     $row = array();
     $row[] = check_plain($method->title);
     $row[] = check_plain($method->label);
@@ -31,11 +32,13 @@ function uc_flatrate_admin_methods() {
     $row[] = l(t('conditions'), CA_UI_PATH .'/uc_flatrate_get_quote_'. $method->mid .'/edit/conditions');
     $rows[] = $row;
   }
+
   if (count($rows)) {
     $header = array(t('Title'), t('Label'), t('Base rate'), t('Default product rate'), array('data' => t('Operations'), 'colspan' => 2));
     $output .= theme('table', array('header' => $header, 'rows' => $rows));
   }
   $output .= l(t('Add a new flat rate shipping method.'), 'admin/store/settings/quotes/methods/flatrate/add');
+
   return $output;
 }
 
@@ -53,7 +56,7 @@ function uc_flatrate_admin_method_edit_form($form_state, $mid = 0) {
   $sign_flag = variable_get('uc_sign_after_amount', FALSE);
   $currency_sign = variable_get('uc_currency_sign', '$');
 
-  if (is_numeric($mid) && ($method = db_fetch_object(db_query("SELECT * FROM {uc_flatrate_methods} WHERE mid = %d", $mid)))) {
+  if (is_numeric($mid) && ($method = db_query("SELECT * FROM {uc_flatrate_methods} WHERE mid = :mid", array(':mid' => $mid))->fetchObject())) {
     $form['mid'] = array('#type' => 'value', '#value' => $mid);
   }
   $form['title'] = array('#type' => 'textfield',
@@ -123,22 +126,26 @@ function uc_flatrate_admin_method_edit_form_delete($form, &$form_state) {
  */
 function uc_flatrate_admin_method_edit_form_submit($form, &$form_state) {
   if ($form_state['values']['mid']) {
-    db_query("UPDATE {uc_flatrate_methods} SET title = '%s', label = '%s', base_rate = %f, product_rate = %f WHERE mid = %d",
-      $form_state['values']['title'], $form_state['values']['label'], $form_state['values']['base_rate'], $form_state['values']['product_rate'], $form_state['values']['mid']);
+    drupal_write_record('uc_flatrate_methods', $form_state['values'], 'mid');
+
     drupal_set_message(t("Flat rate shipping method was updated."));
   }
   else {
-    db_query("INSERT INTO {uc_flatrate_methods} (title, label, base_rate, product_rate) VALUES ('%s', '%s', %f, %f)",
-      $form_state['values']['title'], $form_state['values']['label'], $form_state['values']['base_rate'], $form_state['values']['product_rate']);
-    $mid = db_last_insert_id('uc_flatrate_methods', 'mid');
+    drupal_write_record('uc_flatrate_methods', $form_state['values']);
+
+    $mid = $form_state['values']['mid'];
+
     $enabled = variable_get('uc_quote_enabled', array());
     $enabled['flatrate_'. $mid] = TRUE;
     variable_set('uc_quote_enabled', $enabled);
+
     $weight = variable_get('uc_quote_method_weight', array());
     $weight['flatrate_'. $mid] = 0;
     variable_set('uc_quote_method_weight', $weight);
+
     drupal_set_message(t("Created and enabled new flat rate shipping method."));
   }
+
   $form_state['redirect'] = 'admin/store/settings/quotes/methods/flatrate';
 }
 
@@ -166,8 +173,12 @@ function uc_flatrate_admin_method_confirm_delete($form_state, $mid) {
  * @see uc_flatrate_admin_method_confirm_delete()
  */
 function uc_flatrate_admin_method_confirm_delete_submit($form, &$form_state) {
-  db_query("DELETE FROM {uc_flatrate_methods} WHERE mid = %d", $form_state['values']['mid']);
-  db_query("DELETE FROM {uc_flatrate_products} WHERE mid = %d", $form_state['values']['mid']);
+  db_delete('uc_flatrate_methods')
+    ->condition('mid', $form_state['values']['mid'])
+    ->execute();
+  db_delete('uc_flatrate_products')
+    ->condition('mid', $form_state['values']['mid'])
+    ->execute();
   ca_delete_predicate('uc_flatrate_get_quote_'. $form_state['values']['mid']);
 
   $enabled = variable_get('uc_quote_enabled', array());

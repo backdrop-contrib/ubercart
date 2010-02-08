@@ -90,9 +90,12 @@ function uc_payment_pack_receive_check_form_submit($form, &$form_state) {
 
   uc_payment_enter($form_state['values']['order_id'], 'check', $form_state['values']['amount'], $user->uid, '', $form_state['values']['comment']);
 
-  db_query("INSERT INTO {uc_payment_check} (order_id, clear_date) VALUES (%d, %d)",
-    $form_state['values']['order_id'], mktime(12, 0, 0, $form_state['values']['clear_month'],
-    $form_state['values']['clear_day'], $form_state['values']['clear_year']));
+  db_insert('uc_payment_check')
+    ->fields(array(
+      'order_id' => $form_state['values']['order_id'],
+      'clear_date' => mktime(12, 0, 0, $form_state['values']['clear_month'], $form_state['values']['clear_day'], $form_state['values']['clear_year']),
+    ))
+    ->execute();
 
   drupal_set_message(t('Check received, expected clear date of @date.', array('@date' => $form_state['values']['clear_month'] .'/'. $form_state['values']['clear_day'] .'/'. $form_state['values']['clear_year'])));
 

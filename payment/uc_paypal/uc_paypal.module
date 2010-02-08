@@ -442,8 +442,17 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
       }
 
       // Log the IPN to the database.
-      db_query("INSERT INTO {uc_payment_paypal_ipn} (order_id, txn_id, txn_type, mc_gross, status, receiver_email, payer_email, received) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', %d)",
-      $order->order_id, $nvp_response['TRANSACTIONID'], 'web_accept', $amount, 'Completed', '', $order->primary_email, REQUEST_TIME);
+      db_insert('uc_payment_paypal_ipn')
+        ->fields(array(
+          'order_id' => $order->order_id,
+          'txn_id' => $nvp_response['TRANSACTIONID'],
+          'txn_type' => 'web_accept',
+          'mc_gross' => $amount,
+          'status' => 'Completed',
+          'payer_email' => $order->primary_email,
+          'received' => REQUEST_TIME,
+        ))
+        ->execute();
 
       break;
     case 'FailureWithWarning':
@@ -499,7 +508,7 @@ function _uc_paypal_build_error_messages($nvp_response) {
 function uc_payment_method_paypal_wps($op, &$arg1) {
   switch ($op) {
     case 'order-view':
-      $txn_id = db_result(db_query("SELECT txn_id FROM {uc_payment_paypal_ipn} WHERE order_id = %d ORDER BY received ASC", $arg1->order_id));
+      $txn_id = db_query("SELECT txn_id FROM {uc_payment_paypal_ipn} WHERE order_id = :id ORDER BY received ASC", array(':id' => $arg1->order_id))->fetchField();
       if (empty($txn_id)) {
         $txn_id = t('Unknown');
       }
@@ -608,7 +617,7 @@ function uc_payment_method_paypal_wps($op, &$arg1) {
 function uc_payment_method_paypal_ec($op, &$arg1) {
   switch ($op) {
     case 'order-view':
-      $txn_id = db_result(db_query("SELECT txn_id FROM {uc_payment_paypal_ipn} WHERE order_id = %d ORDER BY received ASC", $arg1->order_id));
+      $txn_id = db_query("SELECT txn_id FROM {uc_payment_paypal_ipn} WHERE order_id = :id ORDER BY received ASC", array(':id' => $arg1->order_id))->fetchField();
       if (empty($txn_id)) {
         $txn_id = t('Unknown');
       }

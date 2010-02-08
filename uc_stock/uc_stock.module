@@ -178,7 +178,7 @@ function uc_stock_uc_message() {
  *   The amount to add to or subtract from the stock level.
  */
 function uc_stock_adjust($sku, $qty, $check_active = TRUE) {
-  $stock = db_fetch_object(db_query("SELECT active, stock FROM {uc_product_stock} WHERE sku = '%s'", $sku));
+  $stock = db_query("SELECT active, stock FROM {uc_product_stock} WHERE sku = :sku", array(':sku' => $sku))->fetchObject();
 
   if ($check_active) {
     if (!$stock->active) {
@@ -186,7 +186,10 @@ function uc_stock_adjust($sku, $qty, $check_active = TRUE) {
     }
   }
 
-  db_query("UPDATE {uc_product_stock} SET stock = stock + %d WHERE sku = '%s'", $qty, $sku);
+  db_update('uc_product_stock')
+    ->expression('stock', 'stock + :qty', array(':qty' => $qty))
+    ->condition('sku', $sku)
+    ->execute();
 
   module_invoke_all('uc_stock_adjusted', $sku, $stock->stock, $qty);
 }
@@ -200,7 +203,10 @@ function uc_stock_adjust($sku, $qty, $check_active = TRUE) {
  *   The number of items in stock.
  */
 function uc_stock_set($sku, $qty) {
-  db_query("UPDATE {uc_product_stock} SET stock = %d WHERE sku = '%s'", $qty, $sku);
+  db_update('uc_product_stock')
+    ->fields(array('stock' => $qty))
+    ->condition('sku', $sku)
+    ->execute();
 }
 
 /**
@@ -212,7 +218,7 @@ function uc_stock_set($sku, $qty) {
  *   The SKU's stock level, or FALSE if not active.
  */
 function uc_stock_level($sku) {
-  $stock = db_fetch_object(db_query("SELECT active, stock FROM {uc_product_stock} WHERE sku = '%s'", $sku));
+  $stock = db_query("SELECT active, stock FROM {uc_product_stock} WHERE sku = :sku", array(':sku' => $sku))->fetchObject();
 
   if ($stock && $stock->active) {
     return $stock->stock;
@@ -230,7 +236,7 @@ function uc_stock_level($sku) {
  *   Whether or not the sku has an active stock record.
  */
 function uc_stock_is_active($sku) {
-  return (bool) db_result(db_query("SELECT active FROM {uc_product_stock} WHERE sku = '%s'", $sku));
+  return (bool) db_query("SELECT active FROM {uc_product_stock} WHERE sku = :sku'", array(':sku' => $sku))->fetchField();
 }
 
 /**
@@ -296,7 +302,7 @@ function uc_stock_decrement_product_stock($product, $key, $order) {
   uc_stock_adjust($product->model, -$product->qty);
 
   // Load the new stock record
-  $stock = db_fetch_object(db_query("SELECT * FROM {uc_product_stock} WHERE sku = '%s'", $product->model));
+  $stock = db_query("SELECT * FROM {uc_product_stock} WHERE sku = :sku", array(':sku' => $product->model))->fetchObject();
 
   // Should we notify?
   if (variable_get('uc_stock_threshold_notification', FALSE) && $stock->stock <= $stock->threshold) {

@@ -225,12 +225,11 @@ function uc_catalog_orphaned_products() {
      products will appear as links below that you can follow to edit
      the product listings to assign them to categories.') .'</p>';
 
-  $query = "SELECT DISTINCT n.nid, n.title FROM {node} AS n LEFT JOIN {term_node} AS tn ON n.nid = tn.nid LEFT JOIN {vocabulary_node_types} AS vnt ON n.type = vnt.type WHERE n.type <> 'image' AND tn.tid IS NULL AND vnt.vid = %d";
   $vid = variable_get('uc_catalog_vid', 0);
-  $result = db_query($query, $vid);
+  $result = db_query("SELECT DISTINCT n.nid, n.title FROM {node} AS n LEFT JOIN {term_node} AS tn ON n.nid = tn.nid LEFT JOIN {vocabulary_node_types} AS vnt ON n.type = vnt.type WHERE n.type <> :type AND tn.tid IS NULL AND vnt.vid = :vid", array(':type' => 'image', ':vid' => $vid));
 
   $rows = array();
-  while ($node = db_fetch_object($result)) {
+  while ($node = $result->fetchObject()) {
     $rows[] = l($node->title, 'node/'. $node->nid .'/edit', array('query' => array('destination' => 'admin/store/products/orphans')));
   }
 

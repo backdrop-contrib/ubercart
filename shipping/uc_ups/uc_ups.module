@@ -129,22 +129,34 @@ function uc_ups_nodeapi(&$node, $op) {
         if (isset($node->ups)) {
           $ups_values = $node->ups;
           if (!$node->revision) {
-            db_query("DELETE FROM {uc_ups_products} WHERE vid = %d", $node->vid);
+            db_delete('uc_ups_products')
+              ->condition('vid', $node->vid)
+              ->execute();
           }
-          db_query("INSERT INTO {uc_ups_products} (vid, nid, pkg_type) VALUES (%d, %d, '%s')",
-            $node->vid, $node->nid, $ups_values['pkg_type']);
+
+          db_insert('uc_ups_products')
+            ->fields(array(
+              'vid' => $node->vid,
+              'nid' => $node->nid,
+              'pkg_type' => $ups_values['pkg_type'],
+            ))
+            ->execute();
         }
       break;
       case 'load':
         if (uc_product_get_shipping_type($node) == 'small_package') {
-          return array('ups' => db_fetch_array(db_query("SELECT * FROM {uc_ups_products} WHERE vid = %d", $node->vid)));
+          return array('ups' => db_query("SELECT * FROM {uc_ups_products} WHERE vid = :vid", array(':vid' => $node->vid))->fetchAssoc());
         }
       break;
       case 'delete':
-        db_query("DELETE FROM {uc_ups_products} WHERE nid = %d", $node->nid);
+        db_delete('uc_ups_products')
+          ->condition('nid', $node->nid)
+          ->execute();
       break;
       case 'delete revision':
-        db_query("DELETE FROM {uc_ups_products} WHERE vid = %d", $node->vid);
+        db_delete('uc_ups_products')
+          ->condition('vid', $node->vid)
+          ->execute();
       break;
     }
   }
@@ -873,7 +885,11 @@ function uc_ups_quote($products, $details) {
   if (empty($_SESSION['messages']['error'])) {
     unset($_SESSION['messages']['error']);
   }
-  db_query("DELETE FROM {watchdog} WHERE type = 'php' AND variables LIKE '%%SSL: fatal protocol error%%'");
+
+  db_delete('watchdog')
+    ->condition('type', 'php')
+    ->condition('variables', '%SSL: fatal protocol error%', 'LIKE')
+    ->execute();
   // End of ugly hack.
 
   return $quotes;
@@ -935,7 +951,7 @@ function uc_ups_fulfill_order($form_state, $order, $package_ids) {
         $product_list[] = $product->qty .' x '. $product->model;
         $declared_value += $product->qty * $product->price;
       }
-      $ups_data = db_fetch_array(db_query("SELECT pkg_type FROM {uc_ups_products} WHERE nid = %d", $product->nid));
+      $ups_data = db_query("SELECT pkg_type FROM {uc_ups_products} WHERE nid = :nid", array(':nid' => $product->nid))->fetchAssoc();
       $product->ups = $ups_data;
       $pkg_form = array('#type' => 'fieldset',
         '#title' => t('Package !id', array('!id' => $id)),

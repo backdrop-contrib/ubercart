@@ -76,21 +76,47 @@ function theme_uc_file_user_downloads($variables) {
 function uc_file_user_downloads($account) {
   drupal_set_title(t('File downloads'));
 
-  $files = array();
-
-  $result = pager_query(
-    "SELECT u.granted, f.filename, u.accessed, u.addresses, p.description, u.file_key, f.fid, u.download_limit, u.address_limit, u.expiration FROM {uc_file_users} as u ".
-    "LEFT JOIN {uc_files} as f ON u.fid = f.fid ".
-    "LEFT JOIN {uc_file_products} as p ON p.pfid = u.pfid WHERE uid = %d".
-    tablesort_sql($header),
-    UC_FILE_PAGER_SIZE,
-    0,
-    "SELECT COUNT(*) FROM {uc_file_users} WHERE uid = %d",
-    $account->uid
+  $header = array(
+    array('data' => t('Purchased'  ), 'field' => 'u.granted', 'sort' => 'asc'),
+    array('data' => t('Filename'   ), 'field' => 'f.filename'),
+    array('data' => t('Description'), 'field' => 'p.description'),
+    array('data' => t('Downloads'  ), 'field' => 'u.accessed'),
+    array('data' => t('Addresses'  )),
   );
 
+  $files = array();
+
+  $query = db_select('uc_file_users', 'u')->extend('PagerDefault')->extend('TableSort')
+    ->ondition('uid', $account->uid)
+    ->orderByHeader($header)
+    ->limit(UC_FILE_PAGER_SIZE);
+  $query->leftJoin('uc_files', 'f', 'u.fid = f.fid');
+  $query->leftJoin('uc_file_products', 'p', 'p.pfid = u.pfid');
+  $query->fields('u', array(
+      'granted',
+      'accessed',
+      'addresses',
+      'file_key',
+      'download_limit',
+      'address_limit',
+      'expiration',
+    ))
+    ->fields('f', array(
+      'filename',
+      'fid',
+    ))
+    ->fields('p', array('description'));
+
+  $count_query = db_select('uc_file_users')
+    ->condition('uid', $account_uid);
+  $count_query->addExpression('COUNT(*)');
+
+  $query->setCountQuery($count_query);
+
+  $result = $query->execute();
+
   $row = 0;
-  while ($file = db_fetch_object($result)) {
+  foreach ($result as $file) {
 
     $download_limit = $file->download_limit;
 

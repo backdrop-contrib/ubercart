@@ -78,7 +78,7 @@ function uc_attribute_condition_ordered_product_option_form($form_state, $settin
 
   $options = array();
   $result = db_query("SELECT a.aid, a.name AS attr_name, a.ordering, o.oid, o.name AS opt_name, o.ordering FROM {uc_attributes} AS a JOIN {uc_attribute_options} AS o ON a.aid = o.aid ORDER BY a.ordering, o.ordering");
-  while ($option = db_fetch_object($result)) {
+  foreach ($result as $option) {
     $options[$option->attr_name][$option->oid] = $option->opt_name;
   }
 

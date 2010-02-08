@@ -69,12 +69,25 @@ function uc_payment_schema() {
 
 function uc_payment_install() {
   $t = get_t();
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('payment_received', '". $t('Payment received') ."', 'payment_received', 10, 1);");
+
+  db_insert('uc_order_statuses')
+    ->fields(array(
+      'order_status_id' => 'payment_received',
+      'title' => $t('Payment received'),
+      'state' => 'payment_received',
+      'weight' => 10,
+      'locked' => 1,
+    ))
+    ->execute();
 }
 
 function uc_payment_uninstall() {
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_pg_%%'");
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_payment_%%'");
+  db_delete('variable')
+    ->condition(db_or()
+      ->condition('name', 'uc_pg_%', 'LIKE')
+      ->condition('name', 'uc_payment_%', 'LIKE'))
+    ->execute();
+
   variable_del('uc_default_payment_msg');
 }
 

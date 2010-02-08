@@ -256,8 +256,8 @@ function uc_shipping_order_actions($order) {
   $actions = array();
   $module_path = base_path() . drupal_get_path('module', 'uc_shipping');
   if (user_access('fulfill orders')) {
-    $result = db_query("SELECT COUNT(nid) FROM {uc_order_products} WHERE order_id = %d AND data LIKE '%%s:9:\"shippable\";s:1:\"1\";%%'", $order->order_id);
-    if (db_result($result)) {
+    $result = db_query("SELECT COUNT(nid) FROM {uc_order_products} WHERE order_id = :id AND data LIKE :data", array(':id' => $order->order_id, ':data' => '%s:9:\"shippable\";s:1:\"1\";%'));
+    if ($result->fetchField()) {
       $title = t('Package order !order_id products.', array('!order_id' => $order->order_id));
       $actions[] = array(
         'name' => t('Package'),
@@ -265,8 +265,8 @@ function uc_shipping_order_actions($order) {
         'icon' => '<img src="'. $module_path .'/images/package.gif" alt="'. $title .'" />',
         'title' => $title,
       );
-      $result = db_query("SELECT COUNT(package_id) FROM {uc_packages} WHERE order_id = %d", $order->order_id);
-      if (db_result($result)) {
+      $result = db_query("SELECT COUNT(package_id) FROM {uc_packages} WHERE order_id = :id", array(':id' => $order->order_id));
+      if ($result->fetchField()) {
         $title = t('Ship order !order_id packages.', array('!order_id' => $order->order_id));
         $actions[] = array(
           'name' => t('Ship'),
@@ -392,15 +392,15 @@ function uc_shipping_package_load($package_id) {
   static $packages = array();
 
   if (!isset($packages[$package_id])) {
-    $result = db_query("SELECT * FROM {uc_packages} WHERE package_id = %d", $package_id);
-    if ($package = db_fetch_object($result)) {
+    $result = db_query("SELECT * FROM {uc_packages} WHERE package_id = :id", array(':id' => $package_id));
+    if ($package = $result->fetchObject()) {
       $products = array();
       $descripion = '';
       $weight = 0;
       $units = variable_get('uc_weight_unit', 'lb');
       $addresses = array();
-      $result = db_query("SELECT op.order_product_id, pp.qty, pp.qty * op.weight AS weight, p.weight_units, op.nid, op.title, op.model, op.price, op.data FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id LEFT JOIN {uc_products} AS p ON op.nid = p.nid WHERE pp.package_id = %d", $package_id);
-      while ($product = db_fetch_object($result)) {
+      $result = db_query("SELECT op.order_product_id, pp.qty, pp.qty * op.weight AS weight, p.weight_units, op.nid, op.title, op.model, op.price, op.data FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id LEFT JOIN {uc_products} AS p ON op.nid = p.nid WHERE pp.package_id = :id", array(':id' => $package_id));
+      foreach ($result as $product) {
         $address = uc_quote_get_default_shipping_address($product->nid);
         // TODO: Lodge complaint that array_unique() compares as strings.
         if (!in_array($address, $addresses)) {
@@ -432,67 +432,87 @@ function uc_shipping_package_load($package_id) {
  */
 function uc_shipping_package_save($package) {
   $package = (object)$package;
+
   if (!isset($package->package_id)) {
-    db_query("INSERT INTO {uc_packages} (order_id) VALUES (%d)", $package->order_id);
-    $package->package_id = db_last_insert_id('uc_packages', 'package_id');
+    $package->package_id = db_insert('uc_packages')
+      ->fields(array('order_id' => $package->order_id))
+      ->execute();
   }
+
   if (count($package->products)) {
-    $types = array();
-    $values = array();
+    $insert = db_insert('uc_packaged_products')
+      ->fields(array('package_id', 'order_product_id', 'qty'));
+
     foreach ($package->products as $id => $product) {
-      $types[] = '(%d, %d, %d)';
-      $values[] = $package->package_id;
-      $values[] = $id;
-      $values[] = $product->qty;
-      $result = db_query("SELECT data FROM {uc_order_products} WHERE order_product_id = %d", $id);
-      if ($order_product = db_fetch_object($result)) {
+      $insert->values(array(
+          'package_id' => $package->package_id,
+          'order_product_id' => $id,
+          'qty' => $product->qty,
+        ));
+
+      $result = db_query("SELECT data FROM {uc_order_products} WHERE order_product_id = :id", array(':id' => $id));
+      if ($order_product = $result->fetchObject()) {
         $order_product->data = unserialize($order_product->data);
         $order_product->data['package_id'] = intval($package->package_id);
-        db_query("UPDATE {uc_order_products} SET data = '%s' WHERE order_product_id = %d", serialize($order_product->data), $id);
+
+        db_update('uc_order_products')
+          ->fields(array('data' => seriailze($order_product->data)))
+          ->condition('order_product_id', $id)
+          ->execute();
       }
     }
-    db_query("DELETE FROM {uc_packaged_products} WHERE package_id = %d", $package->package_id);
-    db_query("INSERT INTO {uc_packaged_products} (package_id, order_product_id, qty) VALUES ". implode(',', $types), $values);
+
+    db_delete('uc_packaged_products')
+      ->condition('package_id', $package->package_id)
+      ->execute();
+
+    $insert->execute();
   }
-  $types = array("shipping_type = '%s'");
-  $values = array($package->shipping_type);
+
+  $fields = array(
+    'order_id' => $package->order_id,
+    'shipping_type' => $package->shipping_type,
+  );
+
   if (isset($package->pkg_type)) {
-    $types[] = "pkg_type = '%s'";
-    $values[] = $package->pkg_type;
+    $fields['pkg_type'] = $package->pkg_type;
   }
   if (isset($package->length) && isset($package->width) && isset($package->height) && isset($package->length_units)) {
-    array_push($types, 'length = %f', 'width = %f', 'height = %f', "length_units = '%s'");
-    array_push($values, $package->length, $package->width, $package->height, $package->length_units);
+    $fields['length'] = $package->length;
+    $fields['width'] = $package->width;
+    $fields['height'] = $package->height;
+    $fields['length_units'] = $package->length_units;
   }
   if (isset($package->value)) {
-    $types[] = 'value = %f';
-    $values[] = $package->value;
+    $fields['value'] = $package->value;
   }
   if (isset($package->sid)) {
-    $types[] = 'sid = %d';
-    $values[] = $package->sid;
+    $fields['sid'] = $package->sid;
   }
   if (isset($package->tracking_number)) {
-    $types[] = "tracking_number = '%s'";
-    $values[] = $package->tracking_number;
+    $fields['tracking_number'] = $package->tracking_number;
   }
   if (isset($package->label_image)) {
-    $types[] = "label_image = '%s'";
-    $values[] = $package->label_image;
+    $fields['label_image'] = $package->label_image;
   }
-  $values[] = $package->package_id;
-  if (count($types)) {
-    // Let it be known that I think it's ridiculous that Drupal doesn't put NULL into its database. --Lyle
-    db_query("UPDATE {uc_packages} SET ". implode(',', $types) ." WHERE package_id = %d", $values);
-  }
+
+  db_update('uc_packages')
+    ->fields($fields)
+    ->condition('package_id', $package->package->id)
+    ->execute();
 }
 
 /**
  * Delete a package.
  */
 function uc_shipping_package_delete($package_id) {
-  db_query("DELETE FROM {uc_packages} WHERE package_id = %d", $package_id);
-  db_query("DELETE FROM {uc_packaged_products} WHERE package_id = %d", $package_id);
+  db_delete('uc_packages')
+    ->condition('package_id', $package_id)
+    ->execute();
+  db_delete('uc_packaged_products')
+    ->condition('package_id', $package_id)
+    ->execute();
+
   drupal_set_message(t('Package @id has been deleted.', array('@id' => $package_id)));
 }
 
@@ -500,11 +520,11 @@ function uc_shipping_package_delete($package_id) {
  * Load a shipment and its packages.
  */
 function uc_shipping_shipment_load($shipment_id) {
-  $shipment = db_fetch_object(db_query("SELECT * FROM {uc_shipments} WHERE sid = %d", $shipment_id));
+  $shipment = db_query("SELECT * FROM {uc_shipments} WHERE sid = :sid", array(':sid' => $shipment_id))->fetchObject();
   if ($shipment) {
-    $result = db_query("SELECT package_id FROM {uc_packages} WHERE sid = %d", $shipment_id);
+    $result = db_query("SELECT package_id FROM {uc_packages} WHERE sid = :sid", array(':sid' => $shipment_id));
     $packages = array();
-    while ($package = db_fetch_object($result)) {
+    foreach ($result as $package) {
       $packages[$package->package_id] = uc_shipping_package_load($package->package_id);
     }
     $shipment->packages = $packages;
@@ -516,6 +536,7 @@ function uc_shipping_shipment_load($shipment_id) {
       }
     }
   }
+
   return $shipment;
 }
 
@@ -523,14 +544,30 @@ function uc_shipping_shipment_load($shipment_id) {
  * Save a shipment.
  */
 function uc_shipping_shipment_save($shipment) {
+  if (isset($shipment->origin)) {
+    foreach ($shipment->origin as $field => $value) {
+      $field = 'o_'. $field;
+      $shipment->$field = $value;
+      $fields[$field] = $value;
+    }
+  }
+  if (isset($shipment->destination)) {
+    foreach ($shipment->destination as $field => $value) {
+      $field = 'd_'. $field;
+      $shipment->$field = $value;
+      $fields[$field] = $value;
+    }
+  }
+
   if (!$shipment->sid) {
-    db_query("INSERT INTO {uc_shipments} (order_id) VALUES (%d)", $shipment->order_id);
-    $shipment->sid = db_last_insert_id('uc_shipments', 'sid');
+    drupal_write_record('uc_shipments', $shipment);
     $shipment->is_new = TRUE;
   }
   else {
+    drupal_write_record('uc_shipments', $shipment, 'sid');
     $shipment->is_new = FALSE;
   }
+
   if (is_array($shipment->packages)) {
     foreach ($shipment->packages as $package) {
       $package->sid = $shipment->sid;
@@ -542,21 +579,6 @@ function uc_shipping_shipment_save($shipment) {
       $package->products = $products;
     }
   }
-  if (isset($shipment->origin)) {
-    foreach ($shipment->origin as $field => $value) {
-      $field = 'o_'. $field;
-      $shipment->$field = $value;
-    }
-  }
-  if (isset($shipment->destination)) {
-    foreach ($shipment->destination as $field => $value) {
-      $field = 'd_'. $field;
-      $shipment->$field = $value;
-    }
-  }
-  db_query("UPDATE {uc_shipments} SET order_id = %d, o_first_name = '%s', o_last_name = '%s', o_company = '%s', o_street1 = '%s', o_street2 = '%s', o_city = '%s', o_zone = %d, o_postal_code = '%s', o_country = %d, d_first_name = '%s', d_last_name = '%s', d_company = '%s', d_street1 = '%s', d_street2 = '%s', d_city = '%s', d_zone = %d, d_postal_code = '%s', d_country = %d, shipping_method = '%s', accessorials = '%s', carrier = '%s', transaction_id = '%s', tracking_number = '%s', ship_date = %d, expected_delivery = %d, cost = %f WHERE sid = %d",
-    $shipment->order_id, $shipment->o_first_name, $shipment->o_last_name, $shipment->o_company, $shipment->o_street1, $shipment->o_street2, $shipment->o_city, $shipment->o_zone, $shipment->o_postal_code, $shipment->o_country, $shipment->d_first_name, $shipment->d_last_name, $shipment->d_company, $shipment->d_street1, $shipment->d_street2, $shipment->d_city, $shipment->d_zone, $shipment->d_postal_code, $shipment->d_country, $shipment->shipping_method, $shipment->accessorials, $shipment->carrier, $shipment->transaction_id, $shipment->tracking_number, $shipment->ship_date, $shipment->expected_delivery, $shipment->cost, $shipment->sid
-  );
 
   module_invoke_all('shipment', 'save', $shipment);
   $order = uc_order_load($shipment->order_id);
@@ -573,8 +595,20 @@ function uc_shipping_shipment_delete($shipment_id) {
       file_delete($package->label_image);
     }
   }
-  db_query("UPDATE {uc_packages} SET sid = NULL, tracking_number = NULL, label_image = NULL WHERE sid = %d", $shipment_id);
-  db_query("DELETE FROM {uc_shipments} WHERE sid = %d", $shipment_id);
+
+  db_update('uc_packages')
+    ->fields(array(
+      'sid' => NULL,
+      'tracking_number' => NULL,
+      'label_image' => NULL,
+    ))
+    ->condition('sid', $shipment_id)
+    ->execute();
+
+  db_delete('uc_shipments')
+    ->condition('sid', $shipment_id)
+    ->execute();
+
   module_invoke_all('shipment', 'delete', $shipment);
 }
 
@@ -588,8 +622,8 @@ function uc_shipping_order_pane_packages($op, $arg1) {
     case 'view':
     case 'customer':
       $tracking = array();
-      $result = db_query("SELECT sid FROM {uc_shipments} WHERE order_id = %d", $arg1->order_id);
-      while ($shipment = db_fetch_object($result)) {
+      $result = db_query("SELECT sid FROM {uc_shipments} WHERE order_id = :id", array(':id' => $arg1->order_id));
+      foreach ($result as $shipment) {
         $shipment = uc_shipping_shipment_load($shipment->sid);
         if ($shipment->tracking_number) {
           $tracking[$shipment->carrier]['children'][] = check_plain($shipment->tracking_number);
@@ -606,8 +640,8 @@ function uc_shipping_order_pane_packages($op, $arg1) {
       foreach ($tracking as $carrier => $item) {
         $output .= '<strong>'. $carrier .':</strong>'. theme('item_list', array('items' => $item));
       }
+
       return $output;
-    break;
   }
 }
 
@@ -623,7 +657,8 @@ function uc_shipping_select_address($addresses, $onchange = '', $title = NULL, $
     $addresses[] = $store_address;
   }
 
-  $blank = array('first_name' => '',
+  $blank = array(
+    'first_name' => '',
     'last_name' => '',
     'phone' => '',
     'company' => '',

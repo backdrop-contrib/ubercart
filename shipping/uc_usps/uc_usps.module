@@ -80,22 +80,34 @@ function uc_usps_nodeapi(&$node, $op) {
         if (isset($node->usps)) {
           $usps_values = $node->usps;
           if (!$node->revision) {
-            db_query("DELETE FROM {uc_usps_products} WHERE vid = %d", $node->vid);
+            db_delete('uc_usps_products')
+              ->condition('vid', $node->vid)
+              ->execute();
           }
-          db_query("INSERT INTO {uc_usps_products} (vid, nid, container) VALUES (%d, %d, '%s')",
-            $node->vid, $node->nid, $usps_values['container']);
+
+          db_insert('uc_usps_products')
+            ->fields(array(
+              'vid' => $node->vid,
+              'nid' => $node->nid,
+              'container' => $usps_values['container'],
+            ))
+            ->execute();
         }
       break;
       case 'load':
         if (uc_product_get_shipping_type($node) == 'small_package') {
-          return array('usps' => db_fetch_array(db_query("SELECT * FROM {uc_usps_products} WHERE vid = %d", $node->vid)));
+          return array('usps' => db_query("SELECT * FROM {uc_usps_products} WHERE vid = :vid", array(':vid' => $node->vid))->fetchAssoc());
         }
       break;
       case 'delete':
-        db_query("DELETE FROM {uc_usps_products} WHERE nid = %d", $node->nid);
+        db_delete('uc_usps_products')
+          ->condition('nid', $node->nid)
+          ->execute();
       break;
       case 'delete revision':
-        db_query("DELETE FROM {uc_usps_products} WHERE vid = %d", $node->vid);
+        db_delete('uc_usps_products')
+          ->condition('vid', $node->vid)
+          ->execute();
       break;
     }
   }

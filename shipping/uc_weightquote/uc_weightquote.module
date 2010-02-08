@@ -60,7 +60,7 @@ function uc_weightquote_form_alter(&$form, $form_state, $form_id) {
       'location' => 'shipping-weightquote-method-node-form',
       'subject' => array(),
     );
-    while ($method = db_fetch_object($result)) {
+    foreach ($result as $method) {
       $context['subject']['weightquote_method'] = $method;
       if (!isset($form['shipping']['weightquote'])) {
         $form['shipping']['weightquote'] = array(
@@ -97,29 +97,42 @@ function uc_weightquote_nodeapi(&$node, $op) {
       case 'update':
         if (is_array($node->weightquote)) {
           if (!$node->revision) {
-            db_query("DELETE FROM {uc_weightquote_products} WHERE vid = %d", $node->vid);
+            db_delete('uc_weightquote_products')
+              ->condition('vid', $node->vid)
+              ->execute();
           }
+
+          $query = db_insert('uc_weightquote-products')
+            ->fields(array('vid', 'nid', 'mid', 'rate'));
           foreach ($node->weightquote as $mid => $rate) {
             if ($rate !== '') {
-              db_query("INSERT INTO {uc_weightquote_products} (vid, nid, mid, rate) VALUES (%d, %d, %d, %f)",
-                $node->vid, $node->nid, $mid, $rate);
+              $query->values(array(
+                  'vid' => $node->vid,
+                  'nid' => $node->nid,
+                  'mid' => $mid,
+                  'rate' => $rate,
+                ));
             }
           }
+
+          $query->execute();
         }
       break;
       case 'load':
-        $return = array('weightquote' => array());
-        $result = db_query("SELECT mid, rate FROM {uc_weightquote_products} WHERE vid = %d", $node->vid);
-        while ($rate = db_fetch_object($result)) {
-          $return['weightquote'][$rate->mid] = $rate->rate;
-        }
+        $return = array();
+
+        $return['weightquote'] = db_query("SELECT mid, rate FROM {uc_weightquote_products} WHERE vid = :vid", array(':vid' => $node->vid))->fetchAllKeyed();
+
         return $return;
-      break;
       case 'delete':
-        db_query("DELETE FROM {uc_weightquote_products} WHERE nid = %d", $node->nid);
+        db_delete('uc_weightquote_products')
+          ->condition('nid', $node->nid)
+          ->execute();
       break;
       case 'delete revision':
-        db_query("DELETE FROM {uc_weightquote_products} WHERE vid = %d", $node->vid);
+        db_delete('uc_weightquote_products')
+          ->condition('vid', $node->vid)
+          ->execute();
       break;
     }
   }
@@ -139,7 +152,7 @@ function uc_weightquote_ca_predicate() {
   $predicates = array();
 
   $result = db_query("SELECT mid, title FROM {uc_weightquote_methods}");
-  while ($method = db_fetch_object($result)) {
+  foreach ($result as $method) {
     $predicates['uc_weightquote_get_quote_'. $method->mid] = array(
       '#title' => t('Shipping quote via @method', array('@method' => $method->title)),
       '#trigger' => 'get_quote_from_weightquote_'. $method->mid,
@@ -170,7 +183,7 @@ function uc_weightquote_shipping_method() {
   $enabled = variable_get('uc_quote_enabled', array());
   $weight = variable_get('uc_quote_method_weight', array());
   $result = db_query("SELECT mid, title, label FROM {uc_weightquote_methods}");
-  while ($method = db_fetch_object($result)) {
+  foreach ($result as $method) {
     $methods['weightquote_'. $method->mid] = array(
       'id' => 'weightquote_'. $method->mid,
       'module' => 'uc_weightquote',
@@ -212,7 +225,7 @@ function uc_weightquote_quote($products, $details, $method) {
     'type' => 'amount',
   );
 
-  if ($method = db_fetch_object(db_query("SELECT * FROM {uc_weightquote_methods} WHERE mid = %d", $mid))) {
+  if ($method = db_query("SELECT * FROM {uc_weightquote_methods} WHERE mid = :mid", array(':mid' => $mid))->fetchObject()) {
     $context['extras']['weightquote_method'] = $method;
     // Start at the base rate.
     $rate = $method->base_rate;

@@ -98,7 +98,11 @@ function uc_payment_pack_schema() {
 }
 
 function uc_payment_pack_uninstall() {
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_check_%%'");
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_cod_%%'");
+  db_delete('variable')
+    ->condition(db_or()
+      ->condition('name', 'uc_check_%', 'LIKE')
+      ->condition('name', 'uc_cod_%', 'LIKE')
+    )
+    ->execute();
 }
 

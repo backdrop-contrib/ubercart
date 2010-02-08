@@ -173,7 +173,7 @@ function uc_file_user_form(&$account, $category = NULL) {
   );
 
   // Drop out early if we don't even have any files uploaded.
-  if (!db_result(db_query("SELECT COUNT(*) FROM {uc_files}"))) {
+  if (!db_query("SELECT COUNT(*) FROM {uc_files}")->fetchField()) {
     $form['file']['file_message'] = array(
       '#value' => t(
         'You must add files at the !url in order to attach them to a user.',
@@ -199,9 +199,9 @@ function uc_file_user_form(&$account, $category = NULL) {
   $form['file']['download']['file_download']['#tree'] = TRUE;
 
   $downloadable_files = array();
-  $file_downloads = db_query("SELECT * FROM {uc_file_users} AS ufu INNER JOIN {uc_files} AS uf ON ufu.fid = uf.fid WHERE ufu.uid = %d ORDER BY uf.filename ASC", $account->uid);
+  $file_downloads = db_query("SELECT * FROM {uc_file_users} AS ufu INNER JOIN {uc_files} AS uf ON ufu.fid = uf.fid WHERE ufu.uid = :uid ORDER BY uf.filename ASC", array(':uid' => $account->uid));
   $behavior = 0;
-  while ($file_download = db_fetch_object($file_downloads)) {
+  foreach ($file_downloads as $file_download) {
 
     // Store a flat array so we can array_diff the ones already allowed when building
     // the list of which can be attached.
@@ -273,7 +273,7 @@ function uc_file_user_form(&$account, $category = NULL) {
   $available_files = array();
 
   $files = db_query("SELECT * FROM {uc_files} ORDER BY filename ASC");
-  while ($file = db_fetch_object($files)) {
+  foreach ($files as $file) {
     if (substr($file->filename, -1) != '/' && substr($file->filename, -1) != '\\') {
       $available_files[$file->fid] = $file->filename;
     }
@@ -392,7 +392,7 @@ function uc_file_user_view(&$account) {
 
   // If user has files and permission to view them, put a link
   // on the user's profile
-  $existing_download = db_result(db_query("SELECT fid FROM {uc_file_users} WHERE uid = %d", $account->uid));
+  $existing_download = db_query("SELECT fid FROM {uc_file_users} WHERE uid = :uid", array(':uid' => $account->uid))->fetchField();
   if (!$existing_download || (!user_access('view all downloads') && $user->uid != $account->uid)) {
     return;
   }
@@ -569,9 +569,9 @@ function uc_file_add_to_cart($nid, $qty, $data) {
   $product_features = db_query("SELECT * FROM {uc_product_features} AS upf ".
     "INNER JOIN {uc_file_products} AS ufp ON upf.pfid = ufp.pfid ".
     "INNER JOIN {uc_files} AS uf ON ufp.fid = uf.fid ".
-    "WHERE upf.nid = %d", $nid);
+    "WHERE upf.nid = :nid", array(':nid' => $nid));
 
-  while ($product_feature = db_fetch_object($product_features)) {
+  foreach ($product_features as $product_feature) {
 
     // Match up models...
     if (!empty($product_feature->model) && $product_feature->model != $data['model']) {
@@ -614,8 +614,8 @@ function uc_file_cart_item($op, &$item) {
     case 'can_ship':
 
       // Check if this model is shippable as well as a file (;/)
-      $files = db_query("SELECT shippable, model FROM {uc_file_products} as fp INNER JOIN {uc_product_features} as pf ON pf.pfid = fp.pfid WHERE nid = %d", $item->nid);
-      while ($file = db_fetch_object($files)) {
+      $files = db_query("SELECT shippable, model FROM {uc_file_products} as fp INNER JOIN {uc_product_features} as pf ON pf.pfid = fp.pfid WHERE nid = :nid", array(':nid' => $item->nid));
+      foreach ($files as $file) {
 
         // If the model is 'any' then return.
         if (empty($file->model)) {
@@ -764,7 +764,7 @@ function uc_file_feature_form($form_state, $node, $feature) {
 
   // Use the feature's values to fill the form, if they exist.
   if (!empty($feature)) {
-    $file_product        = db_fetch_object(db_query("SELECT * FROM {uc_file_products} as p LEFT JOIN {uc_files} as f ON p.fid = f.fid WHERE pfid = %d", $feature['pfid']));
+    $file_product        = db_query("SELECT * FROM {uc_file_products} as p LEFT JOIN {uc_files} as f ON p.fid = f.fid WHERE pfid = :pfid", array(':pfid' => $feature['pfid']))->fetchObject();
 
     $default_feature     = $feature['pfid'];
 
@@ -906,7 +906,7 @@ function uc_file_feature_form($form_state, $node, $feature) {
 function uc_file_feature_form_validate($form, &$form_state) {
 
   // Ensure this is actually a file we control...
-  if (!db_result(db_query("SELECT fid FROM {uc_files} WHERE filename = '%s'", $form_state['values']['uc_file_filename']))) {
+  if (!db_query("SELECT fid FROM {uc_files} WHERE filename = :name", array(':name' => $form_state['values']['uc_file_filename']))->fetchField()) {
     form_set_error('uc_file_filename', t('%file is not a valid file or directory inside file download directory.', array('%file' => $form_state['values']['uc_file_filename'])));
   }
 
@@ -987,7 +987,7 @@ function uc_file_feature_form_submit($form, &$form_state) {
  * Get a file_product id from a product feature id.
  */
 function _uc_file_get_fpid($pfid) {
-  return db_result(db_query("SELECT fpid FROM {uc_file_products} WHERE pfid = %d", $pfid));
+  return db_query("SELECT fpid FROM {uc_file_products} WHERE pfid = :pfid", array(':pfid' => $pfid))->fetchField();
 }
 
 /**
@@ -1208,11 +1208,10 @@ function _uc_file_autocomplete_filename() {
   $url = explode('_autocomplete_file/', request_uri());
   $string = $url[1];
 
-  $files = db_query("SELECT filename FROM {uc_files} WHERE filename LIKE LOWER('%s')", '%'. strtolower($url[1]) .'%');
-  while ($filename = db_result($files)) {
+  $files = db_query("SELECT filename FROM {uc_files} WHERE filename LIKE :name ORDER BY filename ASC", array(':name' => '%' . db_like($url[1]) .'%'));
+  while ($filename = $files->fetchField()) {
     $matches[$filename] = $filename;
   }
-  asort($matches);
 
   drupal_json($matches);
 }
@@ -1255,7 +1254,7 @@ function _uc_file_expiration_date($file_limits, $timestamp) {
  */
 function uc_file_empty() {
   $files = db_query("SELECT * FROM {uc_files}");
-  while ($file = db_fetch_object($files)) {
+  foreach ($files as $file) {
     _uc_file_prune_db($file->fid);
   }
 }
@@ -1264,14 +1263,25 @@ function uc_file_empty() {
  * Remove all db entries associated with a given $fid.
  */
 function _uc_file_prune_db($fid) {
-  $pfids = db_query("SELECT pfid FROM {uc_file_products} WHERE fid = %d", $fid);
-  while ($pfid = db_fetch_object($pfids)) {
-    db_query("DELETE FROM {uc_product_features} WHERE pfid = %d AND fid = 'file'", $pfid->pfid);
-    db_query("DELETE FROM {uc_file_products} WHERE pfid = %d", $pfid->pfid);
+  $pfids = db_query("SELECT pfid FROM {uc_file_products} WHERE fid = :fid", array(':fid' => $fid));
+  while ($pfid = $pfids->fetchField()) {
+    db_delete('uc_product_features')
+      ->condition('pfid', $pfid)
+      ->condition('fid', 'file')
+      ->execute();
+
+    db_delete('uc_file_products')
+      ->condition('pfid', $pfid)
+      ->execute();
   }
 
-  db_query("DELETE FROM {uc_file_users} WHERE fid = %d", $fid);
-  db_query("DELETE FROM {uc_files} WHERE fid = %d", $fid);
+  db_delete('uc_file_users')
+    ->condition('fid', $fid)
+    ->execute();
+
+  db_delete('uc_files')
+    ->condition('fid', $fid)
+    ->execute();
 }
 
 /**
@@ -1279,7 +1289,7 @@ function _uc_file_prune_db($fid) {
  */
 function _uc_file_prune_files() {
   $files = db_query("SELECT * FROM {uc_files}");
-  while ($file = db_fetch_object($files)) {
+  foreach ($files as $file) {
     $filename = uc_file_qualify_file($file->filename);
 
     // It exists, leave it.
@@ -1313,13 +1323,15 @@ function _uc_file_gather_files() {
     $fid = NULL;
 
     // Insert new entries.
-    if (!db_result(db_query("SELECT fid FROM {uc_files} WHERE filename = '%s'", $file_dir .'/')) && $file_dir != '.') {
-      db_query("INSERT INTO {uc_files} (filename) VALUES ('%s')", $file_dir .'/');
-      $fid = db_last_insert_id('uc_files', 'fid');
+    if ($file_dir != '.' && !db_query("SELECT fid FROM {uc_files} WHERE filename = :name", array(':name' => $file_dir .'/'))->fetchField()) {
+      $fid = db_insert('uc_files')
+        ->fields(array('filename' => $file_dir . '/'))
+        ->execute();
     }
-    if (!db_result(db_query("SELECT fid FROM {uc_files} WHERE filename = '%s'", $filename))) {
-      db_query("INSERT INTO {uc_files} (filename) VALUES ('%s')", $filename);
-      $fid = db_last_insert_id('uc_files', 'fid');
+    if (!db_query("SELECT fid FROM {uc_files} WHERE filename = :name", array(':name' => $filename))->fetchField()) {
+      $fid = db_insert('uc_files')
+        ->fields(array('filename' => $filename))
+        ->execute();
     }
 
     // Invoke hook_file_action.
@@ -1370,7 +1382,7 @@ function uc_file_remove_by_id($fid, $recur) {
     $remove_fields = FALSE;
 
     // Qualify the path for I/O, and delete the files/dirs.
-    $filename = db_result(db_query("SELECT filename FROM {uc_files} WHERE fid = %d", $fid));
+    $filename = db_query("SELECT filename FROM {uc_files} WHERE fid = :fid", array(':fid' => $fid))->fetchField();
     $dir = uc_file_qualify_file($filename);
     if (is_dir($dir)) {
 
@@ -1440,7 +1452,7 @@ function _uc_file_get_dir_file_ids($fids, $recursive = FALSE) {
     }
 
    $base_name = $base->filename . (is_dir(uc_file_qualify_file($base->filename)) ? '%' : '');
-   $files = db_query("SELECT * FROM {uc_files} WHERE filename LIKE '%s'", $base_name);
+   $files = db_query("SELECT * FROM {uc_files} WHERE filename LIKE :name", array(':name' => $base_name));
 
     // PHP str_replace() can't replace only n matches, so we use regex. First
     // we escape our file slashes, though.
@@ -1448,7 +1460,7 @@ function _uc_file_get_dir_file_ids($fids, $recursive = FALSE) {
    $base_name = str_replace("\\", "\\\\", $base_name);
    $base_name = str_replace("/", "\/", $base_name);
 
-    while ($file = db_fetch_object($files)) {
+   foreach ($files as $file) {
 
       // Make the file path relative to the given directory.
       $filename_change = preg_replace('/'. $base_name .'/', '', $file->filename, 1);
@@ -1566,10 +1578,11 @@ function uc_file_qualify_file($filename) {
  *   A Drupal user ID.
  */
 function uc_file_remove_user($user) {
-  db_query("DELETE FROM {uc_file_users} WHERE uid = %d", $user->uid);
+  $query = db_delete('uc_file_users')
+    ->condition('uid', $user->uid);
 
   // Echo the deletion only if something was actually deleted.
-  if (db_affected_rows()) {
+  if ($query->execute()) {
     drupal_set_message(t('%user has had all of his/her downloadable files removed.', array('%user' => $user->name)));
   }
 }
@@ -1584,10 +1597,12 @@ function uc_file_remove_user($user) {
  */
 function uc_file_remove_user_file_by_id($user, $fid) {
   $file = uc_file_get_by_id($fid);
-  db_query("DELETE FROM {uc_file_users} WHERE uid = %d AND fid = %d", $user->uid, $fid);
+  $query = db_delete('uc_file_users')
+    ->condition('uid', $user->uid)
+    ->condition('fid', $fid);
 
   // Echo the deletion only if something was actually deleted.
-  if (db_affected_rows()) {
+  if ($query->execute()) {
     drupal_set_message(t('%user has had %file removed from his/her downloadable file list.', array('%user' => $user->name, '%file' => $file->filename)));
   }
 }
@@ -1622,7 +1637,7 @@ function &uc_file_get_by_name($filename) {
   $cache = _uc_file_get_cache();
 
   if (!isset($cache[$filename])) {
-    $cache[$filename] = db_fetch_object(db_query("SELECT * FROM {uc_files} WHERE filename = '%s'", $filename));
+    $cache[$filename] = db_query("SELECT * FROM {uc_files} WHERE filename = :name", array(':name' => $filename))->fetchObject();
   }
 
   return $cache[$filename];
@@ -1640,7 +1655,7 @@ function &uc_file_get_by_id($fid) {
   $cache = _uc_file_get_cache();
 
   if (!isset($cache[$fid])) {
-    $cache[$fid] = db_fetch_object(db_query("SELECT * FROM {uc_files} WHERE fid = %d", $fid));
+    $cache[$fid] = db_query("SELECT * FROM {uc_files} WHERE fid = :fid", array(':fid' => $fid))->fetchObject();
   }
 
   return $cache[$fid];
@@ -1658,9 +1673,9 @@ function &uc_file_get_by_key($key) {
   $cache = _uc_file_get_cache();
 
   if (!isset($cache[$key])) {
-    $cache[$key] = db_fetch_object(db_query("SELECT * FROM {uc_file_users} ufu ".
+    $cache[$key] = db_query("SELECT * FROM {uc_file_users} ufu ".
       "LEFT JOIN {uc_files} uf ON uf.fid = ufu.fid ".
-      "WHERE ufu.file_key = '%s'", $key));
+      "WHERE ufu.file_key = :key", array(':key' => $key))->fetchObject();
     $cache[$key]->addresses = unserialize($cache[$key]->addresses);
   }
 
@@ -1758,7 +1773,7 @@ function uc_file_user_renew($fid, $user, $pfid, $file_limits, $force_overwrite) 
  * Retrieve a file_user object by user and fid.
  */
 function _uc_file_user_get($user, $fid) {
-  $file_user = db_fetch_object(db_query("SELECT * FROM {uc_file_users} WHERE uid = %d AND fid = %d", $user->uid, $fid));
+  $file_user = db_query("SELECT * FROM {uc_file_users} WHERE uid = :uid AND fid = :fid", array(':uid' => $user->uid, ':fid' => $fid))->fetchObject();
 
   if ($file_user) {
     $file_user->addresses = unserialize($file_user->addresses);

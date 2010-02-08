@@ -289,9 +289,16 @@ function uc_catalog_taxonomy($op, $type, $object = NULL) {
             if (file_copy($file, $image_path .'/'. $file->filename)) {
               file_set_status($file, 1);
               if (image_get_info($file->filepath)) {
-                db_query("INSERT INTO {uc_catalog_images} (fid, tid, filename, filepath, filemime, filesize) VALUES (%d, %d, '%s', '%s', '%s', %d)",
-                  $file->fid, $object['tid'], $file->filename, $file->filepath, $file->filemime, $file->filesize
-                );
+                db_insert('uc_catalog_images')
+                  ->fields(array(
+                    'fid' => $file->fid,
+                    'tid' => $object['tid'],
+                    'filename' => $file->filename,
+                    'filepath' => $file->filepath,
+                    'filemime' => $file->filemime,
+                    'filesize' => $file->filesize,
+                  ))
+                  ->execute();
               }
               else {
                 form_set_error($field_name, t('Uploaded file is not a valid image'));
@@ -309,7 +316,9 @@ function uc_catalog_taxonomy($op, $type, $object = NULL) {
           }
           $field_name = 'image';
           if ($object['remove']) {
-            db_query("DELETE FROM {uc_catalog_images} WHERE tid = %d", $object['tid']);
+            db_delete('uc_catalog_images')
+              ->condition('tid', $object['tid'])
+              ->execute();
           }
           elseif ($file = file_save_upload($field_name)) {
             $file->filepath = str_replace('\\', '/', $file->filepath);
@@ -318,10 +327,16 @@ function uc_catalog_taxonomy($op, $type, $object = NULL) {
               file_set_status($file, 1);
               //dpm($file);
               if (image_get_info($file->filepath)) {
-                db_query("DELETE FROM {uc_catalog_images} WHERE tid = %d", $object['tid']);
-                db_query("INSERT INTO {uc_catalog_images} (fid, tid, filename, filepath, filemime, filesize) VALUES (%d, %d, '%s', '%s', '%s', %d)",
-                  $file->fid, $object['tid'], $file->filename, $file->filepath, $file->filemime, $file->filesize
-                );
+                db_merge('uc_catalog_images')
+                  ->key(array('tid' => $object['tid']))
+                  ->fields(array(
+                    'fid' => $file->fid,
+                    'filename' => $file->filename,
+                    'filepath' => $file->filepath,
+                    'filemime' => $file->filemime,
+                    'filesize' => $file->filesize,
+                  ))
+                  ->execute();
               }
               else {
                 form_set_error($field_name, t('Uploaded file is not a valid image'));
@@ -332,9 +347,11 @@ function uc_catalog_taxonomy($op, $type, $object = NULL) {
         break;
         case 'delete':
           $category = (object) $object;
-          if ($file = db_fetch_object(db_query("SELECT fid, filepath FROM {uc_catalog_images} WHERE tid = %d", $category->tid))) {
+          if ($file = db_query("SELECT fid, filepath FROM {uc_catalog_images} WHERE tid = :tid", array(':tid' => $category->tid))->fetchObject()) {
             file_delete($file->filepath);
-            db_query("DELETE FROM {uc_catalog_images} WHERE fid = %d", $file->fid);
+            db_delete('uc_catalog_images')
+              ->condition('fid', $file->fid)
+              ->execute();
           }
           path_set_alias(uc_catalog_path($category));
         break;
@@ -508,8 +525,8 @@ function uc_catalog_pathauto($op) {
  */
 function uc_catalog_pathauto_bulkupdate() {
   $catalog_vid = variable_get('uc_catalog_vid', 0);
-  $query = "SELECT tid, vid, name, src, dst FROM {term_data} LEFT JOIN {url_alias} ON src LIKE CONCAT('catalog/', CAST(tid AS CHAR)) WHERE src IS NULL AND vid = %d";
-  $result = db_query_range($query, $catalog_vid, 0, variable_get('pathauto_max_bulk_update', 50));
+  $query = "SELECT tid, vid, name, src, dst FROM {term_data} LEFT JOIN {url_alias} ON src LIKE CONCAT(:path, CAST(tid AS CHAR)) WHERE src IS NULL AND vid = :vid";
+  $result = db_query_range($query, 0, variable_get('pathauto_max_bulk_update', 50), array(':path' => 'catalog/', ':vid' => $catalog_vid));
 
   $count = 0;
   $placeholders = array();
@@ -571,11 +588,11 @@ function uc_catalog_store_status() {
     );
 
     $excluded = 0;
-    $result = db_query("SELECT COUNT(DISTINCT n.nid) FROM {node} AS n LEFT JOIN {term_node} AS tn ON n.nid = tn.nid LEFT JOIN {vocabulary_node_types} AS vnt ON n.type = vnt.type WHERE n.type <> 'image' AND tn.tid IS NULL AND vnt.vid = %d", $cat_id);
-    if ($excluded = db_result($result)) {
+    $result = db_query("SELECT COUNT(DISTINCT n.nid) FROM {node} AS n LEFT JOIN {term_node} AS tn ON n.nid = tn.nid LEFT JOIN {vocabulary_node_types} AS vnt ON n.type = vnt.type WHERE n.type <> :type AND tn.tid IS NULL AND vnt.vid = :vid", array(':type' => 'image', ':vid' => $cat_id));
+    if ($excluded = $result->fetchField()) {
       $description = format_plural($excluded, 'There is @count product not listed in the catalog.', 'There are @count products not listed in the catalog.')
         . t(' Products are listed by assigning a category from the <a href="!cat_url">Product Catalog</a> vocabulary to them.', array('!cat_url' => url('admin/content/taxonomy/'. $catalog->vid)));
-      $terms = db_result(db_query("SELECT COUNT(*) FROM {term_data} WHERE vid = %d", $catalog->vid));
+      $terms = db_query("SELECT COUNT(*) FROM {term_data} WHERE vid = :vid", array(':vid' => $catalog->vid))->fetchField();
       if ($terms) {
         $description .= ' '. l(t('Find orphaned products here.'), 'admin/store/products/orphans');
       }
@@ -610,12 +627,20 @@ function uc_catalog_product_class($type, $op) {
   switch ($op) {
     case 'insert':
       if ($vid) {
-        db_query("INSERT INTO {vocabulary_node_types} (vid, type) VALUES (%d, '%s')", $vid, $type);
+        db_insert('vocabulary_node_types')
+          ->fields(array(
+            'vid' => $vid,
+            'type' => $type,
+          ))
+          ->execute();
       }
     break;
     case 'delete':
       if ($vid) {
-        db_query("DELETE FROM {vocabulary_node_types} WHERE vid = %d AND type = '%s'", $vid, $type);
+        db_delete('vocabulary_node_types')
+          ->condition('vid', $vid)
+          ->condition('type', $type)
+          ->execute();
       }
     break;
   }
@@ -1013,7 +1038,7 @@ function uc_catalog_image_load($term) {
     $tid = $term;
   }
 
-  $file = db_fetch_object(db_query("SELECT * FROM {uc_catalog_images} WHERE tid = %d", $tid));
+  $file = db_query("SELECT * FROM {uc_catalog_images} WHERE tid = :tid", array(':tid' => $tid))->fetchObject();
 
   return $file;
 }
@@ -1026,7 +1051,10 @@ function uc_catalog_add_node_type($type) {
     return;
   }
 
-  if (!db_result(db_query("SELECT vid FROM {vocabulary_node_types} WHERE vid = %d and type = '%s'", $vid, $type))){
-    db_query("INSERT INTO {vocabulary_node_types} (vid, type) VALUES (%d, '%s')", $vid, $type);
-  }
+  db_merge('vocabulary_node_types')
+    ->key(array(
+      'vid' => $vid,
+      'type' => $type,
+    ))
+    ->execute();
 }

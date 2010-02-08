@@ -553,7 +553,7 @@ function uc_google_checkout_cart_request($order) {
 
     $tax_table = '';
     $result = db_query("SELECT zone, rate, tax_shipping FROM {uc_gc_taxes}");
-    while ($tax = db_fetch_object($result)) {
+    foreach ($result as $tax) {
       $tax_table .= '<default-tax-rule>';
       if ($tax->tax_shipping) {
         $tax_table .= '<shipping-taxed>true</shipping-taxed>';
@@ -657,7 +657,11 @@ function uc_google_checkout_send_request($api, $request) {
   if (empty($_SESSION['messages']['error'])) {
     unset($_SESSION['messages']['error']);
   }
-  db_query("DELETE FROM {watchdog} WHERE type = 'php' AND variables LIKE '%%SSL: fatal protocol error%%'");
+
+  db_delete('watchdog')
+    ->condition('type', 'php')
+    ->condition('variables', '%SSL: fatal protocol error%', 'LIKE')
+    ->execute();
   // End of ugly hack.
 
   return $response;
@@ -726,7 +730,7 @@ function uc_google_checkout_new_order($new_order) {
     $order->billing_street2 = $billing_address->address2;
     $order->billing_city = $billing_address->city;
     if ($billing_address['region'] != $shipping_address->region) {
-      $zone_id = db_result(db_query("SELECT zone_id FROM {uc_zones} WHERE zone_code = '%s'", $billing_address->region));
+      $zone_id = db_query("SELECT zone_id FROM {uc_zones} WHERE zone_code = :code", array(':code' => $billing_address->region))->fetchField();
     }
     $order->billing_zone = $zone_id;
     if ($billing_address->{'country-code'} != $shipping_address->{'country-code'}) {
@@ -798,7 +802,13 @@ function uc_google_checkout_new_order($new_order) {
       }
     }
 
-    db_query("INSERT INTO {uc_gc_orders} (order_id, gc_order_number, gc_total) VALUES (%d, '%s', %f)", $order_id, $new_order->{'google-order-number'}, $new_order->{'order-total'});
+    db_insert('uc_gc_orders')
+      ->fields(array(
+        'order_id' => $order_id,
+        'gc_order_number' => $new_order->{'google-order-number'},
+        'gc_total' => $new_order->{'order-total'},
+      ))
+      ->execute();
 
     uc_google_checkout_notification_acknowledgement($new_order['serial-number']);
   }
@@ -871,7 +881,17 @@ function uc_google_checkout_order_state_change($change) {
     $new_fulfillment = (string)$change->{'new-fulfillment-order-state'};
     $prev_financial = (string)$change->{'previous-financial-order-state'};
     $prev_fulfillment = (string)$change->{'previous-fulfillment-order-state'};
-    db_query("UPDATE {uc_gc_orders} SET financial_state = '%s', fulfillment_state = '%s' WHERE order_id = %d AND financial_state = '%s' AND fulfillment_state = '%s'", array($new_financial, $new_fulfillment, $order_id, $prev_financial, $prev_fulfillment));
+
+    db_update('uc_gc_orders')
+      ->fields(array(
+        'financial_state' => $new_financial,
+        'fulfillment_state' => $new_fulfillment,
+      ))
+      ->condition('order_id', $order_id)
+      ->condition('financial_state', $prev_financial)
+      ->condition('fulfillment_state', $prev_fulfillment)
+      ->execute();
+
     if ($new_financial != $prev_financial) {
       $_SESSION['google_updates'] = TRUE;
       switch ($new_financial) {
@@ -1045,11 +1065,11 @@ function uc_google_checkout_notification_error($message = NULL) {
 }
 
 function uc_google_checkout_get_order($google_order_number) {
-  return db_result(db_query("SELECT order_id FROM {uc_gc_orders} WHERE gc_order_number = '%s'", $google_order_number));
+  return db_query("SELECT order_id FROM {uc_gc_orders} WHERE gc_order_number = :number", array(':number' => $google_order_number))->fetchField();
 }
 
 function uc_google_checkout_get_google_number($order_id) {
-  return db_result(db_query("SELECT gc_order_number FROM {uc_gc_orders} WHERE order_id = %d", $order_id));
+  return db_query("SELECT gc_order_number FROM {uc_gc_orders} WHERE order_id = :id", array(':id' => $order_id))->fetchField();
 }
 
 function uc_google_checkout_shipping_services() {

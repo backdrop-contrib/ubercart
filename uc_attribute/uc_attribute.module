@@ -357,23 +357,51 @@ function uc_attribute_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
         }
         break;
       case 'insert':
-        switch ($GLOBALS['db_type']) {
-          case 'mysqli':
-          case 'mysql':
-            db_query("INSERT IGNORE INTO {uc_product_attributes} (nid, aid, label, ordering, required, display, default_option) SELECT %d, aid, label, ordering, required, display, default_option FROM {uc_class_attributes} WHERE pcid = '%s'", $node->nid, $node->type);
-            db_query("INSERT IGNORE INTO {uc_product_options} (nid, oid, cost, price, weight, ordering) SELECT %d, oid, cost, price, weight, ordering FROM {uc_class_attribute_options} WHERE pcid = '%s'", $node->nid, $node->type);
-            break;
-          case 'pgsql':
-            db_query("INSERT INTO {uc_product_attributes} (nid, aid, label, ordering, required, display, default_option) SELECT %d, aid, label, ordering, required, display, default_option FROM {uc_class_attributes} WHERE pcid = '%s'", $node->nid, $node->type);
-            db_query("INSERT INTO {uc_product_options} (nid, oid, cost, price, weight, ordering) SELECT %d, oid, cost, price, weight, ordering FROM {uc_class_attribute_options} WHERE pcid = '%s'", $node->nid, $node->type);
-            break;
-        }
+        $select = db_select('uc_class_attributes', 'ca')
+          ->fields('ca', array(
+            'aid',
+            'label',
+            'ordering',
+            'required',
+            'display',
+            'default_option',
+          ))
+          ->condition('pcid', $node->type);
+        $select->addExpression(':nid', 'nid', array(':nid' => $node->nid));
+
+        db_insert('uc_product_attributes')
+          ->from($select)
+          ->execute();
+
+        $select = db_select('uc_class_attribute_options', 'co')
+          ->fields('co', array(
+            'oid',
+            'cost',
+            'price',
+            'weight',
+            'ordering',
+          ))
+          ->condition('pcid', $node->type);
+        $select->addExpression(':nid', 'nid', array(':nid' => $node->nid));
+
+        db_insert('uc_product_options')
+          ->from($select)
+          ->execute();
 
         break;
       case 'delete':
-        db_query("DELETE FROM {uc_product_options} WHERE nid = %d", $node->nid);
-        db_query("DELETE FROM {uc_product_adjustments} WHERE nid = %d", $node->nid);
-        db_query("DELETE FROM {uc_product_attributes} WHERE nid = %d", $node->nid);
+        db_delete('uc_product_options')
+          ->condition('nid', $node->nid)
+          ->execute();
+
+        db_delete('uc_product_adjustments')
+          ->condition('nid', $node->nid)
+          ->execute();
+
+        db_delete('uc_product_attributes')
+          ->condition('nid', $node->nid)
+          ->execute();
+
         break;
       case 'update index':
         $output = '';
@@ -385,9 +413,9 @@ function uc_attribute_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
           }
           $output .= "\n";
         }
-        $result = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = %d", $node->nid);
-        while ($adjustment = db_fetch_object($result)) {
-          $output .= '<h2>'. $adjustment->model ."</h2>\n";
+        $result = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $node->nid));
+        while ($model = $result->fetchField()) {
+          $output .= '<h2>'. $model ."</h2>\n";
         }
         return $output;
     }
@@ -402,15 +430,8 @@ function uc_attribute_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
  * Implementation of hook_uc_product_models().
  */
 function uc_attribute_uc_product_models($node) {
-  $models = array();
-
   // Get all the SKUs for all the attributes on this node.
-  $adjustments = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = %d", $node->nid);
-  while ($adjustment = db_fetch_object($adjustments)) {
-    if (!in_array($adjustment->model, $models)) {
-      $models[] = $adjustment->model;
-    }
-  }
+  $models = db_query("SELECT DISTINCT model FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $node->nid))->fetchCol();
 
   return $models;
 }
@@ -450,9 +471,15 @@ function uc_attribute_order_product_alter(&$product, $order) {
 function uc_attribute_product_class($type, $op) {
   switch ($op) {
     case 'delete':
-      db_query("DELETE FROM {uc_class_attributes} WHERE pcid = '%s'", $type);
-      db_query("DELETE FROM {uc_class_attribute_options} WHERE pcid = '%s'", $type);
-    break;
+      db_delete('uc_class_attributes')
+        ->condition('pcid', $type)
+        ->execute();
+
+      db_delete('uc_class_attribute_options')
+        ->condition('pcid', $type)
+        ->execute();
+
+      break;
   }
 }
 
@@ -488,8 +515,7 @@ function uc_attribute_cart_item($op, &$item) {
       }
       ksort($combination);
 
-      $result = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = %d AND combination LIKE '%s'", $item->nid, serialize($combination));
-      $model = db_result($result);
+      $model = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = :nid AND combination LIKE :combo", array(':nid' => $item->nid, ':combo' => serialize($combination)))->fetchField();
 
       if (!empty($model)) {
         $item->model = $model;
@@ -565,16 +591,16 @@ function uc_attribute_load($attr_id, $nid = NULL, $type = '') {
   if ($nid) {
     switch ($type) {
       case 'product':
-        $attribute = db_fetch_object(db_query("SELECT a.aid, a.name, a.label AS default_label, a.ordering AS default_ordering, a.required AS default_required, a.display AS default_display, a.description, pa.label, pa.default_option, pa.required, pa.ordering, pa.display FROM {uc_attributes} AS a LEFT JOIN {uc_product_attributes} AS pa ON a.aid = pa.aid AND pa.nid = %d WHERE a.aid = %d", $nid, $attr_id));
-        $result = db_query("SELECT po.nid, po.oid, po.cost, po.price, po.weight, po.ordering, ao.name, ao.aid FROM {uc_product_options} AS po LEFT JOIN {uc_attribute_options} AS ao ON po.oid = ao.oid AND nid = %d WHERE aid = %d ORDER BY po.ordering, ao.name", $nid, $attr_id);
+        $attribute = db_query("SELECT a.aid, a.name, a.label AS default_label, a.ordering AS default_ordering, a.required AS default_required, a.display AS default_display, a.description, pa.label, pa.default_option, pa.required, pa.ordering, pa.display FROM {uc_attributes} AS a LEFT JOIN {uc_product_attributes} AS pa ON a.aid = pa.aid AND pa.nid = :nid WHERE a.aid = :aid", array(':nid' => $nid, ':aid' => $attr_id))->fetchObject();
+        $result = db_query("SELECT po.nid, po.oid, po.cost, po.price, po.weight, po.ordering, ao.name, ao.aid FROM {uc_product_options} AS po LEFT JOIN {uc_attribute_options} AS ao ON po.oid = ao.oid AND nid = :nid WHERE aid = :aid ORDER BY po.ordering, ao.name", array(':nid' => $nid, ':aid' => $attr_id));
         break;
       case 'class':
-        $attribute = db_fetch_object(db_query("SELECT a.aid, a.name, a.label AS default_label, a.ordering AS default_ordering, a.required AS default_required, a.display AS default_display, a.description, ca.default_option, ca.label, ca.required, ca.ordering, ca.display FROM {uc_attributes} AS a LEFT JOIN {uc_class_attributes} AS ca ON a.aid = ca.aid AND ca.pcid = '%s' WHERE a.aid = %d", $nid, $attr_id));
-        $result = db_query("SELECT co.pcid, co.oid, co.cost, co.price, co.weight, co.ordering, ao.name, ao.aid FROM {uc_class_attribute_options} AS co LEFT JOIN {uc_attribute_options} AS ao ON co.oid = ao.oid AND co.pcid = '%s' WHERE ao.aid = %d ORDER BY co.ordering, ao.name", $nid, $attr_id);
+        $attribute = db_query("SELECT a.aid, a.name, a.label AS default_label, a.ordering AS default_ordering, a.required AS default_required, a.display AS default_display, a.description, ca.default_option, ca.label, ca.required, ca.ordering, ca.display FROM {uc_attributes} AS a LEFT JOIN {uc_class_attributes} AS ca ON a.aid = ca.aid AND ca.pcid = :type WHERE a.aid = :aid", array(':type' => $nid, ':aid' => $attr_id))->fetchObject();
+        $result = db_query("SELECT co.pcid, co.oid, co.cost, co.price, co.weight, co.ordering, ao.name, ao.aid FROM {uc_class_attribute_options} AS co LEFT JOIN {uc_attribute_options} AS ao ON co.oid = ao.oid AND co.pcid = :type WHERE ao.aid = :aid ORDER BY co.ordering, ao.name", array(':type' => $nid, ':aid' => $attr_id));
         break;
       default:
-        $attribute = db_fetch_object(db_query("SELECT * FROM {uc_attributes} WHERE aid = %d", $attr_id));
-        $result = db_query("SELECT * FROM {uc_attribute_options} WHERE aid = %d ORDER BY ordering, name, label", $attr_id);
+        $attribute = db_query("SELECT * FROM {uc_attributes} WHERE aid = :aid", array(':aid' => $attr_id))->fetchObject();
+        $result = db_query("SELECT * FROM {uc_attribute_options} WHERE aid = :aid ORDER BY ordering, name, label", array(':aid' => $attr_id));
         break;
     }
     if (isset($attribute->default_ordering) && is_null($attribute->ordering)) {
@@ -594,12 +620,12 @@ function uc_attribute_load($attr_id, $nid = NULL, $type = '') {
     }
   }
   else {
-    $attribute = db_fetch_object(db_query("SELECT * FROM {uc_attributes} WHERE aid = %d", $attr_id));
-    $result = db_query("SELECT * FROM {uc_attribute_options} WHERE aid = %d ORDER BY ordering, name", $attr_id);
+    $attribute = db_query("SELECT * FROM {uc_attributes} WHERE aid = :aid", array(':aid' => $attr_id))->fetchObject();
+    $result = db_query("SELECT * FROM {uc_attribute_options} WHERE aid = :aid ORDER BY ordering, name, label", array(':aid' => $attr_id));
   }
   if ($attribute) {
     $attribute->options = array();
-    while ($option = db_fetch_object($result)) {
+    foreach ($result as $option) {
       $attribute->options[$option->oid] = $option;
     }
   }
@@ -610,7 +636,7 @@ function uc_attribute_load($attr_id, $nid = NULL, $type = '') {
  * Load the option identified by $oid.
  */
 function uc_attribute_option_load($oid) {
-  return db_fetch_object(db_query("SELECT * FROM {uc_attribute_options} WHERE oid = %d", $oid));
+  return db_query("SELECT * FROM {uc_attribute_options} WHERE oid = :oid", array(':oid' => $oid))->fetchObject();
 }
 
 /**
@@ -619,8 +645,8 @@ function uc_attribute_option_load($oid) {
 function uc_product_get_attributes($nid) {
   $attributes = array();
 
-  $result = db_query("SELECT upa.aid FROM {uc_product_attributes} AS upa LEFT JOIN {uc_attributes} AS ua ON upa.aid = ua.aid WHERE upa.nid = %d ORDER BY upa.ordering, ua.name", $nid);
-  while ($attribute = db_fetch_object($result)) {
+  $result = db_query("SELECT upa.aid FROM {uc_product_attributes} AS upa LEFT JOIN {uc_attributes} AS ua ON upa.aid = ua.aid WHERE upa.nid = :nid ORDER BY upa.ordering, ua.name", array(':nid' => $nid));
+  foreach ($result as $attribute) {
     $attributes[$attribute->aid] = uc_attribute_load($attribute->aid, $nid, 'product');
   }
 
@@ -633,8 +659,8 @@ function uc_product_get_attributes($nid) {
 function uc_class_get_attributes($pcid) {
   $attributes = array();
 
-  $result = db_query("SELECT uca.aid FROM {uc_class_attributes} AS uca LEFT JOIN {uc_attributes} AS ua ON uca.aid = ua.aid WHERE uca.pcid = '%s' ORDER BY uca.ordering, ua.name", $pcid);
-  while ($attribute = db_fetch_object($result)) {
+  $result = db_query("SELECT uca.aid FROM {uc_class_attributes} AS uca LEFT JOIN {uc_attributes} AS ua ON uca.aid = ua.aid WHERE uca.pcid = :type ORDER BY uca.ordering, ua.name", array(':type' => $pcid));
+  foreach ($result as $attribute) {
     $attributes[$attribute->aid] = uc_attribute_load($attribute->aid, $pcid, 'class');
   }
 
@@ -830,11 +856,8 @@ function _uc_attribute_display_types() {
  *   Array of attribute ids that have price affecting options.
  */
 function uc_attribute_priced_attributes($nid) {
-  $attributes = db_query("SELECT DISTINCT (pa.aid) FROM {uc_product_attributes} AS pa INNER JOIN {uc_attribute_options} AS ao ON ao.aid = pa.aid INNER JOIN {uc_product_options} AS po ON (po.oid = ao.oid AND po.nid = pa.nid) WHERE pa.nid = %d AND po.price <> 0 AND pa.display <> 0", $nid);
-  $aids = array();
-  while ($attribute = db_fetch_array($attributes)) {
-    $aids[] = $attribute['aid'];
-  }
+  $aids = db_query("SELECT DISTINCT (pa.aid) FROM {uc_product_attributes} AS pa INNER JOIN {uc_attribute_options} AS ao ON ao.aid = pa.aid INNER JOIN {uc_product_options} AS po ON (po.oid = ao.oid AND po.nid = pa.nid) WHERE pa.nid = :nid AND po.price <> :price AND pa.display <> :display", array(':nid' => $nid, ':price' => 0, ':display' => 0))->fetchCol();
+
   return $aids;
 }
 

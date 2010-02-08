@@ -82,7 +82,7 @@ function theme_uc_roles_expiration($variables) {
  * @see uc_roles_deletion_form_submit()
  */
 function uc_roles_deletion_form($form_id, $account, $rid) {
-  $expiration = db_result(db_query("SELECT expiration FROM {uc_roles_expirations} WHERE uid = %d AND rid = %d", $account->uid, $rid));
+  $expiration = db_query("SELECT expiration FROM {uc_roles_expirations} WHERE uid = :uid AND rid = :rid", array(':uid' => $account->uid, ':rid' => $rid))->fetchField();
   if ($expiration) {
 
     $role_name = _uc_roles_get_name($rid);

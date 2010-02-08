@@ -64,13 +64,28 @@ function uc_stock_report() {
 
   $csv_rows[] = array(t('SKU'), t('Product'), t('Stock'), t('Threshold'));
 
-  $sql = "SELECT s.nid, sku, title, stock, threshold FROM {uc_product_stock} as s LEFT JOIN {node} as n ON s.nid = n.nid WHERE active = 1 AND title <> ''";
+  $query = db_select('uc_product_stock', 's')->extend('PagerDefault')->extend('TableSort')
+    ->orderByHeader($header)
+    ->limit($page_size)
+    ->fields('s', array(
+      'nid',
+      'sku',
+      'stock',
+      'threshold',
+    ));
+
+  $query->leftJoin('node', 'n', 's.nid = n.nid');
+  $query->addField('n', 'title');
+  $query->condition('active', 1)
+    ->condition('title', '', '<>');
+
+
   if (arg(4) == 'threshold') {
-    $sql .= ' AND threshold >= stock';
+    $query->where('threshold >= stock');
   }
 
   $result = pager_query($sql . tablesort_sql($header), $page_size, 0, NULL);
-  while ($stock = db_fetch_object($result)) {
+  foreach ($result as $stock) {
     $op = array();
     if (user_access('administer products')) {
       $op[] = l(t('edit'), 'node/'. $stock->nid .'/edit/stock', $options = array('query' => 'destination=admin/store/reports/stock'));
@@ -160,7 +175,7 @@ function uc_stock_edit_form($form_state, $node) {
   }
   else {
     foreach (array_values($skus) as $id => $sku) {
-      $stock = db_fetch_array(db_query("SELECT * FROM {uc_product_stock} WHERE sku = '%s'", $sku));
+      $stock = db_query("SELECT * FROM {uc_product_stock} WHERE sku = :sku", array(':sku' => $sku))->fetchAssoc();
 
       $form['stock'][$id]['sku'] = array(
         '#type' => 'value',
@@ -240,15 +255,18 @@ function theme_uc_stock_edit_form($variables) {
  */
 function uc_stock_edit_form_submit($form, &$form_state) {
   foreach (element_children($form_state['values']['stock']) as $id) {
-    db_query("UPDATE {uc_product_stock} SET active = %d, stock = %d, threshold = %d WHERE sku = '%s'",
-      $form_state['values']['stock'][$id]['active'] ? 1 : 0, intval($form_state['values']['stock'][$id]['stock']),
-      intval($form_state['values']['stock'][$id]['threshold']), $form_state['values']['stock'][$id]['sku']);
+    $stock = $form_state['values']['stock'][$id];
 
-    if (!db_affected_rows()) {
-      db_query("INSERT INTO {uc_product_stock} (sku, nid, active, stock, threshold) VALUES ('%s', %d, %d, %d, %d)",
-        $form_state['values']['stock'][$id]['sku'], $form_state['values']['nid'], $form_state['values']['stock'][$id]['active'] ? 1 : 0,
-        intval($form_state['values']['stock'][$id]['stock']), intval($form_state['values']['stock'][$id]['threshold']));
-    }
+    db_merge('uc_product_stock')
+      ->key(array('sku' => $stock['sku']))
+      ->fields(array(
+        'nid' => $stock['nid'],
+        'active' => $stock['active'] ? 1 : 0,
+        'stock' => $stock['stock'],
+        'threshold' => $stock['threshold'],
+      ))
+      ->updateExcept('nid')
+      ->execute();
   }
 
   drupal_set_message(t('Stock settings saved.'));

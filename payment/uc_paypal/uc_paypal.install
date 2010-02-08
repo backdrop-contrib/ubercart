@@ -110,13 +110,24 @@ function uc_paypal_schema() {
  */
 function uc_paypal_install() {
   $t = get_t();
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('paypal_pending', '%s', 'payment_received', 7, 1);", $t('PayPal pending'));
+
+  db_insert('uc_order_statuses')
+    ->fields(array(
+      'order_status_id' => 'paypal_pending',
+      'title' => $t('PayPal pending'),
+      'state' => 'payment_received',
+      'weight' => 7,
+      'locked' => 1,
+    ))
+    ->execute();
 }
 
 /**
  * Implementation of hook_uninstall().
  */
 function uc_paypal_uninstall() {
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_paypal_%%'");
+  db_delete('variable')
+    ->condition('name', 'uc_paypal_%', 'LIKE')
+    ->execute();
 }
 

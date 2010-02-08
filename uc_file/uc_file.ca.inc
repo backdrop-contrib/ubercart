@@ -281,9 +281,9 @@ function uc_file_action_order_renew($order) {
     $files = db_query("SELECT * FROM {uc_file_products} AS fp ".
       "INNER JOIN {uc_product_features} AS pf ON pf.pfid = fp.pfid ".
       "INNER JOIN {uc_files} as f ON f.fid = fp.fid ".
-      "WHERE nid = %d", $product->nid, $order_user->uid);
+      "WHERE nid = :nid", array(':nid' => $product->nid));
 
-    while ($file = db_fetch_object($files)) {
+    foreach ($files as $file) {
 
       // Either they match, or the file was set to any SKU.
       if (!empty($file->model) && $file->model != $product->model) {

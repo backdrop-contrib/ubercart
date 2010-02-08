@@ -23,8 +23,28 @@ function uc_attribute_admin() {
 
   $display_types = _uc_attribute_display_types();
 
-  $result = pager_query("SELECT a.aid, a.name, a.label, a.required, a.ordering, a.display, COUNT(ao.oid) AS options FROM {uc_attributes} AS a LEFT JOIN {uc_attribute_options} AS ao ON a.aid = ao.aid GROUP BY a.aid, a.name, a.label, a.ordering, a.required, a.display". tablesort_sql($header), 30, 0, "SELECT COUNT(aid) FROM {uc_attributes}");
-  while ($attr = db_fetch_object($result)) {
+  $query = db_select('uc_attributes', 'a')->extend('PagerDefault')->extend('TableSort')
+    ->orderByHeader($header)
+    ->limit(30);
+  $table_ao = $query->leftJoin('uc_attribute_options', 'ao', 'a.aid = ao.aid');
+
+  $a_aid = $query->addField('a', 'aid');
+  $a_name = $query->addField('a', 'name');
+  $a_label = $query->addField('a', 'label');
+  $a_required = $query->addField('a', 'required');
+  $a_ordering = $query->addField('a', 'ordering');
+  $a_display = $query->addField('a', 'display');
+  $ao_options = $query->addExpression('COUNT(ao.oid)', 'options');
+
+  $query->groupBy($a_aid)
+    ->groupBy($a_name)
+    ->groupBy($a_label)
+    ->groupBy($a_required)
+    ->groupBy($a_ordering)
+    ->groupBy($a_display);
+
+  $result = $query->execute();
+  foreach ($result as $attr) {
     if (empty($attr->label)) {
       $attr->label = $attr->name;
     }
@@ -124,11 +144,10 @@ function uc_attribute_form($form_state, $attribute = NULL) {
  */
 function uc_attribute_form_submit($form, &$form_state) {
   if (!empty($form_state['values']['aid'])) {
-    db_query("UPDATE {uc_attributes} SET name = '%s', label = '%s', ordering = %d, required = %d, display = %d, description = '%s' WHERE aid = %d", $form_state['values']['name'], $form_state['values']['label'], $form_state['values']['ordering'], $form_state['values']['required'], $form_state['values']['display'], $form_state['values']['description'], $form_state['values']['aid']);
+    drupal_write_record('uc_attributes', $form_state['values'], 'aid');
   }
   else {
-    db_query("INSERT INTO {uc_attributes} (name, label, ordering, required, display, description) VALUES ('%s', '%s', %d, %d, %d, '%s')", $form_state['values']['name'], $form_state['values']['label'], $form_state['values']['ordering'], $form_state['values']['required'], $form_state['values']['display'], $form_state['values']['description']);
-    $form_state['values']['aid'] = db_last_insert_id('uc_attributes', 'aid');
+    drupal_write_record('uc_attributes', $form_state['values']);
   }
 
   $form_state['redirect'] = 'admin/store/attributes';
@@ -149,7 +168,7 @@ function uc_attribute_delete_confirm($form_state, $attribute) {
   $form['aid'] = array('#type' => 'value', '#value' => $attribute->aid);
   $form['#redirect'] = 'admin/store/attributes';
 
-  $count = db_result(db_query("SELECT COUNT(*) FROM {uc_product_attributes} WHERE aid = %d", $attribute->aid));
+  $count = db_query("SELECT COUNT(*) FROM {uc_product_attributes} WHERE aid = :aid", array(':aid' => $attribute->aid))->fetchField();
 
   $output = confirm_form($form, t('Are you sure you want to delete the attribute %name?', array('%name' => $attribute->name)),
               'admin/store/attributes', format_plural($count, 'There is @count product with this attribute.', 'There are @count products with this attribute.'),
@@ -163,13 +182,38 @@ function uc_attribute_delete_confirm($form_state, $attribute) {
  */
 function uc_attribute_delete_confirm_submit($form, &$form_state) {
   if ($form_state['values']['confirm']) {
-    db_query("DELETE FROM {uc_class_attribute_options} WHERE EXISTS (SELECT * FROM {uc_attribute_options} AS ao WHERE {uc_class_attribute_options}.oid = ao.oid AND ao.aid = %d)", $form_state['values']['aid']);
-    db_query("DELETE FROM {uc_class_attributes} WHERE aid = %d", $form_state['values']['aid']);
-    db_query("DELETE FROM {uc_product_options} WHERE EXISTS (SELECT * FROM {uc_attribute_options} AS ao WHERE {uc_product_options}.oid = ao.oid AND ao.aid = %d)", $form_state['values']['aid']);
-    db_query("DELETE FROM {uc_product_adjustments} WHERE EXISTS (SELECT * FROM {uc_product_attributes} AS pa WHERE {uc_product_adjustments}.nid = pa.nid AND pa.aid = %d)", $form_state['values']['aid']);
-    db_query("DELETE FROM {uc_product_attributes} WHERE aid = %d", $form_state['values']['aid']);
-    db_query("DELETE FROM {uc_attribute_options} WHERE aid = %d", $form_state['values']['aid']);
-    db_query("DELETE FROM {uc_attributes} WHERE aid = %d", $form_state['values']['aid']);
+    $attribute = uc_attribute_load($form_state['values']['aid']);
+    $options = array_keys($attribute->options);
+
+    db_delete('uc_class_attribute_options')
+      ->condition('oid', $options, 'IN')
+      ->execute();
+
+    db_delete('uc_class_attributes')
+      ->condition('aid', $form_state['values']['aid'])
+      ->execute();
+
+    db_delete('uc_product_options')
+      ->condition('oid', $options, 'IN')
+      ->execute();
+
+    $nodes = db_query("SELECT nid FROM {uc_product_attributes} WHERE aid = :aid", array(':aid' => $attribute->aid))->fetchCol();
+    db_delete('uc_product_adjustments')
+      ->condition('nid', $nodes, 'IN')
+      ->execute();
+
+    db_delete('uc_product_attributes')
+      ->condition('aid', $form_state['values']['aid'])
+      ->execute();
+
+    db_delete('uc_attribute_options')
+      ->condition('aid', $form_state['values']['aid'])
+      ->execute();
+
+    db_delete('uc_attributes')
+      ->condition('aid', $form_state['values']['aid'])
+      ->execute();
+
     drupal_set_message(t('Product attribute deleted.'));
   }
 }
@@ -273,7 +317,12 @@ function uc_attribute_options_form($form_state, $attribute) {
 
 function uc_attribute_options_form_submit($form, &$form_state) {
   foreach ($form_state['values']['options'] as $oid => $option) {
-    db_query("UPDATE {uc_attribute_options} SET ordering = %d WHERE oid = %d", $option['ordering'], $oid);
+    db_update('uc_attribute_options')
+      ->fields(array(
+        'ordering' => $option['ordering'],
+      ))
+      ->condition('oid', $oid)
+      ->execute();
   }
 
   drupal_set_message(t('The changes have been saved.'));
@@ -423,15 +472,13 @@ function uc_attribute_option_form_validate($form, &$form_state) {
  */
 function uc_attribute_option_form_submit($form, &$form_state) {
   if (!isset($form_state['values']['oid'])) {
-    db_query("INSERT INTO {uc_attribute_options} (aid, name, cost, price, weight, ordering) VALUES (%d, '%s', %f, %f, %f, %d)",
-      $form_state['values']['aid'], $form_state['values']['name'], $form_state['values']['cost'], $form_state['values']['price'], $form_state['values']['weight'], $form_state['values']['ordering']);
+    drupal_write_record('uc_attribute_options', $form_state['values']);
     drupal_set_message(t('Created new option %option.', array('%option' => $form_state['values']['name'])));
     watchdog('uc_attribute', 'Created new option %option.', array('%option' => $form_state['values']['name']), WATCHDOG_NOTICE, 'admin/store/attributes/'. $form_state['values']['aid'] .'/options/add');
     $form_state['redirect'] = 'admin/store/attributes/'. $form_state['values']['aid'] .'/options/add';
   }
   else {
-    db_query("UPDATE {uc_attribute_options} SET name = '%s', cost = %f, price = %f, weight = %f, ordering = %d WHERE aid = %d AND oid = %d",
-      $form_state['values']['name'], $form_state['values']['cost'], $form_state['values']['price'], $form_state['values']['weight'], $form_state['values']['ordering'], $form_state['values']['aid'], $form_state['values']['oid']);
+    drupal_write_record('uc_attribute_options', $form_state['values'], array('aid', 'oid'));
     drupal_set_message(t('Updated option %option.', array('%option' => $form_state['values']['name'])));
     watchdog('uc_attribute', 'Updated option %option.', array('%option' => $form_state['values']['name']), WATCHDOG_NOTICE, 'admin/store/attributes/'. $form_state['values']['aid'] .'/options/'. $form_state['values']['oid']);
     $form_state['redirect'] = 'admin/store/attributes/'. $form_state['values']['aid'] .'/options';
@@ -467,11 +514,32 @@ function uc_attribute_option_delete_confirm($form_state, $attribute, $option) {
 function uc_attribute_option_delete_confirm_submit($form, &$form_state) {
   if ($form_state['values']['confirm']) {
     $match = 'i:'. $form_state['values']['aid'] .';s:'. strlen($form_state['values']['oid']) .':"'. $form_state['values']['oid'] .'";';
-    db_query("DELETE FROM {uc_product_adjustments} WHERE combination LIKE '%%%s%%'", $match);
-    db_query("DELETE FROM {uc_class_attribute_options} WHERE EXISTS (SELECT * FROM {uc_attribute_options} AS ao WHERE {uc_class_attribute_options}.oid = ao.oid AND ao.oid = %d)", $form_state['values']['oid']);
-    db_query("DELETE FROM {uc_product_options} WHERE EXISTS (SELECT * FROM {uc_attribute_options} AS ao WHERE {uc_product_options}.oid = ao.oid AND ao.oid = %d)", $form_state['values']['oid']);
-    db_query("DELETE FROM {uc_attribute_options} WHERE oid = %d", $form_state['values']['oid']);
+
+    db_delete('uc_product_adjustments')
+      ->condition('combination', '%' . db_like($match) . '%', 'LIKE')
+      ->execute();
+
+    $select = db_select('uc_attribute_options', 'ao')
+      ->where('{uc_class_attribute_options}.oid = ao.oid')
+      ->condition('ao.oid', $form_state['values']['oid']);
+    $select->addExpression('1');
+    db_delete('uc_class_attribute_options')
+      ->condition('', $select, 'EXISTS')
+      ->execute();
+
+    $select = db_select('uc_attribute_options', 'ao')
+      ->where('{uc_product_options}.oid = ao.oid')
+      ->condition('ao.oid', $form_state['values']['oid']);
+    $select->addExpression('1');
+    db_delete('uc_product_options')
+      ->condition('', $select, 'EXISTS')
+      ->execute();
+
+    db_delete('uc_attribute_options')
+      ->condition('oid', $form_state['values']['oid'])
+      ->execute();
   }
+
   $form_state['redirect'] = 'admin/store/attributes/'. $form_state['values']['aid'] .'/options';
 }
 
@@ -573,7 +641,7 @@ function uc_object_attributes_form($form_state, $object, $type, $view = 'overvie
     // Get list of attributes not already assigned to this node or class.
     $unused_attributes = array();
     $result = db_query("SELECT a.aid, a.name, a.label FROM {uc_attributes} AS a LEFT JOIN {uc_attribute_options} AS ao ON a.aid = ao.aid GROUP BY a.aid, a.name, a.label ORDER BY a.name");
-    while ($attribute = db_fetch_object($result)) {
+    foreach ($result as $attribute) {
       if (!in_array($attribute->aid, $used_aids) && !in_array($attribute->label, $used_labels)) {
         $unused_attributes[$attribute->aid] = $attribute->name;
       }
@@ -669,16 +737,14 @@ function theme_uc_object_attributes_form($variables) {
  */
 function uc_object_attributes_form_submit($form, &$form_state) {
   if ($form_state['values']['type'] == 'product') {
-    $attr_table = '{uc_product_attributes}';
-    $opt_table = '{uc_product_options}';
+    $attr_table = 'uc_product_attributes';
+    $opt_table = 'uc_product_options';
     $id = 'nid';
-    $sql_type = '%d';
   }
   elseif ($form_state['values']['type'] == 'class') {
-    $attr_table = '{uc_class_attributes}';
-    $opt_table = '{uc_class_attribute_options}';
+    $attr_table = 'uc_class_attributes';
+    $opt_table = 'uc_class_attribute_options';
     $id = 'pcid';
-    $sql_type = "'%s'";
   }
 
   if ($form_state['values']['view'] == 'overview' && is_array($form_state['values']['attributes'])) {
@@ -687,19 +753,36 @@ function uc_object_attributes_form_submit($form, &$form_state) {
         $remove_aids[] = $aid;
       }
       else {
-        db_query("UPDATE $attr_table SET label = '%s', ordering = %d, required = %d, display = %d WHERE aid = %d AND $id = $sql_type", $attribute['label'], $attribute['ordering'], $attribute['required'], $attribute['display'], $aid, $form_state['values']['id']);
+        $attribute['aid'] = $aid;
+        $attribute[$id] = $form_state['values']['id'];
+        drupal_write_record($attr_table, $attribute, array('aid', $id));
         $changed = TRUE;
       }
     }
 
     if (count($remove_aids) > 0) {
       $id_value = $form_state['values']['id'];
-      $remove_aids_value = implode(', ', $remove_aids);
 
-      db_query("DELETE FROM $opt_table WHERE EXISTS (SELECT * FROM {uc_attribute_options} AS ao WHERE $opt_table.oid = ao.oid AND ao.aid IN (%s)) AND $opt_table.$id = $sql_type", $remove_aids_value, $id_value);
-      db_query("DELETE FROM $attr_table WHERE $id = $sql_type AND aid IN (%s)", $id_value, $remove_aids_value);
+      // Can't use "{$opt_table}" because PHP will remove the braces, which
+      // prevents the db_prefix from being appended.
+      $select = db_select('uc_attribute_options', 'ao')
+        ->where('{' . $opt_table . '}.oid = ao.oid')
+        ->condition('ao.oid', $remove_aids, 'IN');
+      $select->addExpression('1');
+      db_delete($opt_table)
+        ->condition('', $select, 'EXISTS')
+        ->condition('{' . $opt_table . "}.$id", $id_value)
+        ->execute();
+
+      db_delete($attr_table)
+        ->condition($id, $id_value)
+        ->condition('aid', $remove_aids, 'IN')
+        ->execute();
+
       if ($form_state['values']['type'] == 'product') {
-        db_query("DELETE FROM {uc_product_adjustments} WHERE nid = %d", $id_value);
+        db_delete('uc_product_adjustments')
+          ->condition('nid', $id_value)
+          ->execute();
       }
 
       drupal_set_message(format_plural(count($remove_aids), '@count attribute has been removed.', '@count attributes have been removed.'));
@@ -714,7 +797,10 @@ function uc_object_attributes_form_submit($form, &$form_state) {
       // Enable all options for added attributes.
       $attribute = uc_attribute_load($aid);
       foreach ($attribute->options as $option) {
-        db_query("INSERT INTO $opt_table ($id, oid, cost, price, weight, ordering) VALUES ($sql_type, %d, %f, %f, %f, %d)", $form_state['values']['id'], $option->oid, $option->cost, $option->price, $option->weight, $option->ordering);
+        $option->aid = $id;
+        db_insert($opt_table)
+          ->fields((array) $option)
+          ->execute();
       }
       // Make the first option (if any) the default.
       $option = reset($attribute->options);
@@ -724,11 +810,26 @@ function uc_object_attributes_form_submit($form, &$form_state) {
       else {
         $oid = 0;
       }
-      db_query("INSERT INTO $attr_table ($id, aid, label, ordering, default_option, required, display) SELECT $sql_type, aid, label, ordering, %d, required, display FROM {uc_attributes} WHERE aid = %d", $form_state['values']['id'], $oid, $aid);
+
+      $select = db_select('uc_attributes', 'a')
+        ->condition('aid', $aid);
+      $select->addExpression(':id', $id, array(':id' => $form_state['values']['id']));
+      $select->addField('a', 'aid');
+      $select->addField('a', 'label');
+      $select->addField('a', 'ordering');
+      $select->addExpression(':id', 'default_option', array(':id' => $oid));
+      $select->addField('a', 'required');
+      $select->addField('a', 'display');
+
+      db_insert($attr_table)
+        ->from($select)
+        ->execute();
     }
     if (count($form_state['values']['add_attributes']) > 0) {
       if ($form_state['values']['type'] == 'product') {
-        db_query("DELETE FROM {uc_product_adjustments} WHERE nid = %d", $form_state['values']['id']);
+        db_delete('uc_product_adjustments')
+          ->condition('nid', $form_state['values']['id'])
+          ->execute();
       }
       drupal_set_message(format_plural(count($form_state['values']['add_attributes']), '@count attribute has been added.', '@count attributes have been added.'));
     }
@@ -757,18 +858,16 @@ function uc_object_options_form($form_state, $object, $type) {
     $id = $product->nid;
     drupal_set_title(check_plain($product->title));
     $attributes = uc_product_get_attributes($id);
-    $table = '{uc_product_options}';
+    $table = 'uc_product_options';
     $id_type = 'nid';
-    $sql_type = db_type_placeholder('int');
   }
   elseif ($type == 'class') {
     $class = $object;
     $id = $class->pcid;
     drupal_set_title(check_plain($class->name));
     $attributes = uc_class_get_attributes($id);
-    $table = '{uc_class_attribute_options}';
+    $table = 'uc_class_attribute_options';
     $id_type = 'pcid';
-    $sql_type = db_type_placeholder('varchar');
   }
 
   foreach ($attributes as $aid => $attribute) {
@@ -791,8 +890,35 @@ function uc_object_options_form($form_state, $object, $type) {
     if ($base_attr->options) {
       $options = array();
 
-      $result = db_query("SELECT ao.aid, ao.oid, ao.name, ao.cost AS default_cost, ao.price AS default_price, ao.weight AS default_weight, ao.ordering AS default_ordering, po.cost, po.price, po.weight, po.ordering, po.ordering IS NULL AS null_order FROM {uc_attribute_options} AS ao LEFT JOIN $table AS po ON ao.oid = po.oid AND po.". $id_type ." = ". $sql_type ." WHERE aid = %d ORDER BY null_order, po.ordering, default_ordering, ao.name", $id, $attribute->aid);
-      while ($option = db_fetch_object($result)) {
+      $query = db_select('uc_attribute_options', 'ao');
+      $query->leftJoin($table, 'po', "ao.oid = po.oid AND po.$id_type = :id", array(':id' => $id))
+        ->fields('ao', array(
+          'aid',
+          'oid',
+          'name',
+        ));
+
+      $query->addField('ao', 'cost', 'default_cost');
+      $query->addField('ao', 'price', 'default_price');
+      $query->addField('ao', 'weight', 'default_weight');
+      $query->addField('ao', 'ordering', 'default_ordering');
+
+      $query->fields('po', array(
+          'cost',
+          'price',
+          'weight',
+          'ordering',
+        ))
+        ->addExpression('po.ordering IS NULL', 'null_order');
+
+      $query->condition('aid', $attribute->aid)
+        ->orderBy('null_order')
+        ->orderBy('po.ordering')
+        ->orderBy('default_ordering')
+        ->orderBy('ao.name');
+
+      $result = $query->execute();
+      foreach ($result as $option) {
         $oid = $option->oid;
         $options[$oid] = '';
 
@@ -998,33 +1124,45 @@ function uc_object_options_form_validate($form, &$form_state) {
  */
 function uc_object_options_form_submit($form, &$form_state) {
   if ($form_state['values']['type'] == 'product') {
-    $attr_table = '{uc_product_attributes}';
-    $opt_table = '{uc_product_options}';
+    $attr_table = 'uc_product_attributes';
+    $opt_table = 'uc_product_options';
     $id = 'nid';
-    $sql_type = '%d';
   }
   elseif ($form_state['values']['type'] == 'class') {
-    $attr_table = '{uc_class_attributes}';
-    $opt_table = '{uc_class_attribute_options}';
+    $attr_table = 'uc_class_attributes';
+    $opt_table = 'uc_class_attribute_options';
     $id = 'pcid';
-    $sql_type = "'%s'";
   }
 
   foreach ($form_state['values']['attributes'] as $attribute) {
-    db_query("UPDATE $attr_table SET default_option = %d WHERE $id = $sql_type AND aid = %d", $attribute['default'], $form_state['values']['id'], $attribute['aid']);
+    db_update($attr_table)
+      ->fields(array(
+        'default_option' => $attribute['default'],
+      ))
+      ->condition($id, $form_state['values']['id'])
+      ->condition('aid', $attribute['aid'])
+      ->execute();
 
     if (is_array($attribute['options'])) {
-      foreach ($attribute['options'] as $oid => $option) {
-        db_query("DELETE FROM $opt_table WHERE $id = $sql_type AND oid = %d", $form_state['values']['id'], $oid);
+      db_delete($opt_table)
+        ->condition($id, $form_state['values']['id'])
+        ->condition('oid', array_keys($attribute['options']), 'IN')
+        ->execute();
 
+      foreach ($attribute['options'] as $oid => $option) {
         if ($option['select']) {
-          db_query("INSERT INTO $opt_table ($id, oid, cost, price, weight, ordering) VALUES ($sql_type, %d, %f, %f, %f, %d)",
-                   $form_state['values']['id'], $oid, $option['cost'], $option['price'], $option['weight'], $option['ordering']);
+          $option[$id] = $form_state['values']['id'];
+          $option['oid'] = $oid;
+
+          drupal_write_record($opt_table, $option);
         }
         elseif ($form_state['values']['type'] == 'product') {
           $aid = $attribute['aid'];
           $match = 'i:'. $aid .';s:'. strlen($oid) .':"'. $oid .'";';
-          db_query("DELETE FROM {uc_product_adjustments} WHERE nid = %d AND combination LIKE '%%%s%%'", $form_state['values']['id'], $match);
+          db_delete('uc_product_adjustments')
+            ->condition('nid', $form_state['values']['id'])
+            ->condition('combination', '%' . db_like($match) . '%', 'LIKE')
+            ->execute();
         }
       }
     }
@@ -1049,39 +1187,40 @@ function uc_product_adjustments_form($form_state, $node) {
   $query_from = " FROM";
   $query_where = " WHERE";
   $query_order = " ORDER BY";
-  $result = db_query("SELECT pa.nid, pa.aid, pa.ordering, pa.display, a.name, a.ordering, ao.aid, COUNT(po.oid) FROM {uc_product_attributes} AS pa LEFT JOIN {uc_attributes} AS a ON pa.aid = a.aid LEFT JOIN {uc_attribute_options} AS ao ON a.aid = ao.aid LEFT JOIN {uc_product_options} AS po ON ao.oid = po.oid AND po.nid = %d WHERE pa.nid = %d AND pa.display <> 3 GROUP BY ao.aid, pa.aid, pa.display, a.name, pa.ordering, a.ordering, pa.nid HAVING count(po.oid) > 0 ORDER BY pa.ordering, a.ordering", $nid, $nid);
+  $result = db_query("SELECT pa.nid, pa.aid, pa.ordering, pa.display, a.name, a.ordering, ao.aid, COUNT(po.oid) FROM {uc_product_attributes} AS pa LEFT JOIN {uc_attributes} AS a ON pa.aid = a.aid LEFT JOIN {uc_attribute_options} AS ao ON a.aid = ao.aid LEFT JOIN {uc_product_options} AS po ON ao.oid = po.oid AND po.nid = :po_nid WHERE pa.nid = :pa_nid AND pa.display <> :pa_display GROUP BY ao.aid, pa.aid, pa.display, a.name, pa.ordering, a.ordering, pa.nid HAVING count(po.oid) > 0 ORDER BY pa.ordering, a.ordering", array(':po_nid' => $nid, ':pa_nid' => $nid, ':pa_display' => 3));
   $i = 1;
   $attribute_names = '';
   $full_attributes = array();
   $values = array();
 
-  while ($prod_attr = db_fetch_object($result)) {
-    $query_select .= " ao$i.aid AS aid$i, ao$i.name AS name$i, ao$i.oid AS oid$i, po$i.ordering,";
-    $query_from .= " ({uc_product_options} AS po$i LEFT JOIN {uc_attribute_options} AS ao$i ON po$i.oid = ao$i.oid AND po$i.nid = %d),";
-    $values[] = $nid;
-    $query_where .= " ao$i.aid = ". $prod_attr->aid ." AND";
-    $query_order .= " po$i.ordering, ao$i.name,";
+  $query = db_select('uc_product_options', "po$i")->extend('PagerDefault')
+    ->limit(20);
+
+  foreach ($result as $prod_attr) {
+    if ($i > 1) {
+      $query->join('uc_product_options', "po$i");
+    }
+    $query->leftJoin('uc_attribute_options', "ao$i", "po$i.oid = ao$i.oid AND po$i.nid = :nid", array(':nid' => $nid));
+    $query->addField("ao$i", 'aid', "aid$i");
+    $query->addField("ao$i", 'name', "name$i");
+    $query->addField("ao$i", 'oid', "oid$i");
+    $query->addField("po$i", 'ordering', "ordering$i");
+
+    $query->condition("ao$i.aid", $prod_attr->aid)
+      ->orderBy("po$i.ordering")
+      ->orderBy("ao$i.name");
+
     ++$i;
     $attribute_names .= '<th>'. check_plain($prod_attr->name) .'</th>';
     $attribute_ids[] = $prod_attr->aid;
   }
   $num_prod_attr = count($attribute_ids);
 
-  // Remove last connecting parts (commas, "AND")
-  $query_select = rtrim($query_select, ',');
-  $query_from = rtrim($query_from, ',');
-  $query_where = substr($query_where, 0, strlen($query_where) - 4);
-  $query_order = rtrim($query_order, ',');
-
   if ($num_prod_attr) {
     //Get previous values
-    $result = db_query("SELECT * FROM {uc_product_adjustments} WHERE nid = %d", $nid);
-    $old_vals = array();
-    while ($obj = db_fetch_object($result)) {
-      $old_vals[] = $obj;
-    }
+    $old_val = db_query("SELECT * FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $nid))->fetchAll();
 
-    $result = pager_query($query_select . $query_from . $query_where . $query_order, 20, 0, NULL, $values);
+    $result = $query->execute();
 
     $form['original'] = array(
       '#value' => '<div><br /><b>'. t('Default product SKU: @sku', array('@sku' => $model)) .'</b></div>',
@@ -1107,7 +1246,7 @@ function uc_product_adjustments_form($form_state, $node) {
     );
 
     $i = 0;
-    while ($combo = db_fetch_object($result)) {
+    while ($combo = $result->fetchObject()) {
       $cells = '';
       $row_title = '';
       $comb_array = array();
@@ -1174,16 +1313,21 @@ function uc_product_adjustments_form($form_state, $node) {
 function uc_product_adjustments_form_submit($form, &$form_state) {
   foreach ($form_state['values']['body'] as $value) {
     if (!empty($value['model']) && $value['model'] != $form_state['values']['default']) {
-      db_query("UPDATE {uc_product_adjustments} SET model = '%s' WHERE nid = %d AND combination = '%s'",
-        $value['model'], $form_state['values']['nid'], $value['combo_array']);
-      if (!db_affected_rows()) {
-        db_query("INSERT INTO {uc_product_adjustments} (nid, combination, model) VALUES (%d, '%s', '%s')",
-          $form_state['values']['nid'], $value['combo_array'], $value['model']);
-      }
+      db_merge('uc_product_adjustments')
+        ->key(array(
+          'nid' => $form_state['values']['nid'],
+          'combination' => $value['combo_array'],
+        ))
+        ->fields(array(
+          'model' => $value['model'],
+        ))
+        ->execute();
     }
     else {
-      db_query("DELETE FROM {uc_product_adjustments} WHERE nid = %d AND combination = '%s'",
-        $form_state['values']['nid'], $value['combo_array']);
+      db_delete('uc_product_adjustments')
+        ->condition('nid', $form_state['values']['nid'])
+        ->condition('combination', $value['combo_array'])
+        ->execute();
     }
   }
   drupal_set_message(t('Product adjustments have been saved.'));

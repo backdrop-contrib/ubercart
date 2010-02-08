@@ -211,7 +211,7 @@ function uc_google_checkout_taxes_settings() {
   );
 
   $result = db_query("SELECT zone, rate, tax_shipping FROM {uc_gc_taxes} ORDER BY zone");
-  while ($tax = db_fetch_object($result)) {
+  foreach ($result as $tax) {
     $form['taxes'][$tax->zone]['delete'] = array(
       '#type' => 'checkbox',
       '#default_value' => FALSE,
@@ -284,14 +284,27 @@ function theme_uc_google_checkout_taxes_settings($variables) {
 function uc_google_checkout_taxes_settings_submit($form, &$form_state) {
   foreach ($form_state['values']['taxes'] as $zone => $tax_values) {
     if ($zone == 'new' && $tax_values['zone'] && $tax_values['rate']) {
-      db_query("DELETE FROM {uc_gc_taxes} WHERE zone = '%s'", $tax_values['zone']);
-      db_query("INSERT INTO {uc_gc_taxes} (zone, rate, tax_shipping) VALUES ('%s', %f, %d)", uc_get_zone_code($tax_values['zone']), $tax_values['rate'], $tax_values['tax_shipping']);
+      db_merge('uc_gc_taxes')
+        ->key(array('zone' => uc_get_zone_code($tax_values['zone'])))
+        ->fields(array(
+          'rate' => $tax_values['rate'],
+          'tax_shipping' => $tax_values['tax_shipping'],
+        ))
+        ->execute();
     }
     elseif ($tax_values['delete']) {
-      db_query("DELETE FROM {uc_gc_taxes} WHERE zone = '%s'", $tax_values['zone']);
+      db_delete('uc_gc_taxes')
+        ->condition('zone', $tax_values['zone'])
+        ->execute();
     }
     else {
-      db_query("UPDATE {uc_gc_taxes} SET rate = %f, tax_shipping = %d WHERE zone = '%s'", $tax_values['rate'], $tax_values['tax_shipping'], $tax_values['zone']);
+      db_update('uc_gc_taxes')
+        ->fields(array(
+          'rate' => $tax_values['rate'],
+          'tax_shipping' => $tax_values['tax_shipping'],
+        ))
+        ->condition('zone', $tax_values['zone'])
+        ->execute();
     }
   }
 }

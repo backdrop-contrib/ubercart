@@ -67,19 +67,28 @@ function uc_file_admin_files_form_show_files($form_state) {
   );
 
   // Create pager.
-  $query = pager_query(
-    "SELECT n.nid, f.filename, n.title, fp.model, f.fid, pf.pfid FROM {uc_files} as f ".
-      "LEFT JOIN {uc_file_products} as fp ON (f.fid = fp.fid) ".
-      "LEFT JOIN {uc_product_features} as pf ON (fp.pfid = pf.pfid) ".
-      "LEFT JOIN {node} as n ON (pf.nid = n.nid) ". tablesort_sql($form['#header']),
-    UC_FILE_PAGER_SIZE,
-    0,
-    "SELECT COUNT(*) FROM {uc_files}"
-  );
+  $query = db_select('uc_files', 'f')->extend('PagerDefault')->extend('TableSort')
+    ->orderByHeader($form['#header'])
+    ->limit(UC_FILE_PAGER_SIZE);
+  $query->leftJoin('uc_file_products', 'fp', 'f.fid = fp.fid');
+  $query->leftJoin('uc_product_features', 'pf', 'fp.pfid = pf.pfid');
+  $query->leftJoin('node', 'n', 'pf.nid = n.nid');
+  $query->addField('n', 'nid');
+  $query->addField('f', 'filename');
+  $query->addField('n', 'title');
+  $query->addField('fp', 'model');
+  $query->addField('f', 'fid');
+  $query->addField('pf', 'pfid');
+
+  $count_query = db_select('uc_files');
+  $count_query->addExpression('COUNT(*)');
+
+  $query->setCountQuery($count_query);
+  $result = $query->execute();
 
   // Create checkboxes for each file.
   $form['file_select'] = array('#tree' => TRUE);
-  while ($file = db_fetch_object($query)) {
+  foreach ($result as $file) {
     $form['file_select'][$file->fid]['check'] = array('#type' => 'checkbox');
     $form['file_select'][$file->fid]['filename'] = array('#value' => $file->filename);
     $form['file_select'][$file->fid]['title'] = array('#value' => $file->title);

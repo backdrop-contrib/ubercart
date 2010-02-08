@@ -22,7 +22,7 @@ function uc_weightquote_admin_methods() {
   $enabled = variable_get('uc_quote_enabled', array());
   $weight = variable_get('uc_quote_method_weight', array());
   $result = db_query("SELECT mid, title, label, base_rate, product_rate FROM {uc_weightquote_methods}");
-  while ($method = db_fetch_object($result)) {
+  foreach ($result as $method) {
     $context['subject']['weightquote_method'] = $method;
 
     $row = array();
@@ -39,6 +39,7 @@ function uc_weightquote_admin_methods() {
     $output .= theme('table', array('header' => $header, 'rows' => $rows));
   }
   $output .= l(t('Add a new weight quote shipping method.'), 'admin/store/settings/quotes/methods/weightquote/add');
+
   return $output;
 }
 
@@ -56,7 +57,7 @@ function uc_weightquote_admin_method_edit_form($form_state, $mid = 0) {
   $sign_flag = variable_get('uc_sign_after_amount', FALSE);
   $currency_sign = variable_get('uc_currency_sign', '$');
 
-  if (is_numeric($mid) && ($method = db_fetch_object(db_query("SELECT * FROM {uc_weightquote_methods} WHERE mid = %d", $mid)))) {
+  if (is_numeric($mid) && ($method = db_query("SELECT * FROM {uc_weightquote_methods} WHERE mid = :mid", array(':mid' => $mid))->fetchObject())) {
     $form['mid'] = array('#type' => 'value', '#value' => $mid);
   }
   $form['title'] = array(
@@ -129,14 +130,12 @@ function uc_weightquote_admin_method_edit_form_delete($form, &$form_state) {
  */
 function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
   if ($form_state['values']['mid']) {
-    db_query("UPDATE {uc_weightquote_methods} SET title = '%s', label = '%s', base_rate = %f, product_rate = %f WHERE mid = %d",
-      $form_state['values']['title'], $form_state['values']['label'], $form_state['values']['base_rate'], $form_state['values']['product_rate'], $form_state['values']['mid']);
+    drupal_write_record('uc_weightquote_methods', $form_state['values'], 'mid');
     drupal_set_message(t("Weight quote shipping method was updated."));
   }
   else {
-    db_query("INSERT INTO {uc_weightquote_methods} (title, label, base_rate, product_rate) VALUES ('%s', '%s', %f, %f)",
-      $form_state['values']['title'], $form_state['values']['label'], $form_state['values']['base_rate'], $form_state['values']['product_rate']);
-    $mid = db_last_insert_id('uc_weightquote_methods', 'mid');
+    drupal_write_record('uc_weightquote_methods', $form_state['values']);
+    $mid = $form_state['values']['mid'];
 
     $enabled = variable_get('uc_quote_enabled', array());
     $enabled['weightquote_'. $mid] = TRUE;
@@ -148,6 +147,7 @@ function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
 
     drupal_set_message(t("Created and enabled new weight quote shipping method."));
   }
+
   $form_state['redirect'] = 'admin/store/settings/quotes/methods/weightquote';
 }
 
@@ -175,16 +175,22 @@ function uc_weightquote_admin_method_confirm_delete($form_state, $mid) {
  * @see uc_weightquote_admin_method_confirm_delete()
  */
 function uc_weightquote_admin_method_confirm_delete_submit($form, &$form_state) {
-  db_query("DELETE FROM {uc_weightquote_methods} WHERE mid = %d", $form_state['values']['mid']);
-  db_query("DELETE FROM {uc_weightquote_products} WHERE mid = %d", $form_state['values']['mid']);
+  $mid = $form_state['values']['mid'];
+
+  db_delete('uc_weightquote_methods')
+    ->condition('mid', $mid)
+    ->execute();
+  db_delete('uc_weightquote_products')
+    ->condition('mid', $mid)
+    ->execute();
   ca_delete_predicate('uc_weightquote_get_quote_'. $form_state['values']['mid']);
 
   $enabled = variable_get('uc_quote_enabled', array());
-  unset($enabled['weightquote_'. $form_state['values']['mid']]);
+  unset($enabled['weightquote_'. $mid]);
   variable_set('uc_quote_enabled', $enabled);
 
   $weight = variable_get('uc_quote_method_weight', array());
-  unset($weight['weightquote_'. $form_state['values']['mid']]);
+  unset($weight['weightquote_'. $mid]);
   variable_set('uc_quote_method_weight', $weight);
 
   drupal_set_message(t('Weight quote shipping method deleted.'));

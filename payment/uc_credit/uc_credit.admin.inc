@@ -321,7 +321,10 @@ function uc_credit_terminal_form_submit($form, &$form_state) {
     uc_store_encryption_errors($crypt, 'uc_credit');
 
     // Save it again.
-    db_query("UPDATE {uc_orders} SET data = '%s' WHERE order_id = %d", serialize($data), $form_state['values']['order_id']);
+    db_update('uc_orders')
+      ->fields(array('data' => serialize($data)))
+      ->condition('order_id', $form_state['values']['order_id'])
+      ->execute();
 
     drupal_set_message(t('The credit card was processed successfully. See the admin comments for more details.'));
   }

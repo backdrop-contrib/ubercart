@@ -458,15 +458,15 @@ function uc_roles_action_order_renew($order, $settings) {
   // Loop through all the products on the order.
   foreach ($order->products as $product) {
     // Look for any role promotion features assigned to the product.
-    $roles = db_query("SELECT * FROM {uc_roles_products} WHERE nid = %d", $product->nid);
+    $roles = db_query("SELECT * FROM {uc_roles_products} WHERE nid = :nid", array(':nid' => $product->nid));
 
-    while ($role = db_fetch_object($roles)) {
+    foreach ($roles as $role) {
       // Product model matches, or was 'any'.
       if (!empty($role->model) && $role->model != $product->model) {
         continue;
       }
 
-      $existing_role = db_fetch_object(db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = %d AND rid = %d", $account->uid, $role->rid));
+      $existing_role = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid AND rid = :rid", array(':uid' => $account->uid, ':rid' => $role->rid))->fetchObject();
 
       // Determine the expiration timestamp for the role.
       $expiration = _uc_roles_product_get_expiration($role, $product->qty, !is_null($existing_role->expiration) ? $existing_role->expiration : NULL);
@@ -488,7 +488,7 @@ function uc_roles_action_order_renew($order, $settings) {
       }
 
       // Get the new expiration (if applicable)
-      $new_expiration = db_fetch_object(db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = %d AND rid = %d", $account->uid, $role->rid));
+      $new_expiration = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid AND rid = :rid", array(':uid' => $account->uid, ':rid' => $role->rid))->fetchObject();
       if (!$new_expiration) {
         $new_expiration = new stdClass();
         $new_expiration->uid = $account->uid;

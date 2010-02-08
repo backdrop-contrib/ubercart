@@ -184,7 +184,10 @@ function uc_taxes_form_submit($form, &$form_state) {
   uc_taxes_rate_save((object) $rate);
 
   // Update the name of the associated predicate.
-  db_query("UPDATE {ca_predicates} SET title = '%s' WHERE pid = '%s'", $rate['name'], 'uc_taxes_'. $rate['id']);
+  db_update('ca_predicates')
+    ->fields(array('title' => $rate['name']))
+    ->condition('pid', 'uc_taxes_' . $rate['id'])
+    ->execute();
 
   // Display a message and redirect back to the overview.
   drupal_set_message(t('Tax rate %name saved.', array('%name' => $form_state['values']['name'])));

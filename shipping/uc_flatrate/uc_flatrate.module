@@ -59,7 +59,7 @@ function uc_flatrate_form_alter(&$form, $form_state, $form_id) {
       'revision' => 'formatted',
       'type' => 'amount',
     );
-    while ($method = db_fetch_object($result)) {
+    foreach ($result as $method) {
       if (!isset($form['shipping']['flatrate'])) {
         $form['shipping']['flatrate'] = array(
           '#type' => 'fieldset',
@@ -95,29 +95,42 @@ function uc_flatrate_nodeapi(&$node, $op) {
       case 'update':
         if (is_array($node->flatrate)) {
           if (!$node->revision) {
-            db_query("DELETE FROM {uc_flatrate_products} WHERE vid = %d", $node->vid);
+            db_delete('uc_flatrate_products')
+              ->condition('vid', $node->vid)
+              ->execute();
           }
+
+          $query = db_insert('uc_flatrate_products')
+            ->fields(array('vid', 'nid', 'mid', 'rate'));
           foreach ($node->flatrate as $mid => $rate) {
             if ($rate !== '') {
-              db_query("INSERT INTO {uc_flatrate_products} (vid, nid, mid, rate) VALUES (%d, %d, %d, %f)",
-                $node->vid, $node->nid, $mid, $rate);
+              $query->values(array(
+                  'vid' => $node->vid,
+                  'nid' => $node->nid,
+                  'mid' => $mid,
+                  'rate' => $rate,
+                ));
             }
           }
+
+          $query->execute();
         }
       break;
       case 'load':
-        $return = array('flatrate' => array());
-        $result = db_query("SELECT mid, rate FROM {uc_flatrate_products} WHERE vid = %d", $node->vid);
-        while ($rate = db_fetch_object($result)) {
-          $return['flatrate'][$rate->mid] = $rate->rate;
-        }
+        $return = array();
+
+        $return['flatrate'] = db_query("SELECT mid, rate FROM {uc_flatrate_products} WHERE vid = :vid", array(':vid' => $node->vid))->fetchAllKeyed();
+
         return $return;
-      break;
       case 'delete':
-        db_query("DELETE FROM {uc_flatrate_products} WHERE nid = %d", $node->nid);
+        db_delete('uc_flatrate_products')
+          ->condition('nid', $node->nid)
+          ->execute();
       break;
       case 'delete revision':
-        db_query("DELETE FROM {uc_flatrate_products} WHERE vid = %d", $node->vid);
+        db_delete('uc_flatrate_products')
+          ->condition('vid', $node->vid)
+          ->execute();
       break;
     }
   }
@@ -137,7 +150,7 @@ function uc_flatrate_ca_predicate() {
   $predicates = array();
 
   $result = db_query("SELECT mid, title FROM {uc_flatrate_methods}");
-  while ($method = db_fetch_object($result)) {
+  foreach ($result as $method) {
     $predicates['uc_flatrate_get_quote_'. $method->mid] = array(
       '#title' => t('Shipping quote via @method', array('@method' => $method->title)),
       '#trigger' => 'get_quote_from_flatrate_'. $method->mid,
@@ -167,8 +180,9 @@ function uc_flatrate_shipping_method() {
 
   $enabled = variable_get('uc_quote_enabled', array());
   $weight = variable_get('uc_quote_method_weight', array());
+
   $result = db_query("SELECT mid, title, label FROM {uc_flatrate_methods}");
-  while ($method = db_fetch_object($result)) {
+  foreach ($result as $method) {
     $methods['flatrate_'. $method->mid] = array(
       'id' => 'flatrate_'. $method->mid,
       'module' => 'uc_flatrate',
@@ -212,7 +226,7 @@ function uc_flatrate_quote($products, $details, $method) {
     'type' => 'amount',
   );
 
-  if ($method = db_fetch_object(db_query("SELECT * FROM {uc_flatrate_methods} WHERE mid = %d", $mid))) {
+  if ($method = db_query("SELECT * FROM {uc_flatrate_methods} WHERE mid = :mid", array(':mid' => $mid))->fetchObject()) {
     // Start at the base rate.
     $rate = $method->base_rate;
 

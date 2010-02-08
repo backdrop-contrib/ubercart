@@ -89,7 +89,7 @@ function uc_payment_method_other($op, &$arg1) {
     case 'order-view':
     case 'customer-view':
       // Fetch the description for the payment entered by the administrator.
-      if ($description = db_result(db_query("SELECT description FROM {uc_payment_other} WHERE order_id = %d", $arg1->order_id))) {
+      if ($description = db_query("SELECT description FROM {uc_payment_other} WHERE order_id = :id", array(':id' => $arg1->order_id))->fetchField()) {
         return t('Description: @desc', array('@desc' => $description));
       }
       break;
@@ -103,16 +103,28 @@ function uc_payment_method_other($op, &$arg1) {
       return $changes;
 
     case 'order-load':
-      if ($description = db_result(db_query("SELECT description FROM {uc_payment_other} WHERE order_id = %d", $arg1->order_id))) {
+      if ($description = db_query("SELECT description FROM {uc_payment_other} WHERE order_id = :id", array(':id' => $arg1->order_id))->fetchField()) {
         $arg1->payment_details['description'] = $description;
       }
       break;
 
     case 'order-save':
-      db_query("DELETE FROM {uc_payment_other} WHERE order_id = %d", $arg1->order_id);
-      if (!empty($arg1->payment_details['pm_other_description'])) {
-        db_query("INSERT INTO {uc_payment_other} (order_id, description) VALUES (%d, '%s')", $arg1->order_id, $arg1->payment_details['pm_other_description']);
+      if (empty($arg1->payment_details['pm_other_description'])) {
+        db_delete('uc_payment_other')
+          ->condition('order_id', $arg1->order_id)
+          ->execute();
       }
+      else {
+        db_merge('uc_payment_other')
+          ->key(array(
+            'order_id' => $arg1->order_id,
+          ))
+          ->fields(array(
+            'description' => $arg1->payment_details['pm_other_description'],
+          ))
+          ->execute();
+      }
+
       break;
   }
 }
@@ -203,8 +215,8 @@ function uc_payment_method_cod($op, &$arg1) {
       return;
 
     case 'order-load':
-      $result = db_query("SELECT * FROM {uc_payment_cod} WHERE order_id = %d", $arg1->order_id);
-      if ($row = db_fetch_object($result)) {
+      $result = db_query("SELECT * FROM {uc_payment_cod} WHERE order_id = :id", array(':id' => $arg1->order_id));
+      if ($row = $result->fetchObject()) {
         $arg1->payment_details['delivery_month'] = $row->delivery_month;
         $arg1->payment_details['delivery_day'] = $row->delivery_day;
         $arg1->payment_details['delivery_year'] = $row->delivery_year;
@@ -224,14 +236,20 @@ function uc_payment_method_cod($op, &$arg1) {
           return $result;
       }
     case 'order-save':
-      db_query("DELETE FROM {uc_payment_cod} WHERE order_id = %d", $arg1->order_id);
-      db_query("INSERT INTO {uc_payment_cod} VALUES (%d, %d, %d, %d)",
-               $arg1->order_id, $arg1->payment_details['delivery_month'],
-               $arg1->payment_details['delivery_day'], $arg1->payment_details['delivery_year']);
+      db_merge('uc_payment_cod')
+        ->key(array('order_id' => $arg1->order_id))
+        ->fields(array(
+          'delivery_month' => $arg1->payment_details['delivery_month'],
+          'delivery_day' => $arg1->payment_details['delivery_day'],
+          'delivery_year' => $arg1->payment_details['delivery_year'],
+        ))
+        ->execute();
       break;
 
     case 'order-delete':
-      db_query("DELETE FROM {uc_payment_cod} WHERE order_id = %d", $arg1->order_id);
+      db_delete('uc_payment_cod')
+        ->condition('order_id', $arg1->order_id)
+        ->execute();
       break;
 
     case 'settings':
@@ -336,10 +354,9 @@ function uc_payment_method_check($op, &$arg1) {
       if (!variable_get('uc_payment_tracking', TRUE)) {
         return '';
       }
-      $result = db_query("SELECT clear_date FROM {uc_payment_check} WHERE "
-                        ."order_id = %d ", $arg1->order_id);
-      if ($check = db_fetch_object($result)) {
-        $output = t('Clear Date:') .' '. format_date($check->clear_date, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
+      $result = db_query("SELECT clear_date FROM {uc_payment_check} WHERE order_id = :id ", array(':id' => $arg1->order_id));
+      if ($clear_date = $result->fetch_field()) {
+        $output = t('Clear Date:') .' '. format_date($clear_date, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
       }
       else {
         $output = l(t('Receive Check'), 'admin/store/orders/'. $arg1->order_id .'/receive_check');
@@ -351,10 +368,10 @@ function uc_payment_method_check($op, &$arg1) {
       if (!variable_get('uc_payment_tracking', TRUE)) {
         return '';
       }
-      $result = db_query("SELECT clear_date FROM {uc_payment_check} WHERE order_id = %d ", $arg1->order_id);
-      if ($check = db_fetch_object($result)) {
+      $result = db_query("SELECT clear_date FROM {uc_payment_check} WHERE order_id = :id ", array(':id' => $arg1->order_id));
+      if ($clear_date = $result->fetch_field()) {
         $output = t('Check received') .'<br />'
-                . t('Expected clear date:') .'<br />'. format_date($check->clear_date, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
+                . t('Expected clear date:') .'<br />'. format_date($clear_date, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
       }
       return $output;
 

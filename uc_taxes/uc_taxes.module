@@ -332,7 +332,7 @@ function uc_taxes_rate_load($rate_id = NULL) {
     $result = db_query("SELECT * FROM {uc_taxes} ORDER BY weight");
 
     // Loop through each returned row.
-    while ($rate = db_fetch_object($result)) {
+    foreach ($result as $rate) {
       // Unserialize some arrays and cache the rate in a static array.
       $rate->taxed_product_types = unserialize($rate->taxed_product_types);
       $rate->taxed_line_items = unserialize($rate->taxed_line_items);
@@ -359,7 +359,9 @@ function uc_taxes_rate_load($rate_id = NULL) {
  */
 function uc_taxes_rate_delete($rate_id) {
   // Delete the tax rate record.
-  db_query("DELETE FROM {uc_taxes} WHERE id = %d", $rate_id);
+  db_delete('uc_taxes')
+    ->condition('id', $rate_id)
+    ->execute();
 
   // Delete the associated predicated if it has been saved to the database.
   ca_delete_predicate('uc_taxes_'. $rate_id);

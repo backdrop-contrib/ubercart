@@ -219,11 +219,10 @@ function uc_credit_cron() {
     $key = uc_credit_encryption_key();
     $crypt = new uc_encryption_class;
 
-    $result = db_query("SELECT order_id FROM {uc_orders} WHERE modified <= %d AND order_status = '%s'", $time, variable_get('uc_credit_clear_status', uc_order_state_default('completed')));
-    while ($order = db_fetch_array($result)) {
+    $result = db_query("SELECT order_id, data FROM {uc_orders} WHERE modified <= %d AND order_status = '%s'", $time, variable_get('uc_credit_clear_status', uc_order_state_default('completed')));
+    while ($order = $result->fetchObject()) {
       // Load up the existing data array.
-      $data = db_result(db_query("SELECT data FROM {uc_orders} WHERE order_id = %d", $order['order_id']));
-      $data = unserialize($data);
+      $data = unserialize($order->data);
 
       $cache = uc_credit_cache('save', $data['cc_data']);
 
@@ -237,7 +236,10 @@ function uc_credit_cron() {
       uc_store_encryption_errors($crypt, 'uc_credit');
 
       // Save it again.
-      db_query("UPDATE {uc_orders} SET data = '%s' WHERE order_id = %d", serialize($data), $order['order_id']);
+      db_update('uc_orders')
+        ->fields(array('data' => serialize($data)))
+        ->condition('order_id', $order->order_id)
+        ->execute();
     }
   }
 }
@@ -1419,7 +1421,7 @@ function _save_cc_data_to_order($cc_data, $order_id) {
   $crypt = new uc_encryption_class;
 
   // Load up the existing data array.
-  $data = db_result(db_query("SELECT data FROM {uc_orders} WHERE order_id = %d", $order_id));
+  $data = db_query("SELECT data FROM {uc_orders} WHERE order_id = :id", array(':id' => $order_id))->fetchField();
   $data = unserialize($data);
 
   // Stuff the serialized and encrypted CC details into the array.
@@ -1427,7 +1429,10 @@ function _save_cc_data_to_order($cc_data, $order_id) {
   uc_store_encryption_errors($crypt, 'uc_credit');
 
   // Save it again.
-  db_query("UPDATE {uc_orders} SET data = '%s' WHERE order_id = %d", serialize($data), $order_id);
+  db_update('uc_orders')
+    ->fields(array('data' => serialize($data)))
+    ->condition('order_id' => $order_id)
+    ->execute();
 }
 
 /**
@@ -1515,7 +1520,7 @@ function uc_credit_default_gateway() {
  */
 function uc_credit_log_authorization($order_id, $auth_id, $amount) {
   // Load the existing order data array.
-  $data = db_result(db_query("SELECT data FROM {uc_orders} WHERE order_id = %d", $order_id));
+  $data = db_query("SELECT data FROM {uc_orders} WHERE order_id = :id", array(':id' => $order_id))->fetchField();
   $data = unserialize($data);
 
   // Add the authorization to the cc_txns.
@@ -1525,7 +1530,10 @@ function uc_credit_log_authorization($order_id, $auth_id, $amount) {
   );
 
   // Save the updated data array to the database.
-  db_query("UPDATE {uc_orders} SET data = '%s' WHERE order_id = %d", serialize($data), $order_id);
+  db_update('uc_orders')
+    ->fields(array('data' => serialize($data)))
+    ->condition('order_id', $order_id)
+    ->execute();
 
   return $data;
 }
@@ -1543,7 +1551,7 @@ function uc_credit_log_authorization($order_id, $auth_id, $amount) {
  */
 function uc_credit_log_prior_auth_capture($order_id, $auth_id) {
   // Load the existing order data array.
-  $data = db_result(db_query("SELECT data FROM {uc_orders} WHERE order_id = %d", $order_id));
+  $data = db_query("SELECT data FROM {uc_orders} WHERE order_id = :id", array(':id' => $order_id))->fetchField();
   $data = unserialize($data);
 
   // Return FALSE if we can't find the authorization.
@@ -1555,7 +1563,10 @@ function uc_credit_log_prior_auth_capture($order_id, $auth_id) {
   $data['cc_txns']['authorizations'][$auth_id]['captured'] = REQUEST_TIME;
 
   // Save the updated data array to the database.
-  db_query("UPDATE {uc_orders} SET data = '%s' WHERE order_id = %d", serialize($data), $order_id);
+  db_update('uc_orders')
+    ->fields(array('data' => serialize($data)))
+    ->condition('order_id', $order_id)
+    ->execute();
 
   return $data;
 }
@@ -1576,7 +1587,7 @@ function uc_credit_log_prior_auth_capture($order_id, $auth_id) {
  */
 function uc_credit_log_reference($order_id, $ref_id, $cc_number) {
   // Load the existing order data array.
-  $data = db_result(db_query("SELECT data FROM {uc_orders} WHERE order_id = %d", $order_id));
+  $data = db_query("SELECT data FROM {uc_orders} WHERE order_id = :id", array(':id' => $order_id))->fetchField();
   $data = unserialize($data);
 
   $data['cc_txns']['references'][$ref_id] = array(
@@ -1585,7 +1596,10 @@ function uc_credit_log_reference($order_id, $ref_id, $cc_number) {
   );
 
   // Save the updated data array to the database.
-  db_query("UPDATE {uc_orders} SET data = '%s' WHERE order_id = %d", serialize($data), $order_id);
+  db_update('uc_orders')
+    ->fields(array('data' => serialize($data)))
+    ->condition('order_id', $order_id)
+    ->execute();
 
   return $data;
 }
