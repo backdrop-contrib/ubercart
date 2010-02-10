@@ -37,7 +37,7 @@
  *   - "accessorials": This array represents the different options the customer
  *       may choose for their shipment. The callback function should generate a
  *       quote for each option in accessorials and return them via an array.
- *       drupal_to_js() is very useful for this.
+ *       drupal_json_encode() is very useful for this.
  *       @code
  *         return array(
  *           '03' => array('rate' => 15.75, 'format' => uc_price(15.75, $context) 'option_label' => t('UPS Ground'),

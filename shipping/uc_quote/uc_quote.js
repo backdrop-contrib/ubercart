@@ -9,6 +9,8 @@ var page;
 var details;
 var methods;
 
+(function($) {
+
 /**
  * Set event handlers on address fields.
  */
@@ -207,3 +209,5 @@ function displayQuote(data) {
     }
   } */
 }
+
+})(jQuery);

@@ -1,4 +1,5 @@
 // $Id$
+(function($) {
 
 /**
  * @file
@@ -36,3 +37,5 @@ function apply_address(type, json_address) {
     $('#edit-' + type + '-zone').val(address.zone);
   //}
 }
+
+})(jQuery);

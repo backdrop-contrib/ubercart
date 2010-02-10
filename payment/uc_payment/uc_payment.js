@@ -1,4 +1,5 @@
 // $Id$
+(function($) {
 
 /**
  * Calculate the number of bytes of a Unicode string.
@@ -28,34 +29,32 @@ var payment_update = 0;
 
 var do_payment_details = true;
 
-if (Drupal.jsEnabled) {
-  jQuery.extend(Drupal.settings, {
-    ucShowProgressBar: false,
-    ucDefaultPayment: '',
-    ucOrderInitiate: false
-  });
+jQuery.extend(Drupal.settings, {
+  ucShowProgressBar: false,
+  ucDefaultPayment: '',
+  ucOrderInitiate: false
+});
 
-  $(document).ready(
-    function() {
+$(document).ready(
+  function() {
 
-      // attach a progressbar if requested
-      if (Drupal.settings.ucShowProgressBar) {
-        show_progressBar('#line-items-div');
-      }
-
-      // initialize payment details
-      if (Drupal.settings.ucDefaultPayment != '') {
-        init_payment_details(Drupal.settings.ucDefaultPayment);
-      }
-
-      // disable the submission buttons and get payment details
-      if (Drupal.settings.ucOrderInitiate) {
-        add_order_save_hold();
-        get_payment_details(Drupal.settings.ucURL.adminOrders + $('#edit-order-id').val() + '/payment_details/' + $('#edit-payment-method').val());
-      }
+    // attach a progressbar if requested
+    if (Drupal.settings.ucShowProgressBar) {
+      show_progressBar('#line-items-div');
     }
-  )
-}
+
+    // initialize payment details
+    if (Drupal.settings.ucDefaultPayment != '') {
+      init_payment_details(Drupal.settings.ucDefaultPayment);
+    }
+
+    // disable the submission buttons and get payment details
+    if (Drupal.settings.ucOrderInitiate) {
+      add_order_save_hold();
+      get_payment_details(Drupal.settings.ucURL.adminOrders + $('#edit-order-id').val() + '/payment_details/' + $('#edit-payment-method').val());
+    }
+  }
+)
 
 function show_progressBar(id) {
   var progress = new Drupal.progressBar('paymentProgress');
@@ -276,3 +275,4 @@ function receive_check_toggle(checked) {
   }
 }
 
+})(jQuery);

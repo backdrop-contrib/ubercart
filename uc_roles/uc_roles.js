@@ -1,4 +1,5 @@
 // $Id$
+(function($) {
 
 /**
  * @file
@@ -91,65 +92,80 @@ $(document).ready(
 );
 
 // When you change the role expiration time select.
-Drupal.behaviors.ucRoleExpirationTime = function(context) {
-  $("#edit-expiration:not(.ucRoleExpirationTime-processed)", context).addClass('ucRoleExpirationTime-processed').change(
-    function() {
-      expiration_switcher();
-    }
-  );
+Drupal.behaviors.ucRoleExpirationTime = {
+  attach: function(context, settings) {
+    $("#edit-expiration:not(.ucRoleExpirationTime-processed)", context).addClass('ucRoleExpirationTime-processed').change(
+      function() {
+        expiration_switcher();
+      }
+    );
+  }
 }
 
 // When you change the default role expiration time select.
-Drupal.behaviors.ucRoleDefaultExpirationTimeDefault = function(context) {
-  $("#edit-uc-roles-default-end-expiration:not(.ucRoleDefaultExpirationTimeDefault-processed)", context).addClass('ucRoleDefaultExpirationTimeDefault-processed').change(
-    function() {
-      expiration_switcher_default();
-    }
-  );
+Drupal.behaviors.ucRoleDefaultExpirationTimeDefault = {
+  attach: function(context, settings) {
+    $("#edit-uc-roles-default-end-expiration:not(.ucRoleDefaultExpirationTimeDefault-processed)", context).addClass('ucRoleDefaultExpirationTimeDefault-processed').change(
+      function() {
+        expiration_switcher_default();
+      }
+    );
+  }
 }
 
 // When you change the role expiration time select.
-Drupal.behaviors.ucRoleExpirationTimeDefault = function(context) {
-  $("#edit-uc-roles-end-expiration:not(.ucRoleExpirationTimeDefault-processed)", context).addClass('ucRoleExpirationTimeDefault-processed').change(
-    function() {
-      expiration_switcher_default();
-    }
-  );
+Drupal.behaviors.ucRoleExpirationTimeDefault = {
+  attach: function(context, settings) {
+    $("#edit-uc-roles-end-expiration:not(.ucRoleExpirationTimeDefault-processed)", context).addClass('ucRoleExpirationTimeDefault-processed').change(
+      function() {
+        expiration_switcher_default();
+      }
+    );
+  }
 }
 
 // When you change the role expiration granularity select.
-Drupal.behaviors.ucRoleExpirationGranularity = function(context) {
-  $('#edit-uc-roles-expire-relative-granularity:not(.ucRoleExpirationGranularity-processed)', context).addClass('ucRoleExpirationGranularity-processed').change(
-    function() {
-      _uc_role_expiration_disable_check('#edit-uc-roles-expire-relative-granularity', '#edit-uc-roles-expire-relative-duration');
-    }
-  );
+Drupal.behaviors.ucRoleExpirationGranularity = {
+  attach: function(context, settings) {
+    $('#edit-uc-roles-expire-relative-granularity:not(.ucRoleExpirationGranularity-processed)', context).addClass('ucRoleExpirationGranularity-processed').change(
+      function() {
+        _uc_role_expiration_disable_check('#edit-uc-roles-expire-relative-granularity', '#edit-uc-roles-expire-relative-duration');
+      }
+    );
+  }
 }
 
 // When you change the default role expiration granularity select.
-Drupal.behaviors.ucRoleDefaultExpirationGranularity = function(context) {
-  $('#edit-uc-roles-default-granularity:not(.ucRoleDefaultExpirationGranularity-processed)', context).addClass('ucRoleDefaultExpirationGranularity-processed').change(
-    function() {
-      _uc_role_expiration_disable_check('#edit-uc-roles-default-granularity', '#edit-uc-roles-default-length');
-    }
-  );
+Drupal.behaviors.ucRoleDefaultExpirationGranularity = {
+  attach: function(context, settings) {
+    $('#edit-uc-roles-default-granularity:not(.ucRoleDefaultExpirationGranularity-processed)', context).addClass('ucRoleDefaultExpirationGranularity-processed').change(
+      function() {
+        _uc_role_expiration_disable_check('#edit-uc-roles-default-granularity', '#edit-uc-roles-default-length');
+      }
+    );
+  }
 }
 
 // When you change the default role expiration granularity select.
-Drupal.behaviors.ucRoleReminderExpirationGranularity = function(context) {
-  $('#edit-uc-roles-reminder-granularity:not(.ucRoleReminderExpirationGranularity-processed)', context).addClass('ucRoleReminderExpirationGranularity-processed').change(
-    function() {
-      _uc_role_expiration_disable_check('#edit-uc-roles-reminder-granularity', '#edit-uc-roles-reminder-length');
-    }
-  );
+Drupal.behaviors.ucRoleReminderExpirationGranularity = {
+  attach: function(context, settings) {
+    $('#edit-uc-roles-reminder-granularity:not(.ucRoleReminderExpirationGranularity-processed)', context).addClass('ucRoleReminderExpirationGranularity-processed').change(
+      function() {
+        _uc_role_expiration_disable_check('#edit-uc-roles-reminder-granularity', '#edit-uc-roles-reminder-length');
+      }
+    );
+  }
 }
 
 // When you change the default role expiration granularity select.
-Drupal.behaviors.ucRoleExpirationEndOverride = function(context) {
-  $('#edit-end-override:not(.ucRoleExpirationEndOverride-processed)', context).addClass('ucRoleExpirationEndOverride-processed').click(
-    function() {
-      uc_roles_expiration_default_override();
-    }
-  );
+Drupal.behaviors.ucRoleExpirationEndOverride = {
+  attach: function(context, settings) {
+    $('#edit-end-override:not(.ucRoleExpirationEndOverride-processed)', context).addClass('ucRoleExpirationEndOverride-processed').click(
+      function() {
+        uc_roles_expiration_default_override();
+      }
+    );
+  }
 }
 
+})(jQuery);

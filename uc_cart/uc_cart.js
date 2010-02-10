@@ -8,21 +8,27 @@
 var copy_box_checked = false;
 var uc_ce_submit_disable = false;
 
+(function($) {
+
 /**
  * Scan the DOM and displays the cancel and continue buttons.
  */
-Drupal.behaviors.ucShowOnLoad = function(context) {
-  $('.show-onload:not(.ucShowOnLoad-processed)', context).addClass('ucShowOnLoad-processed').show();
+Drupal.behaviors.ucShowOnLoad = {
+  attach: function(context, settings) {
+    $('.show-onload:not(.ucShowOnLoad-processed)', context).addClass('ucShowOnLoad-processed').show();
+  }
 }
 
 /**
  * Add a throbber to the submit order button on the review order form.
  */
-Drupal.behaviors.ucSubmitOrderThrobber = function(context) {
-  $('form#uc-cart-checkout-review-form input#edit-submit:not(.ucSubmitOrderThrobber-processed)', context).addClass('ucSubmitOrderThrobber-processed').click(function() {
-    $(this).clone().insertAfter(this).attr('disabled', true).after('<span class="ubercart-throbber">&nbsp;&nbsp;&nbsp;&nbsp;</span>').end().hide();
-    $('#uc-cart-checkout-review-form #edit-back').attr('disabled', true);
-  });
+Drupal.behaviors.ucSubmitOrderThrobber = {
+  attach: function(context, settings) {
+    $('form#uc-cart-checkout-review-form input#edit-submit:not(.ucSubmitOrderThrobber-processed)', context).addClass('ucSubmitOrderThrobber-processed').click(function() {
+      $(this).clone().insertAfter(this).attr('disabled', true).after('<span class="ubercart-throbber">&nbsp;&nbsp;&nbsp;&nbsp;</span>').end().hide();
+      $('#uc-cart-checkout-review-form #edit-back').attr('disabled', true);
+    });
+  }
 }
 
 /**
@@ -161,11 +167,15 @@ function apply_address(type, address_str) {
  * it that slick Web 2.0 feel :). The back button is also disabled upon submission.
  * This code was improved by quicksketch.
  */
-Drupal.behaviors.ucDisableNav = function(context) {
-  $('form#uc-cart-checkout-review-form input#edit-submit:not(.ucDisableNav-processed)', context).addClass('ucDisableNav-processed').click(function() {
-    if (uc_ce_submit_disable) {
-      $(this).clone().insertAfter(this).attr('disabled', true).after('<span id=\"submit-throbber\" style=\"background: url(' + Drupal.settings.basePath + 'misc/throbber.gif) no-repeat 100% -20px;\">&nbsp;&nbsp;&nbsp;&nbsp;</span>').end().hide();
-      $('#uc-cart-checkout-review-form #edit-back').attr('disabled', true);
-    }
-  });
+Drupal.behaviors.ucDisableNav = {
+  attach: function(context, settings) {
+    $('form#uc-cart-checkout-review-form input#edit-submit:not(.ucDisableNav-processed)', context).addClass('ucDisableNav-processed').click(function() {
+      if (uc_ce_submit_disable) {
+        $(this).clone().insertAfter(this).attr('disabled', true).after('<span id=\"submit-throbber\" style=\"background: url(' + settings.basePath + 'misc/throbber.gif) no-repeat 100% -20px;\">&nbsp;&nbsp;&nbsp;&nbsp;</span>').end().hide();
+        $('#uc-cart-checkout-review-form #edit-back').attr('disabled', true);
+      }
+    });
+  }
 }
+
+})(jQuery);

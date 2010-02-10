@@ -772,9 +772,9 @@ function uc_cart_pane_quotes($items) {
   $prod_string = substr($prod_string, 1);
   // If a previous quote gets loaded, make sure it gets saved again.
   // Also, make sure the previously checked option is checked by default.
-  drupal_add_js('$(function() {
+  drupal_add_js('jQuery(function() {
     setQuoteCallbacks("'. drupal_urlencode($prod_string) .'");
-    $("#uc-cart-pane-quotes").submit(function() {
+    jQuery("#uc-cart-pane-quotes").submit(function() {
       quoteCallback("'. drupal_urlencode($prod_string) .'");
       return false;
     });
@@ -862,11 +862,11 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2) {
         Drupal.behaviors.getQuotes = function (context) {
           setQuoteCallbacks("'. drupal_urlencode($prod_string) .'", context);
         };
-        $(function() {
-        var quoteButton = $("input:radio[name=quote-option]").click(function() {
-          var quoteButton = $(this);
+        jQuery(function() {
+        var quoteButton = jQuery("input:radio[name=quote-option]").click(function() {
+          var quoteButton = jQuery(this);
           var label = quoteButton.parent("label").text().split(":", 2)[0];
-          var rate = $("input:hidden[name=\'rate[" + quoteButton.val() + "]\']").val();
+          var rate = jQuery("input:hidden[name=\'rate[" + quoteButton.val() + "]\']").val();
           set_line_item("shipping", label, rate, 1, 1, false);
           if (window.getTax) {
             getTax();
@@ -875,8 +875,8 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2) {
             render_line_items();
           }
         }).filter("[value='. $default .']").click();
-        var quoteDiv = $("#quote");
-        if (quoteDiv.length && $("#quote input[name=quote-form]").length == 0) {
+        var quoteDiv = jQuery("#quote");
+        if (quoteDiv.length && jQuery("#quote input[name=quote-form]").length == 0) {
           quoteDiv.append("<input type=\"hidden\" name=\"quote-form\" value=\"" + Drupal.encodeURIComponent(quoteDiv.html()) + "\" />");
         }
       });', 'inline');
@@ -1023,11 +1023,11 @@ function uc_order_pane_quotes($op, $arg1) {
       $default = $arg1->quote['accessorials'] ? $arg1->quote['accessorials'] : 0;
       // If a previous quote gets loaded, make sure it gets saved again.
       // Also, make sure the previously checked option is checked by default.
-      drupal_add_js('$(function() {
+      drupal_add_js('jQuery(function() {
         setQuoteCallbacks();
-        $("input:radio[name=quote-option]").filter("[value='. $default .']").attr("checked", "checked");
-        var quoteDiv = $("#quote");
-        if (quoteDiv.length && $("#quote input[name=quote-form]").length == 0) {
+        jQuery("input:radio[name=quote-option]").filter("[value='. $default .']").attr("checked", "checked");
+        var quoteDiv = jQuery("#quote");
+        if (quoteDiv.length && jQuery("#quote input[name=quote-form]").length == 0) {
           quoteDiv.append("<input type=\"hidden\" name=\"quote-form\" value=\"" + Drupal.encodeURIComponent(quoteDiv.html()) + "\" />");
         }
       })', 'inline');
@@ -1150,8 +1150,8 @@ function uc_quote_cache_quotes($form) {
         $methods = module_invoke_all('shipping_method');
         $method = $methods[$quote['method']];
 
-        drupal_add_js('if (Drupal.jsEnabled) { $(document).ready(function() {
-          $("#quote").find("input:radio[value='. $quote['method'] .'---'. $quote['accessorials'] .']").eq(0).change().attr("checked", "checked");
+        drupal_add_js('jQuery(document).ready(function() {
+          jQuery("#quote").find("input:radio[value='. $quote['method'] .'---'. $quote['accessorials'] .']").eq(0).change().attr("checked", "checked");
           if (window.set_line_item) {
             set_line_item("shipping", "'. $method['quote']['accessorials'][$quote['accessorials']] .'", '. $quote['rate'] .', 1, 1, false);
           }
@@ -1162,7 +1162,7 @@ function uc_quote_cache_quotes($form) {
           else if (window.render_line_items) {
             render_line_items();
           }
-        })};', 'inline');
+        });', 'inline');
     }
     else {
       $form['panes']['quotes']['quote'] = array('#type' => 'markup',

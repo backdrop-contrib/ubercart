@@ -13,6 +13,8 @@ else if ($("input[name*=billing_]").length) {
   pane = 'billing'
 }
 
+(function($) {
+
 $(document).ready(function() {
   getTax();
   $("select[name*=delivery_country], "
@@ -88,3 +90,5 @@ function getTax() {
     });
   }
 }
+
+})(jQuery);

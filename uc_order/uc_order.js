@@ -9,34 +9,40 @@ var customer_select = '';
 var add_product_browser = '';
 var order_save_holds = 0;
 
+(function($) {
+
 /**
  * Add the double click behavior to the order table at admin/store/orders.
  */
-Drupal.behaviors.ucOrderClick = function(context) {
-  $('.uc-orders-table tr.odd, .uc-orders-table tr.even:not(.ucOrderClick-processed)', context).addClass('ucOrderClick-processed').each(
-    function() {
-      $(this).dblclick(
-        function() {
-          var url = Drupal.settings.ucURL.adminOrders + this.id.substring(6);
-          window.location = url;
-        }
-      );
-    }
-  );
+Drupal.behaviors.ucOrderClick = {
+  attach: function(context, settings) {
+    $('.uc-orders-table tr.odd, .uc-orders-table tr.even:not(.ucOrderClick-processed)', context).addClass('ucOrderClick-processed').each(
+      function() {
+        $(this).dblclick(
+          function() {
+            var url = settings.ucURL.adminOrders + this.id.substring(6);
+            window.location = url;
+          }
+        );
+      }
+    );
+  }
 }
 
 /**
  * Add the submit behavior to the order form
  */
-Drupal.behaviors.ucOrderSubmit = function(context) {
-  $('#uc-order-edit-form:not(.ucOrderSubmit-processed)', context).addClass('ucOrderSubmit-processed').submit(
-    function() {
-      $('#products-selector').empty().removeClass();
-      $('#delivery_address_select').empty().removeClass();
-      $('#billing_address_select').empty().removeClass();
-      $('#customer-select').empty().removeClass();
-    }
-  );
+Drupal.behaviors.ucOrderSubmit = {
+  attach: function(context, settings) {
+    $('#uc-order-edit-form:not(.ucOrderSubmit-processed)', context).addClass('ucOrderSubmit-processed').submit(
+      function() {
+        $('#products-selector').empty().removeClass();
+        $('#delivery_address_select').empty().removeClass();
+        $('#billing_address_select').empty().removeClass();
+        $('#customer-select').empty().removeClass();
+      }
+    );
+  }
 }
 
 $(document).ready(
@@ -96,9 +102,9 @@ function load_address_select(uid, div, address_type) {
   };
 
   $.post(Drupal.settings.ucURL.adminOrders + 'address_book', options,
-         function (contents) {
-           $(div).empty().addClass('address-select-box').append(contents);
-         }
+    function (contents) {
+      $(div).empty().addClass('address-select-box').append(contents);
+    }
   );
 }
 
@@ -144,12 +150,12 @@ function load_customer_search() {
   }
 
   $.post(Drupal.settings.ucURL.adminOrders + 'customer', {},
-         function (contents) {
-           $('#customer-select').empty().addClass('customer-select-box').append(contents);
-           $('#customer-select #edit-first-name').val($('#edit-billing-first-name').val());
-           $('#customer-select #edit-last-name').val($('#edit-billing-last-name').val());
-           customer_select = 'search';
-         }
+    function (contents) {
+      $('#customer-select').empty().addClass('customer-select-box').append(contents);
+      $('#customer-select #edit-first-name').val($('#edit-billing-first-name').val());
+      $('#customer-select #edit-last-name').val($('#edit-billing-last-name').val());
+      customer_select = 'search';
+    }
   );
 
   return false;
@@ -174,10 +180,10 @@ function load_customer_search_results() {
   }
 
   $.post(Drupal.settings.ucURL.adminOrders + 'customer/search/' + encodeURIComponent(first_name) + '/' + encodeURIComponent(last_name) + '/' + encodeURIComponent(email),
-         { },
-         function (contents) {
-           $('#customer-select').empty().append(contents);
-         }
+    { },
+    function (contents) {
+      $('#customer-select').empty().append(contents);
+    }
   );
   return false;
 }
@@ -208,10 +214,10 @@ function load_new_customer_form() {
   }
 
   $.post(Drupal.settings.ucURL.adminOrders + 'customer/new', {},
-         function (contents) {
-           $('#customer-select').empty().addClass('customer-select-box').append(contents);
-           customer_select = 'new';
-         }
+    function (contents) {
+      $('#customer-select').empty().addClass('customer-select-box').append(contents);
+      customer_select = 'new';
+    }
   );
   return false;
 }
@@ -225,9 +231,9 @@ function check_new_customer_address() {
     'sendmail' : $('#customer-select #edit-sendmail').attr('checked')
   };
   $.post(Drupal.settings.ucURL.adminOrders + 'customer/new/check/' + encodeURIComponent(options['email']), options,
-         function (contents) {
-           $('#customer-select').empty().append(contents);
-         }
+    function (contents) {
+      $('#customer-select').empty().append(contents);
+    }
   );
   return false;
 }
@@ -268,14 +274,14 @@ function uc_order_load_product_edit_div(order_id) {
       show_product_throbber();
 
       $.post(Drupal.settings.ucURL.adminOrders + order_id + '/products',
-             { action: 'view' },
-             function(contents) {
-               if (contents != '') {
-                 $('#products-container').empty().append(contents);
-               }
-               remove_order_save_hold();
-               hide_product_throbber();
-             });
+        { action: 'view' },
+        function(contents) {
+        if (contents != '') {
+           $('#products-container').empty().append(contents);
+        }
+        remove_order_save_hold();
+        hide_product_throbber();
+      });
     }
   );
 }
@@ -294,10 +300,10 @@ function load_product_select(order_id, search) {
   show_product_throbber();
 
   $.post(Drupal.settings.ucURL.adminOrders + order_id + '/product_select', options,
-         function (contents) {
-           $('#products-selector').empty().addClass('product-select-box2').append(contents);
-           hide_product_throbber();
-         }
+    function (contents) {
+      $('#products-selector').empty().addClass('product-select-box2').append(contents);
+      hide_product_throbber();
+    }
   );
 
   return false;
@@ -329,10 +335,10 @@ function add_product_form() {
 
   if (parseInt($('#edit-unid').val()) > 0) {
     $.post(Drupal.settings.ucURL.adminOrders + $('#edit-order-id').val() + '/add_product/' + $('#edit-unid').val(), { },
-           function(contents) {
-             $('#products-selector').empty().append(contents);
-             hide_product_throbber();
-           }
+      function(contents) {
+        $('#products-selector').empty().append(contents);
+        hide_product_throbber();
+      }
     );
   }
 }
@@ -355,12 +361,12 @@ function add_product_to_order(order_id, node_id) {
   show_product_throbber();
 
   $.post(Drupal.settings.ucURL.adminOrders + order_id + '/products', post_vars,
-         function(contents) {
-           if (contents != '') {
-             $('#products-container').empty().append(contents);
-           }
-           hide_product_throbber();
-         }
+    function(contents) {
+      if (contents != '') {
+        $('#products-container').empty().append(contents);
+      }
+      hide_product_throbber();
+    }
   );
 
   $('#add-product-button').click();
@@ -398,13 +404,13 @@ function add_blank_line_button(order_id) {
   show_product_throbber();
 
   $.post(Drupal.settings.ucURL.adminOrders + order_id + '/products',
-         post_vars,
-         function(contents) {
-           if (contents != '') {
-             $('#products-container').empty().append(contents);
-           }
-           hide_product_throbber();
-         }
+    post_vars,
+    function(contents) {
+      if (contents != '') {
+        $('#products-container').empty().append(contents);
+      }
+      hide_product_throbber();
+    }
   );
 }
 
@@ -420,13 +426,13 @@ function remove_product_button(message, opid) {
     show_product_throbber();
 
     $.post(Drupal.settings.ucURL.adminOrders + $('#edit-order-id').val() + '/products',
-           post_vars,
-           function(contents) {
-             if (contents != '') {
-               $('#products-container').empty().append(contents);
-             }
-             hide_product_throbber();
-           }
+      post_vars,
+      function(contents) {
+        if (contents != '') {
+          $('#products-container').empty().append(contents);
+        }
+        hide_product_throbber();
+      }
     );
   }
 }
@@ -482,3 +488,4 @@ function hide_product_throbber() {
   $('#product-div-throbber').removeAttr('style').empty();
 }
 
+})(jQuery);

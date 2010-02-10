@@ -87,7 +87,7 @@ function uc_paypal_ipn($order_id = 0) {
         'status' => $payment_status,
         'receiver_email' => $receiver_email,
         'payer_email' => $payer_email,
-        'received' => REQUEST_TIME),
+        'received' => REQUEST_TIME,
       ))
       ->execute();
 
@@ -259,7 +259,7 @@ function uc_paypal_ec_review_form($form_state, $order) {
     );
 
     // small hack; automatically looks for shipping quotes on page load
-    drupal_add_js("\$(document).ready(function() { \$(' #edit-quote-button').click(); });", 'inline');
+    drupal_add_js("jQuery(document).ready(function() { jQuery('#edit-quote-button').click(); });", 'inline');
 
     // Fake the checkout form delivery information.
     $form['delivery_first_name'] = array('#type' => 'hidden', '#value' => $order->delivery_first_name);
