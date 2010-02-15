@@ -30,6 +30,7 @@ function uc_catalog_browse($tid = 0) {
  * @ingroup themeable
  */
 function theme_uc_catalog_browse($variables) {
+  $field = field_info_field('taxonomy_catalog');
   $tid = $variables['tid'];
 
   drupal_add_css(drupal_get_path('module', 'uc_catalog') .'/uc_catalog.css');
@@ -74,10 +75,13 @@ function theme_uc_catalog_browse($variables) {
       if ($j > $max_gc_display) {
         break;
       }
-      $g_child_nodes = 0;
-      foreach ($types as $type) {
-        $g_child_nodes += taxonomy_term_count_nodes($grandchild->tid, $type);
-      }
+      $conditions = array(
+        array('tid', $grandchild->tid),
+        array('type', 'node'),
+        array('bundle', $types),
+      );
+      $g_child_nodes = field_attach_query($field['id'], $conditions, array('count' => TRUE));
+
       if ($g_child_nodes) {
         $grandchildren[$i] = l($grandchild->name, uc_catalog_path($grandchild), array('class' => array('subcategory')));
         $j++;
@@ -116,7 +120,7 @@ function theme_uc_catalog_browse($variables) {
   }
 
   $query = db_select('node', 'n')->extend('PagerDefault')->extend('TableSort')->addTag('node_access');
-  $query->innerJoin('term_node', 'tn', 'n.vid = tn.vid');
+  $query->innerJoin('taxonomy_term_node', 'tn', 'n.vid = tn.vid');
   $query->innerJoin('uc_products', 'p', 'n.vid = p.vid');
 
   $query->condition('tn.tid', $catalog->tid)

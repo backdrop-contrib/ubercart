@@ -150,8 +150,6 @@ function uc_catalog_init() {
 
 /**
  * Implementation of hook_enable().
- *
- * Add imagecache preset "uc_category".
  */
 function uc_catalog_enable() {
   foreach (uc_product_types() as $type) {
@@ -229,7 +227,7 @@ function uc_catalog_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
           if (variable_get('site_frontpage', 'node') != 'catalog') {
             $crumbs[] = l(t('Home'), '');
           }
-          $terms = taxonomy_node_get_terms_by_vocabulary($node, variable_get('uc_catalog_vid', 0));
+          $terms = $node->taxonomy_catalog[$node->language];
           if (count($terms)) {
             $crumbs[] = l(variable_get('uc_catalog_name', t('Catalog')), variable_get('uc_catalog_url', 'catalog'));
             $used_tids = array();
@@ -254,110 +252,116 @@ function uc_catalog_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 }
 
 /**
- * Implementation of hook_taxonomy().
+ * Implement hook_taxonomy_vocabulary_delete().
  */
-function uc_catalog_taxonomy($op, $type, $object = NULL) {
-  switch ($type) {
-    case 'vocabulary':
-      if ($object['vid'] == variable_get('uc_catalog_vid', 0)) {
-        switch ($op) {
-          case 'delete':
-            variable_del('uc_catalog_vid');
-            variable_del('uc_catalog_name');
-            variable_del('uc_catalog_description');
-          break;
-          case 'update':
-            variable_set('uc_catalog_name', check_plain($object['name']));
-            variable_set('uc_catalog_description', filter_xss_admin($object['description']));
-          break;
-        }
-      }
-    break;
-    case 'term':
-      switch ($op) {
-        case 'insert':
-          if (module_exists('pathauto')) {
-            $category = (object) $object;
-            if ($category->name) {
-              $count = _uc_catalog_pathauto_alias($category, $op);
-            }
-          }
-          $field_name = 'image';
-          if ($file = file_save_upload($field_name)) {
-            $file->filepath = str_replace('\\', '/', $file->filepath);
-            $image_path = file_create_path();
-            if (file_copy($file, $image_path .'/'. $file->filename)) {
-              file_set_status($file, 1);
-              if (image_get_info($file->filepath)) {
-                db_insert('uc_catalog_images')
-                  ->fields(array(
-                    'fid' => $file->fid,
-                    'tid' => $object['tid'],
-                    'filename' => $file->filename,
-                    'filepath' => $file->filepath,
-                    'filemime' => $file->filemime,
-                    'filesize' => $file->filesize,
-                  ))
-                  ->execute();
-              }
-              else {
-                form_set_error($field_name, t('Uploaded file is not a valid image'));
-                file_delete($file->filepath);
-              }
-            }
-          }
-        break;
-        case 'update':
-          if (module_exists('pathauto')) {
-            $category = (object) $object;
-            if ($category->name) {
-              $count = _uc_catalog_pathauto_alias($category, $op);
-            }
-          }
-          $field_name = 'image';
-          if ($object['remove']) {
-            db_delete('uc_catalog_images')
-              ->condition('tid', $object['tid'])
-              ->execute();
-          }
-          elseif ($file = file_save_upload($field_name)) {
-            $file->filepath = str_replace('\\', '/', $file->filepath);
-            //dpm($file);
-            if (file_copy($file, file_create_path() .'/'. $file->filename)) {
-              file_set_status($file, 1);
-              //dpm($file);
-              if (image_get_info($file->filepath)) {
-                db_merge('uc_catalog_images')
-                  ->key(array('tid' => $object['tid']))
-                  ->fields(array(
-                    'fid' => $file->fid,
-                    'filename' => $file->filename,
-                    'filepath' => $file->filepath,
-                    'filemime' => $file->filemime,
-                    'filesize' => $file->filesize,
-                  ))
-                  ->execute();
-              }
-              else {
-                form_set_error($field_name, t('Uploaded file is not a valid image'));
-                file_delete($file->filepath);
-              }
-            }
-          }
-        break;
-        case 'delete':
-          $category = (object) $object;
-          if ($file = db_query("SELECT fid, filepath FROM {uc_catalog_images} WHERE tid = :tid", array(':tid' => $category->tid))->fetchObject()) {
-            file_delete($file->filepath);
-            db_delete('uc_catalog_images')
-              ->condition('fid', $file->fid)
-              ->execute();
-          }
-          path_set_alias(uc_catalog_path($category));
-        break;
-      }
-    break;
+function uc_catalog_taxonomy_vocabulary_delete($vocabulary) {
+  if ($vocabulary->vid == variable_get('uc_catalog_vid', 0)) {
+    variable_del('uc_catalog_vid');
+    variable_del('uc_catalog_name');
+    variable_del('uc_catalog_description');
   }
+}
+
+/**
+ * Implement hook_taxonomy_vocabulary_update().
+ */
+function uc_catalog_taxonomy_vocabulary_update($vocabulary) {
+  if ($vocabulary->vid == variable_get('uc_catalog_vid', 0)) {
+    variable_set('uc_catalog_name', check_plain($vocabulary->name));
+    variable_set('uc_catalog_description', filter_xss_admin($vocabulary->description));
+  }
+}
+
+/**
+ * Implement hook_taxonomy_term_insert().
+ */
+function uc_catalog_taxonomy_term_insert($term) {
+  if (module_exists('pathauto')) {
+    if ($term->name) {
+      $count = _uc_catalog_pathauto_alias($term, 'insert');
+    }
+  }
+
+  $field_name = 'image';
+  if ($file = file_save_upload($field_name)) {
+    $file->filepath = str_replace('\\', '/', $file->filepath);
+    $image_path = file_create_path();
+    if (file_copy($file, $image_path .'/'. $file->filename)) {
+      file_set_status($file, 1);
+      if (image_get_info($file->filepath)) {
+        db_insert('uc_catalog_images')
+          ->fields(array(
+            'fid' => $file->fid,
+            'tid' => $object['tid'],
+            'filename' => $file->filename,
+            'filepath' => $file->filepath,
+            'filemime' => $file->filemime,
+            'filesize' => $file->filesize,
+          ))
+          ->execute();
+      }
+      else {
+        form_set_error($field_name, t('Uploaded file is not a valid image'));
+        file_delete($file->filepath);
+      }
+    }
+  }
+}
+
+/**
+ * Implement hook_taxonomy_term_update().
+ */
+function uc_catalog_taxonomy_term_update($term) {
+  if (module_exists('pathauto')) {
+    if ($term->name) {
+      $count = _uc_catalog_pathauto_alias($term, 'update');
+    }
+  }
+
+  $field_name = 'image';
+  if ($object['remove']) {
+    db_delete('uc_catalog_images')
+      ->condition('tid', $object['tid'])
+      ->execute();
+  }
+  elseif ($file = file_save_upload($field_name)) {
+    $file->filepath = str_replace('\\', '/', $file->filepath);
+    //dpm($file);
+    if (file_copy($file, file_create_path() .'/'. $file->filename)) {
+      file_set_status($file, 1);
+      //dpm($file);
+      if (image_get_info($file->filepath)) {
+        db_merge('uc_catalog_images')
+          ->key(array('tid' => $object['tid']))
+          ->fields(array(
+            'fid' => $file->fid,
+            'filename' => $file->filename,
+            'filepath' => $file->filepath,
+            'filemime' => $file->filemime,
+            'filesize' => $file->filesize,
+          ))
+          ->execute();
+      }
+      else {
+        form_set_error($field_name, t('Uploaded file is not a valid image'));
+        file_delete($file->filepath);
+      }
+    }
+  }
+}
+
+/**
+ * Implement hook_taxonomy_term_delete().
+ */
+function uc_catalog_taxonomy_term_delete($term) {
+  if ($file = db_query("SELECT fid, filepath FROM {uc_catalog_images} WHERE tid = :tid", array(':tid' => $term->tid))->fetchObject()) {
+    file_delete($file->filepath);
+    db_delete('uc_catalog_images')
+      ->condition('fid', $file->fid)
+      ->execute();
+  }
+
+  path_set_alias(uc_catalog_path($term));
 }
 
 /**
@@ -583,27 +587,33 @@ function uc_catalog_store_status() {
   $cat_id = variable_get('uc_catalog_vid', 0);
   $catalog = taxonomy_vocabulary_load($cat_id);
   if ($catalog) {
-    $statuses[] = array('status' => 'ok', 'title' => t('Catalog vocabulary'),
-      'desc' => t('Vocabulary !name has been identified as the Ubercart catalog.', array('!name' => l($catalog->name, 'admin/content/taxonomy/'. $catalog->vid)))
-    );
-
-    $excluded = 0;
-    $result = db_query("SELECT COUNT(DISTINCT n.nid) FROM {node} AS n LEFT JOIN {taxonomy_term_node} AS ttn ON n.nid = ttn.nid LEFT JOIN {vocabulary_node_types} AS vnt ON n.type = vnt.type WHERE n.type <> :type AND ttn.tid IS NULL AND vnt.vid = :vid", array(':type' => 'image', ':vid' => $cat_id));
-    if ($excluded = $result->fetchField()) {
-      $description = format_plural($excluded, 'There is @count product not listed in the catalog.', 'There are @count products not listed in the catalog.')
-        . t(' Products are listed by assigning a category from the <a href="!cat_url">Product Catalog</a> vocabulary to them.', array('!cat_url' => url('admin/content/taxonomy/'. $catalog->vid)));
-      $terms = db_query("SELECT COUNT(*) FROM {taxonomy_term_data} WHERE vid = :vid", array(':vid' => $catalog->vid))->fetchField();
-      if ($terms) {
-        $description .= ' '. l(t('Find orphaned products here.'), 'admin/store/products/orphans');
-      }
-      else {
-        $description .= ' '. l(t('Add terms for the products to inhabit.'), 'admin/content/taxonomy/'. $catalog->vid .'/add/term');
-      }
-      $statuses[] = array(
-        'status' => 'warning',
-        'title' => t('Unlisted products'),
-        'desc' => $description,
+    // Don't display a status if the taxonomy_index table has no data.
+    if (variable_get('taxonomy_maintain_index_table', TRUE)) {
+      $statuses[] = array('status' => 'ok', 'title' => t('Catalog vocabulary'),
+        'desc' => t('Vocabulary !name has been identified as the Ubercart catalog.', array('!name' => l($catalog->name, 'admin/content/taxonomy/'. $catalog->vid)))
       );
+
+      $product_types = uc_product_types();
+      $field = field_info_field('taxonomy_catalog');
+      $types = array_intersect($types, $field['bundles']['node']);
+      $excluded = 0;
+      $result = db_query("SELECT COUNT(DISTINCT n.nid) FROM {node} AS n LEFT JOIN {taxonomy_index} AS ti ON n.nid = ti.nid LEFT JOIN {taxonomy_term_data} AS td ON ti.tid = td.tid WHERE n.type IN :types AND ti.tid IS NULL AND td.vid = :vid", array(':types' => $types, ':vid' => $catalog->vid));
+      if ($excluded = $result->fetchField()) {
+        $description = format_plural($excluded, 'There is @count product not listed in the catalog.', 'There are @count products not listed in the catalog.')
+          . t(' Products are listed by assigning a category from the <a href="!cat_url">Product Catalog</a> vocabulary to them.', array('!cat_url' => url('admin/content/taxonomy/'. $catalog->vid)));
+        $terms = db_query("SELECT COUNT(1) FROM {taxonomy_term_data} WHERE vid = :vid", array(':vid' => $catalog->vid))->fetchField();
+        if ($terms) {
+          $description .= ' '. l(t('Find orphaned products here.'), 'admin/store/products/orphans');
+        }
+        else {
+          $description .= ' '. l(t('Add terms for the products to inhabit.'), 'admin/content/taxonomy/'. $catalog->vid .'/add/term');
+        }
+        $statuses[] = array(
+          'status' => 'warning',
+          'title' => t('Unlisted products'),
+          'desc' => $description,
+        );
+      }
     }
   }
   else {
@@ -613,34 +623,30 @@ function uc_catalog_store_status() {
       'desc' => t('No vocabulary has been recognized as the Ubercart catalog. Choose one on <a href="!admin_catalog">this page</a> or add one on the <a href="!admin_vocab">taxonomy admin page</a> first, if needed.', array('!admin_catalog' => url('admin/store/settings/catalog/edit'), '!admin_vocab' => url('admin/content/taxonomy'))),
     );
   }
+
   return $statuses;
 }
 
 /**
  * Implementation of hook_product_class().
  *
- * Add and remove product node types to the catalog vocabulary as they are
- * created and deleted.
+ * Add product node types to the catalog vocabulary as they are created.
  */
 function uc_catalog_product_class($type, $op) {
   $vid = variable_get('uc_catalog_vid', 0);
   switch ($op) {
     case 'insert':
       if ($vid) {
-        db_insert('taxonomy_vocabulary_node_type')
-          ->fields(array(
+        $instance = array(
+          'field_name' => 'taxonomy_catalog',
+          'object_type' => 'node',
+          'bundle' => $type,
+          'settings' => array(
             'vid' => $vid,
-            'type' => $type,
-          ))
-          ->execute();
-      }
-    break;
-    case 'delete':
-      if ($vid) {
-       db_delete('taxonomy_vocabulary_node_type')
-          ->condition('vid', $vid)
-          ->condition('type', $type)
-          ->execute();
+          ),
+        );
+
+        field_instace_create($instance);
       }
     break;
   }
@@ -684,22 +690,18 @@ function uc_catalog_get_page($tid) {
     $catalog->image = $info;
     $catalog->image['filepath'] = $file->filepath;
   }
+  $field = field_info_field('taxonomy_catalog');
   $types = uc_product_types();
   $links = array();
   $child_list = array();
   $children = taxonomy_get_children($tid, $vid);
   foreach ($children as $child) {
-    $n = 0;
-    foreach ($types as $type) {
-      //@todo Remove taxonomy_term_count_nodes when f_a_query below is working.
-      //$n += taxonomy_term_count_nodes($child->tid, $type);
-      $conditions = array(
-                    array('type', $type),
-                    );
-      //@todo Clean this field_attach_query.  I'm almost certain it doesn't work. - AL
-      $n += field_attach_query($child->tid, $conditions, $options = array('count' => TRUE));
-    }
-    $child->nodes = $n;
+    $conditions = array(
+      array('tid', $child->tid),
+      array('type', 'node'),
+      array('bundle', $types),
+    );
+    $child->nodes = field_attach_query($field['id'], $conditions, array('count' => TRUE));
     // Display child category's image.
     if ($file = uc_catalog_image_load($child->tid)) {
       $info = image_get_info($file->filepath);
@@ -857,17 +859,22 @@ function uc_catalog_set_breadcrumb($tid) {
       }
     }
     $parents = taxonomy_get_parents_all($tid);
+
     // Remove current term from the breadcrumb.
     array_shift($parents);
     $types = uc_product_types();
+    $field = field_info_field('taxonomy_catalog');
+
     while (count($parents)) {
       $current = array_pop($parents);
       if (!in_array($current->tid, $terms)) {
-        $n = 0;
-        foreach ($types as $type) {
-          $n += taxonomy_term_count_nodes($current->tid, $type);
-        }
-        $current->nodes = $n;
+        $conditions = array(
+          array('tid', $current->tid),
+          array('type', 'node'),
+          array('bundle', $types),
+        );
+        $current->nodes = field_attach_query($field['id'], $conditions, array('count' => TRUE));
+
         $breadcrumbs[] = l($current->name . (variable_get('uc_catalog_breadcrumb_nodecount', FALSE) && $current->nodes ? ' ('. $current->nodes .')' : ''), uc_catalog_path($current));
         $terms[] = $current->tid;
       }
@@ -905,10 +912,13 @@ function _uc_catalog_navigation($branch) {
     $types = uc_product_types();
   }
 
-  $num = 0;
-  foreach ($types as $type) {
-    $num += taxonomy_term_count_nodes($branch->tid, $type);
-  }
+  $field = field_info_field('taxonomy_catalog');
+  $conditions = array(
+    array('tid', $branch->tid),
+    array('type', 'node'),
+    array('bundle', $types),
+  );
+  $num = field_attach_query($field['id'], $conditions, array('count' => TRUE));
 
   // No nodes in category or descendants. Not in path and display nothing.
   if (!$num) {
@@ -928,7 +938,8 @@ function _uc_catalog_navigation($branch) {
     $here = FALSE;
   }
   if (!isset($terms)) {
-    $terms = taxonomy_node_get_terms_by_vocabulary(menu_get_object('node', 1), $vid);
+    $node = menu_get_object('node', 1);
+    $terms = $node->taxonomy_catalog[$node->language];
   }
   // Determine whether to expand menu item.
   if ((arg(0) == 'node' && array_key_exists($branch->tid, $terms))) {
@@ -1057,10 +1068,20 @@ function uc_catalog_add_node_type($type) {
     return;
   }
 
-  db_merge('taxonomy_vocabulary_node_type')
-    ->key(array(
-      'vid' => $vid,
-      'type' => $type,
-    ))
-    ->execute();
+  $instance = array(
+    'field_name' => 'taxonomy_catalog',
+    'object_type' => 'node',
+    'bundle' => $type,
+    'label' => variable_get('uc_catalog_name', t('Catalog')),
+    'settings' => array(
+      'allowed_values' => array(
+        array(
+          'vid' => $vid,
+          'parent' => '0',
+        ),
+      ),
+    ),
+  );
+
+  field_create_instance($instance);
 }

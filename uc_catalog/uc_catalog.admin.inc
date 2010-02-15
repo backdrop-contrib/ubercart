@@ -38,7 +38,7 @@ function uc_catalog_settings_form() {
   }
 
   $vocabs = array();
-  $vocabularies = taxonomy_vocabulary_load_multiple(FALSE, array());
+  $vocabularies = taxonomy_vocabulary_load_multiple(FALSE);
   foreach ($vocabularies as $vid => $vocabulary) {
     $vocabs[$vid] = $vocabulary->name;
   }
@@ -220,24 +220,32 @@ function uc_catalog_grid_settings_form() {
  * Display links to all products that have not been categorized.
  */
 function uc_catalog_orphaned_products() {
-  $output = '<p>'. t('Orphaned products are products that you have created but
-     not yet assigned to a category in your product catalog. All such
-     products will appear as links below that you can follow to edit
-     the product listings to assign them to categories.') .'</p>';
+  if (variable_get('taxonomy_maintain_index_table', TRUE)) {
+    $output = '<p>'. t('Orphaned products are products that you have created but
+       not yet assigned to a category in your product catalog. All such
+       products will appear as links below that you can follow to edit
+       the product listings to assign them to categories.') .'</p>';
 
-  $vid = variable_get('uc_catalog_vid', 0);
-  $result = db_query("SELECT DISTINCT n.nid, n.title FROM {node} AS n LEFT JOIN {term_node} AS tn ON n.nid = tn.nid LEFT JOIN {vocabulary_node_types} AS vnt ON n.type = vnt.type WHERE n.type <> :type AND tn.tid IS NULL AND vnt.vid = :vid", array(':type' => 'image', ':vid' => $vid));
+    $vid = variable_get('uc_catalog_vid', 0);
+    $product_types = uc_product_types();
+    $field = field_info_field('taxonomy_catalog');
+    $types = array_intersect($types, $field['bundles']['node']);
+    $result = db_query("SELECT DISTINCT n.nid, n.title FROM {node} AS n LEFT JOIN {taxonomy_index} AS ti ON n.nid = ti.nid LEFT JOIN {taxonomy_term_data} AS td ON ti.tid = td.tid WHERE n.type IN :types AND ti.tid IS NULL AND td.vid = :vid", array(':types' => $types, ':vid' => $vid));
 
-  $rows = array();
-  while ($node = $result->fetchObject()) {
-    $rows[] = l($node->title, 'node/'. $node->nid .'/edit', array('query' => array('destination' => 'admin/store/products/orphans')));
-  }
+    $rows = array();
+    while ($node = $result->fetchObject()) {
+      $rows[] = l($node->title, 'node/'. $node->nid .'/edit', array('query' => array('destination' => 'admin/store/products/orphans')));
+    }
 
-  if (count($rows) > 0) {
-    $output .= theme('item_list', array('items' => $rows));
+    if (count($rows) > 0) {
+      $output .= theme('item_list', array('items' => $rows));
+    }
+    else {
+      $output .= '<p>'. t('All products are currently listed in the catalog.') .'</p>';
+    }
   }
   else {
-    $output .= '<p>'. t('All products are currently listed in the catalog.') .'</p>';
+    $output = '<p>' . t('The node terms index is not being maintained, so Ubercart can not determine which products are not entered into the catalog.') . '</p>';
   }
 
   return $output;

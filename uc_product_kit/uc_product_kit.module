@@ -90,9 +90,10 @@ function uc_product_kit_enable() {
   // Hack the product kit node type into the catalog if this module is enabled
   // some time after uc_catalog.
   if (module_exists('uc_catalog') && $vid = variable_get('uc_catalog_vid', 0)) {
+    $field = field_info_field('taxonomy_catalog');
     $vocab = taxonomy_vocabulary_load($vid);
-    if (!isset($vocab->nodes['product_kit'])) {
-      db_query("INSERT INTO {taxonomy_vocabulary_node_type} (vid, type) VALUES (%d, '%s')", $vid, 'product_kit');
+    if (!isset($field['bundles']['node']['product_kit'])) {
+      uc_catalog_add_node_type('product_kit');
     }
   }
 
