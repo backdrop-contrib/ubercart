@@ -105,11 +105,7 @@ function uc_product_kit_enable() {
 
 function uc_product_kit_form_alter(&$form, $form_state, $form_id) {
   if ($form_id == 'node_delete_confirm' && uc_product_is_product((integer)$form['nid']['#value'])) {
-    $kits = 0;
-    $result = db_query("SELECT k.nid FROM {node} AS n JOIN {uc_product_kits} AS k ON n.vid = k.vid WHERE k.vid IN (SELECT DISTINCT vid FROM {uc_product_kits} WHERE product_id = %d) GROUP BY k.nid HAVING COUNT(product_id) = 1", $form['nid']['#value']);
-    while ($k = db_fetch_object($result)) {
-      $kits++;
-    }
+    $kits = db_query("SELECT COUNT(k.nid) FROM {node} AS n JOIN {uc_product_kits} AS k ON n.vid = k.vid WHERE k.vid IN (SELECT DISTINCT vid FROM {uc_product_kits} WHERE product_id = :nid) GROUP BY k.nid HAVING COUNT(product_id) = 1", array(':nid' => $form['nid']['#value']))->fetchField();
 
     if ($kits) {
       $description = $form['description']['#value'];
@@ -179,7 +175,7 @@ function uc_product_kit_insert(&$node) {
   $obj->sell_price = 0;
   $obj->weight = 0;
   $obj->weight_units = variable_get('uc_weight_unit', 'lb');
-
+  $obj->default_qty = 0;
   $obj->ordering = $node->ordering;
   $obj->shippable = FALSE;
 
@@ -190,15 +186,16 @@ function uc_product_kit_insert(&$node) {
       $product = node_load($product);
     }
 
-    $values[] = $node->vid;
-    $values[] = $node->nid;
-    $values[] = $product->nid;
-    $values[] = $node->mutable;
-    $values[] = 1;
-    $values[] = 0;
-    $values[] = 0;
-    $values[] = 1;
-    $placeholders[] = '(%d, %d, %d, %d, %d, %f, %d, %d)';
+    $kit = array(
+      'vid' => $node->vid,
+      'nid' => $node->nid,
+      'product_id' => $product->nid,
+      'mutable' => $node->mutable,
+      'qty' => 1,
+      'synchronized' => 1,
+    );
+
+    drupal_write_record('uc_product_kits', $kit);
 
     $obj->model .= $product->model .' / ';
     $obj->list_price += $product->list_price;
@@ -209,13 +206,11 @@ function uc_product_kit_insert(&$node) {
       $obj->shippable = TRUE;
     }
   }
-  db_query("INSERT INTO {uc_product_kits} (vid, nid, product_id, mutable, qty, discount, ordering, synchronized) VALUES ". implode(',', $placeholders), $values);
+
   $obj->model = rtrim($obj->model, ' / ');
-  db_query("INSERT INTO {uc_products} (vid, nid, model, list_price, cost, sell_price, weight, weight_units, default_qty, unique_hash, ordering, shippable) VALUES (%d, %d, '%s', %f, %f, %f, %f, '%s', %d, '%s', %d, %d)",
-    $obj->vid, $obj->nid, $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->weight_units, $obj->default_qty,
-    md5($obj->vid . $obj->nid . $obj->model . $obj->list_price . $obj->cost . $obj->sell_price . $obj->weight . $obj->weight_units . $obj->default_qty . $obj->ordering . $obj->shippable . REQUEST_TIME),
-    $obj->ordering, $obj->shippable
-  );
+  $obj->unique_hash = md5($obj->vid . $obj->nid . $obj->model . $obj->list_price . $obj->cost . $obj->sell_price . $obj->weight . $obj->weight_units . $obj->default_qty . $obj->ordering . $obj->shippable . REQUEST_TIME);
+
+  drupal_write_record('uc_products', $obj);
 }
 
 /**
@@ -269,8 +264,11 @@ function uc_product_kit_update(&$node) {
     }
   }
 
-  $values = array();
-  $placeholders = array();
+  if (!$node->revision) {
+    db_delete('uc_product_kits')
+      ->condition('nid', $node->nid)
+      ->execute();
+  }
   foreach ($node->products as $nid) {
     if (is_numeric($nid)) {
       $product = node_load($nid);
@@ -279,11 +277,6 @@ function uc_product_kit_update(&$node) {
       $product = $nid;
       $nid = $product->nid;
     }
-
-    $values[] = $node->vid;
-    $values[] = $node->nid;
-    $values[] = $nid;
-    $values[] = $node->mutable;
 
     // When a total kit price is specified, calculate the individual product
     // discounts needed to reach it, taking into account the product quantities
@@ -309,12 +302,6 @@ function uc_product_kit_update(&$node) {
       $product->sell_price += $discount;
     }
 
-    $values[] = $product->qty;
-    $values[] = $discount;
-    $values[] = $node->items[$nid]['ordering'];
-    $values[] = !$override_discounts;
-    $placeholders[] = '(%d, %d, %d, %d, %d, %f, %d, %d)';
-
     $obj->model .= $product->model .' / ';
     $obj->list_price += $product->list_price * $product->qty;
     $obj->cost += $product->cost * $product->qty;
@@ -323,33 +310,48 @@ function uc_product_kit_update(&$node) {
     if ($product->shippable) {
       $obj->shippable = TRUE;
     }
+
+    db_insert('uc_product_kits')
+      ->fields(array(
+        'vid' => $node->vid,
+        'nid' => $node->nid,
+        'product_id' => $nid,
+        'mutable' => $node->mutable,
+        'qty' => $product->qty,
+        'discount' => $discount,
+        'ordering' => $node->items[$nid]['ordering'],
+        'synchronized' => !$override_discounts,
+      ))
+      ->execute();
   }
+
   $obj->model = rtrim($obj->model, ' / ');
 
   if ($node->mutable == UC_PRODUCT_KIT_MUTABLE && $discount) {
     drupal_set_message(t('Product kit discounts are not applied because the customer can remove components from their cart.'));
   }
 
-  if (!$node->revision) {
-    db_query("DELETE FROM {uc_product_kits} WHERE nid = %d", $node->nid);
-  }
-  db_query("INSERT INTO {uc_product_kits} (vid, nid, product_id, mutable, qty, discount, ordering, synchronized) VALUES ". implode(',', $placeholders), $values);
   if ($node->revision) {
-    db_query("INSERT INTO {uc_products} (vid, nid, model, list_price, cost, sell_price, weight, weight_units, default_qty, unique_hash, ordering, shippable) VALUES (%d, %d, '%s', %f, %f, %f, %f, '%s', %d, '%s', %d, %d)",
-      $obj->vid, $obj->nid, $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->weight_units, $obj->default_qty,
-      md5($obj->vid . $obj->nid . $obj->model . $obj->list_price . $obj->cost . $obj->sell_price . $obj->weight . $obj->weight_units . $obj->default_qty . $obj->ordering . REQUEST_TIME),
-      $obj->ordering, $obj->shippable
-    );
+    $obj->unique_hash = md5($obj->vid . $obj->nid . $obj->model . $obj->list_price . $obj->cost . $obj->sell_price . $obj->weight . $obj->weight_units . $obj->default_qty . $obj->ordering . REQUEST_TIME);
+    drupal_write_record('uc_products', $obj);
   }
   else {
-    db_query("UPDATE {uc_products} SET model = '%s', list_price = %f, cost = %f, sell_price = %f, weight = %f, weight_units = '%s', default_qty = %d, ordering = %d, shippable = %d WHERE vid = %d",
-      $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->weight_units, $obj->default_qty, $obj->ordering, $obj->shippable, $obj->vid);
-    if (!db_affected_rows()) {
-      db_query("INSERT INTO {uc_products} (vid, nid, model, list_price, cost, sell_price, weight, weight_units, default_qty, unique_hash, ordering, shippable) VALUES (%d, %d, '%s', %f, %f, %f, %f, '%s', %d, '%s', %d, %d)",
-        $obj->vid, $obj->nid, $obj->model, $obj->list_price, $obj->cost, $obj->sell_price, $obj->weight, $obj->weight_units, $obj->default_qty,
-        md5($obj->vid . $obj->nid . $obj->model . $obj->list_price . $obj->cost . $obj->sell_price . $obj->weight . $obj->weight_units . $obj->default_qty . $obj->ordering . $obj->shippable . REQUEST_TIME),
-        $obj->ordering, $obj->shippable
-      );
+    db_merge('uc_products')
+      ->key(array('vid' => $obj->vid))
+      ->fields(array(
+        'model' => $obj->model,
+        'list_price' => $obj->list_price,
+        'cost' => $obj->cost,
+        'sell_price' => $obj->sell_price,
+        'weight' => $obj->weight,
+        'weight_units' => $obj->weight_units,
+        'default_qty' => $obj->default_qty,
+        'unique_hash' => md5($obj->vid . $obj->nid . $obj->model . $obj->list_price . $obj->cost . $obj->sell_price . $obj->weight . $obj->weight_units . $obj->default_qty . $obj->ordering . $obj->shippable . REQUEST_TIME),
+        'ordering' => $obj->ordering,
+        'shippable' => $obj->shippable,
+      ))
+      ->updateExcept('unique_hash')
+      ->execute();
     }
   }
 }
@@ -359,10 +361,17 @@ function uc_product_kit_update(&$node) {
  */
 function uc_product_kit_delete(&$node) {
   if (module_exists('uc_cart')) {
-    db_query("DELETE FROM {uc_cart_products} WHERE data LIKE '%%s:6:\"kit_id\";s:%d:\"%s\";%%'", strlen($node->nid), $node->nid);
+    db_delete('uc_cart_products')
+      ->condition('data', '%' . db_like('s:6:"kit_id";s:' . strlen($node->nid) .':"' . $node->nid . '";') . '%', 'LIKE')
+      ->execute();
   }
-  db_query("DELETE FROM {uc_product_kits} WHERE nid = %d", $node->nid);
-  db_query("DELETE FROM {uc_products} WHERE nid = %d", $node->nid);
+  db_delete('uc_product_kits')
+    ->condition('nid', $node->nid)
+    ->execute();
+
+  db_delete('uc_products')
+    ->condition('nid', $node->nid)
+    ->execute();
 }
 
 /**
@@ -372,8 +381,8 @@ function uc_product_kit_load(&$node) {
   $obj = new stdClass();
 
   $products = array();
-  $result = db_query("SELECT product_id, mutable, qty, discount, ordering, synchronized FROM {uc_product_kits} WHERE vid = %d ORDER BY ordering", $node->vid);
-  while ($prod = db_fetch_object($result)) {
+  $result = db_query("SELECT product_id, mutable, qty, discount, ordering, synchronized FROM {uc_product_kits} WHERE vid = :vid ORDER BY ordering", array(':vid' => $node->vid));
+  while ($prod = $result->fetchObject()) {
     $obj->mutable = $prod->mutable;
     $obj->synchronized = $prod->synchronized;
 
@@ -412,8 +421,8 @@ function uc_product_kit_theme() {
 function uc_product_kit_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
   switch ($op) {
     case 'update':
-      $result = db_query("SELECT DISTINCT nid FROM {uc_product_kits} WHERE product_id = %d", $node->nid);
-      while ($k = db_fetch_object($result)) {
+      $result = db_query("SELECT DISTINCT nid FROM {uc_product_kits} WHERE product_id = :nid", array(':nid' => $node->nid));
+      while ($k = $result->fetchField()) {
         $kit = node_load($k->nid, NULL, TRUE);
         $form_state = array(
           'values' => array('nid' => $kit->nid),
@@ -423,7 +432,7 @@ function uc_product_kit_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
       }
     break;
     case 'delete':
-      $result = db_query("SELECT DISTINCT nid FROM {uc_product_kits} WHERE product_id = %d", $node->nid);
+      $result = db_query("SELECT DISTINCT nid FROM {uc_product_kits} WHERE product_id = :nid", array(':nid' => $node->nid));
       while ($k = db_fetch_object($result)) {
         $kit = node_load($k->nid, NULL, TRUE);
         unset($kit->products[$node->nid]);
@@ -501,11 +510,7 @@ function uc_product_kit_form(&$node) {
   unset($product_types[array_search('product_kit', $product_types)]);
 
   // Query the database and loop through the results.
-  $result = db_query("SELECT nid, title FROM {node} WHERE type IN ('". implode("','", $product_types) ."') ORDER BY title, nid");
-  while ($product = db_fetch_object($result)) {
-    // Add each product to the options array.
-    $products[$product->nid] = $product->title;
-  }
+  $products = db_query("SELECT nid, title FROM {node} WHERE type IN (:types) ORDER BY title, nid", array(':types' => $product_types))->fetchAllKeyed();
 
   $form['base'] = array('#type' => 'fieldset',
     '#title' => t('Product Information'),

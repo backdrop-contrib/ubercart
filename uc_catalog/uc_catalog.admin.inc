@@ -230,7 +230,7 @@ function uc_catalog_orphaned_products() {
     $product_types = uc_product_types();
     $field = field_info_field('taxonomy_catalog');
     $types = array_intersect($types, $field['bundles']['node']);
-    $result = db_query("SELECT DISTINCT n.nid, n.title FROM {node} AS n LEFT JOIN {taxonomy_index} AS ti ON n.nid = ti.nid LEFT JOIN {taxonomy_term_data} AS td ON ti.tid = td.tid WHERE n.type IN :types AND ti.tid IS NULL AND td.vid = :vid", array(':types' => $types, ':vid' => $vid));
+    $result = db_query("SELECT DISTINCT n.nid, n.title FROM {node} AS n LEFT JOIN {taxonomy_index} AS ti ON n.nid = ti.nid LEFT JOIN {taxonomy_term_data} AS td ON ti.tid = td.tid WHERE n.type IN (:types) AND ti.tid IS NULL AND td.vid = :vid", array(':types' => $types, ':vid' => $vid));
 
     $rows = array();
     while ($node = $result->fetchObject()) {

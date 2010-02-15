@@ -313,13 +313,13 @@ function _uc_reports_get_sales($time, $period = 'day') {
 
   // Get the total value of the orders.
   $output = array('income' => 0);
-  $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN :statuses AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $time, ':end' => $new_time));
+  $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN (:statuses) AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $time, ':end' => $new_time));
   while ($order = $orders->fetchObject()) {
     $output['income'] += $order->order_total;
   }
 
   // Get the total amount of orders.
-  $count = db_query("SELECT COUNT(o.order_total) FROM {uc_orders} as o WHERE o.order_status IN :statuses AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $time, ':end' => $new_time))->fetchField();
+  $count = db_query("SELECT COUNT(o.order_total) FROM {uc_orders} as o WHERE o.order_status IN (:statuses) AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $time, ':end' => $new_time))->fetchField();
   $output['total'] = $count;
 
   // Average for this period.

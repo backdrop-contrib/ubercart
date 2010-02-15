@@ -71,10 +71,10 @@ function uc_reports_customers() {
     ))
     ->condition('u.uid', 0, '>')
     ->groupBy('u.uid');
-  $query->addExpression("(SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN :statuses)", 'orders', array(':statuses' => $order_statuses));
-  $query->addExpression("(SELECT SUM(qty) FROM {uc_order_products} as ps LEFT JOIN {uc_orders} as os ON ps.order_id = os.order_id WHERE os.order_status IN :statuses AND os.uid = u.uid)", 'products', array(':statuses' => $order_statuses));
-  $query->addExpression("(SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN :statuses)", 'total', array(':statuses' => $order_statuses));
-  $query->addExpression("ROUND((SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN :sum_statuses)/(SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN :count_statuses), 2)", 'average', array(':sum_statuses' => $order_statuses, ':count_statuses' => $order_statuses));
+  $query->addExpression("(SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN (:statuses))", 'orders', array(':statuses' => $order_statuses));
+  $query->addExpression("(SELECT SUM(qty) FROM {uc_order_products} as ps LEFT JOIN {uc_orders} as os ON ps.order_id = os.order_id WHERE os.order_status IN (:statuses) AND os.uid = u.uid)", 'products', array(':statuses' => $order_statuses));
+  $query->addExpression("(SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN (:statuses))", 'total', array(':statuses' => $order_statuses));
+  $query->addExpression("ROUND((SELECT SUM(ot.order_total) FROM {uc_orders} as ot WHERE ot.uid = u.uid AND ot.order_status IN (:sum_statuses))/(SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} as o WHERE o.uid = u.uid AND o.order_status IN (:count_statuses)), 2)", 'average', array(':sum_statuses' => $order_statuses, ':count_statuses' => $order_statuses));
 
   $count_query = db_select('users', 'u');
   $count_query->leftJoin('uc_orders', 'ou', 'u.uid = ou.uid');
@@ -179,9 +179,9 @@ function uc_reports_products() {
 
   $query->addField('n', 'nid');
   $query->addField('n', 'title');
-  $query->addExpression("(SELECT SUM(uop.qty) FROM {uc_order_products} AS uop LEFT JOIN {uc_orders} AS uo ON uop.order_id = uo.order_id WHERE uo.order_status IN :statuses AND uop.nid = n.nid)", 'sold', array(':statuses' => $order_statuses));
-  $query->addExpression("(SELECT (SUM(uop.price * uop.qty) - SUM(uop.cost * uop.qty)) FROM {uc_order_products} AS uop LEFT JOIN {uc_orders} AS uo ON uop.order_id = uo.order_id WHERE uo.order_status IN :statuses AND uop.nid = n.nid)", 'gross', array(':statuses' => $order_statuses));
-  $query->addExpression("(SELECT (SUM(uop.price * uop.qty)) FROM {uc_order_products} AS uop LEFT JOIN {uc_orders} AS uo ON uop.order_id = uo.order_id WHERE uo.order_status IN :statuses AND uop.nid = n.nid)", 'revenue', array(':statuses' => $order_statuses));
+  $query->addExpression("(SELECT SUM(uop.qty) FROM {uc_order_products} AS uop LEFT JOIN {uc_orders} AS uo ON uop.order_id = uo.order_id WHERE uo.order_status IN (:statuses) AND uop.nid = n.nid)", 'sold', array(':statuses' => $order_statuses));
+  $query->addExpression("(SELECT (SUM(uop.price * uop.qty) - SUM(uop.cost * uop.qty)) FROM {uc_order_products} AS uop LEFT JOIN {uc_orders} AS uo ON uop.order_id = uo.order_id WHERE uo.order_status IN (:statuses) AND uop.nid = n.nid)", 'gross', array(':statuses' => $order_statuses));
+  $query->addExpression("(SELECT (SUM(uop.price * uop.qty)) FROM {uc_order_products} AS uop LEFT JOIN {uc_orders} AS uo ON uop.order_id = uo.order_id WHERE uo.order_status IN (:statuses) AND uop.nid = n.nid)", 'revenue', array(':statuses' => $order_statuses));
   if ($views_column) {
     $query->leftJoin('node_counter', 'nc', 'n.nid = nc.nid');
     $query->addField('nc', 'totalcount');
@@ -233,9 +233,9 @@ function uc_reports_products() {
       $models = _uc_reports_product_get_skus($product['nid']);
       // Add the product breakdown rows
       foreach ($models as $model) {
-        $sold = db_query("SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN :statuses AND p.model = :model AND p.nid = :nid", array(':statuses' => $order_statuses, ':model' => $model, ':nid' => $product['nid']))->fetchField();
-        $revenue = db_query("SELECT SUM(p.price * p.qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN :statuses AND p.model = :model AND p.nid = :nid", array(':statuses' => $order_statuses, ':model' => $model, ':nid' => $product['nid']))->fetchField();
-        $gross = db_query("SELECT (SUM(p.price * p.qty) - SUM(p.cost * p.qty)) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN :statuses AND p.model = :model AND p.nid = :nid", array(':statuses' => $order_statuses, ':model' => $model, ':nid' => $product['nid']))->fetchField();
+        $sold = db_query("SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid", array(':statuses' => $order_statuses, ':model' => $model, ':nid' => $product['nid']))->fetchField();
+        $revenue = db_query("SELECT SUM(p.price * p.qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid", array(':statuses' => $order_statuses, ':model' => $model, ':nid' => $product['nid']))->fetchField();
+        $gross = db_query("SELECT (SUM(p.price * p.qty) - SUM(p.cost * p.qty)) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid", array(':statuses' => $order_statuses, ':model' => $model, ':nid' => $product['nid']))->fetchField();
         $breakdown_product = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$model";
         $product_csv = "     $model";
         $breakdown_sold = ((!empty($sold)) ? $sold : 0);
@@ -367,9 +367,9 @@ function uc_reports_products_custom() {
     ->condition('type', $product_types, 'IN')
     ->groupBy('n.nid');
 
-  $query->addExpression("(SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN :statuses AND p.nid = n.nid AND o.created >= :start AND o.created <= :end)", 'sold', array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date']));
-  $query->addExpression("(SELECT (SUM(p2.price * p2.qty)) FROM {uc_order_products} AS p2 LEFT JOIN {uc_orders} AS o ON p2.order_id = o.order_id WHERE o.order_status IN :statuses AND p2.nid = n.nid AND o.created >= :start AND o.created <= :end)", 'revenue', array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date']));
-  $query->addExpression("(SELECT (SUM(p3.price * p3.qty) - SUM(p3.cost * p3.qty)) FROM {uc_order_products} AS p3 LEFT JOIN {uc_orders} AS o ON p3.order_id = o.order_id WHERE o.order_status IN :statuses AND p3.nid = n.nid AND o.created >= :start AND o.created <= :end)", 'gross', array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date']));
+  $query->addExpression("(SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.nid = n.nid AND o.created >= :start AND o.created <= :end)", 'sold', array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date']));
+  $query->addExpression("(SELECT (SUM(p2.price * p2.qty)) FROM {uc_order_products} AS p2 LEFT JOIN {uc_orders} AS o ON p2.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p2.nid = n.nid AND o.created >= :start AND o.created <= :end)", 'revenue', array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date']));
+  $query->addExpression("(SELECT (SUM(p3.price * p3.qty) - SUM(p3.cost * p3.qty)) FROM {uc_order_products} AS p3 LEFT JOIN {uc_orders} AS o ON p3.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p3.nid = n.nid AND o.created >= :start AND o.created <= :end)", 'gross', array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date']));
 
   if ($statistics && $count_views) {
     $header = array(
@@ -415,9 +415,9 @@ function uc_reports_products_custom() {
       $breakdown_product = $breakdown_sold = $breakdown_revenue = $breakdown_gross = '';
 
       foreach (_uc_reports_product_get_skus($product['nid']) as $model) {  // was $models
-        $sold = db_query("SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN :statuses AND p.model = :model AND p.nid = :nid AND o.created >= :start AND o.created <= :end", array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date'], ':model' => $model, ':nid' => $product['nid']));
-        $revenue = db_result(db_query("SELECT SUM(p.price * p.qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN :statuses AND p.model = :model AND p.nid = :nid AND o.created >= :start AND o.created <= :end", array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date'], ':model' => $model, ':nid' => $product['nid']));
-        $gross = db_result(db_query("SELECT (SUM(p.price * p.qty) - SUM(p.cost * p.qty)) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN :statuses AND p.model = :model AND p.nid = :nid AND o.created >= :start AND o.created <= :end", array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date'], ':model' => $model, ':nid' => $product['nid']));
+        $sold = db_query("SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid AND o.created >= :start AND o.created <= :end", array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date'], ':model' => $model, ':nid' => $product['nid']))->fetchField();
+        $revenue = db_query("SELECT SUM(p.price * p.qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid AND o.created >= :start AND o.created <= :end", array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date'], ':model' => $model, ':nid' => $product['nid']))->fetchField();
+        $gross = db_query("SELECT (SUM(p.price * p.qty) - SUM(p.cost * p.qty)) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid AND o.created >= :start AND o.created <= :end", array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date'], ':model' => $model, ':nid' => $product['nid']))->fetchField();
         $breakdown_product .= "<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$model";
         $product_csv .= "\n     $model";
         $breakdown_sold .= "<br/>". ((!empty($sold)) ? $sold : 0);
@@ -737,10 +737,10 @@ function uc_reports_sales_summary() {
   $header = array(array('data' => t('Statistics'), 'width' => '50%'), '');
 
   $rows = array(
-    array(array('data' => t('Grand total sales')), array('data' => uc_price(db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE order_status IN :statuses", array(':statuses' => $order_statuses))->fetchField(), $context))),
-    array(array('data' => t('Customers total')), array('data' => db_query("SELECT COUNT(DISTINCT uid) FROM {uc_orders} WHERE order_status IN :statuses", array(':statuses' => $order_statuses))->fetchField())),
-    array(array('data' => t('New customers today')), array('data' => db_query("SELECT COUNT(DISTINCT uid) FROM {uc_orders} WHERE order_status IN :statuses AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $today_start, ':end' => $today_end))->fetchField())),
-    array(array('data' => t('Online customers')), array('data' => db_query("SELECT COUNT(DISTINCT s.uid) FROM {sessions} as s LEFT JOIN {uc_orders} as o ON s.uid = o.uid WHERE s.uid > 0 AND o.order_status IN :statuses", array(':statuses' => $order_statuses))->fetchField())),
+    array(array('data' => t('Grand total sales')), array('data' => uc_price(db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField(), $context))),
+    array(array('data' => t('Customers total')), array('data' => db_query("SELECT COUNT(DISTINCT uid) FROM {uc_orders} WHERE order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField())),
+    array(array('data' => t('New customers today')), array('data' => db_query("SELECT COUNT(DISTINCT uid) FROM {uc_orders} WHERE order_status IN (:statuses) AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $today_start, ':end' => $today_end))->fetchField())),
+    array(array('data' => t('Online customers')), array('data' => db_query("SELECT COUNT(DISTINCT s.uid) FROM {sessions} as s LEFT JOIN {uc_orders} as o ON s.uid = o.uid WHERE s.uid > 0 AND o.order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField())),
   );
 
   // Add the statistics table to the output.
@@ -983,7 +983,7 @@ function uc_reports_sales_custom() {
     }
 
     // Build the order data for the subreport.
-    $result = db_query("SELECT COUNT(*) as count, title FROM {uc_orders} LEFT JOIN {uc_order_statuses} ON order_status_id = order_status WHERE :start <= created AND created <= :end AND order_status IN :statuses GROUP BY order_status, {uc_order_statuses}.title, {uc_order_statuses}.weight ORDER BY weight ASC", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']));
+    $result = db_query("SELECT COUNT(*) as count, title FROM {uc_orders} LEFT JOIN {uc_order_statuses} ON order_status_id = order_status WHERE :start <= created AND created <= :end AND order_status IN (:statuses) GROUP BY order_status, {uc_order_statuses}.title, {uc_order_statuses}.weight ORDER BY weight ASC", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']));
     $statuses = array();
 
     // Put the order counts into an array by status.
@@ -997,7 +997,7 @@ function uc_reports_sales_custom() {
     // Build the product data for the subreport.
     if ($args['detail']) {
       // Grab the detailed product breakdown if selected.
-      $result = db_query("SELECT SUM(op.qty) as count, n.title, n.nid FROM {uc_order_products} as op LEFT JOIN {uc_orders} as o ON o.order_id = op.order_id LEFT JOIN {node} as n ON n.nid = op.nid WHERE :start <= o.created AND o.created <= :end AND o.order_status IN :statuses GROUP BY n.nid ORDER BY count DESC, n.title ASC", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']));
+      $result = db_query("SELECT SUM(op.qty) as count, n.title, n.nid FROM {uc_order_products} as op LEFT JOIN {uc_orders} as o ON o.order_id = op.order_id LEFT JOIN {node} as n ON n.nid = op.nid WHERE :start <= o.created AND o.created <= :end AND o.order_status IN (:statuses) GROUP BY n.nid ORDER BY count DESC, n.title ASC", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']));
       foreach ($result as $product_breakdown) {
         $product_data .= $product_breakdown->count .' x '. l($product_breakdown->title, 'node/'. $product_breakdown->nid) ."<br/>\n";
         $product_csv .= $product_breakdown->count .' x '. $product_breakdown->title ."\n";
@@ -1005,12 +1005,12 @@ function uc_reports_sales_custom() {
     }
     else {
       // Otherwise just display the total number of products sold.
-      $product_data = db_query("SELECT SUM(qty) FROM {uc_orders} as o LEFT JOIN {uc_order_products} as op ON o.order_id = op.order_id WHERE :start <= created AND created <= :end AND order_status IN :statuses", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']))->fetchField();
+      $product_data = db_query("SELECT SUM(qty) FROM {uc_orders} as o LEFT JOIN {uc_order_products} as op ON o.order_id = op.order_id WHERE :start <= created AND created <= :end AND order_status IN (:statuses)", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']))->fetchField();
       $product_csv = $product_data;
     }
 
     // Tally up the revenue from the orders.
-    $revenue_count = db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE :start <= created AND created <= :end AND order_status IN :statuses", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']))->fetchField();
+    $revenue_count = db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE :start <= created AND created <= :end AND order_status IN (:statuses)", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']))->fetchField();
 
     // Add the subreport's row to the report table.
     $rows[] = array(
@@ -1030,9 +1030,9 @@ function uc_reports_sales_custom() {
   }
 
   // Calculate the totals for the report.
-  $order_total = db_query("SELECT COUNT(*) FROM {uc_orders} WHERE :start <= created AND created <= :end AND order_status IN :statuses", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']))->fetchField();
-  $product_total = db_query("SELECT SUM(qty) FROM {uc_orders} AS o LEFT JOIN {uc_order_products} AS op ON o.order_id = op.order_id WHERE :start <= created AND created <= :end AND order_status IN :statuses", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']))->fetchField();
-  $revenue_total = db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE :start <= created AND created <= :end AND order_status IN :statuses", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']))->fetchField();
+  $order_total = db_query("SELECT COUNT(*) FROM {uc_orders} WHERE :start <= created AND created <= :end AND order_status IN (:statuses)", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']))->fetchField();
+  $product_total = db_query("SELECT SUM(qty) FROM {uc_orders} AS o LEFT JOIN {uc_order_products} AS op ON o.order_id = op.order_id WHERE :start <= created AND created <= :end AND order_status IN (:statuses)", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']))->fetchField();
+  $revenue_total = db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE :start <= created AND created <= :end AND order_status IN (:statuses)", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']))->fetchField();
 
   // Add the total row to the report table.
   $rows[] = array(
