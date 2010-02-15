@@ -38,7 +38,7 @@ function uc_catalog_settings_form() {
   }
 
   $vocabs = array();
-  $vocabularies = taxonomy_get_vocabularies();
+  $vocabularies = taxonomy_vocabulary_load_multiple(FALSE, array());
   foreach ($vocabularies as $vid => $vocabulary) {
     $vocabs[$vid] = $vocabulary->name;
   }

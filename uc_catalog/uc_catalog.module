@@ -408,7 +408,7 @@ function uc_catalog_link_alter(&$links, $node) {
     if (strstr($module, 'taxonomy_term')) {
       $tid = explode('_', $module);
       $tid = $tid[2];
-      $term = taxonomy_get_term($tid);
+      $term = taxonomy_term_load($tid);
       if ($term->vid == variable_get('uc_catalog_vid', 0)) {
         $links[$module]['href'] = uc_catalog_path($term);
       }
@@ -525,7 +525,7 @@ function uc_catalog_pathauto($op) {
  */
 function uc_catalog_pathauto_bulkupdate() {
   $catalog_vid = variable_get('uc_catalog_vid', 0);
-  $query = "SELECT tid, vid, name, src, dst FROM {term_data} LEFT JOIN {url_alias} ON src LIKE CONCAT(:path, CAST(tid AS CHAR)) WHERE src IS NULL AND vid = :vid";
+  $query = "SELECT tid, vid, name, src, dst FROM {taxonomy_term_data} LEFT JOIN {url_alias} ON src LIKE CONCAT(:path, CAST(tid AS CHAR)) WHERE src IS NULL AND vid = :vid";
   $result = db_query_range($query, 0, variable_get('pathauto_max_bulk_update', 50), array(':path' => 'catalog/', ':vid' => $catalog_vid));
 
   $count = 0;
@@ -588,11 +588,11 @@ function uc_catalog_store_status() {
     );
 
     $excluded = 0;
-    $result = db_query("SELECT COUNT(DISTINCT n.nid) FROM {node} AS n LEFT JOIN {term_node} AS tn ON n.nid = tn.nid LEFT JOIN {vocabulary_node_types} AS vnt ON n.type = vnt.type WHERE n.type <> :type AND tn.tid IS NULL AND vnt.vid = :vid", array(':type' => 'image', ':vid' => $cat_id));
+    $result = db_query("SELECT COUNT(DISTINCT n.nid) FROM {node} AS n LEFT JOIN {taxonomy_term_node} AS ttn ON n.nid = ttn.nid LEFT JOIN {vocabulary_node_types} AS vnt ON n.type = vnt.type WHERE n.type <> :type AND ttn.tid IS NULL AND vnt.vid = :vid", array(':type' => 'image', ':vid' => $cat_id));
     if ($excluded = $result->fetchField()) {
       $description = format_plural($excluded, 'There is @count product not listed in the catalog.', 'There are @count products not listed in the catalog.')
         . t(' Products are listed by assigning a category from the <a href="!cat_url">Product Catalog</a> vocabulary to them.', array('!cat_url' => url('admin/content/taxonomy/'. $catalog->vid)));
-      $terms = db_query("SELECT COUNT(*) FROM {term_data} WHERE vid = :vid", array(':vid' => $catalog->vid))->fetchField();
+      $terms = db_query("SELECT COUNT(*) FROM {taxonomy_term_data} WHERE vid = :vid", array(':vid' => $catalog->vid))->fetchField();
       if ($terms) {
         $description .= ' '. l(t('Find orphaned products here.'), 'admin/store/products/orphans');
       }
@@ -627,7 +627,7 @@ function uc_catalog_product_class($type, $op) {
   switch ($op) {
     case 'insert':
       if ($vid) {
-        db_insert('vocabulary_node_types')
+        db_insert('taxonomy_vocabulary_node_type')
           ->fields(array(
             'vid' => $vid,
             'type' => $type,
@@ -637,7 +637,7 @@ function uc_catalog_product_class($type, $op) {
     break;
     case 'delete':
       if ($vid) {
-        db_delete('vocabulary_node_types')
+       db_delete('taxonomy_vocabulary_node_type')
           ->condition('vid', $vid)
           ->condition('type', $type)
           ->execute();
@@ -665,7 +665,7 @@ function uc_catalog_get_page($tid) {
   $vid = variable_get('uc_catalog_vid', 0);
 
   if ($tid) {
-    $term = taxonomy_get_term($tid);
+    $term = taxonomy_term_load($tid);
     $name = $term->name;
     $description = $term->description;
   }
@@ -691,7 +691,13 @@ function uc_catalog_get_page($tid) {
   foreach ($children as $child) {
     $n = 0;
     foreach ($types as $type) {
-      $n += taxonomy_term_count_nodes($child->tid, $type);
+      //@todo Remove taxonomy_term_count_nodes when f_a_query below is working.
+      //$n += taxonomy_term_count_nodes($child->tid, $type);
+      $conditions = array(
+                    array('type', $type),
+                    );
+      //@todo Clean this field_attach_query.  I'm almost certain it doesn't work. - AL
+      $n += field_attach_query($child->tid, $conditions, $options = array('count' => TRUE));
     }
     $child->nodes = $n;
     // Display child category's image.
@@ -706,7 +712,7 @@ function uc_catalog_get_page($tid) {
     $child->children = $grandchildren_list;
     $catalog->children[] = $child;
   }
-  //$node_resource = taxonomy_select_nodes(array($tid));
+  //$node_resource =    (array($tid));
   return $catalog;
 }
 
@@ -1051,7 +1057,7 @@ function uc_catalog_add_node_type($type) {
     return;
   }
 
-  db_merge('vocabulary_node_types')
+  db_merge('taxonomy_vocabulary_node_type')
     ->key(array(
       'vid' => $vid,
       'type' => $type,

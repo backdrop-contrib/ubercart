@@ -65,11 +65,11 @@ function uc_catalog_schema() {
 function uc_catalog_install() {
   $t = get_t();
   //Find possible Product Catalog vocabulary.
-  $vid = db_query("SELECT vid FROM {vocabulary} WHERE name = :name", array(':name' => $t('Catalog')))->fetchField();
+  $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE name = :name", array(':name' => $t('Catalog')))->fetchField();
 
   // If none, create one.
   if (!$vid) {
-    $vid = db_insert('vocabulary')
+    $vid = db_insert('taxonomy_vocabulary')
       ->fields(array(
         'name' => $t('Catalog'),
         'description' => '',
@@ -88,7 +88,7 @@ function uc_catalog_install() {
  */
 function uc_catalog_uninstall() {
   if ($vid = variable_get('uc_catalog_vid', 0)) {
-    taxonomy_del_vocabulary($vid);
+    taxonomy_vocabulary_delete($vid);
   }
 
   db_delete('variable')
