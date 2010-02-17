@@ -443,10 +443,10 @@ function uc_order_pane_line_items($op, $arg1) {
         else {
           $context['subject']['line_item'] = $item;
           $form['line_items'][$item['line_item_id']]['title'] = array(
-            '#value' => check_plain($item['title']),
+            '#markup' => check_plain($item['title']),
           );
           $form['line_items'][$item['line_item_id']]['amount'] = array(
-            '#value' => uc_price($item['amount'], $context),
+            '#markup' => uc_price($item['amount'], $context),
           );
         }
       }
@@ -594,7 +594,7 @@ function uc_order_pane_update($op, $arg1) {
  *   theme_uc_order_view_update_controls()
  *   uc_order_view_update_form_submit()
  */
-function uc_order_view_update_form($form_state, $order) {
+function uc_order_view_update_form($form, &$form_state, $order) {
   $form['order_comment_field'] = array(
     '#type' => 'fieldset',
     '#title' => t('Add an order comment'),

@@ -34,7 +34,8 @@ function uc_cart_cart_settings_overview() {
 
   // Theme it all up in a summaries overview.
   return array(
-    '#markup' => theme('summary_overview', array('summaries' => $summaries)),
+    '#theme' => 'summary_overview',
+    '#summaries' => $summaries,
   );
 }
 
@@ -244,7 +245,7 @@ function uc_cart_cart_panes_form() {
       '#default_value' => $pane['enabled'],
     );
     $form['panes'][$pane['id']]['title'] = array(
-      '#value' => $pane['title'],
+      '#markup' => $pane['title'],
     );
     $form['panes'][$pane['id']]['uc_cap_'. $pane['id'] .'_weight'] = array(
       '#type' => 'weight',
@@ -272,7 +273,10 @@ function uc_cart_block_edit_info() {
  */
 function uc_cart_checkout_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
-  return array('#markup' => theme('summary_overview', array('summaries' => summarize_child_form_pages('admin/store/settings/checkout/edit'))));
+  return array(
+    '#theme' => 'summary_overview',
+    '#summaries' => summarize_child_form_pages('admin/store/settings/checkout/edit'),
+  );
 }
 
 /**
@@ -431,7 +435,7 @@ function uc_cart_checkout_panes_form() {
       '#default_value' => $pane['enabled'],
     );
     $form['panes'][$pane['id']]['title'] = array(
-      '#value' => $pane['title'],
+      '#markup' => $pane['title'],
     );
     $form['panes'][$pane['id']]['uc_pane_'. $pane['id'] .'_weight'] = array(
       '#type' => 'weight',

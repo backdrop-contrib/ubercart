@@ -929,8 +929,7 @@ function theme_uc_ups_option_label($variables) {
  *   uc_ups_fulfill_order_validate()
  *   uc_ups_fulfill_order_submit()
  */
-function uc_ups_fulfill_order($form_state, $order, $package_ids) {
-  $form = array();
+function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
   $pkg_types = _uc_ups_pkg_types();
   $form['order_id'] = array('#type' => 'value', '#value' => $order->order_id);
   $packages = array();
@@ -956,25 +955,35 @@ function uc_ups_fulfill_order($form_state, $order, $package_ids) {
       $pkg_form = array('#type' => 'fieldset',
         '#title' => t('Package !id', array('!id' => $id)),
       );
-      $pkg_form['products'] = array('#value' => theme('item_list', array('items' => $product_list)));
-      $pkg_form['package_id'] = array('#type' => 'hidden', '#value' => $id);
-      $pkg_form['pkg_type'] = array('#type' => 'select',
+      $pkg_form['products'] = array(
+        '#theme' => 'item_list',
+        '#items' => $product_list,
+      );
+      $pkg_form['package_id'] = array(
+        '#type' => 'hidden',
+        '#value' => $id,
+      );
+      $pkg_form['pkg_type'] = array(
+        '#type' => 'select',
         '#title' => t('Package type'),
         '#options' => $pkg_types,
         '#default_value' => $product->ups['pkg_type'],
         '#required' => TRUE,
       );
-      $pkg_form['declared_value'] = array('#type' => 'textfield',
+      $pkg_form['declared_value'] = array(
+        '#type' => 'textfield',
         '#title' => t('Declared value'),
         '#default_value' => $declared_value,
         '#required' => TRUE,
       );
-      $pkg_type['dimensions'] = array('#type' => 'fieldset',
+      $pkg_type['dimensions'] = array(
+        '#type' => 'fieldset',
         '#title' => t('Dimensions'),
         '#description' => t('Physical dimensions of the package.'),
         '#theme' => 'uc_shipping_package_dimensions',
       );
-      $pkg_form['dimensions']['units'] = array('#type' => 'select',
+      $pkg_form['dimensions']['units'] = array(
+        '#type' => 'select',
         '#title' => t('Units of measurement'),
         '#options' => array(
           'in' => t('Inches'),
@@ -1016,21 +1025,23 @@ function uc_ups_fulfill_order($form_state, $order, $package_ids) {
 
   // Inform user of customer's shipping choice
   $form['shipping_choice'] = array(
-    '#type' => 'markup',
-    '#value' => t('Customer selected @method as the shipping method and paid @rate', array('@method' => $method, '@rate' => uc_currency_format($order->quote['rate']))),
+    '#markup' => t('Customer selected @method as the shipping method and paid @rate', array('@method' => $method, '@rate' => uc_currency_format($order->quote['rate']))),
   );
 
-  $form['service'] = array('#type' => 'select',
+  $form['service'] = array(
+    '#type' => 'select',
     '#title' => t('UPS service'),
     '#options' => $services,
     '#default_value' => $default_service,
   );
   $today = getdate();
-  $form['ship_date'] = array('#type' => 'date',
+  $form['ship_date'] = array(
+    '#type' => 'date',
     '#title' => t('Ship date'),
     '#default_value' => array('year' => $today['year'], 'month' => $today['mon'], 'day' => $today['mday']),
   );
-  $form['expected_delivery'] = array('#type' => 'date',
+  $form['expected_delivery'] = array(
+    '#type' => 'date',
     '#title' => t('Expected delivery'),
     '#default_value' => array('year' => $today['year'], 'month' => $today['mon'], 'day' => $today['mday']),
   );

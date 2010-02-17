@@ -82,7 +82,7 @@ function uc_attribute_admin() {
  * @ingroup forms
  * @see uc_attribute_form_submit()
  */
-function uc_attribute_form($form_state, $attribute = NULL) {
+function uc_attribute_form($form, &$form_state, $attribute = NULL) {
   // If an attribute specified, add its ID as a hidden value.
 
   if (!empty($attribute)) {
@@ -247,9 +247,7 @@ function uc_attribute_admin_settings() {
  *   uc_attribute_options_form_validate()
  *   uc_attribute_options_form_submit()
  */
-function uc_attribute_options_form($form_state, $attribute) {
-  $form = array();
-
+function uc_attribute_options_form($form, &$form_state, $attribute) {
   // Set an appropriate title.
   drupal_set_title(t('Options for %name', array('%name' => $attribute->name)));
 
@@ -271,16 +269,16 @@ function uc_attribute_options_form($form_state, $attribute) {
   foreach ($attribute->options as $key => $data) {
     $form['options'][$key] = array(
       'name' => array(
-        '#value' => check_plain($data->name),
+        '#markup' => check_plain($data->name),
       ),
       'cost' => array(
-        '#value' => $data->cost,
+        '#markup' => $data->cost,
       ),
       'price' => array(
-        '#value' => $data->price,
+        '#markup' => $data->price,
       ),
       'weight' => array(
-        '#value' => $data->weight,
+        '#markup' => $data->weight,
       ),
       'ordering' => array(
         '#type' => 'weight',
@@ -288,18 +286,24 @@ function uc_attribute_options_form($form_state, $attribute) {
         '#default_value' => $data->ordering,
         '#attributes' => array('class' => array('uc-attribute-option-table-ordering')),
       ),
-      'ops' => array(
-        '#value' => l(t('edit'), 'admin/store/attributes/'. $attribute->aid .'/options/'. $key .'/edit') .' '.
-                    l(t('delete'), 'admin/store/attributes/'. $attribute->aid .'/options/'. $key .'/delete'),
+      'edit' => array(
+        '#theme' => 'link',
+        '#text' => t('edit'),
+        '#href' => 'admin/store/attributes/'. $attribute->aid .'/options/'. $key .'/edit',
+      ),
+      'delete' => array(
+        '#theme' => 'link',
+        '#text' => t('delete'),
+        '#href' => 'admin/store/attributes/'. $attribute->aid .'/options/'. $key .'/delete',
       ),
     );
 
     $context['subject']['option'] = $data;
     $context['field'] = 'cost';
-    $form['options'][$key]['cost']['#value'] = uc_price($data->cost, $context);
+    $form['options'][$key]['cost']['#markup'] = uc_price($data->cost, $context);
 
     $context['field'] = 'price';
-    $form['options'][$key]['price']['#value'] = uc_price($data->price, $context);
+    $form['options'][$key]['price']['#markup'] = uc_price($data->price, $context);
   }
 
   if (count($form['options'])) {
@@ -336,7 +340,7 @@ function uc_attribute_options_form_submit($form, &$form_state) {
 function theme_uc_attribute_options_form($variables) {
   $form = $variables['form'];
 
-  $header = array(t('Name'), t('Default cost'), t('Default price'), t('Default weight'), array('data' => t('List position'), 'sort' => 'asc'), t('Operations'));
+  $header = array(t('Name'), t('Default cost'), t('Default price'), t('Default weight'), array('data' => t('List position'), 'sort' => 'asc'), array('data' => t('Operations'), 'colspan' => 2));
 
   if (count(element_children($form['options'])) > 0) {
     foreach (element_children($form['options']) as $oid) {
@@ -346,7 +350,8 @@ function theme_uc_attribute_options_form($variables) {
         drupal_render($form['options'][$oid]['price']),
         drupal_render($form['options'][$oid]['weight']),
         drupal_render($form['options'][$oid]['ordering']),
-        drupal_render($form['options'][$oid]['ops']),
+        drupal_render($form['options'][$oid]['edit']),
+        drupal_render($form['options'][$oid]['delete']),
       );
 
       $rows[] = array(
@@ -357,7 +362,7 @@ function theme_uc_attribute_options_form($variables) {
   }
   else {
     $rows[] = array(
-      array('data' => t('No options for this attribute have been added yet.'), 'colspan' => 6),
+      array('data' => t('No options for this attribute have been added yet.'), 'colspan' => 7),
     );
   }
 
@@ -379,7 +384,7 @@ function theme_uc_attribute_options_form($variables) {
  * @see uc_attribute_option_form_validate()
  * @see uc_attribute_option_form_submit()
  */
-function uc_attribute_option_form($form_state, $attribute, $option = NULL) {
+function uc_attribute_option_form($form, &$form_state, $attribute, $option = NULL) {
   // If we got a bunk attribute, kick out an error message.
   if (empty($attribute)) {
     drupal_set_message(t('There is no attribute with that ID.'), 'error');
@@ -551,7 +556,7 @@ function uc_attribute_option_delete_confirm_submit($form, &$form_state) {
  *   theme_uc_object_attributes_form()
  *   uc_object_attributes_form_submit()
  */
-function uc_object_attributes_form($form_state, $object, $type, $view = 'overview') {
+function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 'overview') {
   switch ($type) {
     case 'class':
       $class = $object;
@@ -603,7 +608,7 @@ function uc_object_attributes_form($form_state, $object, $type, $view = 'overvie
             '#default_value' => 0,
           ),
           'name' => array(
-            '#value' => check_plain($attribute->name),
+            '#markup' => check_plain($attribute->name),
           ),
           'label' => array(
             '#type' => 'textfield',
@@ -611,7 +616,7 @@ function uc_object_attributes_form($form_state, $object, $type, $view = 'overvie
             '#size' => 6,
           ),
           'option' => array(
-            '#value' => $option ? (check_plain($option->name) .' ('. uc_price($option->price, $context) .')' ) : t('n/a'),
+            '#markup' => $option ? (check_plain($option->name) .' ('. uc_price($option->price, $context) .')' ) : t('n/a'),
           ),
           'required' => array(
             '#type' => 'checkbox',
@@ -852,7 +857,7 @@ function uc_object_attributes_form_submit($form, &$form_state) {
  *   uc_object_options_form_validate()
  *   uc_object_options_form_submit()
  */
-function uc_object_options_form($form_state, $object, $type) {
+function uc_object_options_form($form, &$form_state, $object, $type) {
   if ($type == 'product') {
     $product = $object;
     $id = $product->nid;
@@ -872,7 +877,7 @@ function uc_object_options_form($form_state, $object, $type) {
 
   foreach ($attributes as $aid => $attribute) {
     $form['attributes'][$aid]['name'] = array(
-      '#value' => check_plain($attribute->name),
+      '#markup' => check_plain($attribute->name),
     );
     $form['attributes'][$aid]['aid'] = array(
       '#type' => 'hidden',
@@ -959,7 +964,7 @@ function uc_object_options_form($form_state, $object, $type) {
     }
     else {
       $form['attributes'][$aid]['default'] = array(
-        '#value' => t('This attribute does not have any options.'),
+        '#markup' => t('This attribute does not have any options.'),
       );
     }
   }
@@ -1177,7 +1182,7 @@ function uc_object_options_form_submit($form, &$form_state) {
  * @ingroup forms
  * @see uc_product_adjustments_form_submit()
  */
-function uc_product_adjustments_form($form_state, $node) {
+function uc_product_adjustments_form($form, &$form_state, $node) {
   drupal_set_title(check_plain($node->title));
   $nid = $node->nid;
 
@@ -1223,19 +1228,18 @@ function uc_product_adjustments_form($form_state, $node) {
     $result = $query->execute();
 
     $form['original'] = array(
-      '#value' => '<div><br /><b>'. t('Default product SKU: @sku', array('@sku' => $model)) .'</b></div>',
+      '#markup' => '<div><br /><b>'. t('Default product SKU: @sku', array('@sku' => $model)) .'</b></div>',
     );
     $form['default'] = array(
-      '#type' => 'value', '#value' => $model,
+      '#type' => 'value',
+      '#value' => $model,
     );
     $form['table'] = array(
       '#prefix' => '<table class="combinations">',
       '#suffix' => '</table>',
     );
     $form['table']['head'] = array(
-      '#prefix' => '<thead><tr>',
-      '#suffix' => '</tr></thead>',
-      '#value' => $attribute_names .'<th>Alternate SKU</th>',
+      '#markup' => '<thead><tr>' . $attribute_names .'<th>Alternate SKU</th></tr></thead>',
       '#weight' => 0,
     );
     $form['table']['body'] = array(
@@ -1270,7 +1274,7 @@ function uc_product_adjustments_form($form_state, $node) {
         '#suffix' => '</tr>',
       );
       $form['table']['body'][$i]['combo'] = array(
-        '#value' => $cells,
+        '#markup' => $cells,
       );
       $form['table']['body'][$i]['combo_array'] = array(
         '#type' => 'value',
@@ -1296,12 +1300,12 @@ function uc_product_adjustments_form($form_state, $node) {
   }
   else {
     $form['error'] = array(
-      '#value' => '<div><br />'. t('This product does not have any attributes.') .'</div>',
+      '#markup' => '<div><br />'. t('This product does not have any attributes.') .'</div>',
     );
   }
 
   $form['pager'] = array(
-    '#value' => theme('pager'),
+    '#theme' => 'pager',
   );
 
   return $form;

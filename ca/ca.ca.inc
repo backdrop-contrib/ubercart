@@ -352,8 +352,10 @@ function ca_action_drupal_set_message_form($form_state, $settings = array()) {
 
   $tips = _filter_tips(variable_get('filter_default_format', 1), FALSE);
   $form['format']['guidelines'] = array(
+    '#theme' => 'filter_tips',
     '#title' => t('Formatting guidelines'),
-    '#value' => theme('filter_tips', $tips, FALSE, theme('filter_tips_more_info')),
+    '#tips' => $tips,
+    '#theme_wrappers' => array('form_element'),
   );
 
   $form['message_type'] = array(

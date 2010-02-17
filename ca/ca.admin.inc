@@ -133,7 +133,9 @@ function ca_admin($groupby = 'trigger') {
   }
 
   $build['add_link'] = array(
-    '#markup' => l(t('Add a predicate'), CA_UI_PATH .'/add'),
+    '#theme' => 'link',
+    '#text' => t('Add a predicate'),
+    '#href' => CA_UI_PATH . '/add',
     '#weight' => 5,
   );
 
@@ -143,7 +145,7 @@ function ca_admin($groupby = 'trigger') {
 /**
  * Form to allow the creation and editing of conditional action predicates.
  */
-function ca_predicate_meta_form($form_state, $pid) {
+function ca_predicate_meta_form($form, &$form_state, $pid) {
   // Load the predicate if an ID is passed in.
   if (!empty($pid) && $pid !== 0) {
     $predicate = ca_load_predicate($pid);
@@ -344,7 +346,7 @@ function ca_predicate_delete_form_submit($form, &$form_state) {
  *   ca_actions_form_add_action_submit()
  *   ca_actions_form_save_changes_submit()
  */
-function ca_actions_form($form_state, $pid, $title = TRUE) {
+function ca_actions_form($form, &$form_state, $pid, $title = TRUE) {
   // Locate the specified predicate.
   $predicate = ca_load_predicate($pid);
 
@@ -574,7 +576,7 @@ function ca_actions_form_update_actions($pid, $data) {
  *   ca_conditions_form_remove_condition_submit()
  *   ca_conditions_form_save_changes_submit()
  */
-function ca_conditions_form($form_state, $pid, $title = TRUE) {
+function ca_conditions_form($form, &$form_state, $pid, $title = TRUE) {
   // Locate the specified predicate.
   $predicate = ca_load_predicate($pid);
 
@@ -1069,11 +1071,9 @@ function ca_conditions_form_update_conditions($pid, $data) {
  * @ingroup forms
  * @see ca_conversion_form_submit()
  */
-function ca_conversion_form() {
-  $form = array();
-
+function ca_conversion_form($form, &$form_state) {
   $form['help'] = array(
-    '#value' => '<div>'. t('Use this form during the update process from Ubercart 1.0 to 2.0 to convert your Workflow-ng configurations to Conditional Actions predicates.  Once your configurations are converted, you should complete your uninstallation of Workflow-ng.') .'</div>',
+    '#markup' => '<div>'. t('Use this form during the update process from Ubercart 1.0 to 2.0 to convert your Workflow-ng configurations to Conditional Actions predicates.  Once your configurations are converted, you should complete your uninstallation of Workflow-ng.') .'</div>',
   );
 
   $form['submit'] = array(

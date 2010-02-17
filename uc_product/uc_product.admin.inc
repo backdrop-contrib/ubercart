@@ -91,7 +91,8 @@ function uc_product_settings_overview() {
 
   // Theme it all up in a summaries overview.
   return array(
-    '#markup' => theme('summary_overview', array('summaries' => $summaries)),
+    '#theme' => 'summary_overview',
+    '#summaries' => $summaries,
   );
 }
 
@@ -184,9 +185,7 @@ function uc_product_settings_form() {
  *   uc_product_field_settings_form_reset()
  *   uc_product_field_settings_form_submit()
  */
-function uc_product_field_settings_form() {
-  $form = array();
-
+function uc_product_field_settings_form($form, &$form_state) {
   $options = array(
     'model' => t('SKU'),
     'image' => t('Image'),
@@ -198,6 +197,7 @@ function uc_product_field_settings_form() {
     'dimensions' => t('Dimensions'),
     'add_to_cart' => variable_get('uc_product_add_to_cart_text', t('Add to cart')),
   );
+
   $enabled = variable_get('uc_product_field_enabled', array(
     'model' => 'model',
     'image' => 'image',
@@ -205,6 +205,7 @@ function uc_product_field_settings_form() {
     'sell_price' => 'sell_price',
     'add_to_cart' => 'add_to_cart',
   ));
+
   $weight = variable_get('uc_product_field_weight', array(
     'image' => -2,
     'display_price' -1,
@@ -216,6 +217,7 @@ function uc_product_field_settings_form() {
     'dimensions' => 6,
     'add_to_cart' => 10,
   ));
+
   $fields = array();
   foreach ($options as $field => $value) {
     $fields[$field] = array(
@@ -230,13 +232,15 @@ function uc_product_field_settings_form() {
   $form['fields']['#summary arguments'] = array($options, $enabled, $weight);
 
   foreach ($fields as $label => $field) {
-    $form['fields'][$label]['enabled'] = array('#type' => 'checkbox',
+    $form['fields'][$label]['enabled'] = array(
+      '#type' => 'checkbox',
       '#default_value' => $field['enabled'],
     );
-    $form['fields'][$label]['title'] = array('#type' => 'markup',
-      '#value' => $field['title'],
+    $form['fields'][$label]['title'] = array(
+      '#markup' => $field['title'],
     );
-    $form['fields'][$label]['weight'] = array('#type' => 'weight',
+    $form['fields'][$label]['weight'] = array(
+      '#type' => 'weight',
       '#delta' => 10,
       '#default_value' => $field['weight'],
     );
@@ -246,7 +250,8 @@ function uc_product_field_settings_form() {
     '#type' => 'submit',
     '#value' => t('Save configuration'),
   );
-  $form['buttons']['reset'] = array('#type' => 'submit',
+  $form['buttons']['reset'] = array(
+    '#type' => 'submit',
     '#value' => t('Reset to defaults'),
     '#submit' => array('uc_product_field_settings_form_reset'),
   );
@@ -354,7 +359,7 @@ function uc_product_feature_settings_form() {
     $titles[] = '<em>'. t('No product features found.') .'</em>';
   }
   $form['features_list'] = array(
-    '#value' => '<div><b>'. t('The following product features are enabled')
+    '#markup' => '<div><b>'. t('The following product features are enabled')
                .':</b><br />'. implode(', ', $titles) .'</div><br />',
     '#summary callback' => '_uc_product_features_summarize',
     '#summary arguments' => array($titles),
@@ -509,7 +514,7 @@ function uc_product_features($node) {
  *   theme_uc_product_feature_add_form()
  *   uc_product_feature_add_form_submit()
  */
-function uc_product_feature_add_form() {
+function uc_product_feature_add_form($form, &$form_state) {
   foreach (module_invoke_all('product_feature') as $feature) {
     $options[$feature['id']] = $feature['title'];
   }
@@ -570,7 +575,7 @@ function uc_product_image_defaults() {
  *   uc_product_class_form_validate()
  *   uc_product_class_form_submit()
  */
-function uc_product_class_form($form_state, $class = NULL) {
+function uc_product_class_form($form, &$form_state, $class = NULL) {
   if (!is_null($class)) {
     $classname = $class->name;
     $classdesc = $class->description;
@@ -591,6 +596,7 @@ function uc_product_class_form($form_state, $class = NULL) {
       '#description' => t('The machine-readable name of this content type. This text will be used for constructing the URL of the <em>create content</em> page for this content type. This name may consist only of lowercase letters, numbers, and underscores. Dashes are not allowed. Underscores will be converted into dashes when constructing the URL of the <em>create content</em> page. This name must be unique to this content type.'),
     );
   }
+
   $form['name'] = array(
     '#type' => 'textfield',
     '#title' => t('Class name'),

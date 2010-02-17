@@ -118,7 +118,7 @@ function hook_cart_display($item) {
   $element['remove'] = array('#type' => 'checkbox');
 
   $element['title'] = array(
-    '#value' => node_access('view', $node) ? l($item->title, 'node/'. $node->nid) : check_plain($item->title),
+    '#markup' => node_access('view', $node) ? l($item->title, 'node/'. $node->nid) : check_plain($item->title),
   );
 
   $context = array(
@@ -144,7 +144,7 @@ function hook_cart_display($item) {
   );
 
   if ($description = uc_product_get_description($item)) {
-    $element['description'] = array('#value' => $description);
+    $element['description'] = array('#markup' => $description);
   }
 
   return $element;

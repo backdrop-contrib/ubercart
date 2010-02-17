@@ -323,6 +323,9 @@ function uc_order_theme() {
     'uc_order_status_table' => array(
       'render element' => 'form',
     ),
+    'uc_order_search_fieldset' => array(
+      'render element' => 'form',
+    ),
     'uc_order_edit_form' => array(
       'render element' => 'form',
       'file' => 'uc_order.admin.inc',
@@ -803,7 +806,7 @@ function _uc_order_panes_summarize($form, $panes, $parent_name, $parent_id) {
   $items = array();
 
   foreach ($panes as $name => $pane) {
-    $item[] = t('!title is !enabled.', array('!title' => $pane['title']['#value'], '!enabled' => $pane['uc_order_pane_'. $name .'_show_'. $parent_id]['#default_value'] ? t('enabled') : t('disabled')));
+    $item[] = t('!title is !enabled.', array('!title' => $pane['title']['#markup'], '!enabled' => $pane['uc_order_pane_'. $name .'_show_'. $parent_id]['#default_value'] ? t('enabled') : t('disabled')));
   }
 
   $items[] = array(
@@ -820,21 +823,18 @@ function _uc_order_panes_summarize($form, $panes, $parent_name, $parent_id) {
  * @ingroup forms
  * @see uc_order_search_form_submit()
  */
-function uc_order_search_form() {
+function uc_order_search_form($form, &$form_state) {
   $form['search'] = array(
     '#type' => 'fieldset',
     '#title' => t('Search options'),
     '#collapsible' => TRUE,
     '#collapsed' => arg(4) == 'results' ? TRUE : FALSE,
+    '#theme' => 'uc_order_search_fieldset',
   );
-
-  $form['search']['table1'] = array('#value' => '<table><tbody style="border: 0em;"><tr><td colspan="4">');
 
   $form['search']['desc'] = array(
-    '#value' => '<div>'. t("Search for customers based on any of the following fields.  Use * as a wildcard to match any character.<br/>For example, searching by last name for 's*' will return all customers whose last name starts with an s.<br/>(<em>Leave a field empty to ignore it in the search.</em>)") .'</div>',
+    '#markup' => '<div>'. t("Search for customers based on any of the following fields.  Use * as a wildcard to match any character.<br/>For example, searching by last name for 's*' will return all customers whose last name starts with an s.<br/>(<em>Leave a field empty to ignore it in the search.</em>)") .'</div>',
   );
-
-  $form['search']['table2'] = array('#value' => '</td></tr><tr><td>');
 
   $form['search']['billing_first_name'] = array(
     '#type' => 'textfield',
@@ -844,8 +844,6 @@ function uc_order_search_form() {
     '#maxlength' => 32,
   );
 
-  $form['search']['table3'] = array('#value' => '</td><td>');
-
   $form['search']['billing_last_name'] = array(
     '#type' => 'textfield',
     '#title' => t('Billing last name'),
@@ -853,8 +851,6 @@ function uc_order_search_form() {
     '#size' => 24,
     '#maxlength' => 32,
   );
-
-  $form['search']['table4'] = array('#value' => '</td><td>');
 
   $form['search']['billing_company'] = array(
     '#type' => 'textfield',
@@ -864,17 +860,13 @@ function uc_order_search_form() {
     '#maxlength' => 96,
   );
 
-  $form['search']['table5'] = array('#value' => '</td></tr><tr><td>');
-
-    $form['search']['shipping_first_name'] = array(
+  $form['search']['shipping_first_name'] = array(
     '#type' => 'textfield',
     '#title' => t('Shipping first name'),
     '#default_value' => arg(8) != '0' ? arg(8) : '',
     '#size' => 24,
     '#maxlength' => 32,
   );
-
-  $form['search']['table6'] = array('#value' => '</td><td>');
 
   $form['search']['shipping_last_name'] = array(
     '#type' => 'textfield',
@@ -884,8 +876,6 @@ function uc_order_search_form() {
     '#maxlength' => 32,
   );
 
-  $form['search']['table7'] = array('#value' => '</td><td>');
-
   $form['search']['shipping_company'] = array(
     '#type' => 'textfield',
     '#title' => t('Shipping company'),
@@ -894,16 +884,12 @@ function uc_order_search_form() {
     '#maxlength' => 96,
   );
 
-  $form['search']['table8'] = array('#value' => '</td></tr><tr><td>');
-
   $form['search']['use_dates'] = array(
     '#type' => 'checkbox',
     '#title' => t('Search using date range.'),
     '#description' => t('Specify dates to the right if checked.'),
     '#default_value' => arg(11) != 0 ? 1 : 0,
   );
-
-  $form['search']['table9'] = array('#value' => '</td><td>');
 
   $timestamp = arg(11) == 0 ? REQUEST_TIME : arg(11);
   $form['search']['start_date'] = array(
@@ -912,8 +898,6 @@ function uc_order_search_form() {
     '#default_value' => array('year' => format_date($timestamp, 'custom', 'Y'), 'month' => format_date($timestamp, 'custom', 'n'), 'day' => format_date($timestamp, 'custom', 'j'))
   );
 
-  $form['search']['table10'] = array('#value' => '</td><td>');
-
   $timestamp = arg(12) == 0 ? REQUEST_TIME : arg(12);
   $form['search']['end_date'] = array(
     '#type' => 'date',
@@ -921,16 +905,52 @@ function uc_order_search_form() {
     '#default_value' => array('year' => format_date($timestamp, 'custom', 'Y'), 'month' => format_date($timestamp, 'custom', 'n'), 'day' => format_date($timestamp, 'custom', 'j')),
   );
 
-  $form['search']['table11'] = array('#value' => '</td></tr><tr><td colspan="3">');
-
   $form['search']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Search'),
   );
 
-  $form['search']['table12'] = array('#value' => '</td></tr></tbody></table>');
-
   return $form;
+}
+
+function theme_uc_order_search_fieldset($form) {
+  $output = '<table><tbody style="border: 0em;"><tr><td colspan="4">';
+  $output .= drupal_render($form['desc']);
+
+  $output .= '</td></tr><tr><td>';
+  $output .= drupal_render($form['billing_first_name']);
+
+  $output .= '</td><td>';
+  $output .= drupal_render($form['billing_last_name']);
+
+  $output .= '</td><td>';
+  $output .= drupal_render($form['billing_company']);
+
+  $output .= '</td></tr><tr><td>';
+  $output .= drupal_render($form['shipping_first_name']);
+
+  $output .= '</td><td>';
+  $output .= drupal_render($form['shipping_last_name']);
+
+  $output .= '</td><td>';
+  $output .= drupal_render($form['shipping_company']);
+
+  $output .= '</td></tr><tr><td>';
+  $output .= drupal_render($form['use_dates']);
+
+  $output .= '</td><td>';
+  $output .= drupal_render($form['start_date']);
+
+  $output .= '</td><td>';
+  $output .= drupal_render($form['end_date']);
+
+  $output .= '</td></tr><tr><td colspan="3">';
+  $output .= drupal_render($form['submit']);
+
+  $output .= '</td></tr></tbody></table>';
+  $output .= drupal_render_children($form);
+
+  return $output;
 }
 
 /**

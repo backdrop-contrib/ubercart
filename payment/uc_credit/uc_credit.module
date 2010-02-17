@@ -677,7 +677,7 @@ function uc_payment_method_credit($op, &$arg1, $silent = FALSE) {
     case 'settings':
       if (!user_access('administer credit cards')) {
         $form['notice'] = array(
-          '#value' => '<div>'. t('You must have access to <b>administer credit cards</b> to adjust these settings.') .'</div>',
+          '#markup' => '<div>'. t('You must have access to <b>administer credit cards</b> to adjust these settings.') .'</div>',
         );
         return $form;
       }
@@ -931,7 +931,7 @@ function uc_credit_settings_form_submit($form, &$form_state) {
 }
 
 // Displays the credit card details form on the checkout screen.
-function uc_payment_method_credit_form($form_state, $order) {
+function uc_payment_method_credit_form($form, &$form_state, $order) {
   // Normally the CC data is posted in via AJAX.
   if (!empty($_POST['payment-details-data']) && arg(0) == 'cart') {
     $order->payment_details = uc_credit_cache('save', $_POST['payment-details-data']);
@@ -943,7 +943,7 @@ function uc_payment_method_credit_form($form_state, $order) {
     unset($_SESSION['sescrd']);
   }
 
-  $form['cc_policy'] = array('#value' => variable_get('uc_credit_policy', t('Your billing information must match the billing address for the credit card entered below or we will be unable to process your payment.')));
+  $form['cc_policy'] = array('#markup' => variable_get('uc_credit_policy', t('Your billing information must match the billing address for the credit card entered below or we will be unable to process your payment.')));
 
   if (variable_get('uc_credit_type_enabled', FALSE)) {
     $types = variable_get('uc_credit_accepted_types', implode("\r\n", array(t('Visa'), t('Mastercard'), t('Discover'), t('American Express'))));
@@ -1090,8 +1090,8 @@ function theme_uc_payment_method_credit_form($variables) {
   if (arg(1) == 'checkout') {
     $path = base_path() . drupal_get_path('module', 'uc_credit');
     $output = '<table class="inline-pane-table" cellpadding="2">';
-    if (strlen($form['cc_policy']['#value']) > 0) {
-      $output .= '<tr><td colspan="2" class="description">'. $form['cc_policy']['#value']
+    if (strlen($form['cc_policy']['#markup']) > 0) {
+      $output .= '<tr><td colspan="2" class="description">'. $form['cc_policy']['#markup']
                 .'</td></tr>';
     }
     if (variable_get('uc_credit_type_enabled', FALSE)) {
@@ -1431,7 +1431,7 @@ function _save_cc_data_to_order($cc_data, $order_id) {
   // Save it again.
   db_update('uc_orders')
     ->fields(array('data' => serialize($data)))
-    ->condition('order_id' => $order_id)
+    ->condition('order_id', $order_id)
     ->execute();
 }
 

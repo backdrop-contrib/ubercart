@@ -10,7 +10,7 @@
 /**
  * Receive a check for an order and put in a clear date.
  */
-function uc_payment_pack_receive_check_form($form_state, $order) {
+function uc_payment_pack_receive_check_form($form, &$form_state, $order) {
   $balance = uc_payment_balance($order);
   $context = array(
     'revision' => 'formatted-original',
@@ -21,7 +21,7 @@ function uc_payment_pack_receive_check_form($form_state, $order) {
     'thou' => FALSE,
     'dec' => '.',
   );
-  $form['balance'] = array('#value' => uc_price($balance, $context));
+  $form['balance'] = array('#markup' => uc_price($balance, $context));
   $form['order_id'] = array(
     '#type' => 'hidden',
     '#value' => $order->order_id,

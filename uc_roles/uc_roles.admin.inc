@@ -14,14 +14,14 @@ function _uc_roles_expiration_header() {
     array('data' => t('Username'), 'field' => 'u.name'),
     array('data' => t('Role'), 'field' => 'e.rid'),
     array('data' => t('Expiration date'), 'field' => 'e.expiration', 'sort' => 'asc'),
-    t('Operations')
+    array('data' => t('Operations'), 'colspan' => 2),
   );
 }
 
 /**
  * Menu callback for viewing expirations.
  */
-function uc_roles_expiration() {
+function uc_roles_expiration($form, &$form_state) {
   // Create the header for the pager.
   $header = _uc_roles_expiration_header();
 
@@ -34,10 +34,27 @@ function uc_roles_expiration() {
   while ($row = db_fetch_object($result)) {
     $account = user_load($row->uid);
     $name = check_plain(format_username($account));
-    $form['name'][$row->uid .' '. $row->rid] = array('#value' => theme('username', array('account' => $account, 'name' => $name)));
-    $form['role'][$row->uid .' '. $row->rid] = array('#value' => _uc_roles_get_name($row->rid));
-    $form['expiration'][$row->uid .' '. $row->rid] = array('#value' => format_date($row->expiration, 'small'));
-    $form['operations'][$row->uid .' '. $row->rid] = array('#value' => l(t('delete'), 'admin/user/user/expiration/delete/'. $row->uid .'/'. $row->rid) .' '. l(t('edit'), 'user/'. $row->uid .'/edit', array('fragment' => 'role-expiration-'. $row->rid, 'query' => 'destination=admin%2Fuser%2Fuser%2Fexpiration')));
+    $form['name'][$row->uid .' '. $row->rid] = array(
+      '#theme' => 'username',
+      '#account' => $account,
+      '#name' => $name,
+    );
+    $form['role'][$row->uid .' '. $row->rid] = array('#markup' => _uc_roles_get_name($row->rid));
+    $form['expiration'][$row->uid .' '. $row->rid] = array('#markup' => format_date($row->expiration, 'small'));
+    $form['edit'][$row->uid .' '. $row->rid] = array(
+      '#theme' => 'link',
+      '#text' => t('edit'),
+      '#href' => 'user/'. $row->uid .'/edit',
+      '#options' => array(
+        'fragment' => 'role-expiration-'. $row->rid,
+        'query' => 'destination=admin%2Fuser%2Fuser%2Fexpiration',
+      ),
+    );
+    $form['delete'][$row->uid .' '. $row->rid] = array(
+      '#theme' => 'link',
+      '#text' => t('delete'),
+      '#href' => 'admin/user/user/expiration/delete/'. $row->uid .'/'. $row->rid,
+    );
   }
 
   return $form;
@@ -59,12 +76,13 @@ function theme_uc_roles_expiration($variables) {
         drupal_render($form['name'][$key]),
         drupal_render($form['role'][$key]),
         drupal_render($form['expiration'][$key]),
-        drupal_render($form['operations'][$key]),
+        drupal_render($form['edit'][$key]),
+        drupal_render($form['delete'][$key]),
       );
     }
   }
   else  {
-    $rows[] = array(array('data' => t('No expirations set to occur'), 'colspan' => '4'));
+    $rows[] = array(array('data' => t('No expirations set to occur'), 'colspan' => '5'));
   }
 
   // Render everything.
@@ -101,8 +119,7 @@ function uc_roles_deletion_form($form_id, $account, $rid) {
   }
   else {
     $form['error'] = array(
-      '#type' => 'markup',
-      '#value' => t('Invalid user id or role id.'),
+      '#markup' => t('Invalid user id or role id.'),
     );
   }
 

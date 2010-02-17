@@ -472,9 +472,7 @@ function uc_reports_products_custom() {
 }
 
 // Form builder for the custom product report.
-function uc_reports_products_custom_form(&$form_state, $values, $statuses) {
-  $form = array();
-
+function uc_reports_products_custom_form($form, &$form_state, $values, $statuses) {
   $form['search'] = array(
     '#type' => 'fieldset',
     '#title' => t('Customize product report parameters'),
@@ -889,7 +887,7 @@ function uc_reports_sales_year() {
  * @ingroup forms
  * @see uc_reports_sales_year_form_submit()
  */
-function uc_reports_sales_year_form($form_state, $year) {
+function uc_reports_sales_year_form($form, &$form_state, $year) {
   $form['year'] = array(
     '#type' => 'textfield',
     '#title' => t('Sales year'),
@@ -1069,7 +1067,7 @@ function uc_reports_sales_custom() {
  *   uc_reports_sales_custom_form_validate()
  *   uc_reports_sales_custom_form_submit()
  */
-function uc_reports_sales_custom_form($form_state, $values, $statuses) {
+function uc_reports_sales_custom_form($form, &$form_state, $values, $statuses) {
   $form['search'] = array(
     '#type' => 'fieldset',
     '#title' => t('Customize sales report parameters'),

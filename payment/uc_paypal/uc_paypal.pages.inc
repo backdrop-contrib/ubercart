@@ -243,7 +243,7 @@ function uc_paypal_ec_review() {
 }
 
 // Returns the form for the custom Review Payment screen for Express Checkout.
-function uc_paypal_ec_review_form($form_state, $order) {
+function uc_paypal_ec_review_form($form, &$form_state, $order) {
   if (module_exists('uc_quote') && variable_get('uc_paypal_ec_review_shipping', TRUE) && uc_order_is_shippable($order)) {
     $result = uc_checkout_pane_quotes('view', $order, NULL);
     $form['panes']['quotes'] = array(
@@ -255,7 +255,7 @@ function uc_paypal_ec_review_form($form_state, $order) {
     $form['panes']['quotes']['quote_button']['#value'] = t('Click to refresh shipping options');
 
     $form['panes']['quotes']['quote_div'] = array(
-      '#value' => '<div id="quote"></div>',
+      '#markup' => '<div id="quote"></div>',
     );
 
     // small hack; automatically looks for shipping quotes on page load
@@ -393,7 +393,7 @@ function uc_paypal_ec_submit() {
 }
 
 // Submits an order, calling the NVP API to send the order total to PayPal.
-function uc_paypal_ec_submit_form() {
+function uc_paypal_ec_submit_form($form, &$form_state) {
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit order'),

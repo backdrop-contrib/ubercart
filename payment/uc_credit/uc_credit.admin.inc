@@ -33,7 +33,7 @@ function uc_credit_terminal($order) {
 }
 
 // Displays the credit card terminal form for administrators.
-function uc_credit_terminal_form($form_state, $order, $lock_amount = FALSE) {
+function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FALSE) {
   // Get the transaction types available to our default gateway.
   $types = uc_credit_gateway_txn_types(uc_credit_default_gateway());
 

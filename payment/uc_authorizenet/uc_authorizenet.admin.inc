@@ -8,9 +8,8 @@
 
 
 // Displays a form to update a subscriptions's CC info.
-function uc_authorizenet_arb_admin_update_form($form_state, $rfid) {
+function uc_authorizenet_arb_admin_update_form($form, &$form_state, $rfid) {
   $order = new stdClass();
-  $form = array();
 
   $fee = uc_recurring_fee_load('user', $rfid);
 
@@ -19,7 +18,7 @@ function uc_authorizenet_arb_admin_update_form($form_state, $rfid) {
     '#value' => $rfid,
   );
   $form['description'] = array(
-    '#value' => '<div>'. t('Subscription ID: @subscription_id', array('@subscription_id' => $fee['data'])) .'</div>',
+    '#markup' => '<div>'. t('Subscription ID: @subscription_id', array('@subscription_id' => $fee['data'])) .'</div>',
   );
 
   $form['cc_data'] = array(

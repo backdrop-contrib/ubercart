@@ -175,9 +175,9 @@ function uc_file_user_form(&$account, $category = NULL) {
   // Drop out early if we don't even have any files uploaded.
   if (!db_query("SELECT COUNT(*) FROM {uc_files}")->fetchField()) {
     $form['file']['file_message'] = array(
-      '#value' => t(
-        'You must add files at the !url in order to attach them to a user.',
-        array('!url' => l(t('Ubercart file download administration page'), 'admin/store/products/files', array('query' => 'destination=user/'. $account->uid .'/edit')))
+      '#markup' => t(
+        'You must add files at the <a href="!url">Ubercart file download administration page</a> in order to attach them to a user.',
+        array('!url' => url('admin/store/products/files', array('query' => 'destination=user/'. $account->uid .'/edit')))
       ),
     );
 
@@ -213,9 +213,9 @@ function uc_file_user_form(&$account, $category = NULL) {
 
       'remove' => array('#type' => 'checkbox'),
 
-      'filename' => array('#value' => $file_download->filename),
+      'filename' => array('#markup' => $file_download->filename),
 
-      'expires' => array('#value' => $file_download->expiration ? format_date($file_download->expiration, 'small') : t('Never')),
+      'expires' => array('#markup' => $file_download->expiration ? format_date($file_download->expiration, 'small') : t('Never')),
       'time_polarity' => array(
         '#type' => 'select',
         '#default_value' => '+',
@@ -241,7 +241,7 @@ function uc_file_user_form(&$account, $category = NULL) {
         ),
       ),
 
-      'downloads_in' => array('#value' => $file_download->accessed),
+      'downloads_in' => array('#markup' => $file_download->accessed),
       'download_limit' => array(
         '#type' => 'textfield',
         '#maxlength' => 3,
@@ -249,7 +249,7 @@ function uc_file_user_form(&$account, $category = NULL) {
         '#default_value' => $file_download->download_limit ? $file_download->download_limit : NULL
       ),
 
-      'addresses_in' => array('#value' => count(unserialize($file_download->addresses))),
+      'addresses_in' => array('#markup' => count(unserialize($file_download->addresses))),
       'address_limit' => array(
         '#type' => 'textfield',
         '#maxlength' => 2,
@@ -738,21 +738,21 @@ function uc_file_feature_delete($feature) {
  *   uc_file_feature_form_validate()
  *   uc_file_feature_form_submit()
  */
-function uc_file_feature_form($form_state, $node, $feature) {
-  $form = array();
-
+function uc_file_feature_form($form, &$form_state, $node, $feature) {
   if (!is_dir(variable_get('uc_file_base_dir', NULL))) {
     drupal_set_message(t('A file directory needs to be configured in <a href="!url">product feature settings</a> before a file can be selected.', array('!url' => url('admin/store/settings/products/edit/features'))), 'error');
+
     return $form;
   }
 
   if (!db_result(db_query("SELECT COUNT(*) FROM {uc_files}"))) {
     $form['file']['file_message'] = array(
-      '#value' => t(
-        'You must add files at the !url in order to attach them to a model.',
-        array('!url' => l(t('Ubercart file download administration page'), 'admin/store/products/files', array('query' => 'destination=node/'. $node->nid .'/edit/features/file/add')))
+      '#markup' => t(
+        'You must add files at the <a href="!url">Ubercart file download administration page</a> in order to attach them to a model.',
+        array('!url' => url('admin/store/products/files', array('query' => 'destination=node/'. $node->nid .'/edit/features/file/add')))
       ),
     );
+
     return $form;
   }
 
@@ -998,7 +998,7 @@ function _uc_file_get_fpid($pfid) {
  *   uc_file_feature_settings_validate()
  *   uc_file_feature_settings_submit()
  */
-function uc_file_feature_settings() {
+function uc_file_feature_settings($form, &$form_state) {
   $statuses = array();
   foreach (uc_order_status_list('general') as $status) {
     $statuses[$status['id']] = $status['title'];

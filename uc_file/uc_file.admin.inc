@@ -55,8 +55,7 @@ function uc_file_admin_files_form($form_state) {
  *   uc_file_admin_files_form_show_submit()
  *   theme_uc_file_admin_files_form_show()
  */
-function uc_file_admin_files_form_show_files($form_state) {
-
+function uc_file_admin_files_form_show_files($form, &$form_state) {
   $form['#tree'] = TRUE;
 
   $form['#header'] = array(
@@ -90,18 +89,17 @@ function uc_file_admin_files_form_show_files($form_state) {
   $form['file_select'] = array('#tree' => TRUE);
   foreach ($result as $file) {
     $form['file_select'][$file->fid]['check'] = array('#type' => 'checkbox');
-    $form['file_select'][$file->fid]['filename'] = array('#value' => $file->filename);
-    $form['file_select'][$file->fid]['title'] = array('#value' => $file->title);
-    $form['file_select'][$file->fid]['nid'] = array('#value' => $file->nid);
-    $form['file_select'][$file->fid]['model'] = array('#value' => $file->model);
+    $form['file_select'][$file->fid]['filename'] = array('#markup' => $file->filename);
+    $form['file_select'][$file->fid]['title'] = array('#markup' => $file->title);
+    $form['file_select'][$file->fid]['nid'] = array('#markup' => $file->nid);
+    $form['file_select'][$file->fid]['model'] = array('#markup' => $file->model);
   }
 
   // Implement a Checkall / Uncheck all deal.
   $check_all = l(t('Check all'), "admin/store/products/files", array('attributes' => array('id' => 'uc_file_select_all'), 'fragment' => 'NULL'));
   $uncheck_all = l(t('Uncheck all'), 'admin/store/products/files', array('attributes' => array('id' => 'uc_file_select_none'), 'fragment' => 'NULL'));
   $form['uc_file_select'] = array(
-    '#type' => 'markup',
-    '#value' => $check_all .' / '. $uncheck_all,
+    '#markup' => $check_all .' / '. $uncheck_all,
   );
 
   $form['uc_file_action'] = array(
@@ -244,7 +242,7 @@ function theme_uc_file_admin_files_form_show($variables) {
  *   uc_file_admin_files_form_action_validate()
  *   uc_file_admin_files_form_action_submit()
  */
-function uc_file_admin_files_form_action($form_state) {
+function uc_file_admin_files_form_action($form, &$form_state) {
   $file_ids = array();
   foreach ((array)$form_state['values']['file_select'] as $fid => $value) {
     $value = $value['check'];
@@ -280,8 +278,11 @@ function uc_file_admin_files_form_action($form_state) {
 
       // Base files/dirs the user selected.
       $form['selected_files'] = array(
-        '#type' => 'markup',
-        '#value' => theme('item_list', array('items' => $file_list, 'attributes' => array('class' => array('selected-file-name')))),
+        '#theme' => 'item_list',
+        '#items' => $file_list,
+        '#attributes' => array(
+          'class' => array('selected-file-name'),
+        ),
       );
 
       $form = confirm_form(
@@ -302,8 +303,12 @@ function uc_file_admin_files_form_action($form_state) {
         // of the checkbox on load, this should improve the experience of users who
         // don't have JS enabled over not defaulting to any info.
         $form['affected_files'] = array(
-          '#type' => 'markup',
-          '#value' => theme('item_list', array('items' => $affected_list[FALSE], 'title' => 'Affected file(s)', 'attributes' => array('class' => array('affected-file-name')))),
+          '#theme' => 'item_list',
+          '#items' => $affected_list[FALSE],
+          '#title' => t('Affected files'),
+          '#attributes' => array(
+            'class' => array('affected-file-name'),
+          ),
         );
       }
 

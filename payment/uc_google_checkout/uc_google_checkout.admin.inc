@@ -102,10 +102,8 @@ function uc_google_checkout_settings() {
   return system_settings_form($form);
 }
 
-function uc_google_checkout_shipping_settings() {
-  $form = array(
-    '#tree' => TRUE
-  );
+function uc_google_checkout_shipping_settings($form, &$form_state) {
+  $form['#tree'] = TRUE;
 
   $services = uc_google_checkout_shipping_services();
 
@@ -116,8 +114,7 @@ function uc_google_checkout_shipping_settings() {
       '#default_value' => $shipping_settings['enable'],
     );
     $form['services'][$key]['title'] = array(
-      '#type' => 'markup',
-      '#value' => $title,
+      '#markup' => $title,
     );
     $form['services'][$key]['default'] = array(
       '#type' => 'textfield',
@@ -205,10 +202,8 @@ function uc_google_checkout_shipping_settings_submit($form, &$form_state) {
   drupal_set_message(t('The configuration options have been saved.'));
 }
 
-function uc_google_checkout_taxes_settings() {
-  $form = array(
-    '#tree' => TRUE,
-  );
+function uc_google_checkout_taxes_settings($form, &$form_state) {
+  $form['#tree'] = TRUE;
 
   $result = db_query("SELECT zone, rate, tax_shipping FROM {uc_gc_taxes} ORDER BY zone");
   foreach ($result as $tax) {
@@ -354,9 +349,7 @@ function uc_google_checkout_terminal($order) {
   return $output;
 }
 
-function uc_google_checkout_terminal_form($form_state, $order, $amount = 0) {
-  $form = array();
-
+function uc_google_checkout_terminal_form($form, &$form_state, $order, $amount = 0) {
   if ($order->financial_state == 'CHARGED') {
     $form['action'] = array(
       '#type' => 'select',

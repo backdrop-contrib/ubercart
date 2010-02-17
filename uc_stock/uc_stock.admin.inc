@@ -122,7 +122,7 @@ function uc_stock_report() {
  * @ingroup forms
  * @see uc_stock_report_form_submit()
  */
-function uc_stock_report_form() {
+function uc_stock_report_form($form, &$form_state) {
   $form['threshold'] = array(
     '#type' => 'checkbox',
     '#title' => t('Only show SKUs that are below their threshold.'),
@@ -159,10 +159,9 @@ function uc_stock_report_form_submit($form, &$form_state) {
  *   theme_uc_stock_edit_form()
  *   uc_stock_edit_form_submit()
  */
-function uc_stock_edit_form($form_state, $node) {
+function uc_stock_edit_form($form, &$form_state, $node) {
   drupal_set_title(check_plain($node->title));
 
-  $form = array();
   $form['stock'] = array('#tree' => TRUE);
 
   $skus = uc_product_get_models($node);
@@ -190,7 +189,7 @@ function uc_stock_edit_form($form_state, $node) {
 
       // Sanitized version of the SKU for display.
       $form['stock'][$id]['display_sku'] = array(
-        '#value' => check_plain($sku),
+        '#markup' => check_plain($sku),
       );
 
       // Textfield for entering the stock level.

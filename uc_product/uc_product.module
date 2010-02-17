@@ -386,7 +386,7 @@ function uc_product_edit_access($node) {
  *   theme_uc_product_dimensions()
  *   uc_product_form_validate()
  */
-function uc_product_form(&$node) {
+function uc_product_form($node, $form_state) {
   $type = node_get_types('type', $node);
 
   $location = array();
@@ -726,7 +726,11 @@ function uc_product_view($node, $teaser = 0, $page = 0) {
   );
 
   if (module_exists('imagecache') && ($field = variable_get('uc_image_'. $node->type, '')) && isset($node->$field) && file_exists($node->{$field}[0]['filepath'])) {
-    $node->content['image'] = array('#value' => theme('uc_product_image', array('images' => $node->$field, 'teaser' => $teaser, 'page' => $page)),
+    $node->content['image'] = array(
+      '#theme' => 'uc_product_image',
+      '#images' => $node->$field,
+      '#teaser' => $teaser,
+      '#page' => $page,
       '#access' => $enabled['image'],
       '#weight' => $weight['image'],
     );
@@ -734,63 +738,102 @@ function uc_product_view($node, $teaser = 0, $page = 0) {
 
   $context['class'][1] = 'display';
   $context['field'] = 'sell_price';
-  $node->content['display_price'] = array('#value' => theme('uc_product_price', array('price' => $node->sell_price, 'context' => $context)),
+  $node->content['display_price'] = array(
+    '#theme' => 'uc_product_price',
+    'price' => $node->sell_price,
+    'context' => $context,
     '#access' => $enabled['display_price'],
     '#weight' => $weight['display_price'],
   );
 
   if (!$teaser) {
-    $node->content['model'] = array('#value' => theme('uc_product_model', array('model' => $node->model, 'teaser' => $teaser, 'page' => $page)),
+    $node->content['model'] = array(
+      '#theme' => 'uc_product_model',
+      '#model' => $node->model,
+      '#teaser' => $teaser,
+      '#page' => $page,
       '#access' => $enabled['model'],
       '#weight' => $weight['model'],
     );
-    $node->content['body']['#value'] = theme('uc_product_body', array('body' => $node->body, 'teaser' => $teaser, 'page' => $page));
+    //$node->content['body']['#markup'] = theme('uc_product_body', array('body' => $node->body, 'teaser' => $teaser, 'page' => $page));
     $node->content['body']['#weight'] = 1;
 
     $context['class'][1] = 'list';
     $context['field'] = 'list_price';
-    $node->content['list_price'] = array('#value' => theme('uc_product_price', array('price' => $node->list_price, 'context' => $context)),
+    $node->content['list_price'] = array(
+      '#theme' => 'uc_product_price',
+      '#price' => $node->list_price,
+      '#context' => $context,
       '#access' => $enabled['list_price'],
       '#weight' => $weight['list_price'],
     );
 
     $context['class'][1] = 'cost';
     $context['field'] = 'cost';
-    $node->content['cost'] = array('#value' => theme('uc_product_price', array('price' => $node->cost, 'context' => $context)),
+    $node->content['cost'] = array(
+      '#theme' => 'uc_product_price',
+      '#price' => $node->cost,
+      '#context' => $context,
       '#access' => $enabled['cost'] && user_access('administer products'),
       '#weight' => $weight['cost'],
     );
   }
   else {
-    $node->content['body']['#value'] = theme('uc_product_body', array('body' => $node->teaser, 'teaser' => $teaser, 'page' => $page));
+    //$node->content['body']['#markup'] = theme('uc_product_body', array('body' => $node->teaser, 'teaser' => $teaser, 'page' => $page));
     $node->content['#attributes'] = array('style' => 'display: inline');
   }
 
   $context['class'][1] = 'sell';
   $context['field'] = 'sell_price';
-  $node->content['sell_price'] = array('#value' => theme('uc_product_price', array('price' => $node->sell_price, 'context' => $context, 'options' => array('label' => !$teaser))),
+  $node->content['sell_price'] = array(
+    '#theme' => 'uc_product_price',
+    '#price' => $node->sell_price,
+    '#context' => $context,
+    '#options' => array(
+      'label' => !$teaser,
+    ),
     '#access' => $enabled['sell_price'],
     '#weight' => $weight['sell_price'],
   );
 
   if (!$teaser) {
-    $node->content['weight'] = array('#value' => theme('uc_product_weight', array('weight' => $node->weight, 'units' => $node->weight_units, 'teaser' => $teaser, 'page' => $page)),
+    $node->content['weight'] = array(
+      '#theme' => 'uc_product_weight',
+      '#weight' => $node->weight,
+      '#units' => $node->weight_units,
+      '#teaser' => $teaser,
+      '#page' => $page,
       '#access' => $enabled['weight'],
       '#weight' => $weight['weight'],
     );
-    $node->content['dimensions'] = array('#value' => theme('uc_product_dimensions', array('length' => $node->length, 'width' => $node->width, 'height' =>$node->height, 'units' => $node->length_units, 'teaser' => $teaser, 'page' => $page)),
+    $node->content['dimensions'] = array(
+      '#theme' => 'uc_product_dimensions',
+      '#length' => $node->length,
+      '#width' => $node->width,
+      '#height' => $node->height,
+      '#units' => $node->length_units,
+      '#teaser' => $teaser,
+      '#page' => $page,
       '#access' => $enabled['dimensions'],
       '#weight' => $weight['dimensions'],
     );
     if (module_exists('uc_cart')) {
-      $node->content['add_to_cart'] = array('#value' => theme('uc_product_add_to_cart', array('node' => $node, 'teaser' => $teaser, 'page' => $page)),
+      $node->content['add_to_cart'] = array(
+        '#theme' => 'uc_product_add_to_cart',
+        '#node' => $node,
+        '#teaser' => $teaser,
+        '#page' => $page,
         '#access' => $enabled['add_to_cart'],
         '#weight' => $weight['add_to_cart'],
       );
     }
   }
   elseif (module_exists('uc_cart') && variable_get('uc_product_add_to_cart_teaser', TRUE)) {
-    $node->content['add_to_cart'] = array('#value' => theme('uc_product_add_to_cart', array('node' => $node, 'teaser' => $teaser, 'page' => $page)),
+    $node->content['add_to_cart'] = array(
+      '#theme' => 'uc_product_add_to_cart',
+      '#node' => $node,
+      '#teaser' => $teaser,
+      '#page' => $page,
       '#access' => $enabled['add_to_cart'],
       '#weight' => $weight['add_to_cart'],
     );
@@ -1165,7 +1208,7 @@ function uc_product_cart_display($item) {
   $element['remove'] = array('#type' => 'checkbox');
 
   $element['title'] = array(
-    '#value' => node_access('view', $node) ? l($item->title, 'node/'. $node->nid) : check_plain($item->title),
+    '#markup' => node_access('view', $node) ? l($item->title, 'node/'. $node->nid) : check_plain($item->title),
   );
 
   $context = array(
@@ -1191,7 +1234,7 @@ function uc_product_cart_display($item) {
   );
 
   if ($description = uc_product_get_description($item)) {
-    $element['description'] = array('#value' => $description);
+    $element['description'] = array('#markup' => $description);
   }
 
   return $element;
@@ -1395,10 +1438,10 @@ function uc_product_table($args = array()) {
  *   uc_catalog_buy_it_now_form_validate()
  *   uc_catalog_buy_it_now_form_submit()
  */
-function uc_catalog_buy_it_now_form($form_state, $node) {
-  $form = array();
+function uc_catalog_buy_it_now_form($form, &$form_state, $node) {
   $form['#validate'][] = 'uc_catalog_buy_it_now_form_validate';
   $form['#submit'][] = 'uc_catalog_buy_it_now_form_submit';
+
   $form['nid'] = array('#type' => 'hidden', '#value' => $node->nid);
   $form['submit'] = array(
     '#type' => 'submit',
@@ -1492,10 +1535,10 @@ function theme_uc_product_add_to_cart($variables) {
  *   uc_product_add_to_cart_form_validate()
  *   uc_product_add_to_cart_form_submit()
  */
-function uc_product_add_to_cart_form($form_state, $node) {
-  $form = array();
+function uc_product_add_to_cart_form($form, &$form_state, $node) {
   $form['#validate'][] = 'uc_product_add_to_cart_form_validate';
   $form['#submit'][] = 'uc_product_add_to_cart_form_submit';
+
   $form['nid'] = array('#type' => 'value', '#value' => $node->nid);
 
   if ($node->default_qty > 0 && variable_get('uc_product_add_to_cart_qty', FALSE)) {
@@ -1730,7 +1773,7 @@ function uc_product_is_product($node) {
  *   TRUE or FALSE indicating whether or not the form is a product node form.
  */
 function uc_product_is_product_form($form) {
-  return $form['#id'] == 'node-form' && uc_product_is_product($form['#node']);
+  return !empty($form['#node_edit_form']) && uc_product_is_product($form['#node']);
 }
 
 /**
@@ -1961,7 +2004,7 @@ function uc_product_feature_form($form) {
     '#value' => t('Save feature'),
   );
   $form['cancel'] = array(
-    '#value' => l(t('Cancel'), 'node/'. intval(arg(1)) .'/edit/features'),
+    '#markup' => l(t('Cancel'), 'node/'. intval(arg(1)) .'/edit/features'),
   );
 
   return $form;

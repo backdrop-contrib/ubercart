@@ -359,7 +359,7 @@ function uc_google_checkout_shipment($op, $shipment) {
  * Callback Functions, Forms, and Tables                                      *
  ******************************************************************************/
 
-function uc_google_checkout_cart_form() {
+function uc_google_checkout_cart_form($form, &$form_state) {
   if (variable_get('uc_google_checkout_mode', 'checkout') == 'checkout') {
     $merchant_id = variable_get('uc_google_checkout_merchant_id', '');
     $checkout_url = 'https://checkout.google.com';
@@ -371,14 +371,6 @@ function uc_google_checkout_cart_form() {
   if (!$merchant_id) {
     watchdog('google', 'Google Checkout is enabled, but no Merchant ID found.', array(), WATCHDOG_ERROR, 'admin/store/settings/google_checkout');
     return;
-  }
-
-  // Hack to allow the image button to submit.
-  if (isset($_POST['submit_x'])) {
-    $form['submit'] = array(
-      '#type' => 'submit',
-      '#value' => 'submit',
-    );
   }
 
   $disable = FALSE;
@@ -405,11 +397,17 @@ function uc_google_checkout_cart_form() {
     break;
   }
 
-  $form['submit_image'] = array(
-    '#value' => ($disable ? '<img ' : '<input name="submit" type="image" ') .'alt="'. t('Google Checkout') .'" title="'. t('Fast checkout through Google.') .'" src="'. $checkout_url .'/buttons/checkout.gif?merchant_id='. $merchant_id .'&w='. $width .'&h='. $height .'&style='. variable_get('uc_google_checkout_button_color', 'trans') .'&variant='. ($disable ? 'disabled' : 'text') .'&loc=en_US" height="'. $height .'" width="'. $width .'" />',
-  );
-  $form['submit_help'] = array(
-    '#value' => '<br /><a href="javascript:void(window.open(\' http://checkout.google.com/seller/what_is_google_checkout.html\',\'whatischeckout\',\'scrollbars=0,resizable=1,directories=0,height=250,width=400\'));" OnMouseOver="return window.status = \''. t('What is Google Checkout?') .'\';" OnMouseOut="return window.status = \'\';">'. t('What is Google Checkout?') .'</a>',
+  $form['submit'] = array(
+    '#type' => 'image_button',
+    '#src' => $checkout_url . '/buttons/checkout.gif?merchant_id=' . $merchant_id . '&w=' . $width . '&h=' . $height . '&style=' . variable_get('uc_google_checkout_button_color', 'trans') . '&variant=' . ($disable ? 'disabled' : 'text') . '&loc=en_US',
+    '#disabled' => $disable,
+    '#attributes' => array(
+      'alt' => t('Google Checkout'),
+      'title' => t('Fast checkout through Google.'),
+      'height' => $height,
+      'width' => $width,
+    ),
+    '#description' => '<a href="javascript:void(window.open(\' http://checkout.google.com/seller/what_is_google_checkout.html\',\'whatischeckout\',\'scrollbars=0,resizable=1,directories=0,height=250,width=400\'));" OnMouseOver="return window.status = \''. t('What is Google Checkout?') .'\';" OnMouseOut="return window.status = \'\';">'. t('What is Google Checkout?') .'</a>',
   );
 
   return $form;
@@ -694,7 +692,9 @@ function uc_payment_method_google_checkout($op, &$arg1) {
       $form = array();
 
       $form['link'] = array(
-        '#value' => l(t('Click here to go to Google Checkout settings.'), 'admin/store/settings/google_checkout'),
+        '#theme' => 'link',
+        '#text' => t('Click here to go to Google Checkout settings.'),
+        '#href' => 'admin/store/settings/google_checkout',
       );
 
     return $form;

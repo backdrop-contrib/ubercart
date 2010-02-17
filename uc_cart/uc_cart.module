@@ -499,9 +499,9 @@ function uc_cart_block($op = 'list', $delta = 0, $edit = array()) {
                 $items[] = array(
                   'nid' => $display_item['nid']['#value'],
                   'qty' => t('@qty&times;', array('@qty' => $display_item['qty']['#default_value'])),
-                  'title' => $display_item['title']['#value'],
+                  'title' => $display_item['title']['#markup'],
                   'price' => $display_item['#total'],
-                  'desc' => isset($display_item['description']['#value']) ? $display_item['description']['#value'] : FALSE,
+                  'desc' => isset($display_item['description']['#markup']) ? $display_item['description']['#markup'] : FALSE,
                 );
               }
 
@@ -548,9 +548,7 @@ function uc_cart_block($op = 'list', $delta = 0, $edit = array()) {
  * @ingroup forms
  * @see uc_cart_block_settings_form_submit()
  */
-function uc_cart_block_settings_form() {
-  $form = array();
-
+function uc_cart_block_settings_form($form, &$form_state) {
   $form['uc_cart_block_empty_hide'] = array(
     '#type' => 'checkbox',
     '#title' => t('Hide block if cart is empty.'),
@@ -964,7 +962,7 @@ function theme_uc_empty_cart() {
  *   theme_uc_cart_view_price()
  *   uc_cart_view_table()
  */
-function uc_cart_view_form($form_state, $items = NULL) {
+function uc_cart_view_form($form, &$form_state, $items = NULL) {
   $form['items'] = array(
     '#type' => 'tapir_table',
     '#tree' => TRUE,
@@ -979,22 +977,22 @@ function uc_cart_view_form($form_state, $items = NULL) {
     $display_item = module_invoke($item->module, 'cart_display', $item);
     if (!empty($display_item)) {
       $form['items'][$i] = $display_item;
-      $form['items'][$i]['image']['#value'] = uc_product_get_picture($display_item['nid']['#value'], 'cart');
+      $form['items'][$i]['image']['#markup'] = uc_product_get_picture($display_item['nid']['#value'], 'cart');
 
-      $description = $display_item['title']['#value'] . $display_item['description']['#value'];
-      $form['items'][$i]['desc']['#value'] = $description;
+      $description = $display_item['title']['#markup'] . $display_item['description']['#markup'];
+      $form['items'][$i]['desc']['#markup'] = $description;
 
       $form['items'][$i]['title']['#type'] = 'value';
       $form['items'][$i]['description']['#type'] = 'value';
 
       if (empty($display_item['qty'])) {
         $form['items'][$i]['qty'] = array(
-          '#value' => '',
+          '#markup' => '',
         );
       }
 
       $form['items'][$i]['total'] = array(
-        '#value' => uc_price($display_item['#total'], $context),
+        '#markup' => uc_price($display_item['#total'], $context),
         '#theme' => 'uc_cart_view_price',
       );
       $i++;
@@ -1011,7 +1009,9 @@ function uc_cart_view_form($form_state, $items = NULL) {
     // Add the element to the form based on the element type.
     if (variable_get('uc_continue_shopping_type', 'link') == 'link') {
       $form['continue_shopping'] = array(
-        '#value' => l($cs_text, uc_cart_continue_shopping_url()),
+        '#theme' => 'link',
+        '#text' => $cs_text,
+        '#href' => uc_cart_continue_shopping_url(),
       );
     }
     elseif (variable_get('uc_continue_shopping_type', 'link') == 'button') {
@@ -1124,10 +1124,8 @@ function theme_uc_cart_view_form($variables) {
  * @ingroup themeable
  * @see uc_cart_view_form()
  */
-function theme_uc_cart_view_price($variables) {
-  $form = $variables['form'];
-
-  return $form['#value'];
+function theme_uc_cart_view_price($form) {
+  return $form['#markup'];
 }
 
 /**
@@ -1293,7 +1291,7 @@ function uc_cart_complete_sale($order, $login = FALSE) {
       // Login the user if specified.
       if ($login) {
         $form_state = array('values' => $fields);
-        drupal_execute('user_login', $form_state);
+        drupal_form_submit('user_login', $form_state);
       }
 
       $message_type = 'new_user';
@@ -1324,7 +1322,6 @@ function uc_cart_complete_sale($order, $login = FALSE) {
                       FALSE) .'</p>';
 
   $output_message = token_replace_multiple($output, array('global' => NULL, 'order' => $order));
-  $themed_output = theme('uc_cart_complete_sale', array('message' => $output_message));
 
   // Move an order's status from "In Checkout" to "Pending"
   $status = db_result(db_query("SELECT order_status FROM {uc_orders} WHERE order_id = :id", array(':id' => $order->order_id)));
@@ -1341,7 +1338,10 @@ function uc_cart_complete_sale($order, $login = FALSE) {
   module_invoke_all('uc_checkout_complete', $order, $account);
   ca_pull_trigger('uc_checkout_complete', $order, $account);
 
-  return array('#markup' => $themed_output);
+  return array(
+    '#theme' => 'uc_cart_complete_sale',
+    '#message' => $output_message,
+  );
 }
 
 /**

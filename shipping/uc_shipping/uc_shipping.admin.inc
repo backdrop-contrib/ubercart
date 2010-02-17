@@ -80,7 +80,7 @@ function uc_shipping_order_packages($order) {
  *   uc_shipping_new_package_validate()
  *   uc_shipping_new_package_submit()
  */
-function uc_shipping_new_package($form_state, $order) {
+function uc_shipping_new_package($form, &$form_state, $order) {
   $breadcrumb = drupal_get_breadcrumb();
   $breadcrumb[] = l(t('Administer'), 'admin');
   $breadcrumb[] = l(t('Store administration'), 'admin/store');
@@ -89,8 +89,8 @@ function uc_shipping_new_package($form_state, $order) {
   $breadcrumb[] = l(t('Packages'), 'admin/store/orders/'. $order->order_id .'/packages');
   drupal_set_breadcrumb($breadcrumb);
 
-  $form = array('#tree' => TRUE);
-  $form['instructions'] = array('#value' => t('Organize products into packages.
+  $form['#tree'] = TRUE;
+  $form['instructions'] = array('#markup' => t('Organize products into packages.
  Package numbers in multiple shipping types are of the first shipping type they appear in. All
  packages are given a unique ID when they are saved. Choose the default package "Sep." to
  automatically create a package for each of the selected quantity of products in that row.'));
@@ -122,8 +122,8 @@ function uc_shipping_new_package($form_state, $order) {
       if ($unboxed_qty > 0) {
         $product_row = array();
         $product_row['checked'] = array('#type' => 'checkbox', '#default_value' => 0);
-        $product_row['model'] = array('#type' => 'markup', '#value' => check_plain($product->model));
-        $product_row['name'] = array('#type' => 'markup', '#value' => filter_xss_admin($product->title));
+        $product_row['model'] = array('#markup' => check_plain($product->model));
+        $product_row['name'] = array('#markup' => filter_xss_admin($product->title));
         $product_row['qty'] = array('#type' => 'select',
           '#options' => drupal_map_assoc(uc_range(1, $unboxed_qty)),
           '#default_value' => $unboxed_qty,
@@ -262,7 +262,7 @@ function uc_shipping_new_package_submit($form, &$form_state) {
  * @see theme_uc_shipping_edit_package_fieldset()
  * @see uc_shipping_package_edit_submit()
  */
-function uc_shipping_package_edit($form_state, $order, $package) {
+function uc_shipping_package_edit($form, &$form_state, $order, $package) {
   $breadcrumb = drupal_get_breadcrumb();
   $breadcrumb[] = l(t('Administer'), 'admin');
   $breadcrumb[] = l(t('Store administration'), 'admin/store');
@@ -287,7 +287,6 @@ function uc_shipping_package_edit($form_state, $order, $package) {
     $products[$packaged_product->order_product_id]->qty = $products[$packaged_product->order_product_id]->qty - $packaged_product->quantity + $package->products[$packaged_product->order_product_id]->qty;
   }
 
-  $form = array();
   $form['#tree'] = TRUE;
   $form['package_id'] = array('#type' => 'hidden', '#value' => $package->package_id);
   $form['products'] = array();
@@ -295,8 +294,8 @@ function uc_shipping_package_edit($form_state, $order, $package) {
     if ($product->qty > 0) {
       $product_row = array();
       $product_row['checked'] = array('#type' => 'checkbox', '#default_value' => isset($package->products[$product->order_product_id]));
-      $product_row['model'] = array('#type' => 'markup', '#value' => check_plain($product->model));
-      $product_row['name'] = array('#type' => 'markup', '#value' => filter_xss_admin($product->title));
+      $product_row['model'] = array('#markup' => check_plain($product->model));
+      $product_row['name'] = array('#markup' => filter_xss_admin($product->title));
       $product_row['qty'] = array('#type' => 'select',
         '#options' => drupal_map_assoc(uc_range(1, $product->qty)),
         '#default_value' => $package->products[$product->order_product_id]->qty,
@@ -481,7 +480,7 @@ function uc_shipping_order_shipments($order) {
  * @see theme_uc_shipping_new_shipment()
  * @see uc_shipping_new_shipment_submit()
  */
-function uc_shipping_new_shipment($form_state, $order) {
+function uc_shipping_new_shipment($form, &$form_state, $order) {
   $breadcrumb = drupal_get_breadcrumb();
   $breadcrumb[] = l(t('Administer'), 'admin');
   $breadcrumb[] = l(t('Store administration'), 'admin/store');
@@ -492,7 +491,7 @@ function uc_shipping_new_shipment($form_state, $order) {
 
   $checked_pkgs = (array) $_REQUEST['pkgs'];
 
-  $form = array('#tree' => TRUE);
+  $form['#tree'] = TRUE;
   $form['order_id'] = array('#type' => 'hidden', '#value' => $order->order_id);
 
   $packages_by_type = array();
@@ -527,13 +526,13 @@ function uc_shipping_new_shipment($form_state, $order) {
       $pkgs_exist = TRUE;
       $package_row = array();
       $package_row['checked'] = array('#type' => 'checkbox', '#default_value' => (in_array($package->package_id, $checked_pkgs) ? 1 : 0));
-      $package_row['package_id'] = array('#value' => $package->package_id);
+      $package_row['package_id'] = array('#markup' => $package->package_id);
       $product_list = array();
       foreach ($package->products as $product) {
         $product_list[] = $product->qty .' x '. check_plain($product->model);
       }
-      $package_row['products'] = array('#value' => '<ul><li>'. implode('</li><li>', $product_list) .'</li></ul>');
-      $package_row['weight'] = array('#value' => $package->weight);
+      $package_row['products'] = array('#markup' => '<ul><li>'. implode('</li><li>', $product_list) .'</li></ul>');
+      $package_row['weight'] = array('#markup' => $package->weight);
       $form[$shipping_type]['packages'][$package->package_id] = $package_row;
     }
 
@@ -579,7 +578,11 @@ function theme_uc_shipping_new_shipment($variables) {
       $rows[] = $row;
     }
     if (count($rows)) {
-      $form[$shipping_type]['packages']['table'] = array('#value' => theme('table', array('header' => $header, 'rows' => $rows)));
+      $form[$shipping_type]['packages']['table'] = array(
+        '#theme' => 'table',
+        '#header' => $header,
+        '#rows' => $rows,
+      );
     }
     //$output .= drupal_render($form[$shipping_type]['methods']);
   }
@@ -670,9 +673,8 @@ function uc_shipping_shipment_view($order, $shipment) {
  * @see theme_uc_shipping_address()
  * @see uc_shipping_shipment_edit_submit()
  */
-function uc_shipping_shipment_edit($form_state, $order, $shipment) {
+function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
   drupal_add_css(drupal_get_path('module', 'uc_shipping') .'/uc_shipping.css');
-  $form = array();
 
   $form['order_id'] = array('#type' => 'value', '#value' => $order->order_id);
   if (isset($shipment->sid)) {
@@ -710,8 +712,12 @@ function uc_shipping_shipment_edit($form_state, $order, $shipment) {
       '#title' => t('Package @id', array('@id' => $id)),
       '#collapsible' => TRUE,
     );
-    $form['packages'][$id]['products'] = array('#value' => theme('item_list', array('items' => $product_list)));
-    $form['packages'][$id]['pkg_type'] = array('#type' => 'textfield',
+    $form['packages'][$id]['products'] = array(
+      '#theme' => 'item_list',
+      '#items' => $product_list,
+    );
+    $form['packages'][$id]['pkg_type'] = array(
+      '#type' => 'textfield',
       '#title' => t('Package type'),
       '#default_value' => $package->pkg_type,
       '#description' => t('E.g.: Box, pallet, tube, treasure chest, cocoon, etc.'),
@@ -721,12 +727,14 @@ function uc_shipping_shipment_edit($form_state, $order, $shipment) {
       $form['packages'][$id]['pkg_type']['#options'] = $method['ship']['pkg_types'];
       $form['packages'][$id]['pkg_type']['#description'] = '';
     }
-    $form['packages'][$id]['dimensions'] = array('#type' => 'fieldset',
+    $form['packages'][$id]['dimensions'] = array(
+      '#type' => 'fieldset',
       '#title' => t('Dimensions'),
       '#description' => t('Physical dimensions of the packaged product.'),
       '#theme' => 'uc_shipping_package_dimensions',
     );
-    $form['packages'][$id]['dimensions']['units'] = array('#type' => 'select',
+    $form['packages'][$id]['dimensions']['units'] = array(
+      '#type' => 'select',
       '#title' => t('Units of measurement'),
       '#options' => array(
         'in' => t('Inches'),
@@ -736,28 +744,33 @@ function uc_shipping_shipment_edit($form_state, $order, $shipment) {
       ),
       '#default_value' => $package->length_units ? $package->length_units : variable_get('uc_length_unit', 'in'),
     );
-    $form['packages'][$id]['dimensions']['length'] = array('#type' => 'textfield',
+    $form['packages'][$id]['dimensions']['length'] = array(
+      '#type' => 'textfield',
       '#title' => t('Length'),
       '#default_value' => $package->length,
       '#size' => 8,
     );
-    $form['packages'][$id]['dimensions']['width'] = array('#type' => 'textfield',
+    $form['packages'][$id]['dimensions']['width'] = array(
+      '#type' => 'textfield',
       '#title' => t('Width'),
       '#default_value' => $package->width,
       '#size' => 8,
     );
-    $form['packages'][$id]['dimensions']['height'] = array('#type' => 'textfield',
+    $form['packages'][$id]['dimensions']['height'] = array(
+      '#type' => 'textfield',
       '#title' => t('Height'),
       '#default_value' => $package->height,
       '#size' => 8,
     );
-    $form['packages'][$id]['declared_value'] = array('#type' => 'textfield',
+    $form['packages'][$id]['declared_value'] = array(
+      '#type' => 'textfield',
       '#title' => t('Declared value'),
       '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
       '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
       '#default_value' => isset($package->value) ? $package->value : $declared_value,
     );
-    $form['packages'][$id]['tracking_number'] = array('#type' => 'textfield',
+    $form['packages'][$id]['tracking_number'] = array(
+      '#type' => 'textfield',
       '#title' => t('Tracking number'),
       '#default_value' => $package->tracking_number,
     );
@@ -770,23 +783,28 @@ function uc_shipping_shipment_edit($form_state, $order, $shipment) {
     '#collapsible' => TRUE,
     '#weight' => 0,
   );
-  $form['shipment']['shipping_method'] = array('#type' => 'hidden',
+  $form['shipment']['shipping_method'] = array(
+    '#type' => 'hidden',
     '#value' => isset($shipment->shipping_method) ? $shipment->shipping_method : 'manual',
   );
-  $form['shipment']['carrier'] = array('#type' => 'textfield',
+  $form['shipment']['carrier'] = array(
+    '#type' => 'textfield',
     '#title' => t('Carrier'),
     '#default_value' => $shipment->carrier,
   );
-  $form['shipment']['accessorials'] = array('#type' => 'textfield',
+  $form['shipment']['accessorials'] = array(
+    '#type' => 'textfield',
     '#title' => t('Shipment options'),
     '#default_value' => $shipment->accessorials,
     '#description' => t('Short notes about the shipment, e.g. residential, overnight, etc.'),
   );
-  $form['shipment']['transaction_id'] = array('#type' => 'textfield',
+  $form['shipment']['transaction_id'] = array(
+    '#type' => 'textfield',
     '#title' => t('Transaction ID'),
     '#default_value' => $shipment->transaction_id,
   );
-  $form['shipment']['tracking_number'] = array('#type' => 'textfield',
+  $form['shipment']['tracking_number'] = array(
+    '#type' => 'textfield',
     '#title' => t('Tracking number'),
     '#default_value' => $shipment->tracking_number,
   );

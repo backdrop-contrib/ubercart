@@ -19,7 +19,7 @@ function uc_checkout_pane_cart($op) {
   switch ($op) {
     case 'view':
       $contents['cart_review_table'] = array(
-        '#value' => theme('cart_review_table'),
+        '#theme' => 'cart_review_table',
         '#weight' => variable_get('uc_pane_cart_field_cart_weight', 2),
       );
       return array('contents' => $contents, 'next-button' => FALSE);
@@ -67,7 +67,7 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
         $description = t('Order information will be sent to your account e-mail listed below.');// .'<br />'
         $contents['primary_email'] = array('#type' => 'hidden', '#value' => check_plain($email));
         $contents['email_text'] = array(
-          '#value' => '<div>'. t('<b>E-mail address:</b> @email (<a href="!url">edit</a>)', array('@email' => $email, '!url' => url('user/'. $user->uid .'/edit', array('query' => 'destination=cart/checkout')))) .'</div>',
+          '#markup' => '<div>'. t('<b>E-mail address:</b> @email (<a href="!url">edit</a>)', array('@email' => $email, '!url' => url('user/'. $user->uid .'/edit', array('query' => 'destination=cart/checkout')))) .'</div>',
         );
       }
       else {
@@ -214,6 +214,7 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
         '#description' => t('Enter the help message displayed in the new account details fieldset when shown.'),
         '#default_value' => variable_get('uc_cart_new_account_details', t('<b>Optional.</b> New customers may supply custom account details.<br />We will create these for you if no values are entered.')),
       );
+
       return $form;
   }
 }

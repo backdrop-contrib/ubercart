@@ -61,7 +61,7 @@ function uc_payment_methods_form() {
   $methods = _payment_method_list();
 
   $form['methods_info'] = array(
-    '#value' => '<div><strong>'. t('Payment methods') .'</strong><br />'
+    '#markup' => '<div><strong>'. t('Payment methods') .'</strong><br />'
               . t('The settings forms below are for the payment methods defined by enabled modules. Click a name to expand its options and adjust the settings accordingly. Methods are listed in order of appearance on the checkout screen, determined by the list position setting (current value shown in parentheses).') .'</div><br />',
   );
 
@@ -85,7 +85,7 @@ function uc_payment_methods_form() {
         '#default_value' => variable_get('uc_payment_method_'. $method['id'] .'_checkout', $method['checkout']),
       );
       $form['pmtable'][$method['id']]['name'] = array(
-        '#value' => $method['name'],
+        '#markup' => $method['name'],
       );
       $form['pmtable'][$method['id']]['uc_payment_method_'. $method['id'] .'_weight'] = array(
         '#type' => 'weight',
@@ -94,7 +94,7 @@ function uc_payment_methods_form() {
 
       if ($method['no_gateway'] === TRUE) {
         $form['pmtable'][$method['id']]['uc_payment_'. $method['id'] .'_gateway'] = array(
-          '#value' => '-',
+          '#markup' => '-',
         );
       }
       else {
@@ -173,7 +173,7 @@ function uc_payment_gateways_form() {
 
   if (is_array($gateways) && count($gateways) > 0) {
     $form['gateways_info'] = array(
-      '#value' => '<div><strong>'. t('Payment gateways') .'</strong><br />'
+      '#markup' => '<div><strong>'. t('Payment gateways') .'</strong><br />'
                 . t('Payment gateways are web services that allow you to process various types of payments remotely.  The settings forms below are for the payment gateways you have installed.  Click a name to expand its options and adjust the settings accordingly.') .'</div>',
       '#weight' => -10,
     );
@@ -193,7 +193,7 @@ function uc_payment_gateways_form() {
       }
 
       $form['gateways'][$gateway['id']]['supported_methods'] = array(
-        '#value' => '<div>'. t('This gateway supports the following payment methods:')
+        '#markup' => '<div>'. t('This gateway supports the following payment methods:')
                    .'<br />'. implode(',', $supported_methods) .'</div>',
         '#weight' => -10,
       );
@@ -250,7 +250,7 @@ function uc_payment_gateway_select() {
   return $output;
 }
 
-function uc_payment_gateway_select_form($form_state, $options, $method, $order_id, $amount, $data) {
+function uc_payment_gateway_select_form($form, &$form_state, $options, $method, $order_id, $amount, $data) {
   $form['method'] = array(
     '#type' => 'hidden',
     '#value' => $method,
@@ -295,7 +295,7 @@ function uc_payment_gateway_select_form_submit($form, &$form_state) {
 }
 
 // Displays a list of payments attached to an order.
-function uc_payment_by_order_form($form_state, $order) {
+function uc_payment_by_order_form($form, &$form_state, $order) {
   $total = $order->order_total;
   $payments = uc_payment_load_payments($order->order_id);
 
@@ -306,7 +306,7 @@ function uc_payment_by_order_form($form_state, $order) {
       'order' => $order,
     ),
   );
-  $form['order_total'] = array('#value' => uc_price($total, $context));
+  $form['order_total'] = array('#markup' => uc_price($total, $context));
   $form['payments'] = tapir_get_table('uc_payments_table');
 
   if ($payments !== FALSE) {
@@ -315,26 +315,26 @@ function uc_payment_by_order_form($form_state, $order) {
       $context['subject']['payment'] = $payment;
       $form['payments'][$payment->receipt_id]['#attributes'] = array('valign' => 'top');
       $form['payments'][$payment->receipt_id]['received'] = array(
-        '#value' => format_date($payment->received, 'custom', variable_get('uc_date_format_default', 'm/d/Y') .'<b\r>H:i:s'),
+        '#markup' => format_date($payment->received, 'custom', variable_get('uc_date_format_default', 'm/d/Y') .'<b\r />H:i:s'),
       );
       $form['payments'][$payment->receipt_id]['user'] = array(
-        '#value' => uc_get_initials($payment->uid),
+        '#markup' => uc_get_initials($payment->uid),
       );
       $form['payments'][$payment->receipt_id]['method'] = array(
-        '#value' => ($payment->method == '') ? t('Unknown') : $payment->method,
+        '#markup' => ($payment->method == '') ? t('Unknown') : $payment->method,
       );
       $form['payments'][$payment->receipt_id]['amount'] = array(
-        '#value' => uc_price($payment->amount, $context),
+        '#markup' => uc_price($payment->amount, $context),
       );
       $total -= $payment->amount;
       unset($context['subject']['payment']);
       $context['type'] = 'amount';
       $context['subject']['total'] = $total;
       $form['payments'][$payment->receipt_id]['balance'] = array(
-        '#value' => uc_price($total, $context, array('cache' => FALSE)),
+        '#markup' => uc_price($total, $context, array('cache' => FALSE)),
       );
       $form['payments'][$payment->receipt_id]['comment'] = array(
-        '#value' => ($payment->comment == '') ? '-' : filter_xss_admin($payment->comment),
+        '#markup' => ($payment->comment == '') ? '-' : filter_xss_admin($payment->comment),
       );
       if (variable_get('uc_payment_deleting', TRUE) && user_access('delete payments')) {
         $action_value = l(t('Delete'), 'admin/store/orders/'. $order->order_id .'/payments/'
@@ -344,12 +344,12 @@ function uc_payment_by_order_form($form_state, $order) {
         $action_value = '-';
       }
       $form['payments'][$payment->receipt_id]['action'] = array(
-        '#value' => $action_value,
+        '#markup' => $action_value,
       );
     }
   }
 
-  $form['balance'] = array('#value' => uc_price($total, $context));
+  $form['balance'] = array('#markup' => uc_price($total, $context));
   $form['order_id'] = array(
     '#type' => 'hidden',
     '#value' => $order->order_id,
@@ -358,10 +358,10 @@ function uc_payment_by_order_form($form_state, $order) {
   if (user_access('manual payments')) {
     $form['payments']['new']['#attributes'] = array('valign' => 'top');
     $form['payments']['new']['received'] = array(
-      '#value' => '-',
+      '#markup' => '-',
     );
     $form['payments']['new']['user'] = array(
-      '#value' => '-',
+      '#markup' => '-',
     );
     $methods = _payment_method_list();
     foreach ($methods as $method) {
@@ -376,7 +376,7 @@ function uc_payment_by_order_form($form_state, $order) {
       '#size' => 6,
     );
     $form['payments']['new']['balance'] = array(
-      '#value' => '-',
+      '#markup' => '-',
     );
     $form['payments']['new']['comment'] = array(
       '#type' => 'textfield',

@@ -27,6 +27,9 @@ function uc_payment_pack_theme() {
     'uc_payment_method_other_form' => array(
       'render element' => 'form',
     ),
+    'uc_payment_method_cod_form' => array(
+      'render element' => 'form',
+    ),
     'uc_payment_pack_receive_check_form' => array(
       'render element' => 'form',
       'file' => 'uc_payment_pack.admin.inc',
@@ -129,7 +132,7 @@ function uc_payment_method_other($op, &$arg1) {
   }
 }
 
-function uc_payment_method_other_form($form_state, $order) {
+function uc_payment_method_other_form($form, &$form_state, $order) {
   $form['pm_other_description'] = array(
     '#type' => 'textfield',
     '#size' => 32,
@@ -274,19 +277,33 @@ function uc_payment_method_cod($op, &$arg1) {
   }
 }
 
-function uc_payment_method_cod_form($form_state, $order) {
-  $form['table1'] = array('#value' => '<style>.cod-table div, .cod-table { display: inline; }.cod-table tbody { border-top: 0px; }</style><table class="cod-table"><tr><td class="form-item" colspan="3"><label>'. t('Enter a desired delivery date:') .'</label></td></tr><tr><td>');
+function uc_payment_method_cod_form($form, &$form_state, $order) {
   $month = (!empty($order->payment_details['delivery_month'])) ? $order->payment_details['delivery_month'] : format_date(REQUEST_TIME, 'custom', 'n');
   $form['cod_delivery_month'] = uc_select_month(NULL, $month);
-  $form['table2'] = array('#value' => '</td><td>');
+
   $day = (!empty($order->payment_details['delivery_day'])) ? $order->payment_details['delivery_day'] : format_date(REQUEST_TIME, 'custom', 'j');
   $form['cod_delivery_day'] = uc_select_day(NULL, $day);
-  $form['table3'] = array('#value' => '</td><td>');
+
   $year = (!empty($order->payment_details['delivery_year'])) ? $order->payment_details['delivery_year'] : format_date(REQUEST_TIME, 'custom', 'Y');
   $form['cod_delivery_year'] = uc_select_year(NULL, $year, format_date(REQUEST_TIME, 'custom', 'Y'), format_date(REQUEST_TIME, 'custom', 'Y') + 1);
-  $form['table4'] = array('#value' => '</td></tr></table>');
 
   return $form;
+}
+
+function theme_uc_payment_method_cod_form($form) {
+  drupal_add_css('.cod-table div, .cod-table { display: inline; } .cod-table tbody { border-top: 0px; }', array('type' => 'inline', 'preprocess' => FALSE));
+
+  $output = '<table class="cod-table"><tr><td class="form-item" colspan="3"><label>'. t('Enter a desired delivery date:') .'</label></td></tr><tr><td>';
+  $output .= drupal_render($form['cod_delivery_month']);
+  $output .= '</td><td>';
+  $output .= drupal_render($form['cod_delivery_day']);
+  $output .= '</td><td>';
+  $output .= drupal_render($form['cod_delivery_year']);
+  $output .= '</td></tr></table>';
+
+  $output .= drupal_render_children($form);
+
+  return $output;
 }
 
 /**
@@ -377,7 +394,7 @@ function uc_payment_method_check($op, &$arg1) {
 
     case 'settings':
       $form['check_address_info'] = array(
-        '#value' => '<div>'. t('Set the mailing address to display to customers who choose this payment method during checkout.') .'</div>',
+        '#markup' => '<div>'. t('Set the mailing address to display to customers who choose this payment method during checkout.') .'</div>',
       );
       $form['uc_check_mailing_company'] = uc_textfield(uc_get_field_name('company'), variable_get('uc_check_mailing_company', ''), FALSE, NULL, 128);
       $form['uc_check_mailing_name'] = uc_textfield(t('Contact'), variable_get('uc_check_mailing_name', ''), FALSE, t('Direct checks to a person or department.'), 128);
