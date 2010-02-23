@@ -48,22 +48,8 @@ function theme_uc_catalog_browse($variables) {
         'attributes' => array('rel' => 'tag'),
       );
     }
-    if (!empty($child->image)) {
-      $image = '<div>';
-      if (module_exists('imagecache')) {
-        $image .= l(theme('image_style', array(
-            'style_name' => 'uc_category',
-            'path' => $child->image['filepath'],
-          )),
-          uc_catalog_path($child), array('html' => TRUE));
-      }
-      else {
-        $image .= l(theme('image', array(
-            'path' => $child->image['filepath'],
-          )),
-          uc_catalog_path($child), array('html' => TRUE));
-      }
-      $image .= '</div>';
+    if (!empty($child->uc_catalog_image)) {
+      $image = field_view_field('taxonomy_term', $child, 'uc_catalog_image');
     }
     else {
       $image = '<div></div>';
@@ -99,24 +85,8 @@ function theme_uc_catalog_browse($variables) {
       $child_list[] = $cell_link;
     }
   }
-  if (!empty($catalog->image)) {
-    if (module_exists('imagecache')) {
-      $output .= theme('image_style', array(
-        'style_name' => 'uc_thumbnail',
-        'path' => $catalog->image['filepath'],
-        'alt' => $catalog->name,
-        'title' => $catalog->name,
-        'attributes' => array('class' => array('category')),
-      ));
-    }
-    else {
-      $output .= theme('image', array(
-        'path' => $catalog->image['filepath'],
-        'alt' => $catalog->name,
-        'title' => $catalog->name,
-        'attributes' => array('class' => array('category')),
-      ));
-    }
+  if (!empty($catalog->uc_catalog_image)) {
+    $output .= drupal_render(field_view_field('taxonomy_term', $catalog, 'uc_catalog_image', 'image_link_content__uc_thumbnail'));
   }
 
   $query = db_select('node', 'n')->extend('PagerDefault')->extend('TableSort')->addTag('node_access');

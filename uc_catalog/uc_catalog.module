@@ -155,31 +155,31 @@ function uc_catalog_enable() {
   foreach (uc_product_types() as $type) {
     uc_catalog_add_node_type($type);
   }
+
+  uc_catalog_add_image_field();
 }
 
 /**
- * Implementation of hook_imagecache_default_presets().
+ * Implements hook_image_default_styles().
  */
-function uc_catalog_imagecache_default_presets() {
-  $presets = array();
+function uc_catalog_image_default_styles() {
+  $styles = array();
 
-  $presets['uc_category'] = array(
-    'presetname' => 'uc_category',
-    'actions' => array(
+  $styles['uc_category'] = array(
+    'effects' => array(
       array(
-        'weight' => '0',
-        'module' => 'uc_category',
-        'action' => 'imagecache_scale',
+        'name' => 'image_scale',
         'data' => array(
           'width' => '100',
           'height' => '100',
           'upscale' => 0,
         ),
+        'weight' => '0',
       ),
     ),
   );
 
-  return $presets;
+  return $styles;
 }
 
 /**
@@ -281,31 +281,6 @@ function uc_catalog_taxonomy_term_insert($term) {
       $count = _uc_catalog_pathauto_alias($term, 'insert');
     }
   }
-
-  $field_name = 'image';
-  if ($file = file_save_upload($field_name)) {
-    $file->filepath = str_replace('\\', '/', $file->filepath);
-    $image_path = file_create_path();
-    if (file_copy($file, $image_path .'/'. $file->filename)) {
-      file_set_status($file, 1);
-      if (image_get_info($file->filepath)) {
-        db_insert('uc_catalog_images')
-          ->fields(array(
-            'fid' => $file->fid,
-            'tid' => $object['tid'],
-            'filename' => $file->filename,
-            'filepath' => $file->filepath,
-            'filemime' => $file->filemime,
-            'filesize' => $file->filesize,
-          ))
-          ->execute();
-      }
-      else {
-        form_set_error($field_name, t('Uploaded file is not a valid image'));
-        file_delete($file->filepath);
-      }
-    }
-  }
 }
 
 /**
@@ -317,88 +292,13 @@ function uc_catalog_taxonomy_term_update($term) {
       $count = _uc_catalog_pathauto_alias($term, 'update');
     }
   }
-
-  $field_name = 'image';
-  if ($object['remove']) {
-    db_delete('uc_catalog_images')
-      ->condition('tid', $object['tid'])
-      ->execute();
-  }
-  elseif ($file = file_save_upload($field_name)) {
-    $file->filepath = str_replace('\\', '/', $file->filepath);
-    //dpm($file);
-    if (file_copy($file, file_create_path() .'/'. $file->filename)) {
-      file_set_status($file, 1);
-      //dpm($file);
-      if (image_get_info($file->filepath)) {
-        db_merge('uc_catalog_images')
-          ->key(array('tid' => $object['tid']))
-          ->fields(array(
-            'fid' => $file->fid,
-            'filename' => $file->filename,
-            'filepath' => $file->filepath,
-            'filemime' => $file->filemime,
-            'filesize' => $file->filesize,
-          ))
-          ->execute();
-      }
-      else {
-        form_set_error($field_name, t('Uploaded file is not a valid image'));
-        file_delete($file->filepath);
-      }
-    }
-  }
 }
 
 /**
  * Implement hook_taxonomy_term_delete().
  */
 function uc_catalog_taxonomy_term_delete($term) {
-  if ($file = db_query("SELECT fid, filepath FROM {uc_catalog_images} WHERE tid = :tid", array(':tid' => $term->tid))->fetchObject()) {
-    file_delete($file->filepath);
-    db_delete('uc_catalog_images')
-      ->condition('fid', $file->fid)
-      ->execute();
-  }
-
   path_set_alias(uc_catalog_path($term));
-}
-
-/**
- * Implementation of hook_form_alter().
- *
- * Add an image field to the catalog's taxonomy term form.
- */
-function uc_catalog_form_alter(&$form, $form_state, $form_id) {
-  if ($form_id == 'taxonomy_form_term' && $form['vid']['#value'] == variable_get('uc_catalog_vid', 0)) {
-    $form['#attributes'] = array("enctype" => "multipart/form-data");
-
-    $form['identification']['name']['#weight'] = -1;
-    $form['identification']['image']['#weight'] = 0;
-    $form['identification']['image']['image'] = array('#type' => 'file',
-      '#title' => t('Image'),
-      '#weight' => 0,
-    );
-    $image = uc_catalog_image_load($form['tid']['#value']);
-    $imagecache = module_exists('imagecache');
-    if ($image) {
-      if ($imagecache) {
-        $image_display = theme('image_style', array('style_name' => 'uc_category', 'path' => $image->filepath));
-      }
-      else {
-        $image_display = theme('image', array('path' => $image->filepath, 'alt' => t('Term image')));
-      }
-      $form['identification']['image']['remove'] = array('#type' => 'checkbox',
-        '#title' => t('Remove category image: !image', array('!image' => $image_display)),
-        '#weight' => 1,
-      );
-    }
-    if (!$imagecache) {
-      $form['identification']['image']['image']['#description'] = t('The image will not be resized. Consider installing <a href="@url">Image cache</a>.', array('@url' => url('http://drupal.org/project/imagecache')));
-    }
-
-    $form['identification']['description']['#description'] = t('A description of the term. Displayed to customers at the top of catalog pages.');
-  }
 }
 
 /**
@@ -671,30 +571,19 @@ function uc_catalog_get_page($tid) {
   $vid = variable_get('uc_catalog_vid', 0);
 
   if ($tid) {
-    $term = taxonomy_term_load($tid);
-    $name = $term->name;
-    $description = $term->description;
+    $catalog = taxonomy_term_load($tid);
   }
   else {
-    $tid = 0;
-    $name = variable_get('uc_catalog_name', t('Catalog'));
-    $description = variable_get('uc_catalog_description', '');
+    $catalog->tid = 0;
+    $catalog->name = variable_get('uc_catalog_name', t('Catalog'));
+    $catalog->description = variable_get('uc_catalog_description', '');
   }
-  $catalog->tid = $tid;
-  $catalog->vid = $vid;
-  $catalog->name = $name;
-  $catalog->description = $description;
   $catalog->children = array();
-  if ($file = uc_catalog_image_load($catalog->tid)) {
-    $info = image_get_info($file->filepath);
-    $catalog->image = $info;
-    $catalog->image['filepath'] = $file->filepath;
-  }
+
   $field = field_info_field('taxonomy_catalog');
   $types = uc_product_types();
-  $links = array();
-  $child_list = array();
   $children = taxonomy_get_children($tid, $vid);
+
   foreach ($children as $child) {
     $conditions = array(
       array('tid', $child->tid),
@@ -702,19 +591,19 @@ function uc_catalog_get_page($tid) {
       array('bundle', $types),
     );
     $child->nodes = field_attach_query($field['id'], $conditions, array('count' => TRUE));
-    // Display child category's image.
-    if ($file = uc_catalog_image_load($child->tid)) {
-      $info = image_get_info($file->filepath);
-      $child->image = $info;
-      $child->image['filepath'] = $file->filepath;
-    }
+
+    // Set bundle for field_attach_load() later.
+    $child->bundle = 'taxonomy_catalog';
+
     // Display list of child category's children categories.
     // If more than $max_gc_display, show "More..." link to child.
     $grandchildren_list = taxonomy_get_children($child->tid, $vid);
     $child->children = $grandchildren_list;
     $catalog->children[] = $child;
   }
-  //$node_resource =    (array($tid));
+
+  field_attach_load('taxonomy_term', $catalog->children, FIELD_LOAD_CURRENT, array('field_id' => 'uc_catalog_image'));
+
   return $catalog;
 }
 
@@ -769,14 +658,8 @@ function theme_uc_catalog_product_grid($variables) {
     }
 
     $titlelink = l($product->title, "node/$nid", array('html' => TRUE));
-    if (module_exists('imagecache') && ($field = variable_get('uc_image_'. $product->type, '')) && isset($product->$field) && file_exists($product->{$field}[0]['filepath'])) {
-      $imagelink = l(theme('image_style', array(
-          'style_name' => 'product_list',
-          'path' => $product->{$field}[0]['filepath'],
-          'alt' => $product->title,
-          'title' => $product->title,
-        )),
-        "node/$nid", array('html' => TRUE));
+    if (($field = variable_get('uc_image_'. $product->type, '')) && isset($product->$field)) {
+      $imagelink = field_view_field('node', $product, $field, 'image_link_content__uc_product_list');
     }
     else {
       $imagelink = '';
@@ -1085,3 +968,44 @@ function uc_catalog_add_node_type($type) {
 
   field_create_instance($instance);
 }
+
+/**
+ * Set up a default image field on the Catalog vocabulary.
+ */
+function uc_catalog_add_image_field() {
+  $field = field_info_field('uc_catalog_image');
+
+  if (!$field) {
+    $field = array(
+      'field_name' => 'uc_catalog_image',
+      'type' => 'image',
+      'locked' => TRUE,
+    );
+
+    field_create_field($field);
+
+    // Initialize this because field_info_field() would have set it.
+    $field['bundles'] = array();
+  }
+
+  $label = t('Image');
+  $instance = array(
+    'field_name' => 'uc_catalog_image',
+    'object_type' => 'taxonomy_term',
+    'bundle' => 'taxonomy_catalog',
+    'label' => $label,
+    'widget_type' => 'image_image',
+    'display' => array(
+      'full' => array(
+        'label' => 'hidden',
+        'type' => 'image_link_content__uc_category'
+      ),
+    ),
+  );
+
+  // Only add the instance if it doesn't exist. Don't overwrite any changes.
+  if (!in_array('taxonomy_catalog', $field['bundles'])) {
+    field_create_instance($instance);
+  }
+}
+

@@ -74,10 +74,29 @@ function uc_catalog_install() {
     $vocabulary->description = '';
     $vocabulary->hierarchy = 1;
     $vocabulary->module = 'uc_catalog';
+    $vocabulary->machine_name = 'catalog';
 
     taxonomy_vocabulary_save($vocabulary);
     $vid = $vocabulary->vid;
+
+    $field = array(
+      'field_name' => 'taxonomy_catalog',
+      'type' => 'taxonomy_term_reference',
+      // Set cardinality to unlimited for tagging.
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'settings' => array(
+        'allowed_values' => array(
+          array(
+            'vid' => $vocabulary->vid,
+            'parent' => 0,
+          ),
+        ),
+      ),
+    );
+    field_create_field($field);
   }
+
+  uc_catalog_add_image_field();
 
   variable_set('uc_catalog_vid', $vid);
   variable_set('uc_catalog_name', $t('Catalog'));
@@ -94,5 +113,86 @@ function uc_catalog_uninstall() {
   db_delete('variable')
     ->condition('name', 'uc_catalog_%', 'LIKE')
     ->execute();
+}
+
+/**
+ * Implements hook_update_dependencies().
+ */
+function uc_catalog_update_dependencies() {
+  $dependencies['uc_catalog'][7000] = array(
+    'taxonomy' => 7002,
+  );
+}
+
+/**
+ * Set up a default term image for the Catalog.
+ */
+function uc_catalog_update_7000() {
+  uc_catalog_add_image_field();
+}
+
+/**
+ * Migrate uploaded catalog images to the new {file} table.
+ */
+function uc_catalog_update_7001(&$sandbox) {
+  if (!db_table_exists('uc_catalog_images')) {
+    return;
+  }
+
+  if (!isset($sandbox['progress'])) {
+    $sandbox['progress'] = 0;
+    $sandbox['current_fid'] = 0;
+    $sandbox['max'] = db_query("SELECT COUNT(DISTINCT fid) FROM {uc_catalog_images}")->fetchField();
+  }
+
+  $limit = 500;
+
+  // The old {files} tables still exists.  We migrate core data from upload
+  // module, but any contrib module using it will need to do its own update.
+  $result = db_query_range('SELECT tid, f.fid, uid, filename, filepath AS uri, filemime, filesize, status, timestamp FROM {files} f INNER JOIN {uc_catalog_images} u ON u.fid = f.fid WHERE f.fid > :current ORDER BY f.fid', 0, $limit, array(':current' => $sandbox['current_fid']), array('fetch' => PDO::FETCH_ASSOC));
+
+  // We will convert filepaths to uri using the default schmeme
+  // and stripping off the existing file directory path.
+  $basename = variable_get('file_directory_path', conf_path() . '/files');
+  $scheme = variable_get('file_default_scheme', 'public') . '://';
+  $fids = array();
+
+  foreach ($result as $file) {
+    // Get term id for the image.
+    $tid = $file['tid'];
+    // Don't break the insert query with extra data.
+    unset($file['tid']);
+
+    $file['uri'] = $scheme . str_replace($basename, '', $file['uri']);
+    $file['uri'] = file_stream_wrapper_uri_normalize($file['uri']);
+    db_insert('file')->fields($file)->execute();
+    $fids[] = $file['fid'];
+
+    $term = (object) array(
+      'tid' => $tid,
+      'uc_catalog_image' => array(
+        LANGUAGE_NONE => array(
+          0 => array(
+            'fid' => $file['fid'],
+            'uid' => $file['uid'],
+          ),
+        ),
+      ),
+    );
+
+    field_attach_update($term);
+
+    $sandbox['progress']++;
+    $sandbox['current_fid'] = $file['fid'];
+    $sandbox['message'] = check_plain($file['filename']);
+  }
+  // TODO: delete the found fids from {files}?
+
+  if ($sandbox['progress'] < $sandbox['max']) {
+    $sandbox['#finished'] = min(0.99, $sandbox['progress'] / $sandbox['max']);
+  }
+  else {
+    $sandbox['#finished'] = 1;
+  }
 }
 

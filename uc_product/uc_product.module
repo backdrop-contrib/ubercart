@@ -261,14 +261,12 @@ function uc_product_init() {
 }
 
 /**
- * Implementation of hook_enable().
+ * Implements hook_enable().
  *
- * Set up default imagefield and imagecache settings.
+ * Set up a default image field for products.
  */
 function uc_product_enable() {
-  if (module_exists('imagefield')) {
-    uc_product_add_default_image_field();
-  }
+  uc_product_add_default_image_field();
 }
 
 /**
@@ -315,6 +313,37 @@ function uc_product_theme() {
       'file' => 'uc_product.admin.inc',
     ),
   );
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function uc_product_field_formatter_info() {
+  return array(
+    'uc_product_image' => array(
+      'label' => t('Ubercart product'),
+      'description' => t('The first image is displayed with the "uc_product" image style, and subsequent images are displayed below it with the "uc_thumbnail" image style.'),
+      'field types' => array('image'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function uc_product_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  switch ($display['type']) {
+    case 'uc_product_image':
+      $element[0] = array(
+        '#theme' => 'uc_product_image',
+        '#images' => $items,
+      );
+      break;
+  }
+
+  return $element;
 }
 
 /**
@@ -656,7 +685,7 @@ function uc_product_update($node) {
     drupal_write_record('uc_products', $node);
   }
   else {
-    //drupal_set_message('<pre>'. print_r($node, TRUE) .'</pre>');drupal_set_message('<pre>'. print_r($node, TRUE) .'</pre>');
+    //drupal_set_message('<pre>'. print_r($node, TRUE) .'</pre>');
     drupal_write_record('uc_products', $node, 'vid');
   }
 }
@@ -682,7 +711,6 @@ function uc_product_delete(&$node) {
  */
 function uc_product_field_enabled() {
   $enabled = variable_get('uc_product_field_enabled', array(
-    'image' => 1,
     'display_price' => 1,
     'model' => 1,
     'list_price' => 0,
@@ -703,7 +731,6 @@ function uc_product_view($node, $teaser = 0, $page = 0) {
 
   $enabled = uc_product_field_enabled();
   $weight = variable_get('uc_product_field_weight', array(
-    'image' => -2,
     'display_price' => -1,
     'model' => 0,
     'list_price' => 2,
@@ -724,17 +751,6 @@ function uc_product_view($node, $teaser = 0, $page = 0) {
       'node' => $node,
     ),
   );
-
-  if (module_exists('imagecache') && ($field = variable_get('uc_image_'. $node->type, '')) && isset($node->$field) && file_exists($node->{$field}[0]['filepath'])) {
-    $node->content['image'] = array(
-      '#theme' => 'uc_product_image',
-      '#images' => $node->$field,
-      '#teaser' => $teaser,
-      '#page' => $page,
-      '#access' => $enabled['image'],
-      '#weight' => $weight['image'],
-    );
-  }
 
   $context['class'][1] = 'display';
   $context['field'] = 'sell_price';
@@ -977,26 +993,23 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
   );
 
   // image field
-  if (module_exists('content')) {
-    $fields = content_types($type->type);
-    $fields = (array)$fields['fields'];
+  $instances = field_info_instances('node', $type->type);
 
-    $options = array('' => t('None'));
-    foreach ($fields as $field_name => $field) {
-      if (strpos($field['widget']['type'], 'image') !== FALSE) {
-        $options[$field_name] = $field['widget']['label'];
-      }
+  $options = array('' => t('None'));
+  foreach ($instances as $field_name => $instance) {
+    if (strpos($instance['widget']['type'], 'image') !== FALSE) {
+      $options[$field_name] = $instance['widget']['label'];
     }
-
-    $form['uc_product']['uc_image'] = array(
-      '#type' => 'select',
-      '#title' => t('Product image field'),
-      '#default_value' => variable_get('uc_image_'. $type->type, NULL),
-      '#options' => $options,
-      '#description' => t('The selected field will be used on Ubercart pages to represent the products of this content type.'),
-      '#weight' => -4,
-    );
   }
+
+  $form['uc_product']['uc_image'] = array(
+    '#type' => 'select',
+    '#title' => t('Product image field'),
+    '#default_value' => variable_get('uc_image_'. $type->type, NULL),
+    '#options' => $options,
+    '#description' => t('The selected field will be used on Ubercart pages to represent the products of this content type.'),
+    '#weight' => -4,
+  );
 }
 
 /******************************************************************************
@@ -1046,18 +1059,14 @@ function uc_product_content_extra_fields_alter(&$extra, $type_name) {
 }
 
 /**
- * Implement hook_content_fieldapi().
+ * Implement hook_field_delete_instance().
  *
  * Reset a content type's default image field setting when that field instance
  * is removed.
  */
-function uc_product_content_fieldapi($op, $field) {
-  switch ($op) {
-    case 'delete instance':
-      if ($field->field_name == variable_get('uc_image_'. $field->type_name, NULL)) {
-        variable_set('uc_image_'. $field->type_name, NULL);
-      }
-      break;
+function uc_product_field_delete_instance($instance) {
+  if ($instance['object_type'] == 'node' && $instance['field_name'] == variable_get('uc_image_'. $instance['bundle'], NULL)) {
+    variable_del('uc_image_'. $instance['bundle']);
   }
 }
 
@@ -1130,68 +1139,27 @@ function uc_product_product_types() {
  * @see uc_product_image_defaults()
  */
 function uc_product_store_status() {
-  if (!module_exists('imagefield') || !module_exists('imagecache')) {
-    $status = 'warning';
-    $description = t('To automatically configure core image support, <a href="!url">enable</a> the <a href="http://drupal.org/project/cck">Content</a>, <a href="http://drupal.org/project/imagefield">CCK Image field</a>, and <a href="http://drupal.org/project/imagecache">Imagecache</a> modules.', array('!url' => url('admin/build/modules')));
+  module_load_include('inc', 'content', 'includes/content.crud');
+  // Check for filefields on products.
+  if ($field = variable_get('uc_image_product', '')) {
+    $instances = field_info_instances('node', 'product');
+    $field_check = (bool) count($instances[$field]);
   }
   else {
-    module_load_include('inc', 'content', 'includes/content.crud');
-    // Check for filefields on products.
-    if ($field = variable_get('uc_image_product', '')) {
-      $instances = content_field_instance_read(array('field_name' => $field, 'type_name' => 'product'));
-      $field_check = (bool) count($instances);
-    }
-    else {
-      $field_check = FALSE;
-    }
+    $field_check = FALSE;
+  }
 
-    $presets = array('product', 'product_full', 'product_list', 'uc_thumbnail');
-    if (module_exists('uc_catalog')) {
-      $presets[] = 'uc_category';
-    }
-    if (module_exists('uc_cart')) {
-      $presets[] = 'cart';
-    }
-    if (module_exists('uc_manufacturer')) {
-      $presets[] = 'manufacturer';
-    }
-    sort($presets);
+  if ($field_check) {
+    $status = 'ok';
+    $description = t('Product image support has been automatically configured by Ubercart.');
+  }
+  else {
+    $status = 'warning';
+    $description = t('<a href="!url">Click here</a> to automatically configure the following items for core image support:', array('!url' => url('admin/store/settings/products/defaults')));
 
-    $preset_check = 1;
-    $action_check = 1;
-    foreach ($presets as $preset_name) {
-      $preset = imagecache_preset_by_name($preset_name);
-      if (empty($preset)) {
-        $preset_check = 0;
-        $action_check = 0;
-        break;
-      }
-      else {
-        if (empty($preset['actions']) && $preset_name != 'product_full') {
-          $action_check = 0;
-          break;
-        }
-      }
-    }
+    $items[] = t('The Image file field has not been created for products.');
 
-    if ($field_check && $preset_check && $action_check) {
-      $status = 'ok';
-      $description = t('Product image support has been automatically configured by Ubercart.');
-    }
-    else {
-      $status = 'warning';
-      $description = t('<a href="!url">Click here</a> to automatically configure the following items for core image support:', array('!url' => url('admin/store/settings/products/defaults')));
-      if (!$field_check) {
-        $items[] = t('The Image file field has not been created for products.');
-      }
-      if (!$preset_check) {
-        $items[] = t('Some or all of the expected Imagecache presets ("!presets") have not been created. Ubercart will not display images in certain places.', array('!presets' => implode('", "', $presets)));
-      }
-      if (!$action_check) {
-        $items[] = t('Some Imagecache presets do not contain actions to perform on images. Images may be displayed in their original formats.');
-      }
-      $description .= theme('item_list', array('items' => $items)) . t('(This action is not required and should not be taken if you do not need images or have implemented your own image support.)');
-    }
+    $description .= theme('item_list', array('items' => $items)) . t('(This action is not required and should not be taken if you do not need images or have implemented your own image support.)');
   }
 
   return array(array('status' => $status, 'title' => t('Images'), 'desc' => $description));
@@ -1379,23 +1347,19 @@ function uc_product_table($args = array()) {
     $node = node_load($nid);
     if ($enabled['image']) {
       if (module_exists('imagecache')) {
-        if (($field = variable_get('uc_image_'. $node->type, '')) && isset($node->$field) && file_exists($node->{$field}[0]['filepath'])) {
+        if (($field = variable_get('uc_image_'. $node->type, '')) && isset($node->$field)) {
           $image = $node->{$field}[0];
-          $data['image'] = array('#value' => l(theme('image_style', array(
-              'style_name' => 'product_list',
-              'path' => $image['filepath'],
-              'alt' => $image['alt'],
-              'title' => $image['title'],
-            )),
-            'node/'. $node->nid, array('html' => TRUE)));
+          $data['image'] = uc_product_get_picture($nid, 'uc_product_list');
         }
         else {
-          $data['image'] = array('#value' => t('n/a'));
+          $data['image'] = array('#markup' => t('n/a'));
         }
       }
     }
     $data['name'] = array(
-      '#value' => l($node->title, 'node/'. $node->nid),
+      '#theme' => 'link',
+      '#text' => $node->title,
+      '#href' => 'node/' . $node->nid,
       '#cell_attributes' => array('width' => '100%'),
     );
 
@@ -1403,24 +1367,25 @@ function uc_product_table($args = array()) {
     if ($enabled['list_price']) {
       $context['class'][1] = 'list';
       $context['field'] = 'list_price';
-      $data['list_price'] = array('#value' => uc_price($node->list_price, $context, $options), '#cell_attributes' => array('nowrap' => 'nowrap'));
+      $data['list_price'] = array('#markup' => uc_price($node->list_price, $context, $options), '#cell_attributes' => array('nowrap' => 'nowrap'));
     }
     if ($enabled['sell_price']) {
       $context['class'][1] = 'sell';
       $context['field'] = 'sell_price';
-      $data['price'] = array('#value' => uc_price($node->sell_price, $context, $options), '#cell_attributes' => array('nowrap' => 'nowrap'));
+      $data['price'] = array('#markup' => uc_price($node->sell_price, $context, $options), '#cell_attributes' => array('nowrap' => 'nowrap'));
     }
 
     if (module_exists('uc_cart') && arg(0) != 'admin' && $enabled['add_to_cart']) {
-      $data['add_to_cart'] = array('#value' => drupal_get_form('uc_catalog_buy_it_now_form_'. $node->nid, $node));
+      $data['add_to_cart'] = drupal_get_form('uc_catalog_buy_it_now_form_'. $node->nid, $node);
     }
+
     $table[] = $data;
   }
 
   if (!count(element_children($table))) {
     $table[] = array(
       'name' => array(
-        '#value' => t('No products available.'),
+        '#markup' => t('No products available.'),
         '#cell_attributes' => array(
           'colspan' => 'full',
         ),
@@ -1839,44 +1804,13 @@ function uc_product_get_cost($node_id) {
  *   and Lightbox2 are possible). For other values of $format, the image links
  *   to the node page.
  */
-function uc_product_get_picture($node_id, $format = 'product') {
-  $output = '';
-  $product = node_load($node_id);
+function uc_product_get_picture($nid, $style = 'uc_product') {
+  $product = node_load($nid);
 
-  if (!module_exists('imagecache') || !($field = variable_get('uc_image_'. $product->type, ''))) {
-    return '';
-  }
-
-  // Get the current product image widget.
-  $image_widget = uc_product_get_image_widget();
-  $image_widget_func = $image_widget['callback'];
-
-  if (isset($product->$field)) {
-    $image = $product->{$field}[0];
-    $path = $image['filepath'];
-    if (file_exists($path)) {
-      $img = theme('image_style', array(
-        'style_name' => $format,
-        'path' => $path,
-        'alt' => $image['alt'],
-        'title' => $image['title'],
-      ));
-      if ($format == 'product') {
-        if ($image_widget) {
-          $output .= '<a title="'. $image['title'] .'" href="'. imagecache_create_url('product_full', $path) .'" '. $image_widget_func(NULL) .'>';
-        }
-        $output .= $img;
-        if ($image_widget) {
-          $output .= '</a>';
-        }
-      }
-      else {
-        $output = l($img, 'node/'. $product->nid, array('html' => TRUE));
-      }
-    }
-  }
-
-  return $output;
+  return field_view_field('node', $product, 'uc_product_image', array(
+    'label' => 'hidden',
+    'type' => "image_link_content__$style",
+  ), $product->language);
 }
 
 /**
@@ -2066,61 +2000,39 @@ function uc_product_feature_save($data) {
  *   types get an instance of the field.
  */
 function uc_product_add_default_image_field($type = NULL) {
-  module_load_include('inc', 'imagefield', 'imagefield_widget');
-  module_load_include('inc', 'filefield', 'filefield_widget');
-  module_load_include('inc', 'content', 'includes/content.crud');
+  $field = field_info_field('uc_product_image');
+
+  // Set up field if it doesn't exist.
+  if (!$field) {
+    $field = array(
+      'field_name' => 'uc_product_image',
+      'type' => 'image',
+      'cardinality' => 0,
+    );
+
+    field_create_field($field);
+
+    // Initialize this because field_info_field() would have set it.
+    $field['bundles'] = array();
+  }
 
   $label = t('Image');
-  $field = array(
+  $instance = array(
+    'object_type' => 'node',
     'label' => $label,
-    'type' => 'filefield',
-    'widget_type' => 'imagefield_widget',
     'weight' => -2,
-    'file_extensions' => 'gif jpg png',
-    'custom_alt' => 1,
-    'custom_title' => 1,
-    'description' => '',
-    'required' => 0,
-    'multiple' => '1',
-    'list_field' => '0',
-    'list_default' => 1,
-    'description_field' => '0',
-    'module' => 'filefield',
-    'widget_module' => 'imagefield',
-    'columns' => array(
-      'fid' => array(
-        'type' => 'int',
-        'not null' => FALSE,
-      ),
-      'list' => array(
-        'type' => 'int',
-        'size' => 'tiny',
-        'not null' => FALSE,
-      ),
-      'data' => array(
-        'type' => 'text',
-        'serialize' => TRUE,
-      ),
-    ),
-    'display_settings' => array(
-      'label' => array(
-        'format' => 'hidden',
+    'widget_type' => 'image_image',
+    'display' => array(
+      'full' => array(
+        'label' => 'hidden',
+        'type' => 'uc_product_image',
       ),
       'teaser' => array(
-        'format' => 'hidden',
-      ),
-      'full' => array(
-        'format' => 'hidden',
-      ),
-      4 => array(
-        'format' => 'hidden',
+        'label' => 'hidden',
+        'type' => 'uc_product_image',
       ),
     ),
   );
-  if (module_exists('imagefield_tokens')) {
-    $field['alt'] = '[title]';
-    $field['title'] = '[title]';
-  }
 
   if ($type) {
     // Accept single or multiple types as input.
@@ -2130,84 +2042,75 @@ function uc_product_add_default_image_field($type = NULL) {
     $types = uc_product_types();
   }
   foreach ($types as $type) {
-    $field['type_name'] = $type;
+    $instance['bundle'] = $type;
 
     $field_name = variable_get('uc_image_'. $type, '');
     if (empty($field_name)) {
-      $field_name = 'field_image_cache';
+      $field_name = 'uc_product_image';
     }
-    $field['field_name'] = $field_name;
+    $instance['field_name'] = $field_name;
 
-    $instances = content_field_instance_read(array('field_name' => $field_name, 'type_name' => $type));
-
-    if (count($instances) < 1) {
-      // Only add the field if it doesn't exist. Don't overwrite any changes.
-      content_field_instance_create($field);
+    // Only add the instance if it doesn't exist. Don't overwrite any changes.
+    if (!in_array($type, $field['bundles'])) {
+      field_create_instance($instance);
       variable_set('uc_image_'. $type, $field_name);
     }
   }
 }
 
 /**
- * Implementation of hook_imagecache_default_presets().
+ * Implements hook_image_default_styles().
  */
-function uc_product_imagecache_default_presets() {
-  $presets = array();
+function uc_product_image_default_styles() {
+  $styles = array();
 
-  $presets['product'] = array(
-    'presetname' => 'product',
-    'actions' => array(
+  $styles['uc_product'] = array(
+    'effects' => array(
       array(
-        'weight' => '0',
-        'module' => 'uc_product',
-        'action' => 'imagecache_scale',
+        'name' => 'image_scale',
         'data' => array(
           'width' => '100',
           'height' => '100',
           'upscale' => 0,
         ),
+        'weight' => '0',
       ),
     ),
   );
 
-  $presets['product_full'] = array(
-    'presetname' => 'product_full',
-    'actions' => array(),
+  $styles['uc_product_full'] = array(
+    'effects' => array(),
   );
 
-  $presets['product_list'] = array(
-    'presetname' => 'product_list',
-    'actions' => array(
+  $styles['uc_product_list'] = array(
+    'effects' => array(
       array(
-        'weight' => '0',
-        'module' => 'uc_product',
-        'action' => 'imagecache_scale',
+        'name' => 'image_scale',
         'data' => array(
           'width' => '100',
           'height' => '100',
           'upscale' => 0,
         ),
+        'weight' => '0',
       ),
     ),
   );
 
-  $presets['uc_thumbnail'] = array(
-    'presetname' => 'uc_thumbnail',
-    'actions' => array(
+  $styles['uc_thumbnail'] = array(
+    'effects' => array(
       array(
-        'weight' => '0',
-        'module' => 'uc_product',
-        'action' => 'imagecache_scale',
+        'name' => 'image_scale',
         'data' => array(
           'width' => '35',
           'height' => '35',
           'upscale' => 0,
         ),
+        'weight' => '0',
       ),
     ),
   );
 
-  return $presets;
+  return $styles;
 }
 
 /**

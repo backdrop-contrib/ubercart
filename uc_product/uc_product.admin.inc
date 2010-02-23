@@ -188,7 +188,6 @@ function uc_product_settings_form() {
 function uc_product_field_settings_form($form, &$form_state) {
   $options = array(
     'model' => t('SKU'),
-    'image' => t('Image'),
     'display_price' => t('Display price'),
     'list_price' => t('List price'),
     'cost' => t("Cost (seen only by 'administer products' permission)"),
@@ -200,14 +199,12 @@ function uc_product_field_settings_form($form, &$form_state) {
 
   $enabled = variable_get('uc_product_field_enabled', array(
     'model' => 'model',
-    'image' => 'image',
     'display_price' => 'display_price',
     'sell_price' => 'sell_price',
     'add_to_cart' => 'add_to_cart',
   ));
 
   $weight = variable_get('uc_product_field_weight', array(
-    'image' => -2,
     'display_price' -1,
     'model' => 0,
     'list_price' => 2,
@@ -562,7 +559,7 @@ function uc_product_feature_add_form_submit($form, &$form_state) {
 function uc_product_image_defaults() {
   uc_product_add_default_image_field();
 
-  drupal_set_message(t('Default image support configured for Ubercart products using CCK and ImageCache.'));
+  drupal_set_message(t('Default image support configured for Ubercart products.'));
 
   drupal_goto('admin/store');
 }
@@ -671,7 +668,7 @@ function uc_product_class_form_submit($form, &$form_state) {
   }
 
   node_types_rebuild();
-  if ($is_new && module_exists('imagefield')) {
+  if ($is_new) {
     uc_product_add_default_image_field($pcid);
   }
   menu_rebuild();

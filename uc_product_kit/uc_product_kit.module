@@ -97,10 +97,8 @@ function uc_product_kit_enable() {
     }
   }
 
-  // Add field_image_cache to product kits.
-  if (module_exists('imagefield')) {
-    uc_product_add_default_image_field('product_kit');
-  }
+  // Add a default image field to product kits.
+  uc_product_add_default_image_field('product_kit');
 }
 
 function uc_product_kit_form_alter(&$form, $form_state, $form_id) {
@@ -352,7 +350,6 @@ function uc_product_kit_update(&$node) {
       ))
       ->updateExcept('unique_hash')
       ->execute();
-    }
   }
 }
 
@@ -631,7 +628,6 @@ function uc_product_kit_view($node, $teaser = 0, $page = 0) {
   $node = node_prepare($node, $teaser);
 
   $enabled = variable_get('uc_product_field_enabled', array(
-    'image' => 1,
     'display_price' => 1,
     'model' => 1,
     'list_price' => 0,
@@ -642,7 +638,6 @@ function uc_product_kit_view($node, $teaser = 0, $page = 0) {
     'add_to_cart' => 1,
   ));
   $weight = variable_get('uc_product_field_weight', array(
-    'image' => -2,
     'display_price' => -1,
     'model' => 0,
     'list_price' => 2,
@@ -664,14 +659,6 @@ function uc_product_kit_view($node, $teaser = 0, $page = 0) {
     ),
   );
 
-  if (module_exists('imagecache') && ($field = variable_get('uc_image_product_kit', '')) && isset($node->$field) && file_exists($node->{$field}[0]['filepath'])) {
-    $node->content['image'] = array(
-      '#theme' => 'uc_product_image',
-      '#images' => $node->$field,
-      '#access' => $enabled['image'],
-      '#weight' => $weight['image'],
-    );
-  }
   $context['class'][1] = 'display';
   $context['field'] = 'sell_price';
   $node->content['display_price'] = array(

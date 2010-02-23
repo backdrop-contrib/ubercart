@@ -175,28 +175,26 @@ function uc_cart_menu() {
 }
 
 /**
- * Implementation of hook_imagecache_default_presets().
+ * Implements hook_image_default_styles().
  */
-function uc_cart_imagecache_default_presets() {
-  $presets = array();
+function uc_cart_image_default_styles() {
+  $styles = array();
 
-  $presets['cart'] = array(
-    'presetname' => 'cart',
-    'actions' => array(
+  $styles['uc_cart'] = array(
+    'effects' => array(
       array(
-        'weight' => '0',
-        'module' => 'uc_cart',
-        'action' => 'imagecache_scale',
+        'name' => 'image_scale',
         'data' => array(
           'width' => '50',
           'height' => '50',
           'upscale' => 0,
         ),
+        'weight' => '0',
       ),
     ),
   );
 
-  return $presets;
+  return $styles;
 }
 
 /**
@@ -977,7 +975,7 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
     $display_item = module_invoke($item->module, 'cart_display', $item);
     if (!empty($display_item)) {
       $form['items'][$i] = $display_item;
-      $form['items'][$i]['image']['#markup'] = uc_product_get_picture($display_item['nid']['#value'], 'cart');
+      $form['items'][$i]['image'] = uc_product_get_picture($display_item['nid']['#value'], 'uc_cart');
 
       $description = $display_item['title']['#markup'] . $display_item['description']['#markup'];
       $form['items'][$i]['desc']['#markup'] = $description;
