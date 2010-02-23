@@ -160,24 +160,35 @@ function uc_google_checkout_nodeapi(&$node, $op) {
       case 'update':
         if (isset($node->gc_salable)) {
           if (!$node->revision) {
-            db_query("DELETE FROM {uc_gc_products} WHERE vid = %d", $node->vid);
+            db_delete('uc_gc_products')
+              ->conditino('vid', $node->vid)
+              ->execute();
           }
-          db_query("INSERT INTO {uc_gc_products} (vid, nid, gc_salable) VALUES (%d, %d, %d)",
-            $node->vid, $node->nid, $node->gc_salable);
+          db_insert('uc_gc_products')
+            ->fields(array(
+              'vid' => $node->vid,
+              'nid' => $node->nid,
+              'gc_salable' => $node->gc_salable,
+            ))
+            ->exeucte();
         }
       break;
       case 'load':
-        $salable = db_result(db_query("SELECT gc_salable FROM {uc_gc_products} WHERE vid = %d", $node->vid));
+        $salable = db_query("SELECT gc_salable FROM {uc_gc_products} WHERE vid = :vid", array(':vid' => $node->vid))->fetchField();
         if ($salable === FALSE) {
           $salable = TRUE;
         }
         return array('gc_salable' => $salable);
       break;
       case 'delete':
-        db_query("DELETE FROM {uc_gc_products} WHERE nid = %d", $node->nid);
+        db_delete('uc_gc_products')
+          ->condition('nid', $node->nid)
+          ->execute();
       break;
       case 'delete revision':
-        db_query("DELETE FROM {uc_gc_products} WHERE vid = %d", $node->vid);
+        db_delete('uc_gc_products')
+          ->condition('vid', $node->vid)
+          ->execute();
       break;
     }
   }
@@ -234,8 +245,8 @@ function uc_google_checkout_line_item() {
 function uc_google_checkout_order($op, &$arg1, $arg2) {
   switch ($op) {
     case 'load':
-      $result = db_query("SELECT * FROM {uc_gc_orders} WHERE order_id = %d", $arg1->order_id);
-      if ($gc = db_fetch_object($result)) {
+      $result = db_query("SELECT * FROM {uc_gc_orders} WHERE order_id = :id", array(':id' => $arg1->order_id));
+      if ($gc = $result->fetchObject()) {
         $arg1->google_order_number = $gc->gc_order_number;
         $arg1->financial_state = $gc->financial_state;
         $arg1->fulfillment_state = $gc->fulfillment_state;
@@ -715,7 +726,7 @@ function uc_google_checkout_new_order($new_order) {
     $order->delivery_street1 = $shipping_address->address1;
     $order->delivery_street2 = $shipping_address->address2;
     $order->delivery_city = $shipping_address->city;
-    $zone_id = db_result(db_query("SELECT zone_id FROM {uc_zones} WHERE zone_code = '%s'", $shipping_address->region));
+    $zone_id = db_query("SELECT zone_id FROM {uc_zones} WHERE zone_code = :code", array(':code' => $shipping_address->region))->fetchField();
     $order->delivery_zone = $zone_id;
     $countries = uc_get_country_data(array('country_iso_code_2' => $shipping_address->{'country-code'}));
     $order->delivery_country = $countries[0]['country_id'];

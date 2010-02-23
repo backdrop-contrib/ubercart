@@ -128,12 +128,39 @@ function uc_google_checkout_schema() {
 
 function uc_google_checkout_install() {
   $t = get_t();
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('in_google_checkout', '". $t('In Google Checkout') ."', 'in_checkout', -7, 1);");
-  db_query("INSERT INTO {uc_order_statuses} (order_status_id, title, state, weight, locked) VALUES ('chargeable', '". $t('Chargeable') ."', 'post_checkout', 2, 1);");
+
+  db_insert('uc_order_statuses')
+    ->fields(array('order_status_id', 'title', 'state', 'weight', 'locked'))
+    ->values(array(
+      'order_status_id' => 'in_google_checkout',
+      'title' => $t('In Google Checkout'),
+      'state' => 'in_checkout',
+      'weight' => -7,
+      'locked' => 1,
+    ))
+    ->values(array(
+      'order_status_id' => 'chargeable',
+      'title' => $t('Chargeable'),
+      'state' => 'post_checkout',
+      'weight' => 2,
+      'locked' => 1,
+    ))
+    ->execute();
 }
 
 function uc_google_checkout_uninstall() {
-  db_query("UPDATE {uc_order_statuses} SET locked = 0 WHERE order_status_id = 'in_google_checkout' OR order_status_id = 'chargeable'");
-  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_google_checkout_%%'");
+  db_update('uc_order_statuses')
+    ->fields(array(
+      'locked' => 0,
+    ))
+    ->condition(db_or()
+      ->condition('order_status_id', 'in_google_checkout')
+      ->condition('order_status_id', 'chargeable')
+    )
+    ->execute();
+
+  db_delete('variable')
+    ->condition('name', 'uc_google_checkout_%', 'LIKE')
+    ->execute();
 }
 
