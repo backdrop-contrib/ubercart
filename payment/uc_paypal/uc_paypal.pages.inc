@@ -235,11 +235,11 @@ function uc_paypal_ec_review() {
     $_SESSION['have_details'][$order->order_id] = TRUE;
   }
 
-  $output = t("Your order is almost complete!  Please fill in the following details and click 'Continue checkout' to finalize the purchase.");
+  $build['instructions'] = array('#markup' => t("Your order is almost complete!  Please fill in the following details and click 'Continue checkout' to finalize the purchase."));
 
-  $output .= drupal_get_form('uc_paypal_ec_review_form', $order);
+  $build['form'] = drupal_get_form('uc_paypal_ec_review_form', $order);
 
-  return $output;
+  return $build;
 }
 
 // Returns the form for the custom Review Payment screen for Express Checkout.
@@ -384,12 +384,21 @@ function uc_paypal_ec_submit() {
   }
 
   drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
-  $output = '<div>'. theme('cart_review_table', array('show_subtotal' => FALSE)) .'</div>';
-  $output .= uc_order_pane_line_items('customer', $order);
-  $output .= '<p>'. t("Your order is not complete until you click the 'Submit order' button below. Your PayPal account will be charged for the amount shown above once your order is placed. You will receive confirmation once your payment is complete.") .'</p>';
-  $output .= drupal_get_form('uc_paypal_ec_submit_form');
 
-  return $output;
+  $build['review'] = array(
+    '#theme' => 'cart_review_table',
+    '#show_subtotal' => FALSE,
+    '#prefix' => '<div>',
+    '#suffix' => '</div>',
+  );
+
+  $build['line_items'] = array('#markup' => uc_order_pane_line_items('customer', $order));
+
+  $build['instructions'] = array('#markup' => '<p>'. t("Your order is not complete until you click the 'Submit order' button below. Your PayPal account will be charged for the amount shown above once your order is placed. You will receive confirmation once your payment is complete.") .'</p>');
+
+  $build['submit_form'] = drupal_get_form('uc_paypal_ec_submit_form');
+
+  return $build;
 }
 
 // Submits an order, calling the NVP API to send the order total to PayPal.

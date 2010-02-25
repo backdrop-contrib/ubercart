@@ -11,7 +11,10 @@
 // Displays an overview of the payment settings.
 function uc_payment_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
-  return theme('summary_overview', array('summaries' => summarize_child_form_pages('admin/store/settings/payment/edit')));
+  return array(
+    '#theme' => 'summary_overview',
+    '#summaries' => summarize_child_form_pages('admin/store/settings/payment/edit'),
+  );
 }
 
 function uc_payment_settings_form() {
@@ -241,13 +244,13 @@ function uc_payment_gateway_select() {
     $options[$gateway['id']] = $gateway['title'];
   }
 
-  $output = t('Please choose a payment gateway to use for that payment.');
+  $build['instructions'] = array('#markup' => t('Please choose a payment gateway to use for that payment.'));
 
-  $output .= drupal_get_form('uc_payment_gateway_select_form', $options,
+  $build['form'] = drupal_get_form('uc_payment_gateway_select_form', $options,
                $_SESSION['uc_payment_method'], $_SESSION['uc_payment_order_id'],
                $_SESSION['uc_payment_amount'], $_SESSION['uc_payment_data']);
 
-  return $output;
+  return $build;
 }
 
 function uc_payment_gateway_select_form($form, &$form_state, $options, $method, $order_id, $amount, $data) {

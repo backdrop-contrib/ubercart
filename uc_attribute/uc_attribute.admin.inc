@@ -18,7 +18,7 @@ function uc_attribute_admin() {
     array('data' => t('List position'), 'field' => 'a.ordering'),
     t('Number of options'),
     t('Display type'),
-    t('Operations'),
+    array('data' => t('Operations'), 'colspan' => 3),
   );
 
   $display_types = _uc_attribute_display_types();
@@ -48,11 +48,6 @@ function uc_attribute_admin() {
     if (empty($attr->label)) {
       $attr->label = $attr->name;
     }
-    $ops = array(
-      l(t('edit'), 'admin/store/attributes/'. $attr->aid .'/edit'),
-      l(t('options'), 'admin/store/attributes/'. $attr->aid .'/options'),
-      l(t('delete'), 'admin/store/attributes/'. $attr->aid .'/delete'),
-    );
     $rows[] = array(
       check_plain($attr->name),
       check_plain($attr->label),
@@ -60,20 +55,33 @@ function uc_attribute_admin() {
       array('data' => $attr->ordering, 'align' => 'center'),
       array('data' => $attr->options, 'align' => 'center'),
       $display_types[$attr->display],
-      implode(' ', $ops),
+      l(t('edit'), 'admin/store/attributes/'. $attr->aid .'/edit'),
+      l(t('options'), 'admin/store/attributes/'. $attr->aid .'/options'),
+      l(t('delete'), 'admin/store/attributes/'. $attr->aid .'/delete'),
     );
   }
 
   if (count($rows) == 0) {
     $rows[] = array(
-      array('data' => t('No product attributes have been added yet.'), 'colspan' => '6')
+      array('data' => t('No product attributes have been added yet.'), 'colspan' => '9')
     );
   }
 
-  $output = theme('table', array('header' => $header, 'rows' => $rows)) . theme('pager')
-          . l(t('Add an attribute'), 'admin/store/attributes/add');
+  $build['attributes'] = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows,
+  );
+  $build['pager'] = array(
+    '#theme' => 'pager',
+  );
+  $build['add_more'] = array(
+    '#theme' => 'link',
+    '#text' => t('Add an attribute'),
+    '#href' => 'admin/store/attributes/add',
+  );
 
-  return $output;
+  return $build;
 }
 
 /**
@@ -84,7 +92,6 @@ function uc_attribute_admin() {
  */
 function uc_attribute_form($form, &$form_state, $attribute = NULL) {
   // If an attribute specified, add its ID as a hidden value.
-
   if (!empty($attribute)) {
     $form['aid'] = array('#type' => 'hidden', '#value' => $attribute->aid);
     drupal_set_title(t('Edit attribute: %name', array('%name' => $attribute->name)));

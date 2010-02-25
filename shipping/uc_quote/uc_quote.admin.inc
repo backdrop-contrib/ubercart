@@ -17,7 +17,10 @@ function uc_quote_overview() {
   $summaries = array_merge($summaries, summarize_child_form_pages('admin/store/settings/quotes/methods', FALSE, TRUE));
 
   // Theme it all up in a summaries overview.
-  return theme('summary_overview', array('summaries' => $summaries));
+  return array(
+    '#theme' => 'summary_overview',
+    '#summaries' => $summaries,
+  );
 }
 
 /**

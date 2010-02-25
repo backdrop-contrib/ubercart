@@ -312,7 +312,11 @@ function uc_google_checkout_terminal($order) {
     drupal_goto('admin/store/orders');
   }
 
-  $output = l(t('Return to order view screen.'), 'admin/store/orders/'. $order_id);
+  $build['return'] = array(
+    '#theme' => 'link',
+    '#text' => t('Return to order view screen.'),
+    '#href' => 'admin/store/orders/'. $order_id,
+  );
 
   $gc_balance = $order->gc_total;
   $payments = uc_payment_load_payments($order_id);
@@ -324,6 +328,7 @@ function uc_google_checkout_terminal($order) {
     }
   }
   $balance = uc_payment_balance($order);
+
   $context = array(
     'revision' => 'themed-original',
     'type' => 'order_total',
@@ -331,22 +336,46 @@ function uc_google_checkout_terminal($order) {
       'order' => $order,
     ),
   );
-  $output .= '<p>'. t('Use this terminal to process credit card payments:') .'</p>'
-            .'<table style="width: auto;"><tbody style="border-top: 0px;"><tr>'
-            .'<td><strong>'. t('Order total:') .'</strong> </td><td>'
-           . uc_price($order->order_total, $context) .'</td></tr><tr><td>'
-            .'<strong>'. t('Balance:') .'</strong> </td><td>'
-           . uc_price($balance, $context) .'</td></tr><tr><td><strong>'
-           . t('Google Checkout total:') .'</strong></td><td>'
-           . uc_price($order->gc_total, $context) .'</td></tr><tr><td><strong>'
-           . t('Google Checkout balance:') .'</strong></td<td>'
-           . uc_price($gc_balance, $context) .'</td></tr></tbody></table>';
+  $build['instructions'] = array('#markup' => '<p>'. t('Use this terminal to process credit card payments:') .'</p>');
+
+  $build['details'] = array(
+    '#prefix' => '<table style="width: auto;"><tbody style="border-top: 0px;">',
+    '#suffix' => '</tbody></table>',
+  );
+
+  $build['details']['order_total'] = array(
+    '#prefix' => '<tr>',
+    '#suffix' => '</tr>',
+  );
+  $build['details']['order_total']['label'] = array('#markup' => '<strong>' . t('Order total:') . '</strong>');
+  $build['details']['order_total']['value'] = array('#markup' => uc_price($order->order_total, $context));
+
+  $build['details']['balance'] = array(
+    '#prefix' => '<tr>',
+    '#suffix' => '</tr>',
+  );
+  $build['details']['balance']['label'] = array('#markup' => '<strong>' . t('Balance:') . '</strong>');
+  $build['details']['balance']['value'] = array('#markup' => uc_price($balance, $context));
+
+  $build['details']['gco_total'] = array(
+    '#prefix' => '<tr>',
+    '#suffix' => '</tr>',
+  );
+  $build['details']['gco_total']['label'] = array('#markup' => '<strong>' . t('Google Checkout total:') . '</strong>');
+  $build['details']['gco_total']['value'] = array('#markup' => uc_price($order->gc_total, $context));
+
+  $build['details']['gco_balance'] = array(
+    '#prefix' => '<tr>',
+    '#suffix' => '</tr>',
+  );
+  $build['details']['gco_balance']['label'] = array('#markup' => '<strong>' . t('Google Checkout balance:') . '</strong>');
+  $build['details']['gco_balance']['value'] = array('#markup' => uc_price($gc_balance, $context));
 
   if (in_array($order->financial_state, array('REVIEWING', 'CHARGEABLE', 'CHARGED'))) {
-    $output .= drupal_get_form('uc_google_checkout_terminal_form', $order, $gc_balance);
+    $build['form'] = drupal_get_form('uc_google_checkout_terminal_form', $order, $gc_balance);
   }
 
-  return $output;
+  return $build;
 }
 
 function uc_google_checkout_terminal_form($form, &$form_state, $order, $amount = 0) {

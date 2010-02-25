@@ -169,15 +169,31 @@ function uc_tax_report_report_page($start_date = NULL, $end_date = NULL, $status
   $csv_data = uc_reports_store_csv('uc_tax_report', $csv_rows);
 
   // Build the page output holding the form, table, and CSV export link.
-  $output = drupal_get_form('uc_tax_report_params_form', $args, $args['status']);
-  $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('width' => '100%', 'class' => array('uc-sales-table'))));
+  $build['form'] = drupal_get_form('uc_tax_report_params_form', $args, $args['status']);
+  $build['report'] = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows,
+    '#attributes' => array('width' => '100%', 'class' => array('uc-sales-table')),
+  );
+
   if ($star_legend) {
-    $output .= '<div class="uc-reports-note"><p>' . $star_legend . '</p></div>';
+    $build['legend'] = array(
+      '#markup' => $star_legend,
+      '#prefix' => '<div class="uc-reports-note"><p>',
+      '#suffix' => '</p></div>',
+    );
   }
 
-  $output .= '<div class="uc-reports-links">'. l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']) .'</div>';
+  $build['export_csv'] = array(
+    '#theme' => 'link',
+    '#text' => t('Export to CSV file.'),
+    '#href' => 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user'],
+    '#prefix' => '<div class="uc-reports-links">',
+    '#suffix' => '</div>',
+  );
 
-  return $output;
+  return $build;
 }
 
 /**

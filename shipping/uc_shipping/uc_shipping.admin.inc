@@ -61,14 +61,23 @@ function uc_shipping_order_packages($order) {
   if (empty($rows)) {
     $rows[][] = array('data' => t("This order's products have not been organized into packages."), 'colspan' => 11);
   }
-  $output = theme('table', array('header' => $header, 'rows' => $rows));
+
+  $build['packages'] = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    'rows' => $rows,
+  );
 
   $result = db_query("SELECT op.order_product_id, CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = :id AND op.data LIKE :data GROUP BY op.order_product_id HAVING SUM(pp.qty) IS NULL OR CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END > SUM(pp.qty)", array(':id' => $order->order_id, ':data' => '%s:9:"shippable";s:1:"1";%'));
   if ($result->fetchObject()) {
-    $output .= l(t('Create packages.'), 'admin/store/orders/'. $order->order_id .'/packages/new');
+    $build['add_more'] = array(
+      '#theme' => 'link',
+      '#text' => t('Create packages.'),
+      '#href' => 'admin/store/orders/'. $order->order_id .'/packages/new',
+    );
   }
 
-  return $output;
+  return $build;
 }
 
 /**
@@ -441,6 +450,7 @@ function uc_shipping_order_shipments($order) {
   $result = db_query("SELECT * FROM {uc_shipments} WHERE order_id = :id", array(':id' => $order->order_id));
   $header = array(t('Shipment ID'), t('Name'), t('Company'), t('Destination'), t('Ship date'), t('Estimated delivery'), t('Tracking number'), array('data' => t('Actions'), 'colspan' => 4));
   $rows = array();
+
   while ($shipment = db_fetch_object($result)) {
     $row = array();
     $row[] = $shipment->sid;
@@ -456,21 +466,37 @@ function uc_shipping_order_shipments($order) {
     $row[] = l(t('delete'), 'admin/store/orders/'. $order->order_id .'/shipments/'. $shipment->sid .'/delete');
     $rows[] = $row;
   }
+
   if (empty($rows)) {
     $rows[] = array(array('data' => t('No shipments have been made for this order.'), 'colspan' => 11));
   }
-  $output = theme('table', array('header' => $header, 'rows' => $rows));
+
+  $build['shipments'] = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows,
+  );
+
   $packages = db_query("SELECT COUNT(*) FROM {uc_packages} WHERE order_id = :id AND sid IS NULL", array(':id' => $order->order_id))->fetchField();
   if ($packages) {
-    $output .= l(t('Make a new shipment'), 'admin/store/orders/'. $order->order_id .'/shipments/new');
+    $build['add_more'] = array(
+      '#theme' => 'link',
+      '#text' => t('Make a new shipment'),
+      '#href' => 'admin/store/orders/'. $order->order_id .'/shipments/new',
+    );
   }
   else {
     $result = db_query("SELECT op.order_product_id, CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = :id AND op.data LIKE :data GROUP BY op.order_product_id HAVING SUM(pp.qty) IS NULL OR CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END > SUM(pp.qty)", array(':id' => $order->order_id, ':data' => '%s:9:"shippable";s:1:"1";%'));
     if (db_fetch_object($result)) {
-      $output .= l(t('Put products into packages to make shipments.'), 'admin/store/orders/'. $order->order_id .'/packages/new');
+      $build['add_more'] = array(
+        '#theme' => 'link',
+        '#text' => t('Put products into packages to make shipments.'),
+        '#href' => 'admin/store/orders/'. $order->order_id .'/packages/new',
+      );
     }
   }
-  return $output;
+
+  return $build;
 }
 
 /**
@@ -623,46 +649,66 @@ function uc_shipping_shipment_view($order, $shipment) {
   $breadcrumb[] = l(t('Shipments'), 'admin/store/orders/'. $order->order_id .'/shipments');
   drupal_set_breadcrumb($breadcrumb);
 
-  $output = '';
+  $build = array();
 
   $origin = uc_order_address($shipment, 'o');
   $destination = uc_order_address($shipment, 'd');
-  $output .= '<div class="order-pane pos-left"><div class="order-pane-title">'. t('Pickup Address:') .'</div>'. $origin .'</div>';
-  $output .= '<div class="order-pane pos-left"><div class="order-pane-title">'. t('Delivery Address:') .'</div>'. $destination .'</div>';
-  $output .= '<div class="order-pane abs-left"><div class="order-pane-title">'. t('Schedule:') .'</div>';
+
+  $build['pickup_address'] = array('#markup' => '<div class="order-pane pos-left"><div class="order-pane-title">'. t('Pickup Address:') .'</div>'. $origin .'</div>');
+  $build['delivery_address'] = array('#markup' => '<div class="order-pane pos-left"><div class="order-pane-title">'. t('Delivery Address:') .'</div>'. $destination .'</div>');
+
   $rows = array();
   $rows[] = array(t('Ship date:'), format_date($shipment->ship_date, 'custom', 'D, '. variable_get('uc_date_format_default', 'm/d/Y')));
   $rows[] = array(t('Expected delivery:'), format_date($shipment->expected_delivery, 'custom', 'D, '. variable_get('uc_date_format_default', 'm/d/Y')));
-  $output .= theme('table', array('rows' => $rows, 'attributes' => array('style' => 'width: auto')));
-  $output .= '</div>';
-  $output .= '<div class="order-pane abs-left"><div class="order-pane-title">'. t('Shipment Details:') .'</div>';
+
+  $build['schedule'] = array(
+    '#theme' => 'table',
+    '#rows' => $rows,
+    '#attributes' => array('style' => 'width: auto'),
+    '#prefix' => '<div class="order-pane abs-left"><div class="order-pane-title">'. t('Schedule:') .'</div>',
+    '#suffix' => '</div>',
+  );
+
   $rows = array();
   $rows[] = array(t('Carrier:'), check_plain($shipment->carrier));
+
   if ($shipment->transaction_id) {
     $rows[] = array(t('Transaction ID:'), check_plain($shipment->transaction_id));
   }
+
   if ($shipment->tracking_number) {
     $rows[] = array(t('Tracking Number:'), check_plain($shipment->tracking_number));
   }
+
   $methods = module_invoke_all('shipping_method');
   $method = $methods[$shipment->shipping_method];
+
   if (isset($method['quote']['accessorials'][$shipment->accessorials])) {
     $rows[] = array(t('Services:'), $method['quote']['accessorials'][$shipment->accessorials]);
   }
   else {
     $rows[] = array(t('Services:'), $shipment->accessorials);
   }
+
   $context = array(
     'revision' => 'themed',
     'type' => 'amount',
   );
   $rows[] = array(t('Cost:'), uc_price($shipment->cost, $context, array('label' => FALSE)));
-  $output .= theme('table', array('rows' => $rows, 'attributes' => array('style' => 'width:auto')));
-  $output .= '</div>';
+
+  $build['details'] = array(
+    '#theme' => 'table',
+    '#rows' => $rows,
+    '#attributes' => array('style' => 'width:auto'),
+    '#prefix' => '<div class="order-pane abs-left"><div class="order-pane-title">'. t('Shipment Details:') .'</div>',
+    '#suffix' => '</div>',
+  );
+
   foreach ($shipment->packages as $package) {
-    $output .= uc_shipping_package_view($package);
+    $build['packages'][] = uc_shipping_package_view($package);
   }
-  return $output;
+
+  return $build;
 }
 
 /**

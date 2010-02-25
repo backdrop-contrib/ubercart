@@ -12,17 +12,11 @@
 function uc_taxes_admin_settings() {
   $rows = array();
 
-  $header = array(t('Name'), t('Rate'), t('Taxed products'), t('Taxed product types'), t('Taxed line items'), t('Weight'), 'data' => t('Operations'));
+  $header = array(t('Name'), t('Rate'), t('Taxed products'), t('Taxed product types'), t('Taxed line items'), t('Weight'), array('data' => t('Operations'), 'colspan' => 4));
 
   // Loop through all the defined tax rates.
   foreach (uc_taxes_rate_load() as $rate_id => $rate) {
     // Build the operations links for the tax rate.
-    $ops = array(
-       l(t('edit'), 'admin/store/settings/taxes/'. $rate_id .'/edit'),
-       l(t('conditions'), CA_UI_PATH .'/uc_taxes_'. $rate_id .'/edit/conditions'),
-       l(t('clone'), 'admin/store/settings/taxes/'. $rate_id .'/clone'),
-       l(t('delete'), 'admin/store/settings/taxes/'. $rate_id .'/delete'),
-    );
 
     // Add the row to the table.
     $rows[] = array(
@@ -32,20 +26,31 @@ function uc_taxes_admin_settings() {
       implode(', ', $rate->taxed_product_types),
       implode(', ', $rate->taxed_line_items),
       $rate->weight,
-      implode(' | ', $ops),
+      l(t('edit'), 'admin/store/settings/taxes/'. $rate_id .'/edit'),
+      l(t('conditions'), CA_UI_PATH .'/uc_taxes_'. $rate_id .'/edit/conditions'),
+      l(t('clone'), 'admin/store/settings/taxes/'. $rate_id .'/clone'),
+      l(t('delete'), 'admin/store/settings/taxes/'. $rate_id .'/delete'),
     );
   }
 
   // Let the user know if no tax rates are defined.
   if (empty($rows)) {
-    $rows[] = array(array('data' => t('No rates available.'), 'colspan' => 7));
+    $rows[] = array(array('data' => t('No rates available.'), 'colspan' => 10));
   }
 
   // Build the output including the table and a link to add a new rate.
-  $output = theme('table', array('header' => $header, 'rows' => $rows))
-          . l(t('Add a tax rate'), 'admin/store/settings/taxes/add');
+  $build['taxes'] = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows,
+  );
+  $build['add_more'] = array(
+    '#theme' => 'link',
+    '#text' => t('Add a tax rate'),
+    '#href' => 'admin/store/settings/taxes/add',
+  );
 
-  return $output;
+  return $build;
 }
 
 /**

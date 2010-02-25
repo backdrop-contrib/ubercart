@@ -109,11 +109,45 @@ function uc_stock_report() {
 
   $csv_data = uc_reports_store_csv('uc_stock', $csv_rows);
 
-  $output = drupal_get_form('uc_stock_report_form')
-          . theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('width' => '100%', 'class' => array('uc-stock-table'))))
-          . theme('pager');
-  $output .= '<div class="uc-reports-links">'. l(t('Export to CSV file'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']) .'&nbsp;&nbsp;&nbsp;'. ((!is_null($_GET['nopage'])) ? l(t('Show paged records'), 'admin/store/reports/stock') : l(t('Show all records'), 'admin/store/reports/stock', $options = array('query' => 'nopage=1'))) .'</div>';
-  return $output;
+  $build['form'] = drupal_get_form('uc_stock_report_form');
+  $build['report'] = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows,
+    '#attributes' => array('width' => '100%', 'class' => array('uc-stock-table')),
+  );
+  $build['pager'] = array(
+    '#theme' => 'pager',
+  );
+
+  $build['links'] = array(
+    '#prefix' => '<div class="uc-reports-links">',
+    '#suffix' => '</div>',
+  );
+  $build['links']['export_csv'] = array(
+    '#theme' => 'link',
+    '#text' => t('Export to CSV file'),
+    '#href' => 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user'],
+    '#suffix' => '&nbsp;&nbsp;&nbsp;',
+  );
+
+  if (!is_null($_GET['nopage'])) {
+    $build['links']['toggle_pager'] = array(
+      '#theme' => 'link',
+      '#text' => t('Show paged records'),
+      '#href' => 'admin/store/reports/stock',
+    );
+  }
+  else {
+    $build['links']['toggle_pager'] = array(
+      '#theme' => 'link',
+      '#text' => t('Show all records'),
+      '#href' => 'admin/store/reports/stock',
+      '#options' => array('query' => 'nopage=1'),
+    );
+  }
+
+  return $build;
 }
 
 /**

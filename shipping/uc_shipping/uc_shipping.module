@@ -289,38 +289,56 @@ function uc_shipping_order_actions($order) {
  */
 function uc_shipping_package_view($package) {
   $shipment = uc_shipping_shipment_load($package->sid);
-  $output = '';
+  $build = array(
+    '#prefix' => '<div class="order-pane pos-left">',
+    '#suffix' => '</div>',
+  );
   $rows = array();
 
-  $output .= '<div class="order-pane pos-left"><div class="order-pane-title">'. t('Package %id:', array('%id' => $package->package_id)) .'</div>';
+  $build['title'] = array(
+    '#markup' => t('Package %id:', array('%id' => $package->package_id)),
+    '#prefix' => '<div class="order-pane-title">',
+    '#suffix' => '</div>',
+  );
+
   $rows[] = array(t('Contents:'), filter_xss_admin($package->description));
+
   if ($shipment) {
     $methods = module_invoke_all('shipping_method');
     $method = $methods[$shipment->shipping_method];
     $pkg_type = $method['ship']['pkg_types'][$package->pkg_type];
   }
+
   $rows[] = array(t('Package type:'), strlen($pkg_type) ? $pkg_type : check_plain($package->pkg_type));
+
   if ($package->length && $package->width && $package->height) {
     $rows[] = array(t('Dimensions:'), t('!l x !w x !h', array('!l' => uc_length_format($package->length), '!w' => uc_length_format($package->width), '!h' => uc_length_format($package->height))));
   }
+
   $context = array(
     'revision' => 'themed',
     'type' => 'amount',
   );
   $rows[] = array(t('Insured value:'), uc_price($package->value, $context));
+
   if ($package->tracking_number) {
     $rows[] = array(t('Tracking number:'), check_plain($package->tracking_number));
   }
+
   if ($shipment && $package->label_image && file_exists(file_create_path($package->label_image))) {
     $rows[] = array(t('Label:'), l(t('Click to view.'), 'admin/store/orders/'. $package->order_id .'/shipments/labels/'. $shipment->shipping_method .'/'. $package->label_image));
   }
   else {
     $rows[] = array(t('Label:'), t('n/a'));
   }
-  $output .= theme('table', array('rows' => $rows, 'attributes' => array('style' => 'width:auto;')));
-  $output .= '</div>';
 
-  return $output;
+  $build['package'] = array(
+    '#theme' => 'table',
+    '#rows' => $rows,
+    'attributes' => array('style' => 'width:auto;'),
+  );
+
+  return $build;
 }
 
 /**

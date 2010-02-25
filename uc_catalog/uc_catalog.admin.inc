@@ -12,7 +12,10 @@
  */
 function uc_catalog_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
-  return theme('summary_overview', array('summaries' => summarize_child_form_pages('admin/store/settings/catalog/edit')));
+  return array(
+    '#theme' => 'summary_overview',
+    '#summaries' => summarize_child_form_pages('admin/store/settings/catalog/edit'),
+  );
 }
 
 /**
@@ -220,11 +223,14 @@ function uc_catalog_grid_settings_form() {
  * Display links to all products that have not been categorized.
  */
 function uc_catalog_orphaned_products() {
+  $build = array();
+
   if (variable_get('taxonomy_maintain_index_table', TRUE)) {
-    $output = '<p>'. t('Orphaned products are products that you have created but
-       not yet assigned to a category in your product catalog. All such
-       products will appear as links below that you can follow to edit
-       the product listings to assign them to categories.') .'</p>';
+    $build['explanation'] = array(
+      '#markup' => t('Orphaned products are products that you have created but not yet assigned to a category in your product catalog. All such products will appear as links below that you can follow to edit the product listings to assign them to categories.'),
+      '#prefix' => '<p>',
+      '#suffix' => '</p>',
+    );
 
     $vid = variable_get('uc_catalog_vid', 0);
     $product_types = uc_product_types();
@@ -238,16 +244,27 @@ function uc_catalog_orphaned_products() {
     }
 
     if (count($rows) > 0) {
-      $output .= theme('item_list', array('items' => $rows));
+      $build['orphans'] = array(
+        '#theme' => 'item_list',
+        '#items' => $rows,
+      );
     }
     else {
-      $output .= '<p>'. t('All products are currently listed in the catalog.') .'</p>';
+      $build['orphans'] = array(
+        '#markup' => t('All products are currently listed in the catalog.'),
+        '#prefix' => '<p>',
+        '#suffix' => '</p>',
+      );
     }
   }
   else {
-    $output = '<p>' . t('The node terms index is not being maintained, so Ubercart can not determine which products are not entered into the catalog.') . '</p>';
+    $build['orphans'] = array(
+      '#markup' => t('The node terms index is not being maintained, so Ubercart can not determine which products are not entered into the catalog.'),
+      '#prefix' => '<p>',
+      '#suffix' => '</p>',
+    );
   }
 
-  return $output;
+  return $build;
 }
 

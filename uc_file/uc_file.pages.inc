@@ -154,7 +154,10 @@ function uc_file_user_downloads($account) {
     $row++;
   }
 
-  return theme('uc_file_user_downloads', array('files' => $files));
+  return array(
+    '#theme' => 'uc_file_user_downloads',
+    '#files' => $files,
+  );
 }
 
 /**
