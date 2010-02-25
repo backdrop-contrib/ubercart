@@ -565,7 +565,7 @@ function uc_cart_checkout_complete() {
 
   $page = variable_get('uc_cart_checkout_complete_page', '');
   if (!empty($page)) {
-    drupal_goto(variable_get('uc_cart_checkout_complete_page', ''));
+    drupal_goto($page);
   }
 
   return $build;

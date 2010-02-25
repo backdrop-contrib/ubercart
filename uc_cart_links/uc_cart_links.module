@@ -78,7 +78,18 @@ function uc_cart_links_add_to_cart($nid, $qty, $data) {
     $cart_link = 'p'. $nid .'_q'. $qty;
     if (!empty($data['attributes'])) {
       foreach ($data['attributes'] as $attribute => $option) {
-        $cart_link .= '_a'. $attribute .'o'. $option;
+        if (is_array($option)) {
+          // Checkbox options are stored in an array
+          foreach ($option as $oid => $ovalue) {
+            if ($ovalue != 0) {
+              $cart_link .= '_a'. $attribute .'o'. $oid;
+            }
+          }
+        }
+        else {
+          // Textfield, Select, or Radio options
+          $cart_link .= '_a'. $attribute .'o'. $option;
+        }
       }
     }
     drupal_set_message(t('Cart link product action: @cart_link', array('@cart_link' => $cart_link)));

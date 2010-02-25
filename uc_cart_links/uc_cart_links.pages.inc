@@ -30,18 +30,20 @@ function uc_cart_links_process($arg1) {
   }
 
   // Split apart the cart link on the -.
-  $actions = explode('-', drupal_strtolower($arg1));
+  $actions = explode('-', urldecode($arg1));
   $rebuild_cart = FALSE;
 
   foreach ($actions as $action) {
     switch (drupal_substr($action, 0, 1)) {
       // Set the ID of the cart link.
       case 'i':
+      case 'I':
         $id = drupal_substr($action, 1);
         break;
 
       // Add a product to the cart.
       case 'p':
+      case 'P':
         // Set the default product variables.
         $p = array('nid' => 0, 'qty' => 1, 'data' => array());
         $msg = TRUE;
@@ -52,20 +54,27 @@ function uc_cart_links_process($arg1) {
           switch (drupal_substr($part, 0, 1)) {
             // Set the product node ID: p23
             case 'p':
+            case 'P':
               $p['nid'] = intval(drupal_substr($part, 1));
               break;
             // Set the quantity to add to cart: q2
             case 'q':
+            case 'Q':
               $p['qty'] = intval(drupal_substr($part, 1));
               break;
             // Set an attribute/option for the product: a3o6
             case 'a':
-              $attribute = intval(drupal_substr($part, 1, strpos($part, 'o') - 1));
-              $option = intval(drupal_substr($part, strpos($part, 'o') + 1));
-              $p['attributes'][$attribute] = (string) $option;
+            case 'A':
+              $attribute = intval(drupal_substr($part, 1, stripos($part, 'o') - 1));
+              $option = (string) drupal_substr($part, stripos($part, 'o') + 1);
+              // Multiple options for this attribute implies checkbox
+              // attribute, which we must store as an array. However, all other
+              // types can be stored as arrays as well.
+              $p['attributes'][$attribute][$option] = $option;
               break;
             // Suppress the add to cart message: m0
             case 'm':
+            case 'M':
               $msg = intval(drupal_substr($part, 1)) == 1 ? TRUE : FALSE;
               break;
           }
@@ -91,6 +100,7 @@ function uc_cart_links_process($arg1) {
 
       // Empty the shopping cart.
       case 'e':
+      case 'E':
         if (variable_get('uc_cart_links_empty', TRUE)) {
           uc_cart_empty(uc_cart_get_id());
         }
@@ -98,6 +108,7 @@ function uc_cart_links_process($arg1) {
 
       // Display a pre-configured message.
       case 'm':
+      case 'M':
         // Load the messages if they haven't been loaded yet.
         if (empty($messages)) {
           $data = explode("\n", variable_get('uc_cart_links_messages', ''));
