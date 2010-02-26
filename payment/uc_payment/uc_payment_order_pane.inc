@@ -22,37 +22,46 @@ function uc_order_pane_payment($op, $arg1) {
           'revision' => 'formatted-original',
           'type' => 'amount',
         );
-        $output = t('Balance: @balance', array('@balance' => uc_price(uc_payment_balance($arg1), $context)));
-        $output .= ' ('. l(t('View'), 'admin/store/orders/'. $arg1->order_id .'/payments') .')<br />';
+        $build['balance'] = array('#markup' => t('Balance: @balance', array('@balance' => uc_price(uc_payment_balance($arg1), $context))));
+        $build['view_payments'] = array(
+          '#markup' => ' ('. l(t('View'), 'admin/store/orders/'. $arg1->order_id .'/payments') .')',
+          '#suffix' => '<br />',
+        );
       }
       $method_name = _payment_method_data($arg1->payment_method, 'review');
       if (empty($method_name)) {
         $method_name = _payment_method_data($arg1->payment_method, 'name');
       }
-      $output .= t('Method: @payment_method', array('@payment_method' => $method_name));
+      $build['method'] = array('#markup' => t('Method: @payment_method', array('@payment_method' => $method_name)));
       $func = _payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
         $method_output = $func('order-view', $arg1);
         if (!empty($method_output)) {
-          $output .= '<br />'. $method_output;
+          $build['output'] = $method_output + array(
+            '#prefix' => '<br />',
+          );
         }
       }
-      return $output;
+
+      return $build;
 
     case 'customer':
       $method_name = _payment_method_data($arg1->payment_method, 'review');
       if (empty($method_name)) {
         $method_name = _payment_method_data($arg1->payment_method, 'name');
       }
-      $output .= t('Method: @payment_method', array('@payment_method' => $method_name));
+      $build['method'] = array('#markup' => t('Method: @payment_method', array('@payment_method' => $method_name)));
       $func = _payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
         $method_output = $func('customer-view', $arg1);
         if (!empty($method_output)) {
-          $output .= '<br />'. $method_output;
+          $build['output'] = $method_output + array(
+            '#prefix' => '<br />',
+          );
         }
       }
-      return $output;
+
+      return $build;
 
     case 'edit-form':
       drupal_add_js('misc/progress.js');

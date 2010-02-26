@@ -168,8 +168,7 @@ function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
  *
  * @see uc_weightquote_admin_method_confirm_delete_submit()
  */
-function uc_weightquote_admin_method_confirm_delete($form_state, $mid) {
-  $form = array();
+function uc_weightquote_admin_method_confirm_delete($form, &$form_state, $mid) {
   $form['mid'] = array('#type' => 'value', '#value' => $mid);
 
   return confirm_form($form, t('Do you want to delete this shipping method?'),

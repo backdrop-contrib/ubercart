@@ -21,8 +21,8 @@ function uc_order_pane_ship_to($op, $arg1) {
         return;
       }
     case 'view':
-      $output = uc_order_address($arg1, 'delivery') .'<br />'. check_plain($arg1->delivery_phone);
-      return $output;
+      $build = array('#markup' => uc_order_address($arg1, 'delivery') .'<br />'. check_plain($arg1->delivery_phone));
+      return $build;
 
     case 'edit-form':
       $form['ship_to'] = array(
@@ -106,8 +106,8 @@ function uc_order_pane_bill_to($op, $arg1) {
   switch ($op) {
     case 'view':
     case 'customer':
-      $output = uc_order_address($arg1, 'billing') .'<br />'. check_plain($arg1->billing_phone);
-      return $output;
+      $build = array('#markup' => uc_order_address($arg1, 'billing') .'<br />'. check_plain($arg1->billing_phone));
+      return $build;
 
     case 'edit-form':
       $form['bill_to'] = array(
@@ -194,10 +194,10 @@ function uc_order_pane_bill_to($op, $arg1) {
 function uc_order_pane_customer($op, $arg1) {
   switch ($op) {
     case 'view':
-      $output = t('Customer number: !user_link', array('!user_link' => $arg1->uid ? l($arg1->uid, 'user/'. $arg1->uid) : '0'))
-               .'<br />'. t('Primary e-mail:') .'<br />'
-              . check_plain($arg1->primary_email);
-      return $output;
+      $build['uid'] = array('#markup' => t('Customer number: !user_link', array('!user_link' => $arg1->uid ? l($arg1->uid, 'user/'. $arg1->uid) : '0')));
+      $build['primary_email'] = array('#markup' => '<br />' . t('Primary e-mail:') .'<br />' . check_plain($arg1->primary_email));
+
+      return $build;
 
     case 'edit-form':
       $form['customer'] = array(
@@ -268,10 +268,10 @@ function uc_order_pane_customer($op, $arg1) {
 function uc_order_pane_products($op, $arg1) {
   switch ($op) {
     case 'view':
-      return drupal_render(tapir_get_table('op_products_view_table', $arg1));
+      return tapir_get_table('op_products_view_table', $arg1);
 
     case 'customer':
-      return drupal_render(tapir_get_table('op_products_customer_table', $arg1));
+      return tapir_get_table('op_products_customer_table', $arg1);
 
     case 'edit-theme':
       drupal_add_js('uc_order_load_product_edit_div('. $arg1['order_id']['#value'] .');', 'inline');
@@ -338,15 +338,34 @@ function uc_order_pane_line_items($op, $arg1) {
           'order' => $arg1,
         ),
       );
-      $output = '<table class="line-item-table">';
+
+      $build['line_items'] = array(
+        '#prefix' => '<table class="line-item-table">',
+        '#suffix' => '</table>',
+      );
       foreach ($line_items as $item) {
+        $table_row = array(
+          '#prefix' => '<tr>',
+          '#suffix' => '</tr>',
+        );
+
+        $table_row['title'] = array(
+          '#markup' => check_plain($item['title']),
+          '#prefix' => '<td class="li-title">',
+          '#suffix' => '</td>',
+        );
+
         $context['subject']['line_item'] = $item;
-        $output .= '<tr><td class="li-title">'. check_plain($item['title']) .':</td>'
-                  .'<td class="li-amount" nowrap="nowrap">'
-                 . uc_price($item['amount'], $context) .'</td></tr>';
+        $table_row['amount'] = array(
+          '#markup' => uc_price($item['amount'], $context),
+          '#prefix' => '<td class="li-amount" nowrap="nowrap">',
+          '#suffix' => '</td>',
+        );
+
+        $build['line_items'][] = $table_row;
       }
-      $output .= '</table>';
-      return $output;
+
+      return $build;
 
     case 'show-title':
       return FALSE;
@@ -504,7 +523,7 @@ function uc_order_pane_order_comments($op, $arg1) {
   switch ($op) {
     case 'view':
       $comments = uc_order_comments_load($arg1->order_id);
-      return drupal_render(tapir_get_table('op_order_comments_view_table', $comments));
+      return tapir_get_table('op_order_comments_view_table', $comments);
 
     case 'customer':
       $comments = uc_order_comments_load($arg1->order_id);
@@ -526,9 +545,13 @@ function uc_order_pane_order_comments($op, $arg1) {
           );
         }
       }
-      $output = theme('table', array('header' => $header, 'rows' => $rows));
+      $build = array(
+        '#theme' => 'table',
+        '#header' => $header,
+        '#rows' => $rows,
+      );
 
-      return $output;
+      return $build;
   }
 }
 
@@ -539,7 +562,7 @@ function uc_order_pane_admin_comments($op, $arg1) {
   switch ($op) {
     case 'view':
       $comments = uc_order_comments_load($arg1->order_id, TRUE);
-      return drupal_render(tapir_get_table('op_admin_comments_view_table', $comments));
+      return tapir_get_table('op_admin_comments_view_table', $comments);
 
     case 'edit-form':
       $form['admin_comment_field'] = array(

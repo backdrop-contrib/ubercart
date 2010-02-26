@@ -11,9 +11,7 @@
  *
  * @ingroup forms
  */
-function uc_product_kit_settings_form() {
-  $form = array();
-
+function uc_product_kit_settings_form($form, &$form_state) {
   $form['uc_product_kit_mutable'] = array(
     '#type' => 'radios',
     '#title' => t('Product kit cart display'),

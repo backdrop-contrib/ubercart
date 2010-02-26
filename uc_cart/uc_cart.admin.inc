@@ -45,7 +45,7 @@ function uc_cart_cart_settings_overview() {
  * @ingroup forms
  * @see uc_cart_cart_settings_form_validate()
  */
-function uc_cart_cart_settings_form() {
+function uc_cart_cart_settings_form($form, &$form_state) {
   $form['general'] = array(
     '#type' => 'fieldset',
     '#title' => t('General cart settings'),
@@ -230,7 +230,7 @@ function uc_cart_cart_settings_form_validate($form, &$form_state) {
  *
  * @ingroup forms
  */
-function uc_cart_cart_panes_form() {
+function uc_cart_cart_panes_form($form, &$form_state) {
   $panes = uc_cart_cart_pane_list(NULL);
 
   $form['panes'] = array(
@@ -284,7 +284,7 @@ function uc_cart_checkout_settings_overview() {
  *
  * @ingroup forms
  */
-function uc_cart_checkout_settings_form() {
+function uc_cart_checkout_settings_form($form, &$form_state) {
   $form['general'] = array(
     '#type' => 'fieldset',
     '#title' => t('General checkout settings'),
@@ -420,7 +420,7 @@ function _uc_cart_panes_summarize($form, $panes) {
  *
  * @ingroup forms
  */
-function uc_cart_checkout_panes_form() {
+function uc_cart_checkout_panes_form($form, &$form_state) {
   $panes = _checkout_pane_list();
 
   $form['panes'] = array(
@@ -464,7 +464,7 @@ function uc_cart_checkout_panes_form() {
  *
  * @ingroup forms
  */
-function uc_cart_checkout_messages_form() {
+function uc_cart_checkout_messages_form($form, &$form_state) {
   $form['uc_checkout_instructions'] = array(
     '#type' => 'textarea',
     '#title' => t('Checkout instructions'),

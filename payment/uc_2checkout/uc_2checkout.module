@@ -69,7 +69,7 @@ function uc_2checkout_form_alter(&$form, $form_state, $form_id) {
       drupal_add_css(drupal_get_path('module', 'uc_2checkout') .'/uc_2checkout.css');
       unset($form['submit']);
       $form['#prefix'] = '<table id="two-checkout-review-table"><tr><td>';
-      $form['#suffix'] = '</td><td>'. drupal_get_form('uc_2checkout_form', $order) .'</td></tr></table>';
+      $form['#suffix'] = '</td><td>'. drupal_render(drupal_get_form('uc_2checkout_form', $order)) .'</td></tr></table>';
     }
   }
 }
@@ -99,7 +99,6 @@ function uc_2checkout_payment_method() {
   return $methods;
 }
 
-
 /**
  * Add 2Checkout settings to the payment method settings form.
  *
@@ -110,18 +109,28 @@ function uc_payment_method_2checkout($op, &$arg1) {
     case 'cart-details':
       if (variable_get('uc_2checkout_check', FALSE)) {
         if ($_SESSION['pay_method'] == 'CK') {
-          $sel[2] = ' selected="selected"';
+          $sel = 'CK';
         }
         else {
-          $sel[1] = ' selected="selected"';
+          $sel = 'CC';
         }
         unset($_SESSION['pay_method']);
-        $details = '<div class="form-item"><b>'. t('Select your payment type:')
-                  .'</b> <select name="pay_method" class="form-select" id="edit-pay-method">'
-                  .'<option value="CC"'. $sel[1] .'>'. t('Credit card') .'</option>'
-                  .'<option value="CK"'. $sel[2] .'>'. t('Online check') .'</option></select></div>';
+
+        $build = array(
+          '#type' => 'select',
+          '#title' => t('Select your payment type:'),
+          '#name' => 'pay_method',
+          '#id' => 'edit-pay-method',
+          '#attributes' => array('class' => array('form-select')),
+          '#default_value' => $sel,
+          '#options' => array(
+            'CC' => t('Credit card'),
+            'CK' => t('Online check'),
+          ),
+        );
       }
-      return $details;
+
+      return $build;
 
     case 'cart-process':
       $_SESSION['pay_method'] = $_POST['pay_method'];

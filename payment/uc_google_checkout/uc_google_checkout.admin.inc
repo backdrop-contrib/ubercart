@@ -7,9 +7,7 @@
  *
  */
 
-function uc_google_checkout_settings() {
-  $form = array();
-
+function uc_google_checkout_settings($form, &$form_state) {
   $form['authentication'] = array(
     '#type' => 'fieldset',
     '#title' => t('Authentication'),

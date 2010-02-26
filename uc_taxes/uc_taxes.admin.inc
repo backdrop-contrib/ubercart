@@ -231,9 +231,7 @@ function uc_taxes_clone($rate_id) {
  * @ingroup forms
  * @see uc_taxes_delete_submit()
  */
-function uc_taxes_delete_form($form_state, $rate_id) {
-  $form = array();
-
+function uc_taxes_delete_form($form, &$form_state, $rate_id) {
   // Bail if we got a bad rate ID.
   if (!$rate = uc_taxes_rate_load($rate_id)) {
     drupal_set_message(t('That tax rate does not exist.'), 'error');

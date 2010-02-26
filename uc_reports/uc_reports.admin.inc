@@ -11,7 +11,7 @@
  *
  * @ingroup forms
  */
-function uc_reports_settings_form() {
+function uc_reports_settings_form($form, &$form_state) {
   $form['uc_reports_table_size'] = array(
     '#type' => 'textfield',
     '#title' => t('Paged table size'),

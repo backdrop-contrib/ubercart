@@ -20,7 +20,7 @@ define('UC_FILE_FORM_ACTION', 1   );
  *   uc_file_admin_files_form_show_files()
  *   uc_file_admin_files_form_action()
  */
-function uc_file_admin_files_form($form_state) {
+function uc_file_admin_files_form($form, &$form_state) {
 
   switch ($form_state['storage']['step']) {
 
@@ -33,14 +33,14 @@ function uc_file_admin_files_form($form_state) {
         '#theme'  => 'uc_file_admin_files_form_show',
         '#validate' => array('uc_file_admin_files_form_show_validate'),
         '#submit' => array('uc_file_admin_files_form_show_submit'),
-      ) + uc_file_admin_files_form_show_files($form_state);
+      ) + $form + uc_file_admin_files_form_show_files($form_state);
 
     case UC_FILE_FORM_ACTION:
 
       return array(
         '#validate' => array('uc_file_admin_files_form_action_validate'),
         '#submit'   => array('uc_file_admin_files_form_action_submit'),
-      ) + uc_file_admin_files_form_action($form_state);
+      ) + $form + uc_file_admin_files_form_action($form_state);
 
   }
 }

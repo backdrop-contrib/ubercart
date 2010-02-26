@@ -380,8 +380,7 @@ function uc_shipping_package_edit_submit($form, &$form_state) {
  *
  * @see uc_shipping_package_cancel_confirm_submit()
  */
-function uc_shipping_package_cancel_confirm($form_state, $order, $package) {
-  $form = array();
+function uc_shipping_package_cancel_confirm($form, &$form_state, $order, $package) {
   $form['order_id'] = array('#type' => 'value', '#value' => $order->order_id);
   $form['package_id'] = array('#type' => 'value', '#value' => $package->package_id);
   $output = confirm_form($form, t('Are you sure you want to cancel the shipment of this package?'), 'admin/store/orders/'. $order->order_id .'/packages',
@@ -423,8 +422,7 @@ function uc_shipping_package_cancel_confirm_submit($form, &$form_state) {
  * @ingroup forms
  * @see uc_shipping_package_delete_confirm_submit()
  */
-function uc_shipping_package_delete_confirm($form_state, $order, $package) {
-  $form = array();
+function uc_shipping_package_delete_confirm($form, &$form_state, $order, $package) {
   $form['order_id'] = array('#type' => 'value', '#value' => $order->order_id);
   $form['package_id'] = array('#type' => 'value', '#value' => $package->package_id);
   $output = confirm_form($form, t('Are you sure you want to delete this package?'), 'admin/store/orders/'. $order->order_id .'/packages',
@@ -1017,8 +1015,7 @@ EOHTML;
  *
  * @see uc_shipping_shipment_delete_confirm_submit()
  */
-function uc_shipping_shipment_delete_confirm($form_state, $order, $shipment) {
-  $form = array();
+function uc_shipping_shipment_delete_confirm($form, &$form_state, $order, $shipment) {
   $form['order_id'] = array('#type' => 'value', '#value' => $order->order_id);
   $form['sid'] = array('#type' => 'value', '#value' => $shipment->sid);
   $output = confirm_form($form, t('Are you sure you want to delete this shipment?'), 'admin/store/orders/'. $order->order_id .'/shipments',

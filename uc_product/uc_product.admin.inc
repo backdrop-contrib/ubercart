@@ -102,9 +102,7 @@ function uc_product_settings_overview() {
  * @ingroup forms
  * @see uc_product_settings_overview()
  */
-function uc_product_settings_form() {
-  $form = array();
-
+function uc_product_settings_form($form, &$form_state) {
   // Loop through all the integrated image widgets and build an options array.
   $options = array();
 
@@ -346,7 +344,7 @@ function uc_product_field_settings_form_submit($form, &$form_state) {
  * @ingroup forms
  * @see _uc_product_features_summarize()
  */
-function uc_product_feature_settings_form() {
+function uc_product_feature_settings_form($form, &$form_state) {
   $titles = array();
   $features = module_invoke_all('product_feature');
   foreach ($features as $feature) {
@@ -432,7 +430,8 @@ function uc_product_features($node) {
         $question = $node->title;
         $description = t('Are you sure you wish to delete this %feature?', array('%feature' => uc_product_feature_data($feature['fid'], 'title')))
                       .'<div><b>'. t('Description') .':</b><br />'. $feature['description'] .'</div><br />';
-        return drupal_get_form('confirm_form', $question, 'node/'. arg(1) .'/edit/features', $description, t('Delete'), t('Cancel'), 'pf_delete');
+        $form = array();
+        return confirm_form($form, $question, 'node/'. arg(1) .'/edit/features', $description, t('Delete'), t('Cancel'), 'pf_delete');
       }
       else {
         drupal_set_message(t("That product feature doesn't exist."), 'error');
@@ -452,7 +451,7 @@ function uc_product_features($node) {
           ':fid' => arg(4),
         ));
         if ($feature = $result->fetchAssoc()) {
-          $output = drupal_get_form($func, $node, $feature);
+          $build = drupal_get_form($func, $node, $feature);
         }
       }
     }
@@ -681,9 +680,7 @@ function uc_product_class_form_submit($form, &$form_state) {
  *
  * @see uc_product_class_delete_confirm_submit()
  */
-function uc_product_class_delete_confirm($form_state, $class) {
-  $form = array();
-
+function uc_product_class_delete_confirm($form, &$form_state, $class) {
   $form['pcid'] = array(
     '#type' => 'value',
     '#value' => $class->pcid,

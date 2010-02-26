@@ -40,9 +40,7 @@ function uc_cart_view() {
     // If the pane is enabled...
     if ($pane['enabled']) {
       // Add its output to the cart view.
-      $build[$pane['id']] = array(
-        '#markup' => $pane['body'],
-      );
+      $build[$pane['id']] = $pane['body'];
     }
   }
 
@@ -113,9 +111,9 @@ function uc_cart_checkout() {
   }
 
   drupal_add_js(drupal_get_path('module', 'uc_cart') .'/uc_cart.js');
-  $output = drupal_get_form('uc_cart_checkout_form');
+  $build = drupal_get_form('uc_cart_checkout_form');
 
-  return $output;
+  return $build;
 }
 
 /**

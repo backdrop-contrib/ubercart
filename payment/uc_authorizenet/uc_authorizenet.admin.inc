@@ -65,7 +65,7 @@ function uc_authorizenet_arb_admin_update_form_submit($form, &$form_state) {
 }
 
 // Displays a confirm form for cancelling a subscription.
-function uc_authorizenet_arb_admin_cancel_form($form_state, $rfid) {
+function uc_authorizenet_arb_admin_cancel_form($form, &$form_state, $rfid) {
   $form['rfid'] = array(
     '#type' => 'value',
     '#value' => $rfid,

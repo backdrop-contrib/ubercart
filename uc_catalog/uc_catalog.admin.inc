@@ -25,9 +25,7 @@ function uc_catalog_settings_overview() {
  *
  * @ingroup forms
  */
-function uc_catalog_settings_form() {
-  $form = array();
-
+function uc_catalog_settings_form($form, &$form_state) {
   $vid = variable_get('uc_catalog_vid', NULL);
   if ($vid) {
     $catalog = taxonomy_vocabulary_load($vid);
@@ -155,9 +153,7 @@ function uc_catalog_settings_form() {
  *
  * @ingroup forms
  */
-function uc_catalog_grid_settings_form() {
-  $form = array();
-
+function uc_catalog_grid_settings_form($form, &$form_state) {
   $form['uc_catalog_grid_display'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display products in the catalog in a grid.'),

@@ -148,9 +148,7 @@ function uc_cart_condition_product_class($order, $settings) {
 /**
  * @see uc_cart_condition_product_class()
  */
-function uc_cart_condition_product_class_form($form_state, $settings = array()) {
-  $form = array();
-
+function uc_cart_condition_product_class_form($form, &$form_state, $settings = array()) {
   $form['class'] = array('#type' => 'select',
     '#title' => t('Product class'),
     '#options' => uc_product_type_names(),

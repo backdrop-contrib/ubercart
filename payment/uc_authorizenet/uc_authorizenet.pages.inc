@@ -146,7 +146,7 @@ function uc_authorizenet_arb_user_update_form_submit($form, &$form_state) {
 }
 
 // Displays a confirm form for customers to cancel their fees.
-function uc_authorizenet_arb_user_cancel_form($form_state, $user, $rfid) {
+function uc_authorizenet_arb_user_cancel_form($form, &$form_state, $user, $rfid) {
   $form['uid'] = array(
     '#type' => 'value',
     '#value' => $user->uid,

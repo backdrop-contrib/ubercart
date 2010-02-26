@@ -17,7 +17,7 @@ function uc_payment_settings_overview() {
   );
 }
 
-function uc_payment_settings_form() {
+function uc_payment_settings_form($form, &$form_state) {
   $form['uc_payment_tracking'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable payment tracking.'),
@@ -60,7 +60,7 @@ function uc_payment_settings_form() {
   return system_settings_form($form);
 }
 
-function uc_payment_methods_form() {
+function uc_payment_methods_form($form, &$form_state) {
   $methods = _payment_method_list();
 
   $form['methods_info'] = array(
@@ -164,10 +164,9 @@ function theme_uc_payment_method_table($variables) {
   return theme('table', array('header' => $header, 'rows' => $rows));
 }
 
-function uc_payment_gateways_form() {
+function uc_payment_gateways_form($form, &$form_state) {
   $gateways = _payment_gateway_list();
   $methods = _payment_method_list();
-  $form = array();
 
   $form['gateways'] = array(
     '#summary callback' => '_uc_payment_gateways_summarize',
@@ -425,7 +424,7 @@ function uc_payment_by_order_form_submit($form, &$form_state) {
 }
 
 // Confirmation form to delete a payment from an order.
-function uc_payment_delete_confirm_form($form_state, $order, $payment) {
+function uc_payment_delete_confirm_form($form, &$form_state, $order, $payment) {
   // Make sure the payment is for the specified order.
   if ($payment->order_id != $order->order_id) {
     drupal_set_message(t('An error loading the payment information occurred.'));

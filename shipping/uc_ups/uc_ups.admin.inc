@@ -15,9 +15,7 @@
  * @ingroup forms
  * @see uc_admin_settings_validate()
  */
-function uc_ups_admin_settings() {
-  $form = array();
-
+function uc_ups_admin_settings($form, &$form_state) {
   $form['uc_ups_conditions'] = array(
     '#markup' => '<p>'. l(t('Set the conditions that will return a UPS quote.'), CA_UI_PATH .'/uc_ups_get_quote/edit/conditions') .'</p>',
   );

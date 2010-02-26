@@ -11,9 +11,7 @@
  *
  * @ingroup forms
  */
-function uc_usps_admin_settings() {
-  $form = array();
-
+function uc_usps_admin_settings($form, &$form_state) {
   $form['uc_usps_user_id'] = array(
     '#type' => 'textfield',
     '#title' => t('USPS user ID'),

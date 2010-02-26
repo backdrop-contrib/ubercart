@@ -217,20 +217,29 @@ function hook_cart_item($op, &$item) {
  *     - value: The weight of the pane to determine its display order. (Defaults
  *         to 0.)
  *   - "body"
- *     - type: string
- *     - value: The body of the pane when rendered on the cart view screen.
+ *     - type: array
+ *     - value: The body of the pane to be rendered on the cart view screen.
  *
  * The body gets printed to the screen if it is on the cart view page.  For the
  * settings page, the body field is ignored.  You may want your function to check
  * for a NULL argument before processing any queries or foreach() loops.
  */
 function hook_cart_pane($items) {
+  $body = array();
+
+  if (!is_null($items)) {
+    $body = drupal_get_form('uc_cart_view_form', $items) + array(
+      '#prefix' => '<div id="cart-form-pane">',
+      '#suffix' => '</div>',
+    );
+  }
+
   $panes[] = array(
     'id' => 'cart_form',
     'title' => t('Default cart form'),
     'enabled' => TRUE,
     'weight' => 0,
-    'body' => !is_null($items) ? drupal_get_form('uc_cart_view_form', $items) : '',
+    'body' => $body,
   );
 
   return $panes;

@@ -29,8 +29,7 @@ function uc_order_settings_overview() {
  *
  * @ingroup forms
  */
-function uc_order_settings_form() {
-
+function uc_order_settings_form($form, &$form_state) {
   $form['admin'] = array(
     '#type' => 'fieldset',
     '#title' => t('Admin settings'),
@@ -298,7 +297,7 @@ function uc_order_workflow_form_submit($form, &$form_state) {
  *
  * @ingroup forms
  */
-function uc_order_panes_form() {
+function uc_order_panes_form($form, &$form_state) {
   $panes = _order_pane_list();
 
   foreach ($panes as $pane) {
@@ -1201,22 +1200,20 @@ function uc_order_view($order, $view = 'view') {
     if (in_array($view, $pane['show']) && variable_get('uc_order_pane_'. $pane['id'] .'_show_'. $view, $pane['enabled'])) {
       $func = $pane['callback'];
       if (function_exists($func) && ($contents = $func($view, $order)) != NULL) {
-        $build['order_panes'][$pane] = array(
-          '#markup' => '',
-          '#prefix' => '<div class="order-pane '. $pane['class'] .'">',
-          '#suffix' => '</div>',
-        );
+        $title = array();
 
         if ($func('show-title', NULL) !== FALSE) {
-          // TODO: Make sure the title and contents are being displayed in the correct order.
-          $build['order_panes'][$pane]['title'] = array(
+          $title = array(
             '#markup' => $pane['title'] .': '. $func('view-title', $order),
             '#prefix' => '<div class="order-pane-title">',
             '#suffix' => '</div>',
           );
         }
 
-        $build['order_panes'][$pane]['#markup'] .= $contents;
+        $build['order_panes'][$pane] = $title + $contents + array(
+          '#prefix' => '<div class="order-pane '. $pane['class'] .'">',
+          '#suffix' => '</div>',
+        );
       }
     }
   }
@@ -1933,7 +1930,7 @@ function uc_order_log($order) {
  *
  * @see uc_order_delete_confirm_form_submit()
  */
-function uc_order_delete_confirm_form($form_state, $order) {
+function uc_order_delete_confirm_form($form, &$form_state, $order) {
   if (!uc_order_can_delete($order)) {
     drupal_set_message(t('It is not possible to delete order @id.', array('@id' => $order->order_id)));
     drupal_goto('admin/store/orders');

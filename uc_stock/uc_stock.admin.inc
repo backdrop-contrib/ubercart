@@ -12,7 +12,7 @@
  *
  * @ingroup forms
  */
-function uc_stock_settings_form() {
+function uc_stock_settings_form($form, &$form_state) {
   $form['uc_stock_threshold_notification'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send email notification when stock level reaches its threshold value'),

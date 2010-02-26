@@ -206,8 +206,12 @@ function uc_google_checkout_cart_pane() {
     'title' => t('Google Checkout'),
     'enabled' => TRUE,
     'weight' => 1,
-    'body' => '<div align="'. variable_get('uc_google_checkout_button_align', 'right') .'">'. drupal_get_form('uc_google_checkout_cart_form') .'</div>',
+    'body' => drupal_get_form('uc_google_checkout_cart_form') + array(
+      '#prefix' => '<div align="'. variable_get('uc_google_checkout_button_align', 'right') .'">',
+      '#suffix' => '</div>',
+    ),
   );
+
   return $panes;
 }
 
@@ -683,12 +687,13 @@ function uc_google_checkout_pane_email_allowed($op, $arg1) {
     case 'customer':
     case 'view':
       if ($arg1->data['email_allowed']) {
-        $output = t('Customer will accept marketing emails.');
+        $build = array('#markup' => t('Customer will accept marketing emails.'));
       }
       else {
-        $output = t('Customer does not want marketing emails.');
+        $build = array('#markup' => t('Customer does not want marketing emails.'));
       }
-    return $output;
+
+      return $build;
   }
 }
 

@@ -637,7 +637,7 @@ function _uc_store_address_summarize($form) {
  *
  * @ingroup forms
  */
-function uc_store_store_settings_form() {
+function uc_store_store_settings_form($form, &$form_state) {
   $form['uc_store_name'] = uc_textfield(t('Store name'), variable_get('uc_store_name', NULL), FALSE, NULL, 64);
   $form['uc_store_owner'] = uc_textfield(t('Store owner'), variable_get('uc_store_owner', NULL), FALSE, NULL, 64);
 
@@ -699,7 +699,7 @@ function uc_store_store_settings_form() {
  *
  * @ingroup forms
  */
-function uc_store_display_settings_form() {
+function uc_store_display_settings_form($form, &$form_state) {
   $display_options = array(
     1 => t('Dashboard with collapsed submenu links'),
     2 => t('Dashboard with expanded submenu links'),
@@ -764,7 +764,7 @@ function uc_store_display_settings_form() {
  *
  * @ingroup forms
  */
-function uc_store_format_settings_form() {
+function uc_store_format_settings_form($form, &$form_state) {
   $form['currency'] = array(
     '#type' => 'fieldset',
     '#title' => t('Currency format'),
@@ -1125,7 +1125,7 @@ function uc_country_enable($country_id) {
  * @ingroup forms
  * @see uc_country_remove_form_submit()
  */
-function uc_country_remove_form($form_state, $country_id) {
+function uc_country_remove_form($form, &$form_state, $country_id) {
   // Fetch the country name from the database.
   $country = db_query("SELECT country_name FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id))->fetchField();
 

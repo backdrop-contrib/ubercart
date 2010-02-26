@@ -204,9 +204,7 @@ function uc_file_action_order_email_form($form_state, $settings = array()) {
 /**
  * Build an email action settings form.
  */
-function uc_file_build_email_form($form_state, $settings, $token_filters) {
-  $form = array();
-
+function uc_file_build_email_form($form, &$form_state, $settings, $token_filters) {
   $form['from'] = array(
     '#type' => 'textfield',
     '#title' => t('Sender'),

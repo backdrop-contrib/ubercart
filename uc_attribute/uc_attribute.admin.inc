@@ -165,7 +165,7 @@ function uc_attribute_form_submit($form, &$form_state) {
  *
  * @see uc_attribute_delete_confirm_submit()
  */
-function uc_attribute_delete_confirm($form_state, $attribute) {
+function uc_attribute_delete_confirm($form, &$form_state, $attribute) {
   // If we got a bunk attribute, kick out an error message.
   if (empty($attribute)) {
     drupal_set_message(t('There is no attribute with that ID.'), 'error');
@@ -230,9 +230,7 @@ function uc_attribute_delete_confirm_submit($form, &$form_state) {
  *
  * @ingroup forms
  */
-function uc_attribute_admin_settings() {
-  $form = array();
-
+function uc_attribute_admin_settings($form, &$form_state) {
   $form['uc_attribute_option_price_format'] = array('#type' => 'radios',
     '#title' => t('Option price format'),
     '#default_value' => variable_get('uc_attribute_option_price_format', 'adjustment'),
@@ -502,7 +500,7 @@ function uc_attribute_option_form_submit($form, &$form_state) {
  *
  * @see uc_attribute_option_delete_confirm_submit()
  */
-function uc_attribute_option_delete_confirm($form_state, $attribute, $option) {
+function uc_attribute_option_delete_confirm($form, &$form_state, $attribute, $option) {
   if (empty($option)) {
     drupal_set_message(t('There is no option with that ID.'), 'error');
     drupal_goto('admin/store/attributes/'. $attribute->aid .'/options');
