@@ -199,6 +199,15 @@ function uc_shipping_theme() {
   );
 }
 
+/**
+ * Implement hook_file_references().
+ */
+function uc_shipping_file_references($file) {
+  $count = db_query("SELECT COUNT(package_id) FROM {uc_packages} WHERE fid = :fid", array(':fid' => $file->fid))->fetchField();
+
+  return array('uc_shipping' => $count);
+}
+
 function template_preprocess_uc_packing_slip(&$variables) {
   $tokens = uc_store_token_values('global');
   $variables['site_logo'] = $tokens['site-logo'];
@@ -325,8 +334,8 @@ function uc_shipping_package_view($package) {
     $rows[] = array(t('Tracking number:'), check_plain($package->tracking_number));
   }
 
-  if ($shipment && $package->label_image && file_exists(file_create_path($package->label_image))) {
-    $rows[] = array(t('Label:'), l(t('Click to view.'), 'admin/store/orders/'. $package->order_id .'/shipments/labels/'. $shipment->shipping_method .'/'. $package->label_image));
+  if ($shipment && is_object($package->label_image) && file_exists($package->label_image->uri)) {
+    $rows[] = array(t('Label:'), l(t('Click to view.'), 'admin/store/orders/'. $package->order_id .'/shipments/labels/'. $shipment->shipping_method .'/'. $package->label_image->uri));
   }
   else {
     $rows[] = array(t('Label:'), t('n/a'));
@@ -435,6 +444,14 @@ function uc_shipping_package_load($package_id) {
       $package->weight = $weight;
       $package->weight_units = $units;
       $package->products = $products;
+
+      if ($package->label_image && $image = file_load($package->label_image)) {
+        $package->label_image = $image;
+      }
+      else {
+        unset($pacakge->label_image);
+      }
+
       $packages[$package_id] = $package;
     }
     else {
@@ -510,8 +527,8 @@ function uc_shipping_package_save($package) {
   if (isset($package->tracking_number)) {
     $fields['tracking_number'] = $package->tracking_number;
   }
-  if (isset($package->label_image)) {
-    $fields['label_image'] = $package->label_image;
+  if (isset($package->label_image) && is_object($package->label_image)) {
+    $fields['label_image'] = $package->label_image->fid;
   }
 
   db_update('uc_packages')
@@ -524,12 +541,19 @@ function uc_shipping_package_save($package) {
  * Delete a package.
  */
 function uc_shipping_package_delete($package_id) {
+  // @todo: Make these delete functions take the actual object.
+  $package = uc_shipping_package_load($package_id);
+
   db_delete('uc_packages')
     ->condition('package_id', $package_id)
     ->execute();
   db_delete('uc_packaged_products')
     ->condition('package_id', $package_id)
     ->execute();
+
+  if ($package->label_image) {
+    file_delete($package->label_image);
+  }
 
   drupal_set_message(t('Package @id has been deleted.', array('@id' => $package_id)));
 }
@@ -608,11 +632,6 @@ function uc_shipping_shipment_save($shipment) {
  */
 function uc_shipping_shipment_delete($shipment_id) {
   $shipment = uc_shipping_shipment_load($shipment_id);
-  foreach ($shipment->packages as $package) {
-    if (file_exists($package->label_image)) {
-      file_delete($package->label_image);
-    }
-  }
 
   db_update('uc_packages')
     ->fields(array(
@@ -626,6 +645,13 @@ function uc_shipping_shipment_delete($shipment_id) {
   db_delete('uc_shipments')
     ->condition('sid', $shipment_id)
     ->execute();
+
+  foreach ($shipment->packages as $package) {
+    if ($package->label_image) {
+      file_delete($package->label_image);
+      unset($package->label_image);
+    }
+  }
 
   module_invoke_all('shipment', 'delete', $shipment);
 }

@@ -283,12 +283,10 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
     $package =& current($shipment->packages);
     $package->tracking_number = (string)$package_results->TrackingNumber;
     $label_image = (string)$package_results->LabelImage->GraphicImage;
-    if (file_check_directory(file_create_path('ups_labels'), FILE_CREATE_DIRECTORY)) {
-      $label_path = file_create_path('ups_labels') .'/label'. $package->tracking_number .'.gif';
-      if ($label_file = fopen($label_path, 'wb')) {
-        fwrite($label_file, base64_decode($label_image));
-        fclose($label_file);
-        $package->label_image = 'ups_labels/'. basename($label_path);
+    if (file_preprare_directory('public://ups_labels', FILE_CREATE_DIRECTORY)) {
+      $label_path = 'public://ups_labels/label'. $package->tracking_number .'.gif';
+      if ($label_file = file_save_data(base64_decode($label_image), $label_path, FILE_EXISTS_REPLACE)) {
+        $package->label_image = $label_file;
       }
       else {
         drupal_set_message(t('Could not open a file to save the label image.'), 'error');
@@ -359,7 +357,7 @@ function theme_uc_ups_label_image() {
     return MENU_NOT_FOUND;
   }
 
-  $image_path = file_create_url($args[6]);
+  $image_path = file_stream_wrapper_uri_normalize($args[6]);
 
   $output = <<<EOLABEL
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 3.2//EN">

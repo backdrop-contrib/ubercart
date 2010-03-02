@@ -37,11 +37,11 @@ function uc_shipping_order_packages($order) {
     $row[] = isset($package->label_image)
       ? l(theme('image_style', array(
           'style_name' => 'uc_thumbnail',
-          'path' => $package->label_image,
+          'path' => $package->label_image->uri,
           'alt' => t('Shipping Label'),
           'title' => t('Shipping Label'),
         )),
-        'admin/store/orders/'. $order->order_id .'/shipments/labels/'. $method .'/'. $package->label_image,
+        'admin/store/orders/'. $order->order_id .'/shipments/labels/'. $method .'/'. $package->label_image->uri,
         array('html' => TRUE))
       : '';
     $row[] = l(t('edit'), 'admin/store/orders/'. $order->order_id .'/packages/'. $package->package_id .'/edit');
@@ -406,6 +406,11 @@ function uc_shipping_package_cancel_confirm_submit($form, &$form_state) {
         ))
         ->condition('package_id', $package->package_id)
         ->execute();
+
+      if ($package->label_image) {
+        file_delete($package->label_image);
+        unset($package->label_image);
+      }
 
       unset($shipment->packages[$package->package_id]);
       if (!count($shipment->packages)) {
@@ -989,12 +994,12 @@ EOHTML;
   $output .= theme('uc_packing_slip', array('order' => $order, 'shipment' => $shipment));
 
   foreach ($shipment->packages as $id => $package) {
-    if ($package->label_image && ($path = file_create_path($package->label_image)) && file_exists($path)) {
+    if ($package->label_image && file_exists($package->label_image->uri)) {
       // TODO: Find a way to store these magic numbers specifically for UPS.
       list($width, $height) = array(672, 392);
       $output .= '<br class="page-break" />' . "\n";;
       $output .= theme('image', array(
-        'path' => file_create_url($package->label_image),
+        'path' => $package->label_image->uri,
         'attributes' => array('width' => $width, 'height' => $height),
         'getsize' => FALSE,
       )) ."\n";
