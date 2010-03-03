@@ -106,63 +106,95 @@ function uc_quote_theme() {
 }
 
 /**
- * Implementation of hook_nodeapi().
- *
- * Load, save, and delete the shipping type and default shipping address of products.
+ * Implements hook_node_insert().
  */
-function uc_quote_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
+function uc_quote_node_insert($node) {
+  uc_quote_node_update($node);
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function uc_quote_node_update($node) {
   if (uc_product_is_product($node->type)) {
-    switch ($op) {
-      case 'insert':
-      case 'update':
-        if (isset($node->shipping_type)) {
-          uc_quote_set_shipping_type('product', $node->nid, $node->shipping_type);
-        }
+    if (isset($node->shipping_type)) {
+      uc_quote_set_shipping_type('product', $node->nid, $node->shipping_type);
+    }
 
-        if ($node->street1) {
-          db_merge('uc_quote_product_locations')
-            ->key(array('nid' => $node->nid))
-            ->fields(array(
-              'first_name' => $node->first_name,
-              'last_name' => $node->last_name,
-              'company' => $node->company,
-              'street1' => $node->street1,
-              'street2' => $node->street2,
-              'city' => $node->city,
-              'zone' => $node->zone,
-              'postal_code' => $node->postal_code,
-              'country' => $node->country,
-              'phone' => $node->phone,
-            ))
-            ->execute();
-        }
-        else {
-          db_delete('uc_quote_product_locations')
-            ->condition('nid', $node->nid)
-            ->execute();
-        }
-      break;
-      case 'load':
-        $shipping_type = uc_product_get_shipping_type($node);
-
-        $address = db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid = :nid", array(':nid' => $node->nid))->fetchObject();
-        if ($address === FALSE) {
-          $address = variable_get('uc_quote_store_default_address', new stdClass());
-        }
-
-        return array('shipping_type' => $shipping_type, 'shipping_address' => $address);
-      case 'delete':
-        db_delete('uc_quote_shipping_types')
-          ->condition('id_type', 'product')
-          ->condition('id', $node->nid)
-          ->execute();
-
-        db_delete('uc_quote_product_locations')
-          ->condition('nid', $node->nid)
-          ->execute();
-      break;
+    if ($node->street1) {
+      db_merge('uc_quote_product_locations')
+        ->key(array('nid' => $node->nid))
+        ->fields(array(
+          'first_name' => $node->first_name,
+          'last_name' => $node->last_name,
+          'company' => $node->company,
+          'street1' => $node->street1,
+          'street2' => $node->street2,
+          'city' => $node->city,
+          'zone' => $node->zone,
+          'postal_code' => $node->postal_code,
+          'country' => $node->country,
+          'phone' => $node->phone,
+        ))
+        ->execute();
+    }
+    else {
+      db_delete('uc_quote_product_locations')
+        ->condition('nid', $node->nid)
+        ->execute();
     }
   }
+}
+
+/**
+ * Implements hook_node_load().
+ */
+function uc_quote_node_load($nodes, $types) {
+  $product_types = uc_product_types();
+
+  if (empty(array_intersect($product_types, $types))) {
+    return;
+  }
+
+  $shipping_type = variable_get('uc_store_shipping_type', 'small_package');
+  $shipping_types = db_query("SELECT id, shipping_type FROM {uc_quote_shipping_types} WHERE id_type = :type AND id IN (:ids)", array(':type' => 'product', ':ids' => array_keys($nodes)))->fetchAllKeyed();
+
+  $addresses = db_query("SELECT nid, first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid IN (:nids)", array(':nids' => array_keys($nodes)))->fetchAllAssoc('nid');
+
+  foreach ($nodes as $nid => &$node) {
+    if (!in_array($node->type, $product_types)) {
+      continue;
+    }
+
+    if (isset($shipping_types[$nid])) {
+      $node->shipping_type = $shipping_types[$nid];
+    }
+    else {
+      $node->shipping_type = $shipping_type;
+    }
+
+    if (isset($addresses[$nid])) {
+      $node->shipping_address = $addresses[$nid];
+      unset($node->shipping_address->nid);
+    }
+    else {
+      $node->shipping_address = variable_get('uc_quote_store_default_address', new stdClass());
+    }
+  }
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function uc_quote_node_delete($node) {
+  db_delete('uc_quote_shipping_types')
+    ->condition('id_type', 'product')
+    ->condition('id', $node->nid)
+    ->execute();
+
+  db_delete('uc_quote_product_locations')
+    ->condition('nid', $node->nid)
+    ->execute();
 }
 
 /**
@@ -250,10 +282,10 @@ function uc_quote_form_alter(&$form, $form_state, $form_id) {
  * Implementation of hook_content_extra_fields().
  */
 function uc_quote_content_extra_fields($type_name) {
-  $type = node_get_types('type', $type_name);
+  $type = node_type_get_type($type_name);
   $extra = array();
 
-  if ($type->module == 'uc_product') {
+  if ($type->base == 'uc_product') {
     $extra['shipping'] = array(
       'label' => t('Shipping'),
       'description' => t('Shipping settings form.'),

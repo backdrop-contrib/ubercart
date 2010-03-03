@@ -142,18 +142,20 @@ function uc_file_theme() {
 }
 
 /**
- * Implementation of hook_user_delete().
+ * Implements hook_user_cancel().
  *
  * User was deleted, so we delete all the files associated with them.
  */
-function uc_file_user_delete(&$account) {
+function uc_file_user_cancel($edit, $account, $method) {
   uc_file_remove_user($account);
 }
 
 /**
- * Implementation of hook_user_form().
+ * Implements hook_form_user_profile_form_alter().
  */
-function uc_file_user_form(&$account, $category = NULL) {
+function uc_file_form_user_profile_form_alter(&$form, &$form_state) {
+  $account = $form_state['build_info']['args'][0];
+  $category = $form_state['build_info']['args'][1];
 
   // We only want the account edit form.
   if (!user_access('administer users') || (is_null($category) || $category != 'account')) {
@@ -265,8 +267,8 @@ function uc_file_user_form(&$account, $category = NULL) {
     $less_reading = &$form['file']['download']['file_download'][$file_download->fid];
 
     $less_reading['download_limit_old'] = array('#type' => 'value', '#value' => $less_reading['download_limit']['#default_value']);
-    $less_reading['address_limit_old' ] = array('#type' => 'value', '#value' => $less_reading['address_limit' ]['#default_value']);
-    $less_reading['expiration_old'    ] = array('#type' => 'value', '#value' => $less_reading['expiration'    ]['#value']);
+    $less_reading['address_limit_old'] = array('#type' => 'value', '#value' => $less_reading['address_limit']['#default_value']);
+    $less_reading['expiration_old'] = array('#type' => 'value', '#value' => $less_reading['expiration']['#value']);
   }
 
   // Create the list of files able to be attached to this user.
@@ -293,16 +295,20 @@ function uc_file_user_form(&$account, $category = NULL) {
     );
   }
 
+  $form['#validate'][] = 'uc_file_user_validate';
+
   return $form;
 }
 
 /**
- * Implementation of hook_user_validate().
+ * User profile form validation handler.
+ *
+ * @see uc_file_form_user_profile_form_alter()
  */
-function uc_file_user_validate(&$edit) {
+function uc_file_user_validate($form, &$form_state) {
+  $edit = $form_state['values'];
 
   foreach ((array)$edit['file_download'] as $key => $download_modification) {
-
     // We don't care... it's about to be deleted.
     if ($download_modification['remove']) {
       continue;
@@ -335,13 +341,11 @@ function uc_file_user_validate(&$edit) {
 }
 
 /**
- * Implementation of hook_user_submit().
+ * Implementation of hook_user_presave().
  */
-function uc_file_user_submit(&$edit, &$account) {
-
+function uc_file_user_presave(&$edit, $account, $category) {
   // Check out if any downloads were modified.
   foreach ((array)$edit['file_download'] as $fid => $download_modification) {
-
     // Remove this user download?
     if ($download_modification['remove']) {
       uc_file_remove_user_file_by_id($account, $fid);
@@ -349,14 +353,13 @@ function uc_file_user_submit(&$edit, &$account) {
 
     // Update the modified downloads.
     else {
-
       // Calculate the new expiration.
       $download_modification['expiration'] = _uc_file_expiration_date($download_modification, $download_modification['expiration']);
 
       // Don't touch anything if everything's the same.
       if ($download_modification['download_limit'] == $download_modification['download_limit_old'] &&
-          $download_modification['address_limit' ] == $download_modification['address_limit_old' ] &&
-          $download_modification['expiration'    ] == $download_modification['expiration_old'    ]) {
+          $download_modification['address_limit'] == $download_modification['address_limit_old'] &&
+          $download_modification['expiration'] == $download_modification['expiration_old']) {
         continue;
       }
 
@@ -368,7 +371,6 @@ function uc_file_user_submit(&$edit, &$account) {
   // Check out if any downloads were added. We pass NULL to file_user_renew,
   // because this shouldn't be associated with a random product.
   foreach ((array)$edit['file_add'] as $fid => $data) {
-
     $download_modification['download_limit'] = variable_get('uc_file_download_limit_number', NULL);
     $download_modification['address_limit'] = variable_get('uc_file_download_limit_addresses', NULL);
 
@@ -384,10 +386,9 @@ function uc_file_user_submit(&$edit, &$account) {
 }
 
 /**
- * Implementation of hook_user_view().
+ * Implements hook_user_view().
  */
-function uc_file_user_view(&$account) {
-
+function uc_file_user_view($account, $view_mode) {
   global $user;
 
   // If user has files and permission to view them, put a link
@@ -398,45 +399,16 @@ function uc_file_user_view(&$account) {
   }
 
   $item = array(
-      '#type' => 'user_profile_category',
-      '#weight' => '-1',
-
-      '#title' => t('File downloads'),
-
-      'user_items' => array(
-        '#type' => 'user_profile_item',
-        '#value' => l(t('Click here to view your file downloads.'), 'user/'. $account->uid .'/purchased-files'),
-      ),
+    '#type' => 'user_profile_category',
+    '#weight' => '-1',
+    '#title' => t('File downloads'),
+    'user_items' => array(
+      '#type' => 'user_profile_item',
+      '#value' => l(t('Click here to view your file downloads.'), 'user/'. $account->uid .'/purchased-files'),
+    ),
   );
 
   $account->content['uc_file_download'] = $item;
-}
-
-/**
- * Implementation of hook_user().
- */
-function uc_file_user($op, &$edit, &$account, $category = NULL) {
-
-  switch ($op) {
-
-    case 'delete':
-      return uc_file_user_delete($account);
-
-    case 'form':
-      return uc_file_user_form($account, $category);
-
-    case 'validate':
-      return uc_file_user_validate($edit);
-
-    case 'submit':
-      return uc_file_user_submit($edit, $account);
-
-    case 'view':
-      return uc_file_user_view($account);
-
-    default:
-      break;
-  }
 }
 
 /**
@@ -1583,7 +1555,13 @@ function uc_file_remove_user($user) {
 
   // Echo the deletion only if something was actually deleted.
   if ($query->execute()) {
-    drupal_set_message(t('%user has had all of his/her downloadable files removed.', array('%user' => $user->name)));
+    drupal_set_message(t('!user has had all of his/her downloadable files removed.', array(
+      '!user' => theme('username', array(
+        'account' => $user,
+        'name' => check_plain($user->name),
+        'link_path' => 'user/' . $user->uid,
+      )),
+    )));
   }
 }
 
@@ -1603,7 +1581,14 @@ function uc_file_remove_user_file_by_id($user, $fid) {
 
   // Echo the deletion only if something was actually deleted.
   if ($query->execute()) {
-    drupal_set_message(t('%user has had %file removed from his/her downloadable file list.', array('%user' => $user->name, '%file' => $file->filename)));
+    drupal_set_message(t('!user has had %file removed from his/her downloadable file list.', array(
+      '!user' => theme('username', array(
+        'account' => $user,
+        'name' => check_plain($user->name),
+        'link_path' => 'user/' . $user->uid,
+      )),
+      '%file' => $file->filename,
+    )));
   }
 }
 
@@ -1758,10 +1743,10 @@ function uc_file_user_renew($fid, $user, $pfid, $file_limits, $force_overwrite) 
     drupal_write_record('uc_file_users', $file_user, $key);
 
     if ($key) {
-      watchdog('uc_file', '%user has had download privileges of %file renewed.', array('%user' => $user->name, '%file' => $file_user['filename']));
+      watchdog('uc_file', '%user has had download privileges of %file renewed.', array('%user' => format_username($user), '%file' => $file_user['filename']));
     }
     else {
-      watchdog('uc_file', '%user has been allowed to download %file.', array('%user' => $user->name, '%file' => $file_user['filename']));
+      watchdog('uc_file', '%user has been allowed to download %file.', array('%user' => format_username($user), '%file' => $file_user['filename']));
     }
 
     $result[] = (object)$file_user;

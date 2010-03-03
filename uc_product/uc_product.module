@@ -189,7 +189,7 @@ function uc_product_permission() {
   );
 
   foreach (node_type_get_types() as $type) {
-    if ($type->module == 'uc_product') {
+    if ($type->base == 'uc_product') {
       $type = check_plain($type->type);
       $name = $type->name;
 
@@ -288,25 +288,25 @@ function uc_product_theme() {
       'file' => 'uc_product.admin.inc',
     ),
     'uc_product_model' => array(
-      'variables' => array('model' => '', 'teaser' => 0, 'page' => 0),
+      'variables' => array('model' => '', 'view_mode' => 'full'),
     ),
     'uc_product_body' => array(
-      'variables' => array('body' => '', 'teaser' => 0, 'page' => 0),
+      'variables' => array('body' => '', 'view_mode' => 'full'),
     ),
     'uc_product_add_to_cart' => array(
-      'variables' => array('node' => NULL, 'teaser' => 0, 'page' => 0),
+      'variables' => array('node' => NULL, 'view_mode' => 'full'),
     ),
     'uc_product_price' => array(
       'variables' => array('price' => 0, 'context' => array(), 'options' => array()),
     ),
     'uc_product_weight' => array(
-      'variables' => array('weight' => 0, 'units' => NULL, 'teaser' => 0, 'page' => 0),
+      'variables' => array('weight' => 0, 'units' => NULL, 'view_mode' => 'full'),
     ),
     'uc_product_dimensions' => array(
-      'variables' => array('length' => 0, 'width' => 0, 'height' => 0, 'units' => NULL, 'teaser' => 0, 'page' => 0),
+      'variables' => array('length' => 0, 'width' => 0, 'height' => 0, 'units' => NULL, 'view_mode' => 'full'),
     ),
     'uc_product_image' => array(
-      'variables' => array('images' => array(), 'teaser' => 0, 'page' => 0),
+      'variables' => array('images' => array(), 'view_mode' => 'full'),
     ),
     'uc_product_feature_add_form' => array(
       'render element' => 'form',
@@ -360,7 +360,7 @@ function uc_product_node_info($reset = FALSE) {
     $types = array();
     $types['product'] = array(
       'name' => t('Product'),
-      'module' => 'uc_product',
+      'base' => 'uc_product',
       'description' => t('This node displays the representation of a product for sale on the website. It includes all the unique information that can be attributed to a specific model number.'),
       'title_label' => $title_label,
       'body_label' => $body_label,
@@ -370,7 +370,7 @@ function uc_product_node_info($reset = FALSE) {
     foreach ($result as $class) {
       $types[$class->pcid] = array(
         'name' => $class->name,
-        'module' => 'uc_product',
+        'base' => 'uc_product',
         'description' => $class->description,
         'title_label' => $title_label,
         'body_label' => $body_label,
@@ -416,7 +416,7 @@ function uc_product_edit_access($node) {
  *   uc_product_form_validate()
  */
 function uc_product_form($node, $form_state) {
-  $type = node_get_types('type', $node);
+  $type = node_type_get_type($node);
 
   $location = array();
   $location[] = menu_get_item('admin');
@@ -693,8 +693,18 @@ function uc_product_update($node) {
 /**
  * Implementation of hook_load().
  */
-function uc_product_load(&$node) {
-  return db_query('SELECT model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, unique_hash, ordering, shippable FROM {uc_products} WHERE vid = :vid', array(':vid' => $node->vid))->fetchObject();
+function uc_product_load($nodes) {
+  $vids = array();
+  foreach ($nodes as $node) {
+    $vids[$node->nid] = $node->vid;
+  }
+
+  $result = db_query('SELECT nid, model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, unique_hash, ordering, shippable FROM {uc_products} WHERE vid IN (:vids)', array(':vids' => $vids));
+  foreach ($result as $node) {
+    foreach ($node as $field => $value) {
+      $nodes[$node->nid]->$field = $value;
+    }
+  }
 }
 
 /**
@@ -726,9 +736,7 @@ function uc_product_field_enabled() {
 /**
  * Implementation of hook_view().
  */
-function uc_product_view($node, $teaser = 0, $page = 0) {
-  $node = node_prepare($node, $teaser);
-
+function uc_product_view($node, $view_mode) {
   $enabled = uc_product_field_enabled();
   $weight = variable_get('uc_product_field_weight', array(
     'display_price' => -1,
@@ -762,12 +770,11 @@ function uc_product_view($node, $teaser = 0, $page = 0) {
     '#weight' => $weight['display_price'],
   );
 
-  if (!$teaser) {
+  if ($view_mode != 'teaser') {
     $node->content['model'] = array(
       '#theme' => 'uc_product_model',
       '#model' => $node->model,
-      '#teaser' => $teaser,
-      '#page' => $page,
+      '#view_mode' => $view_mode,
       '#access' => $enabled['model'],
       '#weight' => $weight['model'],
     );
@@ -806,19 +813,18 @@ function uc_product_view($node, $teaser = 0, $page = 0) {
     '#price' => $node->sell_price,
     '#context' => $context,
     '#options' => array(
-      'label' => !$teaser,
+      'label' => $view_mode != 'teaser',
     ),
     '#access' => $enabled['sell_price'],
     '#weight' => $weight['sell_price'],
   );
 
-  if (!$teaser) {
+  if ($view_mode != 'teaser') {
     $node->content['weight'] = array(
       '#theme' => 'uc_product_weight',
       '#weight' => $node->weight,
       '#units' => $node->weight_units,
-      '#teaser' => $teaser,
-      '#page' => $page,
+      '#view_mode' => $view_mode,
       '#access' => $enabled['weight'],
       '#weight' => $weight['weight'],
     );
@@ -828,8 +834,7 @@ function uc_product_view($node, $teaser = 0, $page = 0) {
       '#width' => $node->width,
       '#height' => $node->height,
       '#units' => $node->length_units,
-      '#teaser' => $teaser,
-      '#page' => $page,
+      '#view_mode' => $view_mode,
       '#access' => $enabled['dimensions'],
       '#weight' => $weight['dimensions'],
     );
@@ -837,8 +842,7 @@ function uc_product_view($node, $teaser = 0, $page = 0) {
       $node->content['add_to_cart'] = array(
         '#theme' => 'uc_product_add_to_cart',
         '#node' => $node,
-        '#teaser' => $teaser,
-        '#page' => $page,
+        '#view_mode' => $view_mode,
         '#access' => $enabled['add_to_cart'],
         '#weight' => $weight['add_to_cart'],
       );
@@ -848,8 +852,7 @@ function uc_product_view($node, $teaser = 0, $page = 0) {
     $node->content['add_to_cart'] = array(
       '#theme' => 'uc_product_add_to_cart',
       '#node' => $node,
-      '#teaser' => $teaser,
-      '#page' => $page,
+      '#view_mode' => $view_mode,
       '#access' => $enabled['add_to_cart'],
       '#weight' => $weight['add_to_cart'],
     );
@@ -861,7 +864,7 @@ function uc_product_view($node, $teaser = 0, $page = 0) {
 /**
  * Implementation of hook_preprocess_node().
  *
- * Default product classes to use node-product.tpl.php if they don't have their
+ * Product classes default to use node-product.tpl.php if they don't have their
  * own template.
  *
  * @see theme(), MODULE_preprocess_HOOK()
@@ -1022,10 +1025,10 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
  * Adds the "Product information"
  */
 function uc_product_content_extra_fields($type_name) {
-  $type = node_get_types('type', $type_name);
+  $type = node_type_get_type($type_name);
   $extra = array();
 
-  if ($type->module == 'uc_product') {
+  if ($type->base == 'uc_product') {
     $extra['base'] = array(
       'label' => t('Product information'),
       'description' => t('Product module form.'),
@@ -1040,9 +1043,9 @@ function uc_product_content_extra_fields($type_name) {
  * Implementation of hook_content_extra_fields_alter().
  */
 function uc_product_content_extra_fields_alter(&$extra, $type_name) {
-  $type = node_get_types('type', $type_name);
+  $type = node_type_get_type($type_name);
 
-  if ($type->module == 'uc_product') {
+  if ($type->base == 'uc_product') {
     if (isset($extra['menu'])) {
       $extra['menu']['weight'] = 0;
     }

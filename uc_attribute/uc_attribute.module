@@ -344,82 +344,104 @@ function uc_attribute_uc_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
- * Implementation of hook_nodeapi().
+ * Implements hook_node_load().
  */
-function uc_attribute_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
-  if (uc_product_is_product($node->type)) {
-    switch ($op) {
-      case 'load':
-        $attributes = uc_product_get_attributes($node->nid);
-        if (is_array($attributes) && !empty($attributes)) {
-          $node->attributes = $attributes;
-          return array('attributes' => $attributes);
-        }
-        break;
-      case 'insert':
-        $select = db_select('uc_class_attributes', 'ca')
-          ->fields('ca', array(
-            'aid',
-            'label',
-            'ordering',
-            'required',
-            'display',
-            'default_option',
-          ))
-          ->condition('pcid', $node->type);
-        $select->addExpression(':nid', 'nid', array(':nid' => $node->nid));
+function uc_attribute_node_load($nodes, $types) {
+  $product_types = uc_product_types();
 
-        db_insert('uc_product_attributes')
-          ->from($select)
-          ->execute();
+  if (empty(array_intersect($product_types, $types))) {
+    return;
+  }
 
-        $select = db_select('uc_class_attribute_options', 'co')
-          ->fields('co', array(
-            'oid',
-            'cost',
-            'price',
-            'weight',
-            'ordering',
-          ))
-          ->condition('pcid', $node->type);
-        $select->addExpression(':nid', 'nid', array(':nid' => $node->nid));
-
-        db_insert('uc_product_options')
-          ->from($select)
-          ->execute();
-
-        break;
-      case 'delete':
-        db_delete('uc_product_options')
-          ->condition('nid', $node->nid)
-          ->execute();
-
-        db_delete('uc_product_adjustments')
-          ->condition('nid', $node->nid)
-          ->execute();
-
-        db_delete('uc_product_attributes')
-          ->condition('nid', $node->nid)
-          ->execute();
-
-        break;
-      case 'update index':
-        $output = '';
-        $attributes = uc_product_get_attributes($node->nid);
-        foreach ($attributes as $attribute) {
-          $output .= '<h3>'. _uc_attribute_get_name($attribute) .'</h3>';
-          foreach ($attribute->options as $option) {
-            $output .= $option->name .' ';
-          }
-          $output .= "\n";
-        }
-        $result = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $node->nid));
-        while ($model = $result->fetchField()) {
-          $output .= '<h2>'. $model ."</h2>\n";
-        }
-        return $output;
+  foreach ($nodes as &$node) {
+    if (uc_product_is_product($node->type)) {
+      $attributes = uc_product_get_attributes($node->nid);
+      if (is_array($attributes) && !empty($attributes)) {
+        $node->attributes = $attributes;
+      }
     }
   }
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function uc_attribute_node_insert($node) {
+  // Set attributes from class attributes.
+  $select = db_select('uc_class_attributes', 'ca')
+    ->fields('ca', array(
+      'aid',
+      'label',
+      'ordering',
+      'required',
+      'display',
+      'default_option',
+    ))
+    ->condition('pcid', $node->type);
+  // SELECT $node->nid AS nid
+  $select->addExpression(':nid', 'nid', array(':nid' => $node->nid));
+
+  db_insert('uc_product_attributes')
+    ->from($select)
+    ->execute();
+
+  // Set options from class options.
+  $select = db_select('uc_class_attribute_options', 'co')
+    ->fields('co', array(
+      'oid',
+      'cost',
+      'price',
+      'weight',
+      'ordering',
+    ))
+    ->condition('pcid', $node->type);
+  $select->addExpression(':nid', 'nid', array(':nid' => $node->nid));
+
+  db_insert('uc_product_options')
+    ->from($select)
+    ->execute();
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function uc_attribute_node_delete($node) {
+  db_delete('uc_product_options')
+    ->condition('nid', $node->nid)
+    ->execute();
+
+  db_delete('uc_product_adjustments')
+    ->condition('nid', $node->nid)
+    ->execute();
+
+  db_delete('uc_product_attributes')
+    ->condition('nid', $node->nid)
+    ->execute();
+}
+
+/**
+ * Implements hook_node_update_index().
+ */
+function uc_attribute_node_update_index($node) {
+  $output = '';
+
+  $attributes = uc_product_get_attributes($node->nid);
+  foreach ($attributes as $attribute) {
+    $output .= '<h3>'. _uc_attribute_get_name($attribute) .'</h3>';
+
+    foreach ($attribute->options as $option) {
+      $output .= $option->name .' ';
+    }
+
+    $output .= "\n";
+  }
+
+  $result = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $node->nid));
+  while ($model = $result->fetchField()) {
+    $output .= '<h2>'. $model ."</h2>\n";
+  }
+
+  return $output;
 }
 
 /******************************************************************************

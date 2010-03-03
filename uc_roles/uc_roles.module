@@ -160,32 +160,24 @@ function uc_roles_theme() {
 }
 
 /**
- * Implementation of hook_nodeapi().
+ * Implements hook_node_delete().
  */
-function uc_roles_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
-  switch ($op) {
-    case 'delete':
-      // Deleted node was a product; remove all role associations.
-      if (uc_product_is_product($node->type)) {
-        uc_roles_node_delete($node->nid);
-      }
-      break;
-    default:
-      break;
+function uc_roles_node_delete($node) {
+  // Deleted node was a product; remove all role associations.
+  if (uc_product_is_product($node->type)) {
+    db_delete('uc_roles_products')
+      ->condition('nid', $node->nid)
+      ->execute();
   }
 }
 
 /**
- * Implementation of hook_user_delete().
+ * Implements hook_form_user_profile_form_alter().
  */
-function uc_roles_user_delete(&$account) {
-  uc_roles_delete($account->uid);
-}
+function uc_roles_form_user_profile_form_alter(&$form, &$form_state) {
+  $account = $form_state['build_info']['args'][0];
+  $cateogry = $form_state['build_info']['args'][1];
 
-/**
- * Implementation of hook_user_form().
- */
-function uc_roles_user_form(&$edit, &$account, $category = NULL) {
   if (!user_access('administer users') || $category != 'account') {
     return;
   }
@@ -282,6 +274,8 @@ function uc_roles_user_form(&$edit, &$account, $category = NULL) {
     }
   }
 
+  $form['#validate'][] = 'uc_roles_user_validate';
+
   return $form;
 }
 
@@ -356,9 +350,51 @@ function theme_uc_roles_user_expiration($variables) {
 }
 
 /**
- * Implementation of hook_user_submit().
+ * User profile form validate handler.
+ *
+ * @see uc_roles_form_user_profile_form_alter()
  */
-function uc_roles_user_submit(&$edit, &$account, $category) {
+function uc_roles_user_validate($form, &$form_state, &$account, $category) {
+  $edit = $form_state['values'];
+  $account = $form_state['build_info']['args'][0];
+  $category = $form_state['build_info']['args'][1];
+
+  // Validate the amount of time for the expiration.
+  if ($edit['new_role'] && $category == 'account') {
+    if (intval($edit['new_role_add_qty']) < 1) {
+      form_set_error('new_role_add_qty', t('The expiration length must be a positive integer'));
+    }
+  }
+
+  // Validate adjusted expirations.
+  foreach ((array)$edit['table'] as $rid => $value) {
+    // We don't validate if nothing was actually selected, the role, or the
+    // expiration is removed.
+    if ($value['qty'] == 0 || $value['remove'] == 1 || !$edit['roles'][$rid]) {
+      continue;
+    }
+
+    $qty = $value['qty'];
+    $qty *= $value['polarity'] == 'add' ? 1 : -1;
+
+    $new_expiration = _uc_roles_get_expiration($qty, $value['granularity'], $value['expiration']);
+    if (REQUEST_TIME > $new_expiration) {
+      form_set_error('qty', t("The new expiration date, %date, has already occurred.", array('%date' => format_date($new_expiration, 'small'))));
+    }
+  }
+}
+
+/**
+ * Implements hook_user_cancel().
+ */
+function uc_roles_user_cancel($edit, $account, $method) {
+  uc_roles_delete($account->uid);
+}
+
+/**
+ * Implements hook_user_presave().
+ */
+function uc_roles_user_presave(&$edit, $account, $category) {
   if (!user_access('administer users') || $category != 'account') {
     return;
   }
@@ -367,12 +403,7 @@ function uc_roles_user_submit(&$edit, &$account, $category) {
   // Grant a new role.
   if ($edit['new_role'] && $category == 'account') {
     // Save our role info, but don't save the user; user.module will do it.
-    uc_roles_grant(
-      $account,
-      $edit['new_role_add'],
-      _uc_roles_get_expiration($edit['new_role_add_qty'], $edit['new_role_add_granularity']),
-      FALSE
-    );
+    uc_roles_grant($account, $edit['new_role_add'], _uc_roles_get_expiration($edit['new_role_add_qty'], $edit['new_role_add_granularity']), FALSE);
 
     // Push in values so user.module will save in the roles.
     $edit['roles'][$edit['new_role_add']] = _uc_roles_get_name($edit['new_role_add']);
@@ -410,40 +441,11 @@ function uc_roles_user_submit(&$edit, &$account, $category) {
 }
 
 /**
- * Implementation of hook_user_validate().
- */
-function uc_roles_user_validate(&$edit, &$account, $category) {
-  // Validate the amount of time for the expiration.
-  if ($edit['new_role'] && $category == 'account') {
-    if (intval($edit['new_role_add_qty']) < 1) {
-      form_set_error('new_role_add_qty', t('The expiration length must be a positive integer'));
-    }
-  }
-
-  // Validate adjusted expirations.
-  foreach ((array)$edit['table'] as $rid => $value) {
-    // We don't validate if nothing was actually selected, the role, or the
-    // expiration is removed.
-    if ($value['qty'] == 0 || $value['remove'] == 1 || !$edit['roles'][$rid]) {
-      continue;
-    }
-
-    $qty = $value['qty'];
-    $qty *= $value['polarity'] == 'add' ? 1 : -1;
-
-    $new_expiration = _uc_roles_get_expiration($qty, $value['granularity'], $value['expiration']);
-    if (REQUEST_TIME > $new_expiration) {
-      form_set_error('qty', t("The new expiration date, %date, has already occurred.", array('%date' => format_date($new_expiration, 'small'))));
-    }
-  }
-}
-
-/**
  * Implementation of hook_user_view().
  *
  * Display role expirations on the user account screen.
  */
-function uc_roles_user_view(&$edit, &$account) {
+function uc_roles_user_view($account, $view_mode) {
   global $user;
 
   // Kick out anonymous.
@@ -481,25 +483,8 @@ function uc_roles_user_view(&$edit, &$account) {
     '#weight' => '-1',
     '#title' => variable_get('uc_roles_default_expiration_header', uc_get_message('uc_roles_user_expiration_header')),
   );
-  $account->content['uc_roles'] = $item + $form;
-}
 
-/**
- * Implementation of hook_user().
- */
-function uc_roles_user($op, &$edit, &$account, $category = NULL) {
-  switch ($op) {
-    case 'delete':
-      return uc_roles_user_delete($account);
-    case 'form':
-      return uc_roles_user_form($edit, $account, $category);
-    case 'submit':
-      return uc_roles_user_submit($edit, $account, $category);
-    case 'validate':
-      return uc_roles_user_validate($edit, $account, $category);
-    case 'view':
-      return uc_roles_user_view($edit, $account);
-  }
+  $account->content['uc_roles'] = $item + $form;
 }
 
 /******************************************************************************
@@ -1101,18 +1086,6 @@ function _uc_roles_get_choices($exclude = array()) {
  ******************************************************************************/
 
 /**
- * Delete all data associated with a given node.
- *
- * @param $nid
- *   A Drupal node ID.
- */
-function uc_roles_node_delete($nid) {
-  db_delete('uc_roles_products')
-    ->condition('nid', $nid)
-    ->execute();
-}
-
-/**
  * Delete all data associated with a given product feature.
  *
  * @param $pfid
@@ -1157,7 +1130,14 @@ function uc_roles_delete($account, $rid = NULL, $silent = FALSE) {
       drupal_set_message(t('The expiration of your %role_name role has been deleted.', array('%role_name' => _uc_roles_get_name($rid))));
     }
     else {
-      drupal_set_message(t('The expiration of %role_name role for the user %user_name has been deleted.', array('%user_name' => $account->name, '%role_name' => _uc_roles_get_name($rid))));
+      drupal_set_message(t('The expiration of %role_name role for the user !user has been deleted.', array(
+        '!user' => theme('username', array(
+          'account' => $account,
+          'name' => check_plain($account->name),
+          'link_path' => 'user/' . $account->uid,
+        )),
+        '%role_name' => _uc_roles_get_name($rid),
+      )));
     }
   }
 
@@ -1200,7 +1180,14 @@ function uc_roles_revoke($account, $rid, $silent = FALSE) {
       drupal_set_message(t('Your %role role has been revoked.', array('%role' => $role_name)));
     }
     else {
-      drupal_set_message(t('%user has had the %role role revoked.', array('%user' => $account->name, '%role' => $role_name)));
+      drupal_set_message(t('!user has had the %role role revoked.', array(
+        '!user' => theme('username', array(
+          'account' => $account,
+          'name' => check_plain($account->name),
+          'link_path' => 'user/' . $account->uid,
+        )),
+        '%role' => $role_name,
+      )));
     }
   }
 }
@@ -1215,7 +1202,8 @@ function uc_roles_revoke($account, $rid, $silent = FALSE) {
  * @param $timestamp
  *   When this role will expire.
  * @param $save_user
- *   Optimization to prevent unnecessary user saving when calling from hook_user().
+ *   Optimization to prevent unnecessary user saving when calling from
+ *   uc_roles_user_presave().
  * @param $silent
  *   When set to TRUE will suppress any Drupal messages from this function.
  *
@@ -1260,7 +1248,14 @@ function uc_roles_grant(&$account, $rid, $timestamp, $save_user = TRUE, $silent 
       $message = t('You have been granted the %role role.', array('%role' => $role_name));
     }
     else {
-      $message = t('%user has been granted the %role role.', array('%user' => $account->name, '%role' => $role_name));
+      $message = t('!user has been granted the %role role.', array(
+        '!user' => theme('username', array(
+          'account' => $account,
+          'name' => check_plain($account->name),
+          'link_path' => 'user/' . $account->uid,
+        )),
+        '%role' => $role_name,
+      ));
     }
 
     if ($timestamp) {
@@ -1313,7 +1308,15 @@ function uc_roles_renew($account, $rid, $timestamp, $silent = FALSE) {
       $message = t('Your %role role has been renewed. It will expire on %date.', array('%role' => $role_name, '%date' => format_date($timestamp, 'small')));
     }
     else {
-      $message = t("%user's %role role has been renewed. It will expire on %date.", array('%user' => $account->name, '%role' => $role_name, '%date' => format_date($timestamp, 'small')));
+      $message = t("!user's %role role has been renewed. It will expire on %date.", array(
+        '!user' => theme('username', array(
+          'account' => $account,
+          'name' => check_plain($account->name),
+          'link_path' => 'user/' . $account->uid,
+        )),
+        '%role' => $role_name,
+        '%date' => format_date($timestamp, 'small'),
+      ));
     }
 
     drupal_set_message($message);

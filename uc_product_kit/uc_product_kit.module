@@ -69,24 +69,6 @@ function uc_product_kit_access($op, $node, $account) {
  * Implementation of hook_enable().
  */
 function uc_product_kit_enable() {
-  // For some time in Drupal 5, CCK would delete its field data if a node
-  // type was unavailable because its module was disabled. This function
-  // worked around that by giving the product classes to node.module when
-  // uc_product_kit was disabled. This is no longer necessary as of CCK
-  // 5.x-1.9, but the workaround was left in to prevent accidents. This block
-  // of code is here to reclaim the product kit nodes after an upgrade to
-  // Drupal 6, and then should not be used again as the corresponding code in
-  // uc_product_kit_disable() was removed.
-  if (variable_get('uc_product_kit_enable_nodes', TRUE)) {
-    $node_type = node_get_types('type', 'product_kit');
-    if ($node_type->module == 'node') {
-      $node_type->module = 'uc_product_kit';
-      $node_type->custom = 0;
-      node_type_save($node_type);
-    }
-    variable_set('uc_product_kit_enable_nodes', FALSE);
-  }
-
   // Hack the product kit node type into the catalog if this module is enabled
   // some time after uc_catalog.
   if (module_exists('uc_catalog') && $vid = variable_get('uc_catalog_vid', 0)) {
@@ -147,7 +129,7 @@ function uc_product_kit_node_info() {
   return array(
     'product_kit' => array(
       'name' => t('Product kit'),
-      'module' => 'uc_product_kit',
+      'base' => 'uc_product_kit',
       'description' => t('This node represents two or more products that have been listed together. This presents a logical and convenient grouping of items to the customer.'),
       'title_label' => t('Name'),
       'body_label' => t('Description'),
@@ -374,31 +356,38 @@ function uc_product_kit_delete(&$node) {
 /**
  * Implementation of hook_load().
  */
-function uc_product_kit_load(&$node) {
+function uc_product_kit_load($nodes) {
+  $vids = array();
+  foreach ($nodes as $nid => $node) {
+    $vids[$nid] = $node->vid;
+  }
   $obj = new stdClass();
 
-  $products = array();
-  $result = db_query("SELECT product_id, mutable, qty, discount, ordering, synchronized FROM {uc_product_kits} WHERE vid = :vid ORDER BY ordering", array(':vid' => $node->vid));
-  while ($prod = $result->fetchObject()) {
-    $obj->mutable = $prod->mutable;
-    $obj->synchronized = $prod->synchronized;
+  $kit_products = array();
 
-    $product = node_load($prod->product_id);
+  $result = db_query("SELECT nid, product_id, mutable, qty, discount, ordering, synchronized FROM {uc_product_kits} WHERE vid IN (:vids) ORDER BY nid, ordering", array(':vids' => $vids));
+  while ($prod = $result->fetchObject()) {
+    $nodes[$prod->nid]->mutable = $prod->mutable;
+    $nodes[$prod->nid]->synchronized = $prod->synchronized;
+
+    $kit_products[$prod->product_id] = $prod;
+  }
+
+  $products = node_load_multiple(array_keys($kit_products));
+  foreach ($products as $product) {
+    $prod = $kit_products[$product->nid];
     $product->qty = $prod->qty;
     $product->discount = $prod->discount;
     $product->ordering = $prod->ordering;
 
-    $products[$prod->product_id] = $product;
-  }
-  uasort($products, '_uc_product_kit_sort_products');
-  $obj->products = $products;
-  if ($extra = uc_product_load($node)) {
-    foreach ($extra as $key => $value) {
-      $obj->$key = $value;
-    }
+    $nodes[$prod->nid]->products[$product->nid] = $product;
   }
 
-  return $obj;
+  // I hope this is unnecessary since the query should pre-sort them.
+  //uasort($products, '_uc_product_kit_sort_products');
+
+  // Add product data to kits.
+  uc_product_load($nodes);
 }
 
 /**
@@ -407,45 +396,50 @@ function uc_product_kit_load(&$node) {
 function uc_product_kit_theme() {
   return array(
     'uc_product_kit_add_to_cart' => array(
-      'variables' => array('node' => NULL),
-      ),
-    );
+      'variables' => array('node' => NULL, 'view_mode' => 'full'),
+    ),
+  );
 }
 
 /**
- * Implementation of hook_nodeapi().
+ * Implements hook_node_update().
  */
-function uc_product_kit_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
-  switch ($op) {
-    case 'update':
-      $result = db_query("SELECT DISTINCT nid FROM {uc_product_kits} WHERE product_id = :nid", array(':nid' => $node->nid));
-      while ($k = $result->fetchField()) {
-        $kit = node_load($k->nid, NULL, TRUE);
-        $form_state = array(
-          'values' => array('nid' => $kit->nid),
-          'submit_handlers' => array('node_form_submit'),
-        );
-        drupal_form_submit('product_kit_node_form', $form_state, $kit);
-      }
-    break;
-    case 'delete':
-      $result = db_query("SELECT DISTINCT nid FROM {uc_product_kits} WHERE product_id = :nid", array(':nid' => $node->nid));
-      while ($k = db_fetch_object($result)) {
-        $kit = node_load($k->nid, NULL, TRUE);
-        unset($kit->products[$node->nid]);
+function uc_product_kit_node_update(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
+  $result = db_query("SELECT DISTINCT nid FROM {uc_product_kits} WHERE product_id = :nid", array(':nid' => $node->nid));
+  while ($nid = $result->fetchField()) {
+    $kit = node_load($nid, NULL, TRUE);
+    $form_state = array(
+      'values' => array('nid' => $nid),
+      'submit_handlers' => array('node_form_submit'),
+    );
+    drupal_form_submit('product_kit_node_form', $form_state, $kit);
+  }
+}
 
-        if (empty($kit->products)) {
-          node_delete($kit->nid);
-        }
-        else {
-          $form_state = array(
-            'values' => array('nid' => $kit->nid),
-            'submit_handlers' => array('node_form_submit'),
-          );
-          drupal_form_submit('product_kit_node_form', $form_state, $kit);
-        }
-      }
-    break;
+/**
+ * Implements hook_node_delete().
+ */
+function uc_product_kit_node_delete($node) {
+  $empty = array();
+  $result = db_query("SELECT DISTINCT nid FROM {uc_product_kits} WHERE product_id = :nid", array(':nid' => $node->nid));
+  while ($nid = $result->fetchField()) {
+    $kit = node_load($nid, NULL, TRUE);
+    unset($kit->products[$node->nid]);
+
+    if (empty($kit->products)) {
+      $empty[] = $kit->nid;
+    }
+    else {
+      $form_state = array(
+        'values' => array('nid' => $kit->nid),
+        'submit_handlers' => array('node_form_submit'),
+      );
+      drupal_form_submit('product_kit_node_form', $form_state, $kit);
+    }
+  }
+
+  if ($empty) {
+    node_delete_multiple($empty);
   }
 }
 
@@ -624,9 +618,7 @@ function uc_product_kit_form(&$node, $form_state) {
 /**
  * Implementation of hook_view().
  */
-function uc_product_kit_view($node, $teaser = 0, $page = 0) {
-  $node = node_prepare($node, $teaser);
-
+function uc_product_kit_view($node, $view_mode) {
   $enabled = variable_get('uc_product_field_enabled', array(
     'display_price' => 1,
     'model' => 1,
@@ -668,10 +660,11 @@ function uc_product_kit_view($node, $teaser = 0, $page = 0) {
     '#access' => $enabled['display_price'],
     '#weight' => $weight['display_price'],
   );
-  if (!$teaser) {
+  if ($view_mode != 'teaser') {
     $node->content['model'] = array(
       '#theme' => 'uc_product_model',
       '#model' => $node->model,
+      '#view_mode' => $view_mode,
       '#access' => $enabled['model'],
       '#weight' => $weight['model'],
     );
@@ -707,16 +700,17 @@ function uc_product_kit_view($node, $teaser = 0, $page = 0) {
     '#theme' => 'uc_product_price',
     '#price' => $node->sell_price,
     '#context' => $context,
-    '#options' => array('label' => !$teaser),
+    '#options' => array('label' => $view_mode != 'teaser'),
     '#access' => $enabled['sell_price'],
     '#weight' => $weight['sell_price'],
   );
 
-  if (!$teaser) {
+  if ($view_mode != 'teaser') {
     $node->content['weight'] = array(
       '#theme' => 'uc_product_weight',
       '#weight' => $node->weight,
       '#units' => $node->weight_units,
+      '#view_mode' => $view_mode,
       '#access' => $enabled['weight'],
       '#weight' => $weight['weight'],
     );
@@ -740,6 +734,7 @@ function uc_product_kit_view($node, $teaser = 0, $page = 0) {
       $node->content['add_to_cart'] = array(
         '#theme' => 'uc_product_kit_add_to_cart',
         '#node' => $node,
+        '#view_mode' => $view_mode,
         '#weight' => 10,
       );
     }
@@ -748,6 +743,7 @@ function uc_product_kit_view($node, $teaser = 0, $page = 0) {
     $node->content['add_to_cart'] = array(
       '#theme' => 'uc_product_kit_add_to_cart',
       '#node' => $node,
+      '#view_mode' => $view_mode,
       '#weight' => 10,
     );
   }
@@ -760,7 +756,7 @@ function uc_product_kit_view($node, $teaser = 0, $page = 0) {
  *
  * @ingroup themeable
  */
-function theme_uc_product_kit_add_to_cart($node) {
+function theme_uc_product_kit_add_to_cart($variables) {
   $node = $variables['nodes'];
 
   $output = '<div class="add-to-cart" title="'. t('Click to add to cart.') .'">';

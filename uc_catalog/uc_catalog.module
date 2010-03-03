@@ -214,39 +214,38 @@ function uc_catalog_theme() {
 }
 
 /**
- * Implementation of hook_nodeapi().
+ * Implements hook_node_view().
  */
-function uc_catalog_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+function uc_catalog_node_view($node, $view_mode) {
   static $parents = array();
 
   if (uc_product_is_product($node->type)) {
-    switch ($op) {
-      case 'view':
-        if ($a4 == TRUE && variable_get('uc_catalog_breadcrumb', TRUE)) {
-          $crumbs = array();
-          if (variable_get('site_frontpage', 'node') != 'catalog') {
-            $crumbs[] = l(t('Home'), '');
+    if ($view_mode == 'full' && variable_get('uc_catalog_breadcrumb', TRUE)) {
+      $crumbs = array();
+      if (variable_get('site_frontpage', 'node') != 'catalog') {
+        $crumbs[] = l(t('Home'), '');
+      }
+
+      $terms = $node->taxonomy_catalog[$node->language];
+      if (count($terms)) {
+        $crumbs[] = l(variable_get('uc_catalog_name', t('Catalog')), variable_get('uc_catalog_url', 'catalog'));
+        $used_tids = array();
+
+        foreach ($terms as $term) {
+          if (!isset($parents[$term->tid])) {
+            $parents[$term->tid] = taxonomy_get_parents_all($term->tid);
           }
-          $terms = $node->taxonomy_catalog[$node->language];
-          if (count($terms)) {
-            $crumbs[] = l(variable_get('uc_catalog_name', t('Catalog')), variable_get('uc_catalog_url', 'catalog'));
-            $used_tids = array();
-            foreach ($terms as $term) {
-              if (!isset($parents[$term->tid])) {
-                $parents[$term->tid] = taxonomy_get_parents_all($term->tid);
-              }
-              //drupal_set_message('<pre>'. print_r($parents[$term->tid], TRUE) .'</pre>');
-              foreach (array_reverse($parents[$term->tid]) as $parent) {
-                if (!in_array($parent->tid, $used_tids)) {
-                  $crumbs[] = l($parent->name, uc_catalog_path($parent));
-                  $used_tids[] = $parent->tid;
-                }
-              }
+
+          foreach (array_reverse($parents[$term->tid]) as $parent) {
+            if (!in_array($parent->tid, $used_tids)) {
+              $crumbs[] = l($parent->name, uc_catalog_path($parent));
+              $used_tids[] = $parent->tid;
             }
           }
-          drupal_set_breadcrumb($crumbs);
         }
-      break;
+      }
+
+      drupal_set_breadcrumb($crumbs);
     }
   }
 }

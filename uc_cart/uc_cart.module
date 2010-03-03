@@ -318,35 +318,36 @@ function uc_cart_exit() {
 }
 
 /**
- * Implementation of hook_nodeapi().
+ * Implements hook_node_delete().
  */
-function uc_cart_nodeapi(&$node, $op, $arg3, $arg4) {
+function uc_cart_node_delete($node) {
   if (uc_product_is_product($node->type)) {
-    switch ($op) {
-      case 'delete':
-        db_delete('uc_cart_products')
-          ->condition('nid', $node->nid)
-          ->execute();
-      break;
+    db_delete('uc_cart_products')
+      ->condition('nid', $node->nid)
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_user_load().
+ */
+function uc_cart_user_load($users) {
+  if (request_uri() == '/user/register?destination=cart/checkout') {
+    foreach ($users as $account) {
+      if ($account->uid != 0) {
+        // Add items from an anonymous cart to a user's permanent cart on login.
+        uc_cart_login_update($account->uid);
+      }
     }
   }
 }
 
 /**
- * Implementation of hook_user().
+ * Implements hook_user_login().
  */
-function uc_cart_user($op, &$edit, &$user, $category = NULL) {
-  switch ($op) {
-    case 'load':
-      // Fall through if this a new user load prior to checkout.
-      if (request_uri() != '/user/register?destination=cart/checkout' || $user->uid == 0) {
-        break;
-      }
-    case 'login':
-      // Add items from an anonymous cart to a user's permanent cart on login.
-      uc_cart_login_update($user->uid);
-      break;
-  }
+function uc_cart_user_login(&$edit, $account) {
+  // Add items from an anonymous cart to a user's permanent cart on login.
+  uc_cart_login_update($account->uid);
 }
 
 /**

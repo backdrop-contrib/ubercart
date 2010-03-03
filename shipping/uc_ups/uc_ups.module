@@ -119,47 +119,89 @@ function uc_ups_product_alter_validate($form, &$form_state) {
 }
 
 /**
- * Implementation of hook_nodeapi().
+ * Implements hook_node_insert().
  */
-function uc_ups_nodeapi(&$node, $op) {
-  if (uc_product_is_product($node->type)) {
-    switch ($op) {
-      case 'insert':
-      case 'update':
-        if (isset($node->ups)) {
-          $ups_values = $node->ups;
-          if (!$node->revision) {
-            db_delete('uc_ups_products')
-              ->condition('vid', $node->vid)
-              ->execute();
-          }
+function uc_ups_node_insert($node) {
+  uc_ups_node_update($node);
+}
 
-          db_insert('uc_ups_products')
-            ->fields(array(
-              'vid' => $node->vid,
-              'nid' => $node->nid,
-              'pkg_type' => $ups_values['pkg_type'],
-            ))
-            ->execute();
-        }
-      break;
-      case 'load':
-        if (uc_product_get_shipping_type($node) == 'small_package') {
-          return array('ups' => db_query("SELECT * FROM {uc_ups_products} WHERE vid = :vid", array(':vid' => $node->vid))->fetchAssoc());
-        }
-      break;
-      case 'delete':
-        db_delete('uc_ups_products')
-          ->condition('nid', $node->nid)
-          ->execute();
-      break;
-      case 'delete revision':
+/**
+ * Implements hook_node_update().
+ */
+function uc_ups_node_update($node) {
+  if (uc_product_is_product($node->type)) {
+    if (isset($node->ups)) {
+      $ups_values = $node->ups;
+      if (!$node->revision) {
         db_delete('uc_ups_products')
           ->condition('vid', $node->vid)
           ->execute();
-      break;
+      }
+
+      db_insert('uc_ups_products')
+        ->fields(array(
+          'vid' => $node->vid,
+          'nid' => $node->nid,
+          'pkg_type' => $ups_values['pkg_type'],
+        ))
+        ->execute();
     }
   }
+}
+
+/**
+ * Implements hook_node_load().
+ */
+function uc_ups_node_load($nodes, $types) {
+  $product_types = uc_product_types();
+
+  if (empty(array_intersect($product_types, $types))) {
+    return;
+  }
+
+  $vids = array();
+  $shipping_type = variable_get('uc_store_shipping_type', 'small_package');
+  $shipping_types = db_query("SELECT id, shipping_type FROM {uc_quote_shipping_types} WHERE id_type = :type AND id IN (:ids)", array(':type' => 'product', ':ids' => array_keys($nodes)))->fetchAllKeyed();
+
+  foreach ($nodes as $nid => $node) {
+    if (!in_array($node->type, $product_types)) {
+      continue;
+    }
+
+    if (isset($shipping_types[$nid])) {
+      $node->shipping_type = $shipping_types[$nid];
+    }
+    else {
+      $node->shipping_type = $shipping_type;
+    }
+
+    if ($node->shipping_type == 'small_package') {
+      $vids[$nid] = $node->vid;
+    }
+  }
+
+  $result = db_query("SELECT * FROM {uc_ups_products} WHERE vid IN (:vids)", array(':vids' => $vids), array('fetch' => PDO::FETCH_ASSOC));
+  foreach ($result as $ups) {
+    $nodes[$ups['nid']]->ups = $ups;
+  }
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function uc_ups_node_delete($node) {
+  db_delete('uc_ups_products')
+    ->condition('nid', $node->nid)
+    ->execute();
+}
+
+/**
+ * Implements hook_node_revision_delete().
+ */
+function uc_ups_node_revision_delete($node) {
+  db_delete('uc_ups_products')
+    ->condition('vid', $node->vid)
+    ->execute();
 }
 
 /******************************************************************************
