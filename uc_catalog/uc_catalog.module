@@ -320,50 +320,58 @@ function uc_catalog_link_alter(&$links, $node) {
 }
 
 /**
- * Implement hook_block().
+ * Implement hook_block_info().
  *
  * Displays a menu for navigating the "Product Catalog"
  */
-function uc_catalog_block($op = 'list', $delta = 0, $edit = array()) {
-  switch ($op) {
-    case 'list':
-      $blocks[0]['info'] = variable_get('uc_catalog_name', t('Catalog'));
-      return $blocks;
+function uc_catalog_block_info() {
+  $blocks['catalog'] = array(
+    'info' => variable_get('uc_catalog_name', t('Catalog')),
+    'cache' => DRUPAL_CACHE_PER_ROLE | DRUPAL_CACHE_PER_PAGE,
+  );
 
-    case 'view':
-      $block = array();
-      if (user_access('view catalog')) {
-        switch ($delta) {
-          case 0:
-            drupal_add_css(drupal_get_path('module', 'uc_catalog') .'/uc_catalog.css');
+  return $blocks;
+}
 
-            // Get the vocabulary tree information.
-            $vid = variable_get('uc_catalog_vid', 0);
-            $tree = taxonomy_get_tree($vid);
-            // Then convert it into an actual tree structure.
-            $seq = 0;
-            $menu_tree = new UcTreeNode();
-            $level = array();
-            $curr_depth = -1;
-            foreach ($tree as $knot) {
-              $seq++;
-              $knot->sequence = $seq;
-              $knothole = new UcTreeNode($knot);
-              // Begin at the root of the tree and find the proper place.
-              $menu_tree->add_child($knothole);
-            }
+/**
+ * Implement hook_block_view().
+ */
+function uc_catalog_block_view($delta = '') {
+  if ($delta == 'catalog') {
+    $block = array();
 
-            // Now, create a structured menu, separate from Drupal's menu.
-            $content = theme('uc_catalog_block', array('menu_tree' => $menu_tree));
+    if (user_access('view catalog')) {
+      drupal_add_css(drupal_get_path('module', 'uc_catalog') .'/uc_catalog.css');
 
-            $subject = variable_get('uc_catalog_name', t('Catalog'));
-            if (variable_get('uc_catalog_block_title', FALSE)) {
-              $subject = l($subject, 'catalog');
-            }
-            $block = array('subject' => $subject, 'content' => $content);
-            break;
-        }
+      // Get the vocabulary tree information.
+      $vid = variable_get('uc_catalog_vid', 0);
+      $tree = taxonomy_get_tree($vid);
+
+      // Then convert it into an actual tree structure.
+      $seq = 0;
+      $menu_tree = new UcTreeNode();
+      $level = array();
+      $curr_depth = -1;
+
+      foreach ($tree as $knot) {
+        $seq++;
+        $knot->sequence = $seq;
+        $knothole = new UcTreeNode($knot);
+        // Begin at the root of the tree and find the proper place.
+        $menu_tree->add_child($knothole);
       }
+
+      // Now, create a structured menu, separate from Drupal's menu.
+      $content = theme('uc_catalog_block', array('menu_tree' => $menu_tree));
+
+      $subject = variable_get('uc_catalog_name', t('Catalog'));
+      if (variable_get('uc_catalog_block_title', FALSE)) {
+        $subject = l($subject, 'catalog');
+      }
+
+      $block = array('subject' => $subject, 'content' => $content);
+    }
+
     return $block;
   }
 }
