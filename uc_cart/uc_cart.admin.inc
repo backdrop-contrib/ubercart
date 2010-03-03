@@ -471,9 +471,9 @@ function uc_cart_checkout_messages_form($form, &$form_state) {
     '#description' => t('Provide instructions for customers at the top of the checkout screen.'),
     '#summary' => variable_get('uc_checkout_instructions', '') ? t('Checkout instructions are set.') : t('Checkout instructions are not set.'),
     '#default_value' => variable_get('uc_checkout_instructions', ''),
+    '#text_format' => variable_get('uc_checkout_instructions_format', filter_default_format()),
     '#rows' => 3,
   );
-  $form['uc_checkout_instructions_format'] = filter_form(variable_get('uc_checkout_instructions_format', FILTER_FORMAT_DEFAULT), NULL, array('uc_checkout_instructions_format'));
 
   $form['uc_checkout_review_instructions'] = array(
     '#type' => 'textarea',
@@ -483,9 +483,9 @@ function uc_cart_checkout_messages_form($form, &$form_state) {
                ? t('Review instructions are set.')
                : t('Review instructions are not set.'),
     '#default_value' => variable_get('uc_checkout_review_instructions', uc_get_message('review_instructions')),
+    '#text_format' => variable_get('uc_checkout_review_instructions_format', filter_default_format()),
     '#rows' => 3,
   );
-  $form['uc_checkout_review_instructions_format'] = filter_form(variable_get('uc_checkout_review_instructions_format', FILTER_FORMAT_DEFAULT), NULL, array('uc_checkout_review_instructions_format'));
 
   $form['uc_msg_order_submit'] = array(
     '#type' => 'textarea',
@@ -495,9 +495,9 @@ function uc_cart_checkout_messages_form($form, &$form_state) {
                ? t('Completion message is set.')
                : t('Completion message is not set.'),
     '#default_value' => variable_get('uc_msg_order_submit', uc_get_message('completion_message')),
+    '#text_format' => variable_get('uc_msg_order_submit_format', filter_default_format()),
     '#rows' => 3,
   );
-  $form['uc_msg_order_submit_format'] = filter_form(variable_get('uc_msg_order_submit_format', FILTER_FORMAT_DEFAULT), NULL, array('uc_msg_order_submit_format'));
 
   $form['checkout_messages'] = array(
     '#type' => 'fieldset',
@@ -514,9 +514,9 @@ function uc_cart_checkout_messages_form($form, &$form_state) {
                ? t('Completion text for logged in users is set.')
                : t('Completion text for logged in users is not set.'),
     '#default_value' => variable_get('uc_msg_order_logged_in', uc_get_message('completion_logged_in')),
+    '#text_format' => variable_get('uc_msg_order_logged_in_format', filter_default_format()),
     '#rows' => 3,
   );
-  $form['checkout_messages']['uc_msg_order_logged_in_format'] = filter_form(variable_get('uc_msg_order_logged_in_format', FILTER_FORMAT_DEFAULT), NULL, array('uc_msg_order_logged_in_format'));
 
   $form['checkout_messages']['uc_msg_order_existing_user'] = array(
     '#type' => 'textarea',
@@ -527,9 +527,9 @@ function uc_cart_checkout_messages_form($form, &$form_state) {
                : t('Completion text for users who aren\'t logged in is not set.'),
 
     '#default_value' => variable_get('uc_msg_order_existing_user', uc_get_message('completion_existing_user')),
+    '#text_format' => variable_get('uc_msg_order_existing_user_format', filter_default_format()),
     '#rows' => 3,
   );
-  $form['checkout_messages']['uc_msg_order_existing_user_format'] = filter_form(variable_get('uc_msg_order_existing_user_format', FILTER_FORMAT_DEFAULT), NULL, array('uc_msg_order_existing_user_format'));
 
   $form['checkout_messages']['uc_msg_order_new_user'] = array(
     '#type' => 'textarea',
@@ -539,9 +539,9 @@ function uc_cart_checkout_messages_form($form, &$form_state) {
                ? t('Completion text for new users is set.')
                : t('Completion text for new users is not set.'),
     '#default_value' => variable_get('uc_msg_order_new_user', uc_get_message('completion_new_user')),
+    '#text_format' => variable_get('uc_msg_order_new_user_format', filter_default_format()),
     '#rows' => 3,
   );
-  $form['checkout_messages']['uc_msg_order_new_user_format'] = filter_form(variable_get('uc_msg_order_new_user_format', FILTER_FORMAT_DEFAULT), NULL, array('uc_msg_order_new_user_format'));
 
   $form['uc_msg_continue_shopping'] = array(
     '#type' => 'textarea',
@@ -551,9 +551,9 @@ function uc_cart_checkout_messages_form($form, &$form_state) {
                ? t('Continue shopping text is set.')
                : t('Continue shopping text is not set.'),
     '#default_value' => variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping')),
+    '#text_format' => variable_get('uc_msg_continue_shopping_format', filter_default_format()),
     '#rows' => 3,
   );
-  $form['uc_msg_continue_shopping_format'] = filter_form(variable_get('uc_msg_continue_shopping_format', FILTER_FORMAT_DEFAULT), NULL, array('uc_msg_continue_shopping_format'));
 
   return system_settings_form($form);
 }

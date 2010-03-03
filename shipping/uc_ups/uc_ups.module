@@ -12,7 +12,7 @@
  ******************************************************************************/
 
 /**
- * Implementation of hook_menu().
+ * Implement hook_menu().
  */
 function uc_ups_menu() {
   $items = array();
@@ -45,14 +45,14 @@ function uc_ups_menu() {
 }
 
 /**
- * Implementation of hook_init().
+ * Implement hook_init().
  */
 function uc_ups_init() {
   drupal_add_css(drupal_get_path('module', 'uc_ups') .'/uc_ups.css');
 }
 
 /**
- * Implementation of hook_theme().
+ * Implement hook_theme().
  */
 function uc_ups_theme() {
   return array(
@@ -71,7 +71,7 @@ function uc_ups_theme() {
 }
 
 /**
- * Implementation of hook_form_alter().
+ * Implement hook_form_alter().
  *
  * Add package type to products.
  *
@@ -119,14 +119,14 @@ function uc_ups_product_alter_validate($form, &$form_state) {
 }
 
 /**
- * Implements hook_node_insert().
+ * Implement hook_node_insert().
  */
 function uc_ups_node_insert($node) {
   uc_ups_node_update($node);
 }
 
 /**
- * Implements hook_node_update().
+ * Implement hook_node_update().
  */
 function uc_ups_node_update($node) {
   if (uc_product_is_product($node->type)) {
@@ -150,7 +150,7 @@ function uc_ups_node_update($node) {
 }
 
 /**
- * Implements hook_node_load().
+ * Implement hook_node_load().
  */
 function uc_ups_node_load($nodes, $types) {
   $product_types = uc_product_types();
@@ -187,7 +187,7 @@ function uc_ups_node_load($nodes, $types) {
 }
 
 /**
- * Implements hook_node_delete().
+ * Implement hook_node_delete().
  */
 function uc_ups_node_delete($node) {
   db_delete('uc_ups_products')
@@ -196,7 +196,7 @@ function uc_ups_node_delete($node) {
 }
 
 /**
- * Implements hook_node_revision_delete().
+ * Implement hook_node_revision_delete().
  */
 function uc_ups_node_revision_delete($node) {
   db_delete('uc_ups_products')
@@ -209,7 +209,7 @@ function uc_ups_node_revision_delete($node) {
  ******************************************************************************/
 
 /**
- * Implementation of hook_ca_predicate().
+ * Implement hook_ca_predicate().
  *
  * Connect the UPS quote action and event.
  */
@@ -243,7 +243,7 @@ function uc_ups_ca_predicate() {
  ******************************************************************************/
 
 /**
- * Implementation of hook_shipping_type().
+ * Implement hook_shipping_type().
  */
 function uc_ups_shipping_type() {
   $weight = variable_get('uc_quote_type_weight', array('small_package' => 0));
@@ -259,7 +259,7 @@ function uc_ups_shipping_type() {
 }
 
 /**
- * Implementation of hook_shipping_method().
+ * Implement hook_shipping_method().
  */
 function uc_ups_shipping_method() {
   $methods = array();
@@ -289,7 +289,7 @@ function uc_ups_shipping_method() {
 }
 
 /**
- * Implementation of hook_store_status().
+ * Implement hook_store_status().
  *
  * Let the administrator know that the UPS account information has not been
  * filled out.
@@ -824,7 +824,7 @@ function uc_ups_quote($products, $details) {
       }
       $num_of_pkgs = (int)($product->qty / $product->pkg_qty);
       if ($num_of_pkgs) {
-        $package = drupal_clone($product);
+        $package = clone $product;
         $package->description = $product->model;
         $package->weight = $product->weight * $product->pkg_qty;
         $package->price = $product->price * $product->pkg_qty;
@@ -836,7 +836,7 @@ function uc_ups_quote($products, $details) {
       }
       $remaining_qty = $product->qty % $product->pkg_qty;
       if ($remaining_qty) {
-        $package = drupal_clone($product);
+        $package = clone $product;
         $package->description = $product->model;
         $package->weight = $product->weight * $remaining_qty;
         $package->price = $product->price * $remaining_qty;

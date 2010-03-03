@@ -12,7 +12,7 @@
  ******************************************************************************/
 
 /**
- * Implementation of hook_ca_predicate().
+ * Implement hook_ca_predicate().
  */
 function uc_stock_ca_predicate() {
   $predicates['uc_stock_decrement_on_order'] = array(
@@ -35,7 +35,7 @@ function uc_stock_ca_predicate() {
 }
 
 /**
- * Implementation of hook_action().
+ * Implement hook_action().
  */
 function uc_stock_ca_action() {
   $actions['uc_stock_action_decrement_stock'] = array(

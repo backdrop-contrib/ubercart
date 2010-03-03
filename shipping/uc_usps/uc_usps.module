@@ -12,7 +12,7 @@
  ******************************************************************************/
 
 /**
- * Implementation of hook_menu().
+ * Implement hook_menu().
  */
 function uc_usps_menu() {
   $items = array();
@@ -30,7 +30,7 @@ function uc_usps_menu() {
 }
 
 /**
- * Implementation of hook_theme().
+ * Implement hook_theme().
  */
 function uc_usps_theme() {
   return array(
@@ -41,7 +41,7 @@ function uc_usps_theme() {
 }
 
 /**
- * Implementation of hook_form_alter().
+ * Implement hook_form_alter().
  *
  * Add package type to products.
  *
@@ -70,14 +70,14 @@ function uc_usps_form_alter(&$form, $form_state, $form_id) {
 }
 
 /**
- * Implements hook_node_insert().
+ * Implement hook_node_insert().
  */
 function uc_usps_node_insert($node) {
   uc_usps_node_update($node);
 }
 
 /**
- * Implements hook_node_update().
+ * Implement hook_node_update().
  */
 function uc_usps_node_update($node) {
   if (uc_product_is_product($node->type)) {
@@ -101,7 +101,7 @@ function uc_usps_node_update($node) {
 }
 
 /**
- * Implements hook_node_load().
+ * Implement hook_node_load().
  */
 function uc_usps_node_load($nodes, $types) {
   $product_types = uc_product_types();
@@ -138,7 +138,7 @@ function uc_usps_node_load($nodes, $types) {
 }
 
 /**
- * Implements hook_node_delete().
+ * Implement hook_node_delete().
  */
 function uc_usps_node_delete($node) {
   db_delete('uc_usps_products')
@@ -147,7 +147,7 @@ function uc_usps_node_delete($node) {
 }
 
 /**
- * Implements hook_node_revision_delete().
+ * Implement hook_node_revision_delete().
  */
 function uc_usps_node_revision_delete($node) {
   db_delete('uc_usps_products')
@@ -160,7 +160,7 @@ function uc_usps_node_revision_delete($node) {
  ******************************************************************************/
 
 /**
- * Implementation of hook_ca_predicate().
+ * Implement hook_ca_predicate().
  *
  * Connect USPS quote action and event.
  */
@@ -285,7 +285,7 @@ function uc_usps_ca_predicate() {
  ******************************************************************************/
 
 /**
- * Implementation of hook_shipping_type().
+ * Implement hook_shipping_type().
  */
 function uc_usps_shipping_type() {
   $weight = variable_get('uc_quote_type_weight', array('envelope' => -1, 'small_package' => 0));
@@ -307,7 +307,7 @@ function uc_usps_shipping_type() {
 }
 
 /**
- * Implementation of hook_shipping_method().
+ * Implement hook_shipping_method().
  */
 function uc_usps_shipping_method() {
   $enabled = variable_get('uc_quote_enabled', array());
@@ -672,7 +672,7 @@ function _uc_usps_package_products($products, &$addresses) {
       }
       $num_of_pkgs = (int)($product->qty / $product->pkg_qty);
       if ($num_of_pkgs) {
-        $package = drupal_clone($product);
+        $package = clone $product;
         $package->description = $product->model;
         $weight = $product->weight * $product->pkg_qty;
         switch ($product->weight_units) {
@@ -725,7 +725,7 @@ function _uc_usps_package_products($products, &$addresses) {
       }
       $remaining_qty = $product->qty % $product->pkg_qty;
       if ($remaining_qty) {
-        $package = drupal_clone($product);
+        $package = clone $product;
         $package->description = $product->model;
         $weight = $product->weight * $remaining_qty;
         switch ($product->weight_units) {

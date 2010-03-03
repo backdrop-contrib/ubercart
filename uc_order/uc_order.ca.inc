@@ -12,7 +12,7 @@
  ******************************************************************************/
 
 /**
- * Implementation of hook_ca_entity().
+ * Implement hook_ca_entity().
  */
 function uc_order_ca_entity() {
   $entities['uc_order'] = array(
@@ -30,7 +30,7 @@ function uc_order_ca_entity() {
 }
 
 /**
- * Implementation of hook_ca_trigger().
+ * Implement hook_ca_trigger().
  */
 function uc_order_ca_trigger() {
   $triggers['uc_order_status_update'] = array(
@@ -63,7 +63,7 @@ function uc_order_ca_trigger() {
 }
 
 /**
- * Implementation of hook_ca_predicate().
+ * Implement hook_ca_predicate().
  */
 function uc_order_ca_predicate() {
   $predicates = array();
@@ -102,7 +102,7 @@ function uc_order_ca_predicate() {
           'addresses' => '[order-email]',
           'subject' => t('Order #[order-id] Update'),
           'message' => uc_get_message('order_update_email'),
-          'format' => 1,
+          'format' => filter_default_format(),
         ),
       ),
     ),
@@ -112,7 +112,7 @@ function uc_order_ca_predicate() {
 }
 
 /**
- * Implementation of hook_ca_condition().
+ * Implement hook_ca_condition().
  */
 function uc_order_ca_condition() {
   $order_arg = array(
@@ -289,7 +289,7 @@ function uc_order_ca_condition() {
 }
 
 /**
- * Implementation of hook_ca_action().
+ * Implement hook_ca_action().
  */
 function uc_order_ca_action() {
   $order_arg = array(
@@ -1190,10 +1190,8 @@ function uc_order_action_email_form($form_state, $settings = array()) {
     '#type' => 'textarea',
     '#title' => t('Message'),
     '#default_value' => $settings['message'],
+    '#text_format' => $settings['format'],
   );
-
-  // We add the #is_format element to allow us to locate and configure the filters.
-  $form['format'] = filter_form($settings['format']) + array('#is_format' => TRUE);
 
   $form['token_help'] = array(
     '#type' => 'fieldset',

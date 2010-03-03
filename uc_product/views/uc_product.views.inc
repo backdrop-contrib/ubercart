@@ -7,7 +7,7 @@
  */
 
 /**
- * Implementation of hook_views_data().
+ * Implement hook_views_data().
  */
 function uc_product_views_data() {
   $data['uc_products']['table']['group'] = t('Product');
@@ -184,7 +184,7 @@ function uc_product_views_data() {
 
 
 /**
- * Implementation of hook_views_handlers().
+ * Implement hook_views_handlers().
  */
 function uc_product_views_handlers() {
   return array(
@@ -213,7 +213,7 @@ function uc_product_views_handlers() {
 
 
 /**
- * Implementation of hook_views_tables_alter().
+ * Implement hook_views_tables_alter().
  *
  * Conditionally add editablefields support.
  */

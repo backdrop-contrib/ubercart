@@ -11,7 +11,7 @@
  ******************************************************************************/
 
 /**
- * Implementation of hook_ca_entity().
+ * Implement hook_ca_entity().
  *
  * Demonstrates defining a data object that may be passed in to ca_pull_trigger
  * and mapped to a predicate's arguments.
@@ -40,7 +40,7 @@ function ca_ca_entity() {
 }
 
 /**
- * Implementation of hook_ca_condition().
+ * Implement hook_ca_condition().
  */
 function ca_ca_condition() {
   $conditions = array();
@@ -87,7 +87,7 @@ function ca_ca_condition() {
 }
 
 /**
- * Implementation of hook_ca_action().
+ * Implement hook_ca_action().
  *
  * Demonstrates defining an action for predicates to use; primarily specifies a
  * callback function to perform the action and an array that specifies arguments
@@ -319,7 +319,7 @@ function ca_condition_node_field_comparison_form($form_state, $settings = array(
  */
 function ca_action_drupal_set_message($settings) {
   // Filter the text using the default format.
-  $message = check_markup($settings['message_text'], FILTER_FORMAT_DEFAULT, FALSE);
+  $message = check_markup($settings['message_text'], $settings['message_text_format']);
 
   // Return if there's nothing to display.
   if (empty($message) || empty($settings['message_text'])) {
@@ -348,14 +348,7 @@ function ca_action_drupal_set_message_form($form_state, $settings = array()) {
     '#type' => 'textarea',
     '#title' => t('Message text'),
     '#default_value' => $settings['message_text'],
-  );
-
-  $tips = _filter_tips(variable_get('filter_default_format', 1), FALSE);
-  $form['format']['guidelines'] = array(
-    '#theme' => 'filter_tips',
-    '#title' => t('Formatting guidelines'),
-    '#tips' => $tips,
-    '#theme_wrappers' => array('form_element'),
+    '#text_format' => filter_default_format(),
   );
 
   $form['message_type'] = array(

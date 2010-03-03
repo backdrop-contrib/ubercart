@@ -12,7 +12,7 @@
  ******************************************************************************/
 
 /**
- * Implementation of hook_ca_condition().
+ * Implement hook_ca_condition().
  */
 function uc_cart_ca_condition() {
   $conditions['uc_cart_condition_product_class'] = array(
@@ -31,7 +31,7 @@ function uc_cart_ca_condition() {
 }
 
 /**
- * Implementation of hook_ca_trigger().
+ * Implement hook_ca_trigger().
  */
 function uc_cart_ca_trigger() {
   $triggers['uc_checkout_complete'] = array(
@@ -53,7 +53,7 @@ function uc_cart_ca_trigger() {
 }
 
 /**
- * Implementation of hook_ca_predicate().
+ * Implement hook_ca_predicate().
  */
 function uc_cart_ca_predicate() {
   $predicates = array();

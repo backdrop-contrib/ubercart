@@ -250,7 +250,7 @@ function theme_uc_cart_checkout_form($variables) {
 
   drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
 
-  $output = '<div id="checkout-instructions">'. check_markup(variable_get('uc_checkout_instructions', ''), variable_get('uc_checkout_instructions_format', FILTER_FORMAT_DEFAULT), FALSE) .'</div>';
+  $output = '<div id="checkout-instructions">'. check_markup(variable_get('uc_checkout_instructions', ''), variable_get('uc_checkout_instructions_format', filter_fallback_format())) .'</div>';
 
   foreach (element_children($form['panes']) as $pane_id) {
     if (function_exists(($func = _checkout_pane_data($pane_id, 'callback')))) {
@@ -423,7 +423,7 @@ function theme_uc_cart_checkout_review($variables) {
 
   drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
 
-  $output = check_markup(variable_get('uc_checkout_review_instructions', uc_get_message('review_instructions')), variable_get('uc_checkout_review_instructions_format', FILTER_FORMAT_DEFAULT), FALSE)
+  $output = check_markup(variable_get('uc_checkout_review_instructions', uc_get_message('review_instructions')), variable_get('uc_checkout_review_instructions_format', filter_fallback_format()))
            .'<table class="order-review-table">';
 
   foreach ($panes as $title => $data) {

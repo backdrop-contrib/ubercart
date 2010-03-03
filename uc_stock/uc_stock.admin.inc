@@ -37,9 +37,9 @@ function uc_stock_settings_form($form, &$form_state) {
     '#title' => t('Message text'),
     '#default_value' => variable_get('uc_stock_threshold_notification_message', uc_get_message('uc_stock_threshold_notification_message')),
     '#description' => t('The message the user receives when the stock level reaches its threshold value (uses <a href="!token-help-page">global, order, and stock tokens</a>).', array('!token-help-page' => url('admin/store/help/tokens'))),
+    '#text_format' => variable_get('uc_stock_threshold_notification_message_format', filter_default_format()),
     '#rows' => 10,
   );
-  $form['uc_stock_threshold_notification_format'] = filter_form(variable_get('uc_stock_threshold_notification_format', FILTER_FORMAT_DEFAULT), NULL, array('uc_stock_threshold_notification_format'));
 
   return system_settings_form($form);
 }
@@ -194,7 +194,7 @@ function uc_stock_report_form_submit($form, &$form_state) {
  *   uc_stock_edit_form_submit()
  */
 function uc_stock_edit_form($form, &$form_state, $node) {
-  drupal_set_title(check_plain($node->title));
+  drupal_set_title($node->title);
 
   $form['stock'] = array('#tree' => TRUE);
 

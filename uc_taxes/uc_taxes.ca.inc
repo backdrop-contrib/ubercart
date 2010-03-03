@@ -12,7 +12,7 @@
  ******************************************************************************/
 
 /**
- * Implementation of hook_ca_entity().
+ * Implement hook_ca_entity().
  */
 function uc_taxes_ca_entity() {
   $entities['tax'] = array(
@@ -23,7 +23,7 @@ function uc_taxes_ca_entity() {
 }
 
 /**
- * Implementation of hook_ca_trigger().
+ * Implement hook_ca_trigger().
  *
  * Register an event for each tax rule in {uc_taxes}.
  */
@@ -44,7 +44,7 @@ function uc_taxes_ca_trigger() {
 }
 
 /**
- * Implementation of hook_action_info().
+ * Implement hook_action_info().
  */
 function uc_taxes_ca_action() {
   $actions = array();
@@ -80,7 +80,7 @@ function uc_taxes_action_apply_tax($order, $tax) {
 }
 
 /**
- * Implementation of hook_ca_predicate().
+ * Implement hook_ca_predicate().
  *
  * Create a predicate for each event corresponding to a tax rule.
  */

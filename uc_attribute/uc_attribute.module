@@ -20,7 +20,7 @@ require_once('uc_attribute.ca.inc');
  ******************************************************************************/
 
 /**
- * Implementation of hook_help().
+ * Implement hook_help().
  */
 function uc_attribute_help($path, $arg) {
   switch ($path) {
@@ -47,7 +47,7 @@ function uc_attribute_help($path, $arg) {
 }
 
 /**
- * Implementation of hook_menu().
+ * Implement hook_menu().
  */
 function uc_attribute_menu() {
   $items['admin/store/attributes'] = array(
@@ -203,6 +203,20 @@ function uc_attribute_menu() {
 }
 
 /**
+ * Implement hook_admin_paths().
+ */
+function uc_attribute_admin_paths() {
+  $paths = array(
+    'node/*/edit/attributes' => TRUE,
+    'node/*/edit/attributes/add' => TRUE,
+    'node/*/edit/options' => TRUE,
+    'node/*/edit/adjustments' => TRUE,
+  );
+
+  return $paths;
+}
+
+/**
  * Access callback for editing a product class's attributes and options.
  */
 function uc_attribute_product_class_access() {
@@ -232,7 +246,7 @@ function uc_attribute_product_option_access($node) {
 }
 
 /**
- * Implementation of hook_permission().
+ * Implement hook_permission().
  */
 function uc_attribute_permission() {
   return array(
@@ -249,14 +263,14 @@ function uc_attribute_permission() {
 }
 
 /**
- * Implementation of hook_init().
+ * Implement hook_init().
  */
 function uc_attribute_init() {
   drupal_add_css(drupal_get_path('module', 'uc_attribute') .'/uc_attribute.css');
 }
 
 /**
- * Implementation of hook_theme().
+ * Implement hook_theme().
  */
 function uc_attribute_theme() {
   return array(
@@ -283,7 +297,7 @@ function uc_attribute_theme() {
 }
 
 /**
- * Implementation of hook_form_alter().
+ * Implement hook_form_alter().
  */
 function uc_attribute_form_alter(&$form, $form_state, $form_id) {
   if (strpos($form_id, 'add_product_form')) {
@@ -311,7 +325,7 @@ function uc_attribute_form_alter(&$form, $form_state, $form_id) {
 }
 
 /**
- * Implementation of hook_uc_form_alter().
+ * Implement hook_uc_form_alter().
  *
  * Attach option selectors to the form with the "Add to Cart" button.
  *
@@ -344,7 +358,7 @@ function uc_attribute_uc_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
- * Implements hook_node_load().
+ * Implement hook_node_load().
  */
 function uc_attribute_node_load($nodes, $types) {
   $product_types = uc_product_types();
@@ -364,7 +378,7 @@ function uc_attribute_node_load($nodes, $types) {
 }
 
 /**
- * Implements hook_node_insert().
+ * Implement hook_node_insert().
  */
 function uc_attribute_node_insert($node) {
   // Set attributes from class attributes.
@@ -403,7 +417,7 @@ function uc_attribute_node_insert($node) {
 }
 
 /**
- * Implements hook_node_delete().
+ * Implement hook_node_delete().
  */
 function uc_attribute_node_delete($node) {
   db_delete('uc_product_options')
@@ -420,7 +434,7 @@ function uc_attribute_node_delete($node) {
 }
 
 /**
- * Implements hook_node_update_index().
+ * Implement hook_node_update_index().
  */
 function uc_attribute_node_update_index($node) {
   $output = '';
@@ -449,7 +463,7 @@ function uc_attribute_node_update_index($node) {
  ******************************************************************************/
 
 /**
- * Implementation of hook_uc_product_models().
+ * Implement hook_uc_product_models().
  */
 function uc_attribute_uc_product_models($node) {
   // Get all the SKUs for all the attributes on this node.
@@ -471,7 +485,7 @@ function uc_attribute_add_to_cart_data($form_values) {
 }
 
 /**
- * Implemenation of hook_order_product_alter().
+ * Implement hook_order_product_alter().
  */
 function uc_attribute_order_product_alter(&$product, $order) {
   // Convert the attribute and option ids to their current names. This
@@ -488,7 +502,7 @@ function uc_attribute_order_product_alter(&$product, $order) {
 }
 
 /**
- * Implementation of hook_product_class().
+ * Implement hook_product_class().
  */
 function uc_attribute_product_class($type, $op) {
   switch ($op) {
@@ -506,7 +520,7 @@ function uc_attribute_product_class($type, $op) {
 }
 
 /**
- * Implementation of hook_cart_item().
+ * Implement hook_cart_item().
  */
 function uc_attribute_cart_item($op, &$item) {
   switch ($op) {
@@ -547,7 +561,7 @@ function uc_attribute_cart_item($op, &$item) {
 }
 
 /**
- * Implementation of hook_product_description().
+ * Implement hook_product_description().
  */
 function uc_attribute_product_description($product) {
   $description = array(
@@ -832,7 +846,7 @@ function _uc_attribute_alter_form($product) {
       }
       $form_attributes[$attribute->aid] = array(
         '#type' => $attr_type,
-        '#description' => check_markup($attribute->description),
+        '#description' => check_markup($attribute->description, $attribute->format, $product->language),
         '#default_value' => ($attr_type == "checkboxes" ? array() : $attribute->default_option),
         '#options' => $options,
         '#required' => $attribute->required,
@@ -841,7 +855,7 @@ function _uc_attribute_alter_form($product) {
     else {
       $form_attributes[$attribute->aid] = array(
         '#type' => 'textfield',
-        '#description' => check_markup($attribute->description),
+        '#description' => check_markup($attribute->description, $attribute->format, $product->language),
         '#default_value' => $attribute->required == FALSE ? $attribute->options[$attribute->default_option]->name : '',
         '#required' => $attribute->required,
       );

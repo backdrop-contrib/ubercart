@@ -258,8 +258,8 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
 
   $shipment = new stdClass();
   $shipment->order_id = $order_id;
-  $shipment->origin = drupal_clone($_SESSION['ups']['origin']);
-  $shipment->destination = drupal_clone($_SESSION['ups']['destination']);
+  $shipment->origin = clone $_SESSION['ups']['origin'];
+  $shipment->destination = clone $_SESSION['ups']['destination'];
   $shipment->packages = $_SESSION['ups']['packages'];
   $shipment->shipping_method = 'ups';
   $shipment->accessorials = $_SESSION['ups']['service'];

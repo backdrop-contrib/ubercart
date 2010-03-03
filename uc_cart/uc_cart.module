@@ -19,7 +19,7 @@ require_once('uc_cart.ca.inc');
  ******************************************************************************/
 
 /**
- * Implementation of hook_menu().
+ * Implement hook_menu().
  */
 function uc_cart_menu() {
   $items = array();
@@ -175,7 +175,7 @@ function uc_cart_menu() {
 }
 
 /**
- * Implements hook_image_default_styles().
+ * Implement hook_image_default_styles().
  */
 function uc_cart_image_default_styles() {
   $styles = array();
@@ -198,7 +198,7 @@ function uc_cart_image_default_styles() {
 }
 
 /**
- * Implementation of hook_theme().
+ * Implement hook_theme().
  */
 function uc_cart_theme() {
   return array(
@@ -262,7 +262,7 @@ function uc_cart_theme() {
 }
 
 /**
- * Implementation of hook_init().
+ * Implement hook_init().
  */
 function uc_cart_init() {
   global $conf;
@@ -281,7 +281,7 @@ function uc_cart_init() {
 }
 
 /**
- * Implementation of hook_cron().
+ * Implement hook_cron().
  */
 function uc_cart_cron() {
   // Empty anonymous carts.
@@ -300,7 +300,7 @@ function uc_cart_cron() {
 }
 
 /**
- * Implementation of hook_exit().
+ * Implement hook_exit().
  *
  * Code from CacheExclude - http://drupal.org/project/cacheexclude
  */
@@ -318,7 +318,7 @@ function uc_cart_exit() {
 }
 
 /**
- * Implements hook_node_delete().
+ * Implement hook_node_delete().
  */
 function uc_cart_node_delete($node) {
   if (uc_product_is_product($node->type)) {
@@ -329,7 +329,7 @@ function uc_cart_node_delete($node) {
 }
 
 /**
- * Implements hook_user_load().
+ * Implement hook_user_load().
  */
 function uc_cart_user_load($users) {
   if (request_uri() == '/user/register?destination=cart/checkout') {
@@ -343,7 +343,7 @@ function uc_cart_user_load($users) {
 }
 
 /**
- * Implements hook_user_login().
+ * Implement hook_user_login().
  */
 function uc_cart_user_login(&$edit, $account) {
   // Add items from an anonymous cart to a user's permanent cart on login.
@@ -351,7 +351,7 @@ function uc_cart_user_login(&$edit, $account) {
 }
 
 /**
- * Implementation of hook_form_alter().
+ * Implement hook_form_alter().
  */
 function uc_cart_form_alter(&$form, $form_state, $form_id) {
   global $language;
@@ -381,7 +381,7 @@ function uc_cart_form_alter(&$form, $form_state, $form_id) {
 }
 
 /**
- * Implementation of hook_block().
+ * Implement hook_block().
  */
 function uc_cart_block($op = 'list', $delta = 0, $edit = array()) {
   global $user;
@@ -510,7 +510,7 @@ function uc_cart_block($op = 'list', $delta = 0, $edit = array()) {
           }
 
           // Build the item count text and cart links.
-          $item_text = format_plural($item_count, '<span class="num-items">@count</span> Item', '<span class="num-items">@count</span> Items');
+          $item_text = format_plural($item_count, '<span class="num-items">1</span> Item', '<span class="num-items">@count</span> Items');
 
           $summary_links = array(
             'cart-block-view-cart' => array(
@@ -808,7 +808,7 @@ function theme_uc_cart_block_summary($variables) {
  ******************************************************************************/
 
 /**
- * Implementation of hook_uc_message().
+ * Implement hook_uc_message().
  */
 function uc_cart_uc_message() {
   global $user;
@@ -825,7 +825,7 @@ function uc_cart_uc_message() {
 }
 
 /**
- * Implementation of hook_cart_pane().
+ * Implement hook_cart_pane().
  */
 function uc_cart_cart_pane($items) {
   $body = array();
@@ -849,7 +849,7 @@ function uc_cart_cart_pane($items) {
 }
 
 /**
- * Implementation of hook_checkout_pane().
+ * Implement hook_checkout_pane().
  */
 function uc_cart_checkout_pane() {
   $panes[] = array(
@@ -1317,8 +1317,8 @@ function uc_cart_complete_sale($order, $login = FALSE) {
   }
 
   $output = '<p>'. check_markup(variable_get('uc_msg_order_submit', uc_get_message('completion_message')),
-                         variable_get('uc_msg_order_submit_format', FILTER_FORMAT_DEFAULT), FALSE) .'</p>';
-  $show_message = check_markup(variable_get('uc_msg_order_'. $message_type, uc_get_message('completion_'. $message_type)), variable_get('uc_msg_order_'. $message_type .'_format', FILTER_FORMAT_DEFAULT), FALSE);
+                         variable_get('uc_msg_order_submit_format', filter_fallback_format())) .'</p>';
+  $show_message = check_markup(variable_get('uc_msg_order_'. $message_type, uc_get_message('completion_'. $message_type)), variable_get('uc_msg_order_'. $message_type .'_format', filter_fallback_format()));
 
   if ($show_message != '') {
     $variables['!new_username'] = check_plain($_SESSION['new_user']['name']);
@@ -1326,8 +1326,7 @@ function uc_cart_complete_sale($order, $login = FALSE) {
     $output .= '<p>'. strtr($show_message, $variables) .'</p>';
   }
   $output .= '<p>'. check_markup(variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping')),
-                      variable_get('uc_msg_continue_shopping_format', FILTER_FORMAT_DEFAULT),
-                      FALSE) .'</p>';
+                      variable_get('uc_msg_continue_shopping_format', filter_fallback_format())) .'</p>';
 
   $output_message = token_replace_multiple($output, array('global' => NULL, 'order' => $order));
 

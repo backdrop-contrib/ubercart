@@ -14,7 +14,7 @@
  ******************************************************************************/
 
 /**
- * Implementation of hook_menu().
+ * Implement hook_menu().
  */
 function uc_product_menu() {
   $items = array();
@@ -156,7 +156,20 @@ function uc_product_menu() {
 }
 
 /**
- * Implementation of hook_help().
+ * Implement hook_admin_paths().
+ */
+function uc_product_admin_paths() {
+  $paths = array(
+    'node/*/edit/product' => TRUE,
+    'node/*/edit/features' => TRUE,
+    'node/*/edit/features/*' => TRUE,
+  );
+
+  return $paths;
+}
+
+/**
+ * Implement hook_help().
  */
 function uc_product_help($path, $arg) {
   // Do things here later. Figure out what you need to say for each section.
@@ -173,7 +186,7 @@ function uc_product_help($path, $arg) {
 }
 
 /**
- * Implementation of hook_permission().
+ * Implement hook_permission().
  */
 function uc_product_permission() {
   $perms = array(
@@ -215,7 +228,7 @@ function uc_product_permission() {
 }
 
 /**
- * Implementation of hook_access().
+ * Implement hook_access().
  */
 function uc_product_node_access($op, $node, $account) {
   $type = is_string($node) ? $node : (is_array($node) ? $node['type'] : $node->type);
@@ -250,7 +263,7 @@ function uc_product_feature_access($node) {
 }
 
 /**
- * Implementation of hook_init().
+ * Implement hook_init().
  */
 function uc_product_init() {
   drupal_add_css(drupal_get_path('module', 'uc_product') .'/uc_product.css');
@@ -261,7 +274,7 @@ function uc_product_init() {
 }
 
 /**
- * Implements hook_enable().
+ * Implement hook_enable().
  *
  * Set up a default image field for products.
  */
@@ -270,7 +283,7 @@ function uc_product_enable() {
 }
 
 /**
- * Implementation of hook_theme().
+ * Implement hook_theme().
  */
 function uc_product_theme() {
   return array(
@@ -316,7 +329,7 @@ function uc_product_theme() {
 }
 
 /**
- * Implements hook_field_formatter_info().
+ * Implement hook_field_formatter_info().
  */
 function uc_product_field_formatter_info() {
   return array(
@@ -329,7 +342,7 @@ function uc_product_field_formatter_info() {
 }
 
 /**
- * Implements hook_field_formatter_view().
+ * Implement hook_field_formatter_view().
  */
 function uc_product_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
   $element = array();
@@ -347,7 +360,7 @@ function uc_product_field_formatter_view($entity_type, $entity, $field, $instanc
 }
 
 /**
- * Implementation of hook_node_info().
+ * Implement hook_node_info().
  *
  * Create node types for each product class and other product modules.
  */
@@ -381,7 +394,7 @@ function uc_product_node_info($reset = FALSE) {
 }
 
 /**
- * Implementation of hook_forms().
+ * Implement hook_forms().
  *
  * Register an "add to cart" form for each product to prevent id collisions.
  */
@@ -406,7 +419,7 @@ function uc_product_edit_access($node) {
 }
 
 /**
- * Implementation of hook_form().
+ * Implement hook_form().
  *
  * @ingroup forms
  * @see
@@ -440,12 +453,6 @@ function uc_product_form($node, $form_state) {
     '#maxlength' => 255,
     '#weight' => -5,
   );
-
-  if ($type->has_body) {
-    $form['body_field'] = node_body_field($node, $type->body_label, $type->min_word_count);
-    $form['body_field']['body']['#description'] = t('Enter the product description used for product teasers and pages.');
-    $form['body_field']['#weight'] = -4;
-  }
 
   $form['base'] = array('#type' => 'fieldset',
     '#title' => t('Product information'),
@@ -627,7 +634,7 @@ function theme_uc_product_dimensions_form($variables) {
 }
 
 /**
- * Implementation of hook_validate().
+ * Implement hook_validate().
  *
  * Ensure that prices, weight, dimensions, and quantity are positive numbers.
  */
@@ -659,7 +666,7 @@ function uc_product_validate($node) {
 }
 
 /**
- * Implementation of hook_insert().
+ * Implement hook_insert().
  */
 function uc_product_insert($node) {
   $node->length = $node->dim_length;
@@ -674,7 +681,7 @@ function uc_product_insert($node) {
 }
 
 /**
- * Implementation of hook_update().
+ * Implement hook_update().
  */
 function uc_product_update($node) {
   $node->length = $node->dim_length;
@@ -691,7 +698,7 @@ function uc_product_update($node) {
 }
 
 /**
- * Implementation of hook_load().
+ * Implement hook_load().
  */
 function uc_product_load($nodes) {
   $vids = array();
@@ -708,7 +715,7 @@ function uc_product_load($nodes) {
 }
 
 /**
- * Implementation of hook_delete().
+ * Implement hook_delete().
  */
 function uc_product_delete(&$node) {
   db_delete('uc_products')
@@ -734,7 +741,7 @@ function uc_product_field_enabled() {
 }
 
 /**
- * Implementation of hook_view().
+ * Implement hook_view().
  */
 function uc_product_view($node, $view_mode) {
   $enabled = uc_product_field_enabled();
@@ -862,7 +869,7 @@ function uc_product_view($node, $view_mode) {
 }
 
 /**
- * Implementation of hook_preprocess_node().
+ * Implement hook_preprocess_node().
  *
  * Product classes default to use node-product.tpl.php if they don't have their
  * own template.
@@ -876,7 +883,7 @@ function uc_product_preprocess_node(&$variables) {
 }
 
 /**
- * Implementation of hook_form_alter().
+ * Implement hook_form_alter().
  *
  * @see uc_product_save_continue_submit()
  */
@@ -967,7 +974,7 @@ function uc_product_save_continue_submit($form, &$form_state) {
 }
 
 /**
- * Implementation of hook_form_{$form_id}_alter().
+ * Implement hook_form_{$form_id}_alter().
  *
  * Add a default image field setting to product content types.
  */
@@ -1020,7 +1027,7 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
  ******************************************************************************/
 
 /**
- * Implementation of hook_content_extra_fields().
+ * Implement hook_content_extra_fields().
  *
  * Adds the "Product information"
  */
@@ -1040,7 +1047,7 @@ function uc_product_content_extra_fields($type_name) {
 }
 
 /**
- * Implementation of hook_content_extra_fields_alter().
+ * Implement hook_content_extra_fields_alter().
  */
 function uc_product_content_extra_fields_alter(&$extra, $type_name) {
   $type = node_type_get_type($type_name);
@@ -1078,7 +1085,7 @@ function uc_product_field_delete_instance($instance) {
  ******************************************************************************/
 
 /**
- * Implementation of hook_token_values().
+ * Implement hook_token_values().
  */
 function uc_product_token_values($type, $object = NULL, $options = array()) {
   if ($type == 'node' && uc_product_is_product($object)) {
@@ -1102,7 +1109,7 @@ function uc_product_token_values($type, $object = NULL, $options = array()) {
 }
 
 /**
- * Implementation of hook_token_list().
+ * Implement hook_token_list().
  */
 function uc_product_token_list($type = 'all') {
   if ($type == 'node' || $type == 'product' || $type == 'ubercart' || $type == 'all') {
@@ -1130,7 +1137,7 @@ function uc_product_token_list($type = 'all') {
  ******************************************************************************/
 
 /**
- * Implementation of hook_product_types().
+ * Implement hook_product_types().
  */
 function uc_product_product_types() {
   return array_keys(uc_product_node_info());
@@ -1169,7 +1176,7 @@ function uc_product_store_status() {
 }
 
 /**
- * Implementation of hook_cart_display().
+ * Implement hook_cart_display().
  */
 function uc_product_cart_display($item) {
   $node = node_load($item->nid);
@@ -1212,7 +1219,7 @@ function uc_product_cart_display($item) {
 }
 
 /**
- * Implementation of hook_update_cart_item().
+ * Implement hook_update_cart_item().
  */
 function uc_product_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
   if (!$nid) return NULL;
@@ -1234,7 +1241,7 @@ function uc_product_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
 }
 
 /**
- * Implementation of hook_add_to_cart_data().
+ * Implement hook_add_to_cart_data().
  */
 function uc_product_add_to_cart_data($form_values) {
   $node = node_load($form_values['nid']);
@@ -1242,7 +1249,7 @@ function uc_product_add_to_cart_data($form_values) {
 }
 
 /**
- * Implmentation of hook_product_class().
+ * Implement hook_product_class().
  */
 function uc_product_product_class($pcid, $op) {
   switch ($op) {
@@ -2062,7 +2069,7 @@ function uc_product_add_default_image_field($type = NULL) {
 }
 
 /**
- * Implements hook_image_default_styles().
+ * Implement hook_image_default_styles().
  */
 function uc_product_image_default_styles() {
   $styles = array();
@@ -2117,7 +2124,7 @@ function uc_product_image_default_styles() {
 }
 
 /**
- * Implementation of hook_views_api().
+ * Implement hook_views_api().
  */
 function uc_product_views_api() {
   return array(

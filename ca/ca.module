@@ -18,7 +18,7 @@ require_once('ca.ca.inc');
  ******************************************************************************/
 
 /**
- * Implementation of hook_menu().
+ * Implement hook_menu().
  */
 function ca_menu() {
   $items = array();
@@ -139,7 +139,7 @@ function ca_convert_configurations_access() {
 }
 
 /**
- * Implementation of hook_permission().
+ * Implement hook_permission().
  */
 function ca_permission() {
   return array(
@@ -1032,40 +1032,3 @@ function ca_weight_sort($a, $b) {
   return ($a['#weight'] > $b['#weight']) ? 1 : -1;
 }
 
-/**
- * Configure the #parents and #id field of any child filter_forms.
- *
- * Unfortunately, FAPI doesn't give us any way to know we have a filter
- * element, so we require all filters to have an #is_format element.
- */
-function filter_configure_form(&$form) {
-  // Grab all the filters, and search for the formats.
-  $formats = filter_formats();
-  _filter_configure_form_recur($form, $formats, array());
-}
-
-/**
- * Recursive filter configuration.
- */
-function _filter_configure_form_recur(&$form, &$formats, $parents) {
-  // Look for our special element, then search the children.
-  if (isset($form['#is_format']) ? $form['#is_format'] : FALSE) {
-    foreach (element_children($form) as $key) {
-      // Found a filter.
-      if (array_key_exists($key, $formats)) {
-        // Configure the parents and ID so FAPI is happy.
-        $form[$key] = array(
-          '#parents' => $parents,
-          '#id' => form_clean_id('edit-'. implode('-', array_merge($parents, array($key)))),
-        ) + $form[$key];
-
-      }
-    }
-  }
-  else {
-    // Keep looking.
-    foreach (element_children($form) as $key) {
-      _filter_configure_form_recur($form[$key], $formats, array_merge($parents, array($key)));
-    }
-  }
-}

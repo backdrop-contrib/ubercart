@@ -12,7 +12,7 @@
  ******************************************************************************/
 
 /**
- * Implementation of hook_ca_entity().
+ * Implement hook_ca_entity().
  *
  * An entity is defined in order to get a role expiration down
  * to token in the email.
@@ -28,7 +28,7 @@ function uc_roles_ca_entity() {
 }
 
 /**
- * Implementation of hook_ca_predicate().
+ * Implement hook_ca_predicate().
  */
 function uc_roles_ca_predicate() {
   $predicates = array();
@@ -107,7 +107,7 @@ function uc_roles_ca_predicate() {
           'addresses' => '[order-email]',
           'subject' => uc_get_message('uc_roles_grant_subject'),
           'message' => uc_get_message('uc_roles_grant_message'),
-          'format' => 1,
+          'format' => filter_default_format(),
         ),
       ),
     ),
@@ -130,7 +130,7 @@ function uc_roles_ca_predicate() {
           'addresses' => '[mail]',
           'subject' => uc_get_message('uc_roles_revoke_subject'),
           'message' => uc_get_message('uc_roles_revoke_message'),
-          'format' => 1,
+          'format' => filter_default_format(),
         ),
       ),
     ),
@@ -153,7 +153,7 @@ function uc_roles_ca_predicate() {
           'addresses' => '[order-email]',
           'subject' => uc_get_message('uc_roles_renew_subject'),
           'message' => uc_get_message('uc_roles_renew_message'),
-          'format' => 1,
+          'format' => filter_format_default(),
         ),
       ),
     ),
@@ -176,7 +176,7 @@ function uc_roles_ca_predicate() {
           'addresses' => '[mail]',
           'subject' => uc_get_message('uc_roles_reminder_subject'),
           'message' => uc_get_message('uc_roles_reminder_message'),
-          'format' => 1,
+          'format' => filter_default_format(),
         ),
       ),
     ),
@@ -186,7 +186,7 @@ function uc_roles_ca_predicate() {
 }
 
 /**
- * Implementation of hook_ca_action().
+ * Implement hook_ca_action().
  */
 function uc_roles_ca_action() {
   // Renew a role expiration.
@@ -240,7 +240,7 @@ function uc_roles_ca_action() {
 }
 
 /**
- * Implementation of hook_ca_trigger().
+ * Implement hook_ca_trigger().
  */
 function uc_roles_ca_trigger() {
   $order = array(
@@ -336,7 +336,7 @@ function uc_roles_action_order_email($order, $role_expiration, $settings) {
  * @see uc_roles_action_order_email()
  */
 function uc_roles_action_order_email_form($form_state, $settings = array()) {
-  return ca_build_email_form($form_state, $settings, array('global', 'uc_roles', 'user'));
+  return uc_roles_build_email_form($form_state, $settings, array('global', 'uc_roles', 'user'));
 }
 
 /**
@@ -377,13 +377,13 @@ function uc_roles_action_user_email($account, $role_expiration, $settings) {
  * @see uc_roles_action_user_email()
  */
 function uc_roles_action_user_email_form($form_state, $settings = array()) {
-  return ca_build_email_form($form_state, $settings, array('global', 'uc_roles', 'user'));
+  return uc_roles_build_email_form($form_state, $settings, array('global', 'uc_roles', 'user'));
 }
 
 /**
  * Build an email settings form.
  */
-function ca_build_email_form($form, &$form_state, $settings, $token_filters) {
+function uc_roles_build_email_form($form, &$form_state, $settings, $token_filters) {
   $form['from'] = array(
     '#type' => 'textfield',
     '#title' => t('Sender'),
@@ -408,10 +408,8 @@ function ca_build_email_form($form, &$form_state, $settings, $token_filters) {
     '#type' => 'textarea',
     '#title' => t('Message'),
     '#default_value' => $settings['message'],
+    '#text_format' => $settings['format'],
   );
-
-  // We add the #is_format element to allow us to locate and configure the filters.
-  $form['format'] = filter_form($settings['format']) + array('#is_format' => TRUE);
 
   $form['token_help'] = array(
     '#type' => 'fieldset',

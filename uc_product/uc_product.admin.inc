@@ -398,7 +398,7 @@ function _uc_product_features_summarize($form, $titles) {
  * Displays the product features tab on a product node edit form.
  */
 function uc_product_features($node) {
-  drupal_set_title(check_plain($node->title));
+  drupal_set_title($node->title);
 
   $build = array();
   if (arg(4)) {
@@ -575,7 +575,7 @@ function uc_product_class_form($form, &$form_state, $class = NULL) {
   if (!is_null($class)) {
     $classname = $class->name;
     $classdesc = $class->description;
-    drupal_set_title(check_plain($classname));
+    drupal_set_title($classname);
     $form['pcid'] = array(
       '#type' => 'hidden',
       '#value' => $class->pcid
@@ -693,7 +693,7 @@ function uc_product_class_delete_confirm($form, &$form_state, $class) {
   $count = db_query("SELECT COUNT(*) FROM {node} WHERE type = :pcid", array(':pcid' => $class->pcid))->fetchField();
 
   if ($count > 0) {
-    $description .= '<br />'. format_plural($count, 'There is @count node of this type.', 'There are @count nodes of this type.');
+    $description .= '<br />'. format_plural($count, 'There is 1 node of this type.', 'There are @count nodes of this type.');
   }
 
   return confirm_form($form, $question, 'admin/store/products/classes', $description, t('Delete'), t('Cancel'));

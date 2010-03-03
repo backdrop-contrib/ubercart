@@ -12,7 +12,7 @@
  ******************************************************************************/
 
 /**
- * Implementation of hook_ca_entity().
+ * Implement hook_ca_entity().
  *
  * An entity is defined in order to get file expiration(s) down
  * to token in the email.
@@ -29,7 +29,7 @@ function uc_file_ca_entity() {
 }
 
 /**
- * Implementation of hook_ca_predicate().
+ * Implement hook_ca_predicate().
  */
 function uc_file_ca_predicate() {
 
@@ -88,7 +88,7 @@ function uc_file_ca_predicate() {
           'addresses' => '[order-email]',
           'subject' => t("File Downloads for Order# [order-id]"),
           'message' => t("Your order (order# [order-link]) at [store-name] included file download(s). You may access them with the following link(s):\n\n[file-downloads]\n\nAfter downloading these files these links will have expired. If you need to download the files again, you can login at [site-login] and visit the \"My Account\" section of the site.\n\nThanks again, \n\n[store-name]\n[site-slogan]"),
-          'format' => 1,
+          'format' => filter_default_format(),
         ),
       ),
     ),
@@ -98,7 +98,7 @@ function uc_file_ca_predicate() {
 }
 
 /**
- * Implementation of hook_ca_action().
+ * Implement hook_ca_action().
  */
 function uc_file_ca_action() {
 
@@ -135,7 +135,7 @@ function uc_file_ca_action() {
 }
 
 /**
- * Implementation of hook_ca_trigger().
+ * Implement hook_ca_trigger().
  */
 function uc_file_ca_trigger() {
 
@@ -229,10 +229,8 @@ function uc_file_build_email_form($form, &$form_state, $settings, $token_filters
     '#type' => 'textarea',
     '#title' => t('Message'),
     '#default_value' => $settings['message'],
+    '#text_format' => $settings['format'],
   );
-
-  // We add the #is_format element to allow us to locate and configure the filters.
-  $form['format'] = filter_form($settings['format']) + array('#is_format' => TRUE);
 
   $form['token_help'] = array(
     '#type' => 'fieldset',

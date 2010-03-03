@@ -7,7 +7,7 @@
  */
 
 /**
- * Implementation of hook_ca_condition().
+ * Implement hook_ca_condition().
  */
 function uc_attribute_ca_condition() {
   $conditions = array();

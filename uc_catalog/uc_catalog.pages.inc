@@ -37,7 +37,7 @@ function theme_uc_catalog_browse($variables) {
 
   $output = '';
   $catalog = uc_catalog_get_page((int)$tid);
-  drupal_set_title(check_plain($catalog->name));
+  drupal_set_title($catalog->name);
   drupal_set_breadcrumb(uc_catalog_set_breadcrumb($catalog->tid));
   $types = uc_product_types();
   $links = array();

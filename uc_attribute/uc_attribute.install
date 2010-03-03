@@ -7,7 +7,7 @@
  */
 
 /**
- * Implemenation of hook_schema()
+ * Implement hook_schema()
  */
 function uc_attribute_schema() {
   $schema = array();
@@ -64,6 +64,12 @@ function uc_attribute_schema() {
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
+      ),
+      'format' => array(
+        'description' => 'Format of the attribute description.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
       ),
     ),
     'primary key' => array('aid'),
@@ -397,9 +403,35 @@ function uc_attribute_schema() {
 }
 
 /**
- * Implementation of hook_uninstall().
+ * Implement hook_uninstall().
  */
 function uc_attribute_uninstall() {
   variable_del('uc_attribute_option_price_format');
 }
 
+/**
+ * Implement hook_update_dependencies().
+ */
+function uc_attribute_update_dependencies() {
+  $dependencies['uc_attribute'][7000] = array(
+    'filter' => 7005,
+  );
+
+  return $dependencies;
+}
+
+/**
+ * Add description format for attributes.
+ */
+function uc_attribute_update_7000() {
+  db_add_field('uc_attributes', 'format', array(
+    'description' => 'Format of the attribute description.',
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
+  ));
+
+  db_update('uc_attributes')
+    ->fields(array('format' => filter_fallback_format()))
+    ->execute();
+}

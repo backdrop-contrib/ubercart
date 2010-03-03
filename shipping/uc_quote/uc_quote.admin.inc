@@ -80,9 +80,8 @@ function uc_quote_admin_settings($form, &$form_state) {
     '#type' => 'textarea',
     '#title' => t('Message text'),
     '#default_value' => variable_get('uc_quote_pane_description', t('Shipping quotes are generated automatically when you enter your address and may be updated manually with the button below.')),
+    '#text_format' => variable_get('uc_quote_desc_format', filter_default_format()),
   );
-  $form['uc_quote_pane_description']['format'] = filter_form(variable_get('uc_quote_desc_format', FILTER_FORMAT_DEFAULT), NULL, array('uc_quote_pane_description', 'format'));
-  $form['uc_quote_pane_description']['format']['#summary callback'] = 'summarize_null';
 
   $form['uc_quote_err_msg'] = array(
     '#type' => 'fieldset',
@@ -96,9 +95,8 @@ function uc_quote_admin_settings($form, &$form_state) {
     '#type' => 'textarea',
     '#title' => t('Message text'),
     '#default_value' => variable_get('uc_quote_err_msg', t("There were problems getting a shipping quote. Please verify the delivery and product information and try again.\nIf this does not resolve the issue, please call in to complete your order.")),
+    '#text_format' => variable_get('uc_quote_msg_format', filter_default_format()),
   );
-  $form['uc_quote_err_msg']['format'] = filter_form(variable_get('uc_quote_msg_format', FILTER_FORMAT_DEFAULT), NULL, array('uc_quote_err_msg', 'format'));
-  $form['uc_quote_err_msg']['format']['#summary callback'] = 'summarize_null';
 
   $form['default_address'] = array(
     '#type' => 'fieldset',
@@ -160,9 +158,9 @@ function uc_quote_admin_settings_submit($form, &$form_state) {
   variable_set('uc_quote_display_debug', $form_state['values']['uc_quote_display_debug']);
   variable_set('uc_quote_require_quote', $form_state['values']['uc_quote_require_quote']);
   variable_set('uc_quote_pane_description', $form_state['values']['uc_quote_pane_description']['text']);
-  variable_set('uc_quote_desc_format', $form_state['values']['uc_quote_pane_description']['format']);
+  variable_set('uc_quote_desc_format', $form_state['values']['uc_quote_pane_description_format']);
   variable_set('uc_quote_err_msg', $form_state['values']['uc_quote_err_msg']['text']);
-  variable_set('uc_quote_msg_format', $form_state['values']['uc_quote_err_msg']['format']);
+  variable_set('uc_quote_msg_format', $form_state['values']['uc_quote_err_msg_format']);
 
   drupal_set_message(t('The configuration options have been saved.'));
 }

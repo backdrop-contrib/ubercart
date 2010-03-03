@@ -94,7 +94,7 @@ function uc_attribute_form($form, &$form_state, $attribute = NULL) {
   // If an attribute specified, add its ID as a hidden value.
   if (!empty($attribute)) {
     $form['aid'] = array('#type' => 'hidden', '#value' => $attribute->aid);
-    drupal_set_title(t('Edit attribute: %name', array('%name' => $attribute->name)));
+    drupal_set_title(t('Edit attribute: %name', array('%name' => $attribute->name)), PASS_THROUGH);
   }
 
   $form['name'] = array(
@@ -115,6 +115,7 @@ function uc_attribute_form($form, &$form_state, $attribute = NULL) {
     '#title' => t('Help text'),
     '#description' => t('<b>Optional.</b> Enter the help text that will display beneath the attribute on product add to cart forms.'),
     '#default_value' => $attribute->description,
+    '#text_format' => $attribute->format,
     '#maxlength' => 255,
   );
   $form['required'] = array(
@@ -150,6 +151,7 @@ function uc_attribute_form($form, &$form_state, $attribute = NULL) {
  * @see uc_attribute_add_form()
  */
 function uc_attribute_form_submit($form, &$form_state) {
+  $form_state['values']['format'] = $form_state['values']['description_format'];
   if (!empty($form_state['values']['aid'])) {
     drupal_write_record('uc_attributes', $form_state['values'], 'aid');
   }
@@ -178,7 +180,7 @@ function uc_attribute_delete_confirm($form, &$form_state, $attribute) {
   $count = db_query("SELECT COUNT(*) FROM {uc_product_attributes} WHERE aid = :aid", array(':aid' => $attribute->aid))->fetchField();
 
   $output = confirm_form($form, t('Are you sure you want to delete the attribute %name?', array('%name' => $attribute->name)),
-              'admin/store/attributes', format_plural($count, 'There is @count product with this attribute.', 'There are @count products with this attribute.'),
+              'admin/store/attributes', format_plural($count, 'There is 1 product with this attribute.', 'There are @count products with this attribute.'),
               t('Delete'), t('Cancel'));
 
   return $output;
@@ -231,7 +233,8 @@ function uc_attribute_delete_confirm_submit($form, &$form_state) {
  * @ingroup forms
  */
 function uc_attribute_admin_settings($form, &$form_state) {
-  $form['uc_attribute_option_price_format'] = array('#type' => 'radios',
+  $form['uc_attribute_option_price_format'] = array(
+    '#type' => 'radios',
     '#title' => t('Option price format'),
     '#default_value' => variable_get('uc_attribute_option_price_format', 'adjustment'),
     '#options' => array('none' => t('Do not display'),
@@ -254,7 +257,7 @@ function uc_attribute_admin_settings($form, &$form_state) {
  */
 function uc_attribute_options_form($form, &$form_state, $attribute) {
   // Set an appropriate title.
-  drupal_set_title(t('Options for %name', array('%name' => $attribute->name)));
+  drupal_set_title(t('Options for %name', array('%name' => $attribute->name)), PASS_THROUGH);
 
   // Store the attribute ID in the form array.
   $form['aid'] = array(
@@ -401,10 +404,10 @@ function uc_attribute_option_form($form, &$form_state, $attribute, $option = NUL
 
   if (!empty($option)) {
     $form['oid'] = array('#type' => 'hidden', '#value' => $option->oid);
-    drupal_set_title(t('Edit option: %name', array('%name' => $option->name)));
+    drupal_set_title(t('Edit option: %name', array('%name' => $option->name)), PASS_THROUGH);
   }
   else {
-    drupal_set_title(t('Options for %name', array('%name' => $attribute->name)));
+    drupal_set_title(t('Options for %name', array('%name' => $attribute->name)), PASS_THROUGH);
   }
 
   $form['name'] = array(
@@ -569,7 +572,7 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
       if (empty($class->name)) {
         drupal_goto('admin/store/products/classes/'. $id);
       }
-      drupal_set_title(check_plain($class->name));
+      drupal_set_title($class->name);
       $attributes = uc_class_get_attributes($id);
       break;
     case 'product':
@@ -579,7 +582,7 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
       if (empty($product->title)) {
         drupal_goto('node/'. $id);
       }
-      drupal_set_title(check_plain($product->title));
+      drupal_set_title($product->title);
       $attributes = uc_product_get_attributes($id);
   }
 
@@ -795,7 +798,7 @@ function uc_object_attributes_form_submit($form, &$form_state) {
           ->execute();
       }
 
-      drupal_set_message(format_plural(count($remove_aids), '@count attribute has been removed.', '@count attributes have been removed.'));
+      drupal_set_message(format_plural(count($remove_aids), '1 attribute has been removed.', '@count attributes have been removed.'));
     }
 
     if ($changed) {
@@ -841,7 +844,7 @@ function uc_object_attributes_form_submit($form, &$form_state) {
           ->condition('nid', $form_state['values']['id'])
           ->execute();
       }
-      drupal_set_message(format_plural(count($form_state['values']['add_attributes']), '@count attribute has been added.', '@count attributes have been added.'));
+      drupal_set_message(format_plural(count($form_state['values']['add_attributes']), '1 attribute has been added.', '@count attributes have been added.'));
     }
   }
 
@@ -866,7 +869,7 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
   if ($type == 'product') {
     $product = $object;
     $id = $product->nid;
-    drupal_set_title(check_plain($product->title));
+    drupal_set_title($product->title);
     $attributes = uc_product_get_attributes($id);
     $table = 'uc_product_options';
     $id_type = 'nid';
@@ -874,7 +877,7 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
   elseif ($type == 'class') {
     $class = $object;
     $id = $class->pcid;
-    drupal_set_title(check_plain($class->name));
+    drupal_set_title($class->name);
     $attributes = uc_class_get_attributes($id);
     $table = 'uc_class_attribute_options';
     $id_type = 'pcid';
@@ -1188,7 +1191,7 @@ function uc_object_options_form_submit($form, &$form_state) {
  * @see uc_product_adjustments_form_submit()
  */
 function uc_product_adjustments_form($form, &$form_state, $node) {
-  drupal_set_title(check_plain($node->title));
+  drupal_set_title($node->title);
   $nid = $node->nid;
 
   //Populate table and such.
