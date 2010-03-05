@@ -300,7 +300,7 @@ function uc_credit_terminal_form_submit($form, &$form_state) {
       $data['ref_id'] = $form_state['values']['select_ref'];
   }
 
-  $result = uc_payment_process('credit', $form_state['values']['order_id'], $form_state['values']['amount'], $data, TRUE, NULL, FALSE);
+  $result = uc_payment_process_payment('credit', $form_state['values']['order_id'], $form_state['values']['amount'], $data, TRUE, NULL, FALSE);
 
   if ($result) {
     $crypt = new uc_encryption_class;

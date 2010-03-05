@@ -289,7 +289,7 @@ function uc_payment_gateway_select_form_submit($form, &$form_state) {
   unset($_SESSION['uc_payment_amount']);
   unset($_SESSION['uc_payment_data']);
 
-  uc_payment_process($form_state['values']['method'], $form_state['values']['order_id'],
+  uc_payment_process_payment($form_state['values']['method'], $form_state['values']['order_id'],
     $form_state['values']['amount'], unserialize($form_state['values']['p_data']), FALSE,
     $form_state['values']['p_selected']);
 
