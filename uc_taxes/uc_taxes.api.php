@@ -19,7 +19,7 @@
  * @return
  *   An array of tax line item objects keyed by a module-specific id.
  */
-function hook_calculate_tax($order) {
+function hook_uc_calculate_tax($order) {
   global $user;
   if (is_numeric($order)) {
     $order = uc_order_load($order);

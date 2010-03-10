@@ -12,38 +12,6 @@
  */
 
 /**
- * Add status messages to the "Store administration" page.
- *
- * This hook is used to add items to the store status table on the main store
- * administration screen. Each item gets a row in the table that consists of a
- * status icon, title, and description. These items should be used to give
- * special instructions, notifications, or indicators for components of the cart
- * enabled by the modules. At a glance, a store owner should be able to look here
- * and see if a critical component of your module is not functioning properly.
- *
- * For example, if the catalog module is installed and it cannot find the catalog
- * taxonomy vocabulary, it will show an error message here to alert the store
- * administrator.
- *
- * @return
- *   An array of tore status items which are arrays with the following keys:
- *   - "status": "ok", "warning", or "error" depending on the message.
- *   - "title" The title of the status message or module that defines it.
- *   - "desc": The description; can be any message, including links to pages and
- *       forms that deal with the issue being reported.
- */
-function hook_store_status() {
-  if ($key = uc_credit_encryption_key()) {
-    $statuses[] = array(
-      'status' => 'ok',
-      'title' => t('Credit card encryption'),
-      'desc' => t('Credit card data in the database is currently being encrypted.'),
-    );
-  }
-  return $statuses;
-}
-
-/**
  * Allow modules to alter the TAPIr table after the rows are populated.
  *
  * The example below adds a value for the custom 'designer' column to the table
@@ -200,6 +168,38 @@ function hook_uc_price_handler() {
       'my_option_that_my_formatter_recognizes' => 1337,
     )
   );
+}
+
+/**
+ * Add status messages to the "Store administration" page.
+ *
+ * This hook is used to add items to the store status table on the main store
+ * administration screen. Each item gets a row in the table that consists of a
+ * status icon, title, and description. These items should be used to give
+ * special instructions, notifications, or indicators for components of the cart
+ * enabled by the modules. At a glance, a store owner should be able to look here
+ * and see if a critical component of your module is not functioning properly.
+ *
+ * For example, if the catalog module is installed and it cannot find the catalog
+ * taxonomy vocabulary, it will show an error message here to alert the store
+ * administrator.
+ *
+ * @return
+ *   An array of tore status items which are arrays with the following keys:
+ *   - "status": "ok", "warning", or "error" depending on the message.
+ *   - "title" The title of the status message or module that defines it.
+ *   - "desc": The description; can be any message, including links to pages and
+ *       forms that deal with the issue being reported.
+ */
+function hook_uc_store_status() {
+  if ($key = uc_credit_encryption_key()) {
+    $statuses[] = array(
+      'status' => 'ok',
+      'title' => t('Credit card encryption'),
+      'desc' => t('Credit card data in the database is currently being encrypted.'),
+    );
+  }
+  return $statuses;
 }
 
 /**

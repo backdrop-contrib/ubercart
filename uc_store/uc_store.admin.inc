@@ -30,7 +30,7 @@ function uc_store_admin() {
     );
   }
 
-  $results = module_invoke_all('store_status');
+  $results = module_invoke_all('uc_store_status');
 
   foreach ($results as $message) {
     switch ($message['status']) {

@@ -12,63 +12,6 @@
  */
 
 /**
- * Register payment gateway callbacks.
- *
- * @see @link http://www.ubercart.org/docs/api/hook_payment_gateway @endlink
- *
- * @return
- *   Returns an array of payment gateways, which are arrays with the following keys:
- *   - "id"
- *     - type: string
- *     - value: The internal ID of the payment gateway, using a-z, 0-9, and - or
- *         _.
- *   - "title"
- *     - type: string
- *     - value: The name of the payment gateway displayed to the user. Use t().
- *   - "description"
- *     - type: string
- *     - value: A short description of the payment gateway.
- *   - "settings"
- *     - type: string
- *     - value: The name of a function that returns an array of settings form
- *         elements for the gateway.
- */
-function hook_payment_gateway() {
-  $gateways[] = array(
-    'id' => 'test_gateway',
-    'title' => t('Test Gateway'),
-    'description' => t('Process credit card payments through the Test Gateway.'),
-    'credit' => 'test_gateway_charge',
-  );
-  return $gateways;
-}
-
-/**
- * Register callbacks for payment methods.
- *
- * Payment methods are different ways to collect payment. By default, Übercart
- * comes with support for check, credit card, and generic payments. Payment
- * methods show up at checkout or on the order administration screens, and they
- * collect different sorts of information from the user that is used to process
- * or track the payment.
- *
- * @return
- *   An array of payment methods.
- */
-function hook_payment_method() {
-  $methods[] = array(
-    'id' => 'check',
-    'name' => t('Check'),
-    'title' => t('Check or Money Order'),
-    'desc' => t('Pay by mailing a check or money order.'),
-    'callback' => 'uc_payment_method_check',
-    'weight' => 1,
-    'checkout' => TRUE,
-  );
-  return $methods;
-}
-
-/**
  * Take action when a payment is entered for an order.
  *
  * @param $order
@@ -95,6 +38,63 @@ function hook_uc_payment_entered($order, $method, $amount, $account, $data, $com
       '@order_id' => $order->order_id,
     ))
   );
+}
+
+/**
+ * Register payment gateway callbacks.
+ *
+ * @see @link http://www.ubercart.org/docs/api/hook_payment_gateway @endlink
+ *
+ * @return
+ *   Returns an array of payment gateways, which are arrays with the following keys:
+ *   - "id"
+ *     - type: string
+ *     - value: The internal ID of the payment gateway, using a-z, 0-9, and - or
+ *         _.
+ *   - "title"
+ *     - type: string
+ *     - value: The name of the payment gateway displayed to the user. Use t().
+ *   - "description"
+ *     - type: string
+ *     - value: A short description of the payment gateway.
+ *   - "settings"
+ *     - type: string
+ *     - value: The name of a function that returns an array of settings form
+ *         elements for the gateway.
+ */
+function hook_uc_payment_gateway() {
+  $gateways[] = array(
+    'id' => 'test_gateway',
+    'title' => t('Test Gateway'),
+    'description' => t('Process credit card payments through the Test Gateway.'),
+    'credit' => 'test_gateway_charge',
+  );
+  return $gateways;
+}
+
+/**
+ * Register callbacks for payment methods.
+ *
+ * Payment methods are different ways to collect payment. By default, Übercart
+ * comes with support for check, credit card, and generic payments. Payment
+ * methods show up at checkout or on the order administration screens, and they
+ * collect different sorts of information from the user that is used to process
+ * or track the payment.
+ *
+ * @return
+ *   An array of payment methods.
+ */
+function hook_uc_payment_method() {
+  $methods[] = array(
+    'id' => 'check',
+    'name' => t('Check'),
+    'title' => t('Check or Money Order'),
+    'desc' => t('Pay by mailing a check or money order.'),
+    'callback' => 'uc_payment_method_check',
+    'weight' => 1,
+    'checkout' => TRUE,
+  );
+  return $methods;
 }
 
 /**

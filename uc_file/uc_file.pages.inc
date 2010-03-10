@@ -210,8 +210,8 @@ function _uc_file_download($fid, $key) {
  * Perform first-pass authorization. Call authorization hooks afterwards.
  *
  * Called when a user requests a file download, function checks download
- * limits then checks for any implementation of hook_download_authorize.
- * Passing that, the function _uc_file_download_transfer is called.
+ * limits then checks for any implementation of hook_uc_download_authorize().
+ * Passing that, the function _uc_file_download_transfer() is called.
  *
  * @param $fid
  *   The fid of the file specified to download.
@@ -262,9 +262,9 @@ function _uc_file_download_validate($file_download, &$user, $ip) {
     return UC_FILE_ERROR_EXPIRED;
   }
 
-  //Check any if any hook_download_authorize calls deny the download
-  foreach (module_implements('download_authorize') as $module) {
-    $name = $module .'_download_authorize';
+  // Check any if any hook_uc_download_authorize() calls deny the download
+  foreach (module_implements('uc_download_authorize') as $module) {
+    $name = $module .'_uc_download_authorize';
     $result = $name($user, $file_download);
     if (!$result) {
       return UC_FILE_ERROR_HOOK_ERROR;

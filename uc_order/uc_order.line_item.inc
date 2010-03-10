@@ -180,13 +180,13 @@ function _line_item_list($action = NULL) {
     return $items;
   }
 
-  $items = module_invoke_all('line_item', NULL);
+  $items = module_invoke_all('uc_line_item', NULL);
   foreach ($items as $i => $value) {
     $items[$i]['enabled'] = variable_get('uc_li_'. $items[$i]['id'] .'_enabled', (!isset($items[$i]['enabled']) ? TRUE : $items[$i]['enabled']));
     $items[$i]['weight'] = variable_get('uc_li_'. $items[$i]['id'] .'_weight', (!isset($items[$i]['weight']) ? 1 : $items[$i]['weight']));
   }
 
-  drupal_alter('line_item_data', $items);
+  drupal_alter('uc_line_item_data', $items);
 
   usort($items, 'uc_weight_sort');
 

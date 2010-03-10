@@ -12,6 +12,36 @@
  */
 
 /**
+ * Give clearance to a user to download a file.
+ *
+ * By default the uc_file module can implement 3 restrictions on downloads: by
+ * number of IP addresses downloaded from, by number of downloads, and by a set
+ * expiration date. Developers wishing to add further restrictions can do so by
+ * implementing this hook. After the 3 aforementioned restrictions are checked,
+ * the uc_file module will check for implementations of this hook.
+ *
+ * @param $user
+ *   The drupal user object that has requested the download
+ * @param $file_download
+ *   The file download object as defined as a row from the uc_file_users table
+ *   that grants the user the download
+ * @return
+ *   TRUE or FALSE depending on whether the user is to be permitted download of
+ *   the requested files. When a implementation returns FALSE it should set an
+ *   error message in Drupal using drupal_set_message() to inform customers of
+ *   what is going on.
+ */
+function hook_uc_download_authorize($user, $file_download) {
+  if (!$user->status) {
+    drupal_set_message(t("This account has been banned and can't download files anymore. "),'error');
+    return FALSE;
+  }
+  else {
+    return TRUE;
+  }
+}
+
+/**
  * Perform actions on file products.
  *
  * The uc_file module comes with a file manager (found at Administer » Store
@@ -53,7 +83,7 @@
  *     - 'file_object': The file object of the newly discovered file
  *   - 'form':
  *     - 'action': The file action being performed as defined by the key in the
- *         array sent by hook_file_action($op = 'info')
+ *         array sent by hook_uc_file_action($op = 'info')
  *     - 'file_ids' - The file ids (as defined in the uc_files table) of the
  *          selected files to perform the action on
  *   - 'upload':
@@ -86,7 +116,7 @@
  *   - 'validate': None
  *   - 'submit': None
  */
-function hook_file_action($op, $args) {
+function hook_uc_file_action($op, $args) {
   switch ($op) {
     case 'info':
       return array('uc_image_watermark_add_mark' => 'Add Watermark');
@@ -156,7 +186,7 @@ function hook_file_action($op, $args) {
  * @return
  *   The path of the new file to transfer to customer.
  */
-function hook_file_transfer_alter($file_user, $ip, $fid, $file) {
+function hook_uc_file_transfer_alter($file_user, $ip, $fid, $file) {
   $file_data = file_get_contents($file)." [insert personalized data]"; //for large files this might be too memory intensive
   $new_file = tempnam(file_directory_temp(),'tmp');
   file_put_contents($new_file,$file_data);

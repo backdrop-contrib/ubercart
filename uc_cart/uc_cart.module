@@ -480,7 +480,7 @@ function uc_cart_block_view($delta = '') {
 
       if ($product_count) {
         foreach (uc_cart_get_contents() as $item) {
-          $display_item = module_invoke($item->module, 'cart_display', $item);
+          $display_item = module_invoke($item->module, 'uc_cart_display', $item);
 
           if (!empty($display_item)) {
             $items[] = array(
@@ -814,9 +814,9 @@ function uc_cart_uc_message() {
 }
 
 /**
- * Implement hook_cart_pane().
+ * Implement hook_uc_cart_pane().
  */
-function uc_cart_cart_pane($items) {
+function uc_cart_uc_cart_pane($items) {
   $body = array();
 
   if (!is_null($items)) {
@@ -838,9 +838,9 @@ function uc_cart_cart_pane($items) {
 }
 
 /**
- * Implement hook_checkout_pane().
+ * Implement hook_uc_checkout_pane().
  */
-function uc_cart_checkout_pane() {
+function uc_cart_uc_checkout_pane() {
   $panes[] = array(
     'id' => 'cart',
     'callback' => 'uc_checkout_pane_cart',
@@ -971,7 +971,7 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
   );
   $i = 0;
   foreach ($items as $item) {
-    $display_item = module_invoke($item->module, 'cart_display', $item);
+    $display_item = module_invoke($item->module, 'uc_cart_display', $item);
     if (!empty($display_item)) {
       $form['items'][$i] = $display_item;
       $form['items'][$i]['image'] = uc_product_get_picture($display_item['nid']['#value'], 'uc_cart');
@@ -1331,7 +1331,7 @@ function uc_cart_complete_sale($order, $login = FALSE) {
   // Clear our the session variables used to force the cart workflow.
   unset($_SESSION['cart_order'], $_SESSION['do_complete'], $_SESSION['new_user']);
 
-  module_invoke_all('uc_checkout_complete', $order, $account);
+  module_invoke_all('uc_uc_checkout_complete', $order, $account);
   ca_pull_trigger('uc_checkout_complete', $order, $account);
 
   return array(
@@ -1401,8 +1401,8 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
       $item->model = $product->model;
 
       // Invoke hook_cart_item() with $op = 'load' in enabled modules.
-      foreach (module_implements('cart_item') as $module) {
-        $func = $module .'_cart_item';
+      foreach (module_implements('uc_cart_item') as $module) {
+        $func = $module .'_uc_cart_item';
         if (function_exists($func)) {
           // $item must be passed by reference.
           $func('load', $item);
@@ -1470,8 +1470,8 @@ function uc_cart_get_item($cart_item_id) {
   $item->model = $product->model;
 
   // Invoke hook_cart_item() with $op = 'load' in enabled modules.
-  foreach (module_implements('cart_item') as $module) {
-    $func = $module .'_cart_item';
+  foreach (module_implements('uc_cart_item') as $module) {
+    $func = $module .'_uc_cart_item';
     if (function_exists($func)) {
       // $item must be passed by reference.
       $func('load', $item);
@@ -1522,7 +1522,7 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
     return;
   }
 
-  $result = module_invoke_all('add_to_cart', $nid, $qty, $data);
+  $result = module_invoke_all('uc_add_to_cart', $nid, $qty, $data);
   if (is_array($result) && !empty($result)) {
     foreach ($result as $row) {
       if ($row['success'] === FALSE) {
@@ -1578,7 +1578,7 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
       drupal_set_message(t('Your item(s) have been updated.'));
     }
     $qty += $item->qty;
-    module_invoke($data['module'], 'update_cart_item', $node->nid, $data, min($qty, 999999), $cid);
+    module_invoke($data['module'], 'uc_update_cart_item', $node->nid, $data, min($qty, 999999), $cid);
   }
 
   // If specified, rebuild the cached cart items array.
@@ -1615,8 +1615,8 @@ function uc_cart_remove_item($nid, $cid = NULL, $data = array()) {
   // Invoke hook_cart_item() with $op = 'remove' in enabled modules.
   $result = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c ON n.nid = c.nid WHERE c.cart_id = :cart_id AND c.nid = :nid", array(':cart_id' => $cart_id, ':nid' => $nid));
   if ($item = $result->fetchObject()) {
-    foreach (module_implements('cart_item') as $module) {
-      $func = $module .'_cart_item';
+    foreach (module_implements('uc_cart_item') as $module) {
+      $func = $module .'_uc_cart_item';
       if (function_exists($func)) {
         // $item must be passed by reference.
         $func('remove', $item);
@@ -1638,10 +1638,10 @@ function uc_cart_update_item_object($cart) {
   if (is_object($cart)) {
     foreach ($cart->items as $item) {
       if ($item['remove']) {
-        module_invoke($item['module'], 'update_cart_item', $item['nid'], unserialize($item['data']), 0);
+        module_invoke($item['module'], 'uc_update_cart_item', $item['nid'], unserialize($item['data']), 0);
       }
       else {
-        module_invoke($item['module'], 'update_cart_item', $item['nid'], unserialize($item['data']), $item['qty']);
+        module_invoke($item['module'], 'uc_update_cart_item', $item['nid'], unserialize($item['data']), $item['qty']);
       }
     }
 
@@ -1688,7 +1688,7 @@ function uc_cart_cart_pane_list($items, $action = NULL) {
     return $panes;
   }
 
-  $panes = module_invoke_all('cart_pane', $items);
+  $panes = module_invoke_all('uc_cart_pane', $items);
   if (!is_array($panes) || count($panes) == 0) {
     return array();
   }
@@ -1744,8 +1744,8 @@ function uc_cart_product_is_shippable($product) {
   $result = array();
 
   // See if any other modules have a say in the matter...
-  foreach (module_implements('cart_item') as $module) {
-    $func = $module .'_cart_item';
+  foreach (module_implements('uc_cart_item') as $module) {
+    $func = $module .'_uc_cart_item';
     if (function_exists($func)) {
       // $product must be passed by reference.
       $return = $func('can_ship', $product);

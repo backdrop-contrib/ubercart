@@ -534,7 +534,7 @@ function _checkout_pane_list($action = NULL) {
     return $panes;
   }
 
-  $panes = module_invoke_all('checkout_pane', NULL);
+  $panes = module_invoke_all('uc_checkout_pane', NULL);
   foreach ($panes as $i => $value) {
     $panes[$i]['enabled'] = variable_get('uc_pane_'. $panes[$i]['id'] .'_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
     $panes[$i]['weight'] = variable_get('uc_pane_'. $panes[$i]['id'] .'_weight', (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));

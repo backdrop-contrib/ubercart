@@ -102,7 +102,7 @@ function uc_product_menu() {
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'file' => 'uc_product.admin.inc',
   );
-  $features = module_invoke_all('product_feature');
+  $features = module_invoke_all('uc_product_feature');
   if (!empty($features)) {
     $items['node/%node/edit/features'] = array(
       'title' => 'Features',
@@ -1137,18 +1137,20 @@ function uc_product_token_list($type = 'all') {
  ******************************************************************************/
 
 /**
- * Implement hook_product_types().
+ * Implement hook_uc_product_types().
  */
-function uc_product_product_types() {
+function uc_product_uc_product_types() {
   return array_keys(uc_product_node_info());
 }
 
 /**
+ * Implement hook_uc_store_status().
+ *
  * Display the status of the product image handlers.
  *
  * @see uc_product_image_defaults()
  */
-function uc_product_store_status() {
+function uc_product_uc_store_status() {
   module_load_include('inc', 'content', 'includes/content.crud');
   // Check for filefields on products.
   if ($field = variable_get('uc_image_product', '')) {
@@ -1176,9 +1178,9 @@ function uc_product_store_status() {
 }
 
 /**
- * Implement hook_cart_display().
+ * Implement hook_uc_cart_display().
  */
-function uc_product_cart_display($item) {
+function uc_product_uc_cart_display($item) {
   $node = node_load($item->nid);
   $element = array();
   $element['nid'] = array('#type' => 'value', '#value' => $node->nid);
@@ -1219,9 +1221,9 @@ function uc_product_cart_display($item) {
 }
 
 /**
- * Implement hook_update_cart_item().
+ * Implement hook_uc_update_cart_item().
  */
-function uc_product_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
+function uc_product_uc_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
   if (!$nid) return NULL;
   $cid = !(is_null($cid) || empty($cid)) ? $cid : uc_cart_get_id();
   if ($qty < 1) {
@@ -1241,17 +1243,17 @@ function uc_product_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
 }
 
 /**
- * Implement hook_add_to_cart_data().
+ * Implement hook_uc_add_to_cart_data().
  */
-function uc_product_add_to_cart_data($form_values) {
+function uc_product_uc_add_to_cart_data($form_values) {
   $node = node_load($form_values['nid']);
   return array('shippable' => $node->shippable);
 }
 
 /**
- * Implement hook_product_class().
+ * Implement hook_uc_product_class().
  */
-function uc_product_product_class($pcid, $op) {
+function uc_product_uc_product_class($pcid, $op) {
   switch ($op) {
     case 'insert':
       db_update('node_type')
@@ -1453,7 +1455,7 @@ function uc_catalog_buy_it_now_form_validate($form, &$form_state) {
  * @see uc_catalog_buy_it_now_form()
  */
 function uc_catalog_buy_it_now_form_submit($form, &$form_state) {
-  $form_state['redirect'] = uc_cart_add_item($form_state['values']['nid'], 1,  module_invoke_all('add_to_cart_data', $form_state['values']), NULL, variable_get('uc_cart_add_item_msg', TRUE));
+  $form_state['redirect'] = uc_cart_add_item($form_state['values']['nid'], 1,  module_invoke_all('uc_add_to_cart_data', $form_state['values']), NULL, variable_get('uc_cart_add_item_msg', TRUE));
 }
 
 /**
@@ -1563,7 +1565,7 @@ function uc_product_add_to_cart_form_validate($form, &$form_state) {
  * @see uc_product_add_to_cart_form()
  */
 function uc_product_add_to_cart_form_submit($form, &$form_state) {
-  $form_state['redirect'] = uc_cart_add_item($form_state['values']['nid'], $form_state['values']['qty'],  module_invoke_all('add_to_cart_data', $form_state['values']), NULL, variable_get('uc_cart_add_item_msg', TRUE));
+  $form_state['redirect'] = uc_cart_add_item($form_state['values']['nid'], $form_state['values']['qty'],  module_invoke_all('uc_add_to_cart_data', $form_state['values']), NULL, variable_get('uc_cart_add_item_msg', TRUE));
 }
 
 /**
@@ -1685,7 +1687,7 @@ function theme_uc_product_image($variables) {
  * Return an array of product node types.
  */
 function uc_product_types() {
-  return module_invoke_all('product_types');
+  return module_invoke_all('uc_product_types');
 }
 
 /**
@@ -1874,10 +1876,10 @@ function uc_product_get_image_widget() {
  */
 function uc_product_get_description($product) {
   // Run through implementations of hook_product_description()
-  $description = module_invoke_all('product_description', $product);
+  $description = module_invoke_all('uc_product_description', $product);
 
   // Now allow alterations via hook_product_description_alter()
-  drupal_alter('product_description', $description, $product);
+  drupal_alter('uc_product_description', $description, $product);
 
   return drupal_render($description);
 }
@@ -1912,7 +1914,7 @@ function uc_product_feature_data($fid, $key) {
   static $features;
 
   if (empty($features)) {
-    foreach (module_invoke_all('product_feature') as $feature) {
+    foreach (module_invoke_all('uc_product_feature') as $feature) {
       $features[$feature['id']] = $feature;
     }
   }

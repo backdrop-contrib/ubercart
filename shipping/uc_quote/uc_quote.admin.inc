@@ -214,7 +214,7 @@ function uc_quote_method_settings($form, &$form_state) {
       '#tree' => TRUE,
     );
     $weight = variable_get('uc_quote_type_weight', array());
-    $shipping_methods = module_invoke_all('shipping_method');
+    $shipping_methods = module_invoke_all('uc_shipping_method');
     $method_types = array();
     foreach ($shipping_methods as $method) {
       $method_types[$method['quote']['type']][] = $method['title'];

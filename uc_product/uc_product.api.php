@@ -25,7 +25,7 @@
  *       additional information to the node type because it is a product type
  *       should delete this information.
  */
-function hook_product_class($type, $op) {
+function hook_uc_product_class($type, $op) {
   switch ($op) {
     case 'delete':
       db_query("DELETE FROM {uc_class_attributes} WHERE pcid = '%s'", $type);
@@ -48,7 +48,7 @@ function hook_product_class($type, $op) {
  * @return
  *   A structured array that can be fed into drupal_render().
  */
-function hook_product_description($product) {
+function hook_uc_product_description($product) {
   $description = array(
     'attributes' => array(
       '#product' => array(
@@ -98,23 +98,8 @@ function hook_product_description($product) {
  * @param $product
  *   The product being described.
  */
-function hook_product_description_alter(&$description, $product) {
+function hook_uc_product_description_alter(&$description, $product) {
   $description['attributes']['#weight'] = 2;
-}
-
-/**
- * List node types which should be considered products.
- *
- * Trusts the duck philosophy of object identification: if it walks like a duck,
- * quacks like a duck, and has feathers like a duck, it's probably a duck.
- * Products are nodes with prices, SKUs, and everything else Übercart expects
- * them to have.
- *
- * @return
- *   Array of node type ids.
- */
-function hook_product_types() {
-  return array('product_kit');
 }
 
 /**
@@ -138,6 +123,21 @@ function hook_uc_product_models($node) {
   }
 
   return $models;
+}
+
+/**
+ * List node types which should be considered products.
+ *
+ * Trusts the duck philosophy of object identification: if it walks like a duck,
+ * quacks like a duck, and has feathers like a duck, it's probably a duck.
+ * Products are nodes with prices, SKUs, and everything else Übercart expects
+ * them to have.
+ *
+ * @return
+ *   Array of node type ids.
+ */
+function hook_uc_product_types() {
+  return array('product_kit');
 }
 
 /**

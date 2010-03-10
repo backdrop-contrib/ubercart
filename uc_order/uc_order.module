@@ -576,9 +576,9 @@ function uc_order_mail($key, &$message, $params) {
  ******************************************************************************/
 
 /**
- * Implement hook_order_pane().
+ * Implement hook_uc_order_pane().
  */
-function uc_order_order_pane() {
+function uc_order_uc_order_pane() {
   $panes[] = array(
     'id' => 'ship_to',
     'callback' => 'uc_order_pane_ship_to',
@@ -656,9 +656,9 @@ function uc_order_order_pane() {
 }
 
 /**
- * Implement hook_order_state().
+ * Implement hook_uc_order_state().
  */
-function uc_order_order_state() {
+function uc_order_uc_order_state() {
   $states[] = array(
     'id' => 'canceled',
     'title' => t('Canceled'),
@@ -688,9 +688,9 @@ function uc_order_order_state() {
 }
 
 /**
- * Implement hook_line_item().
+ * Implement hook_uc_line_item().
  */
-function uc_order_line_item() {
+function uc_order_uc_line_item() {
   $items[] = array(
     'id' => 'subtotal',
     'title' => t('Subtotal'),
@@ -1109,7 +1109,7 @@ function uc_order_save($order) {
 
   if (is_array($order->products)) {
     foreach ($order->products as $product) {
-      drupal_alter('order_product', $product, $order);
+      drupal_alter('uc_order_product', $product, $order);
       uc_order_product_save($order->order_id, $product);
     }
   }
@@ -1350,7 +1350,7 @@ function uc_order_load_line_items($order, $stored) {
     }
   }
   foreach ($items as &$item) {
-    drupal_alter('line_item', $item, $order);
+    drupal_alter('uc_line_item', $item, $order);
   }
 
   usort($items, 'uc_weight_sort');
@@ -1379,8 +1379,8 @@ function uc_order_update_status($order_id, $status) {
   // Attempt the update if the order exists.
   if ($order !== FALSE) {
     // Return false if any module says the update is not good to go.
-    foreach (module_implements('order') as $module) {
-      $function = $module .'_order';
+    foreach (module_implements('uc_order') as $module) {
+      $function = $module .'_uc_order';
       // $order must be passed by reference.
       if (function_exists($function) && ($return = $function('can_update', $order, $status))){
         for ($i = 0; $i < count($return); $i++) {
@@ -1493,8 +1493,8 @@ function uc_order_address($order, $type) {
  * be passed by reference.
  */
 function uc_order_module_invoke($op, &$order, $edit) {
-  foreach (module_implements('order') as $module) {
-    $function = $module .'_order';
+  foreach (module_implements('uc_order') as $module) {
+    $function = $module .'_uc_order';
     if (function_exists($function)) {
       $function($op, $order, $edit);
     }
@@ -1554,8 +1554,8 @@ function uc_order_get_total($order, $products_only = FALSE) {
 
   $total += uc_line_items_calculate($order);
 
-  foreach (module_implements('order') as $module) {
-    $function = $module .'_order';
+  foreach (module_implements('uc_order') as $module) {
+    $function = $module .'_uc_order';
     // $order must be passed by reference. Since hook_order() may be
     // unknowingly implemented (see date_order() in date_api.module), we verify
     // the results are numeric before continuing.
@@ -1598,8 +1598,8 @@ function uc_order_is_shippable($order) {
     }
 
     // See if any other modules have a say in the matter...
-    foreach (module_implements('cart_item') as $module) {
-      $function = $module .'_cart_item';
+    foreach (module_implements('uc_cart_item') as $module) {
+      $function = $module .'_uc_cart_item';
       if (function_exists($function) && $function('can_ship', $product)) {
         // $product must be passed by reference.
         $result[] = TRUE;
@@ -1750,7 +1750,7 @@ function uc_order_template_options($custom = FALSE) {
  *   ids for use in a SQL query.
  */
 function uc_order_state_list($scope = 'all', $sql = FALSE) {
-  $states = module_invoke_all('order_state');
+  $states = module_invoke_all('uc_order_state');
   foreach ($states as $i => $value) {
     if ($scope != 'all' && $states[$i]['scope'] != $scope) {
       unset($states[$i]);
@@ -1937,8 +1937,8 @@ function uc_order_actions($order, $icon_html = FALSE) {
       }
       else {
         // See if any modules have a say in this order's eligibility for deletion
-        foreach (module_implements('order') as $module) {
-          $function = $module .'_order';
+        foreach (module_implements('uc_order') as $module) {
+          $function = $module .'_uc_order';
           // $order must be passed by reference.
           if (function_exists($function) && ($response = $function('can_delete', $order, NULL))) {
             // Break out early if possible.
@@ -1961,7 +1961,7 @@ function uc_order_actions($order, $icon_html = FALSE) {
     }
   }
 
-  $extra = module_invoke_all('order_actions', $order);
+  $extra = module_invoke_all('uc_order_actions', $order);
   if (count($extra)) {
     $actions = array_merge($actions, $extra);
   }

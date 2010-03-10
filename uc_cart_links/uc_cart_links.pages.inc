@@ -93,7 +93,7 @@ function uc_cart_links_process($arg1) {
               );
             }
           }
-          uc_cart_add_item($p['nid'], $p['qty'], $p['data'] + module_invoke_all('add_to_cart_data', $p), NULL, $msg, FALSE, FALSE);
+          uc_cart_add_item($p['nid'], $p['qty'], $p['data'] + module_invoke_all('uc_add_to_cart_data', $p), NULL, $msg, FALSE, FALSE);
           $rebuild_cart = TRUE;
         }
         break;

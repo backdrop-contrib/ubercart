@@ -26,7 +26,7 @@
  *   Only given when $op is "load". An array of extra data to be added to the
  *   shipment object.
  */
-function hook_shipment($op, &$shipment) {
+function hook_uc_shipment($op, &$shipment) {
   switch ($op) {
     case 'save':
       $google_order_number = uc_google_checkout_get_google_number($shipment->order_id);

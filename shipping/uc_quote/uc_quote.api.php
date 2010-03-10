@@ -52,7 +52,7 @@
  *       output this array so the method doesn't need to be found just for the
  *       package types.
  */
-function hook_shipping_method() {
+function hook_uc_shipping_method() {
   $methods = array();
 
   $enabled = variable_get('uc_quote_enabled', array('ups' => TRUE));
@@ -109,7 +109,7 @@ function hook_shipping_method() {
  * @return
  *   An array of shipping types keyed by a machine-readable name.
  */
-function hook_shipping_type() {
+function hook_uc_shipping_type() {
   $weight = variable_get('uc_quote_type_weight', array('small_package' => 0));
 
   $types = array();

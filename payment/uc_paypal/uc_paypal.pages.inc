@@ -342,7 +342,7 @@ function uc_paypal_ec_review_form_submit($form, &$form_state) {
     $order->quote['rate'] = $_POST['rate'][isset($_POST['quote-option']) ? strval($_POST['quote-option']) : 0];
 
     $order->quote['quote_form'] = rawurldecode($_POST['quote-form']);
-    $methods = module_invoke_all('shipping_method');
+    $methods = module_invoke_all('uc_shipping_method');
     $method = $methods[$order->quote['method']];
     $label = is_null($_POST['quote-option']) ? t('Error calculating shipping') : $method['quote']['accessorials'][$order->quote['accessorials']];
     $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = :id AND type = :type", array(':id' => $order->order_id, ':type' => 'shipping'));

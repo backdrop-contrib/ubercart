@@ -66,7 +66,7 @@
  *         simply show the total of the order at the bottom of the list of line
  *         items.)
  */
-function hook_line_item() {
+function hook_uc_line_item() {
   $items[] = array(
     'id' => 'generic',
     'title' => t('Empty Line'),
@@ -89,7 +89,7 @@ function hook_line_item() {
  * @param $order
  *   The order object containing the line item.
  */
-function hook_line_item_alter(&$item, $order) {
+function hook_uc_line_item_alter(&$item, $order) {
   $account = user_load($order->uid);
   ca_pull_trigger('calculate_line_item_discounts', $item, $account);
 }
@@ -100,7 +100,7 @@ function hook_line_item_alter(&$item, $order) {
  * @param &$items
  *   The combined return value of hook_line_item().
  */
-function hook_line_item_data_alter(&$items) {
+function hook_uc_line_item_data_alter(&$items) {
   foreach ($items as &$item) {
     // Tax amounts are added in to other line items, so the actual tax line
     // items should not be added to the order total.
@@ -173,7 +173,7 @@ function hook_line_item_data_alter(&$items) {
  *       Expects in return a value (positive or negative) by which to modify the
  *       order total.
  */
-function hook_order($op, &$arg1, $arg2) {
+function hook_uc_order($op, &$arg1, $arg2) {
   switch ($op) {
     case 'save':
       // Do something to save payment info!
@@ -193,7 +193,7 @@ function hook_order($op, &$arg1, $arg2) {
  *   - "icon": HTML of an image.
  *   - "title": Title attribute text (mouseover tool-tip).
  */
-function hook_order_actions($order) {
+function hook_uc_order_actions($order) {
   $actions = array();
   $module_path = base_path() . drupal_get_path('module', 'uc_shipping');
   if (user_access('fulfill orders')) {
@@ -241,7 +241,7 @@ function hook_order_actions($order) {
  * this API page, so you'll have to click here to read more about what a callback
  * function should contain.
 */
-function hook_order_pane() {
+function hook_uc_order_pane() {
   $panes[] = array(
     'id' => 'payment',
     'callback' => 'uc_order_pane_payment',
@@ -265,7 +265,7 @@ function hook_order_pane() {
  *   Nothing should be returned. Hook implementations should receive the
  *     $product object by reference and alter it directly.
  */
-function hook_order_product_alter(&$product, $order) {
+function hook_uc_order_product_alter(&$product, $order) {
   drupal_set_message('hook_order_product_alter(&$product, $order):');
   drupal_set_message('&$product: <pre>'. print_r($product, TRUE) .'</pre>');
   drupal_set_message('$order: <pre>'. print_r($order, TRUE) .'</pre>');
@@ -286,7 +286,7 @@ function hook_order_product_alter(&$product, $order) {
  *   - weight: The list position of the state.
  *   - scope: Either "specific" or "general".
  */
-function hook_order_state() {
+function hook_uc_order_state() {
   $states[] = array(
     'id' => 'canceled',
     'title' => t('Canceled'),

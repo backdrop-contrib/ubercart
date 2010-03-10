@@ -1440,10 +1440,10 @@ function uc_order_edit_products($order) {
       $product = node_load(intval($_POST['nid']));
       $product->qty = intval($_POST['qty']);
       $product->price = $product->sell_price;
-      $product->data = module_invoke_all('add_to_cart_data', $form_state['values']);
+      $product->data = module_invoke_all('uc_add_to_cart_data', $form_state['values']);
 
-      foreach (module_implements('cart_item') as $module) {
-        $function = $module .'_cart_item';
+      foreach (module_implements('uc_cart_item') as $module) {
+        $function = $module .'_uc_cart_item';
         if (function_exists($function)) {
           // $product must be passed by reference.
           $function('load', $product);
@@ -1465,7 +1465,7 @@ function uc_order_edit_products($order) {
       );
       $product->price = uc_price($price_info, $context);
 
-      drupal_alter('order_product', $product, $order);
+      drupal_alter('uc_order_product', $product, $order);
       uc_order_product_save($order->order_id, $product);
 
       if (variable_get('uc_order_logging', TRUE)) {

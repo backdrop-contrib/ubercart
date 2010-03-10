@@ -73,7 +73,7 @@ function uc_cart_checkout() {
     $subtotal = 0;
     if (is_array($items) && count($items) > 0) {
       foreach ($items as $item) {
-        $data = module_invoke($item->module, 'cart_display', $item);
+        $data = module_invoke($item->module, 'uc_cart_display', $item);
         if (!empty($data)) {
           $subtotal += $data['#total'];
         }
@@ -507,8 +507,8 @@ function uc_cart_checkout_review_form_submit($form, &$form_state) {
   $error = FALSE;
 
   // Invoke it on a per-module basis instead of all at once.
-  foreach (module_implements('order') as $module) {
-    $function = $module .'_order';
+  foreach (module_implements('uc_order') as $module) {
+    $function = $module .'_uc_order';
     if (function_exists($function)) {
       // $order must be passed by reference.
       $result = $function('submit', $order, NULL);

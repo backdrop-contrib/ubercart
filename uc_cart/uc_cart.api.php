@@ -43,7 +43,7 @@
  *       when a module simply needs to do some other processing during an add to
  *       cart or fail silently.
  */
-function hook_add_to_cart($nid, $qty, $data) {
+function hook_uc_add_to_cart($nid, $qty, $data) {
   if ($qty > 1) {
     $result[] = array(
       'success' => FALSE,
@@ -65,7 +65,7 @@ function hook_add_to_cart($nid, $qty, $data) {
  * @return
  *   An array of data to be merged into the item added to the cart.
  */
-function hook_add_to_cart_data($form_values) {
+function hook_uc_add_to_cart_data($form_values) {
   $node = node_load($form_values['nid']);
   return array('module' => 'uc_product', 'shippable' => $node->shippable);
 }
@@ -110,7 +110,7 @@ function hook_add_to_cart_data($form_values) {
  *     - #value: The quantity of $item in the cart. When "Update cart" is clicked,
  *         the customer's input is saved to the cart.
  */
-function hook_cart_display($item) {
+function hook_uc_cart_display($item) {
   $node = node_load($item->nid);
   $element = array();
   $element['nid'] = array('#type' => 'value', '#value' => $node->nid);
@@ -181,7 +181,7 @@ function hook_cart_display($item) {
  *   No return value for load.
  *   TRUE or FALSE for can_ship.
  */
-function hook_cart_item($op, &$item) {
+function hook_uc_cart_item($op, &$item) {
   switch ($op) {
     case 'load':
       $term = array_shift(taxonomy_node_get_terms_by_vocabulary($item->nid, variable_get('uc_manufacturer_vid', 0)));
@@ -224,7 +224,7 @@ function hook_cart_item($op, &$item) {
  * settings page, the body field is ignored.  You may want your function to check
  * for a NULL argument before processing any queries or foreach() loops.
  */
-function hook_cart_pane($items) {
+function hook_uc_cart_pane($items) {
   $body = array();
 
   if (!is_null($items)) {
@@ -243,6 +243,38 @@ function hook_cart_pane($items) {
   );
 
   return $panes;
+}
+
+/**
+ * Take action when checkout is completed.
+ *
+ * @param $order
+ *   The resulting order object from the completed checkout.
+ * @param $account
+ *   The customer that completed checkout, either the current user, or the
+ *   account created for an anonymous customer.
+ */
+function hook_uc_checkout_complete($order, $account) {
+  // Get previous records of customer purchases.
+  $nids = array();
+  $result = db_query("SELECT uid, nid, qty FROM {uc_customer_purchases} WHERE uid = %d", $account->uid);
+  while ($record = db_fetch_object($result)) {
+    $nids[$record->nid] = $record->qty;
+  }
+
+  // Update records with new data.
+  $record = array('uid' => $account->uid);
+  foreach ($order->products as $product) {
+    $record['nid'] = $product->nid;
+    if (isset($nids[$product->nid])) {
+      $record['qty'] = $nids[$product->nid] + $product->qty;
+      db_write_record($record, 'uc_customer_purchases', array('uid', 'nid'));
+    }
+    else {
+      $record['qty'] = $product->qty;
+      db_write_record($record, 'uc_customer_purchases');
+    }
+  }
 }
 
 /**
@@ -293,7 +325,7 @@ function hook_cart_pane($items) {
  *     - value: Optional. Whether or not this pane is displayed as a collapsible
  *         fieldset. Defaults to TRUE.
  */
-function hook_checkout_pane() {
+function hook_uc_checkout_pane() {
   $panes[] = array(
     'id' => 'cart',
     'callback' => 'uc_checkout_pane_cart',
@@ -304,68 +336,6 @@ function hook_checkout_pane() {
     'collapsible' => FALSE,
   );
   return $panes;
-}
-
-/**
- * Give clearance to a user to download a file.
- *
- * By default the uc_file module can implement 3 restrictions on downloads: by
- * number of IP addresses downloaded from, by number of downloads, and by a set
- * expiration date. Developers wishing to add further restrictions can do so by
- * implementing this hook. After the 3 aforementioned restrictions are checked,
- * the uc_file module will check for implementations of this hook.
- *
- * @param $user
- *   The drupal user object that has requested the download
- * @param $file_download
- *   The file download object as defined as a row from the uc_file_users table
- *   that grants the user the download
- * @return
- *   TRUE or FALSE depending on whether the user is to be permitted download of
- *   the requested files. When a implementation returns FALSE it should set an
- *   error message in Drupal using drupal_set_message() to inform customers of
- *   what is going on.
- */
-function hook_download_authorize($user, $file_download) {
-  if (!$user->status) {
-    drupal_set_message(t("This account has been banned and can't download files anymore. "),'error');
-    return FALSE;
-  }
-  else {
-    return TRUE;
-  }
-}
-
-/**
- * Take action when checkout is completed.
- *
- * @param $order
- *   The resulting order object from the completed checkout.
- * @param $account
- *   The customer that completed checkout, either the current user, or the
- *   account created for an anonymous customer.
- */
-function hook_uc_checkout_complete($order, $account) {
-  // Get previous records of customer purchases.
-  $nids = array();
-  $result = db_query("SELECT uid, nid, qty FROM {uc_customer_purchases} WHERE uid = %d", $account->uid);
-  foreach ($result as $record) {
-    $nids[$record->nid] = $record->qty;
-  }
-
-  // Update records with new data.
-  $record = array('uid' => $account->uid);
-  foreach ($order->products as $product) {
-    $record['nid'] = $product->nid;
-    if (isset($nids[$product->nid])) {
-      $record['qty'] = $nids[$product->nid] + $product->qty;
-      db_write_record($record, 'uc_customer_purchases', array('uid', 'nid'));
-    }
-    else {
-      $record['qty'] = $product->qty;
-      db_write_record($record, 'uc_customer_purchases');
-    }
-  }
 }
 
 /**
@@ -381,7 +351,7 @@ function hook_uc_checkout_complete($order, $account) {
  *   The cart id. Defaults to NULL, which indicates that the current user's cart
  *   should be retrieved with uc_cart_get_id().
  */
-function hook_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
+function hook_uc_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
   if (!$nid) return NULL;
   $cid = !(is_null($cid) || empty($cid)) ? $cid : uc_cart_get_id();
   if ($qty < 1) {

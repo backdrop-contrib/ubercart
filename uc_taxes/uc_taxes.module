@@ -131,9 +131,9 @@ function uc_taxes_form_alter(&$form, $form_state, $form_id) {
  ******************************************************************************/
 
 /**
- * Implement hook_line_item().
+ * Implement hook_uc_line_item().
  */
-function uc_taxes_line_item() {
+function uc_taxes_uc_line_item() {
   $items[] = array(
     'id' => 'tax',
     'title' => t('Tax'),
@@ -157,11 +157,11 @@ function uc_taxes_line_item() {
 }
 
 /**
- * Implement hook_order().
+ * Implement hook_uc_order().
  *
  * Update and save tax line items to the order.
  */
-function uc_taxes_order($op, $arg1, $arg2) {
+function uc_taxes_uc_order($op, $arg1, $arg2) {
   switch ($op) {
     case 'save':
       $changes = array();
@@ -377,7 +377,7 @@ function uc_taxes_rate_delete($rate_id) {
  */
 function uc_taxes_calculate($order) {
   // Find any taxes specified by enabled modules.
-  $taxes = module_invoke_all('calculate_tax', $order);
+  $taxes = module_invoke_all('uc_calculate_tax', $order);
 
   return $taxes;
 }
@@ -385,7 +385,7 @@ function uc_taxes_calculate($order) {
 /**
  * Calculate the amount and types of taxes that apply to an order.
  */
-function uc_taxes_calculate_tax($order) {
+function uc_taxes_uc_calculate_tax($order) {
   global $user;
   if (is_numeric($order)) {
     $order = uc_order_load($order);
@@ -469,7 +469,7 @@ function uc_taxes_calculate_tax($order) {
 function uc_taxes_javascript() {
   $order = $_POST['order'];
   if ($order = unserialize(rawurldecode($order))) {
-    $taxes = module_invoke_all('calculate_tax', $order);
+    $taxes = module_invoke_all('uc_calculate_tax', $order);
     $callback = _line_item_data('tax_subtotal', 'callback');
     if (function_exists($callback)) {
       $subtotal = $callback('load', $order);

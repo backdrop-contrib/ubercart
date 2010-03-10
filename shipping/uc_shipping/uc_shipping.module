@@ -242,9 +242,9 @@ function template_preprocess_uc_packing_slip(&$variables) {
  ******************************************************************************/
 
 /**
- * Implement hook_order_pane().
+ * Implement hook_uc_order_pane().
  */
-function uc_shipping_order_pane() {
+function uc_shipping_uc_order_pane() {
   $panes[] = array(
     'id' => 'packages',
     'callback' => 'uc_shipping_order_pane_packages',
@@ -259,9 +259,9 @@ function uc_shipping_order_pane() {
 }
 
 /**
- * Implement hook_order_actions().
+ * Implement hook_uc_order_actions().
  */
-function uc_shipping_order_actions($order) {
+function uc_shipping_uc_order_actions($order) {
   $actions = array();
   $module_path = base_path() . drupal_get_path('module', 'uc_shipping');
   if (user_access('fulfill orders')) {
@@ -313,7 +313,7 @@ function uc_shipping_package_view($package) {
   $rows[] = array(t('Contents:'), filter_xss_admin($package->description));
 
   if ($shipment) {
-    $methods = module_invoke_all('shipping_method');
+    $methods = module_invoke_all('uc_shipping_method');
     $method = $methods[$shipment->shipping_method];
     $pkg_type = $method['ship']['pkg_types'][$package->pkg_type];
   }
@@ -571,7 +571,7 @@ function uc_shipping_shipment_load($shipment_id) {
     }
     $shipment->packages = $packages;
 
-    $extra = module_invoke_all('shipment', 'load', $shipment);
+    $extra = module_invoke_all('uc_shipment', 'load', $shipment);
     if (is_array($extra)) {
       foreach ($extra as $key => $value) {
         $shipment->$key = $value;
@@ -622,7 +622,7 @@ function uc_shipping_shipment_save($shipment) {
     }
   }
 
-  module_invoke_all('shipment', 'save', $shipment);
+  module_invoke_all('uc_shipment', 'save', $shipment);
   $order = uc_order_load($shipment->order_id);
   ca_pull_trigger('uc_shipment_save', $order, $shipment);
 }
@@ -653,7 +653,7 @@ function uc_shipping_shipment_delete($shipment_id) {
     }
   }
 
-  module_invoke_all('shipment', 'delete', $shipment);
+  module_invoke_all('uc_shipment', 'delete', $shipment);
 }
 
 /**

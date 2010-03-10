@@ -1084,7 +1084,7 @@ function _order_pane_list($view = 'view') {
     return $panes;
   }
 
-  $panes = module_invoke_all('order_pane', NULL);
+  $panes = module_invoke_all('uc_order_pane', NULL);
   foreach ($panes as $i => $value) {
     $panes[$i]['enabled'] = variable_get('uc_order_pane_'. $panes[$i]['id'] .'_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
     $panes[$i]['weight'] = variable_get('uc_order_pane_'. $panes[$i]['id'] .'_weight_'. $view, (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));

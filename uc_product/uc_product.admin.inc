@@ -346,7 +346,7 @@ function uc_product_field_settings_form_submit($form, &$form_state) {
  */
 function uc_product_feature_settings_form($form, &$form_state) {
   $titles = array();
-  $features = module_invoke_all('product_feature');
+  $features = module_invoke_all('uc_product_feature');
   foreach ($features as $feature) {
     $titles[] = $feature['title'];
   }
@@ -511,7 +511,7 @@ function uc_product_features($node) {
  *   uc_product_feature_add_form_submit()
  */
 function uc_product_feature_add_form($form, &$form_state) {
-  foreach (module_invoke_all('product_feature') as $feature) {
+  foreach (module_invoke_all('uc_product_feature') as $feature) {
     $options[$feature['id']] = $feature['title'];
   }
   ksort($options);
@@ -660,10 +660,10 @@ function uc_product_class_form_submit($form, &$form_state) {
       variable_set('comment_'. $pcid, variable_get('comment_product', COMMENT_NODE_READ_WRITE));
     }
 
-    module_invoke_all('product_class', $pcid, 'insert');
+    module_invoke_all('uc_product_class', $pcid, 'insert');
   }
   else {
-    module_invoke_all('product_class', $pcid, 'update');
+    module_invoke_all('uc_product_class', $pcid, 'update');
   }
 
   node_types_rebuild();
@@ -711,7 +711,7 @@ function uc_product_class_delete_confirm_submit($form, &$form_state) {
   db_delete('uc_product_classes')
     ->condition('pcid', $form_state['values']['pcid'])
     ->execute();
-  module_invoke_all('product_class', $form_state['values']['pcid'], 'delete');
+  module_invoke_all('uc_product_class', $form_state['values']['pcid'], 'delete');
   uc_product_node_info(TRUE);
   node_types_rebuild();
   menu_rebuild();
