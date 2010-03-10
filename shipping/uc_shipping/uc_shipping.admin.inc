@@ -454,7 +454,7 @@ function uc_shipping_order_shipments($order) {
   $header = array(t('Shipment ID'), t('Name'), t('Company'), t('Destination'), t('Ship date'), t('Estimated delivery'), t('Tracking number'), array('data' => t('Actions'), 'colspan' => 4));
   $rows = array();
 
-  while ($shipment = db_fetch_object($result)) {
+  foreach ($result as $shipment) {
     $row = array();
     $row[] = $shipment->sid;
     $row[] = check_plain($shipment->d_first_name) .' '. check_plain($shipment->d_last_name);
@@ -490,7 +490,7 @@ function uc_shipping_order_shipments($order) {
   }
   else {
     $result = db_query("SELECT op.order_product_id, CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = :id AND op.data LIKE :data GROUP BY op.order_product_id HAVING SUM(pp.qty) IS NULL OR CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END > SUM(pp.qty)", array(':id' => $order->order_id, ':data' => '%s:9:"shippable";s:1:"1";%'));
-    if (db_fetch_object($result)) {
+    if ($result->fetchObject()) {
       $build['add_more'] = array(
         '#theme' => 'link',
         '#text' => t('Put products into packages to make shipments.'),

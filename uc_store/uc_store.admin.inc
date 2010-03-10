@@ -1183,7 +1183,7 @@ function uc_country_remove_form_submit($form, &$form_state) {
  */
 function uc_country_update($country_id, $version) {
   $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id));
-  if (!($country = db_fetch_object($result))) {
+  if (!($country = $result->fetchObject())) {
     drupal_set_message(t('Attempted to update an invalid country.'));
     drupal_goto('admin/store/settings/countries');
   }

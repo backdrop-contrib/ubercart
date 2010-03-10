@@ -1148,7 +1148,7 @@ function uc_get_zone_code($zone = NULL) {
     $result = db_query("SELECT zone_code FROM {uc_zones} WHERE zone_name = :name", array(':name' => $zone));
   }
 
-  if ($row = db_fetch_object($result)) {
+  if ($row = $result->fetchObject()) {
     return $row->zone_code;
   }
 
@@ -1287,10 +1287,10 @@ function uc_zone_select($title, $default = NULL, $description = NULL, $country_i
     $country_id = uc_store_default_country();
   }
 
-  $result = db_query("SELECT * FROM {uc_zones} WHERE zone_country_id = :id ORDER BY :sort", array(':id' => $country_id, ':sort' => ($display == 'code') ? 'zone_code' : 'zone_name'));
+  $zones = db_query("SELECT * FROM {uc_zones} WHERE zone_country_id = :id ORDER BY :sort", array(':id' => $country_id, ':sort' => ($display == 'code') ? 'zone_code' : 'zone_name'));
 
   $options[''] = t('Please select');
-  while ($zone = db_fetch_object($result)) {
+  foreach ($zones as $zone) {
     $options[$zone->zone_id] = ($display == 'code') ? $zone->zone_code : $zone->zone_name;
   }
 

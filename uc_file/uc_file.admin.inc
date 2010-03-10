@@ -330,7 +330,7 @@ function uc_file_admin_files_form_action($form, &$form_state) {
       // Gather list of directories under the sleected one(s). '/' is always available.
       $directories = array('' => '/');
       $files = db_query("SELECT * FROM {uc_files}");
-      while ($file = db_fetch_object($files)) {
+      foreach ($files as $file) {
         if (is_dir(variable_get('uc_file_base_dir', NULL) ."/". $file->filename)) {
           $directories[$file->filename] = $file->filename;
         }

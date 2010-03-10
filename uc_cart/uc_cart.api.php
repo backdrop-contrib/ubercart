@@ -349,7 +349,7 @@ function hook_uc_checkout_complete($order, $account) {
   // Get previous records of customer purchases.
   $nids = array();
   $result = db_query("SELECT uid, nid, qty FROM {uc_customer_purchases} WHERE uid = %d", $account->uid);
-  while ($record = db_fetch_object($result)) {
+  foreach ($result as $record) {
     $nids[$record->nid] = $record->qty;
   }
 

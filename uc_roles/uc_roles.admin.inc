@@ -31,7 +31,7 @@ function uc_roles_expiration($form, &$form_state) {
   $result = pager_query($sql, 50, 0, NULL);
 
   // Stick the expirations into the form.
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     $account = user_load($row->uid);
     $name = check_plain(format_username($account));
     $form['name'][$row->uid .' '. $row->rid] = array(

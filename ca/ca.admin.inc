@@ -1123,7 +1123,7 @@ function _ca_convert_configurations(&$context) {
     $result = db_query_range("SELECT name, data FROM {workflow_ng_cfgs} WHERE altered = 1 AND name > '%s' ORDER BY name", $context['sandbox']['current_cfg'], 0, $limit);
     $predicates = array();
 
-    while ($configuration_row = db_fetch_object($result)) {
+    foreach ($result as $configuration_row) {
       $predicate = array('#pid' => $configuration_row->name);
       $conditions = array();
       $actions = array();

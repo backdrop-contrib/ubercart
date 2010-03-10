@@ -131,7 +131,7 @@ function hook_uc_product_models($node) {
 
   // Get all the SKUs for all the attributes on this node.
   $adjustments = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = %d", $node->nid);
-  while ($adjustment = db_fetch_object($adjustments)) {
+  foreach ($adjustments as $adjustment) {
     if (!in_array($adjustment->model, $models)) {
       $models[] = $adjustment->model;
     }

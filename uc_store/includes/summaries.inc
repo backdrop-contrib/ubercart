@@ -175,16 +175,22 @@ function summarize_child_form_pages($path, $trim = FALSE, $only_parent = FALSE) 
   $summaries = array();
 
   // Fetch and loop through any child menu items from the database.
-  $accessor = "LIKE '%s/%%'";
+  $query = db_select('menu_router', 'mr')
+    ->orderBy('weight');
+
+  $query->addField('mr', 'path');
 
   // If no_recur is TRUE, only look for the parent
   if ($only_parent) {
-    $accessor = "= '%s'";
+    $query->condition('path', $path);
+  }
+  else {
+    $query->condition('path', db_like($path) . '/%', 'LIKE');
   }
 
-  $result = db_query("SELECT path FROM {menu_router} WHERE path ". $accessor ." ORDER BY weight", $path);
+  $result = $query->execute();
 
-  while ($row = db_fetch_array($result)) {
+  while ($row = $result->fetchAssoc()) {
     $item = menu_get_item($row['path']);
     // Only allow items the user can access.
     if ($item['access'] === FALSE) {
