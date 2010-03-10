@@ -1,4 +1,5 @@
 // $Id$
+(function($) {
 
 /**
  * @file
@@ -43,3 +44,5 @@ function uc_update_zone_select(country_select, default_zone, settings) {
          }
   );
 }
+
+})(jQuery);
