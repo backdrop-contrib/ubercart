@@ -109,7 +109,9 @@ function uc_credit_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
     case 'uc_payment_methods_form':
       if (empty($_POST) && uc_credit_encryption_key() === FALSE) {
-        drupal_set_message(t('Credit card encryption must be configured to accept credit card payments.'), 'error');
+        // Report error and expand fieldset so the problem is easy to spot
+        form_set_error('uc_credit_encryption_path', t('Credit card encryption must be configured to accept credit card payments.'));
+        $form['method_credit']['#collapsed'] = FALSE;
       }
       $form['#validate'][] = 'uc_credit_settings_form_validate';
       $form['#submit'][] = 'uc_credit_settings_form_submit';
