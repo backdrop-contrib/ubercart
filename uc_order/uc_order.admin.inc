@@ -400,9 +400,7 @@ function uc_order_status_create_form($form, &$form_state) {
     '#value' => t('Create'),
   );
   $form['cancel'] = array(
-    '#theme' => 'link',
-    '#text' => t('Cancel'),
-    '#href' => 'admin/store/settings/orders/edit/workflow',
+    '#markup' => l(t('Cancel'), 'admin/store/settings/orders/edit/workflow'),
   );
 
   return $form;

@@ -43,9 +43,7 @@ function uc_flatrate_admin_methods() {
   }
 
   $build['add_more'] = array(
-    '#theme' => 'link',
-    '#text' => t('Add a new flat rate shipping method.'),
-    '#href' => 'admin/store/settings/quotes/methods/flatrate/add',
+    '#markup' => l(t('Add a new flat rate shipping method.'), 'admin/store/settings/quotes/methods/flatrate/add'),
   );
 
   return $build;

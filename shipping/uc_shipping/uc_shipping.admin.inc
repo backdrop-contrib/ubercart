@@ -71,9 +71,7 @@ function uc_shipping_order_packages($order) {
   $result = db_query("SELECT op.order_product_id, CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = :id AND op.data LIKE :data GROUP BY op.order_product_id HAVING SUM(pp.qty) IS NULL OR CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END > SUM(pp.qty)", array(':id' => $order->order_id, ':data' => '%s:9:"shippable";s:1:"1";%'));
   if ($result->fetchObject()) {
     $build['add_more'] = array(
-      '#theme' => 'link',
-      '#text' => t('Create packages.'),
-      '#href' => 'admin/store/orders/'. $order->order_id .'/packages/new',
+      '#markup' => l(t('Create packages.'), 'admin/store/orders/'. $order->order_id .'/packages/new'),
     );
   }
 
@@ -483,18 +481,14 @@ function uc_shipping_order_shipments($order) {
   $packages = db_query("SELECT COUNT(*) FROM {uc_packages} WHERE order_id = :id AND sid IS NULL", array(':id' => $order->order_id))->fetchField();
   if ($packages) {
     $build['add_more'] = array(
-      '#theme' => 'link',
-      '#text' => t('Make a new shipment'),
-      '#href' => 'admin/store/orders/'. $order->order_id .'/shipments/new',
+      '#markup' => l(t('Make a new shipment'), 'admin/store/orders/'. $order->order_id .'/shipments/new'),
     );
   }
   else {
     $result = db_query("SELECT op.order_product_id, CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = :id AND op.data LIKE :data GROUP BY op.order_product_id HAVING SUM(pp.qty) IS NULL OR CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END > SUM(pp.qty)", array(':id' => $order->order_id, ':data' => '%s:9:"shippable";s:1:"1";%'));
     if ($result->fetchObject()) {
       $build['add_more'] = array(
-        '#theme' => 'link',
-        '#text' => t('Put products into packages to make shipments.'),
-        '#href' => 'admin/store/orders/'. $order->order_id .'/packages/new',
+        '#markup' => l(t('Put products into packages to make shipments.'), 'admin/store/orders/'. $order->order_id .'/packages/new'),
       );
     }
   }

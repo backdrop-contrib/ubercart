@@ -311,9 +311,7 @@ function uc_google_checkout_terminal($order) {
   }
 
   $build['return'] = array(
-    '#theme' => 'link',
-    '#text' => t('Return to order view screen.'),
-    '#href' => 'admin/store/orders/'. $order_id,
+    '#markup' => l(t('Return to order view screen.'), 'admin/store/orders/'. $order_id),
   );
 
   $gc_balance = $order->gc_total;

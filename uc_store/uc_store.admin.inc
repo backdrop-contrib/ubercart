@@ -1038,11 +1038,7 @@ function uc_store_customer_orders($uid) {
 
   if (user_access('create orders')) {
     $build['order_link'] = array(
-      '#theme' => 'link',
-      '#text' => t('Create an order for this customer'),
-      '#href' => 'admin/store/orders/create/'. $uid,
-      '#prefix' => '<p>',
-      '#suffix' => '</p>',
+      '#markup' => '<p>'. l(t('Create an order for this customer.'), 'admin/store/orders/create/'. $uid) .'</p>',
       '#weight' => -10,
     );
   }

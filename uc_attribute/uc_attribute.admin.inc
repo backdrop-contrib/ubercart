@@ -76,9 +76,7 @@ function uc_attribute_admin() {
     '#theme' => 'pager',
   );
   $build['add_more'] = array(
-    '#theme' => 'link',
-    '#text' => t('Add an attribute'),
-    '#href' => 'admin/store/attributes/add',
+    '#markup' => l(t('Add an attribute'), 'admin/store/attributes/add'),
   );
 
   return $build;
@@ -294,16 +292,8 @@ function uc_attribute_options_form($form, &$form_state, $attribute) {
         '#default_value' => $data->ordering,
         '#attributes' => array('class' => array('uc-attribute-option-table-ordering')),
       ),
-      'edit' => array(
-        '#theme' => 'link',
-        '#text' => t('edit'),
-        '#href' => 'admin/store/attributes/'. $attribute->aid .'/options/'. $key .'/edit',
-      ),
-      'delete' => array(
-        '#theme' => 'link',
-        '#text' => t('delete'),
-        '#href' => 'admin/store/attributes/'. $attribute->aid .'/options/'. $key .'/delete',
-      ),
+      'edit' => array('#markup' => l(t('edit'), 'admin/store/attributes/'. $attribute->aid .'/options/'. $key .'/edit')),
+      'delete' => array('#markup' => l(t('delete'), 'admin/store/attributes/'. $attribute->aid .'/options/'. $key .'/delete')),
     );
 
     $context['subject']['option'] = $data;

@@ -41,20 +41,8 @@ function uc_roles_expiration($form, &$form_state) {
     );
     $form['role'][$row->uid .' '. $row->rid] = array('#markup' => _uc_roles_get_name($row->rid));
     $form['expiration'][$row->uid .' '. $row->rid] = array('#markup' => format_date($row->expiration, 'small'));
-    $form['edit'][$row->uid .' '. $row->rid] = array(
-      '#theme' => 'link',
-      '#text' => t('edit'),
-      '#href' => 'user/'. $row->uid .'/edit',
-      '#options' => array(
-        'fragment' => 'role-expiration-'. $row->rid,
-        'query' => 'destination=admin%2Fuser%2Fuser%2Fexpiration',
-      ),
-    );
-    $form['delete'][$row->uid .' '. $row->rid] = array(
-      '#theme' => 'link',
-      '#text' => t('delete'),
-      '#href' => 'admin/user/user/expiration/delete/'. $row->uid .'/'. $row->rid,
-    );
+    $form['edit'][$row->uid .' '. $row->rid] = array('#markup' => l(t('edit'), 'user/'. $row->uid .'/edit', array('fragment' => 'role-expiration-'. $row->rid, 'query' => 'destination=admin%2Fuser%2Fuser%2Fexpiration')));
+    $form['delete'][$row->uid .' '. $row->rid] = array('#markup' => l(t('delete'), 'admin/user/user/expiration/delete/'. $row->uid .'/'. $row->rid));
   }
 
   return $form;

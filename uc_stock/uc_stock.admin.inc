@@ -125,25 +125,18 @@ function uc_stock_report() {
     '#suffix' => '</div>',
   );
   $build['links']['export_csv'] = array(
-    '#theme' => 'link',
-    '#text' => t('Export to CSV file'),
-    '#href' => 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user'],
+    '#markup' => l(t('Export to CSV file'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']),
     '#suffix' => '&nbsp;&nbsp;&nbsp;',
   );
 
   if (!is_null($_GET['nopage'])) {
     $build['links']['toggle_pager'] = array(
-      '#theme' => 'link',
-      '#text' => t('Show paged records'),
-      '#href' => 'admin/store/reports/stock',
+      '#markup' => l(t('Show paged records'), 'admin/store/reports/stock'),
     );
   }
   else {
     $build['links']['toggle_pager'] = array(
-      '#theme' => 'link',
-      '#text' => t('Show all records'),
-      '#href' => 'admin/store/reports/stock',
-      '#options' => array('query' => 'nopage=1'),
+      '#markup' => l(t('Show all records'), 'admin/store/reports/stock', array('query' => 'nopage=1')),
     );
   }
 

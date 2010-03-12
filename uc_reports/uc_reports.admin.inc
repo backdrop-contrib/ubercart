@@ -135,24 +135,17 @@ function uc_reports_customers() {
     '#suffix' => '</div>',
   );
   $build['links']['export_csv'] = array(
-    '#theme' => 'link',
-    '#text' => t('Export to CSV file.'),
-    '#href' => 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user'],
+    '#markup' => l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']),
     '#suffix' => '&nbsp;&nbsp;&nbsp;',
   );
   if (!is_null($_GET['nopage'])) {
     $build['links']['toggle_pager'] = array(
-      '#theme' => 'link',
-      '#text' => t('Show paged records'),
-      '#href' => 'admin/store/reports/customers',
+      '#markup' => l(t('Show paged records'), 'admin/store/reports/customers'),
     );
   }
   else {
     $build['links']['toggle_pager'] = array(
-      '#theme' => 'link',
-      '#text' => t('Show all records'),
-      '#href' => 'admin/store/reports/customers',
-      '#options' => array('query' => 'nopage=1'),
+      '#markup' => l(t('Show all records'), 'admin/store/reports/customers', array('query' => 'nopage=1')),
     );
   }
 
@@ -323,24 +316,17 @@ function uc_reports_products() {
     '#suffix' => '</div>',
   );
   $build['links']['export_csv'] = array(
-    '#theme' => 'link',
-    '#text' => t('Export to CSV file.'),
-    '#href' => 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user'],
+    '#markup' => l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']),
     '#suffix' => '&nbsp;&nbsp;&nbsp;',
   );
   if (!is_null($_GET['nopage'])) {
     $build['links']['toggle_pager'] = array(
-      '#theme' => 'link',
-      '#text' => t('Show paged records'),
-      '#href' => 'admin/store/reports/products',
+      '#markup' => l(t('Show paged records'), 'admin/store/reports/products'),
     );
   }
   else {
     $build['links']['toggle_pager'] = array(
-      '#theme' => 'link',
-      '#text' => t('Show all records'),
-      '#href' => 'admin/store/reports/products',
-      '#options' => array('query' => 'nopage=1'),
+      '#markup' => l(t('Show all records'), 'admin/store/reports/products', array('query' => 'nopage=1')),
     );
   }
   $build['instructions'] = array('#markup' => '<small>*'. t('Make sure %setting_name is set to %state in the <a href="!url">access log settings page</a> to enable views column.', array('%setting_name' => 'count content views', '%state' => 'enabled', '!url' => url('admin/reports/settings', array('query' => 'destination=admin/store/reports/products')))) .'</small>');
@@ -539,9 +525,7 @@ function uc_reports_products_custom() {
     '#suffix' => '</div>',
   );
   $build['links']['export_csv'] = array(
-    '#theme' => 'link',
-    '#text' => t('Export to CSV file.'),
-    '#href' => 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user'],
+    '#markup' => l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']),
   );
 
   $build['instructions'] = array('#markup' => '<small>*'. t('Make sure %setting_name is set to %state in the <a href="!url">access log settings page</a> to enable views column.', array('%setting_name' => 'count content views', '%state' => 'enabled', '!url' => url('admin/reports/settings', array('query' => 'destination=admin/store/reports/products/custom')))) .'</small>');
@@ -980,9 +964,7 @@ function uc_reports_sales_year() {
     '#suffix' => '</div>',
   );
   $build['links']['export_csv'] = array(
-    '#theme' => 'link',
-    '#text' => t('Export to CSV file.'),
-    '#href' => 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user'],
+    '#markup' => l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']),
   );
 
   return $build;
@@ -1171,9 +1153,7 @@ function uc_reports_sales_custom() {
     '#suffix' => '</div>',
   );
   $build['links']['export_csv'] = array(
-    '#theme' => 'link',
-    '#text' => t('Export to CSV file.'),
-    '#href' => 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user'],
+    '#markup' => l(t('Export to CSV file.'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']),
   );
 
   return $build;

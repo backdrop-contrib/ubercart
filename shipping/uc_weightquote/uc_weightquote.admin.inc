@@ -44,9 +44,7 @@ function uc_weightquote_admin_methods() {
   }
 
   $build['add_more'] = array(
-    '#theme' => 'link',
-    '#text' => t('Add a new weight quote shipping method.'),
-    '#href' => 'admin/store/settings/quotes/methods/weightquote/add',
+    '#markup' => l(t('Add a new weight quote shipping method.'), 'admin/store/settings/quotes/methods/weightquote/add'),
   );
 
   return $build;

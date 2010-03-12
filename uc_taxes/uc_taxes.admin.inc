@@ -45,9 +45,7 @@ function uc_taxes_admin_settings() {
     '#rows' => $rows,
   );
   $build['add_more'] = array(
-    '#theme' => 'link',
-    '#text' => t('Add a tax rate'),
-    '#href' => 'admin/store/settings/taxes/add',
+    '#markup' => l(t('Add a tax rate'), 'admin/store/settings/taxes/add'),
   );
 
   return $build;

@@ -133,9 +133,7 @@ function ca_admin($groupby = 'trigger') {
   }
 
   $build['add_link'] = array(
-    '#theme' => 'link',
-    '#text' => t('Add a predicate'),
-    '#href' => CA_UI_PATH . '/add',
+    '#markup' => l(t('Add a predicate'), CA_UI_PATH .'/add'),
     '#weight' => 5,
   );
 
