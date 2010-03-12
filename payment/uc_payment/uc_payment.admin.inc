@@ -95,7 +95,7 @@ function uc_payment_methods_form($form, &$form_state) {
         '#default_value' => variable_get('uc_payment_method_'. $method['id'] .'_weight', $method['weight']),
       );
 
-      if ($method['no_gateway'] === TRUE) {
+      if (isset($method['no_gateway']) && $method['no_gateway'] === TRUE) {
         $form['pmtable'][$method['id']]['uc_payment_'. $method['id'] .'_gateway'] = array(
           '#markup' => '-',
         );
@@ -206,7 +206,7 @@ function uc_payment_gateways_form($form, &$form_state) {
       );
 
       // Find any additional settings defined in the payment gateway callback.
-      if (function_exists($gateway['settings'])) {
+      if (isset($gateway['settings']) && function_exists($gateway['settings'])) {
         $gateway_settings = $gateway['settings']();
         if (is_array($gateway_settings)) {
           $form['gateways'][$gateway['id']] = array_merge($form['gateways'][$gateway['id']], $gateway_settings);
