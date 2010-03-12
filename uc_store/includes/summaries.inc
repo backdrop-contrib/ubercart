@@ -24,7 +24,7 @@ function summarize_form($form) {
     // Set the callback for the summary to the default if not specified.
     if (!isset($form[$key]['#summary callback'])) {
       // Default filter forms to have no summary.
-      if (in_array('filter_form_validate', (array) $form[$key]['#element_validate'])) {
+      if (isset($form[$key]['#element_validate']) && in_array('filter_form_validate', (array) $form[$key]['#element_validate'])) {
         $form[$key]['#summary callback'] = 'summarize_null';
       }
       else {
@@ -79,7 +79,7 @@ function summarize_element($form, $title = FALSE) {
       return $form['#summary'];
     }
   }
-  else {
+  elseif (isset($form['#type'])) {
     // Otherwise, use a sensible default based on the field type.
     switch ($form['#type']) {
       case 'fieldset':
@@ -118,13 +118,14 @@ function summarize_element($form, $title = FALSE) {
         else {
           return;
         }
-    }
 
-    // If we didn't have a default action, check for a callback.
-    $callback = 'summarize_'. $form['#type'];
+      default:
+        // If we didn't have a default action, check for a callback.
+        $callback = 'summarize_'. $form['#type'];
 
-    if (function_exists($callback)) {
-      return $callback($form);
+        if (function_exists($callback)) {
+          return $callback($form);
+        }
     }
   }
 }
@@ -212,7 +213,7 @@ function summarize_child_form_pages($path, $trim = FALSE, $only_parent = FALSE) 
         require_once($item['file']);
       }
 
-      $form_state = array('storage' => NULL, 'submitted' => FALSE);
+      $form_state = form_state_defaults();
       $form = drupal_retrieve_form($form_id, $form_state);
       drupal_prepare_form($form_id, $form, $form_state);
 

@@ -11,7 +11,7 @@
  */
 function uc_store_admin() {
   $build = array();
-  $tree = menu_navigation_links('navigation', 2);
+  $tree = menu_navigation_links('management', 2);
 
   if (($type = variable_get('uc_store_admin_page_display', 1)) == 4) {
     $main_menu = menu_get_item('admin/store');
