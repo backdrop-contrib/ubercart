@@ -167,7 +167,7 @@ function uc_google_checkout_node_update($node) {
     if (isset($node->gc_salable)) {
       if (!$node->revision) {
         db_delete('uc_gc_products')
-          ->conditino('vid', $node->vid)
+          ->condition('vid', $node->vid)
           ->execute();
       }
         db_insert('uc_gc_products')
@@ -176,7 +176,7 @@ function uc_google_checkout_node_update($node) {
             'nid' => $node->nid,
             'gc_salable' => $node->gc_salable,
           ))
-          ->exeucte();
+          ->execute();
     }
   }
 }
@@ -190,7 +190,7 @@ function uc_google_checkout_node_load($nodes, $types) {
 
   foreach ($nodes as &$node) {
     if (in_array($node->type, $product_types)) {
-      $vids[$nid] = $node->vid;
+      $vids[$node->nid] = $node->vid;
 
       // Set default value.
       $node->gc_salable = TRUE;
@@ -200,7 +200,7 @@ function uc_google_checkout_node_load($nodes, $types) {
   if ($vids) {
     $result = db_query("SELECT nid, gc_salable FROM {uc_gc_products} WHERE vid IN (:vids)", array(':vids' => $vids));
     foreach ($result as $salable) {
-      $nodes[$nid]->gc_salable = $salable->gc_salable;
+      $nodes[$node->nid]->gc_salable = $salable->gc_salable;
     }
   }
 }

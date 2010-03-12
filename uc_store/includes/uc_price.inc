@@ -287,7 +287,7 @@ function uc_store_uc_price_handler() {
  */
 function uc_store_price_handler_alter(&$price, &$context, &$options) {
   // If a class was specified in the price's context array...
-  if (is_array($context['class'])) {
+  if (isset($context['class']) && is_array($context['class'])) {
     // Look for a product price type in the class array and adjust the price
     // prefix accordingly.
     if (in_array('list', $context['class'])) {

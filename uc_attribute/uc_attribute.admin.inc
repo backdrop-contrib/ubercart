@@ -1068,7 +1068,7 @@ function theme_uc_object_options_form($variables) {
  * @return Themed set of attribute options.
  */
 function theme_uc_product_attributes($variables) {
-  $attributes = $variable['attributes'];
+  $attributes = $variables['attributes'];
 
   $option_rows = array();
 
