@@ -13,23 +13,23 @@ function uc_order_schema() {
   $schema = array();
 
   $schema['uc_orders'] = array(
-    'description' => 'Main orders table.',
+    'description' => 'Stores Ubercart order information.',
     'fields' => array(
       'order_id' => array(
-        'description' => t('The order ID.'),
+        'description' => 'Primary key: the order ID.',
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
       'uid' => array(
-        'description' => 'The ID of the user that placed the order.',
+        'description' => 'The {user}.uid of the customer that placed the order.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'order_status' => array(
-        'description' => 'The order status.',
+        'description' => 'The {uc_order_statuses}.order_status_id indicating the order status.',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
@@ -209,18 +209,18 @@ function uc_order_schema() {
         'default' => '',
       ),
       'data' => array(
-        'description' => 'Serialized array of extra data.',
+        'description' => 'A serialized array of extra data.',
         'type' => 'text',
         'serialize' => TRUE,
       ),
       'created' => array(
-        'description' => 'Timestamp of when the order was created.',
+        'description' => 'The Unix timestamp indicating when the order was created.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
       ),
       'modified' => array(
-        'description' => 'Timestamp of when the order was last modified.',
+        'description' => 'The Unix timestamp indicating when the order was last modified.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
@@ -248,20 +248,20 @@ function uc_order_schema() {
     'description' => 'Comments on orders that only administrators can see.',
     'fields' => array(
       'comment_id' => array(
-        'description' => t('The comment ID.'),
+        'description' => t('Primary key: the comment ID.'),
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
       'order_id' => array(
-        'description' => 'The order ID.',
+        'description' => 'The {uc_orders}.order_id of the order.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'uid' => array(
-        'description' => 'The user ID who made the comment.',
+        'description' => 'The {user}.uid of the author of the comment.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -272,7 +272,7 @@ function uc_order_schema() {
         'type' => 'text',
       ),
       'created' => array(
-        'description' => 'Timestamp of when the comment was created.',
+        'description' => 'The Unix timestamp indicating when the comment was created.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
@@ -292,44 +292,45 @@ function uc_order_schema() {
     'description' => 'Comments on the order that the customer can see.',
     'fields' => array(
       'comment_id' => array(
-        'description' => 'The comment ID.',
+        'description' => 'Primary key: the comment ID.',
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
       'order_id' => array(
-        'description' => 'The order ID.',
+        'description' => 'The {uc_orders}.order_id of the order.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'uid' => array(
-        'description' => 'The user ID who made the comment.',
+        'description' => 'The {users}.uid of the user who made the comment.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'order_status' => array(
-        'description' => 'The status the order had when the comment was made.',
+        'description' => 'The status the order had when the comment was made, from {uc_order_statuses}.order_status_id.',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
         'default' => '',
       ),
       'notified' => array(
-        'description' => 'Boolean flag; if set, the comment was emailed to the customer.',
+        'description' => 'A flag indicating whether the comment was emailed to the customer. 1 => Yes. 0 => No.',
         'type' => 'int',
         'size' => 'tiny',
         'not null' => TRUE,
         'default' => 0,
       ),
       'message' => array(
-        'description' => 'Timestamp of when the comment was created.',
+        'description' => 'The comment body.',
         'type' => 'text',
       ),
       'created' => array(
+        'description' => 'The Unix timestamp indicating when the comment was created.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
@@ -349,13 +350,13 @@ function uc_order_schema() {
     'description' => 'Order line items other than products.',
     'fields' => array(
       'line_item_id' => array(
-        'description' => 'The line item ID.',
+        'description' => 'Primary key: the line item ID.',
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
       'order_id' => array(
-        'description' => 'The order ID.',
+        'description' => 'The {uc_orders}.order_id.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -391,7 +392,7 @@ function uc_order_schema() {
         'default' => 0,
       ),
       'data' => array(
-        'description' => 'Serialized array of extra data.',
+        'description' => 'A serialized array of extra data.',
         'type' => 'text',
         'serialize' => TRUE,
       ),
@@ -409,31 +410,31 @@ function uc_order_schema() {
     'description' => 'Record of changes made to an order.',
     'fields' => array(
       'order_log_id' => array(
-        'description' => 'The log entry ID.',
+        'description' => 'Primary key: the log entry ID.',
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
       'order_id' => array(
-        'description' => 'The order ID.',
+        'description' => 'The {uc_orders}.order_id.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'uid' => array(
-        'description' => 'The user ID who made the changes.',
+        'description' => 'The {users}.uid of the user who made the changes.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'changes' => array(
-        'description' => 'Description of what was changed.',
+        'description' => 'The description of what was changed.',
         'type' => 'text',
       ),
       'created' => array(
-        'description' => 'Timestamp of when the change was made.',
+        'description' => 'The Unix timestamp indicating when the change was made.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
@@ -453,27 +454,27 @@ function uc_order_schema() {
     'description' => 'The products that have been ordered.',
     'fields' => array(
       'order_product_id' => array(
-        'description' => 'The ordered product ID.',
+        'description' => 'Primary key: the ordered product ID.',
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
       'order_id' => array(
-        'description' => 'The order ID.',
+        'description' => 'The {uc_orders}.order_id.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'nid' => array(
-        'description' => 'The product node ID.',
+        'description' => 'The {node}.nid of the product.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'title' => array(
-        'description' => 'The product title.',
+        'description' => 'The product title, from {node}.title.',
         'type' => 'varchar',
         'length' => 128,
         'not null' => TRUE,
@@ -487,7 +488,7 @@ function uc_order_schema() {
         'default' => '',
       ),
       'model' => array(
-        'description' => 'The product model/SKU.',
+        'description' => 'The product model/SKU, from {uc_products}.model.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
@@ -524,7 +525,7 @@ function uc_order_schema() {
         'default' => 0.0,
       ),
       'data' => array(
-        'description' => 'Serialized array of extra data.',
+        'description' => 'A serialized array of extra data.',
         'type' => 'text',
         'serialize' => TRUE,
       ),
@@ -540,10 +541,10 @@ function uc_order_schema() {
   );
 
   $schema['uc_order_statuses'] = array(
-    'description' => 'Statuses the order can be in during its lifecycle.',
+    'description' => 'Statuses the order can have during its lifecycle.',
     'fields' => array(
       'order_status_id' => array(
-        'description' => 'The order status ID.',
+        'description' => 'Primary key: the order status ID.',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
@@ -557,7 +558,7 @@ function uc_order_schema() {
         'default' => '',
       ),
       'state' => array(
-        'description' => 'The base order state the status is associated with.',
+        'description' => 'The base order state with which the status is associated.',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
@@ -571,7 +572,7 @@ function uc_order_schema() {
         'default' => 0,
       ),
       'locked' => array(
-        'description' => 'Boolean flag; if set, users can not delete the status.',
+        'description' => 'A flag indicating whether users can delete the status. 0 => Yes. 1 => No.',
         'type' => 'int',
         'size' => 'tiny',
         'unsigned' => TRUE,
