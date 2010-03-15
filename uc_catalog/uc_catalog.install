@@ -28,21 +28,24 @@ function uc_catalog_install() {
     taxonomy_vocabulary_save($vocabulary);
     $vid = $vocabulary->vid;
 
-    $field = array(
-      'field_name' => 'taxonomy_catalog',
-      'type' => 'taxonomy_term_reference',
-      // Set cardinality to unlimited for tagging.
-      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
-      'settings' => array(
-        'allowed_values' => array(
-          array(
-            'vid' => $vocabulary->vid,
-            'parent' => 0,
+    $field = field_info_field('taxonomy_' . $vocabulary->machine_name);
+    if (empty($field)) {
+      $field = array(
+        'field_name' => 'taxonomy_' . $vocabulary->machine_name,
+        'type' => 'taxonomy_term_reference',
+        'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+        'settings' => array(
+          'allowed_values' => array(
+            array(
+              'vid' => $vocabulary->vid,
+              'parent' => 0,
+            ),
           ),
         ),
-      ),
-    );
-    field_create_field($field);
+      );
+
+      field_create_field($field);
+    }
   }
 
   uc_catalog_add_image_field();
@@ -56,7 +59,9 @@ function uc_catalog_install() {
  */
 function uc_catalog_uninstall() {
   if ($vid = variable_get('uc_catalog_vid', 0)) {
+    $vocabulary = taxonomy_vocabulary_load($vid);
     taxonomy_vocabulary_delete($vid);
+    field_delete_field('taxonomy_' . $vocabulary->machine_name);
   }
 
   db_delete('variable')

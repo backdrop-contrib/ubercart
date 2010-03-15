@@ -990,28 +990,27 @@ function uc_catalog_add_image_field() {
     );
 
     field_create_field($field);
-
-    // Initialize this because field_info_field() would have set it.
-    $field['bundles'] = array();
   }
 
-  $label = t('Image');
-  $instance = array(
-    'field_name' => 'uc_catalog_image',
-    'object_type' => 'taxonomy_term',
-    'bundle' => 'taxonomy_catalog',
-    'label' => $label,
-    'widget_type' => 'image_image',
-    'display' => array(
-      'full' => array(
-        'label' => 'hidden',
-        'type' => 'image_link_content__uc_category'
-      ),
-    ),
-  );
+  $instance = field_info_instance('taxonomy_term', 'uc_catalog_image', 'taxonomy_catalog');
 
   // Only add the instance if it doesn't exist. Don't overwrite any changes.
-  if (!in_array('taxonomy_catalog', $field['bundles'])) {
+  if (!$instance) {
+    $label = t('Image');
+    $instance = array(
+      'field_name' => 'uc_catalog_image',
+      'object_type' => 'taxonomy_term',
+      'bundle' => 'taxonomy_catalog',
+      'label' => $label,
+      'widget_type' => 'image_image',
+      'display' => array(
+        'full' => array(
+          'label' => 'hidden',
+          'type' => 'image_link_content__uc_category'
+        ),
+      ),
+    );
+
     field_create_instance($instance);
   }
 }
