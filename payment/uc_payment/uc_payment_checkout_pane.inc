@@ -32,7 +32,7 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
           '#value' => $arg1->order_total > 0 ? $arg1->order_total : NULL,
         );
         $contents['shown_total'] = array(
-          '#markup' => '<div style="padding: .5em 1em; margin-bottom: 1em; border: dashed 1px #bbb;" id="line-items-div"><em>'. t('Javascript must be enabled to view the order total preview.') .'</em></div>',
+          '#markup' => '<div style="padding: .5em 1em; margin-bottom: 1em; border: dashed 1px #bbb;" id="line-items-div"><em>' . t('Javascript must be enabled to view the order total preview.') . '</em></div>',
           '#weight' => -20,
         );
 

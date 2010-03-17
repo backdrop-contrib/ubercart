@@ -50,7 +50,7 @@ function uc_product_views_default_views() {
   );
 
   if ($field = variable_get('uc_image_product', '')) {
-    $fields[$field .'_fid'] = array(
+    $fields[$field . '_fid'] = array(
       'label' => '',
       'link_to_node' => 1,
       'label_type' => 'widget',
@@ -62,9 +62,9 @@ function uc_product_views_default_views() {
         'multiple_reversed' => 0,
       ),
       'exclude' => 0,
-      'id' => $field .'_fid',
-      'table' => 'node_data_'. $field,
-      'field' => $field .'_fid',
+      'id' => $field . '_fid',
+      'table' => 'node_data_' . $field,
+      'field' => $field . '_fid',
       'relationship' => 'none',
       'override' => array(
         'button' => 'Override',

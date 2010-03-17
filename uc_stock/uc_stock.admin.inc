@@ -48,7 +48,7 @@ function uc_stock_settings_form($form, &$form_state) {
  * Display a stock report for products with stock tracking enabled.
  */
 function uc_stock_report() {
-  drupal_add_css(drupal_get_path('module', 'uc_stock') .'/uc_stock.css');
+  drupal_add_css(drupal_get_path('module', 'uc_stock') . '/uc_stock.css');
 
   $page_size = (!is_null($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
   $csv_rows = array();
@@ -88,14 +88,14 @@ function uc_stock_report() {
   foreach ($result as $stock) {
     $op = array();
     if (user_access('administer products')) {
-      $op[] = l(t('edit'), 'node/'. $stock->nid .'/edit/stock', $options = array('query' => 'destination=admin/store/reports/stock'));
+      $op[] = l(t('edit'), 'node/' . $stock->nid . '/edit/stock', $options = array('query' => 'destination=admin/store/reports/stock'));
     }
 
     // Add the data to a table row for display.
     $rows[] = array(
       'data' => array(
         array('data' => $stock->sku),
-        array('data' => l($stock->title, 'node/'. $stock->nid)),
+        array('data' => l($stock->title, 'node/' . $stock->nid)),
         array('data' => $stock->stock),
         array('data' => $stock->threshold),
         array('data' => implode(' ', $op)),
@@ -125,7 +125,7 @@ function uc_stock_report() {
     '#suffix' => '</div>',
   );
   $build['links']['export_csv'] = array(
-    '#markup' => l(t('Export to CSV file'), 'admin/store/reports/getcsv/'. $csv_data['report'] .'/'. $csv_data['user']),
+    '#markup' => l(t('Export to CSV file'), 'admin/store/reports/getcsv/' . $csv_data['report'] . '/' . $csv_data['user']),
     '#suffix' => '&nbsp;&nbsp;&nbsp;',
   );
 

@@ -84,7 +84,7 @@ function hook_uc_calculate_tax($order) {
     }
 
     $arguments['tax']['#data'] = $tax;
-    if (ca_evaluate_conditions($predicates['uc_taxes_'. $tax->id], $arguments)) {
+    if (ca_evaluate_conditions($predicates['uc_taxes_' . $tax->id], $arguments)) {
       $line_item = uc_taxes_action_apply_tax($order, $tax);
       if ($line_item) {
         $order->taxes[$line_item->id] = $line_item;

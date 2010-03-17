@@ -27,9 +27,9 @@ function uc_googleanalytics_enable() {
 }
 
 /**
- * Implement hook_footer().
+ * Implement hook_page_alter().
  */
-function uc_googleanalytics_footer($main = 0) {
+function uc_googleanalytics_page_alter(&$page) {
   // Check to see if we are at the order completion page.
   if (uc_googleanalytics_display()) {
     // If so, then if we can load the order...
@@ -140,18 +140,18 @@ function uc_googleanalytics_ecommerce_js($order) {
 
   // Put the arguments into an array that is safe to implode directly.
   $args = array(
-    '"'. $trans['order_id'] .'"',
+    '"' . $trans['order_id'] . '"',
     drupal_json_encode($trans['store']),
-    '"'. $trans['total'] .'"',
-    '"'. $trans['tax'] .'"',
-    '"'. $trans['shipping'] .'"',
+    '"' . $trans['total'] . '"',
+    '"' . $trans['tax'] . '"',
+    '"' . $trans['shipping'] . '"',
     drupal_json_encode($trans['city']),
     drupal_json_encode($trans['state']),
     drupal_json_encode($trans['country']),
   );
 
   // Add the transaction line to the JS.
-  $script .= 'pageTracker._addTrans('. implode(', ', $args) .');';
+  $script .= 'pageTracker._addTrans(' . implode(', ', $args) . ');';
 
   // Loop through the products on the order.
   foreach ($order->products as $product) {
@@ -185,16 +185,16 @@ function uc_googleanalytics_ecommerce_js($order) {
 
     // Put the arguments into an array that is safe to implode directly.
     $args = array(
-      '"'. $item['order_id'] .'"',
+      '"' . $item['order_id'] . '"',
       drupal_json_encode($item['sku']),
       drupal_json_encode($item['name']),
       drupal_json_encode((string) $item['category']),
-      '"'. $item['price'] .'"',
-      '"'. $item['qty'] .'"',
+      '"' . $item['price'] . '"',
+      '"' . $item['qty'] . '"',
     );
 
     // Add the item line to the JS.
-    $script .= 'pageTracker._addItem('. implode(', ', $args) .');';
+    $script .= 'pageTracker._addItem(' . implode(', ', $args) . ');';
   }
 
   // Add the function to submit the transaction to GA.

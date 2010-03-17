@@ -232,7 +232,7 @@
                               <b><?php echo $product->qty; ?> x </b>
                             </td>
                             <td width="98%">
-                              <b><?php echo $product->title .' - '. uc_price($price_info, $context); ?></b>
+                              <b><?php echo $product->title . ' - ' . uc_price($price_info, $context); ?></b>
                               <?php if ($product->qty > 1) {
                                 $price_info['qty'] = 1;
                                 echo t('(!price each)', array('!price' => uc_price($price_info, $context)));
@@ -241,7 +241,7 @@
                               <?php echo t('SKU: ') . $product->model; ?><br />
                               <?php if (is_array($product->data['attributes']) && count($product->data['attributes']) > 0) {?>
                               <?php foreach ($product->data['attributes'] as $attribute => $option) {
-                                echo '<li>'. t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))) .'</li>';
+                                echo '<li>' . t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))) . '</li>';
                               } ?>
                               <?php } ?>
                               <br />

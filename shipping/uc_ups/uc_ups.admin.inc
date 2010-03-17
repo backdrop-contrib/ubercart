@@ -17,7 +17,7 @@
  */
 function uc_ups_admin_settings($form, &$form_state) {
   $form['uc_ups_conditions'] = array(
-    '#markup' => '<p>'. l(t('Set the conditions that will return a UPS quote.'), CA_UI_PATH .'/uc_ups_get_quote/edit/conditions') .'</p>',
+    '#markup' => '<p>' . l(t('Set the conditions that will return a UPS quote.'), CA_UI_PATH . '/uc_ups_get_quote/edit/conditions') . '</p>',
   );
 
   $form['uc_ups_access_license'] = array('#type' => 'textfield',
@@ -181,7 +181,7 @@ function uc_ups_confirm_shipment($form, &$form_state, $order) {
 function theme_uc_ups_confirm_shipment($variables) {
   $form = $variables['form'];
 
-  $output = '<div class="shipping-address"><b>'. t('Ship from:') .'</b><br />';
+  $output = '<div class="shipping-address"><b>' . t('Ship from:') . '</b><br />';
   $output .= uc_address_format(
     check_plain($_SESSION['ups']['origin']->first_name),
     check_plain($_SESSION['ups']['origin']->last_name),
@@ -193,10 +193,10 @@ function theme_uc_ups_confirm_shipment($variables) {
     check_plain($_SESSION['ups']['origin']->postal_code),
     check_plain($_SESSION['ups']['origin']->country)
   );
-  $output .= '<br />'. check_plain($_SESSION['ups']['origin']->email);
+  $output .= '<br />' . check_plain($_SESSION['ups']['origin']->email);
   $output .= '</div>';
 
-  $output .= '<div class="shipping-address"><b>'. t('Ship to:') .'</b><br />';
+  $output .= '<div class="shipping-address"><b>' . t('Ship to:') . '</b><br />';
   $output .= uc_address_format(
     check_plain($_SESSION['ups']['destination']->first_name),
     check_plain($_SESSION['ups']['destination']->last_name),
@@ -208,20 +208,20 @@ function theme_uc_ups_confirm_shipment($variables) {
     check_plain($_SESSION['ups']['destination']->postal_code),
     check_plain($_SESSION['ups']['destination']->country)
   );
-  $output .= '<br />'. check_plain($_SESSION['ups']['destination']->email);
+  $output .= '<br />' . check_plain($_SESSION['ups']['destination']->email);
   $output .= '</div>';
   $output .= '<div class="shipment-data">';
   $method = uc_ups_shipping_method();
-  $output .= '<b>'. $method['ups']['quote']['accessorials'][$_SESSION['ups']['service']] .'</b><br />';
+  $output .= '<b>' . $method['ups']['quote']['accessorials'][$_SESSION['ups']['service']] . '</b><br />';
   $context = array(
     'revision' => 'themed',
     'type' => 'amount',
   );
-  $output .= '<i>'. check_plain($_SESSION['ups']['rate']['type']) .'</i>: '. uc_price($_SESSION['ups']['rate']['amount'], $context) .' ('. check_plain($_SESSION['ups']['rate']['currency']) .')<br />';
+  $output .= '<i>' . check_plain($_SESSION['ups']['rate']['type']) . '</i>: ' . uc_price($_SESSION['ups']['rate']['amount'], $context) . ' (' . check_plain($_SESSION['ups']['rate']['currency']) . ')<br />';
   $ship_date = $_SESSION['ups']['ship_date'];
-  $output .= 'Ship date: '. format_date(gmmktime(12, 0, 0, $ship_date['month'], $ship_date['day'], $ship_date['year']), 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
+  $output .= 'Ship date: ' . format_date(gmmktime(12, 0, 0, $ship_date['month'], $ship_date['day'], $ship_date['year']), 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
   $exp_delivery = $_SESSION['ups']['expected_delivery'];
-  $output .= '<br />Expected delivery: '. format_date(gmmktime(12, 0, 0, $exp_delivery['month'], $exp_delivery['day'], $exp_delivery['year']), 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
+  $output .= '<br />Expected delivery: ' . format_date(gmmktime(12, 0, 0, $exp_delivery['month'], $exp_delivery['day'], $exp_delivery['year']), 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
   $output .= "</div>\n<br style=\"clear: both;\" />";
   $output .= drupal_render_children($form);
 
@@ -238,7 +238,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
   $order_id = $_SESSION['ups']['order_id'];
   $packages = array_keys($_SESSION['ups']['packages']);
   $request = uc_ups_request_pickup($form_state['values']['digest'], $order_id, $packages);
-  $result = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') .'ShipAccept', array(
+  $result = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') . 'ShipAccept', array(
     'method' => 'POST',
     'data' => $request,
   ));
@@ -251,7 +251,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
     $error_description = (string)$error->ErrorDescription;
     drupal_set_message(t('(@severity error @code) @description', array('@severity' => $error_severity, '@code' => $error_code, '@description' => $error_description)), 'error');
     if ($error_severity == 'HardError') {
-      $form_state['redirect'] = 'admin/store/orders/'. $order_id .'/shipments/ups/'. implode('/', $packages);
+      $form_state['redirect'] = 'admin/store/orders/' . $order_id . '/shipments/ups/' . implode('/', $packages);
       return;
     }
   }
@@ -284,7 +284,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
     $package->tracking_number = (string)$package_results->TrackingNumber;
     $label_image = (string)$package_results->LabelImage->GraphicImage;
     if (file_preprare_directory('public://ups_labels', FILE_CREATE_DIRECTORY)) {
-      $label_path = 'public://ups_labels/label'. $package->tracking_number .'.gif';
+      $label_path = 'public://ups_labels/label' . $package->tracking_number . '.gif';
       if ($label_file = file_save_data(base64_decode($label_image), $label_path, FILE_EXISTS_REPLACE)) {
         $package->label_image = $label_file;
       }
@@ -302,7 +302,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
   uc_shipping_shipment_save($shipment);
 
   unset($_SESSION['ups']);
-  $form_state['redirect'] = 'admin/store/orders/'. $order_id .'/shipments';
+  $form_state['redirect'] = 'admin/store/orders/' . $order_id . '/shipments';
 }
 
 /**
@@ -329,18 +329,18 @@ function uc_ups_request_pickup($digest, $order_id = 0, $packages = array()) {
       $schema .= "\n<TransactionReference>
       <CustomerContext>";
       if ($order_id) {
-        $schema .= "<OrderId>". $order_id ."</OrderId>\n";
+        $schema .= "<OrderId>" . $order_id . "</OrderId>\n";
       }
       foreach ($packages as $pkg_id) {
-        $schema .= "<PackageId>". $pkg_id ."</PackageId>\n";
+        $schema .= "<PackageId>" . $pkg_id . "</PackageId>\n";
       }
       $schema .= "</CustomerContext>\n</TransactionReference>\n";
     }
   $schema .= "  </Request>
-  <ShipmentDigest>". $digest ."</ShipmentDigest>
+  <ShipmentDigest>" . $digest . "</ShipmentDigest>
 </ShipmentAcceptRequest>";
 
-  //drupal_set_message('<pre>'. htmlentities($schema) .'</pre>');
+  //drupal_set_message('<pre>' . htmlentities($schema) . '</pre>');
   return $schema;
 }
 

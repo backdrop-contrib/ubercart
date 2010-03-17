@@ -205,7 +205,7 @@ function uc_authorizenet_settings_form($form, &$form_state) {
 /**
  * Implement hook_form_alter().
  */
-function uc_authorizenet_form_alter(&$form, $form_state, $form_id) {
+function uc_authorizenet_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'uc_payment_gateways_form') {
     $form['#submit'][] = 'uc_authorizenet_payment_gateway_settings_submit';
   }
@@ -288,7 +288,7 @@ function _uc_authorizenet_cim_profile_create($order) {
  */
 function _uc_authorizenet_cim_profile_create_request($order) {
   return array(
-    'refId' => substr($order->order_id .'-'. REQUEST_TIME, 0, 20),
+    'refId' => substr($order->order_id . '-' . REQUEST_TIME, 0, 20),
     'profile' => array(
       'merchantCustomerId' => substr($order->uid, 0, 20),
       'description' => substr(t('Order @order taking place at @date', array('@order' => $order->order_id, '@date' => format_date(REQUEST_TIME))), 0, 255),
@@ -298,7 +298,7 @@ function _uc_authorizenet_cim_profile_create_request($order) {
         'payment' => array(
           'creditCard' => array(
             'cardNumber' => $order->payment_details['cc_number'],
-            'expirationDate' => $order->payment_details['cc_exp_year'] .'-'. str_pad($order->payment_details['cc_exp_month'], 2, '0', STR_PAD_LEFT),
+            'expirationDate' => $order->payment_details['cc_exp_year'] . '-' . str_pad($order->payment_details['cc_exp_month'], 2, '0', STR_PAD_LEFT),
           ),
         ),
       ),
@@ -339,7 +339,7 @@ function _uc_authorizenet_cim_profile_charge($order, $amount, $data) {
       $result = array(
         'success' => FALSE,
       );
-      $comment[] = '('. $response['resultCode'] .': '. $response['text'] .')';
+      $comment[] = '(' . $response['resultCode'] . ': ' . $response['text'] . ')';
     }
 
     // Transaction succeeded.
@@ -379,7 +379,7 @@ function _uc_authorizenet_cim_profile_charge_request($order, $amount, $data) {
   }
   else {
     return array(
-      'refId' => substr($order->order_id .'-'. REQUEST_TIME, 0, 20),
+      'refId' => substr($order->order_id . '-' . REQUEST_TIME, 0, 20),
       'transaction' => array(
         'profileTransAuthCapture' => array(
           'amount' => $amount,
@@ -437,7 +437,7 @@ function _uc_authorizenet_charge($order, $amount, $data) {
   // Build a description of the order for logging in Auth.Net.
   $description = array();
   foreach ((array) $order->products as $product) {
-    $description[] = $product->qty .'x '. $product->model;
+    $description[] = $product->qty . 'x ' . $product->model;
   }
 
   $billing_country = uc_get_country_data(array('country_id' => $order->billing_country));
@@ -467,7 +467,7 @@ function _uc_authorizenet_charge($order, $amount, $data) {
     // 'x_recurring_billing' => 'FALSE',
     'x_amount' => uc_price($amount, $context, $options),
     'x_card_num' => $order->payment_details['cc_number'],
-    'x_exp_date' => $order->payment_details['cc_exp_month'] .'/'. $order->payment_details['cc_exp_year'],
+    'x_exp_date' => $order->payment_details['cc_exp_month'] . '/' . $order->payment_details['cc_exp_year'],
     'x_card_code' => $order->payment_details['cc_cvv'],
     // 'x_trans_id' => '',
     // 'x_auth_code' => '',
@@ -526,7 +526,7 @@ function _uc_authorizenet_charge($order, $amount, $data) {
   // Translate the data array into a string we can POST.
   $post_fields = array();
   foreach ($submit_data as $key => $value) {
-    $post_fields[] = $key .'='. urlencode($value);
+    $post_fields[] = $key . '=' . urlencode($value);
   }
 
   // Setup the cURL request.
@@ -551,7 +551,7 @@ function _uc_authorizenet_charge($order, $amount, $data) {
   $response = explode('|', $result);
 
   if (variable_get('uc_authnet_response_debug', FALSE)) {
-    watchdog('uc_authorizenet', 'Debug response: !data', array('!data' => '<pre>'. check_plain(print_r($response, TRUE)) .'</pre>'));
+    watchdog('uc_authorizenet', 'Debug response: !data', array('!data' => '<pre>' . check_plain(print_r($response, TRUE)) . '</pre>'));
   }
 
   // Trim off the encapsulating character from the results.
@@ -626,7 +626,7 @@ function _uc_authorizenet_charge($order, $amount, $data) {
 
   // Add the CVV response if enabled.
   if (variable_get('uc_credit_cvv_enabled', TRUE)) {
-    $comment .= '<br />'. t('CVV match: @cvv', array('@cvv' => _uc_authorizenet_cvv($response[38])));
+    $comment .= '<br />' . t('CVV match: @cvv', array('@cvv' => _uc_authorizenet_cvv($response[38])));
   }
 
   // Save the comment to the order.
@@ -656,17 +656,17 @@ function uc_authorizenet_recurring_fee_ops($context, $fee) {
   switch ($context) {
     case 'fee_admin':
       if ($fee['remaining_intervals'] > 0) {
-        $ops[] = l(t('update'), 'admin/store/orders/recurring/'. $fee['rfid'] .'/arb-update');
-        $ops[] = l(t('cancel'), 'admin/store/orders/recurring/'. $fee['rfid'] .'/arb-cancel');
+        $ops[] = l(t('update'), 'admin/store/orders/recurring/' . $fee['rfid'] . '/arb-update');
+        $ops[] = l(t('cancel'), 'admin/store/orders/recurring/' . $fee['rfid'] . '/arb-cancel');
       }
       else {
-        $ops[] = l(t('delete'), 'admin/store/orders/recurring/'. $fee['rfid'] .'/delete');
+        $ops[] = l(t('delete'), 'admin/store/orders/recurring/' . $fee['rfid'] . '/delete');
       }
       break;
 
     case 'user':
-      $ops[] = l(t('update'), 'user/'. $fee['uid'] .'/recurring/'. $fee['rfid'] .'/arb-update');
-      $ops[] = l(t('cancel'), 'user/'. $fee['uid'] .'/recurring/'. $fee['rfid'] .'/arb-cancel');
+      $ops[] = l(t('update'), 'user/' . $fee['uid'] . '/recurring/' . $fee['rfid'] . '/arb-update');
+      $ops[] = l(t('cancel'), 'user/' . $fee['uid'] . '/recurring/' . $fee['rfid'] . '/arb-cancel');
       break;
   }
 
@@ -761,7 +761,7 @@ function uc_authorizenet_arb_create($order, $fee) {
 
   // Build the data array for the request.
   $data = array(
-    'refId' => substr($order->order_id .'-'. REQUEST_TIME, 0, 20),
+    'refId' => substr($order->order_id . '-' . REQUEST_TIME, 0, 20),
     'subscription' => array(
       'name' => substr(t('Order @order_id', array('@order_id' => $order->order_id)), 0, 50),
       'paymentSchedule' => array(
@@ -769,7 +769,7 @@ function uc_authorizenet_arb_create($order, $fee) {
           'length' => $length,
           'unit' => $unit,
         ),
-        'startDate' => date('Y-m-d', strtotime('+ '. $fee->initial_charge)),
+        'startDate' => date('Y-m-d', strtotime('+ ' . $fee->initial_charge)),
         'totalOccurrences' => $fee->number_intervals,
         'trialOccurrences' => '0',
       ),
@@ -817,13 +817,13 @@ function uc_authorizenet_arb_create($order, $fee) {
   // Add the payment information to the data array based on the payment method.
   if ($order->payment_method == 'credit') {
     if ($order->payment_details['cc_exp_month'] < 10) {
-      $order->payment_details['cc_exp_month'] = '0'. $order->payment_details['cc_exp_month'];
+      $order->payment_details['cc_exp_month'] = '0' . $order->payment_details['cc_exp_month'];
     }
 
     $data['subscription']['payment'] = array(
       'creditCard' => array(
         'cardNumber' => $order->payment_details['cc_number'],
-        'expirationDate' => $order->payment_details['cc_exp_year'] .'-'. $order->payment_details['cc_exp_month'],
+        'expirationDate' => $order->payment_details['cc_exp_year'] . '-' . $order->payment_details['cc_exp_month'],
       ),
     );
   }
@@ -851,7 +851,7 @@ function uc_authorizenet_arb_create($order, $fee) {
     'rfid' => 0,
     'uid' => $order->uid,
     'fee_handler' => 'uc_authorizenet',
-    'next_charge' => strtotime('+'. $fee->initial_charge),
+    'next_charge' => strtotime('+' . $fee->initial_charge),
     'fee_amount' => $fee->fee_amount,
     'regular_interval' => $fee->regular_interval,
     'remaining_intervals' => $fee->number_intervals,
@@ -887,7 +887,7 @@ function uc_authorizenet_arb_update($subscription_id, $updates, $order_id = NULL
 
   // Build the data array for the request.
   $data = array(
-    'refId' => substr($order->order_id .'-'. REQUEST_TIME, 0, 20),
+    'refId' => substr($order->order_id . '-' . REQUEST_TIME, 0, 20),
     'subscriptionId' => $subscription_id,
     'subscription' => $updates
   );
@@ -935,7 +935,7 @@ function uc_authorizenet_arb_cancel($subscription_id, $order_id = NULL, $fee = a
 
   // Build the data array for the request.
   $data = array(
-    'refId' => substr($order->order_id .'-'. REQUEST_TIME, 0, 20),
+    'refId' => substr($order->order_id . '-' . REQUEST_TIME, 0, 20),
     'subscriptionId' => $subscription_id,
   );
 
@@ -975,11 +975,11 @@ function uc_authorizenet_arb_cancel($subscription_id, $order_id = NULL, $fee = a
  *   merchant authentication information.
  */
 function _uc_authorizenet_xml_api_wrapper($request, $xml) {
-  return '<?xml version="1.0" encoding="utf-8"?><'. $request
-        .' xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd"><merchantAuthentication>'
-        .'<name>'. variable_get('uc_authnet_api_login_id', '') .'</name>'
-        .'<transactionKey>'. variable_get('uc_authnet_api_transaction_key', '')
-        .'</transactionKey></merchantAuthentication>'. $xml .'</'. $request .'>';
+  return '<?xml version="1.0" encoding="utf-8"?><' . $request
+        . ' xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd"><merchantAuthentication>'
+        . '<name>' . variable_get('uc_authnet_api_login_id', '') . '</name>'
+        . '<transactionKey>' . variable_get('uc_authnet_api_transaction_key', '')
+        . '</transactionKey></merchantAuthentication>' . $xml . '</' . $request . '>';
 }
 
 // Converts a hierarchical array of elements into an XML string.
@@ -990,11 +990,11 @@ function _uc_authorizenet_array_to_xml($data) {
   foreach ($data as $element => $contents) {
     if (is_array($contents)) {
       // Render the element with its child elements.
-      $xml .= '<'. $element .'>'. _uc_authorizenet_array_to_xml($contents) .'</'. $element .'>';
+      $xml .= '<' . $element . '>' . _uc_authorizenet_array_to_xml($contents) . '</' . $element . '>';
     }
     else {
       // Render the element with its contents.
-      $xml .= '<'. $element .'>'. htmlspecialchars($contents) .'</'. $element .'>';
+      $xml .= '<' . $element . '>' . htmlspecialchars($contents) . '</' . $element . '>';
     }
   }
 
@@ -1003,7 +1003,7 @@ function _uc_authorizenet_array_to_xml($data) {
 
 // Returns the message text for an AVS response code.
 function _uc_authorizenet_avs($code) {
-  $text = $code .' - ';
+  $text = $code . ' - ';
 
   switch ($code) {
     case 'A':
@@ -1052,7 +1052,7 @@ function _uc_authorizenet_avs($code) {
 
 // Returns the message text for a CVV match.
 function _uc_authorizenet_cvv($code) {
-  $text = $code .' - ';
+  $text = $code . ' - ';
 
   switch ($code) {
     case 'M':
@@ -1178,8 +1178,8 @@ function _uc_authorizenet_arb_parse_response($content) {
 
 // Helper function for parsing responses; adapted from sample PHP for ARB.
 function _uc_authorizenet_substr_between($string, $element) {
-  $open = '<'. $element .'>';
-  $close = '</'. $element .'>';
+  $open = '<' . $element . '>';
+  $close = '</' . $element . '>';
 
   // Fail if we can't find the open or close tag for the element.
   if (strpos($string, $open) === FALSE || strpos($string, $close) === FALSE) {

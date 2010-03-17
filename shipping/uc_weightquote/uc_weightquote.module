@@ -48,7 +48,7 @@ function uc_weightquote_menu() {
  *
  * Add a form element for the shipping rate of a product.
  */
-function uc_weightquote_form_alter(&$form, $form_state, $form_id) {
+function uc_weightquote_form_alter(&$form, &$form_state, $form_id) {
   if (uc_product_is_product_form($form)) {
     $sign_flag = variable_get('uc_sign_after_amount', FALSE);
     $currency_sign = variable_get('uc_currency_sign', '$');
@@ -81,7 +81,7 @@ function uc_weightquote_form_alter(&$form, $form_state, $form_id) {
         '#size' => 16,
         '#field_prefix' => $sign_flag ? '' : $currency_sign,
         '#field_suffix' => t('@sign/@unit', array('@sign' => $sign_flag ? $currency_sign : '', '@unit' => variable_get('uc_weight_unit', 'lb'))),
-        '#weight' => $weight['weightquote_'. $method->mid],
+        '#weight' => $weight['weightquote_' . $method->mid],
       );
     }
   }
@@ -177,11 +177,11 @@ function uc_weightquote_ca_predicate() {
 
   $result = db_query("SELECT mid, title FROM {uc_weightquote_methods}");
   foreach ($result as $method) {
-    $predicates['uc_weightquote_get_quote_'. $method->mid] = array(
+    $predicates['uc_weightquote_get_quote_' . $method->mid] = array(
       '#title' => t('Shipping quote via @method', array('@method' => $method->title)),
-      '#trigger' => 'get_quote_from_weightquote_'. $method->mid,
+      '#trigger' => 'get_quote_from_weightquote_' . $method->mid,
       '#class' => 'uc_weightquote',
-      '#status' => $enabled['weightquote_'. $method->mid],
+      '#status' => $enabled['weightquote_' . $method->mid],
       '#actions' => array(
         array(
           '#name' => 'uc_quote_action_get_quote',
@@ -208,11 +208,11 @@ function uc_weightquote_uc_shipping_method() {
   $weight = variable_get('uc_quote_method_weight', array());
   $result = db_query("SELECT mid, title, label FROM {uc_weightquote_methods}");
   foreach ($result as $method) {
-    $methods['weightquote_'. $method->mid] = array(
-      'id' => 'weightquote_'. $method->mid,
+    $methods['weightquote_' . $method->mid] = array(
+      'id' => 'weightquote_' . $method->mid,
       'module' => 'uc_weightquote',
       'title' => $method->title,
-      'enabled' => $enabled['weightquote_'. $method->mid],
+      'enabled' => $enabled['weightquote_' . $method->mid],
       'quote' => array(
         'type' => 'order',
         'callback' => 'uc_weightquote_quote',
@@ -220,7 +220,7 @@ function uc_weightquote_uc_shipping_method() {
           $method->label,
         ),
       ),
-      'weight' => $weight['weightquote_'. $method->mid],
+      'weight' => $weight['weightquote_' . $method->mid],
     );
   }
 

@@ -65,14 +65,14 @@ function uc_reports_help($path, $arg) {
         break;
     }
     if (strpos($path, 'admin/store/reports/sales/year') === 0) {
-      $year = $arg[5] ? $arg[5] : format_date(time(), 'custom', "Y");
+      $year = $arg[5] ? $arg[5] : format_date(REQUEST_TIME, 'custom', "Y");
       $output .= t('This is the monthly break down of sales for the year @year. Clicking on each link will take you to a list of orders during that month.', array('@year' => $year));
     }
     $output .= '</p>';
 
     // Include the statuses/offset as needed.
     if ($include_offset) {
-      $output .= "<p>". t('All sales reports are <b>GMT !offset</b> (Default site timezone)', array('!offset' => variable_get('date_default_timezone', 0) / 36)) ."</p>";
+      $output .= "<p>" . t('All sales reports are <b>GMT !offset</b> (Default site timezone)', array('!offset' => variable_get('date_default_timezone', 0) / 36)) . "</p>";
     }
     if ($include_statuses) {
       $statuses = array();
@@ -194,7 +194,7 @@ function uc_reports_theme() {
  */
 function uc_reports_init() {
   if (arg(0) == 'admin' && arg(1) == 'store' && arg(2) == 'reports') {
-    drupal_add_css(drupal_get_path('module', 'uc_reports') .'/uc_reports.css');
+    drupal_add_css(drupal_get_path('module', 'uc_reports') . '/uc_reports.css');
   }
 }
 
@@ -228,11 +228,11 @@ function uc_reports_store_csv($report_id, $rows) {
   $user_id = (empty($user->uid)) ? session_id() : $user->uid;
   foreach ($rows as $row) {
     foreach ($row as $index => $column) {
-      $row[$index] = '"'. str_replace('"', '""', $column) .'"';
+      $row[$index] = '"' . str_replace('"', '""', $column) . '"';
     }
-    $csv_output .= implode(',', $row) ."\n";
+    $csv_output .= implode(',', $row) . "\n";
   }
-  cache_set('uc_reports_'. $report_id .'_'. $user_id, $csv_output, 'cache', REQUEST_TIME + 86400);
+  cache_set('uc_reports_' . $report_id . '_' . $user_id, $csv_output, 'cache', REQUEST_TIME + 86400);
   return array('user' => $user_id, 'report' => $report_id, 'csv' => $csv_output);
 }
 
@@ -249,7 +249,7 @@ function uc_reports_store_csv($report_id, $rows) {
 function _uc_reports_get_csv($report_id, $user_id) {
   global $user;
   $user_check = (empty($user->uid)) ? session_id() : $user->uid;
-  $csv_data = cache_get('uc_reports_'. $report_id .'_'. $user_id, 'cache');
+  $csv_data = cache_get('uc_reports_' . $report_id . '_' . $user_id, 'cache');
 
   if (!$csv_data || $user_id != $user_check) {
     drupal_set_message(t("The CSV data could not be retreived. It's possible the data might have expired. Refresh the report page and try to retrieve the CSV file again."), 'error');
@@ -265,7 +265,7 @@ function _uc_reports_get_csv($report_id, $user_id) {
       'Cache-Control' => 'private',
       'Content-Transfer-Encoding' => 'binary',
       'Content-Length' => strlen($csv_data->data),
-      'Content-Disposition' => 'attachment; filename="'. $report_id .'.csv"',
+      'Content-Disposition' => 'attachment; filename="' . $report_id . '.csv"',
       'Content-Type' => 'text/csv'
     );
     foreach ($http_headers as $header => $value) {
@@ -389,7 +389,7 @@ function _uc_reports_end_interval($time, $interval = 'month') {
     $time = REQUEST_TIME;
   }
 
-  $temp = strtotime('+1 '. $interval, $time) - 1;
+  $temp = strtotime('+1 ' . $interval, $time) - 1;
 
   switch ($interval) {
     case 'day':

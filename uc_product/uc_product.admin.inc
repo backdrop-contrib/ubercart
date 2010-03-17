@@ -50,8 +50,8 @@ function uc_product_class_default() {
   $rows = array();
   foreach ($result as $class) {
     $ops = array(
-      l(t('edit'), 'admin/store/products/classes/'. $class->pcid .'/edit'),
-      l(t('delete'), 'admin/store/products/classes/'. $class->pcid .'/delete'),
+      l(t('edit'), 'admin/store/products/classes/' . $class->pcid . '/edit'),
+      l(t('delete'), 'admin/store/products/classes/' . $class->pcid . '/delete'),
     );
     $rows[] = array(
       $class->pcid,
@@ -351,11 +351,11 @@ function uc_product_feature_settings_form($form, &$form_state) {
     $titles[] = $feature['title'];
   }
   if (empty($titles)) {
-    $titles[] = '<em>'. t('No product features found.') .'</em>';
+    $titles[] = '<em>' . t('No product features found.') . '</em>';
   }
   $form['features_list'] = array(
-    '#markup' => '<div><b>'. t('The following product features are enabled')
-               .':</b><br />'. implode(', ', $titles) .'</div><br />',
+    '#markup' => '<div><b>' . t('The following product features are enabled')
+               . ':</b><br />' . implode(', ', $titles) . '</div><br />',
     '#summary callback' => '_uc_product_features_summarize',
     '#summary arguments' => array($titles),
   );
@@ -423,19 +423,19 @@ function uc_product_features($node) {
             ->execute();
 
           drupal_set_message(t('The product feature has been deleted.'));
-          drupal_goto('node/'. arg(1) .'/edit/features');
+          drupal_goto('node/' . arg(1) . '/edit/features');
         }
 
         // Show the confirmation form for deleting this feature.
         $question = $node->title;
         $description = t('Are you sure you wish to delete this %feature?', array('%feature' => uc_product_feature_data($feature['fid'], 'title')))
-                      .'<div><b>'. t('Description') .':</b><br />'. $feature['description'] .'</div><br />';
+                      . '<div><b>' . t('Description') . ':</b><br />' . $feature['description'] . '</div><br />';
         $form = array();
-        return confirm_form($form, $question, 'node/'. arg(1) .'/edit/features', $description, t('Delete'), t('Cancel'), 'pf_delete');
+        return confirm_form($form, $question, 'node/' . arg(1) . '/edit/features', $description, t('Delete'), t('Cancel'), 'pf_delete');
       }
       else {
         drupal_set_message(t("That product feature doesn't exist."), 'error');
-        drupal_goto('node/'. arg(1) .'/edit/features');
+        drupal_goto('node/' . arg(1) . '/edit/features');
       }
     }
 
@@ -457,12 +457,12 @@ function uc_product_features($node) {
     }
     else {
       drupal_set_message(t('Error: Attempted to add a non-existent product feature type.'), 'error');
-      drupal_goto('node/'. $node->nid .'/edit/features');
+      drupal_goto('node/' . $node->nid . '/edit/features');
     }
 
     if (empty($build)) {
       drupal_set_message(t('Error: No form data was returned for that operation.'), 'error');
-      drupal_goto('node/'. $node->nid .'/edit/features');
+      drupal_goto('node/' . $node->nid . '/edit/features');
     }
 
     return $build;
@@ -473,8 +473,8 @@ function uc_product_features($node) {
   $result = db_query("SELECT * FROM {uc_product_features} WHERE nid = :nid ORDER BY pfid ASC", array(':nid' => $node->nid));
   foreach ($result as $feature) {
     $operations = array(
-      l(t('edit'), 'node/'. $node->nid .'/edit/features/'. $feature->fid .'/'. $feature->pfid),
-      l(t('delete'), 'node/'. $node->nid .'/edit/features/'. $feature->fid .'/'. $feature->pfid .'/delete'),
+      l(t('edit'), 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid),
+      l(t('delete'), 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid . '/delete'),
     );
     $rows[] = array(
       'data' => array(
@@ -535,14 +535,14 @@ function uc_product_feature_add_form($form, &$form_state) {
  * @see uc_product_feature_add_form()
  */
 function theme_uc_product_feature_add_form($variables) {
-  return '<table class="add-feature"><tr><td>'. drupal_render_children($variables['form']) .'</td></tr></table>';
+  return '<table class="add-feature"><tr><td>' . drupal_render_children($variables['form']) . '</td></tr></table>';
 }
 
 /**
  * @see uc_product_feature_add_form().
  */
 function uc_product_feature_add_form_submit($form, &$form_state) {
-  $form_state['redirect'] = 'node/'. arg(1) .'/edit/features/'. $form_state['values']['feature'] .'/add';
+  $form_state['redirect'] = 'node/' . arg(1) . '/edit/features/' . $form_state['values']['feature'] . '/add';
 }
 
 /**
@@ -654,10 +654,10 @@ function uc_product_class_form_submit($form, &$form_state) {
   uc_product_node_info(TRUE);
 
   if ($result == MergeQuery::STATUS_INSERT) {
-    variable_set('node_options_'. $pcid, variable_get('node_options_product', array('status', 'promote')));
+    variable_set('node_options_' . $pcid, variable_get('node_options_product', array('status', 'promote')));
 
     if (module_exists('comment')) {
-      variable_set('comment_'. $pcid, variable_get('comment_product', COMMENT_NODE_READ_WRITE));
+      variable_set('comment_' . $pcid, variable_get('comment_product', COMMENT_NODE_READ_WRITE));
     }
 
     module_invoke_all('uc_product_class', $pcid, 'insert');
@@ -693,7 +693,7 @@ function uc_product_class_delete_confirm($form, &$form_state, $class) {
   $count = db_query("SELECT COUNT(*) FROM {node} WHERE type = :pcid", array(':pcid' => $class->pcid))->fetchField();
 
   if ($count > 0) {
-    $description .= '<br />'. format_plural($count, 'There is 1 node of this type.', 'There are @count nodes of this type.');
+    $description .= '<br />' . format_plural($count, 'There is 1 node of this type.', 'There are @count nodes of this type.');
   }
 
   return confirm_form($form, $question, 'admin/store/products/classes', $description, t('Delete'), t('Cancel'));

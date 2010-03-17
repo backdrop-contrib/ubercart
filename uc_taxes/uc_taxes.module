@@ -102,7 +102,7 @@ function uc_taxes_menu() {
 /**
  * Implement hook_form_alter().
  */
-function uc_taxes_form_alter(&$form, $form_state, $form_id) {
+function uc_taxes_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'uc_cart_checkout_form') {
     if (isset($form['panes']['payment'])) {
       drupal_add_js(array(
@@ -111,7 +111,7 @@ function uc_taxes_form_alter(&$form, $form_state, $form_id) {
           'calculateTax' => url('taxes/calculate'),
         ),
       ), 'setting');
-      drupal_add_js(drupal_get_path('module', 'uc_taxes') .'/uc_taxes.js');
+      drupal_add_js(drupal_get_path('module', 'uc_taxes') . '/uc_taxes.js');
     }
   }
   elseif ($form_id == 'uc_order_edit_form') {
@@ -121,7 +121,7 @@ function uc_taxes_form_alter(&$form, $form_state, $form_id) {
           'calculateTax' => url('taxes/calculate'),
         ),
       ), 'setting');
-      drupal_add_js(drupal_get_path('module', 'uc_taxes') .'/uc_taxes.js');
+      drupal_add_js(drupal_get_path('module', 'uc_taxes') . '/uc_taxes.js');
     }
   }
 }
@@ -175,7 +175,7 @@ function uc_taxes_uc_order($op, $arg1, $arg2) {
         ),
       );
       if (is_array($arg1->line_items)) {
-        //drupal_set_message('<pre>'. var_export($arg1->line_items, TRUE) .'</pre>');
+        //drupal_set_message('<pre>' . var_export($arg1->line_items, TRUE) . '</pre>');
         foreach ($arg1->line_items as $i => $line) {
           if ($line['type'] == 'tax') {
             $delete = TRUE;
@@ -273,7 +273,7 @@ function uc_line_item_tax_subtotal($op, $order) {
       case 'cart-preview':
         drupal_add_js("jQuery(document).ready(function() {
           if (window.set_line_item) {
-            set_line_item('tax_subtotal', '". t('Subtotal excluding taxes') ."', ". $amount .", ". variable_get('uc_li_tax_subtotal_weight', 8) .");
+            set_line_item('tax_subtotal', '" . t('Subtotal excluding taxes') . "', " . $amount . ", " . variable_get('uc_li_tax_subtotal_weight', 8) . ");
           }
         });", 'inline');
       break;
@@ -364,7 +364,7 @@ function uc_taxes_rate_delete($rate_id) {
     ->execute();
 
   // Delete the associated predicated if it has been saved to the database.
-  ca_delete_predicate('uc_taxes_'. $rate_id);
+  ca_delete_predicate('uc_taxes_' . $rate_id);
 }
 
 /**
@@ -389,10 +389,10 @@ function uc_taxes_uc_calculate_tax($order) {
   global $user;
   if (is_numeric($order)) {
     $order = uc_order_load($order);
-    $account = user_load(array('uid' => $order->uid));
+    $account = user_load($order->uid);
   }
   elseif ((int)$order->uid) {
-    $account = user_load(array('uid' => intval($order->uid)));
+    $account = user_load(intval($order->uid));
   }
   else {
     $account = $user;
@@ -450,7 +450,7 @@ function uc_taxes_uc_calculate_tax($order) {
     }
 
     $arguments['tax']['#data'] = $tax;
-    if (ca_evaluate_conditions($predicates['uc_taxes_'. $tax->id], $arguments)) {
+    if (ca_evaluate_conditions($predicates['uc_taxes_' . $tax->id], $arguments)) {
       $line_item = uc_taxes_action_apply_tax($order, $tax);
       if ($line_item) {
         $order->taxes[$line_item->id] = $line_item;

@@ -10,7 +10,7 @@
  * Display the administration page that lets you add and modify predicates.
  */
 function ca_admin($groupby = 'trigger') {
-  drupal_add_css(drupal_get_path('module', 'ca') .'/ca.css');
+  drupal_add_css(drupal_get_path('module', 'ca') . '/ca.css');
 
   // Load all the module defined predicates into a temporary array.
   $temp = module_invoke_all('ca_predicate');
@@ -55,7 +55,7 @@ function ca_admin($groupby = 'trigger') {
     );
 
     $table_class = array('ca-predicate-trigger');
-    $table_label = '<strong>'. t('Trigger') .':</strong> ';
+    $table_label = '<strong>' . t('Trigger') . ':</strong> ';
   }
   elseif ($groupby == 'class') {
     $header = array(
@@ -67,7 +67,7 @@ function ca_admin($groupby = 'trigger') {
     );
 
     $table_class = array('ca-predicate-class');
-    $table_label = '<strong>'. t('Class') .':</strong> ';
+    $table_label = '<strong>' . t('Class') . ':</strong> ';
   }
 
   $rows = array();
@@ -75,17 +75,17 @@ function ca_admin($groupby = 'trigger') {
   foreach ($predicates as $key => $value) {
     // Build the basic operation links for each predicate.
     $ops = array(
-      l(t('edit'), CA_UI_PATH .'/'. $key .'/edit'),
+      l(t('edit'), CA_UI_PATH . '/' . $key . '/edit'),
     );
 
     // Add the reset link if a module defined predicate has been modified.
     if (!is_numeric($key) && isset($value['#modified'])) {
-      $ops[] = l(t('reset'), CA_UI_PATH .'/'. $key .'/reset');
+      $ops[] = l(t('reset'), CA_UI_PATH . '/' . $key . '/reset');
     }
 
     // Add a delete link if displaying a custom predicate.
     if (is_numeric($key)) {
-      $ops[] = l(t('delete'), CA_UI_PATH .'/'. $key .'/delete');
+      $ops[] = l(t('delete'), CA_UI_PATH . '/' . $key . '/delete');
     }
 
     // Add the predicate's row to the table based on the grouping type.
@@ -133,7 +133,7 @@ function ca_admin($groupby = 'trigger') {
   }
 
   $build['add_link'] = array(
-    '#markup' => l(t('Add a predicate'), CA_UI_PATH .'/add'),
+    '#markup' => l(t('Add a predicate'), CA_UI_PATH . '/add'),
     '#weight' => 5,
   );
 
@@ -260,8 +260,8 @@ function ca_predicate_meta_form_submit($form, &$form_state) {
 
   // Compare the values from the form submission with what is already set.
   foreach ($fields as $field) {
-    if ($form_state['values']['predicate_'. $field] != $predicate['#'. $field]) {
-      $predicate['#'. $field] = $form_state['values']['predicate_'. $field];
+    if ($form_state['values']['predicate_' . $field] != $predicate['#' . $field]) {
+      $predicate['#' . $field] = $form_state['values']['predicate_' . $field];
       $save = TRUE;
     }
   }
@@ -274,7 +274,7 @@ function ca_predicate_meta_form_submit($form, &$form_state) {
     $predicate['#actions'] = array();
 
     // For new predicates, redirect to the conditions tab.
-    $form_state['redirect'] = CA_UI_PATH .'/'. $predicate['#pid'] .'/edit/conditions';
+    $form_state['redirect'] = CA_UI_PATH . '/' . $predicate['#pid'] . '/edit/conditions';
   }
 
   // Check to see if any changes were made and save if necessary.
@@ -307,9 +307,9 @@ function ca_predicate_delete_form($form, &$form_state, $pid) {
     '#value' => $predicate['#title'],
   );
 
-  $description = '<p><strong>'. check_plain($predicate['#title']) .'</strong><br />'
-               . check_plain($predicate['#description']) .'</p><p>'
-                . t('This action cannot be undone.') .'</p>';
+  $description = '<p><strong>' . check_plain($predicate['#title']) . '</strong><br />'
+               . check_plain($predicate['#description']) . '</p><p>'
+                . t('This action cannot be undone.') . '</p>';
 
   return confirm_form($form, t('Are you sure you want to !op this predicate?', array('!op' => is_numeric($pid) ? t('delete') : t('reset'))), CA_UI_PATH, $description);
 }
@@ -354,7 +354,7 @@ function ca_actions_form($form, &$form_state, $pid, $title = TRUE) {
   }
 
   // Include the JS for conditional actions forms.
-  drupal_add_js(drupal_get_path('module', 'ca') .'/ca.js');
+  drupal_add_js(drupal_get_path('module', 'ca') . '/ca.js');
 
   // Display the title if appropriate.
   if ($title) {
@@ -446,7 +446,7 @@ function ca_actions_form($form, &$form_state, $pid, $title = TRUE) {
       $form['actions'][$i]['remove'] = array(
         '#type' => 'submit',
         '#value' => t('Remove this action'),
-        '#name' => 'ca_remove_action_'. $i,
+        '#name' => 'ca_remove_action_' . $i,
         '#submit' => array('ca_actions_form_remove_action_submit'),
         '#attributes' => array('class' => array('ca-remove-confirm')),
       );
@@ -584,7 +584,7 @@ function ca_conditions_form($form, &$form_state, $pid, $title = TRUE) {
   }
 
   // Include the JS for conditional actions forms.
-  drupal_add_js(drupal_get_path('module', 'ca') .'/ca.js');
+  drupal_add_js(drupal_get_path('module', 'ca') . '/ca.js');
 
   // Display the title if appropriate.
   if ($title) {
@@ -727,14 +727,14 @@ function _ca_conditions_form_tree($condition, $trigger) {
       '#type' => 'submit',
       '#value' => t('Add condition'),
       '#submit' => array('ca_conditions_form_add_condition_submit'),
-      '#name' => 'add_condition_'. $level,
+      '#name' => 'add_condition_' . $level,
     );
     $form[$level]['remove_condition_group'] = array(
       '#type' => 'submit',
       '#value' => t('Remove group'),
       '#submit' => array('ca_conditions_form_remove_condition_group_submit'),
       '#attributes' => array('class' => array('ca-remove-confirm')),
-      '#name' => 'remove_condition_group_'. $level,
+      '#name' => 'remove_condition_group_' . $level,
     );
 
     $index++;
@@ -831,7 +831,7 @@ function _ca_conditions_form_condition($condition, $trigger) {
   );
 
   // Get the callback for the condition we're displaying.
-  $callback = $condition_data[$condition['#name']]['#callback'] .'_form';
+  $callback = $condition_data[$condition['#name']]['#callback'] . '_form';
 
   if (function_exists($callback)) {
    // Load the trigger data.
@@ -846,7 +846,7 @@ function _ca_conditions_form_condition($condition, $trigger) {
     '#value' => t('Remove this condition'),
     '#submit' => array('ca_conditions_form_remove_condition_submit'),
     '#attributes' => array('class' => array('ca-remove-confirm')),
-    '#name' => 'remove_condition_group_'. $identifier++,
+    '#name' => 'remove_condition_group_' . $identifier++,
   );
 
   return $form;
@@ -1071,7 +1071,7 @@ function ca_conditions_form_update_conditions($pid, $data) {
  */
 function ca_conversion_form($form, &$form_state) {
   $form['help'] = array(
-    '#markup' => '<div>'. t('Use this form during the update process from Ubercart 1.0 to 2.0 to convert your Workflow-ng configurations to Conditional Actions predicates.  Once your configurations are converted, you should complete your uninstallation of Workflow-ng.') .'</div>',
+    '#markup' => '<div>' . t('Use this form during the update process from Ubercart 1.0 to 2.0 to convert your Workflow-ng configurations to Conditional Actions predicates.  Once your configurations are converted, you should complete your uninstallation of Workflow-ng.') . '</div>',
   );
 
   $form['submit'] = array(
@@ -1294,7 +1294,7 @@ function _ca_convert_actions($wf_action, $tax_id = NULL) {
       $action['#name'] = 'uc_order_update_status';
       break;
     case 'uc_taxes_action_apply_tax':
-      $action['#name'] = 'uc_taxes_action_apply_tax_'. $tax_id;
+      $action['#name'] = 'uc_taxes_action_apply_tax_' . $tax_id;
       break;
     case 'workflow_ng_action_custom_php':
       $action['#name'] = 'ca_action_custom_php';

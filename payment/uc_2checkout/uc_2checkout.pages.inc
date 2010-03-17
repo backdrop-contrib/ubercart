@@ -60,10 +60,10 @@ function uc_2checkout_complete($cart_id = 0) {
   // Save changes to order without it's completion (it will be on finalization step)
   uc_order_save($order);
 
-  $url = 'cart/2checkout/finalize/'. $order->order_id;
+  $url = 'cart/2checkout/finalize/' . $order->order_id;
 
   // Javascript redirect on the finalization page.
-  $output = '<script type="text/javascript">window.location = "'. url($url, array('absolute' => TRUE)) .'";</script>';
+  $output = '<script type="text/javascript">window.location = "' . url($url, array('absolute' => TRUE)) . '";</script>';
 
   // Text link for users without Javascript enabled.
   $output .= l(t('Click to complete checkout.'), $url, array('absolute' => TRUE));

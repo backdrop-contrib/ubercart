@@ -13,7 +13,7 @@
  */
 function uc_cart_links_settings_form($form, &$form_state) {
   $form['instructions'] = array(
-    '#markup' => '<div>'. t('<a href="!url">View the help page</a> to learn how to create cart links.', array('!url' => url('admin/store/help/cart_links'))) .'</div>',
+    '#markup' => '<div>' . t('<a href="!url">View the help page</a> to learn how to create cart links.', array('!url' => url('admin/store/help/cart_links'))) . '</div>',
   );
 
   $form['uc_cart_links_add_show'] = array(

@@ -33,7 +33,7 @@ function theme_uc_catalog_browse($variables) {
   $field = field_info_field('taxonomy_catalog');
   $tid = $variables['tid'];
 
-  drupal_add_css(drupal_get_path('module', 'uc_catalog') .'/uc_catalog.css');
+  drupal_add_css(drupal_get_path('module', 'uc_catalog') . '/uc_catalog.css');
 
   $output = '';
   $catalog = uc_catalog_get_page((int)$tid);
@@ -44,7 +44,7 @@ function theme_uc_catalog_browse($variables) {
   $child_list = array();
   foreach ($catalog->children as $child) {
     if (!empty($child->nodes)) {
-      $links[] = array('title' => $child->name . (variable_get('uc_catalog_breadcrumb_nodecount', FALSE) ? ' ('. $child->nodes .')' : ''), 'href' => uc_catalog_path($child),
+      $links[] = array('title' => $child->name . (variable_get('uc_catalog_breadcrumb_nodecount', FALSE) ? ' (' . $child->nodes . ')' : ''), 'href' => uc_catalog_path($child),
         'attributes' => array('rel' => 'tag'),
       );
     }
@@ -78,9 +78,9 @@ function theme_uc_catalog_browse($variables) {
       array_push($grandchildren, l(t('More...'), uc_catalog_path($child), array('class' => array('subcategory'))));
     }
     if ($child->nodes) {
-      $cell_link = $image .'<strong>'. l($child->name, uc_catalog_path($child)) .'</strong>';
+      $cell_link = $image . '<strong>' . l($child->name, uc_catalog_path($child)) . '</strong>';
       if (variable_get('uc_catalog_show_subcategories', TRUE)) {
-        $cell_link .= "<br/><span>". implode(', ', $grandchildren) ."</span>\n";
+        $cell_link .= "<br/><span>" . implode(', ', $grandchildren) . "</span>\n";
       }
       $child_list[] = $cell_link;
     }
@@ -131,7 +131,7 @@ function theme_uc_catalog_browse($variables) {
 
   if (count($catalog->products)) {
     if (count($links)) {
-      $output .= theme('links', array('links' => $links, 'attributes' => array('class' => array('links', 'inline', 'uc-categories')))) ."<br />\n";
+      $output .= theme('links', array('links' => $links, 'attributes' => array('class' => array('links', 'inline', 'uc-categories')))) . "<br />\n";
     }
     $output .= $catalog->description;
     $output .= theme('uc_catalog_products', array('products' => $catalog->products));

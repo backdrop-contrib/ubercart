@@ -992,7 +992,7 @@ function uc_order_condition_user_language_form($form_state, $settings = array())
   $languages = language_list();
   $options = array();
   foreach ($languages as $language) {
-    $options[$language->language] = $language->name.' ('.$language->native.')';
+    $options[$language->language] = $language->name . ' (' . $language->native . ')';
   }
   $form['language'] = array(
     '#type' => 'select',

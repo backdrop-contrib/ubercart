@@ -69,10 +69,10 @@ function uc_payment_pack_receive_check_form($form, &$form_state, $order) {
 function theme_uc_payment_pack_receive_check_form($variables) {
   $form = $variables['form'];
 
-  drupal_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
+  drupal_add_js(drupal_get_path('module', 'uc_payment') . '/uc_payment.js');
 
-  $output = '<p>'. t('Use the form to enter the check into the payments system and set the expected clear date.') .'</p>';
-  $output .= '<p><strong>'. t('Order balance:') .'</strong> '. drupal_render($form['balance']) .'</p>';
+  $output = '<p>' . t('Use the form to enter the check into the payments system and set the expected clear date.') . '</p>';
+  $output .= '<p><strong>' . t('Order balance:') . '</strong> ' . drupal_render($form['balance']) . '</p>';
 
   $output .= drupal_render_children($form);
 
@@ -97,8 +97,8 @@ function uc_payment_pack_receive_check_form_submit($form, &$form_state) {
     ))
     ->execute();
 
-  drupal_set_message(t('Check received, expected clear date of @date.', array('@date' => $form_state['values']['clear_month'] .'/'. $form_state['values']['clear_day'] .'/'. $form_state['values']['clear_year'])));
+  drupal_set_message(t('Check received, expected clear date of @date.', array('@date' => $form_state['values']['clear_month'] . '/' . $form_state['values']['clear_day'] . '/' . $form_state['values']['clear_year'])));
 
-  $form_state['redirect'] = 'admin/store/orders/'. $form_state['values']['order_id'];
+  $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'];
 }
 

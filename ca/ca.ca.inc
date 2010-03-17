@@ -475,7 +475,7 @@ function _ca_custom_php_variables_table($arguments) {
 
   // Translate the arguments into descriptive rows.
   foreach ($arguments as $key => $value) {
-    $rows[] = array(check_plain('$'. $key), check_plain($value['#entity']), $value['#title']);
+    $rows[] = array(check_plain('$' . $key), check_plain($value['#entity']), $value['#title']);
   }
 
   if (empty($rows)) {

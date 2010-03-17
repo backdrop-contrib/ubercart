@@ -21,15 +21,15 @@ function uc_taxes_admin_settings() {
     // Add the row to the table.
     $rows[] = array(
       check_plain($rate->name),
-      $rate->rate * 100 .'%',
+      $rate->rate * 100 . '%',
       $rate->shippable ? t('Shippable products') : t('Any product'),
       implode(', ', $rate->taxed_product_types),
       implode(', ', $rate->taxed_line_items),
       $rate->weight,
-      l(t('edit'), 'admin/store/settings/taxes/'. $rate_id .'/edit'),
-      l(t('conditions'), CA_UI_PATH .'/uc_taxes_'. $rate_id .'/edit/conditions'),
-      l(t('clone'), 'admin/store/settings/taxes/'. $rate_id .'/clone'),
-      l(t('delete'), 'admin/store/settings/taxes/'. $rate_id .'/delete'),
+      l(t('edit'), 'admin/store/settings/taxes/' . $rate_id . '/edit'),
+      l(t('conditions'), CA_UI_PATH . '/uc_taxes_' . $rate_id . '/edit/conditions'),
+      l(t('clone'), 'admin/store/settings/taxes/' . $rate_id . '/clone'),
+      l(t('delete'), 'admin/store/settings/taxes/' . $rate_id . '/delete'),
     );
   }
 
@@ -212,8 +212,8 @@ function uc_taxes_clone($rate_id) {
   $rate = uc_taxes_rate_save($rate);
 
   // Clone the associated predicate as well.
-  if ($predicate = ca_load_predicate('uc_taxes_'. $rate_id)) {
-    $predicate['#pid'] = 'uc_taxes_'. $rate->id;
+  if ($predicate = ca_load_predicate('uc_taxes_' . $rate_id)) {
+    $predicate['#pid'] = 'uc_taxes_' . $rate->id;
     ca_save_predicate($predicate);
   }
 

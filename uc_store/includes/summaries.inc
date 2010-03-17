@@ -85,13 +85,13 @@ function summarize_element($form, $title = FALSE) {
       case 'fieldset':
         return array(
           array(
-            'data' => $form['#title'] .':',
+            'data' => $form['#title'] . ':',
             'children' => summarize_form($form),
           ),
         );
 
       case 'textfield':
-        return $form['#title'] .': '. check_plain($form['#default_value']);
+        return $form['#title'] . ': ' . check_plain($form['#default_value']);
 
       case 'select':
         if (!empty($form['#multiple']) and is_array($form['#default_value'])) {
@@ -103,13 +103,13 @@ function summarize_element($form, $title = FALSE) {
           }
           // Return an item list of the selected options.
           return array(array(
-            'data' => $form['#title'].':',
+            'data' => $form['#title'] . ':',
             'children' => $options,
           ));
         }
         // Else, fall through.
       case 'radios':
-        return $form['#title'] .': '. $form['#options'][$form['#default_value']];
+        return $form['#title'] . ': ' . $form['#options'][$form['#default_value']];
 
       case 'checkbox':
         if ($form['#default_value']) {
@@ -121,7 +121,7 @@ function summarize_element($form, $title = FALSE) {
 
       default:
         // If we didn't have a default action, check for a callback.
-        $callback = 'summarize_'. $form['#type'];
+        $callback = 'summarize_' . $form['#type'];
 
         if (function_exists($callback)) {
           return $callback($form);
@@ -254,22 +254,22 @@ function theme_summary_overview($variables) {
   $link = $variables['link'];
 
   // Add some Ubercart specific JS for modifying summaries.
-  drupal_add_js(drupal_get_path('module', 'uc_store') .'/includes/summaries.js');
-  drupal_add_js(array('editIconPath' => base_path() . drupal_get_path('module', 'uc_store') .'/images/order_edit.gif'), 'setting');
+  drupal_add_js(drupal_get_path('module', 'uc_store') . '/includes/summaries.js');
+  drupal_add_js(array('editIconPath' => base_path() . drupal_get_path('module', 'uc_store') . '/images/order_edit.gif'), 'setting');
 
   $output = '';
 
   foreach ($summaries as $summary) {
     // Add a containing div for the summary overview.
-    $output .= '<div id="'. $summary['path'] .'" class="summary-overview">';
+    $output .= '<div id="' . $summary['path'] . '" class="summary-overview">';
 
     // Add a div for the header containing the title and edit link.
     $output .= '<div class="summary-header"><span class="summary-title">'
-             . check_plain($summary['title']) .': </span>';
+             . check_plain($summary['title']) . ': </span>';
 
     if ($link) {
-      $output .= ' <span class="summary-link">'. l(t('edit'), $summary['href'])
-                .'</span>';
+      $output .= ' <span class="summary-link">' . l(t('edit'), $summary['href'])
+                . '</span>';
     }
 
     $output .= '</div>';

@@ -110,7 +110,7 @@ function uc_cart_checkout() {
     }
   }
 
-  drupal_add_js(drupal_get_path('module', 'uc_cart') .'/uc_cart.js');
+  drupal_add_js(drupal_get_path('module', 'uc_cart') . '/uc_cart.js');
   $build = drupal_get_form('uc_cart_checkout_form');
 
   return $build;
@@ -164,7 +164,7 @@ function uc_cart_checkout_form($form, &$form_state) {
   }
 
   foreach ($panes as $pane) {
-    if (variable_get('uc_pane_'. $pane['id'] .'_enabled', $pane['enabled'])) {
+    if (variable_get('uc_pane_' . $pane['id'] . '_enabled', $pane['enabled'])) {
       $pane['prev'] = _uc_cart_checkout_prev_pane($panes, $pane['id']);
       $pane['next'] = _uc_cart_checkout_next_pane($panes, $pane['id']);
 
@@ -189,7 +189,7 @@ function uc_cart_checkout_form($form, &$form_state) {
           '#description' => !empty($return['description']) ? $return['description'] : NULL,
           '#collapsible' => $pane['collapsible'],
           '#collapsed' => variable_get('uc_use_next_buttons', FALSE) ? $collapsed : FALSE,
-          '#attributes' => array('id' => $pane['id'] .'-pane'),
+          '#attributes' => array('id' => $pane['id'] . '-pane'),
           '#theme' => $return['theme'],
         );
 
@@ -206,7 +206,7 @@ function uc_cart_checkout_form($form, &$form_state) {
             '#type' => 'button',
             '#value' => t('Next'),
             '#weight' => variable_get("uc_pane_{$pane_id}_field_button_weight", 20),
-            '#attributes' => array('onclick' => "return uc_cart_next_button_click(this, '". $pane['next'] ."', '". $opt ."');"),
+            '#attributes' => array('onclick' => "return uc_cart_next_button_click(this, '" . $pane['next'] . "', '" . $opt . "');"),
             '#prefix' => '<div class="next-button show-onload">',
             '#suffix' => '</div>',
           );
@@ -248,9 +248,9 @@ function uc_cart_checkout_form($form, &$form_state) {
 function theme_uc_cart_checkout_form($variables) {
   $form = $variables['form'];
 
-  drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
+  drupal_add_css(drupal_get_path('module', 'uc_cart') . '/uc_cart.css');
 
-  $output = '<div id="checkout-instructions">'. check_markup(variable_get('uc_checkout_instructions', ''), variable_get('uc_checkout_instructions_format', filter_fallback_format())) .'</div>';
+  $output = '<div id="checkout-instructions">' . check_markup(variable_get('uc_checkout_instructions', ''), variable_get('uc_checkout_instructions_format', filter_fallback_format())) . '</div>';
 
   foreach (element_children($form['panes']) as $pane_id) {
     if (function_exists(($func = _checkout_pane_data($pane_id, 'callback')))) {
@@ -268,7 +268,7 @@ function theme_uc_cart_checkout_form($variables) {
     }
   }
 
-  $output .= '<div id="checkout-form-bottom">'. drupal_render_children($form) .'</div>';
+  $output .= '<div id="checkout-form-bottom">' . drupal_render_children($form) . '</div>';
 
   return $output;
 }
@@ -360,7 +360,7 @@ function uc_cart_checkout_form_submit($form, &$form_state) {
  * @see uc_cart_checkout_form()
  */
 function uc_cart_checkout_review() {
-  drupal_add_js(drupal_get_path('module', 'uc_cart') .'/uc_cart.js');
+  drupal_add_js(drupal_get_path('module', 'uc_cart') . '/uc_cart.js');
   $form = drupal_get_form('uc_cart_checkout_review_form');
 
   if ($_SESSION['do_review'] !== TRUE && !uc_referer_check('cart/checkout')) {
@@ -383,7 +383,7 @@ function uc_cart_checkout_review() {
   }
 
   foreach ($panes as $pane) {
-    if (variable_get('uc_pane_'. $pane['id'] .'_enabled', TRUE)) {
+    if (variable_get('uc_pane_' . $pane['id'] . '_enabled', TRUE)) {
       $func = $pane['callback'];
       if (function_exists($func)) {
         $return = $func('review', $order, NULL);
@@ -421,39 +421,39 @@ function theme_uc_cart_checkout_review($variables) {
   $panes = $variables['panes'];
   $form = $variables['form'];
 
-  drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
+  drupal_add_css(drupal_get_path('module', 'uc_cart') . '/uc_cart.css');
 
   $output = check_markup(variable_get('uc_checkout_review_instructions', uc_get_message('review_instructions')), variable_get('uc_checkout_review_instructions_format', filter_fallback_format()))
-           .'<table class="order-review-table">';
+           . '<table class="order-review-table">';
 
   foreach ($panes as $title => $data) {
-    $output .= '<tr class="pane-title-row"><td colspan="2">'. $title
-              .'</td></tr>';
+    $output .= '<tr class="pane-title-row"><td colspan="2">' . $title
+              . '</td></tr>';
     if (is_array($data)) {
       foreach ($data as $row) {
         if (is_array($row)) {
           if (isset($row['border'])) {
-            $border = ' class="row-border-'. $row['border'] .'"';
+            $border = ' class="row-border-' . $row['border'] . '"';
           }
           else {
             $border = '';
           }
-          $output .= '<tr valign="top"'. $border .'><td class="title-col" '
-                    .'nowrap>'. $row['title'] .':</td><td class="data-col">'
-                   . $row['data'] .'</td></tr>';
+          $output .= '<tr valign="top"' . $border . '><td class="title-col" '
+                    . 'nowrap>' . $row['title'] . ':</td><td class="data-col">'
+                   . $row['data'] . '</td></tr>';
         }
         else {
-          $output .= '<tr valign="top"><td colspan="2">'. $row .'</td></tr>';
+          $output .= '<tr valign="top"><td colspan="2">' . $row . '</td></tr>';
         }
       }
     }
     else {
-      $output .= '<tr valign="top"><td colspan="2">'. $data .'</td></tr>';
+      $output .= '<tr valign="top"><td colspan="2">' . $data . '</td></tr>';
     }
   }
 
-  $output .= '<tr class="review-button-row"><td colspan="2">'. drupal_render_children($form)
-            .'</td></tr></table>';
+  $output .= '<tr class="review-button-row"><td colspan="2">' . drupal_render_children($form)
+            . '</td></tr></table>';
 
   return $output;
 }
@@ -508,7 +508,7 @@ function uc_cart_checkout_review_form_submit($form, &$form_state) {
 
   // Invoke it on a per-module basis instead of all at once.
   foreach (module_implements('uc_order') as $module) {
-    $function = $module .'_uc_order';
+    $function = $module . '_uc_order';
     if (function_exists($function)) {
       // $order must be passed by reference.
       $result = $function('submit', $order, NULL);

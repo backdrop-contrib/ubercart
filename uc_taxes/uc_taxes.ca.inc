@@ -51,7 +51,7 @@ function uc_taxes_ca_action() {
 
   // Loop through all the defined tax rates.
   foreach (uc_taxes_rate_load() as $rate) {
-    $actions['uc_taxes_action_apply_tax_'. $rate->id] = array(
+    $actions['uc_taxes_action_apply_tax_' . $rate->id] = array(
       '#title' => t('Apply !name', array('!name' => $rate->name)),
       '#category' => t('Taxes'),
       '#callback' => 'uc_taxes_action_apply_tax',
@@ -89,14 +89,14 @@ function uc_taxes_ca_predicate() {
 
   // Loop through all the defined tax rates.
   foreach (uc_taxes_rate_load() as $rate) {
-    $predicates['uc_taxes_'. $rate->id] = array(
+    $predicates['uc_taxes_' . $rate->id] = array(
       '#title' => $rate->name,
       '#class' => 'taxes',
       '#trigger' => 'calculate_taxes',
       '#status' => 1,
       '#actions' => array(
         array(
-          '#name' => 'uc_taxes_action_apply_tax_'. $rate->id,
+          '#name' => 'uc_taxes_action_apply_tax_' . $rate->id,
           '#title' => t('Apply !name', array('!name' => $rate->name)),
           '#argument_map' => array(
             'order' => 'order',

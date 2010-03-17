@@ -30,11 +30,11 @@ foreach ($products as $product) {
     'order_product' => $product,
   );
 ?>
-- <?php echo $product->qty; ?> x <?php echo $product->title .' - '. uc_price($price_info, $context); ?><br />
+- <?php echo $product->qty; ?> x <?php echo $product->title . ' - ' . uc_price($price_info, $context); ?><br />
 &nbsp;&nbsp;<?php echo t('SKU: ') . $product->model; ?><br />
     <?php if (is_array($product->data['attributes']) && count($product->data['attributes']) > 0) {?>
     <?php foreach ($product->data['attributes'] as $attribute => $option) {
-      echo '&nbsp;&nbsp;'. t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))) .'<br />';
+      echo '&nbsp;&nbsp;' . t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))) . '<br />';
     } ?>
     <?php } ?>
 <br />

@@ -18,7 +18,7 @@ function uc_authorizenet_silent_post() {
     $args = array(
       '!arb' => $arb ? 'ARB ' : '',
       '@order_id' => $_POST['x_invoice_num'],
-      '@post' => print_r($_POST, true),
+      '@post' => print_r($_POST, TRUE),
     );
     watchdog('uc_authorizenet', '!arbSilent POST received for order @order_id: <pre>@post</pre>', $args);
   }
@@ -53,7 +53,7 @@ function uc_authorizenet_silent_post() {
       // **** start @deprecated code ******
       if (function_exists('uc_recurring_fee_save')) {
         // Otherwise, update the recurring fee information in our database.
-        $fee = db_query("SELECT * FROM {uc_recurring_users} WHERE fee_handler = :handler AND data = :data", array(':handler' => 'uc_authorizenet',':data' => $_POST['x_subscription_id']))->fetchAssoc();
+        $fee = db_query("SELECT * FROM {uc_recurring_users} WHERE fee_handler = :handler AND data = :data", array(':handler' => 'uc_authorizenet', ':data' => $_POST['x_subscription_id']))->fetchAssoc();
 
         // Only process if the fee actually exists!
         if (!empty($fee)) {
@@ -62,7 +62,7 @@ function uc_authorizenet_silent_post() {
           $fee['charged_intervals'] += 1;
 
           // Set the next expected charge time.
-          $fee['next_charge'] = strtotime('+'. $fee['regular_interval'], $fee['next_charge']);
+          $fee['next_charge'] = strtotime('+' . $fee['regular_interval'], $fee['next_charge']);
 
           // Save the new values.
           uc_recurring_fee_save('user', $fee);
@@ -99,7 +99,7 @@ function uc_authorizenet_arb_user_update_form($form, &$form_state, $user, $rfid)
     '#value' => $rfid,
   );
   $form['description'] = array(
-    '#markup' => '<div>'. t('Recurring fee order ID: @order_id', array('@order_id' => $fee['order_id'])) .'</div>',
+    '#markup' => '<div>' . t('Recurring fee order ID: @order_id', array('@order_id' => $fee['order_id'])) . '</div>',
   );
 
   $form['cc_data'] = array(
@@ -114,7 +114,7 @@ function uc_authorizenet_arb_user_update_form($form, &$form_state, $user, $rfid)
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Update'),
-    '#suffix' => l(t('Cancel'), 'user/'. $user->uid),
+    '#suffix' => l(t('Cancel'), 'user/' . $user->uid),
   );
 
   return $form;
@@ -127,7 +127,7 @@ function uc_authorizenet_arb_user_update_form_submit($form, &$form_state) {
     'payment' => array(
       'creditCard' => array(
         'cardNumber' => $form_state['values']['cc_data']['cc_number'],
-        'expirationDate' => $form_state['values']['cc_data']['cc_exp_year'] .'-'. $form_state['values']['cc_data']['cc_exp_month'],
+        'expirationDate' => $form_state['values']['cc_data']['cc_exp_year'] . '-' . $form_state['values']['cc_data']['cc_exp_month'],
       ),
     ),
   );
@@ -142,7 +142,7 @@ function uc_authorizenet_arb_user_update_form_submit($form, &$form_state) {
     drupal_set_message(t('An error has occurred while updating your payment details. Please try again and contact us if you are unable to perform the update.'), 'error');
   }
 
-  $form_state['redirect'] = 'user/'. $form_state['values']['uid'];
+  $form_state['redirect'] = 'user/' . $form_state['values']['uid'];
 }
 
 // Displays a confirm form for customers to cancel their fees.
@@ -156,7 +156,7 @@ function uc_authorizenet_arb_user_cancel_form($form, &$form_state, $user, $rfid)
     '#value' => $rfid,
   );
 
-  return confirm_form($form, t('Are you sure you wish to cancel this fee?'), 'user/'. $user->uid, t('This action cannot be undone and may result in the termination of subscription services.'), t('Confirm'), t('Cancel'));
+  return confirm_form($form, t('Are you sure you wish to cancel this fee?'), 'user/' . $user->uid, t('This action cannot be undone and may result in the termination of subscription services.'), t('Confirm'), t('Cancel'));
 }
 
 function uc_authorizenet_arb_user_cancel_form_submit($form, &$form_state) {
@@ -175,6 +175,6 @@ function uc_authorizenet_arb_user_cancel_form_submit($form, &$form_state) {
     drupal_set_message(t('An error has occurred. Please try again and contact us if the problem persists.'), 'error');
   }
 
-  $form_state['redirect'] = 'user/'. $form_state['values']['uid'];
+  $form_state['redirect'] = 'user/' . $form_state['values']['uid'];
 }
 

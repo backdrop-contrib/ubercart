@@ -44,7 +44,7 @@ function uc_paypal_ipn($order_id = 0) {
 
   foreach ($_POST as $key => $value) {
     $value = urlencode(stripslashes($value));
-    $req .= $key .'='. $value .'&';
+    $req .= $key . '=' . $value . '&';
   }
 
   $req .= 'cmd=_notify-validate';
@@ -383,7 +383,7 @@ function uc_paypal_ec_submit() {
     drupal_goto('cart');
   }
 
-  drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
+  drupal_add_css(drupal_get_path('module', 'uc_cart') . '/uc_cart.css');
 
   $build['review'] = array(
     '#theme' => 'cart_review_table',
@@ -394,7 +394,7 @@ function uc_paypal_ec_submit() {
 
   $build['line_items'] = array('#markup' => uc_order_pane_line_items('customer', $order));
 
-  $build['instructions'] = array('#markup' => '<p>'. t("Your order is not complete until you click the 'Submit order' button below. Your PayPal account will be charged for the amount shown above once your order is placed. You will receive confirmation once your payment is complete.") .'</p>');
+  $build['instructions'] = array('#markup' => '<p>' . t("Your order is not complete until you click the 'Submit order' button below. Your PayPal account will be charged for the amount shown above once your order is placed. You will receive confirmation once your payment is complete.") . '</p>');
 
   $build['submit_form'] = drupal_get_form('uc_paypal_ec_submit_form');
 

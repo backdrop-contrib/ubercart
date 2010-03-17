@@ -241,14 +241,14 @@ function uc_product_node_access($op, $node, $account) {
   }
   switch ($op) {
     case 'create':
-      return user_access('create '. $type .'products', $account);
+      return user_access('create ' . $type . 'products', $account);
     case 'update':
-      if (user_access('edit all '. $type .'products', $account) || (user_access('edit own '. $type .'products', $account) && ($account->uid == $node->uid))) {
+      if (user_access('edit all ' . $type . 'products', $account) || (user_access('edit own ' . $type . 'products', $account) && ($account->uid == $node->uid))) {
         return NODE_ACCESS_ALLOW;
       }
       break;
     case 'delete':
-      if (user_access('delete all '. $type .'products', $account) || (user_access('delete own '. $type .'products', $account) && ($account->uid == $node->uid))) {
+      if (user_access('delete all ' . $type . 'products', $account) || (user_access('delete own ' . $type . 'products', $account) && ($account->uid == $node->uid))) {
         return NODE_ACCESS_ALLOW;
       }
       break;
@@ -266,7 +266,7 @@ function uc_product_feature_access($node) {
  * Implement hook_init().
  */
 function uc_product_init() {
-  drupal_add_css(drupal_get_path('module', 'uc_product') .'/uc_product.css');
+  drupal_add_css(drupal_get_path('module', 'uc_product') . '/uc_product.css');
 
   global $conf;
   $conf['i18n_variables'][] = 'uc_product_add_to_cart_text';
@@ -403,8 +403,8 @@ function uc_product_forms($form_id, $args) {
   if (isset($args[0]) && isset($args[0]->nid) && isset($args[0]->type)) {
     $product = $args[0];
     if (in_array($product->type, array_keys(uc_product_node_info()))) {
-      $forms['uc_product_add_to_cart_form_'. $product->nid] = array('callback' => 'uc_product_add_to_cart_form');
-      $forms['uc_catalog_buy_it_now_form_'. $product->nid] = array('callback' => 'uc_catalog_buy_it_now_form');
+      $forms['uc_product_add_to_cart_form_' . $product->nid] = array('callback' => 'uc_product_add_to_cart_form');
+      $forms['uc_catalog_buy_it_now_form_' . $product->nid] = array('callback' => 'uc_catalog_buy_it_now_form');
     }
   }
   return $forms;
@@ -515,7 +515,7 @@ function uc_product_form($node, $form_state) {
   $form['base']['shippable'] = array(
     '#type' => 'checkbox',
     '#title' => t('Product and its derivatives are shippable.'),
-    '#default_value' => isset($node->shippable) ? $node->shippable : variable_get('uc_product_shippable_'. $node->type, 1),
+    '#default_value' => isset($node->shippable) ? $node->shippable : variable_get('uc_product_shippable_' . $node->type, 1),
     '#weight' => 10,
   );
 
@@ -602,10 +602,10 @@ function uc_product_form($node, $form_state) {
 function theme_uc_product_form_prices($variables) {
   $form = $variables['form'];
 
-  return "<table><tr><td>\n". drupal_render($form['list_price'])
-    .'</td><td>'. drupal_render($form['cost'])
-    .'</td><td>'. drupal_render($form['sell_price'])
-    ."</td></tr></table>\n". drupal_render_children($form);
+  return "<table><tr><td>\n" . drupal_render($form['list_price'])
+    . '</td><td>' . drupal_render($form['cost'])
+    . '</td><td>' . drupal_render($form['sell_price'])
+    . "</td></tr></table>\n" . drupal_render_children($form);
 }
 
 /**
@@ -614,8 +614,8 @@ function theme_uc_product_form_prices($variables) {
 function theme_uc_product_form_weight($variables) {
   $form = $variables['form'];
 
-  return '<table><tr><td>'. drupal_render($form['weight']) .'</td><td>'
-       . drupal_render($form['weight_units']) .'</td></tr></table>';
+  return '<table><tr><td>' . drupal_render($form['weight']) . '</td><td>'
+       . drupal_render($form['weight_units']) . '</td></tr></table>';
 }
 
 /**
@@ -692,7 +692,7 @@ function uc_product_update($node) {
     drupal_write_record('uc_products', $node);
   }
   else {
-    //drupal_set_message('<pre>'. print_r($node, TRUE) .'</pre>');
+    //drupal_set_message('<pre>' . print_r($node, TRUE) . '</pre>');
     drupal_write_record('uc_products', $node, 'vid');
   }
 }
@@ -887,7 +887,7 @@ function uc_product_preprocess_node(&$variables) {
  *
  * @see uc_product_save_continue_submit()
  */
-function uc_product_form_alter(&$form, $form_state, $form_id) {
+function uc_product_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'search_form' && arg(0) == 'admin' && arg(1) == 'store' && arg(2) == 'products' && user_access('use advanced search')) {
     // Keyword boxes:
     $form['advanced'] = array(
@@ -970,7 +970,7 @@ function uc_product_form_alter(&$form, $form_state, $form_id) {
  * tasks.
  */
 function uc_product_save_continue_submit($form, &$form_state) {
-  $form_state['redirect'] = 'node/'. $form_state['nid'] .'/edit';
+  $form_state['redirect'] = 'node/' . $form_state['nid'] . '/edit';
 }
 
 /**
@@ -996,7 +996,7 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
   $form['uc_product']['uc_product_shippable'] = array(
     '#type' => 'checkbox',
     '#title' => t('Product and its derivatives are shippable.'),
-    '#default_value' => variable_get('uc_product_shippable_'. $type->type, 1),
+    '#default_value' => variable_get('uc_product_shippable_' . $type->type, 1),
     '#description' => t('This setting can still be overridden on the node form.'),
     '#return_value' => 1,
     '#weight' => -5,
@@ -1015,7 +1015,7 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
   $form['uc_product']['uc_image'] = array(
     '#type' => 'select',
     '#title' => t('Product image field'),
-    '#default_value' => variable_get('uc_image_'. $type->type, NULL),
+    '#default_value' => variable_get('uc_image_' . $type->type, NULL),
     '#options' => $options,
     '#description' => t('The selected field will be used on Ubercart pages to represent the products of this content type.'),
     '#weight' => -4,
@@ -1075,8 +1075,8 @@ function uc_product_content_extra_fields_alter(&$extra, $type_name) {
  * is removed.
  */
 function uc_product_field_delete_instance($instance) {
-  if ($instance['object_type'] == 'node' && $instance['field_name'] == variable_get('uc_image_'. $instance['bundle'], NULL)) {
-    variable_del('uc_image_'. $instance['bundle']);
+  if ($instance['object_type'] == 'node' && $instance['field_name'] == variable_get('uc_image_' . $instance['bundle'], NULL)) {
+    variable_del('uc_image_' . $instance['bundle']);
   }
 }
 
@@ -1188,7 +1188,7 @@ function uc_product_uc_cart_display($item) {
   $element['remove'] = array('#type' => 'checkbox');
 
   $element['title'] = array(
-    '#markup' => node_access('view', $node) ? l($item->title, 'node/'. $node->nid) : check_plain($item->title),
+    '#markup' => node_access('view', $node) ? l($item->title, 'node/' . $node->nid) : check_plain($item->title),
   );
 
   $context = array(
@@ -1361,7 +1361,7 @@ function uc_product_table($args = array()) {
     $node = node_load($nid);
     if ($enabled['image']) {
       if (module_exists('imagecache')) {
-        if (($field = variable_get('uc_image_'. $node->type, '')) && isset($node->$field)) {
+        if (($field = variable_get('uc_image_' . $node->type, '')) && isset($node->$field)) {
           $image = $node->{$field}[0];
           $data['image'] = uc_product_get_picture($nid, 'uc_product_list');
         }
@@ -1388,7 +1388,7 @@ function uc_product_table($args = array()) {
     }
 
     if (module_exists('uc_cart') && arg(0) != 'admin' && $enabled['add_to_cart']) {
-      $data['add_to_cart'] = drupal_get_form('uc_catalog_buy_it_now_form_'. $node->nid, $node);
+      $data['add_to_cart'] = drupal_get_form('uc_catalog_buy_it_now_form_' . $node->nid, $node);
     }
 
     $table[] = $data;
@@ -1423,7 +1423,7 @@ function uc_catalog_buy_it_now_form($form, &$form_state, $node) {
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' =>  variable_get('uc_teaser_add_to_cart_text', t('Add to cart')),
-    '#id' => 'edit-submit-'. $node->nid,
+    '#id' => 'edit-submit-' . $node->nid,
     '#attributes' => array(
       'class' => array('list-add-to-cart'),
     ),
@@ -1445,7 +1445,7 @@ function uc_catalog_buy_it_now_form_validate($form, &$form_state) {
     $attributes = uc_product_get_attributes($node->nid);
     if (!empty($attributes)) {
       drupal_set_message(t('This product has options that need to be selected before purchase. Please select them in the form below.'), 'error');
-      drupal_goto('node/'. $form_state['values']['nid']);
+      drupal_goto('node/' . $form_state['values']['nid']);
     }
   }
 }
@@ -1492,7 +1492,7 @@ function theme_uc_product_add_to_cart($variables) {
 
   $output = '<div class="add-to-cart">';
   if ($node->nid) {
-    $output .= drupal_render(drupal_get_form('uc_product_add_to_cart_form_'. $node->nid, $node));
+    $output .= drupal_render(drupal_get_form('uc_product_add_to_cart_form_' . $node->nid, $node));
   }
   else {
     $output .= drupal_render(drupal_get_form('uc_product_add_to_cart_form', $node));
@@ -1533,7 +1533,7 @@ function uc_product_add_to_cart_form($form, &$form_state, $node) {
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' =>  variable_get('uc_product_add_to_cart_text', t('Add to cart')),
-    '#id' => 'edit-submit-'. $node->nid,
+    '#id' => 'edit-submit-' . $node->nid,
     '#attributes' => array(
       'class' => array('node-add-to-cart'),
     ),
@@ -1589,7 +1589,7 @@ function theme_uc_product_price($variables) {
   $context = $variables['context'];
   $options = $variables['options'];
 
-  $output = '<div class="product-info '. implode(' ', (array)$context['class']) .'">';
+  $output = '<div class="product-info ' . implode(' ', (array)$context['class']) . '">';
   $output .= uc_price($price, $context, $options);
   $output .= '</div>';
 
@@ -1646,7 +1646,7 @@ function theme_uc_product_image($variables) {
   $first = array_shift($images);
 
   $output = '<div class="product-image"><div class="main-product-image">';
-  $output .= '<a href="'. imagecache_create_url('product_full', $first['filepath']) .'" title="'. $first['data']['title'] .'"';
+  $output .= '<a href="' . imagecache_create_url('product_full', $first['filepath']) . '" title="' . $first['data']['title'] . '"';
   if ($image_widget) {
     $output .= $image_widget_func($rel_count);
   }
@@ -1663,7 +1663,7 @@ function theme_uc_product_image($variables) {
     if (!is_array($thumbnail) || empty($thumbnail['filepath'])) {
       continue;
     }
-    $output .= '<a href="'. imagecache_create_url('product_full', $thumbnail['filepath']) .'" title="'. $thumbnail['data']['title'] .'"';
+    $output .= '<a href="' . imagecache_create_url('product_full', $thumbnail['filepath']) . '" title="' . $thumbnail['data']['title'] . '"';
     if ($image_widget) {
       $output .= $image_widget_func($rel_count);
     }
@@ -1950,7 +1950,7 @@ function uc_product_feature_form($form) {
     '#value' => t('Save feature'),
   );
   $form['cancel'] = array(
-    '#markup' => l(t('Cancel'), 'node/'. intval(arg(1)) .'/edit/features'),
+    '#markup' => l(t('Cancel'), 'node/' . intval(arg(1)) . '/edit/features'),
   );
 
   return $form;
@@ -1995,7 +1995,7 @@ function uc_product_feature_save($data) {
     drupal_set_message(t('The product feature has been updated.'));
   }
 
-  return 'node/'. $data['nid'] .'/edit/features';
+  return 'node/' . $data['nid'] . '/edit/features';
 }
 
 /**
@@ -2056,7 +2056,7 @@ function uc_product_add_default_image_field($type = NULL) {
   foreach ($types as $type) {
     $new_instance['bundle'] = $type;
 
-    $field_name = variable_get('uc_image_'. $type, '');
+    $field_name = variable_get('uc_image_' . $type, '');
     if (empty($field_name)) {
       $field_name = 'uc_product_image';
     }
@@ -2067,7 +2067,7 @@ function uc_product_add_default_image_field($type = NULL) {
     // Only add the instance if it doesn't exist. Don't overwrite any changes.
     if (!$instance) {
       field_create_instance($new_instance);
-      variable_set('uc_image_'. $type, $field_name);
+      variable_set('uc_image_' . $type, $field_name);
     }
   }
 }
@@ -2133,7 +2133,7 @@ function uc_product_image_default_styles() {
 function uc_product_views_api() {
   return array(
     'api' => '2.0',
-    'path' => drupal_get_path('module', 'uc_product') .'/views',
+    'path' => drupal_get_path('module', 'uc_product') . '/views',
   );
 }
 

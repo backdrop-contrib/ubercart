@@ -341,7 +341,7 @@ function uc_catalog_block_view($delta = '') {
     $block = array();
 
     if (user_access('view catalog')) {
-      drupal_add_css(drupal_get_path('module', 'uc_catalog') .'/uc_catalog.css');
+      drupal_add_css(drupal_get_path('module', 'uc_catalog') . '/uc_catalog.css');
 
       // Get the vocabulary tree information.
       $vid = variable_get('uc_catalog_vid', 0);
@@ -417,7 +417,7 @@ function uc_catalog_pathauto($op) {
       foreach ($patterns as $type => $pattern_set) {
         if ($type != 'global') {
           foreach ($pattern_set as $pattern => $description) {
-            $settings['placeholders']['['. $pattern .']'] = $description;
+            $settings['placeholders']['[' . $pattern . ']'] = $description;
           }
         }
       }
@@ -460,7 +460,7 @@ function _uc_catalog_pathauto_alias($category, $op) {
   _pathauto_include();
   $count = 0;
 
-  if ($category->vid == variable_get('uc_catalog_vid', 0)){
+  if ($category->vid == variable_get('uc_catalog_vid', 0)) {
     $placeholders = pathauto_get_placeholders('taxonomy', $category);
 
     $src = uc_catalog_path($category);
@@ -497,7 +497,7 @@ function uc_catalog_uc_store_status() {
     // Don't display a status if the taxonomy_index table has no data.
     if (variable_get('taxonomy_maintain_index_table', TRUE)) {
       $statuses[] = array('status' => 'ok', 'title' => t('Catalog vocabulary'),
-        'desc' => t('Vocabulary !name has been identified as the Ubercart catalog.', array('!name' => l($catalog->name, 'admin/content/taxonomy/'. $catalog->vid)))
+        'desc' => t('Vocabulary !name has been identified as the Ubercart catalog.', array('!name' => l($catalog->name, 'admin/content/taxonomy/' . $catalog->vid)))
       );
 
       $product_types = uc_product_types();
@@ -507,13 +507,13 @@ function uc_catalog_uc_store_status() {
       $result = db_query("SELECT COUNT(DISTINCT n.nid) FROM {node} AS n LEFT JOIN {taxonomy_index} AS ti ON n.nid = ti.nid LEFT JOIN {taxonomy_term_data} AS td ON ti.tid = td.tid WHERE n.type IN (:types) AND ti.tid IS NULL AND td.vid = :vid", array(':types' => $types, ':vid' => $catalog->vid));
       if ($excluded = $result->fetchField()) {
         $description = format_plural($excluded, 'There is 1 product not listed in the catalog.', 'There are @count products not listed in the catalog.')
-          . t(' Products are listed by assigning a category from the <a href="!cat_url">Product Catalog</a> vocabulary to them.', array('!cat_url' => url('admin/content/taxonomy/'. $catalog->vid)));
+          . t(' Products are listed by assigning a category from the <a href="!cat_url">Product Catalog</a> vocabulary to them.', array('!cat_url' => url('admin/content/taxonomy/' . $catalog->vid)));
         $terms = db_query("SELECT COUNT(1) FROM {taxonomy_term_data} WHERE vid = :vid", array(':vid' => $catalog->vid))->fetchField();
         if ($terms) {
-          $description .= ' '. l(t('Find orphaned products here.'), 'admin/store/products/orphans');
+          $description .= ' ' . l(t('Find orphaned products here.'), 'admin/store/products/orphans');
         }
         else {
-          $description .= ' '. l(t('Add terms for the products to inhabit.'), 'admin/content/taxonomy/'. $catalog->vid .'/add/term');
+          $description .= ' ' . l(t('Add terms for the products to inhabit.'), 'admin/content/taxonomy/' . $catalog->vid . '/add/term');
         }
         $statuses[] = array(
           'status' => 'warning',
@@ -625,7 +625,7 @@ function theme_uc_catalog_products($variables) {
   $products = $variables['products'];
 
   if (!$products) {
-    $output .= '<div class="no-products">'. t('No products are available in this category.') .'</div>';
+    $output .= '<div class="no-products">' . t('No products are available in this category.') . '</div>';
     return $output;
   }
   else {
@@ -665,7 +665,7 @@ function theme_uc_catalog_product_grid($variables) {
     }
 
     $titlelink = l($product->title, "node/$nid", array('html' => TRUE));
-    if (($field = variable_get('uc_image_'. $product->type, '')) && isset($product->$field)) {
+    if (($field = variable_get('uc_image_' . $product->type, '')) && isset($product->$field)) {
       $imagelink = field_view_field('node', $product, $field, 'image_link_content__uc_product_list');
     }
     else {
@@ -674,21 +674,21 @@ function theme_uc_catalog_product_grid($variables) {
 
     $product_table .= '<td>';
     if (variable_get('uc_catalog_grid_display_title', TRUE)) {
-      $product_table .= '<span class="catalog-grid-title">'. $titlelink .'</span>';
+      $product_table .= '<span class="catalog-grid-title">' . $titlelink . '</span>';
     }
     if (variable_get('uc_catalog_grid_display_model', TRUE)) {
-      $product_table .= '<span class="catalog-grid-ref">'. $product->model .'</span>';
+      $product_table .= '<span class="catalog-grid-ref">' . $product->model . '</span>';
     }
-    $product_table .= '<span class="catalog-grid-image">'. $imagelink .'</span>';
+    $product_table .= '<span class="catalog-grid-image">' . $imagelink . '</span>';
     if (variable_get('uc_catalog_grid_display_sell_price', TRUE)) {
-      $product_table .= '<span class="catalog-grid-sell-price">'. uc_price($product->sell_price, $context) .'</span>';
+      $product_table .= '<span class="catalog-grid-sell-price">' . uc_price($product->sell_price, $context) . '</span>';
     }
     if (module_exists('uc_cart') && variable_get('uc_catalog_grid_display_add_to_cart', TRUE)) {
       if (variable_get('uc_catalog_grid_display_attributes', TRUE)) {
         $product_table .= theme('uc_product_add_to_cart', array('node' => $product));
       }
       else {
-        $product_table .= drupal_render(drupal_get_form('uc_catalog_buy_it_now_form_'. $product->nid, $product));
+        $product_table .= drupal_render(drupal_get_form('uc_catalog_buy_it_now_form_' . $product->nid, $product));
       }
     }
     $product_table .= '</td>';
@@ -765,11 +765,11 @@ function uc_catalog_set_breadcrumb($tid) {
         );
         $current->nodes = field_attach_query($field['id'], $conditions, array('count' => TRUE));
 
-        $breadcrumbs[] = l($current->name . (variable_get('uc_catalog_breadcrumb_nodecount', FALSE) && $current->nodes ? ' ('. $current->nodes .')' : ''), uc_catalog_path($current));
+        $breadcrumbs[] = l($current->name . (variable_get('uc_catalog_breadcrumb_nodecount', FALSE) && $current->nodes ? ' (' . $current->nodes . ')' : ''), uc_catalog_path($current));
         $terms[] = $current->tid;
       }
     }
-    //print '<pre>'. print_r($breadcrumbs, TRUE) .'</pre>';
+    //print '<pre>' . print_r($breadcrumbs, TRUE) . '</pre>';
     return $breadcrumbs;
   }
   else {
@@ -847,7 +847,7 @@ function _uc_catalog_navigation($branch) {
   // Checks to see if node counts are desired in navigation
   $num_text = '';
   if (variable_get('uc_catalog_block_nodecount', TRUE)) {
-    $num_text = ' ('. $num .')';
+    $num_text = ' (' . $num . ')';
   }
 
   $lis = array();
@@ -892,18 +892,18 @@ function theme_uc_catalog_item($variables) {
 
   if ($expand || $count_children) {
     if ($here) {
-      $output = '<li class="expanded"><span class="trail">'. $link ."</span>\n";
+      $output = '<li class="expanded"><span class="trail">' . $link . "</span>\n";
       if (count($lis)) {
         $output .= '<ul class="menu">';
         foreach ($lis as $li) {
-          $output .= $li ."\n";
+          $output .= $li . "\n";
         }
         $output .= "</ul>\n";
       }
       $output .= "</li>";
     }
     elseif ($expand || $inpath) {
-      $output = '<li class="expanded"><span class="trail">'. $link ."</span>\n";
+      $output = '<li class="expanded"><span class="trail">' . $link . "</span>\n";
       if (count($lis)) {
         $output .= '<ul class="menu">';
         foreach ($lis as $li) {
@@ -914,11 +914,11 @@ function theme_uc_catalog_item($variables) {
       $output .= "</li>";
     }
     else {
-      $output = '<li class="collapsed">'. $link ."</li>\n";
+      $output = '<li class="collapsed">' . $link . "</li>\n";
     }
   }
   else {
-    $output = '<li class="leaf">'. ($inpath ? '<span class="trail">' : '') . $link . ($inpath ? '</span>' : '') ."</li>\n";
+    $output = '<li class="leaf">' . ($inpath ? '<span class="trail">' : '') . $link . ($inpath ? '</span>' : '') . "</li>\n";
   }
 
   return $output;
@@ -928,7 +928,7 @@ function theme_uc_catalog_item($variables) {
  * Create paths to the catalog from taxonomy term.
  */
 function uc_catalog_path($term) {
-  return 'catalog/'. $term->tid;
+  return 'catalog/' . $term->tid;
 }
 
 /**

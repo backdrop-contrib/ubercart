@@ -95,7 +95,7 @@ function hook_ucga_item_alter(&$item, $product, $trans, $order) {
  */
 function hook_ucga_trans_alter(&$trans, $order) {
   // Example implementation: prefix all orders with "UC-".
-  $trans['order_id'] = 'UC-'. $trans['order_id'];
+  $trans['order_id'] = 'UC-' . $trans['order_id'];
 }
 
 /**

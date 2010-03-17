@@ -24,7 +24,7 @@ function uc_order_pane_payment($op, $arg1) {
         );
         $build['balance'] = array('#markup' => t('Balance: @balance', array('@balance' => uc_price(uc_payment_balance($arg1), $context))));
         $build['view_payments'] = array(
-          '#markup' => ' ('. l(t('View'), 'admin/store/orders/'. $arg1->order_id .'/payments') .')',
+          '#markup' => ' (' . l(t('View'), 'admin/store/orders/' . $arg1->order_id . '/payments') . ')',
           '#suffix' => '<br />',
         );
       }
@@ -82,13 +82,13 @@ function uc_order_pane_payment($op, $arg1) {
         '#title' => t('Payment method'),
         '#default_value' => $arg1->payment_method,
         '#options' => (is_array($options)) ? $options : array(t('None available')),
-        '#attributes' => array('onchange' => "add_order_save_hold(); get_payment_details(Drupal.settings.ucURL.adminOrders + '". $arg1->order_id ."/payment_details/' + this.value);"),
+        '#attributes' => array('onchange' => "add_order_save_hold(); get_payment_details(Drupal.settings.ucURL.adminOrders + '" . $arg1->order_id . "/payment_details/' + this.value);"),
         '#disabled' => (is_array($options)) ? FALSE : TRUE,
       );
       return $form;
 
     case 'edit-theme':
-      drupal_add_js(drupal_get_path('module', 'uc_payment') .'/uc_payment.js');
+      drupal_add_js(drupal_get_path('module', 'uc_payment') . '/uc_payment.js');
 
       // build a JS array of our payment methods
       $methods = _payment_method_list();
@@ -105,8 +105,8 @@ function uc_order_pane_payment($op, $arg1) {
       foreach (element_children($arg1['payment']) as $field) {
         $title = $arg1['payment'][$field]['#title'];
         $arg1['payment'][$field]['#title'] = NULL;
-        $output .= '<tr><td class="oet-label">'. $title .':</td><td>'
-                 . drupal_render($arg1['payment'][$field]) .'</td></tr>';
+        $output .= '<tr><td class="oet-label">' . $title . ':</td><td>'
+                 . drupal_render($arg1['payment'][$field]) . '</td></tr>';
       }
       $output .= '</table><div id="payment_details"></div>';
       return $output;

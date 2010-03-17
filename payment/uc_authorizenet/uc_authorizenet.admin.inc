@@ -18,7 +18,7 @@ function uc_authorizenet_arb_admin_update_form($form, &$form_state, $rfid) {
     '#value' => $rfid,
   );
   $form['description'] = array(
-    '#markup' => '<div>'. t('Subscription ID: @subscription_id', array('@subscription_id' => $fee['data'])) .'</div>',
+    '#markup' => '<div>' . t('Subscription ID: @subscription_id', array('@subscription_id' => $fee['data'])) . '</div>',
   );
 
   $form['cc_data'] = array(
@@ -46,7 +46,7 @@ function uc_authorizenet_arb_admin_update_form_submit($form, &$form_state) {
     'payment' => array(
       'creditCard' => array(
         'cardNumber' => $form_state['values']['cc_data']['cc_number'],
-        'expirationDate' => $form_state['values']['cc_data']['cc_exp_year'] .'-'. $form_state['values']['cc_data']['cc_exp_month'],
+        'expirationDate' => $form_state['values']['cc_data']['cc_exp_year'] . '-' . $form_state['values']['cc_data']['cc_exp_month'],
       ),
     ),
   );

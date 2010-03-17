@@ -44,8 +44,8 @@ function uc_checkout_pane_cart($op) {
           'cart_item' => $item,
           'node' => node_load($item->nid),
         );
-        $output .= '<tr valign="top"><td>'. $item->qty .'&times;</td><td width="100%">'. $desc
-                  .'</td><td nowrap="nowrap">'. uc_price($price_info, $context) .'</td></tr>';
+        $output .= '<tr valign="top"><td>' . $item->qty . '&times;</td><td width="100%">' . $desc
+                  . '</td><td nowrap="nowrap">' . uc_price($price_info, $context) . '</td></tr>';
       }
       $output .= '</table>';
       $review[] = $output;
@@ -64,10 +64,10 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
       $email = (is_null($arg1) || empty($arg1->primary_email)) ? $user->mail : $arg1->primary_email;
 
       if ($user->uid) {
-        $description = t('Order information will be sent to your account e-mail listed below.');// .'<br />'
+        $description = t('Order information will be sent to your account e-mail listed below.');// . '<br />'
         $contents['primary_email'] = array('#type' => 'hidden', '#value' => check_plain($email));
         $contents['email_text'] = array(
-          '#markup' => '<div>'. t('<b>E-mail address:</b> @email (<a href="!url">edit</a>)', array('@email' => $email, '!url' => url('user/'. $user->uid .'/edit', array('query' => 'destination=cart/checkout')))) .'</div>',
+          '#markup' => '<div>' . t('<b>E-mail address:</b> @email (<a href="!url">edit</a>)', array('@email' => $email, '!url' => url('user/' . $user->uid . '/edit', array('query' => 'destination=cart/checkout')))) . '</div>',
         );
       }
       else {
@@ -458,10 +458,10 @@ function theme_address_pane($variables) {
 
   foreach (element_children($form) as $field) {
     if (substr($field, 0, 9) == 'delivery_' || substr($field, 0, 8) == 'billing_') {
-      $title = $form[$field]['#title'] .':';
+      $title = $form[$field]['#title'] . ':';
       unset($form[$field]['#title']);
       if (substr($field, -7) == 'street1') {
-        $title = uc_get_field_name('street') .':';
+        $title = uc_get_field_name('street') . ':';
       }
       elseif (substr($field, -7) == 'street2') {
         $title = ' ';
@@ -470,7 +470,7 @@ function theme_address_pane($variables) {
       if ($form[$field]['#required']) {
         $output .= $req;
       }
-      $output .= $title .'</td><td>'. drupal_render($form[$field]) .'</td></tr>';
+      $output .= $title . '</td><td>' . drupal_render($form[$field]) . '</td></tr>';
     }
   }
   $output .= '</table></div>';
@@ -493,7 +493,7 @@ function _uc_cart_checkout_prev_pane($panes, $pane_id = NULL) {
     if ($target['id'] == $pane_id) {
       return $prev;
     }
-    if ($target['collapsible'] && variable_get('uc_pane_'. $target['id'] .'_enabled', TRUE)) {
+    if ($target['collapsible'] && variable_get('uc_pane_' . $target['id'] . '_enabled', TRUE)) {
       $prev = $target['id'];
     }
   }
@@ -512,7 +512,7 @@ function _uc_cart_checkout_next_pane($panes, $pane_id = NULL) {
   $next = FALSE;
   foreach ($panes as $target) {
     if ($next) {
-      if ($target['collapsible'] && variable_get('uc_pane_'. $target['id'] .'_enabled', TRUE)) {
+      if ($target['collapsible'] && variable_get('uc_pane_' . $target['id'] . '_enabled', TRUE)) {
         return $target['id'];
       }
     }
@@ -536,8 +536,8 @@ function _checkout_pane_list($action = NULL) {
 
   $panes = module_invoke_all('uc_checkout_pane', NULL);
   foreach ($panes as $i => $value) {
-    $panes[$i]['enabled'] = variable_get('uc_pane_'. $panes[$i]['id'] .'_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
-    $panes[$i]['weight'] = variable_get('uc_pane_'. $panes[$i]['id'] .'_weight', (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));
+    $panes[$i]['enabled'] = variable_get('uc_pane_' . $panes[$i]['id'] . '_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
+    $panes[$i]['weight'] = variable_get('uc_pane_' . $panes[$i]['id'] . '_weight', (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));
     $panes[$i]['review'] = !isset($panes[$i]['review']) ? TRUE : $panes[$i]['review'];
     $panes[$i]['process'] = !isset($panes[$i]['process']) ? TRUE : $panes[$i]['process'];
     $panes[$i]['collapsible'] = !isset($panes[$i]['collapsible']) ? TRUE : $panes[$i]['collapsible'];

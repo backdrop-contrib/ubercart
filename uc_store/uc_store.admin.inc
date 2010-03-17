@@ -35,19 +35,19 @@ function uc_store_admin() {
   foreach ($results as $message) {
     switch ($message['status']) {
       case 'warning':
-        $icon = base_path() . drupal_get_path('module', 'uc_store') .'/images/alert.gif';
+        $icon = base_path() . drupal_get_path('module', 'uc_store') . '/images/alert.gif';
         break;
       case 'error':
-        $icon = base_path() . drupal_get_path('module', 'uc_store') .'/images/error.gif';
+        $icon = base_path() . drupal_get_path('module', 'uc_store') . '/images/error.gif';
         break;
       case 'ok':
       default:
-        $icon = base_path() . drupal_get_path('module', 'uc_store') .'/images/info.gif';
+        $icon = base_path() . drupal_get_path('module', 'uc_store') . '/images/info.gif';
     }
 
     $rows[] = array('data' => array(
-      array('data' => '<img src="'. $icon .'" />'),
-      array('data' => '<strong>'. $message['title'] .'</strong>', 'nowrap' => 'nowrap'),
+      array('data' => '<img src="' . $icon . '" />'),
+      array('data' => '<strong>' . $message['title'] . '</strong>', 'nowrap' => 'nowrap'),
       array('data' => $message['desc'], 'width' => '100%')), 'valign' => 'top');
   }
 
@@ -57,7 +57,7 @@ function uc_store_admin() {
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
-    '#prefix' => '<div style="clear: both;"><h2>'. t('Status messages:') .'</h2>',
+    '#prefix' => '<div style="clear: both;"><h2>' . t('Status messages:') . '</h2>',
     '#suffix' => '</div>',
   );
 
@@ -96,23 +96,23 @@ function uc_store_customers($message = NULL, $query = NULL, $page_length = 25) {
 
   foreach ($result as $customer) {
     $icons = l(uc_store_get_icon('admin/store/customers', TRUE),
-               'user/'. $customer->uid,
+               'user/' . $customer->uid,
                array('html' => TRUE, 'attributes' => array('title' => t('View user details.')))
              )
            . l(uc_store_get_icon('admin/store/orders', TRUE),
-               'admin/store/customers/orders/'. $customer->uid,
+               'admin/store/customers/orders/' . $customer->uid,
                array('html' => TRUE, 'attributes' => array('title' => t("View customer's order.")))
              );
     if ($address == 'delivery') {
-      $name = ucfirst($customer->delivery_last_name) .', '
+      $name = ucfirst($customer->delivery_last_name) . ', '
             . ucfirst($customer->delivery_first_name);
-      $city = ucfirst($customer->delivery_city) .', '
+      $city = ucfirst($customer->delivery_city) . ', '
             . uc_get_zone_code($customer->delivery_zone);
     }
     else {
-      $name = ucfirst($customer->billing_last_name) .', '
+      $name = ucfirst($customer->billing_last_name) . ', '
             . ucfirst($customer->billing_first_name);
-      $city = ucfirst($customer->billing_city) .', '
+      $city = ucfirst($customer->billing_city) . ', '
             . uc_get_zone_code($customer->billing_zone);
     }
     if ($name == ', ') {
@@ -126,11 +126,11 @@ function uc_store_customers($message = NULL, $query = NULL, $page_length = 25) {
         array('data' => check_plain($customer->mail)),
         array('data' => check_plain($city)),
         array('data' => $customer->uid)),
-      'id' => 'customer-'. $customer->uid,
+      'id' => 'customer-' . $customer->uid,
     );
   }
 
-  drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_store.js');
+  drupal_add_js(drupal_get_path('module', 'uc_store') . '/uc_store.js');
 
   $build = array();
 
@@ -236,7 +236,7 @@ function uc_store_customer_search_form($form, &$form_state) {
   $form['search'] = array(
     '#type' => 'fieldset',
     '#title' => t('Search options'),
-    '#description' => t('Search for customers based on any of the following fields. Use * as a wildcard to match any character.') .'<br />'. t("For example, searching by last name for 's*' will return all customers whose last name starts with an s.") .'<br />'. t('(<em>Leave a field empty to ignore it in the search.</em>)'),
+    '#description' => t('Search for customers based on any of the following fields. Use * as a wildcard to match any character.') . '<br />' . t("For example, searching by last name for 's*' will return all customers whose last name starts with an s.") . '<br />' . t('(<em>Leave a field empty to ignore it in the search.</em>)'),
     '#collapsible' => TRUE,
     '#collapsed' => arg(4) == 'results' ? TRUE : FALSE,
     '#theme' => 'uc_store_customer_search_fieldset',
@@ -318,8 +318,8 @@ function uc_store_customer_search_form_submit($form, &$form_state) {
     $email = strtolower(trim($form_state['values']['email']));
   }
 
-  drupal_goto('admin/store/customers/search/results/'. $first_name .'/'
-            . $last_name .'/'. $email);
+  drupal_goto('admin/store/customers/search/results/' . $first_name . '/'
+            . $last_name . '/' . $email);
 }
 
 /**
@@ -363,7 +363,7 @@ function uc_store_configuration_page() {
 function uc_store_ubercart_help() {
   $build = array();
   $build['description'] = array(
-    '#markup' => '<p>'. t('Use the following links to find documentation and support:') .'</p>',
+    '#markup' => '<p>' . t('Use the following links to find documentation and support:') . '</p>',
   );
 
   $items = array();
@@ -384,7 +384,7 @@ function uc_store_ubercart_help() {
 function uc_store_ubercart_help_tokens() {
   $build = array();
   $build['description'] = array(
-    '#markup' => '<p>'. t('Tokens are bracketed phrases you can use in certain text fields and boxes as placeholders for some other text. Tokens represent things like store variables, links to certain pages, order information, etc.  Tokens are used by including the token listed below in a text field that uses them.  The description for the textfields will alert you to which groups of tokens listed below may be used.') .'</p>',
+    '#markup' => '<p>' . t('Tokens are bracketed phrases you can use in certain text fields and boxes as placeholders for some other text. Tokens represent things like store variables, links to certain pages, order information, etc.  Tokens are used by including the token listed below in a text field that uses them.  The description for the textfields will alert you to which groups of tokens listed below may be used.') . '</p>',
   );
 
   return $build;
@@ -396,7 +396,7 @@ function uc_store_ubercart_help_tokens() {
 function uc_country_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
   return array(
-    '#theme'=> 'summary_overview',
+    '#theme' => 'summary_overview',
     '#summaries' => summarize_child_form_pages('admin/store/settings/countries/edit'),
   );
 }
@@ -422,15 +422,15 @@ function uc_country_import_form($form, &$form_state) {
 
       $ops = array();
       if ($country->version < 0) {
-        $ops[] = l(t('enable'), 'admin/store/settings/countries/'. $country->country_id .'/enable');
+        $ops[] = l(t('enable'), 'admin/store/settings/countries/' . $country->country_id . '/enable');
       }
       else {
-        $ops[] = l(t('disable'), 'admin/store/settings/countries/'. $country->country_id .'/disable');
+        $ops[] = l(t('disable'), 'admin/store/settings/countries/' . $country->country_id . '/disable');
       }
       if ($country->version < $files[$country->country_id]['version'] && $country->version > 0) {
-        $ops[] = l(t('update'), 'admin/store/settings/countries/'. $country->country_id .'/update/'. $files[$country->country_id]['version']);
+        $ops[] = l(t('update'), 'admin/store/settings/countries/' . $country->country_id . '/update/' . $files[$country->country_id]['version']);
       }
-      $ops[] = l(t('remove'), 'admin/store/settings/countries/'. $country->country_id .'/remove');
+      $ops[] = l(t('remove'), 'admin/store/settings/countries/' . $country->country_id . '/remove');
       $row[] = implode(' ', $ops);
 
       $rows[] = $row;
@@ -559,8 +559,8 @@ function uc_country_formats_form($form, &$form_state) {
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
-    '#prefix' => '<div><p>'. t('The following variables should be used in configuring addresses for the countries you ship to:') . '</p>',
-    '#suffix' => '<p>'. t('*Adding _if to any country variable will make it only display for addresses<br />whose country is different than the default store country.') .'</p></div>',
+    '#prefix' => '<div><p>' . t('The following variables should be used in configuring addresses for the countries you ship to:') . '</p>',
+    '#suffix' => '<p>' . t('*Adding _if to any country variable will make it only display for addresses<br />whose country is different than the default store country.') . '</p></div>',
   );
 
   $countries = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC")->fetchAll();
@@ -580,7 +580,7 @@ function uc_country_formats_form($form, &$form_state) {
       $form['countries'][$country->country_id]['address_format'] = array(
         '#type' => 'textarea',
         '#title' => t('Address format'),
-        '#default_value' => variable_get('uc_address_format_'. $country->country_id, ''),
+        '#default_value' => variable_get('uc_address_format_' . $country->country_id, ''),
         '#description' => t('Uses the variables mentioned in the instructions to format an address for this country.'),
         '#rows' => 6,
       );
@@ -600,7 +600,7 @@ function uc_country_formats_form($form, &$form_state) {
  */
 function uc_country_formats_form_submit($form, &$form_state) {
   foreach ($form_state['values']['countries'] as $country_id => $data) {
-    variable_set('uc_address_format_'. $country_id, $data['address_format']);
+    variable_set('uc_address_format_' . $country_id, $data['address_format']);
   }
   drupal_set_message(t('Country settings saved.'));
 }
@@ -744,7 +744,7 @@ function uc_store_display_settings_form($form, &$form_state) {
     break;
 
     default:
-      $user_footer = '"'. $options[variable_get('uc_footer_message', 0)] .'"';
+      $user_footer = '"' . $options[variable_get('uc_footer_message', 0)] . '"';
     break;
   }
 
@@ -825,7 +825,7 @@ function uc_store_format_settings_form($form, &$form_state) {
     '#collapsed' => TRUE,
   );
   $form['weight']['instructions'] = array(
-    '#markup' => '<div>'. t('Supply a format string for each unit. !value represents the weight value.') .'</div>',
+    '#markup' => '<div>' . t('Supply a format string for each unit. !value represents the weight value.') . '</div>',
     '#summary callback' => 'summarize_null',
   );
   $units = array(
@@ -843,11 +843,11 @@ function uc_store_format_settings_form($form, &$form_state) {
     '#options' => $units,
   );
   foreach ($units as $unit => $name) {
-    $form['weight']['uc_weight_format_'. $unit] = array(
+    $form['weight']['uc_weight_format_' . $unit] = array(
       '#type' => 'textfield',
       '#title' => t('@unit format string', array('@unit' => $name)),
       '#summary callback' => 'summarize_null',
-      '#default_value' => variable_get('uc_weight_format_'. $unit, '!value '. $unit),
+      '#default_value' => variable_get('uc_weight_format_' . $unit, '!value ' . $unit),
     );
   }
 
@@ -859,7 +859,7 @@ function uc_store_format_settings_form($form, &$form_state) {
     '#collapsed' => TRUE,
   );
   $form['length']['instructions'] = array(
-    '#markup' => '<div>'. t('Supply a format string for each unit. !value represents the weight value.') .'</div>',
+    '#markup' => '<div>' . t('Supply a format string for each unit. !value represents the weight value.') . '</div>',
   );
   $units = array(
     'in' => t('Inches'),
@@ -874,10 +874,10 @@ function uc_store_format_settings_form($form, &$form_state) {
     '#options' => $units,
   );
   foreach ($units as $unit => $name) {
-    $form['length']['uc_length_format_'. $unit] = array(
+    $form['length']['uc_length_format_' . $unit] = array(
       '#type' => 'textfield',
       '#title' => t('@unit format string', array('@unit' => $name)),
-      '#default_value' => variable_get('uc_store_length_format_'. $unit, '!value '. $unit),
+      '#default_value' => variable_get('uc_store_length_format_' . $unit, '!value ' . $unit),
     );
   }
 
@@ -889,7 +889,7 @@ function uc_store_format_settings_form($form, &$form_state) {
     '#collapsed' => TRUE,
   );
   $form['date']['instructions'] = array(
-    '#markup' => '<div>'. t('Supply a format string using !link syntax.', array('!link' => l(t('PHP date'), 'http://www.php.net/date'))) .'</div>',
+    '#markup' => '<div>' . t('Supply a format string using !link syntax.', array('!link' => l(t('PHP date'), 'http://www.php.net/date'))) . '</div>',
     '#summary callback' => 'summarize_form',
   );
   $form['date']['uc_date_format_default'] = array(
@@ -939,11 +939,11 @@ function uc_store_initials_submit($form, &$form_state) {
   $result = db_query("SELECT uid FROM {users} WHERE name = :name", array(':name' => $form_state['values']['username']));
   if ($user = $result->fetchObject()) {
     if ($form_state['values']['initials'] == '') {
-      variable_del('user_initials_'. $user->uid);
+      variable_del('user_initials_' . $user->uid);
       drupal_set_message(t('Initials for !username deleted.', array('!username' => $form_state['values']['username'])));
     }
     else {
-      variable_set('user_initials_'. $user->uid, $form_state['values']['initials']);
+      variable_set('user_initials_' . $user->uid, $form_state['values']['initials']);
       drupal_set_message(t('Initials for !username set to !initials.',
                            array('!username' => $form_state['values']['username'],
                                  '!initials' => $form_state['values']['initials'])));
@@ -955,8 +955,8 @@ function uc_store_initials_submit($form, &$form_state) {
  * List of extensible TAPIr tables used by Ubercart.
  */
 function uc_store_tables() {
-  $output = '<p>'. t('The following tables are used to display various parts of your store to your administrators and customers. Click on a table id to configure the display of that table.');
-  $output .= '<p>'. tapir_table_list('admin/store/settings/tables') .'</p>';
+  $output = '<p>' . t('The following tables are used to display various parts of your store to your administrators and customers. Click on a table id to configure the display of that table.');
+  $output .= '<p>' . tapir_table_list('admin/store/settings/tables') . '</p>';
 
   return $output;
 }
@@ -986,11 +986,11 @@ function uc_store_customer_orders($uid) {
   $totals = array('orders' => 0, 'items' => 0, 'total' => 0);
   foreach ($result as $order) {
     $icons = l(uc_store_get_icon('file:order_view'),
-               'admin/store/orders/'. $order->order_id,
+               'admin/store/orders/' . $order->order_id,
                array('html' => TRUE, 'attributes' => array('title' => t("View order !order_id.", array('!order_id' => $order->order_id))))
              )
            . l(uc_store_get_icon('file:order_edit'),
-               'admin/store/orders/'. $order->order_id .'/edit',
+               'admin/store/orders/' . $order->order_id . '/edit',
                array('html' => TRUE, 'attributes' =>
                  array(
                    'title' => t("Edit order !order_id.",
@@ -999,9 +999,9 @@ function uc_store_customer_orders($uid) {
                  )
                )
              );
-    $bname = ucfirst($order->billing_first_name) .' '
+    $bname = ucfirst($order->billing_first_name) . ' '
            . ucfirst($order->billing_last_name);
-    $sname = ucfirst($order->delivery_first_name) .' '
+    $sname = ucfirst($order->delivery_first_name) . ' '
            . ucfirst($order->delivery_last_name);
     $item_count = db_query("SELECT COUNT(*) FROM {uc_order_products} WHERE order_id = :order_id", array(':order_id' => $order->order_id))->fetchField();
 
@@ -1018,7 +1018,7 @@ function uc_store_customer_orders($uid) {
         array('data' => check_plain($sname)),
         array('data' => $item_count['COUNT(*)']),
         array('data' => uc_price($order->order_total, $context), 'nowrap' => 'nowrap')),
-      'id' => 'order-'. $order->order_id,
+      'id' => 'order-' . $order->order_id,
     );
   }
   if (empty($rows)) {
@@ -1027,7 +1027,7 @@ function uc_store_customer_orders($uid) {
     );
   }
 
-  drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_store.js');
+  drupal_add_js(drupal_get_path('module', 'uc_store') . '/uc_store.js');
 
   $build = array();
 
@@ -1038,18 +1038,18 @@ function uc_store_customer_orders($uid) {
 
   if (user_access('create orders')) {
     $build['order_link'] = array(
-      '#markup' => '<p>'. l(t('Create an order for this customer.'), 'admin/store/orders/create/'. $uid) .'</p>',
+      '#markup' => '<p>' . l(t('Create an order for this customer.'), 'admin/store/orders/create/' . $uid) . '</p>',
       '#weight' => -10,
     );
   }
 
   $build['description'] = array(
-    '#markup' => '<p>'. t('!totals_orders orders shown match that account with !totals_items items purchased and !totals_total spent:',
+    '#markup' => '<p>' . t('!totals_orders orders shown match that account with !totals_items items purchased and !totals_total spent:',
        array(
          '!totals_orders' => $totals['orders'],
          '!totals_items' => $totals['items'],
          '!totals_total' => uc_price($totals['total'], $context)
-       )) .'</p>',
+       )) . '</p>',
   );
   $build['orders'] = array(
     '#theme' => 'table',
@@ -1160,11 +1160,11 @@ function uc_country_remove_form_submit($form, &$form_state) {
   db_delete('uc_zones')
     ->condition('country_id', $country_id)
     ->execute();
-  variable_del('uc_address_format_'. $country_id);
+  variable_del('uc_address_format_' . $country_id);
 
   $func_base = _country_import_include($country_id, $country->version);
   if ($func_base !== FALSE) {
-    $func = $func_base .'_uninstall';
+    $func = $func_base . '_uninstall';
     if (function_exists($func)) {
       $func();
     }
@@ -1191,7 +1191,7 @@ function uc_country_update($country_id, $version) {
 
   $func_base = _country_import_include($country_id, $version);
   if ($func_base !== FALSE) {
-    $func = $func_base .'_update';
+    $func = $func_base . '_update';
     if (function_exists($func)) {
       for ($i = $country->version; $i <= $version; $i++) {
         $func($i);
@@ -1237,7 +1237,7 @@ function uc_price_settings_form($form, &$form_state) {
       $description = $data['alter']['title'];
 
       if (!empty($data['alter']['description'])) {
-        $description .= '<div class="description">'. $data['alter']['description'] .'</div>';
+        $description .= '<div class="description">' . $data['alter']['description'] . '</div>';
       }
 
       $form['uc_price_alterers'][$module]['module'] = array(
@@ -1259,7 +1259,7 @@ function uc_price_settings_form($form, &$form_state) {
       $description = $data['format']['title'];
 
       if (!empty($data['format']['description'])) {
-        $description .= '<div class="description">'. $data['format']['description'] .'</div>';
+        $description .= '<div class="description">' . $data['format']['description'] . '</div>';
       }
 
       $options[$data['format']['callback']] = $description;
@@ -1267,7 +1267,7 @@ function uc_price_settings_form($form, &$form_state) {
   }
 
   $form['price_alterers_description'] = array(
-    '#markup' => '<div class="description">'. t('Prices will be altered by enabled price alterers in their order in the table above.') .'</div>',
+    '#markup' => '<div class="description">' . t('Prices will be altered by enabled price alterers in their order in the table above.') . '</div>',
   );
 
   $form['uc_price_format_callback'] = array(
@@ -1280,7 +1280,7 @@ function uc_price_settings_form($form, &$form_state) {
   $form['uc_price_caching'] = array(
     '#type' => 'checkbox',
     '#title' => t('Cache generated price values until the next cron run.'),
-    '#description' => t('It may be helpful to disable caching while configuring modules that alter prices or price displays.') .'<br />'. t("For high traffic sites or sites with multiple price alterers, leaving this disabled may hurt the site's performance."),
+    '#description' => t('It may be helpful to disable caching while configuring modules that alter prices or price displays.') . '<br />' . t("For high traffic sites or sites with multiple price alterers, leaving this disabled may hurt the site's performance."),
     '#default_value' => variable_get('uc_price_caching', TRUE),
   );
 

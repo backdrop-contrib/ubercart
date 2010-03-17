@@ -47,7 +47,7 @@ function uc_usps_theme() {
  *
  * @see uc_product_form()
  */
-function uc_usps_form_alter(&$form, $form_state, $form_id) {
+function uc_usps_form_alter(&$form, &$form_state, $form_id) {
   if (uc_product_is_product_form($form)) {
     $node = $form['#node'];
     $enabled = variable_get('uc_quote_enabled', array());
@@ -389,8 +389,8 @@ function uc_usps_uc_shipping_method() {
  *   JSON object containing rate, error, and debugging information.
  */
 function uc_usps_quote($products, $details, $method) {
-  //drupal_set_message('<pre>'. print_r($products, TRUE) .'</pre>');
-  //drupal_set_message('<pre>'. print_r($details, TRUE) .'</pre>');
+  //drupal_set_message('<pre>' . print_r($products, TRUE) . '</pre>');
+  //drupal_set_message('<pre>' . print_r($details, TRUE) . '</pre>');
   $services = array();
   $addresses = array((array)variable_get('uc_quote_store_default_address', new stdClass()));
   $packages = _uc_usps_package_products($products, $addresses);
@@ -402,7 +402,7 @@ function uc_usps_quote($products, $details, $method) {
 
   $usps_server = 'production.shippingapis.com';
   $api_dll = 'ShippingAPI.dll';
-  $connection_url = 'http://'. $usps_server .'/'. $api_dll;
+  $connection_url = 'http://' . $usps_server . '/' . $api_dll;
 
   foreach ($packages as $key => $ship_packages) {
     $orig = (object)$addresses[$key];
@@ -416,7 +416,7 @@ function uc_usps_quote($products, $details, $method) {
     }
 
     if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
-      $services['data']['debug'] .= htmlentities(urldecode($request)) ."<br />\n";
+      $services['data']['debug'] .= htmlentities(urldecode($request)) . "<br />\n";
     }
 
     $result = drupal_http_request($connection_url, array(
@@ -425,7 +425,7 @@ function uc_usps_quote($products, $details, $method) {
     ));
 
     if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
-      $services['data']['debug'] .= htmlentities($result->data) ."<br />\n";
+      $services['data']['debug'] .= htmlentities($result->data) . "<br />\n";
     }
 
     $response = new SimpleXMLElement($result->data);
@@ -433,7 +433,7 @@ function uc_usps_quote($products, $details, $method) {
     if (isset($response->Package)) {
       foreach ($response->Package as $package) {
         if (isset($package->Error)) {
-          $services['data']['error'] .= (string)$package->Error[0]->Description .'<br />';
+          $services['data']['error'] .= (string)$package->Error[0]->Description . '<br />';
         }
         else {
           if (strpos($method['id'], 'intl')) {
@@ -466,8 +466,8 @@ function uc_usps_quote($products, $details, $method) {
     }
   }
 
-  $method_services = 'uc_'. $method['id'] .'_services';
-  $usps_services = array_filter(variable_get($method_services, array_keys(call_user_func('_'. $method_services))));
+  $method_services = 'uc_' . $method['id'] . '_services';
+  $usps_services = array_filter(variable_get($method_services, array_keys(call_user_func('_' . $method_services))));
   foreach ($services as $service => $quote) {
     if ($service != 'data' && !in_array($service, $usps_services)) {
       unset($services[$service]);
@@ -505,7 +505,7 @@ function theme_uc_usps_option_label($variables) {
   $service = $variables['service'];
 
   // Start with logo
-  $output = '<img class="usps-logo" src="'. url(drupal_get_path('module', 'uc_usps')) .'/uc_usps_logo.gif" alt="'. t('USPS Logo') .'" /> ';
+  $output = '<img class="usps-logo" src="' . url(drupal_get_path('module', 'uc_usps')) . '/uc_usps_logo.gif" alt="' . t('USPS Logo') . '" /> ';
 
   // Add USPS service name, removing the first nine characters
   // (== 'U.S.P.S. ') because these replicate the logo image
@@ -527,22 +527,22 @@ function theme_uc_usps_option_label($variables) {
  *   RateV3Request XML document to send to USPS
  */
 function uc_usps_rate_request($packages, $origin, $destination) {
-  $request  = '<RateV3Request USERID="'. variable_get('uc_usps_user_id', '') .'">';
+  $request  = '<RateV3Request USERID="' . variable_get('uc_usps_user_id', '') . '">';
   $services_count = 0;
   $rate_type = variable_get('uc_usps_online_rates', FALSE);
 
   foreach ($packages as $package) {
     $qty = $package->qty;
     for ($i = 0; $i < $qty; $i++) {
-      $request .= '<Package ID="'. $services_count .'">'.
-        '<Service>'. ($rate_type ? 'ONLINE' : 'ALL') .'</Service>'.
-        '<ZipOrigination>'. substr($origin->postal_code, 0, 5) .'</ZipOrigination>'.
-        '<ZipDestination>'. substr($destination->postal_code, 0, 5) .'</ZipDestination>'.
-        '<Pounds>'. intval($package->pounds) .'</Pounds>'.
-        '<Ounces>'. number_format($package->ounces, 1, '.', '') .'</Ounces>'.
-        '<Container>'. $package->container .'</Container>'.
-        '<Size>'. $package->size .'</Size>'.
-        '<Machinable>'. ($package->machinable ? 'True' : 'False') .'</Machinable>'.
+      $request .= '<Package ID="' . $services_count . '">' .
+        '<Service>' . ($rate_type ? 'ONLINE' : 'ALL') . '</Service>' .
+        '<ZipOrigination>' . substr($origin->postal_code, 0, 5) . '</ZipOrigination>' .
+        '<ZipDestination>' . substr($destination->postal_code, 0, 5) . '</ZipDestination>' .
+        '<Pounds>' . intval($package->pounds) . '</Pounds>' .
+        '<Ounces>' . number_format($package->ounces, 1, '.', '') . '</Ounces>' .
+        '<Container>' . $package->container . '</Container>' .
+        '<Size>' . $package->size . '</Size>' .
+        '<Machinable>' . ($package->machinable ? 'True' : 'False') . '</Machinable>' .
         '</Package>';
 
       $services_count++;
@@ -550,7 +550,7 @@ function uc_usps_rate_request($packages, $origin, $destination) {
   }
   $request .= '</RateV3Request>';
 
-  return 'API=RateV3&XML='. drupal_urlencode($request);
+  return 'API=RateV3&XML=' . drupal_urlencode($request);
 }
 
 /**
@@ -567,7 +567,7 @@ function uc_usps_rate_request($packages, $origin, $destination) {
  */
 function uc_usps_intl_rate_request($packages, $origin, $destination) {
   module_load_include('inc', 'uc_usps', 'uc_usps.countries');
-  $request  = '<IntlRateRequest USERID="'. variable_get('uc_usps_user_id', '') .'">';
+  $request  = '<IntlRateRequest USERID="' . variable_get('uc_usps_user_id', '') . '">';
   $services_count = 0;
 
   // This needs to be international name per USPS website. See http://pe.usps.com/text/Imm/immctry.htm
@@ -576,11 +576,11 @@ function uc_usps_intl_rate_request($packages, $origin, $destination) {
   foreach ($packages as $package) {
     $qty = $package->qty;
     for ($i = 0; $i < $qty; $i++) {
-      $request .= '<Package ID="'. $services_count .'">'.
-        '<Pounds>'. intval($package->pounds) .'</Pounds>'.
-        '<Ounces>'. ceil($package->ounces) .'</Ounces>'.
-        '<MailType>Package</MailType>'.
-        '<Country>'. $shipto_country .'</Country>'.
+      $request .= '<Package ID="' . $services_count . '">' .
+        '<Pounds>' . intval($package->pounds) . '</Pounds>' .
+        '<Ounces>' . ceil($package->ounces) . '</Ounces>' .
+        '<MailType>Package</MailType>' .
+        '<Country>' . $shipto_country . '</Country>' .
         '</Package>';
 
       $services_count++;
@@ -588,7 +588,7 @@ function uc_usps_intl_rate_request($packages, $origin, $destination) {
   }
   $request .= '</IntlRateRequest>';
 
-  $request = 'API=IntlRate&XML='. drupal_urlencode($request);
+  $request = 'API=IntlRate&XML=' . drupal_urlencode($request);
   return $request;
 }
 

@@ -21,7 +21,7 @@ function uc_order_pane_ship_to($op, $arg1) {
         return;
       }
     case 'view':
-      $build = array('#markup' => uc_order_address($arg1, 'delivery') .'<br />'. check_plain($arg1->delivery_phone));
+      $build = array('#markup' => uc_order_address($arg1, 'delivery') . '<br />' . check_plain($arg1->delivery_phone));
       return $build;
 
     case 'edit-form':
@@ -70,10 +70,10 @@ function uc_order_pane_ship_to($op, $arg1) {
       return $form;
 
     case 'edit-title':
-      $output .= ' <img src="'. base_path() . drupal_get_path('module', 'uc_store')
-                .'/images/address_book.gif" alt="'. t('Select from address book.') .'" '
-                .'title="'. t('Select from address book.') .'" onclick="load_address_select('. $arg1['order_uid']['#value'] .', \'#delivery_address_select\', \'delivery\');" '
-                .'style="position: relative; top: 2px; cursor: pointer;" />';
+      $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
+                . '/images/address_book.gif" alt="' . t('Select from address book.') . '" '
+                . 'title="' . t('Select from address book.') . '" onclick="load_address_select(' . $arg1['order_uid']['#value'] . ', \'#delivery_address_select\', \'delivery\');" '
+                . 'style="position: relative; top: 2px; cursor: pointer;" />';
       return $output;
 
     case 'edit-theme':
@@ -81,8 +81,8 @@ function uc_order_pane_ship_to($op, $arg1) {
       foreach (element_children($arg1['ship_to']) as $field) {
         $title = $arg1['ship_to'][$field]['#title'];
         $arg1['ship_to'][$field]['#title'] = NULL;
-        $output .= '<tr><td class="oet-label">'. $title .':</td><td>'
-                 . drupal_render($arg1['ship_to'][$field]) .'</td></tr>';
+        $output .= '<tr><td class="oet-label">' . $title . ':</td><td>'
+                 . drupal_render($arg1['ship_to'][$field]) . '</td></tr>';
       }
       $output .= '</table>';
       return $output;
@@ -106,7 +106,7 @@ function uc_order_pane_bill_to($op, $arg1) {
   switch ($op) {
     case 'view':
     case 'customer':
-      $build = array('#markup' => uc_order_address($arg1, 'billing') .'<br />'. check_plain($arg1->billing_phone));
+      $build = array('#markup' => uc_order_address($arg1, 'billing') . '<br />' . check_plain($arg1->billing_phone));
       return $build;
 
     case 'edit-form':
@@ -155,14 +155,14 @@ function uc_order_pane_bill_to($op, $arg1) {
       return $form;
 
     case 'edit-title':
-      $output .= ' <img src="'. base_path() . drupal_get_path('module', 'uc_store')
-                .'/images/address_book.gif" alt="'. t('Select from address book.') .'" '
-                .'title="'. t('Select from address book.') .'" onclick="load_address_select('. $arg1['order_uid']['#value'] .', \'#billing_address_select\', \'billing\');" '
-                .'style="position: relative; top: 2px; cursor: pointer;" />';
-      $output .= ' <img src="'. base_path() . drupal_get_path('module', 'uc_store')
-               .'/images/copy.gif" alt="'. t('Copy shipping information.') .'" title="'
-               . t('Copy shipping information.') .'" onclick="uc_order_copy_shipping_to_billing();" '
-               .'style="position: relative; top: 2px; cursor: pointer;" />';
+      $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
+                . '/images/address_book.gif" alt="' . t('Select from address book.') . '" '
+                . 'title="' . t('Select from address book.') . '" onclick="load_address_select(' . $arg1['order_uid']['#value'] . ', \'#billing_address_select\', \'billing\');" '
+                . 'style="position: relative; top: 2px; cursor: pointer;" />';
+      $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
+               . '/images/copy.gif" alt="' . t('Copy shipping information.') . '" title="'
+               . t('Copy shipping information.') . '" onclick="uc_order_copy_shipping_to_billing();" '
+               . 'style="position: relative; top: 2px; cursor: pointer;" />';
       return $output;
 
     case 'edit-theme':
@@ -170,8 +170,8 @@ function uc_order_pane_bill_to($op, $arg1) {
       foreach (element_children($arg1['bill_to']) as $field) {
         $title = $arg1['bill_to'][$field]['#title'];
         $arg1['bill_to'][$field]['#title'] = NULL;
-        $output .= '<tr><td class="oet-label">'. $title .':</td><td>'
-                 . drupal_render($arg1['bill_to'][$field]) .'</td></tr>';
+        $output .= '<tr><td class="oet-label">' . $title . ':</td><td>'
+                 . drupal_render($arg1['bill_to'][$field]) . '</td></tr>';
       }
       $output .= '</table>';
       return $output;
@@ -194,8 +194,8 @@ function uc_order_pane_bill_to($op, $arg1) {
 function uc_order_pane_customer($op, $arg1) {
   switch ($op) {
     case 'view':
-      $build['uid'] = array('#markup' => t('Customer number: !user_link', array('!user_link' => $arg1->uid ? l($arg1->uid, 'user/'. $arg1->uid) : '0')));
-      $build['primary_email'] = array('#markup' => '<br />' . t('Primary e-mail:') .'<br />' . check_plain($arg1->primary_email));
+      $build['uid'] = array('#markup' => t('Customer number: !user_link', array('!user_link' => $arg1->uid ? l($arg1->uid, 'user/' . $arg1->uid) : '0')));
+      $build['primary_email'] = array('#markup' => '<br />' . t('Primary e-mail:') . '<br />' . check_plain($arg1->primary_email));
 
       return $build;
 
@@ -233,14 +233,14 @@ function uc_order_pane_customer($op, $arg1) {
       return $form;
 
     case 'edit-title':
-      $output .= ' <img src="'. base_path() . drupal_get_path('module', 'uc_store')
-                .'/images/order_view.gif" alt="'. t('Search for an existing customer.') .'" '
-                .'title="'. t('Search for an existing customer.') .'" onclick="load_customer_search();" '
-                .'style="position: relative; top: 2px; cursor: pointer;" />';
-      $output .= ' <img src="'. base_path() . drupal_get_path('module', 'uc_store')
-                .'/images/menu_customers_small.gif" alt="'. t('Create a new customer.') .'" '
-                .'title="'. t('Create a new customer.') .'" onclick="load_new_customer_form();" '
-                .'style="position: relative; top: 2px; cursor: pointer;" />';
+      $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
+                . '/images/order_view.gif" alt="' . t('Search for an existing customer.') . '" '
+                . 'title="' . t('Search for an existing customer.') . '" onclick="load_customer_search();" '
+                . 'style="position: relative; top: 2px; cursor: pointer;" />';
+      $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
+                . '/images/menu_customers_small.gif" alt="' . t('Create a new customer.') . '" '
+                . 'title="' . t('Create a new customer.') . '" onclick="load_new_customer_form();" '
+                . 'style="position: relative; top: 2px; cursor: pointer;" />';
       return $output;
 
     case 'edit-theme':
@@ -248,10 +248,10 @@ function uc_order_pane_customer($op, $arg1) {
       foreach (element_children($arg1['customer']['text']) as $field) {
         $title = $arg1['customer']['text'][$field]['#title'];
         $arg1['customer']['text'][$field]['#title'] = NULL;
-        $output .= '<tr><td class="oet-label">'. $title .':</td><td>'
-                 . drupal_render($arg1['customer']['text'][$field]) .'</td></tr>';
+        $output .= '<tr><td class="oet-label">' . $title . ':</td><td>'
+                 . drupal_render($arg1['customer']['text'][$field]) . '</td></tr>';
       }
-      $output .= '</table>'. drupal_render($arg1['customer']['primary_email'])
+      $output .= '</table>' . drupal_render($arg1['customer']['primary_email'])
                . drupal_render($arg1['customer']['uid']);
       return $output;
 
@@ -274,10 +274,10 @@ function uc_order_pane_products($op, $arg1) {
       return tapir_get_table('op_products_customer_table', $arg1);
 
     case 'edit-theme':
-      drupal_add_js('uc_order_load_product_edit_div('. $arg1['order_id']['#value'] .');', 'inline');
+      drupal_add_js('uc_order_load_product_edit_div(' . $arg1['order_id']['#value'] . ');', 'inline');
 
       $output = '<div id="products-selector"></div>'
-               .'<div id="products-container">'. t('Loading product information... (<em>If nothing happens, make sure you have Javascript enabled.</em>)') .'</div>';
+               . '<div id="products-container">' . t('Loading product information... (<em>If nothing happens, make sure you have Javascript enabled.</em>)') . '</div>';
       return $output;
 
     case 'edit-title':
@@ -294,13 +294,13 @@ function uc_order_pane_products($op, $arg1) {
         'select' => 'add_product_form();',
       );
 
-      $output = '<input type="button" value="'. t('Add product')
-               .'" onclick="load_product_select('. $arg1['order_id']['#value']
-               .', false);" id="add-product-button" />';
+      $output = '<input type="button" value="' . t('Add product')
+               . '" onclick="load_product_select(' . $arg1['order_id']['#value']
+               . ', false);" id="add-product-button" />';
 
-      $output .= '<input type="button" value="'. t('Add blank line')
-                .'" onclick="add_blank_line_button('. $arg1['order_id']['#value']
-                .');" />';
+      $output .= '<input type="button" value="' . t('Add blank line')
+                . '" onclick="add_blank_line_button(' . $arg1['order_id']['#value']
+                . ');" />';
       $output .= ' <span id="product-div-throbber"></span>';
       return $output;
   }
@@ -441,13 +441,13 @@ function uc_order_pane_line_items($op, $arg1) {
             '#default_value' => $item['title'],
             '#size' => 40,
             '#maxlength' => 128,
-            '#prefix' => '<img id="li-'. $item['line_item_id'] .'" src="'
+            '#prefix' => '<img id="li-' . $item['line_item_id'] . '" src="'
                        . base_path() . drupal_get_path('module', 'uc_store')
-                        .'/images/error.gif" alt="'. t('Remove line item.')
-                        .'" title="'. t('Remove line item.') .'" style="'
-                        .'cursor: pointer; position: relative; top: 3px;" '
-                        .'onclick="confirm_line_item_delete(\''
-                       . addslashes(t('Remove this line item?')) .'\', this.id);" />',
+                        . '/images/error.gif" alt="' . t('Remove line item.')
+                        . '" title="' . t('Remove line item.') . '" style="'
+                        . 'cursor: pointer; position: relative; top: 3px;" '
+                        . 'onclick="confirm_line_item_delete(\''
+                       . addslashes(t('Remove this line item?')) . '\', this.id);" />',
           );
           $form['line_items'][$item['line_item_id']]['amount'] = array(
             '#type' => 'textfield',
@@ -474,21 +474,21 @@ function uc_order_pane_line_items($op, $arg1) {
     case 'edit-theme':
       $arg1['add_line_item']['li_type_select']['#title'] = '';
       $output = '<table class="full-width"><tr><td>';
-      $output .= '<table><tr><td colspan="2"><b>'. t('Add a line item')
-                .': </b></td></tr><tr><td>'. drupal_render($arg1['add_line_item']['li_type_select'])
-                .' </td><td>'. drupal_render($arg1['add_line_item']['submit'])
-                .'</td></tr></table>';
-      $output .= '</td><td>'. drupal_render($arg1['li_delete_id'])
-                .'<table class="line-item-table">';
+      $output .= '<table><tr><td colspan="2"><b>' . t('Add a line item')
+                . ': </b></td></tr><tr><td>' . drupal_render($arg1['add_line_item']['li_type_select'])
+                . ' </td><td>' . drupal_render($arg1['add_line_item']['submit'])
+                . '</td></tr></table>';
+      $output .= '</td><td>' . drupal_render($arg1['li_delete_id'])
+                . '<table class="line-item-table">';
       foreach (element_children($arg1['line_items']) as $field) {
         $arg1['line_items'][$field]['title']['#title'] = '';
         $arg1['line_items'][$field]['amount']['#title'] = '';
         $output .= '<tr><td class="li-title">'
                  . drupal_render($arg1['line_items'][$field]['li_id'])
                  . drupal_render($arg1['line_items'][$field]['title'])
-                  .':</td><td class="li-amount" nowrap>'
+                  . ':</td><td class="li-amount" nowrap>'
                  . drupal_render($arg1['line_items'][$field]['amount'])
-                  .'</td></tr>';
+                  . '</td></tr>';
       }
       $output .= '</table></td></tr></table>';
       return $output;
@@ -511,8 +511,8 @@ function uc_order_pane_line_items($op, $arg1) {
       return array(t('Add line'));
 
     case t('Add line'):
-      drupal_goto('admin/store/orders/'. $arg1['order_id']
-                 .'/add_line_item/'. $arg1['li_type_select']);
+      drupal_goto('admin/store/orders/' . $arg1['order_id']
+                 . '/add_line_item/' . $arg1['li_type_select']);
   }
 }
 
@@ -581,7 +581,7 @@ function uc_order_pane_admin_comments($op, $arg1) {
       $comments = uc_order_comments_load($arg1['order_id']['#value'], TRUE);
       if (is_array($comments) && count($comments) > 0) {
         foreach ($comments as $comment) {
-          $items[] = '['. uc_get_initials($comment->uid) .'] '. filter_xss_admin($comment->message);
+          $items[] = '[' . uc_get_initials($comment->uid) . '] ' . filter_xss_admin($comment->message);
         }
       }
       else {
@@ -690,7 +690,7 @@ function uc_order_view_update_form($form, &$form_state, $order) {
  * @see uc_order_view_update_form()
  */
 function theme_uc_order_view_update_controls($variables) {
-  return '<div class="update-controls">'. drupal_render($variables['form']) .'</div>';
+  return '<div class="update-controls">' . drupal_render($variables['form']) . '</div>';
 }
 
 /**
@@ -791,7 +791,7 @@ function op_products_view_table($order) {
     foreach ($order->products as $product) {
       $data = array();
       $data['qty'] = array(
-        '#value' => $product->qty .'&times;',
+        '#value' => $product->qty . '&times;',
         '#cell_attributes' => array('align' => 'right'),
       );
       $data['product'] = array(
@@ -907,7 +907,7 @@ function op_products_customer_table($order) {
     foreach ($order->products as $product) {
       $data = array();
       $data['qty'] = array(
-        '#value' => $product->qty .'&times;',
+        '#value' => $product->qty . '&times;',
         '#cell_attributes' => array('align' => 'right'),
       );
       $data['product'] = array(
@@ -989,7 +989,7 @@ function op_order_comments_view_table($comments) {
     foreach ($comments as $comment) {
       $data = array();
       $data['date'] = array(
-        '#value' => format_date($comment->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y') .'<\b\r />g:i:s A'),
+        '#value' => format_date($comment->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y') . '<\b\r />g:i:s A'),
         '#cell_attributes' => array('align' => 'center', 'nowrap' => 'true'),
       );
       $data['user'] = array(
@@ -998,8 +998,8 @@ function op_order_comments_view_table($comments) {
       );
       $data['notified'] = array(
         '#value' => (($comment->notified == 1)
-          ? '<img src="'. base_path() . drupal_get_path('module', 'uc_order') .'/images/true-icon.gif" />'
-          : '<img src="'. base_path() . drupal_get_path('module', 'uc_order') .'/images/false-icon.gif" />'),
+          ? '<img src="' . base_path() . drupal_get_path('module', 'uc_order') . '/images/true-icon.gif" />'
+          : '<img src="' . base_path() . drupal_get_path('module', 'uc_order') . '/images/false-icon.gif" />'),
         '#cell_attributes' => array('align' => 'center'),
       );
       $data['status'] = array(
@@ -1049,7 +1049,7 @@ function op_admin_comments_view_table($comments) {
     foreach ($comments as $comment) {
       $data = array();
       $data['date'] = array(
-        '#value' => format_date($comment->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y') .'<\b\r />g:i:s A'),
+        '#value' => format_date($comment->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y') . '<\b\r />g:i:s A'),
         '#cell_attributes' => array('align' => 'center', 'nowrap' => 'true', 'valign' => 'top'),
       );
       $data['user'] = array(
@@ -1086,8 +1086,8 @@ function _order_pane_list($view = 'view') {
 
   $panes = module_invoke_all('uc_order_pane', NULL);
   foreach ($panes as $i => $value) {
-    $panes[$i]['enabled'] = variable_get('uc_order_pane_'. $panes[$i]['id'] .'_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
-    $panes[$i]['weight'] = variable_get('uc_order_pane_'. $panes[$i]['id'] .'_weight_'. $view, (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));
+    $panes[$i]['enabled'] = variable_get('uc_order_pane_' . $panes[$i]['id'] . '_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
+    $panes[$i]['weight'] = variable_get('uc_order_pane_' . $panes[$i]['id'] . '_weight_' . $view, (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));
   }
   usort($panes, 'uc_weight_sort');
 

@@ -30,8 +30,8 @@ function uc_weightquote_admin_methods() {
     $row[] = check_plain($method->label);
     $row[] = uc_price($method->base_rate, $context);
     $row[] = uc_price($method->product_rate, $context);
-    $row[] = l(t('edit'), 'admin/store/settings/quotes/methods/weightquote/'. $method->mid);
-    $row[] = l(t('conditions'), CA_UI_PATH .'/uc_weightquote_get_quote_'. $method->mid .'/edit/conditions');
+    $row[] = l(t('edit'), 'admin/store/settings/quotes/methods/weightquote/' . $method->mid);
+    $row[] = l(t('conditions'), CA_UI_PATH . '/uc_weightquote_get_quote_' . $method->mid . '/edit/conditions');
     $rows[] = $row;
   }
   if (count($rows)) {
@@ -128,7 +128,7 @@ function uc_weightquote_admin_method_edit_form_validate($form, &$form_state) {
  * @see uc_weightquote_admin_method_edit_form()
  */
 function uc_weightquote_admin_method_edit_form_delete($form, &$form_state) {
-  drupal_goto('admin/store/settings/quotes/weightquote/'. $form_state['values']['mid'] .'/delete');
+  drupal_goto('admin/store/settings/quotes/weightquote/' . $form_state['values']['mid'] . '/delete');
 }
 
 /**
@@ -144,11 +144,11 @@ function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
     $mid = $form_state['values']['mid'];
 
     $enabled = variable_get('uc_quote_enabled', array());
-    $enabled['weightquote_'. $mid] = TRUE;
+    $enabled['weightquote_' . $mid] = TRUE;
     variable_set('uc_quote_enabled', $enabled);
 
     $weight = variable_get('uc_quote_method_weight', array());
-    $weight['weightquote_'. $mid] = 0;
+    $weight['weightquote_' . $mid] = 0;
     variable_set('uc_quote_method_weight', $weight);
 
     drupal_set_message(t("Created and enabled new weight quote shipping method."));
@@ -188,14 +188,14 @@ function uc_weightquote_admin_method_confirm_delete_submit($form, &$form_state) 
   db_delete('uc_weightquote_products')
     ->condition('mid', $mid)
     ->execute();
-  ca_delete_predicate('uc_weightquote_get_quote_'. $form_state['values']['mid']);
+  ca_delete_predicate('uc_weightquote_get_quote_' . $form_state['values']['mid']);
 
   $enabled = variable_get('uc_quote_enabled', array());
-  unset($enabled['weightquote_'. $mid]);
+  unset($enabled['weightquote_' . $mid]);
   variable_set('uc_quote_enabled', $enabled);
 
   $weight = variable_get('uc_quote_method_weight', array());
-  unset($weight['weightquote_'. $mid]);
+  unset($weight['weightquote_' . $mid]);
   variable_set('uc_quote_method_weight', $weight);
 
   drupal_set_message(t('Weight quote shipping method deleted.'));

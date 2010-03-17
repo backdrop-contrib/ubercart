@@ -10,13 +10,13 @@
 // Displays the credit card terminal page.
 function uc_credit_terminal($order) {
   $build['return'] = array(
-    '#markup' => l(t('Return to order view screen.'), 'admin/store/orders/'. $order->order_id),
+    '#markup' => l(t('Return to order view screen.'), 'admin/store/orders/' . $order->order_id),
   );
 
-  $build['instructions'] = array('#markup' => '<p>'. t('Use this terminal to process credit card payments through your default gateway.') .'</p>');
+  $build['instructions'] = array('#markup' => '<p>' . t('Use this terminal to process credit card payments through your default gateway.') . '</p>');
 
   if (!variable_get('uc_credit_debug', FALSE) || variable_get('uc_credit_checkout_process', TRUE)) {
-    $build['warning'] = array('#markup' => '<p>'. t('Be warned that credit card data will automatically be converted to the last 4 digits of the card once a transaction has occurred.  As such, subsequent charges after a partial payment will not have any stored credit card information to use.') .'</p>');
+    $build['warning'] = array('#markup' => '<p>' . t('Be warned that credit card data will automatically be converted to the last 4 digits of the card once a transaction has occurred.  As such, subsequent charges after a partial payment will not have any stored credit card information to use.') . '</p>');
   }
 
   $context = array(
@@ -26,8 +26,8 @@ function uc_credit_terminal($order) {
       'order' => $order,
     ),
   );
-  $build['details']['order_total'] = array('#markup' => '<div><strong>'. t('Order total: @total', array('@total' => uc_price($order->order_total, $context))) .'</strong></div>');
-  $build['details']['balance'] = array('#markup' => '<div><strong>'. t('Balance: @balance', array('@balance' => uc_price(uc_payment_balance($order), $context))) .'</strong></div>');
+  $build['details']['order_total'] = array('#markup' => '<div><strong>' . t('Order total: @total', array('@total' => uc_price($order->order_total, $context))) . '</strong></div>');
+  $build['details']['balance'] = array('#markup' => '<div><strong>' . t('Balance: @balance', array('@balance' => uc_price(uc_payment_balance($order), $context))) . '</strong></div>');
 
   $build['form'] = drupal_get_form('uc_credit_terminal_form', $order);
 
@@ -338,6 +338,6 @@ function uc_credit_terminal_form_submit($form, &$form_state) {
     drupal_set_message(t('There was an error processing the credit card.  See the admin comments for details.'), 'error');
   }
 
-  $form_state['redirect'] = 'admin/store/orders/'. $form_state['values']['order_id'];
+  $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'];
 }
 

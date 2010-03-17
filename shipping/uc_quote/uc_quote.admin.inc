@@ -193,7 +193,7 @@ function uc_quote_method_settings($form, &$form_state) {
         '#default_value' => $enabled[$id],
         '#summary callback' => 'summarize_checkbox',
         '#summary arguments' => array(
-          l(t('@method is enabled.', array('@method' => $title)), 'admin/store/settings/quotes/methods/'. $id),
+          l(t('@method is enabled.', array('@method' => $title)), 'admin/store/settings/quotes/methods/' . $id),
           '',
         ),
       );
@@ -225,7 +225,7 @@ function uc_quote_method_settings($form, &$form_state) {
     }
     foreach ($shipping_types as $id => $title) {
       $form['uc_quote_type_weight'][$id] = array('#type' => 'weight',
-        '#title' => $title . (is_array($method_types[$id]) ? ' ('. implode(', ', $method_types[$id]) .')' : ''),
+        '#title' => $title . (is_array($method_types[$id]) ? ' (' . implode(', ', $method_types[$id]) . ')' : ''),
         '#delta' => 5,
         '#default_value' => isset($weight[$id]) ? $weight[$id] : 0,
       );

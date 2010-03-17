@@ -51,7 +51,7 @@ function uc_quote_request_quotes() {
       if ($key == 'country' AND $value == '') {
         $value = variable_get('uc_store_country', 840);
       }
-      $field = $type .'_'. $key;
+      $field = $type . '_' . $key;
       $fake_order->$field = $value;
     }
   }
@@ -60,12 +60,12 @@ function uc_quote_request_quotes() {
   $fake_order->order_total = uc_order_get_total($fake_order, TRUE);
   // Get all quote types neccessary to fulfill order.
   $quote_data = _uc_quote_assemble_quotes($fake_order);
-  //drupal_set_message('<pre>'. print_r($methods, TRUE) .'</pre>');
-  //drupal_set_message('<pre>'. print_r($quote_data, TRUE) .'</pre>');
+  //drupal_set_message('<pre>' . print_r($methods, TRUE) . '</pre>');
+  //drupal_set_message('<pre>' . print_r($quote_data, TRUE) . '</pre>');
   $return_quotes = array();
   foreach ($quote_data as $method_id => $options) {
     foreach ($options as $accsrl => $data) {
-      $return_quotes[$method_id .'---'. $accsrl] = $data;
+      $return_quotes[$method_id . '---' . $accsrl] = $data;
     }
   }
   drupal_json($return_quotes);
@@ -116,7 +116,7 @@ function _uc_quote_assemble_quotes($order) {
     ),
   );
 
-  //drupal_set_message('<pre>'. print_r($products, TRUE) .'</pre>');
+  //drupal_set_message('<pre>' . print_r($products, TRUE) . '</pre>');
   $quote_data = array();
   $arguments = array(
     'order' => array(
@@ -137,7 +137,7 @@ function _uc_quote_assemble_quotes($order) {
   );
   foreach ($methods as $method) {
     $arguments['method']['#data'] = $method;
-    $predicates = ca_load_trigger_predicates('get_quote_from_'. $method['id']);
+    $predicates = ca_load_trigger_predicates('get_quote_from_' . $method['id']);
     $predicate = array_shift($predicates);
     if ($predicate && ca_evaluate_conditions($predicate, $arguments)) {
       $data = uc_quote_action_get_quote($order, $method, $user);

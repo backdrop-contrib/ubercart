@@ -23,7 +23,7 @@
  * @param &$shipment
  *   The shipment object.
  * @return
- *   Only given when $op is "load". An array of extra data to be added to the
+ *   Only given when $op is "load" . An array of extra data to be added to the
  *   shipment object.
  */
 function hook_uc_shipment($op, &$shipment) {
@@ -43,12 +43,12 @@ function hook_uc_shipment($op, &$shipment) {
             foreach ($package->products as $product) {
               $xml_data .= '<item-shipping-information>';
               $xml_data .= '<item-id>';
-              $xml_data .= '<merchant-item-id>'. check_plain($product->nid .'|'. $product->model) .'</merchant-item-id>';
+              $xml_data .= '<merchant-item-id>' . check_plain($product->nid . '|' . $product->model) . '</merchant-item-id>';
               $xml_data .= '</item-id>';
               $xml_data .= '<tracking-data-list>';
               $xml_data .= '<tracking-data>';
-              $xml_data .= '<carrier>'. check_plain($shipment->carrier) .'</carrier>';
-              $xml_data .= '<tracking-number>'. check_plain($tracking_number) .'</tracking-number>';
+              $xml_data .= '<carrier>' . check_plain($shipment->carrier) . '</carrier>';
+              $xml_data .= '<tracking-number>' . check_plain($tracking_number) . '</tracking-number>';
               $xml_data .= '</tracking-data>';
               $xml_data .= '</tracking-data-list>';
               $xml_data .= '</item-shipping-information>';
@@ -56,8 +56,8 @@ function hook_uc_shipment($op, &$shipment) {
           }
         }
         if ($xml_data) {
-          $request = '<?xml version="1.0" encoding="UTF-8"?>'. "\n";
-          $request .= '<ship-items xmlns="http://checkout.google.com/schema/2" google-order-number="'. $google_order_number .'">';
+          $request = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+          $request .= '<ship-items xmlns="http://checkout.google.com/schema/2" google-order-number="' . $google_order_number . '">';
           $request .= '<item-shipping-information-list>';
           $request .= $xml_data;
           $request .= '</item-shipping-information-list>';
@@ -72,15 +72,15 @@ function hook_uc_shipment($op, &$shipment) {
       if ($google_order_number) {
         foreach ($shipment->packages as $package) {
           foreach ($package->products as $product) {
-            $reset_ids[] = check_plain($product->nid .'|'. $product->model);
+            $reset_ids[] = check_plain($product->nid . '|' . $product->model);
           }
         }
         $request = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-        $request .= '<reset-items-shipping-information xmlns="http://checkout.google.com/schema/2" google-order-number="'. $google_order_number .'">';
+        $request .= '<reset-items-shipping-information xmlns="http://checkout.google.com/schema/2" google-order-number="' . $google_order_number . '">';
         $request .= '<item-ids>';
         foreach (array_unique($reset_ids) as $item_id) {
           $request .= '<item-id>';
-          $request .= '<merchant-item-id>'. $item_id .'</merchant-item-id>';
+          $request .= '<merchant-item-id>' . $item_id . '</merchant-item-id>';
           $request .= '</item-id>';
         }
         $request .= '</item-ids>';

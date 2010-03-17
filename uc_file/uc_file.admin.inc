@@ -99,7 +99,7 @@ function uc_file_admin_files_form_show_files($form, &$form_state) {
   $check_all = l(t('Check all'), "admin/store/products/files", array('attributes' => array('id' => 'uc_file_select_all'), 'fragment' => 'NULL'));
   $uncheck_all = l(t('Uncheck all'), 'admin/store/products/files', array('attributes' => array('id' => 'uc_file_select_none'), 'fragment' => 'NULL'));
   $form['uc_file_select'] = array(
-    '#markup' => $check_all .' / '. $uncheck_all,
+    '#markup' => $check_all . ' / ' . $uncheck_all,
   );
 
   $form['uc_file_action'] = array(
@@ -117,7 +117,7 @@ function uc_file_admin_files_form_show_files($form, &$form_state) {
 
   // Check if any hook_uc_file_action('info', $args) are implemented
   foreach (module_implements('uc_file_action') as $module) {
-    $name = $module .'_uc_file_action';
+    $name = $module . '_uc_file_action';
     $result = $name('info', NULL);
     if (is_array($result)) {
       foreach ($result as $key => $action) {
@@ -213,7 +213,7 @@ function theme_uc_file_admin_files_form_show($variables) {
     $rows[] = array(
       array('data' => drupal_render($form['file_select'][$fid]['check'])),
       array('data' => $filename, 'class' => array($class)),
-      array('data' => l(drupal_render($form['file_select'][$fid]['title']), 'node/'. drupal_render($form['file_select'][$fid]['nid']))),
+      array('data' => l(drupal_render($form['file_select'][$fid]['title']), 'node/' . drupal_render($form['file_select'][$fid]['nid']))),
       array('data' => drupal_render($form['file_select'][$fid]['model']))
     );
   }
@@ -223,7 +223,7 @@ function theme_uc_file_admin_files_form_show($variables) {
   }
 
   // Render everything.
-  $output .= '<p>'. t('File downloads can be attached to any Ubercart product as a product feature. For security reasons the <a href="!download_url">file downloads directory</a> is separated from the Drupal <a href="!file_url">file system</a>. Here are the list of files (and their associated Ubercart products) that can be used for file downloads.', array('!download_url' => url('admin/store/settings/products/edit/features', array('query' => 'destination=admin/store/products/files')), '!file_url' => url('admin/settings/file-system'))) .'</p>';
+  $output .= '<p>' . t('File downloads can be attached to any Ubercart product as a product feature. For security reasons the <a href="!download_url">file downloads directory</a> is separated from the Drupal <a href="!file_url">file system</a>. Here are the list of files (and their associated Ubercart products) that can be used for file downloads.', array('!download_url' => url('admin/store/settings/products/edit/features', array('query' => 'destination=admin/store/products/files')), '!file_url' => url('admin/settings/file-system'))) . '</p>';
   $output .= drupal_render($form['uc_file_action']);
   $output .= drupal_render($form['uc_file_select']);
   $output .= theme('table', array('header' => $header, 'rows' => $rows));
@@ -267,7 +267,7 @@ function uc_file_admin_files_form_action($form, &$form_state) {
         // Gather a list of user-selected filenames.
         $file = uc_file_get_by_id($file_id);
         $filename = $file->filename;
-        $file_list[] = (substr($filename, -1) == "/") ? $filename .' ('. t('directory') .')' : $filename;
+        $file_list[] = (substr($filename, -1) == "/") ? $filename . ' (' . t('directory') . ')' : $filename;
 
         // Determine if there are any directories in this list.
         $path = uc_file_qualify_file($filename);
@@ -331,7 +331,7 @@ function uc_file_admin_files_form_action($form, &$form_state) {
       $directories = array('' => '/');
       $files = db_query("SELECT * FROM {uc_files}");
       foreach ($files as $file) {
-        if (is_dir(variable_get('uc_file_base_dir', NULL) ."/". $file->filename)) {
+        if (is_dir(variable_get('uc_file_base_dir', NULL) . "/" . $file->filename)) {
           $directories[$file->filename] = $file->filename;
         }
       }
@@ -366,7 +366,7 @@ function uc_file_admin_files_form_action($form, &$form_state) {
 
       // This action isn't handled by us, so check if any hook_uc_file_action('form', $args) are implemented.
       foreach (module_implements('uc_file_action') as $module) {
-        $name = $module .'_uc_file_action';
+        $name = $module . '_uc_file_action';
         $result = $name('form', array('action' => $form_state['values']['uc_file_action']['action'], 'file_ids' => $file_ids));
         $form = (is_array($result)) ? array_merge($form, $result) : $form;
       }
@@ -391,7 +391,7 @@ function uc_file_admin_files_form_action_validate($form, &$form_state) {
 
         // Check if any hook_uc_file_action('upload_validate', $args) are implemented.
         foreach (module_implements('uc_file_action') as $module) {
-          $name = $module .'_uc_file_action';
+          $name = $module . '_uc_file_action';
           $result = $name('upload_validate', array('file_object' => $temp_file, 'form_id' => $form_id, 'form_state' => $form_state));
         }
 
@@ -408,7 +408,7 @@ function uc_file_admin_files_form_action_validate($form, &$form_state) {
 
       // This action isn't handled by us, so check if any hook_uc_file_action('validate', $args) are implemented
       foreach (module_implements('uc_file_action') as $module) {
-        $name = $module .'_uc_file_action';
+        $name = $module . '_uc_file_action';
         $result = $name('validate', array('form_id' => $form_id, 'form_state' => $form_state));
       }
 
@@ -444,7 +444,7 @@ function uc_file_admin_files_form_action_submit($form, &$form_state) {
 
       // Build the destination location. We start with the base directory, then add any
       // directory which was explicitly selected.
-      $dir = variable_get('uc_file_base_dir', NULL) .'/';
+      $dir = variable_get('uc_file_base_dir', NULL) . '/';
       $dir = (is_null($form_state['values']['upload_dir'])) ? $dir : $dir . $form_state['values']['upload_dir'];
       if (is_dir($dir)) {
 
@@ -452,11 +452,11 @@ function uc_file_admin_files_form_action_submit($form, &$form_state) {
         $file_object = $form_state['storage']['temp_file'];
 
         // Copy the file to its final location.
-        if (copy($file_object->filepath, $dir .'/'. $file_object->filename)) {
+        if (copy($file_object->filepath, $dir . '/' . $file_object->filename)) {
 
           // Check if any hook_uc_file_action('upload', $args) are implemented
           foreach (module_implements('uc_file_action') as $module) {
-            $name = $module .'_uc_file_action';
+            $name = $module . '_uc_file_action';
             $result = $name('upload', array('file_object' => $file_object, 'form_id' => $form_id, 'form_state' => $form_state));
           }
 
@@ -479,7 +479,7 @@ function uc_file_admin_files_form_action_submit($form, &$form_state) {
 
       // This action isn't handled by us, so check if any hook_uc_file_action('submit', $args) are implemented
       foreach (module_implements('uc_file_action') as $module) {
-        $name = $module .'_uc_file_action';
+        $name = $module . '_uc_file_action';
         $result = $name('submit', array('form_id' => $form_id, 'form_state' => $form_state));
       }
       break;
@@ -520,7 +520,7 @@ function _uc_file_build_js_file_display($file_ids) {
   $recursion_file_ids = _uc_file_sort_names(_uc_file_get_dir_file_ids($file_ids, TRUE));
   foreach ($recursion_file_ids as $file_id) {
     $file = uc_file_get_by_id($file_id);
-    $recursion[] = '<li>'. $file->filename .'</li>';
+    $recursion[] = '<li>' . $file->filename . '</li>';
   }
 
   // Gather the files if recursion isn't selected. Get 'em all ready to be punched into
@@ -528,7 +528,7 @@ function _uc_file_build_js_file_display($file_ids) {
   $no_recursion_file_ids = $file_ids;
   foreach ($no_recursion_file_ids as $file_id) {
     $file = uc_file_get_by_id($file_id);
-    $no_recursion[] = '<li>'. $file->filename .'</li>';
+    $no_recursion[] = '<li>' . $file->filename . '</li>';
   }
 
   // We'll disable the recursion checkbox if they're equal.
@@ -540,8 +540,8 @@ function _uc_file_build_js_file_display($file_ids) {
 
   // Set up some JS to dynamically update the list based on the
   // recursion checkbox state.
-  drupal_add_js('uc_file_list[false] = '. drupal_json_encode('<li>'. implode('</li><li>', $no_recursion) .'</li>') .';', 'inline');
-  drupal_add_js('uc_file_list[true] = '. drupal_json_encode('<li>'. implode('</li><li>', $recursion) .'</li>') .';', 'inline');
+  drupal_add_js('uc_file_list[false] = ' . drupal_json_encode('<li>' . implode('</li><li>', $no_recursion) . '</li>') . ';', 'inline');
+  drupal_add_js('uc_file_list[true] = ' . drupal_json_encode('<li>' . implode('</li><li>', $recursion) . '</li>') . ';', 'inline');
 
   return $result;
 }

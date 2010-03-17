@@ -62,7 +62,7 @@ function uc_line_item_subtotal($op, $arg1) {
           ),
         );
 
-        drupal_add_js("jQuery(document).ready( function() { set_line_item('subtotal', '". $line_item['name'] ."', ". uc_price($line_item['amount'], $context) .", ". $line_item['weight'] ."); } );", 'inline');
+        drupal_add_js("jQuery(document).ready( function() { set_line_item('subtotal', '" . $line_item['name'] . "', " . uc_price($line_item['amount'], $context) . ", " . $line_item['weight'] . "); } );", 'inline');
       }
       break;
   }
@@ -182,8 +182,8 @@ function _line_item_list($action = NULL) {
 
   $items = module_invoke_all('uc_line_item', NULL);
   foreach ($items as $i => $value) {
-    $items[$i]['enabled'] = variable_get('uc_li_'. $items[$i]['id'] .'_enabled', (!isset($items[$i]['enabled']) ? TRUE : $items[$i]['enabled']));
-    $items[$i]['weight'] = variable_get('uc_li_'. $items[$i]['id'] .'_weight', (!isset($items[$i]['weight']) ? 1 : $items[$i]['weight']));
+    $items[$i]['enabled'] = variable_get('uc_li_' . $items[$i]['id'] . '_enabled', (!isset($items[$i]['enabled']) ? TRUE : $items[$i]['enabled']));
+    $items[$i]['weight'] = variable_get('uc_li_' . $items[$i]['id'] . '_weight', (!isset($items[$i]['weight']) ? 1 : $items[$i]['weight']));
   }
 
   drupal_alter('uc_line_item_data', $items);

@@ -216,7 +216,7 @@ function template_preprocess_uc_packing_slip(&$variables) {
   $variables['store_phone'] = $tokens['store-phone'];
 
   $order = $variables['order'];
-  $variables['order_link'] = l($order->order_id, url('user/'. $order->uid .'/order/'. $order->order_id, array('absolute' => TRUE)));
+  $variables['order_link'] = l($order->order_id, url('user/' . $order->uid . '/order/' . $order->order_id, array('absolute' => TRUE)));
   $variables['order_email'] = check_plain($order->primary_email);
   $variables['billing_address'] = uc_order_address($order, 'billing');
   $variables['billing_phone'] = check_plain($order->billing_phone);
@@ -270,8 +270,8 @@ function uc_shipping_uc_order_actions($order) {
       $title = t('Package order !order_id products.', array('!order_id' => $order->order_id));
       $actions[] = array(
         'name' => t('Package'),
-        'url' => 'admin/store/orders/'. $order->order_id .'/packages',
-        'icon' => '<img src="'. $module_path .'/images/package.gif" alt="'. $title .'" />',
+        'url' => 'admin/store/orders/' . $order->order_id . '/packages',
+        'icon' => '<img src="' . $module_path . '/images/package.gif" alt="' . $title . '" />',
         'title' => $title,
       );
       $result = db_query("SELECT COUNT(package_id) FROM {uc_packages} WHERE order_id = :id", array(':id' => $order->order_id));
@@ -279,8 +279,8 @@ function uc_shipping_uc_order_actions($order) {
         $title = t('Ship order !order_id packages.', array('!order_id' => $order->order_id));
         $actions[] = array(
           'name' => t('Ship'),
-          'url' => 'admin/store/orders/'. $order->order_id .'/shipments',
-          'icon' => '<img src="'. $module_path .'/images/ship.gif" alt="'. $title .'" />',
+          'url' => 'admin/store/orders/' . $order->order_id . '/shipments',
+          'icon' => '<img src="' . $module_path . '/images/ship.gif" alt="' . $title . '" />',
           'title' => $title,
         );
       }
@@ -335,7 +335,7 @@ function uc_shipping_package_view($package) {
   }
 
   if ($shipment && is_object($package->label_image) && file_exists($package->label_image->uri)) {
-    $rows[] = array(t('Label:'), l(t('Click to view.'), 'admin/store/orders/'. $package->order_id .'/shipments/labels/'. $shipment->shipping_method .'/'. $package->label_image->uri));
+    $rows[] = array(t('Label:'), l(t('Click to view.'), 'admin/store/orders/' . $package->order_id . '/shipments/labels/' . $shipment->shipping_method . '/' . $package->label_image->uri));
   }
   else {
     $rows[] = array(t('Label:'), t('n/a'));
@@ -374,7 +374,7 @@ function theme_uc_shipping_package_dimensions($variables) {
 function theme_uc_shipping_address($variables) {
   $address = $variables['address'];
 
-  drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
+  drupal_add_css(drupal_get_path('module', 'uc_cart') . '/uc_cart.css');
   if ($address['#collapsed']) {
     $collapsed = ' collapsed';
   }
@@ -384,10 +384,10 @@ function theme_uc_shipping_address($variables) {
   foreach (element_children($address) as $field) {
     list($type, $name) = explode('_', $field, 2);
     if ($address !== NULL) {
-      $title = $address[$field]['#title'] .':';
+      $title = $address[$field]['#title'] . ':';
       unset($address[$field]['#title']);
       if ($name == 'street1') {
-        $title = uc_get_field_name('street') .':';
+        $title = uc_get_field_name('street') . ':';
       }
       elseif ($name == 'street2') {
         $title = ' ';
@@ -396,9 +396,9 @@ function theme_uc_shipping_address($variables) {
       if ($address[$field]['#required']) {
         $output .= $req;
       }
-      $output .= $title .'</td><td>'
+      $output .= $title . '</td><td>'
         . drupal_render($address[$field])
-        .'</td></tr>';
+        . '</td></tr>';
     }
   }
   $output .= '</table>';
@@ -433,7 +433,7 @@ function uc_shipping_package_load($package_id) {
         if (!in_array($address, $addresses)) {
           $addresses[] = $address;
         }
-        $description .= ', '. $product->qty .' x '. $product->model;
+        $description .= ', ' . $product->qty . ' x ' . $product->model;
         // Normalize all weights to default units.
         $weight += $product->weight * uc_weight_conversion($product->weight_units, $units);
         $product->data = unserialize($product->data);
@@ -588,14 +588,14 @@ function uc_shipping_shipment_load($shipment_id) {
 function uc_shipping_shipment_save($shipment) {
   if (isset($shipment->origin)) {
     foreach ($shipment->origin as $field => $value) {
-      $field = 'o_'. $field;
+      $field = 'o_' . $field;
       $shipment->$field = $value;
       $fields[$field] = $value;
     }
   }
   if (isset($shipment->destination)) {
     foreach ($shipment->destination as $field => $value) {
-      $field = 'd_'. $field;
+      $field = 'd_' . $field;
       $shipment->$field = $value;
       $fields[$field] = $value;
     }
@@ -684,7 +684,7 @@ function uc_shipping_order_pane_packages($op, $arg1) {
       $build = array();
       foreach ($tracking as $carrier => $item) {
         $build['tracking'][] = array(
-          '#prefix' => '<strong>'. $carrier .':</strong>',
+          '#prefix' => '<strong>' . $carrier . ':</strong>',
           '#theme' => 'item_list',
           '#items' => $item,
         );
@@ -720,7 +720,7 @@ function uc_shipping_select_address($addresses, $onchange = '', $title = NULL, $
   );
   $options = array(drupal_json_encode($blank) => t('- Reset fields -'));
   foreach ($addresses as $address) {
-    $options[drupal_json_encode($address)] = $address->company .' '. $address->street1 .' '. $address->city;
+    $options[drupal_json_encode($address)] = $address->company . ' ' . $address->street1 . ' ' . $address->city;
   }
 
   $select = array(
@@ -741,7 +741,7 @@ function uc_shipping_select_address($addresses, $onchange = '', $title = NULL, $
  * @ingroup forms
  */
 function uc_shipping_address_form($form, &$form_state, $addresses, $order) {
-  drupal_add_js(drupal_get_path('module', 'uc_shipping') .'/uc_shipping.js');
+  drupal_add_js(drupal_get_path('module', 'uc_shipping') . '/uc_shipping.js');
 
   $form['origin'] = array('#type' => 'fieldset',
     '#title' => t('Origin address'),

@@ -22,7 +22,7 @@ function uc_usps_admin_settings($form, &$form_state) {
   $form['domestic'] = array(
     '#type' => 'fieldset',
     '#title' => t('USPS Domestic'),
-    '#description' => l(t('Set the conditions that will return a USPS quote.'), CA_UI_PATH .'/uc_usps_get_quote/edit/conditions'),
+    '#description' => l(t('Set the conditions that will return a USPS quote.'), CA_UI_PATH . '/uc_usps_get_quote/edit/conditions'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
@@ -53,7 +53,7 @@ function uc_usps_admin_settings($form, &$form_state) {
   $form['international'] = array(
     '#type' => 'fieldset',
     '#title' => t('USPS International'),
-    '#description' => l(t('Set the conditions that will return a USPS International quote.'), CA_UI_PATH .'/uc_usps_get_intl_quote/edit/conditions'),
+    '#description' => l(t('Set the conditions that will return a USPS International quote.'), CA_UI_PATH . '/uc_usps_get_intl_quote/edit/conditions'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );

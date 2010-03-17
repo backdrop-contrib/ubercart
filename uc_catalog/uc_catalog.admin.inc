@@ -32,7 +32,7 @@ function uc_catalog_settings_form($form, &$form_state) {
 
     $form['catalog_vid'] = array(
       '#prefix' => '<div>',
-      '#summary' => t('The taxonomy vocabulary <a href="!edit-url">%name</a> is set as the product catalog.', array('!edit-url' => url('admin/content/taxonomy/'. $vid), '%name' => $catalog->name)),
+      '#summary' => t('The taxonomy vocabulary <a href="!edit-url">%name</a> is set as the product catalog.', array('!edit-url' => url('admin/content/taxonomy/' . $vid), '%name' => $catalog->name)),
       '#suffix' => '</div>',
     );
     $form['catalog_vid']['#markup'] = $form['catalog_vid']['#summary'];
@@ -236,7 +236,7 @@ function uc_catalog_orphaned_products() {
 
     $rows = array();
     while ($node = $result->fetchObject()) {
-      $rows[] = l($node->title, 'node/'. $node->nid .'/edit', array('query' => array('destination' => 'admin/store/products/orphans')));
+      $rows[] = l($node->title, 'node/' . $node->nid . '/edit', array('query' => array('destination' => 'admin/store/products/orphans')));
     }
 
     if (count($rows) > 0) {

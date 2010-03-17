@@ -106,7 +106,7 @@ function uc_google_checkout_shipping_settings($form, &$form_state) {
   $services = uc_google_checkout_shipping_services();
 
   foreach ($services as $key => $title) {
-    $shipping_settings = variable_get('uc_google_checkout_shipping_'. $key, array());
+    $shipping_settings = variable_get('uc_google_checkout_shipping_' . $key, array());
     $form['services'][$key]['enable'] = array(
       '#type' => 'checkbox',
       '#default_value' => $shipping_settings['enable'],
@@ -164,7 +164,7 @@ function theme_uc_google_checkout_shipping_settings($variables) {
     $temp = explode('_', $key, 2);
     if ($company != $temp[0]) {
       $company = $temp[0];
-      $rows[] = array(array('data' => '<strong>'. $companies[$company] .'</strong>', 'colspan' => 6));
+      $rows[] = array(array('data' => '<strong>' . $companies[$company] . '</strong>', 'colspan' => 6));
     }
     foreach (array('enable', 'title', 'default', 'pickup', 'fixed_charge', 'percent_adjustment') as $field) {
       $row[] = drupal_render($form['services'][$key][$field]);
@@ -179,23 +179,23 @@ function theme_uc_google_checkout_shipping_settings($variables) {
 function uc_google_checkout_shipping_settings_validate($form, &$form_state) {
   foreach ($form_state['values']['services'] as $key => $service) {
     if ($service['enable'] && empty($service['default'])) {
-      form_set_error('services]['. $key .'][default', t('A default shipping cost is required.'));
+      form_set_error('services][' . $key . '][default', t('A default shipping cost is required.'));
     }
     if (!empty($service['default']) && (!is_numeric($service['default']) || $service['default'] < 0)) {
-      form_set_error('services]['. $key .'][default', t('The default shipping cost should be a positive number.'));
+      form_set_error('services][' . $key . '][default', t('The default shipping cost should be a positive number.'));
     }
     if (!empty($service['fixed_charge']) && !is_numeric($service['fixed_charge'])) {
-      form_set_error('services]['. $key .'][fixed_charge', t('The fixed charge should be a number.'));
+      form_set_error('services][' . $key . '][fixed_charge', t('The fixed charge should be a number.'));
     }
     if (!empty($service['percent_adjustment']) && !is_numeric($service['percent_adjustment'])) {
-      form_set_error('services]['. $key .'][percent_adjustment', t('The percent adjustment should be a number.'));
+      form_set_error('services][' . $key . '][percent_adjustment', t('The percent adjustment should be a number.'));
     }
   }
 }
 
 function uc_google_checkout_shipping_settings_submit($form, &$form_state) {
   foreach ($form_state['values']['services'] as $key => $service) {
-    variable_set('uc_google_checkout_shipping_'. $key, $service);
+    variable_set('uc_google_checkout_shipping_' . $key, $service);
   }
   drupal_set_message(t('The configuration options have been saved.'));
 }
@@ -311,7 +311,7 @@ function uc_google_checkout_terminal($order) {
   }
 
   $build['return'] = array(
-    '#markup' => l(t('Return to order view screen.'), 'admin/store/orders/'. $order_id),
+    '#markup' => l(t('Return to order view screen.'), 'admin/store/orders/' . $order_id),
   );
 
   $gc_balance = $order->gc_total;
@@ -332,7 +332,7 @@ function uc_google_checkout_terminal($order) {
       'order' => $order,
     ),
   );
-  $build['instructions'] = array('#markup' => '<p>'. t('Use this terminal to process credit card payments:') .'</p>');
+  $build['instructions'] = array('#markup' => '<p>' . t('Use this terminal to process credit card payments:') . '</p>');
 
   $build['details'] = array(
     '#prefix' => '<table style="width: auto;"><tbody style="border-top: 0px;">',

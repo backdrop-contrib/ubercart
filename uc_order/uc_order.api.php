@@ -202,8 +202,8 @@ function hook_uc_order_actions($order) {
       $title = t('Package order !order_id products.', array('!order_id' => $order->order_id));
       $actions[] = array(
         'name' => t('Package'),
-        'url' => 'admin/store/orders/'. $order->order_id .'/packages',
-        'icon' => '<img src="'. $module_path .'/images/package.gif" alt="'. $title .'" />',
+        'url' => 'admin/store/orders/' . $order->order_id . '/packages',
+        'icon' => '<img src="' . $module_path . '/images/package.gif" alt="' . $title . '" />',
         'title' => $title,
       );
       $result = db_query("SELECT package_id FROM {uc_packages} WHERE order_id = %d", $order->order_id);
@@ -211,8 +211,8 @@ function hook_uc_order_actions($order) {
         $title = t('Ship order !order_id packages.', array('!order_id' => $order->order_id));
         $actions[] = array(
           'name' => t('Ship'),
-          'url' => 'admin/store/orders/'. $order->order_id .'/shipments',
-          'icon' => '<img src="'. $module_path .'/images/ship.gif" alt="'. $title .'" />',
+          'url' => 'admin/store/orders/' . $order->order_id . '/shipments',
+          'icon' => '<img src="' . $module_path . '/images/ship.gif" alt="' . $title . '" />',
           'title' => $title,
         );
       }
@@ -267,8 +267,8 @@ function hook_uc_order_pane() {
  */
 function hook_uc_order_product_alter(&$product, $order) {
   drupal_set_message('hook_order_product_alter(&$product, $order):');
-  drupal_set_message('&$product: <pre>'. print_r($product, TRUE) .'</pre>');
-  drupal_set_message('$order: <pre>'. print_r($order, TRUE) .'</pre>');
+  drupal_set_message('&$product: <pre>' . print_r($product, TRUE) . '</pre>');
+  drupal_set_message('$order: <pre>' . print_r($order, TRUE) . '</pre>');
 }
 
 /**

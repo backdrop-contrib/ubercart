@@ -285,14 +285,14 @@ function uc_cart_init() {
  */
 function uc_cart_cron() {
   // Empty anonymous carts.
-  $time = strtotime(variable_get('uc_cart_anon_duration', '4') .' '. variable_get('uc_cart_anon_unit', 'hours') .' ago');
+  $time = strtotime(variable_get('uc_cart_anon_duration', '4') . ' ' . variable_get('uc_cart_anon_unit', 'hours') . ' ago');
   $result = db_query("SELECT DISTINCT cart_id FROM {uc_cart_products} WHERE changed <= :changed AND CHAR_LENGTH(cart_id) > :strlen", array(':changed' => $time, ':strlen' => 8));
   foreach ($result as $row) {
     uc_cart_empty($row->cart_id);
   }
 
   // Empty authenticated carts.
-  $time = strtotime(variable_get('uc_cart_auth_duration', '1') .' '. variable_get('uc_cart_auth_unit', 'years') .' ago');
+  $time = strtotime(variable_get('uc_cart_auth_duration', '1') . ' ' . variable_get('uc_cart_auth_unit', 'years') . ' ago');
   $result = db_query("SELECT DISTINCT cart_id FROM {uc_cart_products} WHERE changed <= :changed AND CHAR_LENGTH(cart_id) <= :strlen", array(':changed' => $time, ':strlen' => 8));
   foreach ($result as $row) {
     uc_cart_empty($row->cart_id);
@@ -353,7 +353,7 @@ function uc_cart_user_login(&$edit, $account) {
 /**
  * Implement hook_form_alter().
  */
-function uc_cart_form_alter(&$form, $form_state, $form_id) {
+function uc_cart_form_alter(&$form, &$form_state, $form_id) {
   global $language;
 
   // Redirect shopper back to checkout page if they go to login from there.
@@ -415,12 +415,12 @@ function uc_cart_block_view($delta = '') {
     }
 
     // Add the cart block CSS.
-    drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart_block.css');
+    drupal_add_css(drupal_get_path('module', 'uc_cart') . '/uc_cart_block.css');
 
     // If the block is collapsible, add the appropriate JS.
     if (!$cachable && variable_get('uc_cart_block_collapsible', TRUE)) {
       drupal_add_js(array('ucCollapsedBlock' => variable_get('uc_cart_block_collapsed', TRUE)), 'setting');
-      drupal_add_js(drupal_get_path('module', 'uc_cart') .'/uc_cart_block.js');
+      drupal_add_js(drupal_get_path('module', 'uc_cart') . '/uc_cart_block.js');
       $collapsible = TRUE;
     }
     else {
@@ -620,10 +620,10 @@ function theme_uc_cart_block_title($variables) {
   // Add the main title span and text, with or without the arrow based on the
   // cart block collapsibility settings.
   if ($collapsible) {
-    $output .= '<span class="cart-block-title-bar" title="'. t('Show/hide shopping cart contents.') .'">'. $title .'<span class="cart-block-arrow"></span></span>';
+    $output .= '<span class="cart-block-title-bar" title="' . t('Show/hide shopping cart contents.') . '">' . $title . '<span class="cart-block-arrow"></span></span>';
   }
   else {
-    $output .= '<span class="cart-block-title-bar">'. $title .'</span>';
+    $output .= '<span class="cart-block-title-bar">' . $title . '</span>';
   }
 
   return $output;
@@ -639,7 +639,7 @@ function theme_uc_cart_block_title($variables) {
 function theme_uc_cart_block_title_icon($variables) {
   $icon_class = $variables['icon_class'];
 
-  return l('<span class="'. $icon_class .'" title="'. t('View your shopping cart.') .'"></span>', 'cart', array('html' => TRUE));
+  return l('<span class="' . $icon_class . '" title="' . t('View your shopping cart.') . '"></span>', 'cart', array('html' => TRUE));
 }
 
  /**
@@ -682,7 +682,7 @@ function theme_uc_cart_block_content($variables) {
 
   // Add the help text if enabled.
   if ($help_text) {
-    $output .= '<span class="cart-help-text">'. $help_text .'</span>';
+    $output .= '<span class="cart-help-text">' . $help_text . '</span>';
   }
 
   // Add a wrapper div for use when collapsing the block.
@@ -727,13 +727,13 @@ function theme_uc_cart_block_items($variables) {
         'node' => node_load($item->nid),
       );
       // Add the basic row with quantity, title, and price.
-      $output .= '<tr class="'. $row_class .'"><td class="cart-block-item-qty">'. $item['qty'] .'</td>'
-                .'<td class="cart-block-item-title">'. $item['title'] .'</td>'
-                .'<td class="cart-block-item-price">'. uc_price($item['price'], $context) .'</td></tr>';
+      $output .= '<tr class="' . $row_class . '"><td class="cart-block-item-qty">' . $item['qty'] . '</td>'
+                . '<td class="cart-block-item-title">' . $item['title'] . '</td>'
+                . '<td class="cart-block-item-price">' . uc_price($item['price'], $context) . '</td></tr>';
 
       // Add a row of description if necessary.
       if ($item['desc']) {
-        $output .= '<tr class="'. $row_class .'"><td colspan="3" class="cart-block-item-desc">'. $item['desc'] .'</td></tr>';
+        $output .= '<tr class="' . $row_class . '"><td colspan="3" class="cart-block-item-desc">' . $item['desc'] . '</td></tr>';
       }
 
       // Alternate the class for the rows.
@@ -744,7 +744,7 @@ function theme_uc_cart_block_items($variables) {
   }
   else {
     // Otherwise display an empty message.
-    $output = '<p>'. t('There are no products in your shopping cart.') .'</p>';
+    $output = '<p>' . t('There are no products in your shopping cart.') . '</p>';
   }
 
   return $output;
@@ -775,15 +775,15 @@ function theme_uc_cart_block_summary($variables) {
   );
   // Build the basic table with the number of items in the cart and total.
   $output = '<table class="cart-block-summary"><tbody><tr>'
-           .'<td class="cart-block-summary-items">'. $item_text .'</td>'
-           .'<td class="cart-block-summary-total"><label>'. t('Total:')
-           .'</label> '. uc_price($total, $context) .'</td></tr>';
+           . '<td class="cart-block-summary-items">' . $item_text . '</td>'
+           . '<td class="cart-block-summary-total"><label>' . t('Total:')
+           . '</label> ' . uc_price($total, $context) . '</td></tr>';
 
   // If there are products in the cart...
   if ($item_count > 0) {
     // Add a view cart link.
     $output .= '<tr class="cart-block-summary-links"><td colspan="2">'
-             . theme('links', array('links' => $summary_links)) .'</td></tr>';
+             . theme('links', array('links' => $summary_links)) . '</td></tr>';
   }
 
   $output .= '</tbody></table>';
@@ -942,7 +942,7 @@ function uc_cart_login_update($uid) {
  * @ingroup themeable
  */
 function theme_uc_empty_cart() {
-  return '<p>'. t('There are no products in your shopping cart.') .'</p>';
+  return '<p>' . t('There are no products in your shopping cart.') . '</p>';
 }
 
 /**
@@ -1078,10 +1078,10 @@ function uc_cart_view_form_submit($form, &$form_state) {
 function theme_uc_cart_view_form($variables) {
   $form = $variables['form'];
 
-  drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
+  drupal_add_css(drupal_get_path('module', 'uc_cart') . '/uc_cart.css');
 
   $output = '<div id="cart-form-products">'
-          . drupal_render($form['items']) .'</div>';
+          . drupal_render($form['items']) . '</div>';
 
   foreach (element_children($form['items']) as $i) {
     foreach (array('title', 'options', 'remove', 'image', 'qty') as $column) {
@@ -1098,16 +1098,16 @@ function theme_uc_cart_view_form($variables) {
     // Add the element with the appropriate markup based on the display type.
     if ($type == 'link') {
       $output .= '<div id="cart-form-buttons"><div id="continue-shopping-link">'
-               . $cs_element .'</div>'. drupal_render_children($form) .'</div>';
+               . $cs_element . '</div>' . drupal_render_children($form) . '</div>';
     }
     elseif ($type == 'button') {
       $output .= '<div id="cart-form-buttons"><div id="update-checkout-buttons">'
-               . drupal_render_children($form) .'</div><div id="continue-shopping-button">'
-               . $cs_element .'</div></div>';
+               . drupal_render_children($form) . '</div><div id="continue-shopping-button">'
+               . $cs_element . '</div></div>';
     }
   }
   else {
-    $output .= '<div id="cart-form-buttons">'. drupal_render_children($form) .'</div>';
+    $output .= '<div id="cart-form-buttons">' . drupal_render_children($form) . '</div>';
   }
 
   return $output;
@@ -1170,7 +1170,7 @@ function uc_cart_view_table($table) {
   );
   $table[] = array(
     'total' => array(
-      '#value' => '<strong>'. t('Subtotal:') .'</strong> '. uc_price($subtotal, $context),
+      '#value' => '<strong>' . t('Subtotal:') . '</strong> ' . uc_price($subtotal, $context),
       '#cell_attributes' => array(
         'colspan' => 'full',
         'align' => 'right',
@@ -1304,17 +1304,17 @@ function uc_cart_complete_sale($order, $login = FALSE) {
     }
   }
 
-  $output = '<p>'. check_markup(variable_get('uc_msg_order_submit', uc_get_message('completion_message')),
-                         variable_get('uc_msg_order_submit_format', filter_fallback_format())) .'</p>';
-  $show_message = check_markup(variable_get('uc_msg_order_'. $message_type, uc_get_message('completion_'. $message_type)), variable_get('uc_msg_order_'. $message_type .'_format', filter_fallback_format()));
+  $output = '<p>' . check_markup(variable_get('uc_msg_order_submit', uc_get_message('completion_message')),
+                         variable_get('uc_msg_order_submit_format', filter_fallback_format())) . '</p>';
+  $show_message = check_markup(variable_get('uc_msg_order_' . $message_type, uc_get_message('completion_' . $message_type)), variable_get('uc_msg_order_' . $message_type . '_format', filter_fallback_format()));
 
   if ($show_message != '') {
     $variables['!new_username'] = check_plain($_SESSION['new_user']['name']);
     $variables['!new_password'] = check_plain($_SESSION['new_user']['pass']);
-    $output .= '<p>'. strtr($show_message, $variables) .'</p>';
+    $output .= '<p>' . strtr($show_message, $variables) . '</p>';
   }
-  $output .= '<p>'. check_markup(variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping')),
-                      variable_get('uc_msg_continue_shopping_format', filter_fallback_format())) .'</p>';
+  $output .= '<p>' . check_markup(variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping')),
+                      variable_get('uc_msg_continue_shopping_format', filter_fallback_format())) . '</p>';
 
   $output_message = token_replace_multiple($output, array('global' => NULL, 'order' => $order));
 
@@ -1401,7 +1401,7 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
 
       // Invoke hook_cart_item() with $op = 'load' in enabled modules.
       foreach (module_implements('uc_cart_item') as $module) {
-        $func = $module .'_uc_cart_item';
+        $func = $module . '_uc_cart_item';
         if (function_exists($func)) {
           // $item must be passed by reference.
           $func('load', $item);
@@ -1470,7 +1470,7 @@ function uc_cart_get_item($cart_item_id) {
 
   // Invoke hook_cart_item() with $op = 'load' in enabled modules.
   foreach (module_implements('uc_cart_item') as $module) {
-    $func = $module .'_uc_cart_item';
+    $func = $module . '_uc_cart_item';
     if (function_exists($func)) {
       // $item must be passed by reference.
       $func('load', $item);
@@ -1491,7 +1491,7 @@ function uc_cart_update_item($item) {
   db_update('uc_cart_products')
     ->fields(array(
       'qty' => $item->qty,
-      'changed' => time(),
+      'changed' => REQUEST_TIME,
       'data' => serialize($item->data),
     ))
     ->condition('cart_item_id', $item->cart_item_id)
@@ -1615,7 +1615,7 @@ function uc_cart_remove_item($nid, $cid = NULL, $data = array()) {
   $result = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c ON n.nid = c.nid WHERE c.cart_id = :cart_id AND c.nid = :nid", array(':cart_id' => $cart_id, ':nid' => $nid));
   if ($item = $result->fetchObject()) {
     foreach (module_implements('uc_cart_item') as $module) {
-      $func = $module .'_uc_cart_item';
+      $func = $module . '_uc_cart_item';
       if (function_exists($func)) {
         // $item must be passed by reference.
         $func('remove', $item);
@@ -1659,7 +1659,7 @@ function uc_cart_empty($cart_id) {
 
   // Empty cart one item at a time.  This will ensure the cart_item hook is fired with $op set to 'remove' for each item.
   $items = uc_cart_get_contents($cart_id);
-  foreach($items as $item) {
+  foreach ($items as $item) {
     uc_cart_remove_item($item->nid, $cart_id, $item->data);
   }
 
@@ -1692,8 +1692,8 @@ function uc_cart_cart_pane_list($items, $action = NULL) {
     return array();
   }
   foreach ($panes as $i => $value) {
-    $panes[$i]['enabled'] = variable_get('uc_cap_'. $panes[$i]['id'] .'_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
-    $panes[$i]['weight'] = variable_get('uc_cap_'. $panes[$i]['id'] .'_weight', (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));
+    $panes[$i]['enabled'] = variable_get('uc_cap_' . $panes[$i]['id'] . '_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
+    $panes[$i]['weight'] = variable_get('uc_cap_' . $panes[$i]['id'] . '_weight', (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));
   }
   usort($panes, 'uc_weight_sort');
 
@@ -1744,7 +1744,7 @@ function uc_cart_product_is_shippable($product) {
 
   // See if any other modules have a say in the matter...
   foreach (module_implements('uc_cart_item') as $module) {
-    $func = $module .'_uc_cart_item';
+    $func = $module . '_uc_cart_item';
     if (function_exists($func)) {
       // $product must be passed by reference.
       $return = $func('can_ship', $product);

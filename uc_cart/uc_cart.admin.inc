@@ -15,8 +15,8 @@ function uc_cart_cart_settings_overview() {
 
   // Build the block summary since it comes from another form.
   if (variable_get('uc_cart_show_help_text', FALSE)) {
-    $help_text = t('Help text is shown in block:') .'<br /><i>'
-               . variable_get('uc_cart_help_text', t('Click title to display cart contents.')) .'</i>';
+    $help_text = t('Help text is shown in block:') . '<br /><i>'
+               . variable_get('uc_cart_help_text', t('Click title to display cart contents.')) . '</i>';
   }
   else {
     $help_text = t('Help text is not shown in block.');
@@ -240,14 +240,14 @@ function uc_cart_cart_panes_form($form, &$form_state) {
     '#summary arguments' => array($panes),
   );
   foreach ($panes as $pane) {
-    $form['panes'][$pane['id']]['uc_cap_'. $pane['id'] .'_enabled'] = array(
+    $form['panes'][$pane['id']]['uc_cap_' . $pane['id'] . '_enabled'] = array(
       '#type' => 'checkbox',
       '#default_value' => $pane['enabled'],
     );
     $form['panes'][$pane['id']]['title'] = array(
       '#markup' => $pane['title'],
     );
-    $form['panes'][$pane['id']]['uc_cap_'. $pane['id'] .'_weight'] = array(
+    $form['panes'][$pane['id']]['uc_cap_' . $pane['id'] . '_weight'] = array(
       '#type' => 'weight',
       '#delta' => 10,
       '#default_value' => $pane['weight'],
@@ -261,7 +261,7 @@ function uc_cart_cart_panes_form($form, &$form_state) {
  * Helpful message redirecting users to the block settings.
  */
 function uc_cart_block_edit_info() {
-  $output = t('Drupal handles all the block settings forms automatically.') .'<p>'
+  $output = t('Drupal handles all the block settings forms automatically.') . '<p>'
           . t('<a href="!url">Click here</a> to goto the shopping cart block configuration page.',
               array('!url' => url('admin/build/block/configure/uc_cart/0')));
 
@@ -430,14 +430,14 @@ function uc_cart_checkout_panes_form($form, &$form_state) {
     '#summary arguments' => array($panes),
   );
   foreach ($panes as $pane) {
-    $form['panes'][$pane['id']]['uc_pane_'. $pane['id'] .'_enabled'] = array(
+    $form['panes'][$pane['id']]['uc_pane_' . $pane['id'] . '_enabled'] = array(
       '#type' => 'checkbox',
       '#default_value' => $pane['enabled'],
     );
     $form['panes'][$pane['id']]['title'] = array(
       '#markup' => $pane['title'],
     );
-    $form['panes'][$pane['id']]['uc_pane_'. $pane['id'] .'_weight'] = array(
+    $form['panes'][$pane['id']]['uc_pane_' . $pane['id'] . '_weight'] = array(
       '#type' => 'weight',
       '#default_value' => $pane['weight'],
     );
@@ -445,14 +445,14 @@ function uc_cart_checkout_panes_form($form, &$form_state) {
     $null = NULL;
     $pane_settings = $pane['callback']('settings', $null, NULL);
     if (is_array($pane_settings)) {
-      $form['pane_'. $pane['id']] = array(
+      $form['pane_' . $pane['id']] = array(
         '#type' => 'fieldset',
         '#summary callback' => 'summarize_null',
         '#title' => t('!pane settings', array('!pane' => $pane['title'])),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
       );
-      $form['pane_'. $pane['id']] = array_merge($form['pane_'. $pane['id']], $pane_settings);
+      $form['pane_' . $pane['id']] = array_merge($form['pane_' . $pane['id']], $pane_settings);
     }
   }
 

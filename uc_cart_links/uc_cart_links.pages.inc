@@ -84,7 +84,7 @@ function uc_cart_links_process($arg1) {
         if ($p['nid'] > 0 && $p['qty'] > 0) {
           // If it's a product kit, we need black magic to make everything work
           // right. In other words, we have to simulate FAPI's form values.
-          $node = node_load(array('nid' => $p['nid']));
+          $node = node_load($p['nid']);
           if (is_array($node->products)) {
             foreach ($node->products as $nid => $product) {
               $p['data']['products'][$nid] = array(

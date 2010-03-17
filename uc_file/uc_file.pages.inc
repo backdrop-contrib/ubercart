@@ -48,11 +48,11 @@ function theme_uc_file_user_downloads($variables) {
   $row = 0;
   foreach ($files as $file) {
     $rows[] = array(
-      array('data' => format_date($file['granted'], 'custom', variable_get('uc_date_format_default', 'm/d/Y')), 'class' => array('date-row'), 'id' => 'date-'. $row),
-      array('data' => $file['link'], 'class' => array('filename-row'), 'id' => 'filename-'. $row),
-      array('data' => $file['description'], 'class' => array('description-row'), 'id' => 'description-'. $row),
-      array('data' => $file['accessed'] .'/'. ($file['download_limit'] ? $file['download_limit'] : t('Unlimited')), 'class' => array('download-row'), 'id' => 'download-'. $row),
-      array('data' => count(unserialize($file['addresses'])) .'/'. ($file['address_limit'] ? $file['address_limit'] : t('Unlimited')), 'class' => array('addresses-row'), 'id' => 'addresses-'. $row),
+      array('data' => format_date($file['granted'], 'custom', variable_get('uc_date_format_default', 'm/d/Y')), 'class' => array('date-row'), 'id' => 'date-' . $row),
+      array('data' => $file['link'], 'class' => array('filename-row'), 'id' => 'filename-' . $row),
+      array('data' => $file['description'], 'class' => array('description-row'), 'id' => 'description-' . $row),
+      array('data' => $file['accessed'] . '/' . ($file['download_limit'] ? $file['download_limit'] : t('Unlimited')), 'class' => array('download-row'), 'id' => 'download-' . $row),
+      array('data' => count(unserialize($file['addresses'])) . '/' . ($file['address_limit'] ? $file['address_limit'] : t('Unlimited')), 'class' => array('addresses-row'), 'id' => 'addresses-' . $row),
     );
     $row++;
   }
@@ -62,10 +62,10 @@ function theme_uc_file_user_downloads($variables) {
 
   $output .= theme('table', array('header' => $header, 'rows' => $rows));
   $output .= theme('pager');
-  $output .= '<div class="form-item"><p class="description">'.
+  $output .= '<div class="form-item"><p class="description">' .
   t('Once your download is finished, you must refresh the page to download again. (Provided you have permission)') .
-  '<br />'. t('Downloads will not be counted until the file is finished transferring, even though the number may increment when you click.') .
-  '<br /><b>'. t('Do not use any download acceleration feature to download the file, or you may lock yourself out of the download.') .'</b>'.
+  '<br />' . t('Downloads will not be counted until the file is finished transferring, even though the number may increment when you click.') .
+  '<br /><b>' . t('Do not use any download acceleration feature to download the file, or you may lock yourself out of the download.') . '</b>' .
   '</p></div>';
   return $output;
 }
@@ -123,13 +123,13 @@ function uc_file_user_downloads($account) {
     // Set the JS behavior when this link gets clicked.
     $onclick = array(
       'attributes' => array(
-        'onclick' => 'uc_file_update_download('. $row .', '. $file->accessed .', '. ((empty($download_limit)) ? -1 : $download_limit) .');', 'id' => 'link-'. $row
+        'onclick' => 'uc_file_update_download(' . $row . ', ' . $file->accessed . ', ' . ((empty($download_limit)) ? -1 : $download_limit) . ');', 'id' => 'link-' . $row
       ),
     );
 
     // Expiration set to 'never'
     if ($file->expiration == FALSE) {
-      $file_link = l(basename($file->filename), 'download/'. $file->fid .'/'. $file->file_key, $onclick);
+      $file_link = l(basename($file->filename), 'download/' . $file->fid . '/' . $file->file_key, $onclick);
     }
 
     // Expired.
@@ -139,7 +139,7 @@ function uc_file_user_downloads($account) {
 
     // Able to be downloaded.
     else {
-      $file_link = l(basename($file->filename), 'download/'. $file->fid .'/'. $file->file_key, $onclick) .' ('. t('expires on @date', array('@date' => format_date($file->expiration, 'custom', variable_get('uc_date_format_default', 'm/d/Y')))) .')';
+      $file_link = l(basename($file->filename), 'download/' . $file->fid . '/' . $file->file_key, $onclick) . ' (' . t('expires on @date', array('@date' => format_date($file->expiration, 'custom', variable_get('uc_date_format_default', 'm/d/Y')))) . ')';
     }
 
     $files[] = array(
@@ -220,7 +220,7 @@ function _uc_file_download($fid, $key) {
  */
 function _uc_file_download_validate($file_download, &$user, $ip) {
 
-  $request_cache = cache_get('uc_file_'. $ip);
+  $request_cache = cache_get('uc_file_' . $ip);
   $requests = ($request_cache) ? $request_cache->data + 1 : 1;
 
   $message_user = ($user->uid) ? t('The user %username ', array('%username' => format_username($user))) : t('The IP address %ip ', array('%ip' => $ip));
@@ -231,7 +231,7 @@ function _uc_file_download_validate($file_download, &$user, $ip) {
 
   // Must be a valid file.
   if (!$file_download || !is_file($file_download->full_path)) {
-    cache_set('uc_file_'. $ip, $requests, 'cache', REQUEST_TIME + 86400);
+    cache_set('uc_file_' . $ip, $requests, 'cache', REQUEST_TIME + 86400);
     if ($requests == UC_FILE_REQUEST_LIMIT) {
       watchdog('uc_file', '%username has been temporarily banned from file downloads.', array('%username' => $message_user), WATCHDOG_WARNING);
     }
@@ -264,7 +264,7 @@ function _uc_file_download_validate($file_download, &$user, $ip) {
 
   // Check any if any hook_uc_download_authorize() calls deny the download
   foreach (module_implements('uc_download_authorize') as $module) {
-    $name = $module .'_uc_download_authorize';
+    $name = $module . '_uc_download_authorize';
     $result = $name($user, $file_download);
     if (!$result) {
       return UC_FILE_ERROR_HOOK_ERROR;
@@ -287,7 +287,7 @@ function _uc_file_download_transfer($file_user, $ip) {
 
   // Check if any hook_file_transfer_alter calls alter the download.
   foreach (module_implements('file_transfer_alter') as $module) {
-    $name = $module .'_file_transfer_alter';
+    $name = $module . '_file_transfer_alter';
     $file_user->full_path = $name($file_user, $ip, $file_user->fid, $file_user->full_path);
   }
 
@@ -345,7 +345,7 @@ function _uc_file_download_transfer($file_user, $ip) {
   drupal_set_header('Content-Length', $seek_end - $seek_start + 1);
 
   // Last-Modified is required for content served dynamically
-  drupal_set_header('Last-Modified', gmdate("D, d M Y H:i:s", filemtime($file_user->full_path)) ." GMT");
+  drupal_set_header('Last-Modified', gmdate("D, d M Y H:i:s", filemtime($file_user->full_path)) . " GMT");
 
   // Etag header is required for Firefox3 and other managers
   drupal_set_header('ETag', md5($file_user->full_path));
@@ -406,7 +406,7 @@ function _uc_file_download_redirect($uid = NULL) {
   // Redirect users back to their file page.
   else {
     if (!headers_sent()) {
-      drupal_goto('user/'. $uid .'/purchased-files');
+      drupal_goto('user/' . $uid . '/purchased-files');
     }
   }
 }

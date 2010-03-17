@@ -21,13 +21,13 @@ function uc_shipping_order_packages($order) {
     $product_list = array();
     $result2 = db_query("SELECT op.order_product_id, pp.qty, op.title, op.model FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id WHERE pp.package_id = :id", array(':id' => $package->package_id));
     foreach ($result2 as $product) {
-      $product_list[] = $product->qty .' x '. check_plain($product->model);
+      $product_list[] = $product->qty . ' x ' . check_plain($product->model);
     }
 
-    $row[] = '<ul><li>'. implode('</li><li>', $product_list) .'</li></ul>';
+    $row[] = '<ul><li>' . implode('</li><li>', $product_list) . '</li></ul>';
     $row[] = strtr($package->shipping_type, '_', ' ');
     $row[] = check_plain($package->pkg_type);
-    $row[] = isset($package->sid) ? l($package->sid, 'admin/store/orders/'. $order->order_id .'/shipments/'. $package->sid .'/view') : '';
+    $row[] = isset($package->sid) ? l($package->sid, 'admin/store/orders/' . $order->order_id . '/shipments/' . $package->sid . '/view') : '';
     $row[] = isset($package->tracking_number) ? check_plain($package->tracking_number) : '';
 
     if ($package->sid && $package->label_image) {
@@ -41,15 +41,15 @@ function uc_shipping_order_packages($order) {
           'alt' => t('Shipping Label'),
           'title' => t('Shipping Label'),
         )),
-        'admin/store/orders/'. $order->order_id .'/shipments/labels/'. $method .'/'. $package->label_image->uri,
+        'admin/store/orders/' . $order->order_id . '/shipments/labels/' . $method . '/' . $package->label_image->uri,
         array('html' => TRUE))
       : '';
-    $row[] = l(t('edit'), 'admin/store/orders/'. $order->order_id .'/packages/'. $package->package_id .'/edit');
-    $row[] = l(t('ship'), 'admin/store/orders/'. $order->order_id .'/shipments/new', array('query' => 'pkgs[]='. $package->package_id));
-    $row[] = l(t('delete'), 'admin/store/orders/'. $order->order_id .'/packages/'. $package->package_id .'/delete');
+    $row[] = l(t('edit'), 'admin/store/orders/' . $order->order_id . '/packages/' . $package->package_id . '/edit');
+    $row[] = l(t('ship'), 'admin/store/orders/' . $order->order_id . '/shipments/new', array('query' => 'pkgs[]=' . $package->package_id));
+    $row[] = l(t('delete'), 'admin/store/orders/' . $order->order_id . '/packages/' . $package->package_id . '/delete');
 
     if ($package->sid) {
-      $row[] = l(t('cancel shipment'), 'admin/store/orders/'. $order->order_id .'/packages/'. $package->package_id .'/cancel');
+      $row[] = l(t('cancel shipment'), 'admin/store/orders/' . $order->order_id . '/packages/' . $package->package_id . '/cancel');
     }
     else {
       $row[] = '';
@@ -71,7 +71,7 @@ function uc_shipping_order_packages($order) {
   $result = db_query("SELECT op.order_product_id, CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = :id AND op.data LIKE :data GROUP BY op.order_product_id HAVING SUM(pp.qty) IS NULL OR CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END > SUM(pp.qty)", array(':id' => $order->order_id, ':data' => '%s:9:"shippable";s:1:"1";%'));
   if ($result->fetchObject()) {
     $build['add_more'] = array(
-      '#markup' => l(t('Create packages.'), 'admin/store/orders/'. $order->order_id .'/packages/new'),
+      '#markup' => l(t('Create packages.'), 'admin/store/orders/' . $order->order_id . '/packages/new'),
     );
   }
 
@@ -92,8 +92,8 @@ function uc_shipping_new_package($form, &$form_state, $order) {
   $breadcrumb[] = l(t('Administer'), 'admin');
   $breadcrumb[] = l(t('Store administration'), 'admin/store');
   $breadcrumb[] = l(t('Orders'), 'admin/store/orders');
-  $breadcrumb[] = l(t('Order @id', array('@id' => $order->order_id)), 'admin/store/orders/'. $order->order_id);
-  $breadcrumb[] = l(t('Packages'), 'admin/store/orders/'. $order->order_id .'/packages');
+  $breadcrumb[] = l(t('Order @id', array('@id' => $order->order_id)), 'admin/store/orders/' . $order->order_id);
+  $breadcrumb[] = l(t('Packages'), 'admin/store/orders/' . $order->order_id . '/packages');
   drupal_set_breadcrumb($breadcrumb);
 
   $form['#tree'] = TRUE;
@@ -259,7 +259,7 @@ function uc_shipping_new_package_submit($form, &$form_state) {
     }
   }
 
-  $form_state['redirect'] = 'admin/store/orders/'. $form_state['values']['order_id'] .'/packages';
+  $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/packages';
 }
 
 /**
@@ -274,8 +274,8 @@ function uc_shipping_package_edit($form, &$form_state, $order, $package) {
   $breadcrumb[] = l(t('Administer'), 'admin');
   $breadcrumb[] = l(t('Store administration'), 'admin/store');
   $breadcrumb[] = l(t('Orders'), 'admin/store/orders');
-  $breadcrumb[] = l(t('Order @id', array('@id' => $order->order_id)), 'admin/store/orders/'. $order->order_id);
-  $breadcrumb[] = l(t('Packages'), 'admin/store/orders/'. $order->order_id .'/packages');
+  $breadcrumb[] = l(t('Order @id', array('@id' => $order->order_id)), 'admin/store/orders/' . $order->order_id);
+  $breadcrumb[] = l(t('Packages'), 'admin/store/orders/' . $order->order_id . '/packages');
   drupal_set_breadcrumb($breadcrumb);
 
   $products = array();
@@ -370,7 +370,7 @@ function uc_shipping_package_edit_submit($form, &$form_state) {
   $package->shipping_type = $form_state['values']['shipping_type'];
   uc_shipping_package_save($package);
 
-  $form_state['redirect'] = 'admin/store/orders/'. $package->order_id .'/packages';
+  $form_state['redirect'] = 'admin/store/orders/' . $package->order_id . '/packages';
 }
 
 /**
@@ -381,7 +381,7 @@ function uc_shipping_package_edit_submit($form, &$form_state) {
 function uc_shipping_package_cancel_confirm($form, &$form_state, $order, $package) {
   $form['order_id'] = array('#type' => 'value', '#value' => $order->order_id);
   $form['package_id'] = array('#type' => 'value', '#value' => $package->package_id);
-  $output = confirm_form($form, t('Are you sure you want to cancel the shipment of this package?'), 'admin/store/orders/'. $order->order_id .'/packages',
+  $output = confirm_form($form, t('Are you sure you want to cancel the shipment of this package?'), 'admin/store/orders/' . $order->order_id . '/packages',
     t('It will be available for reshipment.'), t('Cancel shipment'), t('Nevermind'));
   return $output;
 }
@@ -416,7 +416,7 @@ function uc_shipping_package_cancel_confirm_submit($form, &$form_state) {
       }
     }
   }
-  $form_state['redirect'] = 'admin/store/orders/'. $form_state['values']['order_id'] .'/packages';
+  $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/packages';
 }
 
 /**
@@ -428,7 +428,7 @@ function uc_shipping_package_cancel_confirm_submit($form, &$form_state) {
 function uc_shipping_package_delete_confirm($form, &$form_state, $order, $package) {
   $form['order_id'] = array('#type' => 'value', '#value' => $order->order_id);
   $form['package_id'] = array('#type' => 'value', '#value' => $package->package_id);
-  $output = confirm_form($form, t('Are you sure you want to delete this package?'), 'admin/store/orders/'. $order->order_id .'/packages',
+  $output = confirm_form($form, t('Are you sure you want to delete this package?'), 'admin/store/orders/' . $order->order_id . '/packages',
     t('The products it contains will be available for repackaging.'), t('Delete'), t('Cancel'));
   return $output;
 }
@@ -438,7 +438,7 @@ function uc_shipping_package_delete_confirm($form, &$form_state, $order, $packag
  */
 function uc_shipping_package_delete_confirm_submit($form, &$form_state) {
   uc_shipping_package_delete($form_state['values']['package_id']);
-  $form_state['redirect'] = 'admin/store/orders/'. $form_state['values']['order_id'] .'/packages';
+  $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/packages';
 }
 
 /**
@@ -455,16 +455,16 @@ function uc_shipping_order_shipments($order) {
   foreach ($result as $shipment) {
     $row = array();
     $row[] = $shipment->sid;
-    $row[] = check_plain($shipment->d_first_name) .' '. check_plain($shipment->d_last_name);
+    $row[] = check_plain($shipment->d_first_name) . ' ' . check_plain($shipment->d_last_name);
     $row[] = check_plain($shipment->d_company);
-    $row[] = check_plain($shipment->d_city) .', '. uc_get_zone_code($shipment->d_zone) .' '. check_plain($shipment->d_postal_code);
+    $row[] = check_plain($shipment->d_city) . ', ' . uc_get_zone_code($shipment->d_zone) . ' ' . check_plain($shipment->d_postal_code);
     $row[] = format_date($shipment->ship_date, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
     $row[] = format_date($shipment->expected_delivery, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
     $row[] = is_null($shipment->tracking_number) ? t('n/a') : check_plain($shipment->tracking_number);
-    $row[] = l(t('view'), 'admin/store/orders/'. $order->order_id .'/shipments/'. $shipment->sid .'/view');
-    $row[] = l(t('edit'), 'admin/store/orders/'. $order->order_id .'/shipments/'. $shipment->sid .'/edit');
-    $row[] = l(t('print'), 'admin/store/orders/'. $order->order_id .'/shipments/'. $shipment->sid .'/print');
-    $row[] = l(t('delete'), 'admin/store/orders/'. $order->order_id .'/shipments/'. $shipment->sid .'/delete');
+    $row[] = l(t('view'), 'admin/store/orders/' . $order->order_id . '/shipments/' . $shipment->sid . '/view');
+    $row[] = l(t('edit'), 'admin/store/orders/' . $order->order_id . '/shipments/' . $shipment->sid . '/edit');
+    $row[] = l(t('print'), 'admin/store/orders/' . $order->order_id . '/shipments/' . $shipment->sid . '/print');
+    $row[] = l(t('delete'), 'admin/store/orders/' . $order->order_id . '/shipments/' . $shipment->sid . '/delete');
     $rows[] = $row;
   }
 
@@ -481,14 +481,14 @@ function uc_shipping_order_shipments($order) {
   $packages = db_query("SELECT COUNT(*) FROM {uc_packages} WHERE order_id = :id AND sid IS NULL", array(':id' => $order->order_id))->fetchField();
   if ($packages) {
     $build['add_more'] = array(
-      '#markup' => l(t('Make a new shipment'), 'admin/store/orders/'. $order->order_id .'/shipments/new'),
+      '#markup' => l(t('Make a new shipment'), 'admin/store/orders/' . $order->order_id . '/shipments/new'),
     );
   }
   else {
     $result = db_query("SELECT op.order_product_id, CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = :id AND op.data LIKE :data GROUP BY op.order_product_id HAVING SUM(pp.qty) IS NULL OR CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END > SUM(pp.qty)", array(':id' => $order->order_id, ':data' => '%s:9:"shippable";s:1:"1";%'));
     if ($result->fetchObject()) {
       $build['add_more'] = array(
-        '#markup' => l(t('Put products into packages to make shipments.'), 'admin/store/orders/'. $order->order_id .'/packages/new'),
+        '#markup' => l(t('Put products into packages to make shipments.'), 'admin/store/orders/' . $order->order_id . '/packages/new'),
       );
     }
   }
@@ -508,8 +508,8 @@ function uc_shipping_new_shipment($form, &$form_state, $order) {
   $breadcrumb[] = l(t('Administer'), 'admin');
   $breadcrumb[] = l(t('Store administration'), 'admin/store');
   $breadcrumb[] = l(t('Orders'), 'admin/store/orders');
-  $breadcrumb[] = l(t('Order @id', array('@id' => $order->order_id)), 'admin/store/orders/'. $order->order_id);
-  $breadcrumb[] = l(t('Shipments'), 'admin/store/orders/'. $order->order_id .'/shipments');
+  $breadcrumb[] = l(t('Order @id', array('@id' => $order->order_id)), 'admin/store/orders/' . $order->order_id);
+  $breadcrumb[] = l(t('Shipments'), 'admin/store/orders/' . $order->order_id . '/shipments');
   drupal_set_breadcrumb($breadcrumb);
 
   $checked_pkgs = (array) $_REQUEST['pkgs'];
@@ -552,9 +552,9 @@ function uc_shipping_new_shipment($form, &$form_state, $order) {
       $package_row['package_id'] = array('#markup' => $package->package_id);
       $product_list = array();
       foreach ($package->products as $product) {
-        $product_list[] = $product->qty .' x '. check_plain($product->model);
+        $product_list[] = $product->qty . ' x ' . check_plain($product->model);
       }
-      $package_row['products'] = array('#markup' => '<ul><li>'. implode('</li><li>', $product_list) .'</li></ul>');
+      $package_row['products'] = array('#markup' => '<ul><li>' . implode('</li><li>', $product_list) . '</li></ul>');
       $package_row['weight'] = array('#markup' => $package->weight);
       $form[$shipping_type]['packages'][$package->package_id] = $package_row;
     }
@@ -576,7 +576,7 @@ function uc_shipping_new_shipment($form, &$form_state, $order) {
       '#value' => t('Ship packages'),
     );
   }
-  //drupal_set_message('<pre>'. print_r($form, TRUE) .'</pre>');
+  //drupal_set_message('<pre>' . print_r($form, TRUE) . '</pre>');
   return $form;
 }
 
@@ -631,7 +631,7 @@ function uc_shipping_new_shipment_submit($form, &$form_state) {
       }
     }
   }
-  $form_state['redirect'] = 'admin/store/orders/'. $form_state['values']['order_id'] .'/ship/'. $form_state['values']['method'] .'/'. implode('/', $packages);
+  $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/ship/' . $form_state['values']['method'] . '/' . implode('/', $packages);
 }
 
 /**
@@ -642,8 +642,8 @@ function uc_shipping_shipment_view($order, $shipment) {
   $breadcrumb[] = l(t('Administer'), 'admin');
   $breadcrumb[] = l(t('Store administration'), 'admin/store');
   $breadcrumb[] = l(t('Orders'), 'admin/store/orders');
-  $breadcrumb[] = l(t('Order @id', array('@id' => $order->order_id)), 'admin/store/orders/'. $order->order_id);
-  $breadcrumb[] = l(t('Shipments'), 'admin/store/orders/'. $order->order_id .'/shipments');
+  $breadcrumb[] = l(t('Order @id', array('@id' => $order->order_id)), 'admin/store/orders/' . $order->order_id);
+  $breadcrumb[] = l(t('Shipments'), 'admin/store/orders/' . $order->order_id . '/shipments');
   drupal_set_breadcrumb($breadcrumb);
 
   $build = array();
@@ -651,18 +651,18 @@ function uc_shipping_shipment_view($order, $shipment) {
   $origin = uc_order_address($shipment, 'o');
   $destination = uc_order_address($shipment, 'd');
 
-  $build['pickup_address'] = array('#markup' => '<div class="order-pane pos-left"><div class="order-pane-title">'. t('Pickup Address:') .'</div>'. $origin .'</div>');
-  $build['delivery_address'] = array('#markup' => '<div class="order-pane pos-left"><div class="order-pane-title">'. t('Delivery Address:') .'</div>'. $destination .'</div>');
+  $build['pickup_address'] = array('#markup' => '<div class="order-pane pos-left"><div class="order-pane-title">' . t('Pickup Address:') . '</div>' . $origin . '</div>');
+  $build['delivery_address'] = array('#markup' => '<div class="order-pane pos-left"><div class="order-pane-title">' . t('Delivery Address:') . '</div>' . $destination . '</div>');
 
   $rows = array();
-  $rows[] = array(t('Ship date:'), format_date($shipment->ship_date, 'custom', 'D, '. variable_get('uc_date_format_default', 'm/d/Y')));
-  $rows[] = array(t('Expected delivery:'), format_date($shipment->expected_delivery, 'custom', 'D, '. variable_get('uc_date_format_default', 'm/d/Y')));
+  $rows[] = array(t('Ship date:'), format_date($shipment->ship_date, 'custom', 'D, ' . variable_get('uc_date_format_default', 'm/d/Y')));
+  $rows[] = array(t('Expected delivery:'), format_date($shipment->expected_delivery, 'custom', 'D, ' . variable_get('uc_date_format_default', 'm/d/Y')));
 
   $build['schedule'] = array(
     '#theme' => 'table',
     '#rows' => $rows,
     '#attributes' => array('style' => 'width: auto'),
-    '#prefix' => '<div class="order-pane abs-left"><div class="order-pane-title">'. t('Schedule:') .'</div>',
+    '#prefix' => '<div class="order-pane abs-left"><div class="order-pane-title">' . t('Schedule:') . '</div>',
     '#suffix' => '</div>',
   );
 
@@ -697,7 +697,7 @@ function uc_shipping_shipment_view($order, $shipment) {
     '#theme' => 'table',
     '#rows' => $rows,
     '#attributes' => array('style' => 'width:auto'),
-    '#prefix' => '<div class="order-pane abs-left"><div class="order-pane-title">'. t('Shipment Details:') .'</div>',
+    '#prefix' => '<div class="order-pane abs-left"><div class="order-pane-title">' . t('Shipment Details:') . '</div>',
     '#suffix' => '</div>',
   );
 
@@ -717,7 +717,7 @@ function uc_shipping_shipment_view($order, $shipment) {
  * @see uc_shipping_shipment_edit_submit()
  */
 function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
-  drupal_add_css(drupal_get_path('module', 'uc_shipping') .'/uc_shipping.css');
+  drupal_add_css(drupal_get_path('module', 'uc_shipping') . '/uc_shipping.css');
 
   $form['order_id'] = array('#type' => 'value', '#value' => $order->order_id);
   if (isset($shipment->sid)) {
@@ -748,7 +748,7 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
     $declared_value = 0;
     $product_list = array();
     foreach ($package->products as $product) {
-      $product_list[] = $product->qty .' x '. check_plain($product->model);
+      $product_list[] = $product->qty . ' x ' . check_plain($product->model);
       $declared_value += $product->qty * $product->price;
     }
     $form['packages'][$id] = array('#type' => 'fieldset',
@@ -897,7 +897,7 @@ function uc_shipping_shipment_edit_validate($form, &$form_state) {
   foreach ($form_state['values']['packages'] as $key => $package) {
     foreach (array('length', 'width', 'height') as $property) {
       if (!empty($package['dimensions'][$property]) && (!is_numeric($package['dimensions'][$property]) || $package['dimensions'][$property] < 0)) {
-        form_set_error('packages]['. $key .'][dimensions]['. $property, t('@property must be a positive number. No commas and only one decimal point.', array('@property' => ucfirst($property))));
+        form_set_error('packages][' . $key . '][dimensions][' . $property, t('@property must be a positive number. No commas and only one decimal point.', array('@property' => ucfirst($property))));
       }
     }
   }
@@ -949,7 +949,7 @@ function uc_shipping_shipment_edit_submit($form, &$form_state) {
 
   uc_shipping_shipment_save($shipment);
 
-  $form_state['redirect'] = 'admin/store/orders/'. $form_state['values']['order_id'] .'/shipments';
+  $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/shipments';
 }
 
 /**
@@ -996,7 +996,7 @@ EOHTML;
         'path' => $package->label_image->uri,
         'attributes' => array('width' => $width, 'height' => $height),
         'getsize' => FALSE,
-      )) ."\n";
+      )) . "\n";
     }
   }
 
@@ -1017,7 +1017,7 @@ EOHTML;
 function uc_shipping_shipment_delete_confirm($form, &$form_state, $order, $shipment) {
   $form['order_id'] = array('#type' => 'value', '#value' => $order->order_id);
   $form['sid'] = array('#type' => 'value', '#value' => $shipment->sid);
-  $output = confirm_form($form, t('Are you sure you want to delete this shipment?'), 'admin/store/orders/'. $order->order_id .'/shipments',
+  $output = confirm_form($form, t('Are you sure you want to delete this shipment?'), 'admin/store/orders/' . $order->order_id . '/shipments',
     t('The shipment will be canceled and the packages it contains will be available for reshipment.'), t('Delete'), t('Cancel'));
   return $output;
 }
@@ -1041,7 +1041,7 @@ function uc_shipping_shipment_delete_confirm_submit($form, &$form_state) {
     uc_shipping_shipment_delete($form_state['values']['sid']);
   }
 
-  $form_state['redirect'] = 'admin/store/orders/'. $form_state['values']['order_id'] .'/shipments';
+  $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/shipments';
 }
 
 /**
@@ -1057,7 +1057,7 @@ function uc_shipping_make_shipment() {
     $methods = module_invoke_all('uc_shipping_method');
     $method = $methods[$method_id];
     if (isset($method)) {
-      $inc_file = drupal_get_path('module', $method['module']) .'/'. $method['ship']['file'];
+      $inc_file = drupal_get_path('module', $method['module']) . '/' . $method['ship']['file'];
       if (is_file($inc_file)) {
         require_once $inc_file;
       }
@@ -1076,7 +1076,7 @@ function uc_shipping_make_shipment() {
   }
   else {
     drupal_set_message(t('There is no sense in making a shipment with no packages on it, right?'));
-    drupal_goto('admin/store/orders/'. $args[0]->order_id .'/shipments/new');
+    drupal_goto('admin/store/orders/' . $args[0]->order_id . '/shipments/new');
   }
 }
 
