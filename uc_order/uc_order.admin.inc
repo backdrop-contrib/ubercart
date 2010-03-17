@@ -957,7 +957,7 @@ function uc_order_select_customer($email = NULL) {
         $account->password = $fields['pass'];
 
         // Send the e-mail through the user module.
-        drupal_mail('user', 'register_no_approval_required', $email, NULL, array('account' => $account), uc_store_email_from());
+        drupal_mail('user', 'register_admin_created', $email, NULL, array('account' => $account), uc_store_email_from());
 
         $build['email']['#markup'] .= t('Account details sent to e-mail provided.<br /><br /><strong>Username:</strong> @username<br /><strong>Password:</strong> @password', array('@username' => $fields['name'], '@password' => $fields['pass'])) .'<br /><br />';
       }
