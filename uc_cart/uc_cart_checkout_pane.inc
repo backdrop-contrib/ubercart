@@ -67,7 +67,7 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
         $description = t('Order information will be sent to your account e-mail listed below.');// . '<br />'
         $contents['primary_email'] = array('#type' => 'hidden', '#value' => check_plain($email));
         $contents['email_text'] = array(
-          '#markup' => '<div>' . t('<b>E-mail address:</b> @email (<a href="!url">edit</a>)', array('@email' => $email, '!url' => url('user/' . $user->uid . '/edit', array('query' => 'destination=cart/checkout')))) . '</div>',
+          '#markup' => '<div>' . t('<b>E-mail address:</b> @email (<a href="!url">edit</a>)', array('@email' => $email, '!url' => url('user/' . $user->uid . '/edit', array('query' => array('destination' => 'cart/checkout'))))) . '</div>',
         );
       }
       else {

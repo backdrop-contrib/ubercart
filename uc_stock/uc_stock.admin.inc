@@ -88,7 +88,7 @@ function uc_stock_report() {
   foreach ($result as $stock) {
     $op = array();
     if (user_access('administer products')) {
-      $op[] = l(t('edit'), 'node/' . $stock->nid . '/edit/stock', $options = array('query' => 'destination=admin/store/reports/stock'));
+      $op[] = l(t('edit'), 'node/' . $stock->nid . '/edit/stock', $options = array('query' => array('destination' => 'admin/store/reports/stock')));
     }
 
     // Add the data to a table row for display.
@@ -136,7 +136,7 @@ function uc_stock_report() {
   }
   else {
     $build['links']['toggle_pager'] = array(
-      '#markup' => l(t('Show all records'), 'admin/store/reports/stock', array('query' => 'nopage=1')),
+      '#markup' => l(t('Show all records'), 'admin/store/reports/stock', array('query' => array('nopage' => '1'))),
     );
   }
 

@@ -45,7 +45,7 @@ function uc_shipping_order_packages($order) {
         array('html' => TRUE))
       : '';
     $row[] = l(t('edit'), 'admin/store/orders/' . $order->order_id . '/packages/' . $package->package_id . '/edit');
-    $row[] = l(t('ship'), 'admin/store/orders/' . $order->order_id . '/shipments/new', array('query' => 'pkgs[]=' . $package->package_id));
+    $row[] = l(t('ship'), 'admin/store/orders/' . $order->order_id . '/shipments/new', array('query' => array('pkgs' => array($package->package_id))));
     $row[] = l(t('delete'), 'admin/store/orders/' . $order->order_id . '/packages/' . $package->package_id . '/delete');
 
     if ($package->sid) {

@@ -145,7 +145,7 @@ function uc_reports_customers() {
   }
   else {
     $build['links']['toggle_pager'] = array(
-      '#markup' => l(t('Show all records'), 'admin/store/reports/customers', array('query' => 'nopage=1')),
+      '#markup' => l(t('Show all records'), 'admin/store/reports/customers', array('query' => array('nopage' => '1'))),
     );
   }
 
@@ -326,10 +326,10 @@ function uc_reports_products() {
   }
   else {
     $build['links']['toggle_pager'] = array(
-      '#markup' => l(t('Show all records'), 'admin/store/reports/products', array('query' => 'nopage=1')),
+      '#markup' => l(t('Show all records'), 'admin/store/reports/products', array('query' => array('nopage' => '1'))),
     );
   }
-  $build['instructions'] = array('#markup' => '<small>*' . t('Make sure %setting_name is set to %state in the <a href="!url">access log settings page</a> to enable views column.', array('%setting_name' => 'count content views', '%state' => 'enabled', '!url' => url('admin/config/system/statistics', array('query' => 'destination=admin/store/reports/products')))) . '</small>');
+  $build['instructions'] = array('#markup' => '<small>*' . t('Make sure %setting_name is set to %state in the <a href="!url">access log settings page</a> to enable views column.', array('%setting_name' => 'count content views', '%state' => 'enabled', '!url' => url('admin/config/system/statistics', array('query' => array('destination' => 'admin/store/reports/products'))))) . '</small>');
 
   return $build;
 }
@@ -528,7 +528,7 @@ function uc_reports_products_custom() {
     '#markup' => l(t('Export to CSV file.'), 'admin/store/reports/getcsv/' . $csv_data['report'] . '/' . $csv_data['user']),
   );
 
-  $build['instructions'] = array('#markup' => '<small>*' . t('Make sure %setting_name is set to %state in the <a href="!url">access log settings page</a> to enable views column.', array('%setting_name' => 'count content views', '%state' => 'enabled', '!url' => url('admin/config/system/settings', array('query' => 'destination=admin/store/reports/products/custom')))) . '</small>');
+  $build['instructions'] = array('#markup' => '<small>*' . t('Make sure %setting_name is set to %state in the <a href="!url">access log settings page</a> to enable views column.', array('%setting_name' => 'count content views', '%state' => 'enabled', '!url' => url('admin/config/system/settings', array('query' => array('destination' => 'admin/store/reports/products/custom'))))) . '</small>');
 
   return $output;
 }
