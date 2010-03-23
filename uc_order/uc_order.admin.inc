@@ -838,7 +838,7 @@ function uc_order_address_book_form($form, &$form_state, $uid = 0, $type = 'bill
   $select = uc_select_address($uid, $type, $func);
 
   if ($uid == 0) {
-    $form['desc'] = array('#markup' => '<br />' . t('You must select a customer before address<br>information is available.<br>') . '<br/>');
+    $form['desc'] = array('#markup' => '<br />' . t('You must select a customer before address<br />information is available.<br />') . '<br />');
   }
   elseif (is_null($select)) {
     $form['desc'] = array('#markup' => '<br />' . t('No addresses found for customer.') . '<br />');
@@ -938,7 +938,7 @@ function uc_order_select_customer($email = NULL) {
       $build['email']['#markup'] .= '<b>' . t('Use this account now?') . '</b><br />'
         . t('User !uid - !mail', array('!uid' => $user->uid, '!mail' => $user->mail)) . ' <input type="button" '
         . 'onclick="select_existing_customer(' . $user->uid . ', \''
-        . $user->mail . '\');" value="' . t('Apply') . '" /><br /><br /><hr><br/>';
+        . $user->mail . '\');" value="' . t('Apply') . '" /><br /><br /><hr /><br/>';
     }
     else {
       $name = uc_store_email_to_username($email);
@@ -966,7 +966,7 @@ function uc_order_select_customer($email = NULL) {
         '#markup' => '<strong>' . t('Use this account now?') . '</strong><br />'
           . t('User @uid - @mail', array('@uid' => $account->uid, '@mail' => $account->mail)) . ' <input type="button" '
           . 'onclick="select_existing_customer(' . $account->uid . ', \''
-          . $account->mail . '\');" value="' . t('Apply') . '" /><br /><br /><hr><br/>',
+          . $account->mail . '\');" value="' . t('Apply') . '" /><br /><br /><hr /><br/>',
       );
     }
   }
@@ -987,7 +987,7 @@ function uc_order_select_customer_form($form, &$form_state, $options = NULL) {
   if (is_null(arg(4))) {
     $form['desc'] = array(
       '#markup' => '<div>' . t('Search for a customer based on these fields.')
-                 . '<br />' . t('Use * as a wildcard to match any character.') . '<br/>'
+                 . '<br />' . t('Use * as a wildcard to match any character.') . '<br />'
                  . '(<em>' . t('Leave a field empty to ignore it in the search.')
                  . '</em>)</div>',
     );

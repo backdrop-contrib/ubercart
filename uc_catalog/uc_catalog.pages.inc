@@ -80,7 +80,7 @@ function theme_uc_catalog_browse($variables) {
     if ($child->nodes) {
       $cell_link = $image . '<strong>' . l($child->name, uc_catalog_path($child)) . '</strong>';
       if (variable_get('uc_catalog_show_subcategories', TRUE)) {
-        $cell_link .= "<br/><span>" . implode(', ', $grandchildren) . "</span>\n";
+        $cell_link .= "<br /><span>" . implode(', ', $grandchildren) . "</span>\n";
       }
       $child_list[] = $cell_link;
     }

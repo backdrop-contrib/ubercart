@@ -467,13 +467,13 @@ function uc_reports_products_custom() {
         $sold = db_query("SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid AND o.created >= :start AND o.created <= :end", array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date'], ':model' => $model, ':nid' => $product['nid']))->fetchField();
         $revenue = db_query("SELECT SUM(p.price * p.qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid AND o.created >= :start AND o.created <= :end", array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date'], ':model' => $model, ':nid' => $product['nid']))->fetchField();
         $gross = db_query("SELECT (SUM(p.price * p.qty) - SUM(p.cost * p.qty)) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid AND o.created >= :start AND o.created <= :end", array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date'], ':model' => $model, ':nid' => $product['nid']))->fetchField();
-        $breakdown_product .= "<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$model";
+        $breakdown_product .= "<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$model";
         $product_csv .= "\n     $model";
-        $breakdown_sold .= "<br/>" . ((!empty($sold)) ? $sold : 0);
+        $breakdown_sold .= "<br />" . ((!empty($sold)) ? $sold : 0);
         $sold_csv .= "\n     " . ((!empty($sold)) ? $sold : 0);
-        $breakdown_revenue .= "<br/>" . (uc_currency_format((!empty($revenue)) ? $revenue : 0));
+        $breakdown_revenue .= "<br />" . (uc_currency_format((!empty($revenue)) ? $revenue : 0));
         $revenue_csv .= "\n     " . (uc_currency_format((!empty($revenue)) ? $revenue : 0));
-        $breakdown_gross .= "<br/>" . (uc_currency_format((!empty($gross)) ? $gross : 0));
+        $breakdown_gross .= "<br />" . (uc_currency_format((!empty($gross)) ? $gross : 0));
         $gross_csv .= "\n     " . (uc_currency_format((!empty($gross)) ? $gross : 0));
       }
       $product_cell = $product_cell . $breakdown_product;
@@ -1086,7 +1086,7 @@ function uc_reports_sales_custom() {
       // Grab the detailed product breakdown if selected.
       $result = db_query("SELECT SUM(op.qty) as count, n.title, n.nid FROM {uc_order_products} as op LEFT JOIN {uc_orders} as o ON o.order_id = op.order_id LEFT JOIN {node} as n ON n.nid = op.nid WHERE :start <= o.created AND o.created <= :end AND o.order_status IN (:statuses) GROUP BY n.nid ORDER BY count DESC, n.title ASC", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']));
       foreach ($result as $product_breakdown) {
-        $product_data .= $product_breakdown->count . ' x ' . l($product_breakdown->title, 'node/' . $product_breakdown->nid) . "<br/>\n";
+        $product_data .= $product_breakdown->count . ' x ' . l($product_breakdown->title, 'node/' . $product_breakdown->nid) . "<br />\n";
         $product_csv .= $product_breakdown->count . ' x ' . $product_breakdown->title . "\n";
       }
     }

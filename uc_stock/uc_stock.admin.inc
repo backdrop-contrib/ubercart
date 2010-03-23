@@ -258,7 +258,7 @@ function theme_uc_stock_edit_form($variables) {
   $form = $variables['form'];
 
   $header = array(
-    array('data' => t('Active')),
+    array('data' => '&nbsp;&nbsp;'. t('Active')) + theme('table_select_header_cell'),
     array('data' => t('SKU')),
     array('data' => t('Stock')),
     array('data' => t('Threshold')),

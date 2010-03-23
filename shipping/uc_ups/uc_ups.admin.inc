@@ -389,7 +389,7 @@ Your driver will pickup your shipment(s) as usual. </ul>
 FOLD HERE</td>
 </tr>
 <tr>
-<td align="left" valign="top"><hr>
+<td align="left" valign="top"><hr />
 </td>
 </tr>
 </table>
