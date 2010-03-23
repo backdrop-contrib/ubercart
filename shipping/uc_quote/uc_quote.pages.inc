@@ -68,7 +68,7 @@ function uc_quote_request_quotes() {
       $return_quotes[$method_id . '---' . $accsrl] = $data;
     }
   }
-  drupal_json($return_quotes);
+  drupal_json_output($return_quotes);
 }
 
 /**
