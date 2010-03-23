@@ -334,7 +334,7 @@ function uc_shipping_package_edit($form, &$form_state, $order, $package) {
  *
  * @ingroup themeable
  */
-function theme_uc_shipping_edit_package_fieldset($varibles) {
+function theme_uc_shipping_edit_package_fieldset($variables) {
   $fieldset = $variables['fieldset'];
 
   $output = '';

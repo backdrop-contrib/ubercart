@@ -255,7 +255,7 @@ function uc_quote_form_alter(&$form, &$form_state, $form_id) {
     $form['shipping']['shipping_type'] = array(
       '#type' => 'select',
       '#title' => t('Default product shipping type'),
-      '#default_value' => uc_quote_get_shipping_type('product', $form['#node']->nid),
+      '#default_value' => isset($form['#node']->nid) ? uc_quote_get_shipping_type('product', $form['#node']->nid) : variable_get('uc_store_shipping_type', 'small_package'),
       '#options' => $options,
       '#weight' => -7,
     );
@@ -821,9 +821,9 @@ function uc_cart_pane_quotes($form, &$form_state, $items) {
   // If a previous quote gets loaded, make sure it gets saved again.
   // Also, make sure the previously checked option is checked by default.
   drupal_add_js('jQuery(function() {
-    setQuoteCallbacks("' . drupal_urlencode($prod_string) . '");
+    setQuoteCallbacks("' . drupal_encode_path($prod_string) . '");
     jQuery("#uc-cart-pane-quotes").submit(function() {
-      quoteCallback("' . drupal_urlencode($prod_string) . '");
+      quoteCallback("' . drupal_encode_path($prod_string) . '");
       return false;
     });
   })', 'inline');
@@ -892,13 +892,19 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2) {
       ), 'setting');
       drupal_add_js('misc/progress.js');
       drupal_add_js(drupal_get_path('module', 'uc_quote') . '/uc_quote.js');
-      $default = $arg1->quote['method'] . '---' . ($arg1->quote['accessorials'] ? $arg1->quote['accessorials'] : 0);
+
+      if (!empty($arg1->quote)) {
+        $default = $arg1->quote['method'] . '---' . ($arg1->quote['accessorials'] ? $arg1->quote['accessorials'] : 0);
+      }
+      else {
+        $default = '---';
+      }
+
       $prod_string = '';
       foreach (uc_cart_get_contents() as $item) {
         $prod_string .= '|' . $item->nid;
         $prod_string .= '^' . $item->title;
         $prod_string .= '^' . $item->model;
-        $prod_string .= '^' . $item->manufacturer;
         $prod_string .= '^' . $item->qty;
         $prod_string .= '^' . $item->cost;
         $prod_string .= '^' . $item->price;
@@ -909,8 +915,10 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2) {
       // If a previous quote gets loaded, make sure it gets saved again.
       // Also, make sure the previously checked option is checked by default.
       drupal_add_js('
-        Drupal.behaviors.getQuotes = function (context) {
-          setQuoteCallbacks("' . drupal_urlencode($prod_string) . '", context);
+        Drupal.behaviors.getQuotes = {
+          attach: function (context) {
+            setQuoteCallbacks("' . drupal_encode_path($prod_string) . '", context);
+          }
         };
         jQuery(function() {
         var quoteButton = jQuery("input:radio[name=quote-option]").click(function() {
@@ -927,7 +935,7 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2) {
         }).filter("[value=' . $default . ']").click();
         var quoteDiv = jQuery("#quote");
         if (quoteDiv.length && jQuery("#quote input[name=quote-form]").length == 0) {
-          quoteDiv.append("<input type=\"hidden\" name=\"quote-form\" value=\"" + Drupal.encodeURIComponent(quoteDiv.html()) + "\" />");
+          quoteDiv.append("<input type=\"hidden\" name=\"quote-form\" value=\"" + Drupal.encodePath(quoteDiv.html()) + "\" />");
         }
       });', 'inline');
 
@@ -1077,7 +1085,7 @@ function uc_order_pane_quotes($op, $arg1) {
         jQuery("input:radio[name=quote-option]").filter("[value=' . $default . ']").attr("checked", "checked");
         var quoteDiv = jQuery("#quote");
         if (quoteDiv.length && jQuery("#quote input[name=quote-form]").length == 0) {
-          quoteDiv.append("<input type=\"hidden\" name=\"quote-form\" value=\"" + Drupal.encodeURIComponent(quoteDiv.html()) + "\" />");
+          quoteDiv.append("<input type=\"hidden\" name=\"quote-form\" value=\"" + Drupal.encodePath(quoteDiv.html()) + "\" />");
         }
       })', 'inline');
       return $form;

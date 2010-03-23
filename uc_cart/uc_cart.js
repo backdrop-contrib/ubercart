@@ -8,14 +8,12 @@
 var copy_box_checked = false;
 var uc_ce_submit_disable = false;
 
-(function($) {
-
 /**
  * Scan the DOM and displays the cancel and continue buttons.
  */
 Drupal.behaviors.ucShowOnLoad = {
   attach: function(context, settings) {
-    $('.show-onload:not(.ucShowOnLoad-processed)', context).addClass('ucShowOnLoad-processed').show();
+    jQuery('.show-onload:not(.ucShowOnLoad-processed)', context).addClass('ucShowOnLoad-processed').show();
   }
 }
 
@@ -24,9 +22,9 @@ Drupal.behaviors.ucShowOnLoad = {
  */
 Drupal.behaviors.ucSubmitOrderThrobber = {
   attach: function(context, settings) {
-    $('form#uc-cart-checkout-review-form input#edit-submit:not(.ucSubmitOrderThrobber-processed)', context).addClass('ucSubmitOrderThrobber-processed').click(function() {
-      $(this).clone().insertAfter(this).attr('disabled', true).after('<span class="ubercart-throbber">&nbsp;&nbsp;&nbsp;&nbsp;</span>').end().hide();
-      $('#uc-cart-checkout-review-form #edit-back').attr('disabled', true);
+    jQuery('form#uc-cart-checkout-review-form input#edit-submit:not(.ucSubmitOrderThrobber-processed)', context).addClass('ucSubmitOrderThrobber-processed').click(function() {
+      jQuery(this).clone().insertAfter(this).attr('disabled', true).after('<span class="ubercart-throbber">&nbsp;&nbsp;&nbsp;&nbsp;</span>').end().hide();
+      jQuery('#uc-cart-checkout-review-form #edit-back').attr('disabled', true);
     });
   }
 }
@@ -39,14 +37,14 @@ Drupal.behaviors.ucSubmitOrderThrobber = {
  */
 function uc_cart_next_button_click(button, pane_id, current) {
   if (current !== 'false') {
-    $('#' + current + '-pane legend a').click();
+    jQuery('#' + current + '-pane legend a').click();
   }
   else {
     button.disabled = true;
   }
 
-  if ($('#' + pane_id + '-pane').attr('class').indexOf('collapsed') > -1 && $('#' + pane_id + '-pane').html() !== null) {
-    $('#' + pane_id + '-pane legend a').click();
+  if (jQuery('#' + pane_id + '-pane').attr('class').indexOf('collapsed') > -1 && jQuery('#' + pane_id + '-pane').html() !== null) {
+    jQuery('#' + pane_id + '-pane legend a').click();
   }
 
   return false;
@@ -60,7 +58,7 @@ function uc_cart_next_button_click(button, pane_id, current) {
  */
 function uc_cart_copy_address(checked, source, target) {
   if (!checked) {
-    $('#' + target + '-pane div.address-pane-table').slideDown();
+    jQuery('#' + target + '-pane div.address-pane-table').slideDown();
     copy_box_checked = false;
     return false;
   }
@@ -73,25 +71,25 @@ function uc_cart_copy_address(checked, source, target) {
   }
 
   // Hide the target information fields.
-  $('#' + target + '-pane div.address-pane-table').slideUp();
+  jQuery('#' + target + '-pane div.address-pane-table').slideUp();
   copy_box_checked = true;
 
   // Copy over the zone options manually.
-  if ($('#edit-panes-' + target + '-' + target + '-zone').html() != $('#edit-panes-' + source + '-' + source + '-zone').html()) {
-    $('#edit-panes-' + target + '-' + target + '-zone').empty().append($('#edit-panes-' + source + '-' + source + '-zone').children().clone());
-    $('#edit-panes-' + target + '-' + target + '-zone').attr('disabled', $('#edit-panes-' + source + '-' + source + '-zone').attr('disabled'));
+  if (jQuery('#edit-panes-' + target + '-' + target + '-zone').html() != jQuery('#edit-panes-' + source + '-' + source + '-zone').html()) {
+    jQuery('#edit-panes-' + target + '-' + target + '-zone').empty().append(jQuery('#edit-panes-' + source + '-' + source + '-zone').children().clone());
+    jQuery('#edit-panes-' + target + '-' + target + '-zone').attr('disabled', jQuery('#edit-panes-' + source + '-' + source + '-zone').attr('disabled'));
   }
 
   // Copy over the information and set it to update if delivery info changes.
-  $('#' + source + '-pane input, select, textarea').each(
+  jQuery('#' + source + '-pane input, select, textarea').each(
     function() {
       if (this.id.substring(0, x) == 'edit-panes-' + source + '-' + source) {
-        $('#edit-panes-' + target + '-' + target + this.id.substring(x)).val($(this).val());
+        jQuery('#edit-panes-' + target + '-' + target + this.id.substring(x)).val(jQuery(this).val());
         if (target == 'billing') {
-          $(this).change(function () { update_billing_field(this); });
+          jQuery(this).change(function () { update_billing_field(this); });
         }
         else {
-          $(this).change(function () { update_delivery_field(this); });
+          jQuery(this).change(function () { update_delivery_field(this); });
         }
       }
     }
@@ -106,11 +104,11 @@ function uc_cart_copy_address(checked, source, target) {
 function update_billing_field(field) {
   if (copy_box_checked) {
     if (field.id.substring(29) == 'zone') {
-      $('#edit-panes-billing-billing-zone').empty().append($('#edit-panes-delivery-delivery-zone').children().clone());
-      $('#edit-panes-billing-billing-zone').attr('disabled', $('#edit-panes-delivery-delivery-zone').attr('disabled'));
+      jQuery('#edit-panes-billing-billing-zone').empty().append(jQuery('#edit-panes-delivery-delivery-zone').children().clone());
+      jQuery('#edit-panes-billing-billing-zone').attr('disabled', jQuery('#edit-panes-delivery-delivery-zone').attr('disabled'));
     }
 
-    $('#edit-panes-billing-billing' + field.id.substring(28)).val($(field).val()).change();
+    jQuery('#edit-panes-billing-billing' + field.id.substring(28)).val(jQuery(field).val()).change();
   }
 }
 
@@ -120,11 +118,11 @@ function update_billing_field(field) {
 function update_delivery_field(field) {
   if (copy_box_checked) {
     if (field.id.substring(27) == 'zone') {
-      $('#edit-panes-delivery-delivery-zone').empty().append($('#edit-panes-billing-billing-zone').children().clone());
-      $('#edit-panes-delivery-delivery-zone').attr('disabled', $('#edit-panes-billing-billing-zone').attr('disabled'));
+      jQuery('#edit-panes-delivery-delivery-zone').empty().append(jQuery('#edit-panes-billing-billing-zone').children().clone());
+      jQuery('#edit-panes-delivery-delivery-zone').attr('disabled', jQuery('#edit-panes-billing-billing-zone').attr('disabled'));
     }
 
-    $('#edit-panes-delivery-delivery' + field.id.substring(26)).val($(field).val()).change();
+    jQuery('#edit-panes-delivery-delivery' + field.id.substring(26)).val(jQuery(field).val()).change();
   }
 }
 
@@ -139,24 +137,24 @@ function apply_address(type, address_str) {
   eval('var address = ' + address_str + ';');
   var temp = type + '-' + type;
 
-  $('#edit-panes-' + temp + '-first-name').val(address.first_name).trigger('change');
-  $('#edit-panes-' + temp + '-last-name').val(address.last_name).trigger('change');
-  $('#edit-panes-' + temp + '-phone').val(address.phone).trigger('change');
-  $('#edit-panes-' + temp + '-company').val(address.company).trigger('change');
-  $('#edit-panes-' + temp + '-street1').val(address.street1).trigger('change');
-  $('#edit-panes-' + temp + '-street2').val(address.street2).trigger('change');
-  $('#edit-panes-' + temp + '-city').val(address.city).trigger('change');
-  $('#edit-panes-' + temp + '-postal-code').val(address.postal_code).trigger('change');
+  jQuery('#edit-panes-' + temp + '-first-name').val(address.first_name).trigger('change');
+  jQuery('#edit-panes-' + temp + '-last-name').val(address.last_name).trigger('change');
+  jQuery('#edit-panes-' + temp + '-phone').val(address.phone).trigger('change');
+  jQuery('#edit-panes-' + temp + '-company').val(address.company).trigger('change');
+  jQuery('#edit-panes-' + temp + '-street1').val(address.street1).trigger('change');
+  jQuery('#edit-panes-' + temp + '-street2').val(address.street2).trigger('change');
+  jQuery('#edit-panes-' + temp + '-city').val(address.city).trigger('change');
+  jQuery('#edit-panes-' + temp + '-postal-code').val(address.postal_code).trigger('change');
 
-  if ($('#edit-panes-' + temp + '-country').val() != address.country) {
-    $('#edit-panes-' + temp + '-country').val(address.country).trigger('change');
+  if (jQuery('#edit-panes-' + temp + '-country').val() != address.country) {
+    jQuery('#edit-panes-' + temp + '-country').val(address.country).trigger('change');
     try {
       uc_update_zone_select('edit-panes-' + temp + '-country', address.zone);
     }
     catch (err) { }
   }
 
-  $('#edit-panes-' + temp + '-zone').val(address.zone).trigger('change');
+  jQuery('#edit-panes-' + temp + '-zone').val(address.zone).trigger('change');
 }
 
 /**
@@ -169,13 +167,12 @@ function apply_address(type, address_str) {
  */
 Drupal.behaviors.ucDisableNav = {
   attach: function(context, settings) {
-    $('form#uc-cart-checkout-review-form input#edit-submit:not(.ucDisableNav-processed)', context).addClass('ucDisableNav-processed').click(function() {
+    jQuery('form#uc-cart-checkout-review-form input#edit-submit:not(.ucDisableNav-processed)', context).addClass('ucDisableNav-processed').click(function() {
       if (uc_ce_submit_disable) {
-        $(this).clone().insertAfter(this).attr('disabled', true).after('<span id=\"submit-throbber\" style=\"background: url(' + settings.basePath + 'misc/throbber.gif) no-repeat 100% -20px;\">&nbsp;&nbsp;&nbsp;&nbsp;</span>').end().hide();
-        $('#uc-cart-checkout-review-form #edit-back').attr('disabled', true);
+        jQuery(this).clone().insertAfter(this).attr('disabled', true).after('<span id=\"submit-throbber\" style=\"background: url(' + settings.basePath + 'misc/throbber.gif) no-repeat 100% -20px;\">&nbsp;&nbsp;&nbsp;&nbsp;</span>').end().hide();
+        jQuery('#uc-cart-checkout-review-form #edit-back').attr('disabled', true);
       }
     });
   }
 }
 
-})(jQuery);

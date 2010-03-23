@@ -395,7 +395,7 @@ function uc_reports_products_custom() {
     $args = array(
       'start_date' => arg(5),
       'end_date' => arg(6),
-      'status' => explode(',', urldecode(arg(7))),
+      'status' => explode(',', arg(7)),
     );
   }
 
@@ -1027,7 +1027,7 @@ function uc_reports_sales_custom() {
       'start_date' => arg(5),
       'end_date' => arg(6),
       'length' => arg(7),
-      'status' => explode(',', urldecode(arg(8))),
+      'status' => explode(',', arg(8)),
       'detail' => arg(9),
     );
   }
@@ -1266,7 +1266,7 @@ function uc_reports_sales_custom_form_submit($form, &$form_state) {
     $start_date,
     $end_date,
     $form_state['values']['length'],
-    drupal_urlencode(implode(',', array_keys($form_state['values']['status']))),
+    implode(',', array_keys($form_state['values']['status'])),
     $form_state['values']['detail'],
   );
 

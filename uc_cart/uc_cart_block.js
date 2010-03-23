@@ -1,4 +1,5 @@
 // $Id$
+(function ($) {
 
 /**
  * @file
@@ -8,12 +9,14 @@
 /**
  * Set the behavior to (un)collapse the cart block on a click
  */
-Drupal.behaviors.ucCollapseBlock = function(context) {
-  $('.cart-block-title-bar:not(.ucCollapseBlock-processed)', context).addClass('ucCollapseBlock-processed').click(
-    function() {
-      cart_block_toggle();
-    }
-  );
+Drupal.behaviors.ucCollapseBlock = {
+  attach: function(context) {
+    $('.cart-block-title-bar:not(.ucCollapseBlock-processed)', context).addClass('ucCollapseBlock-processed').click(
+      function() {
+        cart_block_toggle();
+      }
+    );
+  }
 }
 
 /**
@@ -50,3 +53,5 @@ function cart_block_toggle() {
     $('.cart-block-arrow').removeClass('arrow-down').addClass('arrow-up');
   }
 }
+
+})(jQuery);

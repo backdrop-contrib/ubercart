@@ -1,5 +1,4 @@
 // $Id$
-(function($) {
 
 /**
  * Calculate the number of bytes of a Unicode string.
@@ -10,11 +9,11 @@
  * use this function to get the correct string length.
  */
 String.prototype.bytes = function() {
-  // Drupal.encodeURIComponent() gets around some weirdness in
+  // Drupal.encodePath() gets around some weirdness in
   // encodeURIComponent(), but encodes some characters twice. The first
   // replace takes care of those while the second lets String.length count
   // the multi-byte characters.
-  return Drupal.encodeURIComponent(this).replace(/%252[36F]/g, 'x').replace(/%../g, 'x').length;
+  return Drupal.encodePath(this).replace(/%252[36F]/g, 'x').replace(/%../g, 'x').length;
 };
 
 // Arrays for order total preview data.
@@ -35,7 +34,7 @@ jQuery.extend(Drupal.settings, {
   ucOrderInitiate: false
 });
 
-$(document).ready(
+jQuery(document).ready(
   function() {
 
     // attach a progressbar if requested
@@ -51,7 +50,7 @@ $(document).ready(
     // disable the submission buttons and get payment details
     if (Drupal.settings.ucOrderInitiate) {
       add_order_save_hold();
-      get_payment_details(Drupal.settings.ucURL.adminOrders + $('#edit-order-id').val() + '/payment_details/' + $('#edit-payment-method').val());
+      get_payment_details(Drupal.settings.ucURL.adminOrders + jQuery('#edit-order-id').val() + '/payment_details/' + jQuery('#edit-payment-method').val());
     }
   }
 )
@@ -59,33 +58,33 @@ $(document).ready(
 function show_progressBar(id) {
   var progress = new Drupal.progressBar('paymentProgress');
   progress.setProgress(-1, '');
-  $(id).empty().append(progress.element);
+  jQuery(id).empty().append(progress.element);
 }
 
 function serializeOrder() {
-  var products = $("[name=cart_contents]").val();
+  var products = jQuery("[name=cart_contents]").val();
   if (!products) {
     return false;
   }
 
-  var p_email = $("input[name*=primary_email]").val() || '';
-  var s_f_name = $("input[name*=delivery_first_name]").val() || '';
-  var s_l_name = $("input[name*=delivery_last_name]").val() || '';
-  var s_street1 = $("input[name*=delivery_street1]").val() || '';
-  var s_street2 = $("input[name*=delivery_street2]").val() || '';
-  var s_city = $("input[name*=delivery_city]").val() || '';
-  var s_zone = $("select[name*=delivery_zone]").val() || '0';
-  var s_code = $("input[name*=delivery_postal_code]").val() || '';
-  var s_country = $("select[name*=delivery_country]").val() || '0';
+  var p_email = jQuery("input[name*=primary_email]").val() || '';
+  var s_f_name = jQuery("input[name*=delivery_first_name]").val() || '';
+  var s_l_name = jQuery("input[name*=delivery_last_name]").val() || '';
+  var s_street1 = jQuery("input[name*=delivery_street1]").val() || '';
+  var s_street2 = jQuery("input[name*=delivery_street2]").val() || '';
+  var s_city = jQuery("input[name*=delivery_city]").val() || '';
+  var s_zone = jQuery("select[name*=delivery_zone]").val() || '0';
+  var s_code = jQuery("input[name*=delivery_postal_code]").val() || '';
+  var s_country = jQuery("select[name*=delivery_country]").val() || '0';
 
-  var b_f_name = $("input[name*=billing_first_name]").val() || '';
-  var b_l_name = $("input[name*=billing_last_name]").val() || '';
-  var b_street1 = $("input[name*=billing_street1]").val() || '';
-  var b_street2 = $("input[name*=billing_street2]").val() || '';
-  var b_city = $("input[name*=billing_city]").val() || '';
-  var b_zone = $("select[name*=billing_zone]").val() || '0';
-  var b_code = $("input[name*=billing_postal_code]").val() || '';
-  var b_country = $("select[name*=billing_country]").val() || '0';
+  var b_f_name = jQuery("input[name*=billing_first_name]").val() || '';
+  var b_l_name = jQuery("input[name*=billing_last_name]").val() || '';
+  var b_street1 = jQuery("input[name*=billing_street1]").val() || '';
+  var b_street2 = jQuery("input[name*=billing_street2]").val() || '';
+  var b_city = jQuery("input[name*=billing_city]").val() || '';
+  var b_zone = jQuery("select[name*=billing_zone]").val() || '0';
+  var b_code = jQuery("input[name*=billing_postal_code]").val() || '';
+  var b_country = jQuery("select[name*=billing_country]").val() || '0';
 
   var line_item = '';
   var key;
@@ -172,7 +171,7 @@ function render_line_items() {
 
   // Put all the existing line item data into a single array.
   var cur_total = 0;
-  $.each(li_titles,
+  jQuery.each(li_titles,
     function(a, b) {
       // Tally up the current order total for storage in a hidden item.
       if (li_titles[a] != '' && li_summed[a] == 1) {
@@ -180,16 +179,16 @@ function render_line_items() {
       }
     }
   );
-  $('#edit-panes-payment-current-total').val(cur_total).click();
+  jQuery('#edit-panes-payment-current-total').val(cur_total).click();
 
-  $('#order-total-throbber').addClass('ubercart-throbber').html('&nbsp;&nbsp;&nbsp;&nbsp;');
+  jQuery('#order-total-throbber').addClass('ubercart-throbber').html('&nbsp;&nbsp;&nbsp;&nbsp;');
 
   // Post the line item data to a URL and get it back formatted for display.
-  $.post(Drupal.settings.ucURL.checkoutLineItems, {order: serializeOrder()},
+  jQuery.post(Drupal.settings.ucURL.checkoutLineItems, {order: serializeOrder()},
     function(contents) {
       // Only display the changes if this was the last requested update.
       if (this_update.getTime() == line_update) {
-        $('#line-items-div').empty().append(contents);
+        jQuery('#line-items-div').empty().append(contents);
       }
     }
   );
@@ -218,7 +217,7 @@ function init_payment_details(payment_method) {
 function get_payment_details(path) {
   var progress = new Drupal.progressBar('paymentProgress');
   progress.setProgress(-1, '');
-  $('#payment_details').empty().append(progress.element).removeClass('display-none');
+  jQuery('#payment_details').empty().append(progress.element).removeClass('display-none');
 
   // Get the timestamp for the current update.
   var this_update = new Date();
@@ -226,23 +225,23 @@ function get_payment_details(path) {
   // Set the global timestamp for the update.
   payment_update = this_update.getTime();
 
-  if ($('#edit-payment-details-data').length) {
-    data = { 'payment-details-data' : $('#edit-payment-details-data').val() };
+  if (jQuery('#edit-payment-details-data').length) {
+    data = { 'payment-details-data' : jQuery('#edit-payment-details-data').val() };
   }
   else {
     data = {};
   }
   // Make the post to get the details for the chosen payment method.
-  $.post(path, data,
+  jQuery.post(path, data,
     function(details) {
       if (this_update.getTime() == payment_update) {
         // If the response was empty, throw up the default message.
         if (details == '') {
-          $('#payment_details').empty().html(Drupal.settings.defPaymentMsg);
+          jQuery('#payment_details').empty().html(Drupal.settings.defPaymentMsg);
         }
         // Otherwise display the returned details.
         else {
-          $('#payment_details').empty().append(details);
+          jQuery('#payment_details').empty().append(details);
         }
       }
 
@@ -266,13 +265,12 @@ function cvv_info_popup() {
  */
 function receive_check_toggle(checked) {
   if (!checked) {
-    $('#edit-amount').removeAttr('disabled').val('');
-    $('#edit-comment').removeAttr('disabled').val('');
+    jQuery('#edit-amount').removeAttr('disabled').val('');
+    jQuery('#edit-comment').removeAttr('disabled').val('');
   }
   else {
-    $('#edit-amount').attr('disabled', 'true').val('-');
-    $('#edit-comment').attr('disabled', 'true').val('-');
+    jQuery('#edit-amount').attr('disabled', 'true').val('-');
+    jQuery('#edit-comment').attr('disabled', 'true').val('-');
   }
 }
 
-})(jQuery);

@@ -153,7 +153,7 @@ function uc_roles_ca_predicate() {
           'addresses' => '[order-email]',
           'subject' => uc_get_message('uc_roles_renew_subject'),
           'message' => uc_get_message('uc_roles_renew_message'),
-          'format' => filter_format_default(),
+          'format' => filter_default_format(),
         ),
       ),
     ),

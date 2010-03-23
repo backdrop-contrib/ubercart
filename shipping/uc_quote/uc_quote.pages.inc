@@ -22,16 +22,15 @@ function uc_quote_request_quotes() {
     $product->nid = $props[0];
     $product->title = $props[1];
     $product->model = $props[2];
-    $product->manufacturer = $props[3];
-    $product->qty = $props[4];
-    $product->cost = $props[5];
-    $product->price = $props[6];
-    $product->weight = $props[7];
-    if ($data = unserialize($props[8])) {
+    $product->qty = $props[3];
+    $product->cost = $props[4];
+    $product->price = $props[5];
+    $product->weight = $props[6];
+    if ($data = unserialize($props[7])) {
       $product->data = $data;
     }
     else {
-      $product->data = $props[8];
+      $product->data = $props[7];
     }
     if ($product->nid) {
       $node = (array)node_load($product->nid);

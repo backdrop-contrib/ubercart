@@ -6,18 +6,16 @@
  */
 
 var pane = '';
-if ($("input[name*=delivery_]").length) {
+if (jQuery("input[name*=delivery_]").length) {
   pane = 'delivery'
 }
-else if ($("input[name*=billing_]").length) {
+else if (jQuery("input[name*=billing_]").length) {
   pane = 'billing'
 }
 
-(function($) {
-
-$(document).ready(function() {
+jQuery(document).ready(function() {
   getTax();
-  $("select[name*=delivery_country], "
+  jQuery("select[name*=delivery_country], "
     + "select[name*=delivery_zone], "
     + "input[name*=delivery_city], "
     + "input[name*=delivery_postal_code], "
@@ -25,8 +23,8 @@ $(document).ready(function() {
     + "select[name*=billing_zone], "
     + "input[name*=billing_city], "
     + "input[name*=billing_postal_code]").change(getTax);
-  $("input[name*=copy_address]").click(getTax);
-  $('#edit-panes-payment-current-total').click(getTax);
+  jQuery("input[name*=copy_address]").click(getTax);
+  jQuery('#edit-panes-payment-current-total').click(getTax);
 });
 
 /**
@@ -36,10 +34,10 @@ function getTax() {
   var order = serializeOrder();
 
   if (!!order) {
-    $.ajax({
+    jQuery.ajax({
       type: "POST",
       url: Drupal.settings.ucURL.calculateTax,
-      data: 'order=' + Drupal.encodeURIComponent(order),
+      data: 'order=' + Drupal.encodePath(order),
       dataType: "json",
       success: function(taxes) {
         var key;
@@ -91,4 +89,3 @@ function getTax() {
   }
 }
 
-})(jQuery);

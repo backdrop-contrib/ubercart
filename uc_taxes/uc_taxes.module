@@ -246,6 +246,16 @@ function uc_line_item_tax($op, $order) {
  */
 function uc_line_item_tax_subtotal($op, $order) {
   $amount = 0;
+//  if ($different && $has_taxes) {
+    switch ($op) {
+      case 'cart-preview':
+        drupal_add_js("jQuery(document).ready(function() {
+          if (window.set_line_item) {
+            set_line_item('tax_subtotal', '" . t('Subtotal excluding taxes') . "', " . $amount . ", " . variable_get('uc_li_tax_subtotal_weight', 8) . ");
+          }
+        });", 'inline');
+      break;
+      case 'load':
   if (is_array($order->products)) {
     foreach ($order->products as $item) {
       $amount += $item->price * $item->qty;
@@ -268,16 +278,6 @@ function uc_line_item_tax_subtotal($op, $order) {
   if (is_array($order->taxes)) {
     $has_taxes = TRUE;
   }
-  if ($different && $has_taxes) {
-    switch ($op) {
-      case 'cart-preview':
-        drupal_add_js("jQuery(document).ready(function() {
-          if (window.set_line_item) {
-            set_line_item('tax_subtotal', '" . t('Subtotal excluding taxes') . "', " . $amount . ", " . variable_get('uc_li_tax_subtotal_weight', 8) . ");
-          }
-        });", 'inline');
-      break;
-      case 'load':
         return array(array(
           'id' => 'tax_subtotal',
           'title' => t('Subtotal excluding taxes'),
@@ -285,7 +285,7 @@ function uc_line_item_tax_subtotal($op, $order) {
           'weight' => variable_get('uc_li_tax_subtotal_weight', 7),
         ));
     }
-  }
+//  }
 }
 
 

@@ -29,7 +29,7 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
 
         $contents['current_total'] = array(
           '#type' => 'hidden',
-          '#value' => $arg1->order_total > 0 ? $arg1->order_total : NULL,
+          '#value' => isset($arg1->order_total) && $arg1->order_total > 0 ? $arg1->order_total : NULL,
         );
         $contents['shown_total'] = array(
           '#markup' => '<div style="padding: .5em 1em; margin-bottom: 1em; border: dashed 1px #bbb;" id="line-items-div"><em>' . t('Javascript must be enabled to view the order total preview.') . '</em></div>',
@@ -41,6 +41,8 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
       }
 
       $methods = _payment_method_list();
+      $options = array();
+      $default = NULL;
 
       foreach ($methods as $method) {
         if ($method['checkout']) {
@@ -48,7 +50,7 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
         }
       }
 
-      if (is_array($options)) {
+      if (count($options)) {
         if (isset($_POST['panes']) && in_array($_POST['panes']['payment']['payment_method'], array_keys($options))) {
           $default = $_POST['panes']['payment']['payment_method'];
         }

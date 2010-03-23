@@ -47,8 +47,10 @@ function tapir_get_table($table_id) {
 function tapir_gather_rows($element) {
   foreach (element_children($element) as $row) {
     foreach (array_keys($element['#columns']) as $col_id) {
-      $element['#rows'][$row][$col_id] = $element[$row][$col_id];
-      unset($element[$row][$col_id]);
+      if (isset($element[$row][$col_id])) {
+        $element['#rows'][$row][$col_id] = $element[$row][$col_id];
+        unset($element[$row][$col_id]);
+      }
     }
     $element['#rows'][$row]['#attributes'] = isset($element[$row]['#attributes']) ? $element[$row]['#attributes'] : array();
   }
@@ -130,7 +132,18 @@ function theme_tapir_table($variables) {
   }
 
   // Return the rendered table.
-  return theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => (array)$element['#attributes'], 'caption' => $element['#title'])) . drupal_render_children($element);
+  $options = array(
+    'header' => $header,
+    'rows' => $rows,
+  );
+  if (isset($element['#attributes'])) {
+    $options['attributes'] = (array)$element['#attributes'];
+  }
+  if (isset($element['#title'])) {
+    $options['caption'] = $element['#title'];
+  }
+
+  return theme('table', $options) . drupal_render_children($element);
 }
 
 /**

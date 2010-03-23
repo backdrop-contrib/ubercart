@@ -274,7 +274,9 @@ function uc_store_customer_search_form($form, &$form_state) {
   return $form;
 }
 
-function theme_uc_store_customer_search_fieldset($form) {
+function theme_uc_store_customer_search_fieldset($variables) {
+  $form = $variables['form'];
+
   $output = '<table><tbody style="border: 0px;"><tr><td>';
   $output .= drupal_render($form['first_name']);
 
