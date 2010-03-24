@@ -1109,6 +1109,6 @@ function _uc_order_pane_data($pane_id, $key) {
 /**
  * Call an order pane function with the argument passed by reference.
  */
-function _call_order_pane_byref($func, $op, &$form) {
+function _uc_order_call_order_pane_byref($func, $op, &$form) {
   return $func($op, $form);
 }
