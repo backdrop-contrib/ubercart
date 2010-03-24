@@ -207,7 +207,7 @@ function uc_payment_gateways_form($form, &$form_state) {
 
       // Find any additional settings defined in the payment gateway callback.
       if (isset($gateway['settings']) && function_exists($gateway['settings'])) {
-        $gateway_settings = $gateway['settings']();
+        $gateway_settings = $gateway['settings'](array(), $form_state);
         if (is_array($gateway_settings)) {
           $form['gateways'][$gateway['id']] = array_merge($form['gateways'][$gateway['id']], $gateway_settings);
         }
