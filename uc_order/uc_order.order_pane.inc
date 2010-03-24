@@ -268,10 +268,10 @@ function uc_order_pane_customer($op, $arg1) {
 function uc_order_pane_products($op, $arg1) {
   switch ($op) {
     case 'view':
-      return tapir_get_table('op_products_view_table', $arg1);
+      return tapir_get_table('uc_op_products_view_table', $arg1);
 
     case 'customer':
-      return tapir_get_table('op_products_customer_table', $arg1);
+      return tapir_get_table('uc_op_products_customer_table', $arg1);
 
     case 'edit-theme':
       drupal_add_js('uc_order_load_product_edit_div(' . $arg1['order_id']['#value'] . ');', 'inline');
@@ -314,7 +314,7 @@ function uc_order_pane_line_items($op, $arg1) {
     case 'view':
     case 'customer':
       $line_items = $arg1->line_items;
-      $items = _line_item_list();
+      $items = _uc_line_item_list();
       foreach ($items as $item) {
         if (isset($item['display_only']) && $item['display_only'] == TRUE) {
           $result = $item['callback']('display', $arg1);
@@ -372,7 +372,7 @@ function uc_order_pane_line_items($op, $arg1) {
 
     case 'edit-form':
       $options = array();
-      $items = _line_item_list();
+      $items = _uc_line_item_list();
       $line_items = $arg1->line_items;
       foreach ($items as $item) {
         if ($item['add_list'] === TRUE) {
@@ -434,7 +434,7 @@ function uc_order_pane_line_items($op, $arg1) {
           '#type' => 'hidden',
           '#value' => $item['line_item_id'],
         );
-        if (_line_item_data($item['type'], 'stored') == TRUE) {
+        if (_uc_line_item_data($item['type'], 'stored') == TRUE) {
           $form['line_items'][$item['line_item_id']]['title'] = array(
             '#type' => 'textfield',
             '#title' => t('Title'),
@@ -523,7 +523,7 @@ function uc_order_pane_order_comments($op, $arg1) {
   switch ($op) {
     case 'view':
       $comments = uc_order_comments_load($arg1->order_id);
-      return tapir_get_table('op_order_comments_view_table', $comments);
+      return tapir_get_table('uc_op_order_comments_view_table', $comments);
 
     case 'customer':
       $comments = uc_order_comments_load($arg1->order_id);
@@ -562,7 +562,7 @@ function uc_order_pane_admin_comments($op, $arg1) {
   switch ($op) {
     case 'view':
       $comments = uc_order_comments_load($arg1->order_id, TRUE);
-      return tapir_get_table('op_admin_comments_view_table', $comments);
+      return tapir_get_table('uc_op_admin_comments_view_table', $comments);
 
     case 'edit-form':
       $form['admin_comment_field'] = array(
@@ -727,7 +727,7 @@ function uc_order_view_update_form_submit($form, &$form_state) {
 /**
  * Build the order view products table.
  */
-function op_products_view_table($order) {
+function uc_op_products_view_table($order) {
   $table = array(
     '#type' => 'tapir_table',
     '#attributes' => array('class' => array('order-pane-table')),
@@ -843,7 +843,7 @@ function op_products_view_table($order) {
 /**
  * Build the order customer's view products table.
  */
-function op_products_customer_table($order) {
+function uc_op_products_customer_table($order) {
   $table = array(
     '#type' => 'tapir_table',
     '#attributes' => array('class' => array('order-pane-table')),
@@ -958,7 +958,7 @@ function op_products_customer_table($order) {
 /**
  * Build the order comments table.
  */
-function op_order_comments_view_table($comments) {
+function uc_op_order_comments_view_table($comments) {
   $table = array(
     '#type' => 'tapir_table',
     '#attributes' => array('class' => array('order-pane-table')),
@@ -1026,7 +1026,7 @@ function op_order_comments_view_table($comments) {
 /**
  * Build the order admin comments table.
  */
-function op_admin_comments_view_table($comments) {
+function uc_op_admin_comments_view_table($comments) {
   $table = array(
     '#type' => 'tapir_table',
     '#attributes' => array('class' => array('order-pane-table')),
@@ -1077,7 +1077,7 @@ function op_admin_comments_view_table($comments) {
 /**
  * Build a list of order panes defined in the enabled modules.
  */
-function _order_pane_list($view = 'view') {
+function _uc_order_pane_list($view = 'view') {
   static $panes;
 
   if (count($panes) > 0) {
@@ -1097,8 +1097,8 @@ function _order_pane_list($view = 'view') {
 /**
  * Return data from an order pane by pane ID and the array key.
  */
-function _order_pane_data($pane_id, $key) {
-  $panes = _order_pane_list();
+function _uc_order_pane_data($pane_id, $key) {
+  $panes = _uc_order_pane_list();
   foreach ($panes as $pane) {
     if ($pane['id'] == $pane_id) {
       return $pane[$key];

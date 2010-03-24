@@ -332,7 +332,7 @@ function uc_credit_uc_order($op, &$arg1, $arg2) {
           // later for test processing.
           $cc_data = $arg1->payment_details;
 
-          _save_cc_data_to_order($cc_data, $arg1->order_id);
+          _uc_credit_save_cc_data_to_order($cc_data, $arg1->order_id);
         }
       }
       break;
@@ -356,7 +356,7 @@ function uc_credit_uc_order($op, &$arg1, $arg2) {
             );
           }
 
-          _save_cc_data_to_order($cc_data, $arg1->order_id);
+          _uc_credit_save_cc_data_to_order($cc_data, $arg1->order_id);
         }
       }
       break;
@@ -473,7 +473,7 @@ function uc_payment_method_credit($op, &$arg1, $silent = FALSE) {
       }
 
       // Validate the CC number if that's turned on/check for non-digits.
-      if ((variable_get('uc_credit_validate_numbers', TRUE) && !_valid_card_number($cc_data['cc_number']))
+      if ((variable_get('uc_credit_validate_numbers', TRUE) && !_uc_credit_valid_card_number($cc_data['cc_number']))
         || !ctype_digit($cc_data['cc_number'])) {
         if (!$silent) {
           drupal_set_message(t('You have entered an invalid credit card number.'), 'error');
@@ -482,7 +482,7 @@ function uc_payment_method_credit($op, &$arg1, $silent = FALSE) {
       }
 
       // Validate the start date (if entered).
-      if (variable_get('uc_credit_start_enabled', FALSE) && !_valid_card_start($cc_data['cc_start_month'], $cc_data['cc_start_year'])) {
+      if (variable_get('uc_credit_start_enabled', FALSE) && !_uc_credit_valid_card_start($cc_data['cc_start_month'], $cc_data['cc_start_year'])) {
         if (!$silent) {
           drupal_set_message(t('The start date you entered is invalid.'), 'error');
         }
@@ -490,7 +490,7 @@ function uc_payment_method_credit($op, &$arg1, $silent = FALSE) {
       }
 
       // Validate the card expiration date.
-      if (!_valid_card_expiration($cc_data['cc_exp_month'], $cc_data['cc_exp_year'])) {
+      if (!_uc_credit_valid_card_expiration($cc_data['cc_exp_month'], $cc_data['cc_exp_year'])) {
         if (!$silent) {
           drupal_set_message(t('The credit card you entered has expired.'), 'error');
         }
@@ -499,7 +499,7 @@ function uc_payment_method_credit($op, &$arg1, $silent = FALSE) {
 
       // Validate the issue number (if entered).  With issue numbers, '01' is
       // different from '1', but is_numeric() is still appropriate.
-      if (variable_get('uc_credit_issue_enabled', FALSE) && !_valid_card_issue($cc_data['cc_issue'])) {
+      if (variable_get('uc_credit_issue_enabled', FALSE) && !_uc_credit_valid_card_issue($cc_data['cc_issue'])) {
         if (!$silent) {
           drupal_set_message(t('The issue number you entered is invalid.'), 'error');
         }
@@ -507,7 +507,7 @@ function uc_payment_method_credit($op, &$arg1, $silent = FALSE) {
       }
 
       // Validate the CVV number if enabled.
-      if (variable_get('uc_credit_cvv_enabled', TRUE) && !_valid_cvv($cc_data['cc_cvv'])) {
+      if (variable_get('uc_credit_cvv_enabled', TRUE) && !_uc_credit_valid_cvv($cc_data['cc_cvv'])) {
         if (!$silent) {
           drupal_set_message(t('You have entered an invalid CVV number.'), 'error');
         }
@@ -973,7 +973,7 @@ function uc_payment_method_credit_form($form, &$form_state, $order) {
   }
 
   // Set up the default CC number on the credit card form.
-  if (variable_get('uc_credit_validate_numbers', TRUE) && (strlen($order->payment_details['cc_number']) > 4 && !_valid_card_number($order->payment_details['cc_number']))) {
+  if (variable_get('uc_credit_validate_numbers', TRUE) && (strlen($order->payment_details['cc_number']) > 4 && !_uc_credit_valid_card_number($order->payment_details['cc_number']))) {
     // Display the number as is if it does not validate so it can be corrected.
     $default_num = $order->payment_details['cc_number'];
   }
@@ -1006,7 +1006,7 @@ function uc_payment_method_credit_form($form, &$form_state, $order) {
 
   if (variable_get('uc_credit_issue_enabled', FALSE)) {
     // Set up the default Issue Number on the credit card form.
-    if (!_valid_card_issue($order->payment_details['cc_issue'])) {
+    if (!_uc_credit_valid_card_issue($order->payment_details['cc_issue'])) {
       // Display the Issue Number as is if it does not validate so it can be corrected.
       $default_card_issue = $order->payment_details['cc_issue'];
     }
@@ -1032,7 +1032,7 @@ function uc_payment_method_credit_form($form, &$form_state, $order) {
 
   if (variable_get('uc_credit_cvv_enabled', TRUE)) {
     // Set up the default CVV  on the credit card form.
-    if (!_valid_cvv($order->payment_details['cc_cvv'])) {
+    if (!_uc_credit_valid_cvv($order->payment_details['cc_cvv'])) {
       // Display the CVV as is if it does not validate so it can be corrected.
       $default_cvv = $order->payment_details['cc_cvv'];
     }
@@ -1264,7 +1264,7 @@ function uc_credit_cart_review_post_form_submit($form, &$form_state) {
 }
 
 // Validates a CVV number during checkout.
-function _valid_cvv($cvv) {
+function _uc_credit_valid_cvv($cvv) {
   $digits = array();
 
   if (variable_get('uc_credit_visa', TRUE) ||
@@ -1288,7 +1288,7 @@ function _valid_cvv($cvv) {
  * Validates a credit card number during checkout.
  * See: http://www.merriampark.com/anatomycc.htm
  */
-function _valid_card_number($number) {
+function _uc_credit_valid_card_number($number) {
   $id = substr($number, 0, 1);
   if (($id == 3 && !variable_get('uc_credit_amex', TRUE)) ||
       ($id == 4 && !variable_get('uc_credit_visa', TRUE)) ||
@@ -1327,7 +1327,7 @@ function _valid_card_number($number) {
  *   TRUE for cards whose start date is blank (both month and year) or in the
  *   past, FALSE otherwise.
  */
-function _valid_card_start($month, $year) {
+function _uc_credit_valid_card_start($month, $year) {
   if (empty($month) && empty($year)) {
     return TRUE;
   }
@@ -1358,7 +1358,7 @@ function _valid_card_start($month, $year) {
  * @return
  *   TRUE for non-expired cards, FALSE for expired.
  */
-function _valid_card_expiration($month, $year) {
+function _uc_credit_valid_card_expiration($month, $year) {
   if ($year < date('Y')) {
     return FALSE;
   }
@@ -1372,7 +1372,7 @@ function _valid_card_expiration($month, $year) {
 }
 
 // Validates an issue number on a card; returns TRUE or FALSE.
-function _valid_card_issue($issue) {
+function _uc_credit_valid_card_issue($issue) {
   if (empty($issue) || (is_numeric($issue) && $issue > 0)) {
     return TRUE;
   }
@@ -1414,7 +1414,7 @@ function uc_credit_encryption_key() {
 }
 
 // Saves a CC data array to an order's data array.
-function _save_cc_data_to_order($cc_data, $order_id) {
+function _uc_credit_save_cc_data_to_order($cc_data, $order_id) {
   $crypt = new uc_encryption_class;
 
   // Load up the existing data array.
@@ -1456,7 +1456,7 @@ function uc_credit_transaction_types() {
  */
 function uc_credit_default_gateway() {
   // Get an array of enabled payment gateways available for the payment method.
-  $gateways = _payment_gateway_list('credit', TRUE);
+  $gateways = _uc_payment_gateway_list('credit', TRUE);
 
   // Return FALSE if we found no gateways.
   if (empty($gateways)) {
@@ -1608,11 +1608,11 @@ function uc_credit_gateway_txn_types($gateway) {
   $types = array();
 
   // Get the transaction types associated with this gateway.
-  $types = _payment_gateway_data($gateway, 'credit_txn_types');
+  $types = _uc_payment_gateway_data($gateway, 'credit_txn_types');
 
   // Default to authorization plus capture if none are specified.
   if (empty($types)) {
-    if (!is_null(_payment_gateway_data($gateway, 'credit'))) {
+    if (!is_null(_uc_payment_gateway_data($gateway, 'credit'))) {
       $types = array(UC_CREDIT_AUTH_CAPTURE);
     }
     else {

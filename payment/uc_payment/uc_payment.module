@@ -137,9 +137,9 @@ function uc_payment_token_values($type, $object = NULL) {
   switch ($type) {
     case 'order':
       $order = $object;
-      $values['order-payment-method'] = _payment_method_data($order->payment_method, 'review');
+      $values['order-payment-method'] = _uc_payment_method_data($order->payment_method, 'review');
       if (empty($values['order-payment-method'])) {
-        $values['order-payment-method'] = _payment_method_data($order->payment_method, 'name');
+        $values['order-payment-method'] = _uc_payment_method_data($order->payment_method, 'name');
       }
 
       $context = array(
@@ -245,21 +245,21 @@ function uc_payment_form_alter(&$form, &$form_state, $form_id) {
 function uc_payment_uc_order($op, &$arg1) {
   switch ($op) {
     case 'submit':
-      $func = _payment_method_data($arg1->payment_method, 'callback');
+      $func = _uc_payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
         return $func('order-submit', $arg1);
       }
       break;
 
     case 'load':
-      $func = _payment_method_data($arg1->payment_method, 'callback');
+      $func = _uc_payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
         $func('order-load', $arg1);
       }
       break;
 
     case 'save':
-      $func = _payment_method_data($arg1->payment_method, 'callback');
+      $func = _uc_payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
         $func('order-save', $arg1);
       }
@@ -277,7 +277,7 @@ function uc_payment_uc_order($op, &$arg1) {
         ->execute();
 
       // Call each payment method to delete method specific data from the database.
-      $methods = _payment_method_list();
+      $methods = _uc_payment_method_list();
       foreach ($methods as $method) {
         $func = $method['callback'];
         if (function_exists($func)) {
@@ -414,7 +414,7 @@ function uc_payment_get_details($method_id, $view = 'cart', $order = NULL) {
     }
   }
 
-  $func = _payment_method_data($method_id, 'callback');
+  $func = _uc_payment_method_data($method_id, 'callback');
   if (function_exists($func)) {
     $output = $func($view . '-details', $order);
   }
@@ -423,7 +423,7 @@ function uc_payment_get_details($method_id, $view = 'cart', $order = NULL) {
   exit();
 }
 
-function _total_sort($a, $b) {
+function _uc_payment_total_sort($a, $b) {
   if ($a[0] == $b[0]) {
     return 0;
   }
@@ -504,13 +504,13 @@ function uc_payment_process_payment($method, $order_id, $amount, $data = NULL, $
   $result = array();
 
   // Get an array of enabled payment gateways available for the payment method.
-  $gateways = _payment_gateway_list($method, TRUE);
+  $gateways = _uc_payment_gateway_list($method, TRUE);
 
   // Fail if no gateways were found for the specified method.
   if (empty($gateways)) {
     // Display an error message if messages weren't silenced.
     if (!$default) {
-      drupal_set_message(t('You are not able to process %type payments.', array('%type' => _payment_method_data($method, 'name'))));
+      drupal_set_message(t('You are not able to process %type payments.', array('%type' => _uc_payment_method_data($method, 'name'))));
     }
 
     return FALSE;
@@ -610,9 +610,9 @@ function uc_payment_process_payment($method, $order_id, $amount, $data = NULL, $
  * Enter a payment for an order.
  */
 function uc_payment_enter($order_id, $method, $amount, $uid, $data, $comment) {
-  $method_name = _payment_method_data($method, 'review');
+  $method_name = _uc_payment_method_data($method, 'review');
   if (empty($method_name)) {
-    $method_name = _payment_method_data($method, 'name');
+    $method_name = _uc_payment_method_data($method, 'name');
   }
   if (is_null($method_name)) {
     $method_name = t('Other');
@@ -731,7 +731,7 @@ function uc_payment_load_payments($order_id, $action = NULL) {
 /**
  * Build a list of payment methods defined in the enabled modules.
  */
-function _payment_method_list($action = NULL) {
+function _uc_payment_method_list($action = NULL) {
   static $methods;
 
   if (count($methods) > 0 && $action !== 'rebuild') {
@@ -751,8 +751,8 @@ function _payment_method_list($action = NULL) {
 /**
  * Return data from a payment method by method ID and the array key.
  */
-function _payment_method_data($method_id, $key) {
-  $methods = _payment_method_list();
+function _uc_payment_method_data($method_id, $key) {
+  $methods = _uc_payment_method_list();
   foreach ($methods as $method) {
     if ($method['id'] == $method_id) {
       return isset($method[$key]) ? $method[$key] : NULL;
@@ -763,7 +763,7 @@ function _payment_method_data($method_id, $key) {
 /**
  * Build a list of payment gateways defined in the enabled modules.
  */
-function _payment_gateway_list($filter = NULL, $enabled_only = FALSE) {
+function _uc_payment_gateway_list($filter = NULL, $enabled_only = FALSE) {
   $gateways = module_invoke_all('uc_payment_gateway');
 
   foreach ($gateways as $i => $value) {
@@ -793,9 +793,9 @@ function _payment_gateway_list($filter = NULL, $enabled_only = FALSE) {
  * @return
  *   The requested data.
  */
-function _payment_gateway_data($gateway_id, $key) {
+function _uc_payment_gateway_data($gateway_id, $key) {
   // Load all the payment gateways.
-  $gateways = _payment_gateway_list();
+  $gateways = _uc_payment_gateway_list();
 
   // Loop through the array to find the matching gateway.
   foreach ($gateways as $gateway) {

@@ -40,7 +40,7 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
         drupal_add_js(array('ucShowProgressBar' => TRUE), 'setting');
       }
 
-      $methods = _payment_method_list();
+      $methods = _uc_payment_method_list();
       $options = array();
       $default = NULL;
 
@@ -84,7 +84,7 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
 
     case 'process':
       $arg1->payment_method = $arg2['payment_method'];
-      $func = _payment_method_data($arg1->payment_method, 'callback');
+      $func = _uc_payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
         $result = $func('cart-process', $arg1);
         if ($result === FALSE) {
@@ -95,7 +95,7 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
 
     case 'review':
       $line_items = $arg1->line_items;
-      $items = _line_item_list();
+      $items = _uc_line_item_list();
       foreach ($items as $item) {
         if (isset($item['display_only']) && $item['display_only'] == TRUE) {
           $result = $item['callback']('display', $arg1);
@@ -123,12 +123,12 @@ function uc_checkout_pane_payment($op, &$arg1, $arg2) {
         $context['subject']['line_item'] = $line_item;
         $review[] = array('title' => $line_item['title'], 'data' => uc_price($line_item['amount'], $context));
       }
-      $review_data = _payment_method_data($arg1->payment_method, 'review');
+      $review_data = _uc_payment_method_data($arg1->payment_method, 'review');
       if (empty($review_data)) {
-        $review_data = _payment_method_data($arg1->payment_method, 'name');
+        $review_data = _uc_payment_method_data($arg1->payment_method, 'name');
       }
       $review[] = array('border' => 'top', 'title' => t('Paying by'), 'data' => $review_data);
-      $func = _payment_method_data($arg1->payment_method, 'callback');
+      $func = _uc_payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
         $result = $func('cart-review', $arg1);
         if (is_array($result)) {

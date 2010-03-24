@@ -398,8 +398,8 @@ function uc_store_ubercart_help_tokens() {
 function uc_country_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
   return array(
-    '#theme' => 'summary_overview',
-    '#summaries' => summarize_child_form_pages('admin/store/settings/countries/edit'),
+    '#theme' => 'uc_summary_overview',
+    '#summaries' => uc_summarize_child_form_pages('admin/store/settings/countries/edit'),
   );
 }
 
@@ -411,7 +411,7 @@ function uc_country_settings_overview() {
  */
 function uc_country_import_form($form, &$form_state) {
   $countries = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC")->fetchAll(PDO::FETCH_ASSOC);
-  $files = _country_import_list();
+  $files = _uc_country_import_list();
 
   $header = array(t('Country'), t('Code'), t('Version'), t('Operations'));
   if (is_array($countries)) {
@@ -577,7 +577,7 @@ function uc_country_formats_form($form, &$form_state) {
         '#title' => $country->country_name,
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
-        '#summary callback' => 'summarize_null',
+        '#summary callback' => 'uc_summarize_null',
       );
       $form['countries'][$country->country_id]['address_format'] = array(
         '#type' => 'textarea',
@@ -613,8 +613,8 @@ function uc_country_formats_form_submit($form, &$form_state) {
 function uc_store_store_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
   return array(
-    '#theme' => 'summary_overview',
-    '#summaries' => summarize_child_form_pages('admin/store/settings/store/edit'),
+    '#theme' => 'uc_summary_overview',
+    '#summaries' => uc_summarize_child_form_pages('admin/store/settings/store/edit'),
   );
 }
 
@@ -660,9 +660,9 @@ function uc_store_store_settings_form($form, &$form_state) {
     '#description' => t('May not be available on all server configurations. Turn off if this causes problems.'),
 
     // don't show this element if there isn't an e-mail address set
-    '#summary callback' => variable_get('uc_store_email', NULL) ? NULL : 'summarize_null',
+    '#summary callback' => variable_get('uc_store_email', NULL) ? NULL : 'uc_summarize_null',
     '#default_value' => variable_get('uc_store_email_include_name', TRUE),
-    '#summary callback' => variable_get('uc_store_email', NULL) ? NULL : 'summarize_null',
+    '#summary callback' => variable_get('uc_store_email', NULL) ? NULL : 'uc_summarize_null',
   );
 
   $form['uc_store_phone'] = uc_textfield(t('Phone number'), variable_get('uc_store_phone', NULL), FALSE);
@@ -733,7 +733,7 @@ function uc_store_display_settings_form($form, &$form_state) {
     '#default_value' => variable_get('uc_customer_list_address', 'billing'),
   );
 
-  $options = array_merge(array(t('Randomly select a message from the list below.')), _store_footer_options());
+  $options = array_merge(array(t('Randomly select a message from the list below.')), _uc_store_footer_options());
 
   // format the message nicely for the user
   switch (variable_get('uc_footer_message', 0)) {
@@ -770,7 +770,7 @@ function uc_store_format_settings_form($form, &$form_state) {
   $form['currency'] = array(
     '#type' => 'fieldset',
     '#title' => t('Currency format'),
-    '#summary callback' => 'summarize_form',
+    '#summary callback' => 'uc_summarize_form',
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
@@ -796,39 +796,39 @@ function uc_store_format_settings_form($form, &$form_state) {
     '#size' => 10,
   );
   $form['currency']['uc_currency_sign'] = uc_textfield(t('Currency Sign'), variable_get('uc_currency_sign', '$'), FALSE, NULL, 10, 10);
-  $form['currency']['uc_currency_sign']['#summary callback'] = 'summarize_null';
+  $form['currency']['uc_currency_sign']['#summary callback'] = 'uc_summarize_null';
 
   $form['currency']['uc_sign_after_amount'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display currency sign after amount.'),
-    '#summary callback' => 'summarize_null',
+    '#summary callback' => 'uc_summarize_null',
     '#default_value' => variable_get('uc_sign_after_amount', FALSE),
   );
 
   $form['currency']['uc_currency_thou'] = uc_textfield(t('Thousands Marker'), variable_get('uc_currency_thou', ','), FALSE, NULL, 10, 10);
-  $form['currency']['uc_currency_thou']['#summary callback'] = 'summarize_null';
+  $form['currency']['uc_currency_thou']['#summary callback'] = 'uc_summarize_null';
 
   $form['currency']['uc_currency_dec'] = uc_textfield(t('Decimal Marker'), variable_get('uc_currency_dec', '.'), FALSE, NULL, 10, 10);
-  $form['currency']['uc_currency_dec']['#summary callback'] = 'summarize_null';
+  $form['currency']['uc_currency_dec']['#summary callback'] = 'uc_summarize_null';
 
   $form['currency']['uc_currency_prec'] = array(
     '#type' => 'select',
     '#title' => t('Number of decimal places'),
     '#options' => drupal_map_assoc(array(0, 1, 2)),
-    '#summary callback' => 'summarize_null',
+    '#summary callback' => 'uc_summarize_null',
     '#default_value' => variable_get('uc_currency_prec', 2),
   );
 
   $form['weight'] = array(
     '#type' => 'fieldset',
     '#title' => t('Weight format'),
-    '#summary callback' => 'summarize_form',
+    '#summary callback' => 'uc_summarize_form',
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
   $form['weight']['instructions'] = array(
     '#markup' => '<div>' . t('Supply a format string for each unit. !value represents the weight value.') . '</div>',
-    '#summary callback' => 'summarize_null',
+    '#summary callback' => 'uc_summarize_null',
   );
   $units = array(
     'lb' => t('Pounds'),
@@ -848,7 +848,7 @@ function uc_store_format_settings_form($form, &$form_state) {
     $form['weight']['uc_weight_format_' . $unit] = array(
       '#type' => 'textfield',
       '#title' => t('@unit format string', array('@unit' => $name)),
-      '#summary callback' => 'summarize_null',
+      '#summary callback' => 'uc_summarize_null',
       '#default_value' => variable_get('uc_weight_format_' . $unit, '!value ' . $unit),
     );
   }
@@ -856,7 +856,7 @@ function uc_store_format_settings_form($form, &$form_state) {
   $form['length'] = array(
     '#type' => 'fieldset',
     '#title' => t('Length format'),
-    '#summary callback' => 'summarize_null',
+    '#summary callback' => 'uc_summarize_null',
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
@@ -886,13 +886,13 @@ function uc_store_format_settings_form($form, &$form_state) {
   $form['date'] = array(
     '#type' => 'fieldset',
     '#title' => t('Date format'),
-    '#summary callback' => 'summarize_form',
+    '#summary callback' => 'uc_summarize_form',
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
   $form['date']['instructions'] = array(
     '#markup' => '<div>' . t('Supply a format string using !link syntax.', array('!link' => l(t('PHP date'), 'http://www.php.net/date'))) . '</div>',
-    '#summary callback' => 'summarize_form',
+    '#summary callback' => 'uc_summarize_form',
   );
   $form['date']['uc_date_format_default'] = array(
     '#type' => 'textfield',
@@ -1164,7 +1164,7 @@ function uc_country_remove_form_submit($form, &$form_state) {
     ->execute();
   variable_del('uc_address_format_' . $country_id);
 
-  $func_base = _country_import_include($country_id, $country->version);
+  $func_base = _uc_country_import_include($country_id, $country->version);
   if ($func_base !== FALSE) {
     $func = $func_base . '_uninstall';
     if (function_exists($func)) {
@@ -1191,7 +1191,7 @@ function uc_country_update($country_id, $version) {
     drupal_goto('admin/store/settings/countries');
   }
 
-  $func_base = _country_import_include($country_id, $version);
+  $func_base = _uc_country_import_include($country_id, $version);
   if ($func_base !== FALSE) {
     $func = $func_base . '_update';
     if (function_exists($func)) {

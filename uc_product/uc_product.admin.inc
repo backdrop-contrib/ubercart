@@ -87,11 +87,11 @@ function uc_product_class_default() {
  */
 function uc_product_settings_overview() {
   // Load the form summaries for pages beneath this path.
-  $summaries = summarize_child_form_pages('admin/store/settings/products/edit');
+  $summaries = uc_summarize_child_form_pages('admin/store/settings/products/edit');
 
   // Theme it all up in a summaries overview.
   return array(
-    '#theme' => 'summary_overview',
+    '#theme' => 'uc_summary_overview',
     '#summaries' => $summaries,
   );
 }
@@ -367,7 +367,7 @@ function uc_product_feature_settings_form($form, &$form_state) {
         '#title' => t('!feature settings', array('!feature' => $feature['title'])),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
-        '#summary callback' => 'summarize_null',
+        '#summary callback' => 'uc_summarize_null',
       );
       $form[$feature['id']] = array_merge($form[$feature['id']], $feature['settings']());
     }

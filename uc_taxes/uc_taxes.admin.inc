@@ -119,7 +119,7 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
 
   $options = array();
 
-  foreach (_line_item_list() as $line_item) {
+  foreach (_uc_line_item_list() as $line_item) {
     if (!in_array($line_item['id'], array('subtotal', 'tax_subtotal', 'total'))) {
       $options[$line_item['id']] = $line_item['title'];
     }

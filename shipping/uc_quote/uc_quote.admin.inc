@@ -13,12 +13,12 @@ function uc_quote_overview() {
   $summaries = array();
 
   // Load the form summaries for pages beneath this path.
-  $summaries = array_merge($summaries, summarize_child_form_pages('admin/store/settings/quotes/edit', FALSE, TRUE));
-  $summaries = array_merge($summaries, summarize_child_form_pages('admin/store/settings/quotes/methods', FALSE, TRUE));
+  $summaries = array_merge($summaries, uc_summarize_child_form_pages('admin/store/settings/quotes/edit', FALSE, TRUE));
+  $summaries = array_merge($summaries, uc_summarize_child_form_pages('admin/store/settings/quotes/methods', FALSE, TRUE));
 
   // Theme it all up in a summaries overview.
   return array(
-    '#theme' => 'summary_overview',
+    '#theme' => 'uc_summary_overview',
     '#summaries' => $summaries,
   );
 }
@@ -40,7 +40,7 @@ function uc_quote_admin_settings($form, &$form_state) {
   $form['uc_quote_log_errors'] = array(
     '#type' => 'checkbox',
     '#title' => t('Log errors during checkout to watchdog'),
-    '#summary callback' => 'summarize_checkbox',
+    '#summary callback' => 'uc_summarize_checkbox',
     '#summary arguments' => array(
       t('Quote errors are submitted to watchdog.'),
       t('Quote errors are not submitted to watchdog.'),
@@ -50,7 +50,7 @@ function uc_quote_admin_settings($form, &$form_state) {
   $form['uc_quote_display_debug'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display debug information to administrators.'),
-    '#summary callback' => 'summarize_checkbox',
+    '#summary callback' => 'uc_summarize_checkbox',
     '#summary arguments' => array(
       t('Debugging information is displayed to administrators when quotes are generated.'),
       t('Debugging information is not displayed to administrators when quotes are generated.'),
@@ -60,7 +60,7 @@ function uc_quote_admin_settings($form, &$form_state) {
   $form['uc_quote_require_quote'] = array(
     '#type' => 'checkbox',
     '#title' => t('Prevent the customer from completing an order if a shipping quote is not selected.'),
-    '#summary callback' => 'summarize_checkbox',
+    '#summary callback' => 'uc_summarize_checkbox',
     '#summary arguments' => array(
       t('Customers cannot complete checkout without selecting a shipping quote.'),
       t('Customers can still checkout without selecting a shipping quote.'),
@@ -71,7 +71,7 @@ function uc_quote_admin_settings($form, &$form_state) {
   $form['uc_quote_pane_description'] = array(
     '#type' => 'fieldset',
     '#title' => t('Shipping quote pane description'),
-    '#summary callback ' => 'summarize_form',
+    '#summary callback ' => 'uc_summarize_form',
     '#tree' => TRUE,
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
@@ -86,7 +86,7 @@ function uc_quote_admin_settings($form, &$form_state) {
   $form['uc_quote_err_msg'] = array(
     '#type' => 'fieldset',
     '#title' => t('Shipping quote error message'),
-    '#summary callback' => 'summarize_form',
+    '#summary callback' => 'uc_summarize_form',
     '#tree' => TRUE,
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
@@ -179,7 +179,7 @@ function uc_quote_admin_settings_submit($form, &$form_state) {
 function uc_quote_method_settings($form, &$form_state) {
   $form['methods'] = array(
     '#tree' => TRUE,
-    '#summary callback' => 'summarize_form',
+    '#summary callback' => 'uc_summarize_form',
   );
 
   $enabled = variable_get('uc_quote_enabled', array());
@@ -188,10 +188,10 @@ function uc_quote_method_settings($form, &$form_state) {
   if (is_array($methods)) {
     foreach ($methods as $id => $title) {
 
-      $form['methods'][$id]['#summary callback'] = 'summarize_form';
+      $form['methods'][$id]['#summary callback'] = 'uc_summarize_form';
       $form['methods'][$id]['uc_quote_enabled'] = array('#type' => 'checkbox',
         '#default_value' => $enabled[$id],
-        '#summary callback' => 'summarize_checkbox',
+        '#summary callback' => 'uc_summarize_checkbox',
         '#summary arguments' => array(
           l(t('@method is enabled.', array('@method' => $title)), 'admin/store/settings/quotes/methods/' . $id),
           '',
@@ -210,7 +210,7 @@ function uc_quote_method_settings($form, &$form_state) {
       '#title' => t('List position'),
       '#description' => t('Determines which shipping methods are quoted at checkout when products of different shipping types are ordered. Larger values take precedence.'),
       '#collapsible' => TRUE,
-      '#summary callback' => 'summarize_null',
+      '#summary callback' => 'uc_summarize_null',
       '#tree' => TRUE,
     );
     $weight = variable_get('uc_quote_type_weight', array());

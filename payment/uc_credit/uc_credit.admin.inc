@@ -332,7 +332,7 @@ function uc_credit_terminal_form_submit($form, &$form_state) {
   }
   else {
     if (variable_get('uc_credit_debug', FALSE)) {
-      _save_cc_data_to_order(uc_credit_cache('load'), $form_state['values']['order_id']);
+      _uc_credit_save_cc_data_to_order(uc_credit_cache('load'), $form_state['values']['order_id']);
     }
 
     drupal_set_message(t('There was an error processing the credit card.  See the admin comments for details.'), 'error');

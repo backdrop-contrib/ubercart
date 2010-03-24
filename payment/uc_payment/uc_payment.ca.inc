@@ -210,7 +210,7 @@ function uc_order_condition_payment_method($order, $settings) {
 }
 
 function uc_order_condition_payment_method_form($form_state, $settings = array()) {
-  foreach (_payment_method_list() as $method) {
+  foreach (_uc_payment_method_list() as $method) {
     $options[$method['id']] = $method['title'];
   }
 

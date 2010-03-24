@@ -105,7 +105,7 @@ function uc_cybersource_settings_form($form, &$form_state) {
       'test' => t('Test'),
     ),
     '#default_value' => variable_get('uc_cybersource_server', 'test'),
-    '#summary callback' => 'summarize_null',
+    '#summary callback' => 'uc_summarize_null',
   );
   $form['uc_cybersource_method'] = array(
     '#type' => 'radios',
@@ -117,7 +117,7 @@ function uc_cybersource_settings_form($form, &$form_state) {
       'soap' => t('SOAP Toolkit API'),
     ),
     '#default_value' => variable_get('uc_cybersource_method', 'post'),
-    '#summary callback' => 'summarize_null',
+    '#summary callback' => 'uc_summarize_null',
   );
 
   $form['uc_cybersource_avs'] = array(
@@ -137,7 +137,7 @@ function uc_cybersource_settings_form($form, &$form_state) {
     '#title' => t('SOAP Toolkit API settings'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
-    '#summary callback' => 'summarize_null',
+    '#summary callback' => 'uc_summarize_null',
   );
   $form['soap']['uc_cybersource_soap_merchant_id'] = array(
     '#type' => 'textfield',
@@ -384,14 +384,14 @@ function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country)
       'revision' => 'formatted-original',
       'type' => 'amount',
     );
-    $o_comment = t('<b>Credit card !type:</b> !amount<br /><b>Decision: @decision</b><br /><b>Reason:</b> !reason', array('!type' => variable_get('uc_cybersource_transaction_type', 'sale'), '!amount' => uc_price($nvp['orderAmount'], $context), '@decision' => $nvp['decision'], '!reason' => _parse_cs_reason_code($nvp['reasonCode'])));
+    $o_comment = t('<b>Credit card !type:</b> !amount<br /><b>Decision: @decision</b><br /><b>Reason:</b> !reason', array('!type' => variable_get('uc_cybersource_transaction_type', 'sale'), '!amount' => uc_price($nvp['orderAmount'], $context), '@decision' => $nvp['decision'], '!reason' => _uc_cybersource_parse_reason_code($nvp['reasonCode'])));
     $p_comment = t('!id<br />!decision, Reason: !reason', array('!id' => $nvp['orderPage_serialNumber'], '!decision' => $nvp['decision'], '!reason' => $nvp['reasonCode']));
     if (!empty($nvp['ccAuthReply_avsCode'])) {
-      $o_comment .= t('<br /><b>AVS:</b> !avs', array('!avs' => _parse_cs_avs_code($nvp['ccAuthReply_avsCode'])));
+      $o_comment .= t('<br /><b>AVS:</b> !avs', array('!avs' => _uc_cybersource_parse_avs_code($nvp['ccAuthReply_avsCode'])));
       $p_comment .= t(', AVS: @avs', array('@avs' => $nvp['ccAuthReply_avsCode']));
     }
     if (!empty($nvp['ccAuthReply_cvCode'])) {
-      $o_comment .= t('<br /><b>CVV:</b> !cvv', array('!cvv' => _parse_cs_cvv_code($nvp['ccAuthReply_cvCode'])));
+      $o_comment .= t('<br /><b>CVV:</b> !cvv', array('!cvv' => _uc_cybersoure_parse_cvv_code($nvp['ccAuthReply_cvCode'])));
       $p_comment .= t(', CVV: @cvv', array('@cvv' => $nvp['ccAuthReply_cvCode']));
     }
     uc_order_comment_save($order_id, $user->uid, $o_comment, 'admin');
@@ -611,15 +611,15 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
       'revision' => 'formatted-original',
       'type' => 'amount',
     );
-    $o_comment = t('<b>@type:</b> @amount<br /><b>Decision: @decision</b><br /><b>Reason:</b> !reason', array('@type' => $types[$data['txn_type']], '@amount' => uc_price($amount, $context), '@decision' => $reply->decision, '!reason' => _parse_cs_reason_code($reply->reasonCode)));
+    $o_comment = t('<b>@type:</b> @amount<br /><b>Decision: @decision</b><br /><b>Reason:</b> !reason', array('@type' => $types[$data['txn_type']], '@amount' => uc_price($amount, $context), '@decision' => $reply->decision, '!reason' => _uc_cybersource_parse_reason_code($reply->reasonCode)));
     $p_comment = t('<b>@type:</b><br />@id<br />@decision, Reason: !reason', array('@type' => $types[$data['txn_type']], '@id' => $reply->requestID, '@decision' => $reply->decision, '!reason' => $reply->reasonCode));
 
     if (!empty($reply->ccAuthReply->avsCode)) {
-      $o_comment .= '<br />' . t('<b>AVS:</b> @avs', array('@avs' => _parse_cs_avs_code($reply->ccAuthReply->avsCode)));
+      $o_comment .= '<br />' . t('<b>AVS:</b> @avs', array('@avs' => _uc_cybersource_parse_avs_code($reply->ccAuthReply->avsCode)));
       $p_comment .= t(', AVS: @avs', array('@avs' => $reply->ccAuthReply->avsCode));
     }
     if (!empty($reply->ccAuthReply->cvCode)) {
-      $o_comment .= '<br />' . t('<b>CVV:</b> @cvv', array('@cvv' => _parse_cs_cvv_code($reply->ccAuthReply->cvCode)));
+      $o_comment .= '<br />' . t('<b>CVV:</b> @cvv', array('@cvv' => _uc_cybersoure_parse_cvv_code($reply->ccAuthReply->cvCode)));
       $p_comment .= t(', CVV: @cvv', array('@cvv' => $reply->ccAuthReply->cvCode));
     }
     uc_order_comment_save($order->order_id, $user->uid, $o_comment, 'admin');
@@ -1027,7 +1027,7 @@ function _uc_cybersource_card_type($cc_number) {
 }
 
 // Returns the meaning of the reason code given by CyberSource.
-function _parse_cs_reason_code($code) {
+function _uc_cybersource_parse_reason_code($code) {
   switch ($code) {
     case '100':
       return t('Successful transaction.');
@@ -1089,7 +1089,7 @@ function _parse_cs_reason_code($code) {
 }
 
 // Returns the meaning of the code for Address Verification.
-function _parse_cs_avs_code($code) {
+function _uc_cybersource_parse_avs_code($code) {
   switch ($code) {
     case 'A':
       return t('Street address matches, but 5- and 9-digit postal codes do not match.');
@@ -1143,7 +1143,7 @@ function _parse_cs_avs_code($code) {
 }
 
 // Returns the meaning of the code sent back for CVV verification.
-function _parse_cs_cvv_code($code) {
+function _uc_cybersoure_parse_cvv_code($code) {
   switch ($code) {
     case 'D':
       return t('Transaction determined suspicious by issuing bank.');

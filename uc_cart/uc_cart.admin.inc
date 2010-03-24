@@ -11,7 +11,7 @@
  */
 function uc_cart_cart_settings_overview() {
   // Load the form summaries for pages beneath this path.
-  $summaries = summarize_child_form_pages('admin/store/settings/cart/edit');
+  $summaries = uc_summarize_child_form_pages('admin/store/settings/cart/edit');
 
   // Build the block summary since it comes from another form.
   if (variable_get('uc_cart_show_help_text', FALSE)) {
@@ -34,7 +34,7 @@ function uc_cart_cart_settings_overview() {
 
   // Theme it all up in a summaries overview.
   return array(
-    '#theme' => 'summary_overview',
+    '#theme' => 'uc_summary_overview',
     '#summaries' => $summaries,
   );
 }
@@ -49,7 +49,7 @@ function uc_cart_cart_settings_form($form, &$form_state) {
   $form['general'] = array(
     '#type' => 'fieldset',
     '#title' => t('General cart settings'),
-    '#summary callback' => 'summarize_form',
+    '#summary callback' => 'uc_summarize_form',
   );
   $form['general']['uc_cart_add_item_msg'] = array(
     '#type' => 'checkbox',
@@ -274,8 +274,8 @@ function uc_cart_block_edit_info() {
 function uc_cart_checkout_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
   return array(
-    '#theme' => 'summary_overview',
-    '#summaries' => summarize_child_form_pages('admin/store/settings/checkout/edit'),
+    '#theme' => 'uc_summary_overview',
+    '#summaries' => uc_summarize_child_form_pages('admin/store/settings/checkout/edit'),
   );
 }
 
@@ -288,12 +288,12 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
   $form['general'] = array(
     '#type' => 'fieldset',
     '#title' => t('General checkout settings'),
-    '#summary callback' => 'summarize_form',
+    '#summary callback' => 'uc_summarize_form',
   );
   $form['general']['uc_checkout_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable checkout (disable to only use third party checkout service like PayPal Express Checkout).'),
-    '#summary callback' => 'summarize_checkbox',
+    '#summary callback' => 'uc_summarize_checkbox',
     '#summary arguments' => array(
       t('Ubercart checkout is enabled.'),
       t('Ubercart checkout is disabled.'),
@@ -303,7 +303,7 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
   $form['general']['uc_checkout_anonymous'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable anonymous checkout (users can checkout without logging in).'),
-    '#summary callback' => 'summarize_checkbox',
+    '#summary callback' => 'uc_summarize_checkbox',
     '#summary arguments' => array(
       t('Anonymous checkout is enabled.'),
       t('Anonymous checkout is disabled.'),
@@ -313,7 +313,7 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
   $form['general']['uc_cart_delivery_not_shippable'] = array(
     '#type' => 'checkbox',
     '#title' => t('Hide shipping information when possible for carts with no shippable items.'),
-    '#summary callback' => 'summarize_checkbox',
+    '#summary callback' => 'uc_summarize_checkbox',
     '#summary arguments' => array(
       t('Shipping fields are hidden when applicable.'),
       t('Shipping fields are always shown.'),
@@ -324,12 +324,12 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
   $form['pane_settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('Checkout pane display options'),
-    '#summary callback' => 'summarize_form',
+    '#summary callback' => 'uc_summarize_form',
   );
   $form['pane_settings']['uc_use_next_buttons'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use collapsing checkout panes with next buttons during checkout.'),
-    '#summary callback' => 'summarize_checkbox',
+    '#summary callback' => 'uc_summarize_checkbox',
     '#summary arguments' => array(
       t('Checkout panes are collapsed with next buttons.'),
       t('Checkout panes are expanded by default.'),
@@ -339,7 +339,7 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
   $form['pane_settings']['uc_collapse_current_pane'] = array(
     '#type' => 'checkbox',
     '#title' => t('Collapse a pane when its next button is clicked.'),
-    '#summary callback' => 'summarize_checkbox',
+    '#summary callback' => 'uc_summarize_checkbox',
     '#summary arguments' => array(
       t('Collapsible panes will collapse when their next buttons are clicked.'),
       t('Collapsible panes will not collapse when their next buttons are clicked.'),
@@ -350,12 +350,12 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
   $form['completion'] = array(
     '#type' => 'fieldset',
     '#title' => t('Checkout completion settings'),
-    '#summary callback' => 'summarize_form',
+    '#summary callback' => 'uc_summarize_form',
   );
   $form['completion']['uc_new_customer_email'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send new customers a separate e-mail with their account details.'),
-    '#summary callback' => 'summarize_checkbox',
+    '#summary callback' => 'uc_summarize_checkbox',
     '#summary arguments' => array(
       t('New customers receive an e-mail with their account details.'),
       t('New customers will only see their details in their initial order e-mail.')
@@ -365,14 +365,14 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
   $form['completion']['uc_new_customer_login'] = array(
     '#type' => 'checkbox',
     '#title' => t('Login users when new customer accounts are created at checkout.'),
-    '#summary callback' => 'summarize_null',
+    '#summary callback' => 'uc_summarize_null',
     '#default_value' => variable_get('uc_new_customer_login', FALSE),
   );
   $form['completion']['uc_new_customer_status_active'] = array(
     '#type' => 'checkbox',
     '#title' => t('New customer accounts will be set to active.'),
     '#description' => t('Uncheck to create new accounts but make them blocked.'),
-    '#summary callback' => 'summarize_checkbox',
+    '#summary callback' => 'uc_summarize_checkbox',
     '#summary arguments' => array(
       t('New customer account status will be active.'),
       t('New customer account status will be blocked.'),
@@ -421,7 +421,7 @@ function _uc_cart_panes_summarize($form, $panes) {
  * @ingroup forms
  */
 function uc_cart_checkout_panes_form($form, &$form_state) {
-  $panes = _checkout_pane_list();
+  $panes = _uc_checkout_pane_list();
 
   $form['panes'] = array(
     '#theme' => 'uc_pane_sort_table',
@@ -447,7 +447,7 @@ function uc_cart_checkout_panes_form($form, &$form_state) {
     if (is_array($pane_settings)) {
       $form['pane_' . $pane['id']] = array(
         '#type' => 'fieldset',
-        '#summary callback' => 'summarize_null',
+        '#summary callback' => 'uc_summarize_null',
         '#title' => t('!pane settings', array('!pane' => $pane['title'])),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
@@ -503,7 +503,7 @@ function uc_cart_checkout_messages_form($form, &$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Checkout completion message body'),
     '#description' => t("In the following three boxes, you may use the special tokens !new_username for the username of a newly created account and !new_password for that account's password."),
-    '#summary callback' => 'summarize_form',
+    '#summary callback' => 'uc_summarize_form',
     '#collapsible' => FALSE,
   );
   $form['checkout_messages']['uc_msg_order_logged_in'] = array(

@@ -28,12 +28,12 @@ function uc_order_pane_payment($op, $arg1) {
           '#suffix' => '<br />',
         );
       }
-      $method_name = _payment_method_data($arg1->payment_method, 'review');
+      $method_name = _uc_payment_method_data($arg1->payment_method, 'review');
       if (empty($method_name)) {
-        $method_name = _payment_method_data($arg1->payment_method, 'name');
+        $method_name = _uc_payment_method_data($arg1->payment_method, 'name');
       }
       $build['method'] = array('#markup' => t('Method: @payment_method', array('@payment_method' => $method_name)));
-      $func = _payment_method_data($arg1->payment_method, 'callback');
+      $func = _uc_payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
         $method_output = $func('order-view', $arg1);
         if (!empty($method_output)) {
@@ -46,12 +46,12 @@ function uc_order_pane_payment($op, $arg1) {
       return $build;
 
     case 'customer':
-      $method_name = _payment_method_data($arg1->payment_method, 'review');
+      $method_name = _uc_payment_method_data($arg1->payment_method, 'review');
       if (empty($method_name)) {
-        $method_name = _payment_method_data($arg1->payment_method, 'name');
+        $method_name = _uc_payment_method_data($arg1->payment_method, 'name');
       }
       $build['method'] = array('#markup' => t('Method: @payment_method', array('@payment_method' => $method_name)));
-      $func = _payment_method_data($arg1->payment_method, 'callback');
+      $func = _uc_payment_method_data($arg1->payment_method, 'callback');
       if (function_exists($func)) {
         $method_output = $func('customer-view', $arg1);
         if (!empty($method_output)) {
@@ -73,7 +73,7 @@ function uc_order_pane_payment($op, $arg1) {
         '#collapsible' => TRUE,
         '#collapsed' => FALSE
       );
-      $methods = _payment_method_list();
+      $methods = _uc_payment_method_list();
       foreach ($methods as $method) {
         $options[$method['id']] = $method['name'];
       }
@@ -91,7 +91,7 @@ function uc_order_pane_payment($op, $arg1) {
       drupal_add_js(drupal_get_path('module', 'uc_payment') . '/uc_payment.js');
 
       // build a JS array of our payment methods
-      $methods = _payment_method_list();
+      $methods = _uc_payment_method_list();
       $method_array_js = array();
       foreach ($methods as $method) {
         $method_array_js[$method['name']] = $method['id'];
@@ -113,7 +113,7 @@ function uc_order_pane_payment($op, $arg1) {
 
     case 'edit-process':
       $changes['payment_method'] = $arg1['payment_method'];
-      $func = _payment_method_data($arg1['payment_method'], 'callback');
+      $func = _uc_payment_method_data($arg1['payment_method'], 'callback');
       if (function_exists($func) && ($return = $func('edit-process', $arg1)) != NULL && is_array($return)) {
         $changes = array_merge($changes, $return);
       }

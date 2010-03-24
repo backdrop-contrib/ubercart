@@ -16,7 +16,7 @@
  * @return
  *   An array of summary information, structured for theme_item_list().
  */
-function summarize_form($form) {
+function uc_summarize_form($form) {
   $items = array();
 
   // Loop through each element in $form.
@@ -25,10 +25,10 @@ function summarize_form($form) {
     if (!isset($form[$key]['#summary callback'])) {
       // Default filter forms to have no summary.
       if (isset($form[$key]['#element_validate']) && in_array('filter_form_validate', (array) $form[$key]['#element_validate'])) {
-        $form[$key]['#summary callback'] = 'summarize_null';
+        $form[$key]['#summary callback'] = 'uc_summarize_null';
       }
       else {
-        $form[$key]['#summary callback'] = 'summarize_element';
+        $form[$key]['#summary callback'] = 'uc_summarize_element';
       }
     }
 
@@ -68,7 +68,7 @@ function summarize_form($form) {
  * @return
  *   A summary string for the element or a summary array for a fieldset.
  */
-function summarize_element($form, $title = FALSE) {
+function uc_summarize_element($form, $title = FALSE) {
   // Check to see if the form array contained a #summary.
   if (isset($form['#summary'])) {
     // If so, decide whether to display it with or without the element's #title.
@@ -86,7 +86,7 @@ function summarize_element($form, $title = FALSE) {
         return array(
           array(
             'data' => $form['#title'] . ':',
-            'children' => summarize_form($form),
+            'children' => uc_summarize_form($form),
           ),
         );
 
@@ -133,7 +133,7 @@ function summarize_element($form, $title = FALSE) {
 /**
  * Return an empty summary string.
  */
-function summarize_null($form) {
+function uc_summarize_null($form) {
   return array();
 }
 
@@ -148,7 +148,7 @@ function summarize_null($form) {
  * @return
  *   The correct supplied string based on the current value of the checkbox.
  */
-function summarize_checkbox($form, $true, $false) {
+function uc_summarize_checkbox($form, $true, $false) {
   if ($form['#default_value']) {
     return $true;
   }
@@ -172,7 +172,7 @@ function summarize_checkbox($form, $true, $false) {
  *   An array of data representing a form page summary including keys for the
  *   page's 'path', and edit 'href', a summary 'title' and 'items'.
  */
-function summarize_child_form_pages($path, $trim = FALSE, $only_parent = FALSE) {
+function uc_summarize_child_form_pages($path, $trim = FALSE, $only_parent = FALSE) {
   $summaries = array();
 
   // Fetch and loop through any child menu items from the database.
@@ -217,7 +217,7 @@ function summarize_child_form_pages($path, $trim = FALSE, $only_parent = FALSE) 
       $form = drupal_retrieve_form($form_id, $form_state);
       drupal_prepare_form($form_id, $form, $form_state);
 
-      $summary_items = summarize_form($form);
+      $summary_items = uc_summarize_form($form);
 
       if (!$trim || $trim && count($summary_items) > 0) {
         $summaries[] = array(
@@ -249,7 +249,7 @@ function summarize_child_form_pages($path, $trim = FALSE, $only_parent = FALSE) 
  *   The HTML output of the summary.
  * @ingroup themeable
  */
-function theme_summary_overview($variables) {
+function theme_uc_summary_overview($variables) {
   $summaries = $variables['summaries'];
   $link = $variables['link'];
 

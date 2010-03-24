@@ -19,7 +19,7 @@ function uc_checkout_pane_cart($op) {
   switch ($op) {
     case 'view':
       $contents['cart_review_table'] = array(
-        '#theme' => 'cart_review_table',
+        '#theme' => 'uc_cart_review_table',
         '#weight' => variable_get('uc_pane_cart_field_cart_weight', 2),
       );
       return array('contents' => $contents, 'next-button' => FALSE);
@@ -230,8 +230,8 @@ function uc_checkout_pane_delivery($op, &$arg1, $arg2) {
       $description = t('Enter your delivery address and information here.');
 
       if ((uc_cart_is_shippable() || !variable_get('uc_cart_delivery_not_shippable', TRUE)) &&
-           _checkout_pane_data('billing', 'weight') < _checkout_pane_data('delivery', 'weight') &&
-           _checkout_pane_data('billing', 'enabled')) {
+           _uc_checkout_pane_data('billing', 'weight') < _uc_checkout_pane_data('delivery', 'weight') &&
+           _uc_checkout_pane_data('billing', 'enabled')) {
         $contents['copy_address'] = array(
           '#type' => 'checkbox',
           '#title' => t('My delivery information is the same as my billing information.'),
@@ -296,7 +296,7 @@ function uc_checkout_pane_delivery($op, &$arg1, $arg2) {
         $contents['delivery_phone'] = uc_textfield(uc_get_field_name('phone'), $delivery_phone, uc_address_field_required('phone'), NULL, 32, 16);
       }
 
-      return array('description' => $description, 'contents' => $contents, 'theme' => 'address_pane');
+      return array('description' => $description, 'contents' => $contents, 'theme' => 'uc_address_pane');
 
     case 'process':
       $arg1->delivery_first_name = $arg2['delivery_first_name'];
@@ -331,8 +331,8 @@ function uc_checkout_pane_billing($op, &$arg1, $arg2) {
       $description = t('Enter your billing address and information here.');
 
       if ((uc_cart_is_shippable() || !variable_get('uc_cart_delivery_not_shippable', TRUE)) &&
-           _checkout_pane_data('delivery', 'weight') < _checkout_pane_data('billing', 'weight') &&
-           _checkout_pane_data('delivery', 'enabled')) {
+           _uc_checkout_pane_data('delivery', 'weight') < _uc_checkout_pane_data('billing', 'weight') &&
+           _uc_checkout_pane_data('delivery', 'enabled')) {
         $contents['copy_address'] = array(
           '#type' => 'checkbox',
           '#title' => t('My billing information is the same as my delivery information.'),
@@ -396,7 +396,7 @@ function uc_checkout_pane_billing($op, &$arg1, $arg2) {
         $contents['billing_phone'] = uc_textfield(uc_get_field_name('phone'), $billing_phone, uc_address_field_required('phone'), NULL, 32, 16);
       }
 
-      return array('description' => $description, 'contents' => $contents, 'theme' => 'address_pane');
+      return array('description' => $description, 'contents' => $contents, 'theme' => 'uc_address_pane');
 
     case 'process':
       $arg1->billing_first_name = $arg2['billing_first_name'];
@@ -468,7 +468,7 @@ function uc_checkout_pane_comments($op, &$arg1, $arg2) {
  *   uc_checkout_pane_delivery()
  *   uc_checkout_pane_billing()
  */
-function theme_address_pane($variables) {
+function theme_uc_address_pane($variables) {
   $form = $variables['form'];
   $output = '';
 
@@ -551,7 +551,7 @@ function _uc_cart_checkout_next_pane($panes, $pane_id = NULL) {
 /**
  * Build a list of checkout panes defined in the enabled modules.
  */
-function _checkout_pane_list($action = NULL) {
+function _uc_checkout_pane_list($action = NULL) {
   static $panes;
 
   if (count($panes) > 0 && $action !== 'rebuild') {
@@ -574,8 +574,8 @@ function _checkout_pane_list($action = NULL) {
 /**
  * Return data from a checkout pane by pane ID and the array key.
  */
-function _checkout_pane_data($pane_id, $key) {
-  $panes = _checkout_pane_list();
+function _uc_checkout_pane_data($pane_id, $key) {
+  $panes = _uc_checkout_pane_list();
   foreach ($panes as $pane) {
     if ($pane['id'] == $pane_id) {
       return $pane[$key];
@@ -593,7 +593,7 @@ function _checkout_pane_data($pane_id, $key) {
  *
  * @ingroup themeable
  */
-function theme_cart_review_table($variables) {
+function theme_uc_cart_review_table($variables) {
   $show_subtotal = $variables['show_subtotal'];
 
   $subtotal = 0;

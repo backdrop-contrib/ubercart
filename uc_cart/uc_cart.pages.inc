@@ -103,7 +103,7 @@ function uc_cart_checkout() {
     unset($_SESSION['checkout-redirect']);
   }
 
-  $list = _line_item_list();
+  $list = _uc_line_item_list();
   foreach ($list as $line_item) {
     if (isset($line_item['callback']) && function_exists($line_item['callback'])) {
       $line_item['callback']('cart-preview', $items);
@@ -161,7 +161,7 @@ function uc_cart_checkout_form($form, &$form_state) {
   }
 
   $form['panes'] = array('#tree' => TRUE);
-  $panes = _checkout_pane_list();
+  $panes = _uc_checkout_pane_list();
 
   // If the cart isn't shippable, remove panes with shippable == TRUE.
   if (!uc_cart_is_shippable() && variable_get('uc_cart_delivery_not_shippable', TRUE)) {
@@ -258,7 +258,7 @@ function theme_uc_cart_checkout_form($variables) {
   $output = '<div id="checkout-instructions">' . check_markup(variable_get('uc_checkout_instructions', ''), variable_get('uc_checkout_instructions_format', filter_fallback_format())) . '</div>';
 
   foreach (element_children($form['panes']) as $pane_id) {
-    if (function_exists(($func = _checkout_pane_data($pane_id, 'callback')))) {
+    if (function_exists(($func = _uc_checkout_pane_data($pane_id, 'callback')))) {
       $result = $func('theme', $form['panes'][$pane_id], NULL);
       if (!empty($result)) {
         $output .= $result;
@@ -329,7 +329,7 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
   // Validate/process the cart panes.  A FALSE value results in failed checkout.
   $_SESSION['checkout_valid'] = TRUE;
   foreach (element_children($form_state['values']['panes']) as $pane_id) {
-    $func = _checkout_pane_data($pane_id, 'callback');
+    $func = _uc_checkout_pane_data($pane_id, 'callback');
     $isvalid = $func('process', $order, $form_state['values']['panes'][$pane_id]);
     if ($isvalid === FALSE) {
       $_SESSION['expanded_panes'][] = $pane_id;
@@ -380,7 +380,7 @@ function uc_cart_checkout_review() {
     drupal_goto('cart/checkout');
   }
 
-  $panes = _checkout_pane_list();
+  $panes = _uc_checkout_pane_list();
 
   // If the cart isn't shippable, bypass panes with shippable == TRUE.
   if (!uc_cart_is_shippable() && variable_get('uc_cart_delivery_not_shippable', TRUE)) {

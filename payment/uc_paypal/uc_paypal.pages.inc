@@ -386,7 +386,7 @@ function uc_paypal_ec_submit() {
   drupal_add_css(drupal_get_path('module', 'uc_cart') . '/uc_cart.css');
 
   $build['review'] = array(
-    '#theme' => 'cart_review_table',
+    '#theme' => 'uc_cart_review_table',
     '#show_subtotal' => FALSE,
     '#prefix' => '<div>',
     '#suffix' => '</div>',

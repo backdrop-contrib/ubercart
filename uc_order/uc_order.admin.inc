@@ -13,13 +13,13 @@ function uc_order_settings_overview() {
   $summaries = array();
 
   // don't load admin/store/settings/orders/edit/workflow/create
-  $summaries = array_merge($summaries, summarize_child_form_pages('admin/store/settings/orders/edit/basic', FALSE, TRUE));
-  $summaries = array_merge($summaries, summarize_child_form_pages('admin/store/settings/orders/edit/workflow', FALSE, TRUE));
-  $summaries = array_merge($summaries, summarize_child_form_pages('admin/store/settings/orders/edit/panes', FALSE, TRUE));
+  $summaries = array_merge($summaries, uc_summarize_child_form_pages('admin/store/settings/orders/edit/basic', FALSE, TRUE));
+  $summaries = array_merge($summaries, uc_summarize_child_form_pages('admin/store/settings/orders/edit/workflow', FALSE, TRUE));
+  $summaries = array_merge($summaries, uc_summarize_child_form_pages('admin/store/settings/orders/edit/panes', FALSE, TRUE));
 
   // Theme it all up in a summaries overview.
   return array(
-    '#theme' => 'summary_overview',
+    '#theme' => 'uc_summary_overview',
     '#summaries' => $summaries,
   );
 }
@@ -33,7 +33,7 @@ function uc_order_settings_form($form, &$form_state) {
   $form['admin'] = array(
     '#type' => 'fieldset',
     '#title' => t('Admin settings'),
-    '#summary callback' => 'summarize_form',
+    '#summary callback' => 'uc_summarize_form',
     '#collapsible' => FALSE,
     '#collapsed' => FALSE,
   );
@@ -48,7 +48,7 @@ function uc_order_settings_form($form, &$form_state) {
   $form['admin']['uc_order_logging'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable order logging'),
-    '#summary callback' => 'summarize_checkbox',
+    '#summary callback' => 'uc_summarize_checkbox',
     '#summary arguments' => array(
       t('Order logging is enabled.'),
       t('Order logging is disabled.'),
@@ -58,7 +58,7 @@ function uc_order_settings_form($form, &$form_state) {
   $form['admin']['uc_order_capitalize_addresses'] = array(
     '#type' => 'checkbox',
     '#title' => t('Capitalize address on order screens'),
-    '#summary callback' => 'summarize_checkbox',
+    '#summary callback' => 'uc_summarize_checkbox',
     '#summary arguments' => array(
       t('Addresses on order view pages are capitalized.'),
       t('Addresses on order view pages are not capitalized.'),
@@ -69,7 +69,7 @@ function uc_order_settings_form($form, &$form_state) {
     $form['admin']['uc_ubrowser_product_select'] = array(
       '#type' => 'checkbox',
       '#title' => t('Use the uBrowser product select on order edit screens'),
-      '#summary callback' => 'summarize_checkbox',
+      '#summary callback' => 'uc_summarize_checkbox',
       '#summary arguments' => array(
         t('You are using the uBrowser to add products to orders.'),
         t('You are not using the uBrowser to add products to orders.'),
@@ -81,7 +81,7 @@ function uc_order_settings_form($form, &$form_state) {
   $form['customer'] = array(
     '#type' => 'fieldset',
     '#title' => t('Customer settings'),
-    '#summary callback' => 'summarize_form',
+    '#summary callback' => 'uc_summarize_form',
     '#collapsible' => FALSE,
     '#collapsed' => FALSE,
   );
@@ -89,7 +89,7 @@ function uc_order_settings_form($form, &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Allow customers to view order invoices from their order history.'),
     '#description' => t('Enabling this feature allows pop-up invoices to be opened when a particular order is being viewed.'),
-    '#summary callback' => 'summarize_checkbox',
+    '#summary callback' => 'uc_summarize_checkbox',
     '#summary arguments' => array(
       t('Customers are allowed to view order invoices from their accounts.'),
       t('Customers are not allowed to view order invoices from their accounts.'),
@@ -152,14 +152,14 @@ function uc_order_workflow_form($form, &$form_state) {
     '#title' => t('Order states'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
-    '#summary callback' => 'summarize_null',
+    '#summary callback' => 'uc_summarize_null',
     '#theme' => 'uc_order_state_table',
     '#tree' => TRUE,
   );
 
   foreach ($states as $state) {
 
-    $form['order_states'][$state['id']]['#summary callback'] = 'summarize_form';
+    $form['order_states'][$state['id']]['#summary callback'] = 'uc_summarize_form';
     $form['order_states'][$state['id']]['title'] = array(
       '#markup' => $state['title'],
     );
@@ -298,7 +298,7 @@ function uc_order_workflow_form_submit($form, &$form_state) {
  * @ingroup forms
  */
 function uc_order_panes_form($form, &$form_state) {
-  $panes = _order_pane_list();
+  $panes = _uc_order_pane_list();
 
   foreach ($panes as $pane) {
     foreach ($pane['show'] as $view) {
@@ -319,7 +319,7 @@ function uc_order_panes_form($form, &$form_state) {
     }
   }
 
-  $titles = _get_order_screen_titles();
+  $titles = _uc_order_get_screen_titles();
   foreach ($form['panes'] as $view => $data) {
 
     if (!is_array($form['panes'][$view])) {
@@ -339,7 +339,7 @@ function uc_order_panes_form($form, &$form_state) {
       '#summary arguments' => array($data, $titles[$view], $view),
     );
     $form['panes'][$view] = array_merge($fieldset, $form['panes'][$view]);
-    $form['panes']['#summary callback'] = 'summarize_form';
+    $form['panes']['#summary callback'] = 'uc_summarize_form';
   }
 
   return system_settings_form($form);
@@ -358,7 +358,7 @@ function uc_order_status_create_form($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Order status ID'),
     '#description' => t('Must be a unique ID with no spaces.'),
-    '#summary callback' => 'summarize_null',
+    '#summary callback' => 'uc_summarize_null',
     '#size' => 32,
     '#maxlength' => 32,
     '#required' => TRUE,
@@ -368,7 +368,7 @@ function uc_order_status_create_form($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Title'),
     '#description' => t('The order status title displayed to users.'),
-    '#summary callback' => 'summarize_null',
+    '#summary callback' => 'uc_summarize_null',
     '#size' => 32,
     '#maxlength' => 48,
     '#required' => TRUE,
@@ -383,7 +383,7 @@ function uc_order_status_create_form($form, &$form_state) {
     '#type' => 'select',
     '#title' => t('Order state'),
     '#description' => t('Set which order state this status is for.'),
-    '#summary callback' => 'summarize_null',
+    '#summary callback' => 'uc_summarize_null',
     '#options' => $options,
     '#default_value' => 'post_checkout',
   );
@@ -1193,7 +1193,7 @@ function uc_order_view($order, $view = 'view') {
     'order_panes' => array(),
   );
 
-  $panes = _order_pane_list($view);
+  $panes = _uc_order_pane_list($view);
   foreach ($panes as $pane) {
     if (in_array($view, $pane['show']) && variable_get('uc_order_pane_' . $pane['id'] . '_show_' . $view, $pane['enabled'])) {
       $func = $pane['callback'];
@@ -1248,7 +1248,7 @@ function uc_order_edit_form($form, &$form_state, $order) {
   $modified = isset($form_state['post']['order_modified']) ? $form_state['post']['order_modified'] : REQUEST_TIME;
   $form['order_modified'] = array('#type' => 'hidden', '#value' => $modified);
 
-  $panes = _order_pane_list('edit');
+  $panes = _uc_order_pane_list('edit');
   foreach ($panes as $pane) {
     if (in_array('edit', $pane['show']) &&
         variable_get('uc_order_pane_' . $pane['id'] . '_show_edit', $pane['enabled'])) {
@@ -1283,12 +1283,12 @@ function uc_order_edit_form($form, &$form_state, $order) {
 function theme_uc_order_edit_form($variables) {
   $form = $variables['form'];
 
-  $panes = _order_pane_list();
+  $panes = _uc_order_pane_list();
   foreach ($panes as $pane) {
     if (in_array('edit', $pane['show']) &&
         variable_get('uc_order_pane_' . $pane['id'] . '_show_edit', TRUE)) {
       $func = $pane['callback'];
-      if (function_exists($func) && ($contents = _call_order_pane_byref($func, 'edit-theme', $form)) != NULL) {
+      if (function_exists($func) && ($contents = _uc_order_call_order_pane_byref($func, 'edit-theme', $form)) != NULL) {
         if (is_array($pane['theme_all']) && in_array('edit', $pane['theme_all'])) {
           $output .= $contents;
         }
@@ -1335,7 +1335,7 @@ function uc_order_edit_form_submit($form, &$form_state) {
   $order = uc_order_load($form_state['values']['order_id']);
   $log = array();
 
-  $panes = _order_pane_list();
+  $panes = _uc_order_pane_list();
   foreach ($panes as $pane) {
     if (in_array('edit', $pane['show']) &&
         variable_get('uc_order_pane_' . $pane['id'] . '_show_edit', TRUE)) {
@@ -1498,13 +1498,13 @@ function uc_order_edit_products($order) {
  * Form to allow ordered products' data to be changed.
  *
  * @see
- *   op_products_edit_table()
+ *   uc_op_products_edit_table()
  *   theme_uc_order_edit_products_form()
  *   theme_uc_order_remove_product()
  */
 function uc_order_edit_products_form($form, &$form_state, $products) {
   if (($product_count = count($products)) > 0) {
-    $form['products'] = tapir_get_table('op_products_edit_table');
+    $form['products'] = tapir_get_table('uc_op_products_edit_table');
     for ($i = 0; $i < $product_count; $i++) {
       $form['products'][$i]['remove'] = array(
         '#type' => 'checkbox',
@@ -1598,7 +1598,7 @@ function theme_uc_order_edit_products_form($variables) {
  * Format the button to remove products from an order.
  *
  * @ingroup themeable
- * @see op_products_edit_table()
+ * @see uc_op_products_edit_table()
  */
 function theme_uc_order_remove_product($variables) {
   $form = $variables['form'];
@@ -1620,7 +1620,7 @@ function theme_uc_order_remove_product($variables) {
  *   uc_order_add_line_item_submit()
  */
 function uc_order_add_line_item_form($form, &$form_state, $order, $line_item_id) {
-  $func = _line_item_data($line_item_id, 'callback');
+  $func = _uc_line_item_data($line_item_id, 'callback');
 
   if (!function_exists($func) || ($form = $func('form', $order->order_id)) == NULL) {
     $form['title'] = array(
@@ -1629,7 +1629,7 @@ function uc_order_add_line_item_form($form, &$form_state, $order, $line_item_id)
       '#description' => t('Display title of the line item.'),
       '#size' => 32,
       '#maxlength' => 128,
-      '#default_value' => _line_item_data($line_item_id, 'title'),
+      '#default_value' => _uc_line_item_data($line_item_id, 'title'),
     );
     $form['amount'] = array(
       '#type' => 'textfield',
@@ -1663,7 +1663,7 @@ function uc_order_add_line_item_form($form, &$form_state, $order, $line_item_id)
  * @see uc_order_add_line_item_form()
  */
 function uc_order_add_line_item_form_validate($form, &$form_state) {
-  $func = _line_item_data($form_state['values']['line_item_id'], 'callback');
+  $func = _uc_line_item_data($form_state['values']['line_item_id'], 'callback');
   if (function_exists($func) && ($form = $func('form', $form_state['values']['order_id'])) != NULL) {
     $func('validate', $form_state['values']['order_id']);
   }
@@ -1678,7 +1678,7 @@ function uc_order_add_line_item_form_validate($form, &$form_state) {
  * @see uc_order_add_line_item_form()
  */
 function uc_order_add_line_item_form_submit($form, &$form_state) {
-  $func = _line_item_data($form_state['values']['line_item_id'], 'callback');
+  $func = _uc_line_item_data($form_state['values']['line_item_id'], 'callback');
   if (function_exists($func) && ($form = $func('form', $form_state['values']['order_id'])) != NULL) {
     $func('submit', $form_state['values']['order_id']);
   }
