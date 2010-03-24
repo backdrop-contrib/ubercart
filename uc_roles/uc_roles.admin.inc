@@ -26,9 +26,15 @@ function uc_roles_expiration($form, &$form_state) {
   $header = _uc_roles_expiration_header();
 
   // Grab all the info to build the pager.
-  $sql = 'SELECT * FROM {uc_roles_expirations} AS e INNER JOIN {users} AS u ON e.uid = u.uid';
-  $sql .= tablesort_sql($header);
-  $result = pager_query($sql, 50, 0, NULL);
+  $query = db_select('uc_roles_expirations', 'e')->extend('PagerDefault')->extend('TableSort')
+    ->fields('e')
+    ->limit(50)
+    ->orderByHeader($header);
+
+  $query->join('users', 'u', 'e.uid = u.uid');
+  $query->fields('u');
+
+  $result = $query->execute();
 
   // Stick the expirations into the form.
   foreach ($result as $row) {
