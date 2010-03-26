@@ -223,7 +223,7 @@ function theme_uc_file_admin_files_form_show($variables) {
   }
 
   // Render everything.
-  $output .= '<p>' . t('File downloads can be attached to any Ubercart product as a product feature. For security reasons the <a href="!download_url">file downloads directory</a> is separated from the Drupal <a href="!file_url">file system</a>. Here are the list of files (and their associated Ubercart products) that can be used for file downloads.', array('!download_url' => url('admin/store/settings/products/edit/features', array('query' => array('destination' => 'admin/store/products/files'))), '!file_url' => url('admin/settings/file-system'))) . '</p>';
+  $output .= '<p>' . t('File downloads can be attached to any Ubercart product as a product feature. For security reasons the <a href="!download_url">file downloads directory</a> is separated from the Drupal <a href="!file_url">file system</a>. Here are the list of files (and their associated Ubercart products) that can be used for file downloads.', array('!download_url' => url('admin/store/settings/products/edit/features', array('query' => array('destination' => 'admin/store/products/files'))), '!file_url' => url('admin/config/media/file-system'))) . '</p>';
   $output .= drupal_render($form['uc_file_action']);
   $output .= drupal_render($form['uc_file_select']);
   $output .= theme('table', array('header' => $header, 'rows' => $rows));

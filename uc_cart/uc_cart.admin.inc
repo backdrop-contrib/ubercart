@@ -263,7 +263,7 @@ function uc_cart_cart_panes_form($form, &$form_state) {
 function uc_cart_block_edit_info() {
   $output = t('Drupal handles all the block settings forms automatically.') . '<p>'
           . t('<a href="!url">Click here</a> to goto the shopping cart block configuration page.',
-              array('!url' => url('admin/build/block/configure/uc_cart/0')));
+              array('!url' => url('admin/structure/block/manage/uc_cart/cart/configure')));
 
   return array('#markup' => $output);
 }

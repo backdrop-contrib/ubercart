@@ -32,7 +32,7 @@ function uc_catalog_settings_form($form, &$form_state) {
 
     $form['catalog_vid'] = array(
       '#prefix' => '<div>',
-      '#summary' => t('The taxonomy vocabulary <a href="!edit-url">%name</a> is set as the product catalog.', array('!edit-url' => url('admin/content/taxonomy/' . $vid), '%name' => $catalog->name)),
+      '#summary' => t('The taxonomy vocabulary <a href="!edit-url">%name</a> is set as the product catalog.', array('!edit-url' => url('admin/structure/taxonomy/' . $vid), '%name' => $catalog->name)),
       '#suffix' => '</div>',
     );
     $form['catalog_vid']['#markup'] = $form['catalog_vid']['#summary'];

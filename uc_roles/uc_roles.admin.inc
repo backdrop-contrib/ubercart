@@ -47,8 +47,8 @@ function uc_roles_expiration($form, &$form_state) {
     );
     $form['role'][$row->uid . ' ' . $row->rid] = array('#markup' => _uc_roles_get_name($row->rid));
     $form['expiration'][$row->uid . ' ' . $row->rid] = array('#markup' => format_date($row->expiration, 'small'));
-    $form['edit'][$row->uid . ' ' . $row->rid] = array('#markup' => l(t('edit'), 'user/' . $row->uid . '/edit', array('fragment' => 'role-expiration-' . $row->rid, 'query' => array('destination' => 'admin/user/user/expiration'))));
-    $form['delete'][$row->uid . ' ' . $row->rid] = array('#markup' => l(t('delete'), 'admin/user/user/expiration/delete/' . $row->uid . '/' . $row->rid));
+    $form['edit'][$row->uid . ' ' . $row->rid] = array('#markup' => l(t('edit'), 'user/' . $row->uid . '/edit', array('fragment' => 'role-expiration-' . $row->rid, 'query' => array('destination' => 'admin/people/expiration'))));
+    $form['delete'][$row->uid . ' ' . $row->rid] = array('#markup' => l(t('delete'), 'admin/people/expiration/delete/' . $row->uid . '/' . $row->rid));
   }
 
   return $form;
@@ -114,7 +114,7 @@ function uc_roles_deletion_form($form, &$form_state, $account, $rid) {
         )),
         '%role_name' => $role_name,
       )),
-      'admin/user/user/expiration',
+      'admin/people/expiration',
       t('Deleting the expiration will give !user privileges set by the %role_name role indefinitely unless manually removed.', array(
         '!user' => theme('username', array(
           'account' => $account,
@@ -142,6 +142,6 @@ function uc_roles_deletion_form($form, &$form_state, $account, $rid) {
 function uc_roles_deletion_form_submit($form, &$form_state) {
   uc_roles_delete(user_load($form_state['values']['uid']), $form_state['values']['rid']);
 
-  drupal_goto('admin/user/user/expiration');
+  drupal_goto('admin/people/expiration');
 }
 
