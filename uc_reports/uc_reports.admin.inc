@@ -345,7 +345,7 @@ function uc_reports_products() {
  */
 function _uc_reports_product_get_skus($nid) {
   // Product SKU.
-  $models = array(db_result(db_query("SELECT model FROM {uc_products} WHERE nid = %d", $nid)));
+  $models = array(db_query("SELECT model FROM {uc_products} WHERE nid = :nid", array(':nid' => $nid))->fetchField());
   // Adjustment SKUs.
   $models += db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $nid))->fetchCol();
 

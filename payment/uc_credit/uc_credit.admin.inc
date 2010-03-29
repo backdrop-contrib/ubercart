@@ -304,7 +304,7 @@ function uc_credit_terminal_form_submit($form, &$form_state) {
     $crypt = new uc_encryption_class;
 
     // Load up the existing data array.
-    $data = db_result(db_query("SELECT data FROM {uc_orders} WHERE order_id = %d", $form_state['values']['order_id']));
+    $data = db_query("SELECT data FROM {uc_orders} WHERE order_id = :id", array(':id' => $form_state['values']['order_id']))->fetchField();
     $data = unserialize($data);
 
     $cache = uc_credit_cache('load');

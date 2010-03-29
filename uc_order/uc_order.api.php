@@ -197,8 +197,8 @@ function hook_uc_order_actions($order) {
   $actions = array();
   $module_path = base_path() . drupal_get_path('module', 'uc_shipping');
   if (user_access('fulfill orders')) {
-    $result = db_query("SELECT nid FROM {uc_order_products} WHERE order_id = %d AND data LIKE '%%s:9:\"shippable\";s:1:\"1\";%%'", $order->order_id);
-    if (db_num_rows($result)) {
+    $result = db_query("SELECT COUNT(nid) FROM {uc_order_products} WHERE order_id = :id AND data LIKE :data", array(':id' => $order->order_id, ':data' => '%s:9:\"shippable\";s:1:\"1\";%'));
+    if ($result->fetchField()) {
       $title = t('Package order !order_id products.', array('!order_id' => $order->order_id));
       $actions[] = array(
         'name' => t('Package'),
@@ -206,8 +206,8 @@ function hook_uc_order_actions($order) {
         'icon' => '<img src="' . $module_path . '/images/package.gif" alt="' . $title . '" />',
         'title' => $title,
       );
-      $result = db_query("SELECT package_id FROM {uc_packages} WHERE order_id = %d", $order->order_id);
-      if (db_num_rows($result)) {
+      $result = db_query("SELECT COUNT(package_id) FROM {uc_packages} WHERE order_id = :id", array(':id' => $order->order_id));
+      if ($result->fetchField()) {
         $title = t('Ship order !order_id packages.', array('!order_id' => $order->order_id));
         $actions[] = array(
           'name' => t('Ship'),

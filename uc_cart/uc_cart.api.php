@@ -257,7 +257,7 @@ function hook_uc_cart_pane($items) {
 function hook_uc_checkout_complete($order, $account) {
   // Get previous records of customer purchases.
   $nids = array();
-  $result = db_query("SELECT uid, nid, qty FROM {uc_customer_purchases} WHERE uid = %d", $account->uid);
+  $result = db_query("SELECT uid, nid, qty FROM {uc_customer_purchases} WHERE uid = :uid", array(':uid' => $account->uid));
   foreach ($result as $record) {
     $nids[$record->nid] = $record->qty;
   }
@@ -358,7 +358,15 @@ function hook_uc_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
     uc_cart_remove_item($nid, $cid, $data);
   }
   else {
-    db_query("UPDATE {uc_cart_products} SET qty = %d, changed = %d WHERE nid = %d AND cart_id = '%s' AND data = '%s'", $qty, time(), $nid, $cid, serialize($data));
+    db_update('uc_cart_products')
+      ->fields(array(
+        'qty' => $qty,
+        'changed' => REQUEST_TIME,
+      ))
+      ->condition('nid', $nid)
+      ->condition('cart_id', $cid)
+      ->condition('data', serialize($data))
+      ->execute();
   }
 
   // Rebuild the items hash

@@ -1238,7 +1238,10 @@ function uc_cart_complete_sale($order, $login = FALSE) {
     if ($account = $result->fetchObject()) {
       $order->uid = $account->uid;
       $account = user_load($account->uid);
-      db_query("UPDATE {uc_orders} SET uid = %d WHERE order_id = %d", $order->uid, $order->order_id);
+      db_update('uc_orders')
+        ->fields(array('uid' => $order->uid))
+        ->condition('order_id', $order->order_id)
+        ->execute();
       $message_type = 'existing_user';
     }
     else {

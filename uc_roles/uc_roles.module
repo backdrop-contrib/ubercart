@@ -1173,7 +1173,7 @@ function uc_roles_revoke($account, $rid, $silent = FALSE) {
   // Remove our record of the expiration.
   uc_roles_delete($account, $rid);
 
-  $role_name = db_result(db_query('SELECT name FROM {role} WHERE rid = %d', $rid));
+  $role_name = db_query("SELECT name FROM {role} WHERE rid = :rid", array(':rid' => $rid))->fetchField();
 
   if (!$silent) {
     if ($user->uid == $account->uid) {
@@ -1303,7 +1303,7 @@ function uc_roles_renew($account, $rid, $timestamp, $silent = FALSE) {
     ->execute();
 
   if (!$silent) {
-    $role_name = db_result(db_query('SELECT name FROM {role} WHERE rid = %d', $rid));
+    $role_name = db_query("SELECT name FROM {role} WHERE rid = :rid", array(':rid' => $rid))->fetchField();
     if ($user->uid == $account->uid) {
       $message = t('Your %role role has been renewed. It will expire on %date.', array('%role' => $role_name, '%date' => format_date($timestamp, 'small')));
     }

@@ -409,9 +409,9 @@ function uc_order_token_values($type, $object = NULL) {
         $values['order-first-name'] = check_plain($order->billing_first_name);
         $values['order-last-name'] = check_plain($order->billing_last_name);
       }
-      $result = db_result(db_query_range("SELECT message FROM {uc_order_comments} WHERE order_id = %d AND uid = 0 ORDER BY created DESC", $order->order_id, 0, 1));
+      $result = db_query_range("SELECT message FROM {uc_order_comments} WHERE order_id = :order_id AND uid = :uid ORDER BY created DESC", 0, 1, array(':order_id' => $order->order_id, ':uid' => 0))->fetchField();
       $values['order-comments'] = empty($result) ? t('<i>No comments left.</i>') : check_plain($result);
-      $result = db_result(db_query_range("SELECT message FROM {uc_order_comments} WHERE order_id = %d AND uid > 0 ORDER BY created DESC", $order->order_id, 0, 1));
+      $result = db_query_range("SELECT message FROM {uc_order_comments} WHERE order_id = :order_id AND uid > :uid ORDER BY created DESC", 0, 1, array(':order_id' => $order->order_id, ':uid' => 0))->fetchField();
       $values['order-last-comment'] = empty($result) ? t('<i>No comment found.</i>') : check_plain($result);
       $values['order-last-comment-raw'] = empty($result) ? t('<i>No comment found.</i>') : $result;
       $values['order-status'] = uc_order_status_data($order->order_status, 'title');

@@ -28,9 +28,15 @@
 function hook_uc_product_class($type, $op) {
   switch ($op) {
     case 'delete':
-      db_query("DELETE FROM {uc_class_attributes} WHERE pcid = '%s'", $type);
-      db_query("DELETE FROM {uc_class_attribute_options} WHERE pcid = '%s'", $type);
-    break;
+      db_delete('uc_class_attributes')
+        ->condition('pcid', $type)
+        ->execute();
+
+      db_delete('uc_class_attribute_options')
+        ->condition('pcid', $type)
+        ->execute();
+
+      break;
   }
 }
 
@@ -112,15 +118,8 @@ function hook_uc_product_description_alter(&$description, $product) {
  * Code lifted from uc_attribute.module.
  */
 function hook_uc_product_models($node) {
-  $models = array();
-
   // Get all the SKUs for all the attributes on this node.
-  $adjustments = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = %d", $node->nid);
-  foreach ($adjustments as $adjustment) {
-    if (!in_array($adjustment->model, $models)) {
-      $models[] = $adjustment->model;
-    }
-  }
+  $models = db_query("SELECT DISTINCT model FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $node->nid))->fetchCol();
 
   return $models;
 }

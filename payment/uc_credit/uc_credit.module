@@ -216,7 +216,7 @@ function uc_credit_cron() {
     $key = uc_credit_encryption_key();
     $crypt = new uc_encryption_class;
 
-    $result = db_query("SELECT order_id, data FROM {uc_orders} WHERE modified <= %d AND order_status = '%s'", $time, variable_get('uc_credit_clear_status', uc_order_state_default('completed')));
+    $result = db_query("SELECT order_id, data FROM {uc_orders} WHERE modified <= :last AND order_status = :status", array(':last' => $time, ':status' => variable_get('uc_credit_clear_status', uc_order_state_default('completed'))));
     while ($order = $result->fetchObject()) {
       // Load up the existing data array.
       $data = unserialize($order->data);

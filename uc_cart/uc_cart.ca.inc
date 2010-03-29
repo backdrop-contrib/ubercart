@@ -132,7 +132,7 @@ function uc_cart_condition_product_class($order, $settings) {
           $types[$product->nid] = $product->type;
         }
         else {
-          $types[$product->nid] = db_result(db_query("SELECT type FROM {node} WHERE nid = %d", $product->nid));
+          $types[$product->nid] = db_query("SELECT type FROM {node} WHERE nid = :nid", array(':nid' => $product->nid))->fetchField();
         }
       }
       if ($types[$product->nid] == $settings['class']) {

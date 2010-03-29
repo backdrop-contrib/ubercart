@@ -155,7 +155,7 @@ function hook_uc_file_action($op, $args) {
     case 'submit':
       if ($args['form_values']['action'] == 'uc_image_watermark_add_mark') {
         foreach ($args['form_values']['file_ids'] as $file_id) {
-          $filename = db_result(db_query("SELECT filename FROM {uc_files} WHERE fid = %d",$file_id));
+          $filename = db_query("SELECT filename FROM {uc_files} WHERE fid = :fid", array(':fid' => $file_id))->fetchField();
           //Function adds watermark to image
           _add_watermark($filename);
         }

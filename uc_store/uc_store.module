@@ -1749,7 +1749,7 @@ function uc_store_email_to_username($email) {
   $name = trim(substr($name, 0, USERNAME_MAX_LENGTH - 4));
 
   // Make sure we don't hand out a duplicate username.
-  while (db_result(db_query("SELECT COUNT(uid) FROM {users} WHERE LOWER(name) = LOWER('%s')", $name)) > 0) {
+  while (db_query("SELECT COUNT(uid) FROM {users} WHERE name LIKE :name", array(':name' => $name))->fetchField() > 0) {
     // If the username got too long, trim it back down.
     if (strlen($name) == USERNAME_MAX_LENGTH) {
       $name = substr($name, 0, USERNAME_MAX_LENGTH - 4);
