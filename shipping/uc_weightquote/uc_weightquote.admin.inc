@@ -66,6 +66,16 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
   if (is_numeric($mid) && ($method = db_query("SELECT * FROM {uc_weightquote_methods} WHERE mid = :mid", array(':mid' => $mid))->fetchObject())) {
     $form['mid'] = array('#type' => 'value', '#value' => $mid);
   }
+  else {
+    $method = (object) array(
+      'mid' => $mid,
+      'title' => '',
+      'label' => '',
+      'base_rate' => '',
+      'product_rate' => '',
+    );
+  }
+
   $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Shipping method title'),
@@ -101,11 +111,14 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
     '#type' => 'submit',
     '#value' => t('Submit'),
   );
-  $form['buttons']['delete'] = array(
-    '#type' => 'submit',
-    '#value' => t('Delete'),
-    '#submit' => array('uc_weightquote_admin_method_edit_form_delete'),
-  );
+
+  if (isset($form['mid'])) {
+    $form['buttons']['delete'] = array(
+      '#type' => 'submit',
+      '#value' => t('Delete'),
+      '#submit' => array('uc_weightquote_admin_method_edit_form_delete'),
+    );
+  }
 
   return $form;
 }

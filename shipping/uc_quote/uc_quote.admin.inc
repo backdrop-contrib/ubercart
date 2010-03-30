@@ -190,7 +190,7 @@ function uc_quote_method_settings($form, &$form_state) {
 
       $form['methods'][$id]['#summary callback'] = 'uc_summarize_form';
       $form['methods'][$id]['uc_quote_enabled'] = array('#type' => 'checkbox',
-        '#default_value' => $enabled[$id],
+        '#default_value' => isset($enabled[$id]) ? $enabled[$id] : FALSE,
         '#summary callback' => 'uc_summarize_checkbox',
         '#summary arguments' => array(
           l(t('@method is enabled.', array('@method' => $title)), 'admin/store/settings/quotes/methods/' . $id),
