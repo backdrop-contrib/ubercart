@@ -369,7 +369,7 @@ function uc_product_feature_settings_form($form, &$form_state) {
         '#collapsed' => TRUE,
         '#summary callback' => 'uc_summarize_null',
       );
-      $form[$feature['id']] = array_merge($form[$feature['id']], $feature['settings']());
+      $form[$feature['id']] = array_merge($form[$feature['id']], $feature['settings'](array(), $form_state));
     }
   }
 
