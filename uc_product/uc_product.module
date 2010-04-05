@@ -1294,12 +1294,10 @@ function uc_product_table_header() {
   if (empty($columns)) {
     $enabled = uc_product_field_enabled();
 
-    if (module_exists('imagecache') && $enabled['image']) {
-      $columns['image'] = array(
-        'weight' => -5,
-        'cell' => array('data' => t('Image')),
-      );
-    }
+    $columns['image'] = array(
+      'weight' => -5,
+      'cell' => array('data' => t('Image')),
+    );
     $columns['name'] = array(
       'weight' => 0,
       'cell' => array('data' => t('Name'), 'field' => 'n.title'),
@@ -1356,20 +1354,24 @@ function uc_product_table($args = array()) {
   );
   $options = array('label' => FALSE);
 
+  $remove_image_column = TRUE;
+
   foreach ($args as $nid) {
     $data = array();
     $node = node_load($nid);
-    if ($enabled['image']) {
-      if (module_exists('imagecache')) {
-        if (($field = variable_get('uc_image_' . $node->type, '')) && isset($node->$field)) {
-          $image = $node->{$field}[0];
-          $data['image'] = uc_product_get_picture($nid, 'uc_product_list');
-        }
-        else {
-          $data['image'] = array('#markup' => t('n/a'));
-        }
-      }
+
+    if (($field = variable_get('uc_image_' . $node->type, '')) && !empty($node->$field)) {
+      $remove_image_column = FALSE;
+
+      $image = $node->{$field}[0];
+      $data['image'] = uc_product_get_picture($nid, 'uc_product_list');
     }
+    else {
+      $data['image'] = array(
+        '#markup' => t('n/a'),
+      );
+    }
+
     $data['name'] = array(
       '#markup' => l($node->title, 'node/' . $node->nid),
       '#cell_attributes' => array('width' => '100%'),
@@ -1392,6 +1394,13 @@ function uc_product_table($args = array()) {
     }
 
     $table[] = $data;
+  }
+
+  if ($remove_image_column) {
+    unset($table['#columns']['image']);
+    foreach (element_children($table) as $row) {
+      unset($table[$row]['image']);
+    }
   }
 
   if (!count(element_children($table))) {

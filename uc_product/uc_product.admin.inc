@@ -17,10 +17,6 @@ function uc_product_administration() {
   foreach ($tbl_columns as $column) {
     $header[] = $column['cell'];
   }
-  $order = substr(tablesort_sql($header), 10);
-  if (empty($_REQUEST['order'])) {
-    $order = 'p.ordering, n.title, n.nid';
-  }
 
   // Display 50 products per page.
   $query = db_select('node', 'n')->extend('PagerDefault')->extend('TableSort')
@@ -32,7 +28,7 @@ function uc_product_administration() {
   $nids = $query->execute()->fetchCol();
 
   // Display the product table and pager if necessary.
-  $build['table'] += tapir_get_table('uc_product_table', $nids);
+  $build['table'] = tapir_get_table('uc_product_table', $nids);
   $build['pager'] = array(
     '#theme' => 'pager',
     '#weight' => 5,

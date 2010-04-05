@@ -584,12 +584,15 @@ function uc_catalog_get_page($tid) {
     $catalog->tid = 0;
     $catalog->name = variable_get('uc_catalog_name', t('Catalog'));
     $catalog->description = variable_get('uc_catalog_description', '');
+    $catalog->vocabulary_machine_name = 'catalog';
   }
   $catalog->children = array();
 
   $field = field_info_field('taxonomy_catalog');
   $types = uc_product_types();
   $children = taxonomy_get_children($tid, $vid);
+
+  $children = taxonomy_term_load_multiple(array_keys($children));
 
   foreach ($children as $child) {
     $conditions = array(
@@ -608,8 +611,6 @@ function uc_catalog_get_page($tid) {
     $child->children = $grandchildren_list;
     $catalog->children[] = $child;
   }
-
-  field_attach_load('taxonomy_term', $catalog->children, FIELD_LOAD_CURRENT, array('field_id' => 'uc_catalog_image'));
 
   return $catalog;
 }
@@ -829,7 +830,12 @@ function _uc_catalog_navigation($branch) {
   }
   if (!isset($terms)) {
     $node = menu_get_object('node', 1);
-    $terms = $node->taxonomy_catalog[$node->language];
+    if ($node) {
+      $terms = $node->taxonomy_catalog[$node->language];
+    }
+    else {
+      $terms = array();
+    }
   }
   // Determine whether to expand menu item.
   if ((arg(0) == 'node' && array_key_exists($branch->tid, $terms))) {
@@ -958,22 +964,26 @@ function uc_catalog_add_node_type($type) {
     return;
   }
 
-  $instance = array(
-    'field_name' => 'taxonomy_catalog',
-    'entity_type' => 'node',
-    'bundle' => $type,
-    'label' => variable_get('uc_catalog_name', t('Catalog')),
-    'settings' => array(
-      'allowed_values' => array(
-        array(
-          'vid' => $vid,
-          'parent' => '0',
+  $instance = field_info_instance('node', 'taxonomy_catalog', $type);
+
+  if (!$instance) {
+    $instance = array(
+      'field_name' => 'taxonomy_catalog',
+      'entity_type' => 'node',
+      'bundle' => $type,
+      'label' => variable_get('uc_catalog_name', t('Catalog')),
+      'settings' => array(
+        'allowed_values' => array(
+          array(
+            'vid' => $vid,
+            'parent' => '0',
+          ),
         ),
       ),
-    ),
-  );
+    );
 
-  field_create_instance($instance);
+    field_create_instance($instance);
+  }
 }
 
 /**

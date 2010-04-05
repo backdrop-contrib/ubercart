@@ -90,18 +90,8 @@ function theme_uc_catalog_browse($variables) {
   }
 
   $query = db_select('node', 'n')->extend('PagerDefault')->extend('TableSort')->addTag('node_access');
-  $query->innerJoin('taxonomy_term_node', 'tn', 'n.vid = tn.vid');
+  $query->innerJoin('taxonomy_index', 'tn', 'n.nid = tn.nid');
   $query->innerJoin('uc_products', 'p', 'n.vid = p.vid');
-
-  $query->condition('tn.tid', $catalog->tid)
-    ->condition('n.status', 1)
-    ->condition('n.type', $types, 'IN');
-
-  $count_query = clone $query;
-  $count_query->expression('COUNT(DISTINCT n.nid)');
-
-  $query->setCountQuery($count_query);
-
   $query->fields('n', array(
       'nid',
       'title',
@@ -113,8 +103,11 @@ function theme_uc_catalog_browse($variables) {
       'sell_price',
       'ordering',
     ))
-    ->groupBy('nid')
+    ->groupBy('n.nid')
     ->limit(variable_get('uc_product_nodes_per_page', 12));
+
+  $query->condition('tn.tid', $catalog->tid)
+    ->condition('n.type', $types, 'IN');
 
   // Build an ORDER BY clause for the SELECT query based on table sort info.
   if (empty($_REQUEST['order'])) {
