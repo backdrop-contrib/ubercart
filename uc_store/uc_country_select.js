@@ -1,5 +1,4 @@
 // $Id$
-(function($) {
 
 /**
  * @file
@@ -11,7 +10,7 @@
  */
 Drupal.behaviors.ucCountrySelect = {
   attach: function(context, settings) {
-    $('select[id$=-country]:not(.ucCountrySelect-processed)', context).addClass('ucCountrySelect-processed').change(
+    jQuery('select[id$=-country]:not(.ucCountrySelect-processed)', context).addClass('ucCountrySelect-processed').change(
       function() {
         uc_update_zone_select(this.id, '', settings);
       }
@@ -27,22 +26,21 @@ function uc_update_zone_select(country_select, default_zone, settings) {
 
   var zone_select = country_select.substr(0, country_select.length - 8) + '-zone';
 
-  var options = { 'country_id' : $('#' + country_select).val() };
+  var options = { 'country_id' : jQuery('#' + country_select).val() };
 
-  $('#' + zone_select).parent().siblings('.zone-throbber').attr('style', 'background-image: url(' + settings.basePath + 'misc/throbber.gif); background-repeat: no-repeat; background-position: 100% -20px;').html('&nbsp;&nbsp;&nbsp;&nbsp;');
+  jQuery('#' + zone_select).parent().siblings('.zone-throbber').attr('style', 'background-image: url(' + settings.basePath + 'misc/throbber.gif); background-repeat: no-repeat; background-position: 100% -20px;').html('&nbsp;&nbsp;&nbsp;&nbsp;');
 
-  $.post(settings.basePath + '?q=uc_js_util/zone_select', options,
+  jQuery.post(settings.basePath + '?q=uc_js_util/zone_select', options,
          function (contents) {
            if (contents.match('value="-1"') != null) {
-             $('#' + zone_select).attr('disabled', 'disabled');
+             jQuery('#' + zone_select).attr('disabled', 'disabled');
            }
            else {
-             $('#' + zone_select).removeAttr('disabled');
+             jQuery('#' + zone_select).removeAttr('disabled');
            }
-           $('#' + zone_select).empty().append(contents).val(default_zone).change();
-           $('#' + zone_select).parent().siblings('.zone-throbber').removeAttr('style').empty();
+           jQuery('#' + zone_select).empty().append(contents).val(default_zone).change();
+           jQuery('#' + zone_select).parent().siblings('.zone-throbber').removeAttr('style').empty();
          }
   );
 }
 
-})(jQuery);

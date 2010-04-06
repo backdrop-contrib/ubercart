@@ -1,10 +1,9 @@
 // $Id$
-(function($) {
 
-$(document).ready(
+jQuery(document).ready(
   function () {
-    $('#cc_details_title').show(0);
-    $('#cc_details').hide(0);
+    jQuery('#cc_details_title').show(0);
+    jQuery('#cc_details').hide(0);
   }
 );
 
@@ -12,8 +11,7 @@ $(document).ready(
  * Toggle credit card details on the order view screen.
  */
 function toggle_card_details() {
-  $('#cc_details').toggle();
-  $('#cc_details_title').toggle();
+  jQuery('#cc_details').toggle();
+  jQuery('#cc_details_title').toggle();
 }
 
-})(jQuery);

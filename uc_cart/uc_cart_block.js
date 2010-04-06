@@ -1,5 +1,4 @@
 // $Id$
-(function ($) {
 
 /**
  * @file
@@ -11,7 +10,7 @@
  */
 Drupal.behaviors.ucCollapseBlock = {
   attach: function(context) {
-    $('.cart-block-title-bar:not(.ucCollapseBlock-processed)', context).addClass('ucCollapseBlock-processed').click(
+    jQuery('.cart-block-title-bar:not(.ucCollapseBlock-processed)', context).addClass('ucCollapseBlock-processed').click(
       function() {
         cart_block_toggle();
       }
@@ -22,18 +21,18 @@ Drupal.behaviors.ucCollapseBlock = {
 /**
  * Collapse the shopping cart block at page load.
  */
-$(document).ready(
+jQuery(document).ready(
   function() {
     if (Drupal.settings.ucCollapsedBlock == true) {
       // Add the appropriate title bar class.
-      $('.cart-block-title-bar').addClass('cart-block-toggle');
+      jQuery('.cart-block-title-bar').addClass('cart-block-toggle');
 
       // Add the appropriate arrow class.
-      $('.cart-block-arrow').removeClass('arrow-down').addClass('arrow-up');
+      jQuery('.cart-block-arrow').removeClass('arrow-down').addClass('arrow-up');
     }
     else {
       // Add the appropriate arrow class.
-      $('.cart-block-arrow').removeClass('arrow-up').addClass('arrow-down');
+      jQuery('.cart-block-arrow').removeClass('arrow-up').addClass('arrow-down');
     }
   }
 );
@@ -43,15 +42,14 @@ $(document).ready(
  */
 function cart_block_toggle() {
   // Toggle the display of the cart contents table.
-  $('#cart-block-contents').toggle();
+  jQuery('#cart-block-contents').toggle();
 
   // Toggle the class of the cart block arrow.
-  if ($('.cart-block-arrow').hasClass('arrow-up')) {
-    $('.cart-block-arrow').removeClass('arrow-up').addClass('arrow-down');
+  if (jQuery('.cart-block-arrow').hasClass('arrow-up')) {
+    jQuery('.cart-block-arrow').removeClass('arrow-up').addClass('arrow-down');
   }
   else {
-    $('.cart-block-arrow').removeClass('arrow-down').addClass('arrow-up');
+    jQuery('.cart-block-arrow').removeClass('arrow-down').addClass('arrow-up');
   }
 }
 
-})(jQuery);

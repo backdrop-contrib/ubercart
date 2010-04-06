@@ -1,5 +1,4 @@
 // $Id$
-(function($) {
 
 /**
  * @file
@@ -11,18 +10,18 @@
  */
 Drupal.behaviors.ucStoreMoreLinks = {
   attach: function(context, settings) {
-    $('.uc-store-admin-panel:not(.ucStoreMoreLinks-processed)', context).addClass('ucStoreMoreLinks-processed').each(
+    jQuery('.uc-store-admin-panel:not(.ucStoreMoreLinks-processed)', context).addClass('ucStoreMoreLinks-processed').each(
       function() {
         var panel_id = this.id.substring(6);
-        $('#show-links-' + panel_id).click(
+        jQuery('#show-links-' + panel_id).click(
           function() {
             var panel_id = this.id.substring(11);
-            $('#panel-' + panel_id + ' .panel-links').toggle();
-            if ($('#panel-' + panel_id + ' .panel-show-link').html() == '<a>' + settings.ucTextShow + '</a>') {
-              $('#panel-' + panel_id + ' .panel-show-link').html('<a>' + settings.ucTextHide + '</a>');
+            jQuery('#panel-' + panel_id + ' .panel-links').toggle();
+            if (jQuery('#panel-' + panel_id + ' .panel-show-link').html() == '<a>' + settings.ucTextShow + '</a>') {
+              jQuery('#panel-' + panel_id + ' .panel-show-link').html('<a>' + settings.ucTextHide + '</a>');
             }
             else {
-              $('#panel-' + panel_id + ' .panel-show-link').html('<a>' + settings.ucTextShow + '</a>');
+              jQuery('#panel-' + panel_id + ' .panel-show-link').html('<a>' + settings.ucTextShow + '</a>');
             }
           }
         );
@@ -36,9 +35,9 @@ Drupal.behaviors.ucStoreMoreLinks = {
  */
 Drupal.behaviors.ucCustomerOrder = {
   attach: function(context, settings) {
-    $('.uc-customer-table tr.odd, .uc-customer-table tr.even:not(.ucCustomerOrder-processed)', context).addClass('ucCustomerOrder-processed').each(
+    jQuery('.uc-customer-table tr.odd, .uc-customer-table tr.even:not(.ucCustomerOrder-processed)', context).addClass('ucCustomerOrder-processed').each(
       function() {
-        $(this).dblclick(
+        jQuery(this).dblclick(
           function() {
             window.location = settings.basePath + '?q=admin/store/customers/orders/' + this.id.substring(9);
           }
@@ -53,9 +52,9 @@ Drupal.behaviors.ucCustomerOrder = {
  */
 Drupal.behaviors.ucCustomerOrders = {
   attach: function(context, settings) {
-    $('.uc-cust-orders-table tr.odd, .uc-cust-orders-table tr.even:not(.ucCustomerOrders-processed)', context).addClass('ucCustomerOrders-processed').each(
+    jQuery('.uc-cust-orders-table tr.odd, .uc-cust-orders-table tr.even:not(.ucCustomerOrders-processed)', context).addClass('ucCustomerOrders-processed').each(
       function() {
-        $(this).dblclick(
+        jQuery(this).dblclick(
           function() {
             window.location = settings.basePath + '?q=admin/store/orders/' + this.id.substring(6);
           }
@@ -65,4 +64,3 @@ Drupal.behaviors.ucCustomerOrders = {
   }
 }
 
-})(jQuery);
