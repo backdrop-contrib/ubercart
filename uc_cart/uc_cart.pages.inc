@@ -368,7 +368,7 @@ function uc_cart_checkout_review() {
   drupal_add_js(drupal_get_path('module', 'uc_cart') . '/uc_cart.js');
   $form = drupal_get_form('uc_cart_checkout_review_form');
 
-  if ($_SESSION['do_review'] !== TRUE && !uc_referer_check('cart/checkout')) {
+  if ((!isset($_SESSION['do_review']) || $_SESSION['do_review'] !== TRUE) && !uc_referer_check('cart/checkout')) {
     drupal_goto('cart/checkout');
   }
   unset($_SESSION['do_review']);

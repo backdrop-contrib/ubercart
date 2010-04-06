@@ -1249,18 +1249,18 @@ function uc_order_delete($order_id) {
  */
 function uc_order_comments_load($order_id, $admin = FALSE) {
   $query = db_select(($admin) ? 'uc_order_admin_comments' : 'uc_order_comments', 'oc')
-    ->condition('oc_order_id', $order_id);
+    ->condition('order_id', $order_id);
 
   $oc_order_id = $query->addField('oc', 'order_id');
   $oc_comment_id = $query->addField('oc', 'comment_id');
   $oc_created = $query->addField('oc', 'created');
 
-  $query->fields()
-    ->orderBy($oc_created)
+  $query->orderBy($oc_created)
     ->orderBy($oc_comment_id);
 
   if (!$admin) {
     $query->leftJoin('uc_order_statuses', 'os', 'oc.order_status = os.order_status_id');
+    $query->fields('os');
   }
 
   $comments = $query->execute()->fetchAll();

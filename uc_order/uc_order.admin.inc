@@ -473,9 +473,9 @@ function uc_order_admin($query = NULL, $args = NULL, $search = FALSE) {
         'order_total',
         'created',
       ));
-    $o_first_name = $query->addField('o', $address . '_first_name', 'o_first_name');
-    $o_last_name = $query->addField('o', $address . '_last_name', 'o_last_name');
-    $o_order_status = $query->addField('o', 'order_status', 'o_order_status');
+    $o_first_name = $query->addField('o', $address . '_first_name');
+    $o_last_name = $query->addField('o', $address . '_last_name');
+    $o_order_status = $query->addField('o', 'order_status');
 
     $os = $query->leftJoin('uc_order_statuses', 'os', 'o.order_status = os.order_status_id');
 
