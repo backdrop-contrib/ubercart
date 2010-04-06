@@ -494,7 +494,8 @@ function uc_order_admin($query = NULL, $args = NULL, $search = FALSE) {
         $query->condition($o_order_status, uc_order_status_list('general', TRUE), 'IN');
       }
     }
-    if ($_SESSION['sort_status'] == 'all') {
+
+    if (isset($_SESSION['sort_status']) && $_SESSION['sort_status'] == 'all') {
       $conditions =& $query->conditions();
       $conditions = array();
     }
@@ -1208,7 +1209,7 @@ function uc_order_view($order, $view = 'view') {
           );
         }
 
-        $build['order_panes'][$pane] = $title + $contents + array(
+        $build['order_panes'][$pane['id']] = $title + $contents + array(
           '#prefix' => '<div class="order-pane ' . $pane['class'] . '">',
           '#suffix' => '</div>',
         );

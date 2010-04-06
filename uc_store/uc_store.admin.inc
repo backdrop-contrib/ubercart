@@ -968,7 +968,7 @@ function uc_store_tables() {
  */
 function uc_store_customer_orders($uid) {
   $result = db_select('uc_orders')->extend('PagerDefault')
-    ->fields()
+    ->fields('uc_orders')
     ->condition('uid', $uid)
     ->condition('order_status', uc_order_status_list('general', TRUE), 'IN')
     ->orderBy('created', 'DESC')

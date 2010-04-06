@@ -69,7 +69,7 @@ function uc_cart_links_report() {
   );
 
   $query = db_select('uc_cart_link_clicks')->extend('PagerDefault')->extend('TableSort')
-    ->fields()
+    ->fields('uc_cart_link_clicks')
     ->limit(25)
     ->element(1)
     ->orderByHeader($header);
