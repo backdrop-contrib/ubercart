@@ -452,6 +452,7 @@ function uc_checkout_pane_comments($op, &$arg1, $arg2) {
       return TRUE;
 
     case 'review':
+      $review = NULL;
       $result = db_query("SELECT message FROM {uc_order_comments} WHERE order_id = :id", array(':id' => $arg1->order_id));
       if ($comment = $result->fetchObject()) {
         $review[] = array('title' => t('Comment'), 'data' => check_plain($comment->message));

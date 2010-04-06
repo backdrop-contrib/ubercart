@@ -457,7 +457,7 @@ function theme_uc_cart_checkout_review($variables) {
     }
   }
 
-  $output .= '<tr class="review-button-row"><td colspan="2">' . drupal_render_children($form)
+  $output .= '<tr class="review-button-row"><td colspan="2">' . drupal_render($form)
             . '</td></tr></table>';
 
   return $output;
@@ -473,7 +473,8 @@ function theme_uc_cart_checkout_review($variables) {
  */
 function uc_cart_checkout_review_form($form, &$form_state) {
   // Set the session variable to pass the redirect check on the pageload.
-  if ($_POST['op'] == t('Back')) {
+  // @todo This value should be in $form_state somewhere.
+  if (isset($_POST['op']) && $_POST['op'] == t('Back')) {
     $_SESSION['do_review'] = TRUE;
   }
 

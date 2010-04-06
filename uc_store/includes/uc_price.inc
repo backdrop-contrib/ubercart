@@ -117,14 +117,7 @@ function uc_price($price_info, $context, $options = array()) {
   // an array with a limited set of keys that don't change every pageload; the
   // uid, name, mail, and roles of the user account.
   $context_clone = $context;
-  // TODO: array_intersect_key() isn't available until PHP 5.1.0. (Drupal 7)
-  //$context_clone['account'] = array_intersect_key((array) $context['account'], drupal_map_assoc(array()));
-  $context_clone['account'] = array(
-    'uid' => $context['account']->uid,
-    'name' => $context['account']->name,
-    'mail' => $context['account']->mail,
-    'roles' => $context['account']->roles,
-  );
+  $context_clone['account'] = array_intersect_key((array) $context['account'], array('uid' => 0, 'name' => '', 'mail' => '', 'roles' => array()));
 
   $key = md5(serialize($price_info + $context_clone + $options));
 

@@ -150,14 +150,22 @@ function uc_credit_form_alter(&$form, &$form_state, $form_id) {
         drupal_goto('cart/checkout');
       }
 
-      // Cache the CC details for use in other functions.
-      uc_credit_cache('save', $_SESSION['sescrd']);
+      if (isset($_SESSION['sescrd'])) {
+        // Cache the CC details for use in other functions.
+        uc_credit_cache('save', $_SESSION['sescrd']);
 
-      // Store the encrypted details to the form for processing on submit.
-      $form['sescrd'] = array(
-        '#type' => 'hidden',
-        '#value' => base64_encode($_SESSION['sescrd']),
-      );
+        // Store the encrypted details to the form for processing on submit.
+        $form['sescrd'] = array(
+          '#type' => 'hidden',
+          '#value' => base64_encode($_SESSION['sescrd']),
+        );
+      }
+      else {
+        $form['sescrd'] = array(
+          '#type' => 'hidden',
+          '#value' => '',
+        );
+      }
 
       // Add submit handler to preserve CC details for the back button and
       // failed order submissions.
