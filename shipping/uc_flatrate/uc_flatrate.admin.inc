@@ -18,8 +18,6 @@ function uc_flatrate_admin_methods() {
   );
 
   $rows = array();
-  $enabled = variable_get('uc_quote_enabled', array());
-  $weight = variable_get('uc_quote_method_weight', array());
 
   $result = db_query("SELECT mid, title, label, base_rate, product_rate FROM {uc_flatrate_methods}");
   foreach ($result as $method) {

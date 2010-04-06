@@ -81,8 +81,10 @@ function uc_ups_theme() {
 function uc_ups_form_alter(&$form, &$form_state, $form_id) {
   if (uc_product_is_product_form($form)) {
     $node = $form['#node'];
-    $enabled = variable_get('uc_quote_enabled', array());
-    $weight = variable_get('uc_quote_method_weight', array('ups' => 0));
+
+    $enabled = variable_get('uc_quote_enabled', array()) + array('ups' => FALSE);
+    $weight = variable_get('uc_quote_method_weight', array()) + array('ups' => 0);
+
     $ups = array(
       '#type' => 'fieldset',
       '#title' => t('UPS product description'),
@@ -97,6 +99,7 @@ function uc_ups_form_alter(&$form, &$form_state, $form_id) {
       '#options' => _uc_ups_pkg_types(),
       '#default_value' => $node->ups['pkg_type'] ? $node->ups['pkg_type'] : '02',
     );
+
     $form['shipping']['ups'] = $ups;
     if ($enabled['ups']) {
       $form['#validate'][] = 'uc_ups_product_alter_validate';
@@ -110,7 +113,6 @@ function uc_ups_form_alter(&$form, &$form_state, $form_id) {
  * @see uc_ups_form_alter()
  */
 function uc_ups_product_alter_validate($form, &$form_state) {
-  $enabled = variable_get('uc_quote_enabled', array());
   if ($form_state['values']['shippable'] && ($form_state['values']['shipping_type'] == 'small_package' || (empty($form_state['values']['shipping_type']) && variable_get('uc_store_shipping_type', 'small_package') == 'small_package'))) {
     if ($form_state['values']['ups']['pkg_type'] == '02' && (empty($form_state['values']['dim_length']) || empty($form_state['values']['dim_width']) || empty($form_state['values']['dim_height']))) {
       form_set_error('base][dimensions', t('Dimensions are required for custom packaging.'));
@@ -214,7 +216,7 @@ function uc_ups_node_revision_delete($node) {
  * Connect the UPS quote action and event.
  */
 function uc_ups_ca_predicate() {
-  $enabled = variable_get('uc_quote_enabled', array());
+  $enabled = variable_get('uc_quote_enabled', array()) + array('ups' => FALSE);
 
   $predicates = array(
     'uc_ups_get_quote' => array(
@@ -264,13 +266,14 @@ function uc_ups_uc_shipping_type() {
 function uc_ups_uc_shipping_method() {
   $methods = array();
 
-  $enabled = variable_get('uc_quote_enabled', array());
-  $weight = variable_get('uc_quote_method_weight', array('ups' => 0));
+  $enabled = variable_get('uc_quote_enabled', array()) + array('ups' => FALSE);
+  $weight = variable_get('uc_quote_method_weight', array()) + array('ups' => 0);
+
   $methods['ups'] = array(
     'id' => 'ups',
     'module' => 'uc_ups',
     'title' => t('UPS'),
-    'enabled' => isset($enabled['ups']) ? $enabled['ups'] : FALSE,
+    'enabled' => $enabled['ups'],
     'quote' => array(
       'type' => 'small_package',
       'callback' => 'uc_ups_quote',
@@ -282,7 +285,7 @@ function uc_ups_uc_shipping_method() {
       'pkg_types' => _uc_ups_pkg_types(),
     ),
     'cancel' => 'uc_ups_void_shipment',
-    'weight' => isset($weight['ups']) ? $weight['ups'] : 0,
+    'weight' => $weight['ups'],
   );
 
   return $methods;

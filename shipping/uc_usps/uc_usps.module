@@ -50,8 +50,9 @@ function uc_usps_theme() {
 function uc_usps_form_alter(&$form, &$form_state, $form_id) {
   if (uc_product_is_product_form($form)) {
     $node = $form['#node'];
-    $enabled = variable_get('uc_quote_enabled', array());
-    $weight = variable_get('uc_quote_method_weight', array('usps' => 0, 'usps_intl' => 1));
+    $enabled = variable_get('uc_quote_enabled', array()) + array('usps' => FALSE, 'usps_intl' => FALSE);
+    $weight = variable_get('uc_quote_method_weight', array()) + array('usps' => 0, 'usps_intl' => 1);
+
     $form['shipping']['usps'] = array(
       '#type' => 'fieldset',
       '#title' => t('USPS product description'),
@@ -165,7 +166,12 @@ function uc_usps_node_revision_delete($node) {
  * Connect USPS quote action and event.
  */
 function uc_usps_ca_predicate() {
-  $enabled = variable_get('uc_quote_enabled', array());
+  $enabled = variable_get('uc_quote_enabled', array()) + array(
+    'usps' => FALSE,
+    'usps_env' => FALSE,
+    'usps_intl' => FALSE,
+    'usps_intl_env' => FALSE,
+  );
   $quote_action = array(
     '#name' => 'uc_quote_action_get_quote',
     '#title' => t('Fetch a shipping quote'),
@@ -310,13 +316,18 @@ function uc_usps_uc_shipping_type() {
  * Implement hook_uc_shipping_method().
  */
 function uc_usps_uc_shipping_method() {
-  $enabled = variable_get('uc_quote_enabled', array());
-  $weight = variable_get('uc_quote_method_weight', array(
+  $enabled = variable_get('uc_quote_enabled', array()) + array(
+    'usps_env' => FALSE,
+    'usps' => FALSE,
+    'usps_intl_env' => FALSE,
+    'usps_intl' => FALSE,
+  );
+  $weight = variable_get('uc_quote_method_weight', array()) + array(
     'usps_env' => 0,
     'usps' => 0,
     'usps_intl_env' => 1,
     'usps_intl' => 1,
-   ));
+   );
 
   $methods = array(
     'usps_env' => array(
@@ -328,8 +339,8 @@ function uc_usps_uc_shipping_method() {
         'callback' => 'uc_usps_quote',
         'accessorials' => _uc_usps_env_services(),
       ),
-      'enabled' => isset($enabled['usps_env']) ? $enabled['usps_env'] : FALSE,
-      'weight' => isset($weight['usps_env']) ? $weight['usps_env'] : 0,
+      'enabled' => $enabled['usps_env'],
+      'weight' => $weight['usps_env'],
     ),
     'usps' => array(
       'id' => 'usps',
@@ -340,8 +351,8 @@ function uc_usps_uc_shipping_method() {
         'callback' => 'uc_usps_quote',
         'accessorials' => _uc_usps_services(),
       ),
-      'enabled' => isset($enabled['usps']) ? $enabled['usps'] : FALSE,
-      'weight' => isset($weight['usps']) ? $weight['usps'] : 0,
+      'enabled' => $enabled['usps'],
+      'weight' => $weight['usps'],
     ),
     'usps_intl_env' => array(
       'id' => 'usps_intl_env',
@@ -352,8 +363,8 @@ function uc_usps_uc_shipping_method() {
         'callback' => 'uc_usps_quote',
         'accessorials' => _uc_usps_env_services(),
       ),
-      'enabled' => isset($enabled['usps_intl_env']) ? $enabled['usps_intl_env'] : FALSE,
-      'weight' => isset($weight['usps_intl_env']) ? $weight['usps_intl_env'] : 1,
+      'enabled' => $enabled['usps_intl_env'],
+      'weight' => $weight['usps_intl_env'],
     ),
     'usps_intl' => array(
       'id' => 'usps_intl',
@@ -364,8 +375,8 @@ function uc_usps_uc_shipping_method() {
         'callback' => 'uc_usps_quote',
         'accessorials' => _uc_usps_intl_services(),
       ),
-      'enabled' => isset($enabled['usps_intl']) ? $enabled['usps_intl'] : FALSE,
-      'weight' => isset($weight['usps_intl']) ? $weight['usps_intl'] : 1,
+      'enabled' => $enabled['usps_intl'],
+      'weight' => $weight['usps_intl'],
     ),
   );
 

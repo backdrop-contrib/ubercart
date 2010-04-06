@@ -19,8 +19,6 @@ function uc_weightquote_admin_methods() {
   );
 
   $rows = array();
-  $enabled = variable_get('uc_quote_enabled', array());
-  $weight = variable_get('uc_quote_method_weight', array());
   $result = db_query("SELECT mid, title, label, base_rate, product_rate FROM {uc_weightquote_methods}");
   foreach ($result as $method) {
     $context['subject']['weightquote_method'] = $method;

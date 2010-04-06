@@ -187,10 +187,13 @@ function uc_quote_method_settings($form, &$form_state) {
   $methods = uc_quote_shipping_method_options();
   if (is_array($methods)) {
     foreach ($methods as $id => $title) {
+      // Ensure default values are set.
+      $enabled += array($id => FALSE);
+      $weight += array($id => 0);
 
       $form['methods'][$id]['#summary callback'] = 'uc_summarize_form';
       $form['methods'][$id]['uc_quote_enabled'] = array('#type' => 'checkbox',
-        '#default_value' => isset($enabled[$id]) ? $enabled[$id] : FALSE,
+        '#default_value' => $enabled[$id],
         '#summary callback' => 'uc_summarize_checkbox',
         '#summary arguments' => array(
           l(t('@method is enabled.', array('@method' => $title)), 'admin/store/settings/quotes/methods/' . $id),
@@ -199,7 +202,7 @@ function uc_quote_method_settings($form, &$form_state) {
       );
       $form['methods'][$id]['uc_quote_method_weight'] = array('#type' => 'weight',
         '#delta' => 5,
-        '#default_value' => isset($weight[$id]) ? $weight[$id] : 0,
+        '#default_value' => $weight[$id],
       );
     }
   }

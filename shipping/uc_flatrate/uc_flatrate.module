@@ -52,7 +52,6 @@ function uc_flatrate_form_alter(&$form, &$form_state, $form_id) {
   if (uc_product_is_product_form($form)) {
     $sign_flag = variable_get('uc_sign_after_amount', FALSE);
     $currency_sign = variable_get('uc_currency_sign', '$');
-    $enabled = variable_get('uc_quote_enabled', array());
     $weight = variable_get('uc_quote_method_weight', array());
     $result = db_query("SELECT mid, title, product_rate FROM {uc_flatrate_methods}");
     $context = array(
@@ -60,6 +59,9 @@ function uc_flatrate_form_alter(&$form, &$form_state, $form_id) {
       'type' => 'amount',
     );
     foreach ($result as $method) {
+      // Ensure default weight is set.
+      $weight += array('flatrate_' . $method->mid => 0);
+
       if (!isset($form['shipping']['flatrate'])) {
         $form['shipping']['flatrate'] = array(
           '#type' => 'fieldset',
@@ -175,6 +177,9 @@ function uc_flatrate_ca_predicate() {
 
   $result = db_query("SELECT mid, title FROM {uc_flatrate_methods}");
   foreach ($result as $method) {
+    // Ensure default status is set.
+    $enabled += array('flatrate_' . $method->mid => TRUE);
+
     $predicates['uc_flatrate_get_quote_' . $method->mid] = array(
       '#title' => t('Shipping quote via @method', array('@method' => $method->title)),
       '#trigger' => 'get_quote_from_flatrate_' . $method->mid,
@@ -207,11 +212,15 @@ function uc_flatrate_uc_shipping_method() {
 
   $result = db_query("SELECT mid, title, label FROM {uc_flatrate_methods}");
   foreach ($result as $method) {
+    // Ensure default values are set.
+    $enabled += array('flatrate_' . $method->mid => TRUE);
+    $weight += array('flatrate_' . $method->mid => 0);
+
     $methods['flatrate_' . $method->mid] = array(
       'id' => 'flatrate_' . $method->mid,
       'module' => 'uc_flatrate',
       'title' => $method->title,
-      'enabled' => isset($enabled['flatrate_' . $method->mid]) ? $enabled['flatrate_' . $method->mid] : FALSE,
+      'enabled' => $enabled['flatrate_' . $method->mid],
       'quote' => array(
         'type' => 'order',
         'callback' => 'uc_flatrate_quote',
@@ -219,7 +228,7 @@ function uc_flatrate_uc_shipping_method() {
           $method->label,
         ),
       ),
-      'weight' => isset($weight['flatrate_' . $method->mid]) ? $weight['flatrate_' . $method->mid] : 0,
+      'weight' => $weight['flatrate_' . $method->mid],
     );
   }
 
