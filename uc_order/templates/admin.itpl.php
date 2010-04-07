@@ -8,10 +8,10 @@
 ?>
 
 <p>
-<?php echo t('Order number:'); ?> [order-admin-link]<br />
-<?php echo t('Customer:'); ?> [order-first-name] [order-last-name] - [order-email]<br />
-<?php echo t('Order total:'); ?> [order-total]<br />
-<?php echo t('Shipping method:'); ?> [order-shipping-method]
+<?php echo t('Order number:'); ?> [uc_order:admin-link]<br />
+<?php echo t('Customer:'); ?> [uc_order:first-name] [uc_order:last-name] - [uc_order:email]<br />
+<?php echo t('Order total:'); ?> [uc_order:total]<br />
+<?php echo t('Shipping method:'); ?> [uc_order:shipping-method]
 </p>
 
 <p>
@@ -43,5 +43,5 @@ foreach ($products as $product) {
 
 <p>
 <?php echo t('Order comments:'); ?><br />
-[order-comments]
+[uc_order:comments]
 </p>

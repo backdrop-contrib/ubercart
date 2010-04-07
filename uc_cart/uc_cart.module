@@ -804,11 +804,11 @@ function uc_cart_uc_message() {
 
   $messages['checkout_instructions'] = '';
   $messages['review_instructions'] = t("Your order is almost complete. Please review the details below and click 'Submit order' if all the information is correct.  You may use the 'Back' button to make changes to your order if necessary.");
-  $messages['completion_message'] = t('Your order is complete! Your order number is [order-id].');
-  $messages['completion_logged_in'] = t('Thank you for shopping at [store-name]. While logged in, you may continue shopping or <a href="[order-url]">view your current order status</a> and order history.');
-  $messages['completion_existing_user'] = t("Thank you for shopping at [store-name]. Your current order has been attached to the account we found matching your e-mail address.\n\n<a href=\"!user_url\">Login</a> to view your current order status and order history. Remember to login when you make your next purchase for a faster checkout experience!", array('!user_url' => url('user')));
-  $messages['completion_new_user'] = t("Thank you for shopping at [store-name]. A new account has been created for you here that you may use to view your current order status.\n\n<a href=\"!user_url\">Login</a> to your new account using the following information:\n\n<strong>Username:</strong> !new_username\n<strong>Password:</strong> !new_password", array('!user_url' => url('user')));
-  $messages['continue_shopping'] = t('<a href="[site-url]">Return to the front page.</a>');
+  $messages['completion_message'] = t('Your order is complete! Your order number is [uc_order:order-id].');
+  $messages['completion_logged_in'] = t('Thank you for shopping at [store:name]. While logged in, you may continue shopping or <a href="[uc_order:url]">view your current order status</a> and order history.');
+  $messages['completion_existing_user'] = t("Thank you for shopping at [store:name]. Your current order has been attached to the account we found matching your e-mail address.\n\n<a href=\"!user_url\">Login</a> to view your current order status and order history. Remember to login when you make your next purchase for a faster checkout experience!", array('!user_url' => url('user')));
+  $messages['completion_new_user'] = t("Thank you for shopping at [store:name]. A new account has been created for you here that you may use to view your current order status.\n\n<a href=\"!user_url\">Login</a> to your new account using the following information:\n\n<strong>Username:</strong> !new_username\n<strong>Password:</strong> !new_password", array('!user_url' => url('user')));
+  $messages['continue_shopping'] = t('<a href="[site:url]">Return to the front page.</a>');
 
   return $messages;
 }
@@ -1319,7 +1319,7 @@ function uc_cart_complete_sale($order, $login = FALSE) {
   $output .= '<p>' . check_markup(variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping')),
                       variable_get('uc_msg_continue_shopping_format', filter_fallback_format())) . '</p>';
 
-  $output_message = token_replace_multiple($output, array('global' => NULL, 'order' => $order));
+  $output_message = token_replace($output, array('uc_order' => $order));
 
   // Move an order's status from "In Checkout" to "Pending"
   $status = db_query("SELECT order_status FROM {uc_orders} WHERE order_id = :id", array(':id' => $order->order_id))->fetchField();

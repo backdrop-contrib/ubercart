@@ -14,8 +14,8 @@
 /**
  * Implement hook_ca_entity().
  *
- * An entity is defined in order to get file expiration(s) down
- * to token in the email.
+ * An entity is defined in order to get file expiration(s) down to token in the
+ * email.
  */
 function uc_file_ca_entity() {
 
@@ -85,9 +85,9 @@ function uc_file_ca_predicate() {
         '#argument_map' => $order_args,
         '#settings' => array(
           'from' => uc_store_email_from(),
-          'addresses' => '[order-email]',
-          'subject' => t("File Downloads for Order# [order-id]"),
-          'message' => t("Your order (order# [order-link]) at [store-name] included file download(s). You may access them with the following link(s):\n\n[file-downloads]\n\nAfter downloading these files these links will have expired. If you need to download the files again, you can login at [site-login] and visit the \"My Account\" section of the site.\n\nThanks again, \n\n[store-name]\n[site-slogan]"),
+          'addresses' => '[uc_order:email]',
+          'subject' => t("File Downloads for Order# [uc_order:order-id]"),
+          'message' => t("Your order (order# [uc_order:link]) at [store:name] included file download(s). You may access them with the following link(s):\n\n[uc_file:downloads]\n\nAfter downloading these files these links will have expired. If you need to download the files again, you can login at [site:login-link] and visit the \"My Account\" section of the site.\n\nThanks again, \n\n[store:name]\n[site:slogan]"),
           'format' => filter_default_format(),
         ),
       ),
@@ -167,19 +167,15 @@ function uc_file_ca_trigger() {
  * @see uc_file_action_order_email_form()
  */
 function uc_file_action_order_email($order, $file_expiration, $settings) {
-  $account = uc_order_user_load($order);
-
   // Token replacements for the subject and body
   $settings['replacements'] = array(
-    'global' => NULL,
-    'order' => $order,
-    'user' => $account,
+    'uc_order' => $order,
     'uc_file' => $file_expiration,
   );
 
   // Replace tokens and parse recipients.
   $recipients = array();
-  $addresses = token_replace_multiple($settings['addresses'], $settings['replacements']);
+  $addresses = token_replace($settings['addresses'], $settings['replacements']);
   foreach (explode("\n", $addresses) as $address) {
     $recipients[] = trim($address);
   }
@@ -198,7 +194,7 @@ function uc_file_action_order_email($order, $file_expiration, $settings) {
  * @see uc_file_action_order_email()
  */
 function uc_file_action_order_email_form($form_state, $settings = array()) {
-  return uc_file_build_email_form($form_state, $settings, array('global', 'uc_file'));
+  return uc_file_build_email_form($form_state, $settings, array('site', 'store', 'uc_order', 'uc_file'));
 }
 
 /**

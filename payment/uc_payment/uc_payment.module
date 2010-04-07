@@ -131,41 +131,6 @@ function uc_payment_menu() {
 }
 
 /**
- * Implement hook_token_values().
- */
-function uc_payment_token_values($type, $object = NULL) {
-  switch ($type) {
-    case 'order':
-      $order = $object;
-      $values['order-payment-method'] = _uc_payment_method_data($order->payment_method, 'review');
-      if (empty($values['order-payment-method'])) {
-        $values['order-payment-method'] = _uc_payment_method_data($order->payment_method, 'name');
-      }
-
-      $context = array(
-        'revision' => 'formatted',
-        'type' => 'amount',
-      );
-      $values['order-payment-balance'] = uc_price(uc_payment_balance($order), $context);
-      break;
-  }
-
-  return $values;
-}
-
-/**
- * Implement hook_token_list().
- */
-function uc_payment_token_list($type = 'all') {
-  if ($type == 'order' || $type == 'ubercart' || $type == 'all') {
-    $tokens['order']['order-payment-method'] = t('The payment method of the order.');
-    $tokens['order']['order-payment-balance'] = t('The payment balance of the order');
-  }
-
-  return $tokens;
-}
-
-/**
  * Implement hook_permission().
  */
 function uc_payment_permission() {

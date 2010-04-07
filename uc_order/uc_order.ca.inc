@@ -99,8 +99,8 @@ function uc_order_ca_predicate() {
         ),
         '#settings' => array(
           'from' => uc_store_email_from(),
-          'addresses' => '[order-email]',
-          'subject' => t('Order #[order-id] Update'),
+          'addresses' => '[uc_order:email]',
+          'subject' => t('Order #[uc_order:order-id] Update'),
           'message' => uc_get_message('order_update_email'),
           'format' => filter_default_format(),
         ),
@@ -1097,7 +1097,7 @@ function uc_order_action_update_status_form($form_state, $settings = array()) {
  */
 function uc_order_action_add_comment($order, $settings) {
   uc_order_comment_save($order->order_id, 0,
-    token_replace_multiple($settings['comment'], array('global' => NULL, 'order' => $order)),
+    token_replace($settings['comment'], array('uc_order' => $order)),
     $settings['comment_type'] == 'admin' ? 'admin' : 'order',
     $order->order_status, $settings['comment_type'] == 'notified');
 }
@@ -1119,7 +1119,7 @@ function uc_order_action_add_comment_form($form_state, $settings = array()) {
   $form['comment'] = array(
     '#type' => 'textarea',
     '#title' => t('Comment'),
-    '#description' => t('Enter the comment message. Uses <a href="!url">order and global tokens</a>.', array('!url' => url('admin/store/help/tokens'))),
+    '#description' => t('Enter the comment message. Uses <a href="!url">order, store, and site tokens</a>.', array('!url' => url('admin/store/help/tokens'))),
     '#default_value' => $settings['comment'],
   );
 
@@ -1134,18 +1134,14 @@ function uc_order_action_add_comment_form($form_state, $settings = array()) {
  * @see uc_order_action_email_form()
  */
 function uc_order_action_email($order, $settings) {
-  $account = uc_order_user_load($order);
-
   // Token replacements for the subject and body
   $settings['replacements'] = array(
-    'global' => NULL,
-    'order' => $order,
-    'user' => $account,
+    'uc_order' => $order,
   );
 
   // Apply token replacements to from and recipient e-mail addressses.
-  $from = token_replace_multiple($settings['from'], $settings['replacements']);
-  $addresses = token_replace_multiple($settings['addresses'], $settings['replacements']);
+  $from = token_replace($settings['from'], $settings['replacements']);
+  $addresses = token_replace($settings['addresses'], $settings['replacements']);
 
   // Split up our recipient e-mail addresses.
   $recipients = array();
@@ -1176,7 +1172,7 @@ function uc_order_action_email_form($form_state, $settings = array()) {
   $form['addresses'] = array(
     '#type' => 'textarea',
     '#title' => t('Recipients'),
-    '#default_value' => isset($settings['addresses']) ? $settings['addresses'] : '[order-email]',
+    '#default_value' => isset($settings['addresses']) ? $settings['addresses'] : '[uc_order:email]',
     '#description' => t('Enter the email addresses to receive the notifications, one on each line. You may use order tokens for dynamic email addresses.'),
     '#required' => TRUE,
   );
@@ -1200,7 +1196,7 @@ function uc_order_action_email_form($form_state, $settings = array()) {
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
-  foreach (array('global', 'order') as $name) {
+  foreach (array('site', 'store', 'uc_order') as $name) {
     $form['token_help'][$name] = array(
       '#type' => 'fieldset',
       '#title' => t('@name replacement patterns', array('@name' => drupal_ucfirst($name))),
@@ -1222,12 +1218,11 @@ function uc_order_action_email_form($form_state, $settings = array()) {
 function uc_order_action_email_invoice($order, $settings) {
   // Token replacements for the subject and body
   $settings['replacements'] = array(
-    'global' => NULL,
-    'order' => $order,
+    'uc_order' => $order,
   );
 
   $recipients = array();
-  $addresses = token_replace_multiple($settings['addresses'], $settings['replacements']);
+  $addresses = token_replace($settings['addresses'], $settings['replacements']);
 
   foreach (explode("\n", $addresses) as $address) {
     $recipients[] = trim($address);

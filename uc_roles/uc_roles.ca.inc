@@ -104,7 +104,7 @@ function uc_roles_ca_predicate() {
         '#argument_map' => $order_args,
         '#settings' => array(
           'from' => uc_store_email_from(),
-          'addresses' => '[order-email]',
+          'addresses' => '[uc_order:email]',
           'subject' => uc_get_message('uc_roles_grant_subject'),
           'message' => uc_get_message('uc_roles_grant_message'),
           'format' => filter_default_format(),
@@ -127,7 +127,7 @@ function uc_roles_ca_predicate() {
         '#argument_map' => $user_args,
         '#settings' => array(
           'from' => uc_store_email_from(),
-          'addresses' => '[mail]',
+          'addresses' => '[user:mail]',
           'subject' => uc_get_message('uc_roles_revoke_subject'),
           'message' => uc_get_message('uc_roles_revoke_message'),
           'format' => filter_default_format(),
@@ -150,7 +150,7 @@ function uc_roles_ca_predicate() {
         '#argument_map' => $order_args,
         '#settings' => array(
           'from' => uc_store_email_from(),
-          'addresses' => '[order-email]',
+          'addresses' => '[uc_order:email]',
           'subject' => uc_get_message('uc_roles_renew_subject'),
           'message' => uc_get_message('uc_roles_renew_message'),
           'format' => filter_default_format(),
@@ -173,7 +173,7 @@ function uc_roles_ca_predicate() {
         '#argument_map' => $user_args,
         '#settings' => array(
           'from' => uc_store_email_from(),
-          'addresses' => '[mail]',
+          'addresses' => '[user:mail]',
           'subject' => uc_get_message('uc_roles_reminder_subject'),
           'message' => uc_get_message('uc_roles_reminder_message'),
           'format' => filter_default_format(),
@@ -303,19 +303,15 @@ function uc_roles_ca_trigger() {
  * @see uc_roles_action_order_email_form()
  */
 function uc_roles_action_order_email($order, $role_expiration, $settings) {
-  $account = uc_order_user_load($order);
-
   // Token replacements for the subject and body
   $settings['replacements'] = array(
-    'global' => NULL,
-    'order' => $order,
-    'user' => $account,
-    'uc_roles' => $role_expiration,
+    'uc_order' => $order,
+    'uc_role' => $role_expiration,
   );
 
   // Replace tokens and parse recipients.
   $recipients = array();
-  $addresses = token_replace_multiple($settings['addresses'], $settings['replacements']);
+  $addresses = token_replace($settings['addresses'], $settings['replacements']);
   foreach (explode("\n", $addresses) as $address) {
     $recipients[] = trim($address);
   }
@@ -349,14 +345,13 @@ function uc_roles_action_order_email_form($form_state, $settings = array()) {
 function uc_roles_action_user_email($account, $role_expiration, $settings) {
   // Token replacements for the subject and body
   $settings['replacements'] = array(
-    'global' => NULL,
     'user' => $account,
     'uc_roles' => $role_expiration,
   );
 
   // Replace tokens and parse recipients.
   $recipients = array();
-  $addresses = token_replace_multiple($settings['addresses'], $settings['replacements']);
+  $addresses = token_replace($settings['addresses'], $settings['replacements']);
   foreach (explode("\n", $addresses) as $address) {
     $recipients[] = trim($address);
   }

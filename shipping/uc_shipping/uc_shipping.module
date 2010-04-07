@@ -209,11 +209,11 @@ function uc_shipping_file_references($file) {
 }
 
 function template_preprocess_uc_packing_slip(&$variables) {
-  $tokens = uc_store_token_values('global');
-  $variables['site_logo'] = $tokens['site-logo'];
-  $variables['store_name'] = $tokens['store-name'];
-  $variables['store_address'] = $tokens['store-address'];
-  $variables['store_phone'] = $tokens['store-phone'];
+  $tokens = token_generate('store') + token_generate('site');
+  $variables['site_logo'] = $tokens['[site:logo]'];
+  $variables['store_name'] = $tokens['[store:name]'];
+  $variables['store_address'] = $tokens['[store:address]'];
+  $variables['store_phone'] = $tokens['[store:phone]'];
 
   $order = $variables['order'];
   $variables['order_link'] = l($order->order_id, url('user/' . $order->uid . '/order/' . $order->order_id, array('absolute' => TRUE)));
@@ -224,8 +224,11 @@ function template_preprocess_uc_packing_slip(&$variables) {
   $variables['shipping_phone'] = check_plain($order->delivery_phone);
 
   if (module_exists('uc_payment')) {
-    $tokens = uc_payment_token_values('order', $order);
-    $variables['payment_method'] = $tokens['order-payment-method'];
+    $payment_method = _uc_payment_method_data($order->payment_method, 'review');
+    if (empty($payment_method)) {
+      $payment_method = _uc_payment_method_data($order->payment_method, 'name');
+    }
+    $variables['payment_method'] = $payment_method;
   }
   else {
     $variables['payment_method'] = '';

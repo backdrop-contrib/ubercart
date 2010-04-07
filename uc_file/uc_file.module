@@ -123,6 +123,7 @@ function uc_file_theme() {
   return array(
     'uc_file_downloads_token' => array(
       'variables' => array('file_downloads' => NULL),
+      'file' => 'uc_file.tokens.inc',
     ),
     'uc_file_admin_files_form_show' => array(
       'render element' => 'form',
@@ -643,54 +644,6 @@ function uc_file_uc_store_status() {
     );
   }
   return $message;
-}
-
-/**
- * Implement hook_token_list().
- */
-function uc_file_token_list($type = 'all') {
-  if ($type == 'uc_file' || $type == 'ubercart' || $type == 'all') {
-    $tokens['uc_file']['file-downloads'] = t('The list of file download links (if any) associated with an order');
-  }
-
-  return $tokens;
-}
-
-/**
- * Implement hook_token_values().
- */
-function uc_file_token_values($type, $object = NULL) {
-  switch ($type) {
-    case 'uc_file':
-      if (!empty($object)) {
-        $values['file-downloads'] = theme('uc_file_downloads_token', array('file_downloads' => $object));
-      }
-      break;
-  }
-
-  return $values;
-}
-
-/**
- * Theme file download links token.
- *
- * @ingroup themeable
- */
-function theme_uc_file_downloads_token($variables) {
-  $file_downloads = $variables['file_downloads'];
-
-  $output = '';
-
-  foreach ($file_downloads as $file_download) {
-    // Let's only notify of them of the files, not the directories.
-    if (is_dir($file_download->filename)) {
-      continue;
-    }
-
-    $output .= l($file_download->filename, 'download/' . $file_download->fid . '/' . $file_download->file_key, array('absolute' => TRUE)) . "\n";
-  }
-
-  return $output;
 }
 
 /******************************************************************************

@@ -345,120 +345,6 @@ function uc_order_theme() {
 }
 
 /**
- * Implement hook_token_values().
- */
-function uc_order_token_values($type, $object = NULL) {
-  $values = array();
-  switch ($type) {
-    case 'order':
-      $order = $object;
-
-      if (isset($_SESSION['new_user']) && is_array($_SESSION['new_user'])) {
-        $values['new-username'] = check_plain($_SESSION['new_user']['name']);
-        $values['new-password'] = check_plain($_SESSION['new_user']['pass']);
-      }
-      else {
-        $values['new-username'] = '';
-        $values['new-password'] = '';
-      }
-      $values['order-id'] = $order->order_id;
-      $values['order-uid'] = $order->uid;
-      $values['order-url'] = url('user/' . $order->uid . '/order/' . $order->order_id, array('absolute' => TRUE));
-      $values['order-link'] = l($order->order_id, $values['order-url']);
-      $values['order-admin-url'] = url('admin/store/orders/' . $order->order_id, array('absolute' => TRUE));
-      $admin_url = url('admin/store/orders/' . $order->order_id, array('absolute' => TRUE));
-      $values['order-admin-link'] = l($order->order_id, $admin_url);
-      if (is_array($order->line_items)) {
-        foreach ($order->line_items as $key => $value) {
-          if ($value['type'] == 'subtotal') {
-            $context = array(
-              'revision' => 'formatted',
-              'type' => 'line_item',
-              'subject' => array(
-                'order' => $order,
-                'line_item' => $order->line_items[$key],
-              ),
-            );
-            $subtotal = uc_price($order->line_items[$key]['amount'], $context);
-          }
-          if ($value['type'] == 'shipping' && is_null($ship_method)) {
-            $ship_method = $value['title'];
-          }
-        }
-      }
-      $values['order-subtotal'] = $subtotal;
-      $context = array(
-        'revision' => 'formatted-original',
-        'type' => 'order_total',
-        'subject' => array(
-          'order' => $order,
-        ),
-      );
-      $values['order-total'] = uc_price($order->order_total, $context);
-      $values['order-email'] = check_plain($order->primary_email);
-      $values['order-shipping-address'] = uc_order_address($order, 'delivery');
-      $values['order-shipping-phone'] = check_plain($order->delivery_phone);
-      $values['order-shipping-method'] = is_null($ship_method) ? t('Standard delivery') : $ship_method;
-      $values['order-billing-address'] = uc_order_address($order, 'billing');
-      $values['order-billing-phone'] = check_plain($order->billing_phone);
-      if (variable_get('uc_customer_list_address', 'billing') == 'shipping') {
-        $values['order-first-name'] = check_plain($order->delivery_first_name);
-        $values['order-last-name'] = check_plain($order->delivery_last_name);
-      }
-      else {
-        $values['order-first-name'] = check_plain($order->billing_first_name);
-        $values['order-last-name'] = check_plain($order->billing_last_name);
-      }
-      $result = db_query_range("SELECT message FROM {uc_order_comments} WHERE order_id = :order_id AND uid = :uid ORDER BY created DESC", 0, 1, array(':order_id' => $order->order_id, ':uid' => 0))->fetchField();
-      $values['order-comments'] = empty($result) ? t('<i>No comments left.</i>') : check_plain($result);
-      $result = db_query_range("SELECT message FROM {uc_order_comments} WHERE order_id = :order_id AND uid > :uid ORDER BY created DESC", 0, 1, array(':order_id' => $order->order_id, ':uid' => 0))->fetchField();
-      $values['order-last-comment'] = empty($result) ? t('<i>No comment found.</i>') : check_plain($result);
-      $values['order-last-comment-raw'] = empty($result) ? t('<i>No comment found.</i>') : $result;
-      $values['order-status'] = uc_order_status_data($order->order_status, 'title');
-      $values['order-date-created'] = format_date($order->created, 'small');
-      $values['order-date-modified'] = format_date($order->modified, 'small');
-      break;
-  }
-
-  return $values;
-}
-
-/**
- * Implement hook_token_list().
- */
-function uc_order_token_list($type = 'all') {
-  $tokens = array();
-  if ($type == 'order' || $type == 'ubercart' || $type == 'all') {
-    $tokens['order']['new-username'] = t('New username associated with an order if applicable.');
-    $tokens['order']['new-password'] = t('New password associated with an order if applicable.');
-    $tokens['order']['order-id'] = t('The order ID.');
-    $tokens['order']['order-uid'] = t('The user ID of the order.');
-    $tokens['order']['order-url'] = t('The URL to the order');
-    $tokens['order']['order-link'] = t('A link to the order using the order ID.');
-    $tokens['order']['order-admin-url'] = t('The URL to the admin view page using the order ID.');
-    $tokens['order']['order-admin-link'] = t('A link to the order admin view page using the order ID.');
-    $tokens['order']['order-subtotal'] = t('The subtotal of products on an order.');
-    $tokens['order']['order-total'] = t('The order total.');
-    $tokens['order']['order-email'] = t('The primary e-mail address of the order.');
-    $tokens['order']['order-shipping-address'] = t('The order shipping address.');
-    $tokens['order']['order-shipping-phone'] = t('The phone number for the shipping address.');
-    $tokens['order']['order-billing-address'] = t('The order billing address.');
-    $tokens['order']['order-billing-phone'] = t('The phone number for the billing address.');
-    $tokens['order']['order-shipping-method'] = t('The title of the first shipping line item.');
-    $tokens['order']['order-first-name'] = t('The first name associated with the order.');
-    $tokens['order']['order-last-name'] = t('The last name associated with the order.');
-    $tokens['order']['order-comments'] = t('Comments left by the customer.');
-    $tokens['order']['order-last-comment'] = t('Last order comment left by an administrator (not counting the order admin comments).');
-    $tokens['order']['order-last-comment-raw'] = t('Last order comment left by an administrator (not counting the order admin comments).  Use with caution: this is unescaped raw input.');
-    $tokens['order']['order-status'] = t('The current order status.');
-    $tokens['order']['order-date-created'] = t('The date and time when the order was created.');
-    $tokens['order']['order-date-modified'] = t('The date and time when the order was last modified.');
-  }
-
-  return $tokens;
-}
-
-/**
  * Implement hook_permission().
  */
 function uc_order_permission() {
@@ -551,11 +437,11 @@ function uc_order_mail($key, &$message, $params) {
       $message['from'] = $params['from'];
 
       // Perform token replacement on the subject and body.
-      $subject = token_replace_multiple($params['subject'], $params['replacements']);
-      $body = token_replace_multiple($params['message'], $params['replacements']);
+      $subject = token_replace($params['subject'], $params['replacements'], $langcode ? array('language' => $message['language']) : array());
+      $body = token_replace($params['message'], $params['replacements'], $langcode ? array('language' => $message['language']) : array());
 
       // Strip newline characters from e-mail subjects.
-      // TODO: Maybe drupal_mail_send() should do this? -LM
+      // @todo: Maybe drupal_mail_send() should do this?
       $message['subject'] = str_replace(array("\r\n", "\r", "\n"), ' ', $subject);
 
       // Apply an input format to the message body if specified.
@@ -725,7 +611,7 @@ function uc_order_uc_line_item() {
  * Implement hook_uc_message().
  */
 function uc_order_uc_message() {
-  $messages['order_update_email'] = t("[order-first-name] [order-last-name],\n\nYour order number [order-link] at [store-name] has been updated.\n\nOrder status: [order-status]\n\nOrder comment:\n[order-last-comment]\n\nBrowse to the following page to login to your account and view your order details:\n[site-login]\n\n\nThanks again,\n\n[store-name]\n[site-slogan]");
+  $messages['order_update_email'] = t("[uc_order:first-name] [uc_order:last-name],\n\nYour order number [uc_order:link] at [store:name] has been updated.\n\nOrder status: [uc_order:order-status]\n\nOrder comment:\n[uc_order:last-comment]\n\nBrowse to the following page to login to your account and view your order details:\n[site:login-link]\n\n\nThanks again,\n\n[store:name]\n[site:slogan]");
 
   return $messages;
 }
@@ -1695,8 +1581,7 @@ function uc_order_load_invoice($order, $op = 'view', $template = 'customer') {
     ob_end_clean();
   }
 
-  $output = token_replace($output, 'global');
-  $output = token_replace($output, 'order', $order);
+  $output = token_replace($output, array('uc_order' => $order), array('clear' => TRUE));
 
   $invoice[$order->order_id][$template] = $output;
   return $output;

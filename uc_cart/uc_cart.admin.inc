@@ -490,7 +490,7 @@ function uc_cart_checkout_messages_form($form, &$form_state) {
   $form['uc_msg_order_submit'] = array(
     '#type' => 'textarea',
     '#title' => t('Checkout completion message header'),
-    '#description' => t('Header for message displayed after a user checks out. <a href="!url">Uses order and global tokens</a>.', array('!url' => url('admin/store/help/tokens'))),
+    '#description' => t('Header for message displayed after a user checks out. <a href="!url">Uses order, store, and site tokens</a>.', array('!url' => url('admin/store/help/tokens'))),
     '#summary' => variable_get('uc_msg_order_submit', uc_get_message('completion_message'))
                ? t('Completion message is set.')
                : t('Completion message is not set.'),
@@ -509,7 +509,7 @@ function uc_cart_checkout_messages_form($form, &$form_state) {
   $form['checkout_messages']['uc_msg_order_logged_in'] = array(
     '#type' => 'textarea',
     '#title' => t('Checkout completion for logged-in users'),
-    '#description' => t('Message displayed upon checkout for a user who has logged in. <a href="!url">Uses order and global tokens</a>.', array('!url' => url('admin/store/help/tokens'))),
+    '#description' => t('Message displayed upon checkout for a user who has logged in. <a href="!url">Uses order, store, and site tokens</a>.', array('!url' => url('admin/store/help/tokens'))),
     '#summary' => variable_get('uc_msg_order_logged_in', uc_get_message('completion_logged_in'))
                ? t('Completion text for logged in users is set.')
                : t('Completion text for logged in users is not set.'),
@@ -521,7 +521,7 @@ function uc_cart_checkout_messages_form($form, &$form_state) {
   $form['checkout_messages']['uc_msg_order_existing_user'] = array(
     '#type' => 'textarea',
     '#title' => t('Checkout completion for existing users'),
-    '#description' => t("Message displayed upon checkout for a user who has an account but wasn't logged in. <a href=\"!url\">Uses order and global tokens</a>.", array('!url' => url('admin/store/help/tokens'))),
+    '#description' => t("Message displayed upon checkout for a user who has an account but wasn't logged in. <a href=\"!url\">Uses order, store, and site tokens</a>.", array('!url' => url('admin/store/help/tokens'))),
     '#summary' => variable_get('uc_msg_order_existing_user', uc_get_message('completion_existing_user'))
                ? t('Completion text for users who aren\'t logged in is set.')
                : t('Completion text for users who aren\'t logged in is not set.'),
@@ -534,7 +534,7 @@ function uc_cart_checkout_messages_form($form, &$form_state) {
   $form['checkout_messages']['uc_msg_order_new_user'] = array(
     '#type' => 'textarea',
     '#title' => t('Checkout completion for new users'),
-    '#description' => t('Message displayed upon checkout for a new user whose account was just created. <a href="!url">Uses order and global tokens</a>.', array('!url' => url('admin/store/help/tokens'))),
+    '#description' => t('Message displayed upon checkout for a new user whose account was just created. <a href="!url">Uses order, store, and site tokens</a>.', array('!url' => url('admin/store/help/tokens'))),
     '#summary' => variable_get('uc_msg_order_new_user', uc_get_message('completion_new_user'))
                ? t('Completion text for new users is set.')
                : t('Completion text for new users is not set.'),
@@ -546,7 +546,7 @@ function uc_cart_checkout_messages_form($form, &$form_state) {
   $form['uc_msg_continue_shopping'] = array(
     '#type' => 'textarea',
     '#title' => t('Continue shopping message'),
-    '#description' => t('Message displayed upon checkout to direct customers to another part of your site. <a href="!url">Uses order and global tokens</a>.', array('!url' => url('admin/store/help/tokens'))),
+    '#description' => t('Message displayed upon checkout to direct customers to another part of your site. <a href="!url">Uses order, store, and site tokens</a>.', array('!url' => url('admin/store/help/tokens'))),
     '#summary' => variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping'))
                ? t('Continue shopping text is set.')
                : t('Continue shopping text is not set.'),
