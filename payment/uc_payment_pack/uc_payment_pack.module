@@ -93,7 +93,7 @@ function uc_payment_method_other($op, &$arg1) {
     case 'customer-view':
       // Fetch the description for the payment entered by the administrator.
       if ($description = db_query("SELECT description FROM {uc_payment_other} WHERE order_id = :id", array(':id' => $arg1->order_id))->fetchField()) {
-        return t('Description: @desc', array('@desc' => $description));
+        return array('#markup' => t('Description: @desc', array('@desc' => $description)));
       }
       break;
 
@@ -194,13 +194,16 @@ function uc_payment_method_cod($op, &$arg1) {
 
     case 'order-view':
     case 'customer-view':
+      $build = array('#markup' => '');
+
       if (variable_get('uc_cod_delivery_date', FALSE)) {
-        $output = t('Desired delivery date:') . '<br />'
-                . uc_date_format($arg1->payment_details['delivery_month'],
-                                 $arg1->payment_details['delivery_day'],
-                                 $arg1->payment_details['delivery_year']);
+        $build['#markup'] = t('Desired delivery date:') . '<br />' .
+          uc_date_format($arg1->payment_details['delivery_month'],
+            $arg1->payment_details['delivery_day'],
+            $arg1->payment_details['delivery_year']);
       }
-      return $output;
+
+      return $build;
 
     case 'order-details':
       $build = array();
@@ -387,28 +390,35 @@ function uc_payment_method_check($op, &$arg1) {
 
     case 'order-view':
       if (!variable_get('uc_payment_tracking', TRUE)) {
-        return '';
+        return array();
       }
+
+      $build = array('#suffix' => '<br />');
+
       $result = db_query("SELECT clear_date FROM {uc_payment_check} WHERE order_id = :id ", array(':id' => $arg1->order_id));
       if ($clear_date = $result->fetchField()) {
-        $output = t('Clear Date:') . ' ' . format_date($clear_date, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
+        $build['#markup'] = t('Clear Date:') . ' ' . format_date($clear_date, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
       }
       else {
-        $output = l(t('Receive Check'), 'admin/store/orders/' . $arg1->order_id . '/receive_check');
+        $build['#markup'] = l(t('Receive Check'), 'admin/store/orders/' . $arg1->order_id . '/receive_check');
       }
-      $output .= '<br />';
-      return $output;
+
+      return $build;
 
     case 'customer-view':
       if (!variable_get('uc_payment_tracking', TRUE)) {
-        return '';
+        return array();
       }
+
+      $build = array();
+
       $result = db_query("SELECT clear_date FROM {uc_payment_check} WHERE order_id = :id ", array(':id' => $arg1->order_id));
-      if ($clear_date = $result->fetch_field()) {
-        $output = t('Check received') . '<br />'
-                . t('Expected clear date:') . '<br />' . format_date($clear_date, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
+      if ($clear_date = $result->fetchField()) {
+        $build['#markup'] = t('Check received') . '<br />' .
+          t('Expected clear date:') . '<br />' . format_date($clear_date, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
       }
-      return $output;
+
+      return $build;
 
     case 'settings':
       $form['check_address_info'] = array(

@@ -1113,7 +1113,7 @@ function _ca_convert_configurations(&$context) {
       // Initialize batch data.
       $context['sandbox']['progress'] = 0;
       $context['sandbox']['current_cfg'] = '';
-      $context['sandbox']['max'] = db_result(db_query("SELECT COUNT(name) FROM {workflow_ng_cfgs} WHERE altered = 1"));
+      $context['sandbox']['max'] = db_query("SELECT COUNT(name) FROM {workflow_ng_cfgs} WHERE altered = 1")->fetchField();
     }
 
     $limit = 25;

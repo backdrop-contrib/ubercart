@@ -209,7 +209,7 @@ function uc_shipping_file_references($file) {
 }
 
 function template_preprocess_uc_packing_slip(&$variables) {
-  $tokens = token_generate('store') + token_generate('site');
+  $tokens = token_generate('store', array()) + token_generate('site', array());
   $variables['site_logo'] = $tokens['[site:logo]'];
   $variables['store_name'] = $tokens['[store:name]'];
   $variables['store_address'] = $tokens['[store:address]'];
@@ -425,7 +425,7 @@ function uc_shipping_package_load($package_id) {
     $result = db_query("SELECT * FROM {uc_packages} WHERE package_id = :id", array(':id' => $package_id));
     if ($package = $result->fetchObject()) {
       $products = array();
-      $descripion = '';
+      $description = '';
       $weight = 0;
       $units = variable_get('uc_weight_unit', 'lb');
       $addresses = array();
@@ -452,7 +452,7 @@ function uc_shipping_package_load($package_id) {
         $package->label_image = $image;
       }
       else {
-        unset($pacakge->label_image);
+        unset($package->label_image);
       }
 
       $packages[$package_id] = $package;
@@ -494,7 +494,7 @@ function uc_shipping_package_save($package) {
         $order_product->data['package_id'] = intval($package->package_id);
 
         db_update('uc_order_products')
-          ->fields(array('data' => seriailze($order_product->data)))
+          ->fields(array('data' => serialize($order_product->data)))
           ->condition('order_product_id', $id)
           ->execute();
       }
@@ -536,7 +536,7 @@ function uc_shipping_package_save($package) {
 
   db_update('uc_packages')
     ->fields($fields)
-    ->condition('package_id', $package->package->id)
+    ->condition('package_id', $package->package_id)
     ->execute();
 }
 

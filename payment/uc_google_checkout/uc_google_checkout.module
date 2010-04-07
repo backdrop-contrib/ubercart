@@ -287,7 +287,7 @@ function uc_google_checkout_uc_order($op, &$arg1, $arg2) {
       }
     break;
     case 'can_update':
-      if (is_null($arg1->google_order_number) || isset($_SESSION['google_updates']) && $_SESSION['google_updates']) {
+      if (!isset($arg1->google_order_number) || isset($_SESSION['google_updates']) && $_SESSION['google_updates']) {
         return TRUE;
       }
       switch ($arg2) {
@@ -663,6 +663,10 @@ function uc_google_checkout_send_request($api, $request) {
     $checkout_url = 'https://sandbox.google.com/checkout';
   }
 
+  if (!$merchant_id) {
+    return;
+  }
+
   // Google's XML parser doesn't like named entities apparently.
   str_replace(array('&amp;', '&lt;', '&gt;'), array('&#x26;', '&#x3c;', '&#x3e;'), $request);
   $response_obj = drupal_http_request($checkout_url . '/api/checkout/v2/' . $api . '/Merchant/' . $merchant_id, array(
@@ -731,8 +735,9 @@ function uc_google_checkout_pane_email_allowed($op, $arg1) {
 function uc_payment_method_google_checkout($op, &$arg1) {
   switch ($op) {
     case 'order-view':
-      $output = l(t('Google Checkout terminal'), 'admin/store/orders/' . $arg1->order_id . '/google_checkout');
-      return $output;
+      $build['#markup'] = l(t('Google Checkout terminal'), 'admin/store/orders/' . $arg1->order_id . '/google_checkout');
+
+      return $build;
     case 'settings':
       $form = array();
 

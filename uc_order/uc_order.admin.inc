@@ -1209,10 +1209,13 @@ function uc_order_view($order, $view = 'view') {
           );
         }
 
-        $build['order_panes'][$pane['id']] = $title + $contents + array(
+        $build['order_panes'][$pane['id']] = array(
           '#prefix' => '<div class="order-pane ' . $pane['class'] . '">',
           '#suffix' => '</div>',
         );
+
+        $build['order_panes'][$pane['id']]['title'] = $title;
+        $build['order_panes'][$pane['id']]['pane'] = $contents;
       }
     }
   }
@@ -1283,6 +1286,7 @@ function uc_order_edit_form($form, &$form_state, $order) {
  */
 function theme_uc_order_edit_form($variables) {
   $form = $variables['form'];
+  $output = '';
 
   $panes = _uc_order_pane_list();
   foreach ($panes as $pane) {
@@ -1290,7 +1294,7 @@ function theme_uc_order_edit_form($variables) {
         variable_get('uc_order_pane_' . $pane['id'] . '_show_edit', TRUE)) {
       $func = $pane['callback'];
       if (function_exists($func) && ($contents = _uc_order_call_order_pane_byref($func, 'edit-theme', $form)) != NULL) {
-        if (is_array($pane['theme_all']) && in_array('edit', $pane['theme_all'])) {
+        if (isset($pane['theme_all']) && is_array($pane['theme_all']) && in_array('edit', $pane['theme_all'])) {
           $output .= $contents;
         }
         else {
@@ -1491,7 +1495,7 @@ function uc_order_edit_products($order) {
 
   $products = db_query("SELECT * FROM {uc_order_products} WHERE order_id = :id ORDER BY order_product_id", array(':id' => $order->order_id))->fetchAll();
 
-  print uc_strip_form(drupal_render(drupal_get_form('uc_order_edit_products_form', $products)));
+  print drupal_render(uc_strip_form(drupal_get_form('uc_order_edit_products_form', $products)));
   exit();
 }
 
@@ -1592,7 +1596,7 @@ function uc_order_edit_products_form($form, &$form_state, $products) {
  * @see uc_order_edit_products_form()
  */
 function theme_uc_order_edit_products_form($variables) {
-  return drupal_render($variables['form']);
+  return drupal_render_children($variables['form']);
 }
 
 /**

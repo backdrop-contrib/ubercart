@@ -573,80 +573,88 @@ function uc_payment_method_credit($op, &$arg1, $silent = FALSE) {
       return $review;
 
     case 'order-view':
+      $build = array();
+
       // Add the hidden span for the CC details if possible.
       if (user_access('view cc details')) {
         drupal_add_js(drupal_get_path('module', 'uc_credit') . '/uc_credit.js');
 
-        $output .= '<span onclick="toggle_card_details();" style="cursor: pointer;">'
-                  . '<a id="cc_details_title" href="" onclick="return false;" style="display: none;">' . t('View card details.') . '</a>';
-
-        $output .= '<span id="cc_details"><table style="width: auto;">';
+        $rows = array();
 
         if (variable_get('uc_credit_type_enabled', TRUE)) {
           $type = check_plain($arg1->payment_details['cc_type']);
           if (strlen($type) > 0) {
-            $output .= '<tr><td>' . t('Card Type:') . ' </td><td>' . $type . '</td></tr>';
+            $rows[] = array(t('Card Type:'), $type);
           }
         }
 
         if (variable_get('uc_credit_owner_enabled', FALSE)) {
           $owner = check_plain($arg1->payment_details['cc_owner']);
           if (strlen($owner) > 0) {
-            $output .= '<tr><td>' . t('Card Owner:') . ' </td><td>' . $owner . '</td></tr>';
+            $rows[] = array(t('Card Owner:'), $owner);
           }
         }
 
-        $output .= '<tr><td>' . t('Card Number:') . ' </td><td>' . uc_credit_display_number($arg1->payment_details['cc_number']) . '</td></tr>';
+        $rows[] = array(t('Card Number:'), uc_credit_display_number($arg1->payment_details['cc_number']));
 
         $exp = $arg1->payment_details['cc_exp_month'] . '/' . $arg1->payment_details['cc_exp_year'];
         if (strlen($exp) > 1) {
-          $output .= '<tr><td>' . t('Expiration:') . ' </td><td>' . $exp . '</td></tr>';
+          $rows[] = array(t('Expiration:'), $exp);
         }
 
         if (variable_get('uc_credit_debug', FALSE)) {
           if (variable_get('uc_credit_start_enabled', FALSE)) {
             $start = $arg1->payment_details['cc_start_month'] . '/' . $arg1->payment_details['cc_start_year'];
             if (strlen($start) > 1) {
-              $output .= '<tr><td>' . t('Start Date:') . ' </td><td>' . $start . '</td></tr>';
+              $rows[] = array(t('Start Date:'), $start);
             }
           }
 
           if (variable_get('uc_credit_issue_enabled', FALSE)) {
             $issue = $arg1->payment_details['cc_issue'];
             if (strlen($issue) > 0) {
-              $output .= '<tr><td>' . t('Issue Number:') . ' </td><td>' . $issue . '</td></tr>';
+              $rows[] = array(t('Issue Number:'), $issue);
             }
           }
 
           if (variable_get('uc_credit_cvv_enabled', TRUE)) {
             $cvv = user_access('view cc numbers') ? $arg1->payment_details['cc_cvv'] : str_repeat('-', strlen($arg1->payment_details['cc_cvv']));
             if (strlen($cvv) > 0) {
-              $output .= '<tr><td>' . t('CVV:') . ' </td><td>' . $cvv . '</td></tr>';
+              $rows[] = array(t('CVV:'), $cvv);
             }
           }
 
           if (variable_get('uc_credit_bank_enabled', TRUE)) {
             $bank = check_plain($arg1->payment_details['cc_bank']);
             if (strlen($bank) > 0) {
-              $output .= '<tr><td>' . t('Issuing Bank:') . ' </td><td>' . $bank . '</td></tr>';
+              $rows[] = array(t('Issuing Bank:'), $bank);
             }
           }
         }
 
-        $output .= '</table></span></span>';
+        $build['cc_info'] = array(
+          '#theme' => 'table',
+          '#rows' => $rows,
+          '#attributes' => array(
+            'style' => 'width: auto',
+          ),
+          '#prefix' => '<span onclick="toggle_card_details();" style="cursor: pointer;"><a id="cc_details_title" href="" onclick="return false;" style="display: none;">' . t('View card details.') . '</a><span id="cc_details">',
+          '#suffix' => '</span></span>',
+        );
 
         // Add the form to process the card if applicable.
         if (user_access('process credit cards')) {
-          $output .= drupal_get_form('uc_credit_order_view_form', $arg1->order_id);
+          $build['terminal'] = drupal_get_form('uc_credit_order_view_form', $arg1->order_id);
         }
       }
 
-      return $output;
+      return $build;
 
     case 'customer-view':
-      $output = t('Card Number:') . '<br />'
-              . uc_credit_display_number($arg1->payment_details['cc_number'], TRUE);
-      return $output;
+      $build['#markup'] = t('Card Number:') . '<br />'
+        . uc_credit_display_number($arg1->payment_details['cc_number'], TRUE);
+
+      return $build;
 
     case 'order-details':
       if (variable_get('uc_credit_debug', FALSE)) {

@@ -87,22 +87,9 @@ function uc_store_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'logo':
-          $theme_key = variable_get('theme_default', 'garland');
-          $settings = theme_get_settings($theme_key);
-          $themes = list_themes();
-          $theme_object = $themes[$theme_key];
-          if ($settings['toggle_logo']) {
-            if ($settings['default_logo']) {
-              $settings['logo'] = dirname($theme_object->filename) . '/logo.png';
-            }
-            elseif ($settings['logo_path']) {
-              $settings['logo'] = $settings['logo_path'];
-            }
-          }
-
           // Use a logo; but only if we have one to use.
-          if (isset($settings['logo']) && $settings['logo']) {
-            $values[$original] = '<img src="' . url($base_url . '/' . $settings['logo'], array('absolute' => TRUE)) . '" />';
+          if ($uri = theme_get_setting('logo')) {
+            $values[$original] = '<img src="' . $uri . '" />';
           }
           break;
       }

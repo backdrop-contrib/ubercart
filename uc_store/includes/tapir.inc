@@ -125,7 +125,9 @@ function theme_tapir_table($variables) {
     }
 
     // Merge the row data into a single row array along with the attributes.
-    $row = array_merge(array('data' => $row), (array)$data['#attributes']);
+    if (isset($data['#attributes'])) {
+      $row = array_merge(array('data' => $row), (array)$data['#attributes']);
+    }
 
     // Add the current row to the table rows array.
     $rows[] = $row;

@@ -70,7 +70,7 @@ function uc_order_pane_ship_to($op, $arg1) {
       return $form;
 
     case 'edit-title':
-      $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
+      $output = ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
                 . '/images/address_book.gif" alt="' . t('Select from address book.') . '" '
                 . 'title="' . t('Select from address book.') . '" onclick="load_address_select(' . $arg1['order_uid']['#value'] . ', \'#delivery_address_select\', \'delivery\');" '
                 . 'style="position: relative; top: 2px; cursor: pointer;" />';
@@ -155,7 +155,7 @@ function uc_order_pane_bill_to($op, $arg1) {
       return $form;
 
     case 'edit-title':
-      $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
+      $output = ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
                 . '/images/address_book.gif" alt="' . t('Select from address book.') . '" '
                 . 'title="' . t('Select from address book.') . '" onclick="load_address_select(' . $arg1['order_uid']['#value'] . ', \'#billing_address_select\', \'billing\');" '
                 . 'style="position: relative; top: 2px; cursor: pointer;" />';
@@ -233,7 +233,7 @@ function uc_order_pane_customer($op, $arg1) {
       return $form;
 
     case 'edit-title':
-      $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
+      $output = ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
                 . '/images/order_view.gif" alt="' . t('Search for an existing customer.') . '" '
                 . 'title="' . t('Search for an existing customer.') . '" onclick="load_customer_search();" '
                 . 'style="position: relative; top: 2px; cursor: pointer;" />';
@@ -375,7 +375,7 @@ function uc_order_pane_line_items($op, $arg1) {
       $items = _uc_line_item_list();
       $line_items = $arg1->line_items;
       foreach ($items as $item) {
-        if ($item['add_list'] === TRUE) {
+        if (isset($item['add_list']) && $item['add_list'] === TRUE) {
           $options[$item['id']] = check_plain($item['title']);
         }
         if (isset($item['display_only']) && $item['display_only'] == TRUE) {
@@ -434,7 +434,7 @@ function uc_order_pane_line_items($op, $arg1) {
           '#type' => 'hidden',
           '#value' => $item['line_item_id'],
         );
-        if (_uc_line_item_data($item['type'], 'stored') == TRUE) {
+        if (isset($item['type']) && _uc_line_item_data($item['type'], 'stored') == TRUE) {
           $form['line_items'][$item['line_item_id']]['title'] = array(
             '#type' => 'textfield',
             '#title' => t('Title'),
@@ -690,7 +690,7 @@ function uc_order_view_update_form($form, &$form_state, $order) {
  * @see uc_order_view_update_form()
  */
 function theme_uc_order_view_update_controls($variables) {
-  return '<div class="update-controls">' . drupal_render($variables['form']) . '</div>';
+  return '<div class="update-controls">' . drupal_render_children($variables['form']) . '</div>';
 }
 
 /**
@@ -791,14 +791,14 @@ function uc_op_products_view_table($order) {
     foreach ($order->products as $product) {
       $data = array();
       $data['qty'] = array(
-        '#value' => $product->qty . '&times;',
+        '#markup' => $product->qty . '&times;',
         '#cell_attributes' => array('align' => 'right'),
       );
       $data['product'] = array(
-        '#value' => check_plain($product->title) . uc_product_get_description($product),
+        '#markup' => check_plain($product->title) . uc_product_get_description($product),
       );
       $data['model'] = array(
-        '#value' => check_plain($product->model),
+        '#markup' => check_plain($product->model),
         '#cell_attributes' => array('align' => 'center', 'nowrap' => 'nowrap'),
       );
 
@@ -808,7 +808,7 @@ function uc_op_products_view_table($order) {
         $context['field'] = 'cost';
 
         $data['cost'] = array(
-          '#value' => uc_price($product->cost, $context),
+          '#markup' => uc_price($product->cost, $context),
           '#cell_attributes' => array('align' => 'right', 'nowrap' => 'nowrap'),
         );
       }
@@ -819,11 +819,11 @@ function uc_op_products_view_table($order) {
         'qty' => $product->qty,
       );
       $data['price'] = array(
-        '#value' => uc_price($product->price, $context),
+        '#markup' => uc_price($product->price, $context),
         '#cell_attributes' => array('align' => 'right', 'nowrap' => 'nowrap'),
       );
       $data['total'] = array(
-        '#value' => uc_price($price_info, $context),
+        '#markup' => uc_price($price_info, $context),
         '#cell_attributes' => array('align' => 'right', 'nowrap' => 'nowrap'),
       );
       $data['#attributes'] = array('valign' => 'top');
@@ -832,7 +832,7 @@ function uc_op_products_view_table($order) {
   }
   else {
     $table['#rows'][]['product'] = array(
-      '#value' => t('This order contains no products.'),
+      '#markup' => t('This order contains no products.'),
       '#cell_attributes' => array('colspan' => 'full'),
     );
   }
@@ -907,14 +907,14 @@ function uc_op_products_customer_table($order) {
     foreach ($order->products as $product) {
       $data = array();
       $data['qty'] = array(
-        '#value' => $product->qty . '&times;',
+        '#markup' => $product->qty . '&times;',
         '#cell_attributes' => array('align' => 'right'),
       );
       $data['product'] = array(
-        '#value' => check_plain($product->title) . uc_product_get_description($product),
+        '#markup' => check_plain($product->title) . uc_product_get_description($product),
       );
       $data['model'] = array(
-        '#value' => check_plain($product->model),
+        '#markup' => check_plain($product->model),
         '#cell_attributes' => array('align' => 'center', 'nowrap' => 'nowrap'),
       );
 
@@ -923,7 +923,7 @@ function uc_op_products_customer_table($order) {
       if (user_access('administer products')) {
         $context['field'] = 'cost';
         $data['cost'] = array(
-          '#value' => uc_price($product->cost, $context),
+          '#markup' => uc_price($product->cost, $context),
           '#cell_attributes' => array('align' => 'right', 'nowrap' => 'nowrap'),
         );
       }
@@ -934,11 +934,11 @@ function uc_op_products_customer_table($order) {
         'qty' => $product->qty,
       );
       $data['price'] = array(
-        '#value' => uc_price($product->price, $context),
+        '#markup' => uc_price($product->price, $context),
         '#cell_attributes' => array('align' => 'right', 'nowrap' => 'nowrap'),
       );
       $data['total'] = array(
-        '#value' => uc_price($price_info, $context),
+        '#markup' => uc_price($price_info, $context),
         '#cell_attributes' => array('align' => 'right', 'nowrap' => 'nowrap'),
       );
       $data['#attributes'] = array('valign' => 'top');
@@ -947,7 +947,7 @@ function uc_op_products_customer_table($order) {
   }
   else {
     $table['#rows'][]['product'] = array(
-      '#value' => t('This order contains no products.'),
+      '#markup' => t('This order contains no products.'),
       '#cell_attributes' => array('colspan' => 'full'),
     );
   }
@@ -985,36 +985,36 @@ function uc_op_order_comments_view_table($comments) {
     'weight' => 4,
   );
 
-  if (is_array($comments)) {
+  if (is_array($comments) && !empty($comments)) {
     foreach ($comments as $comment) {
       $data = array();
       $data['date'] = array(
-        '#value' => format_date($comment->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y') . '<\b\r />g:i:s A'),
+        '#markup' => format_date($comment->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y') . '<\b\r />g:i:s A'),
         '#cell_attributes' => array('align' => 'center', 'nowrap' => 'true'),
       );
       $data['user'] = array(
-        '#value' => uc_get_initials($comment->uid),
+        '#markup' => uc_get_initials($comment->uid),
         '#cell_attributes' => array('align' => 'center'),
       );
       $data['notified'] = array(
-        '#value' => (($comment->notified == 1)
+        '#markup' => (($comment->notified == 1)
           ? '<img src="' . base_path() . drupal_get_path('module', 'uc_order') . '/images/true-icon.gif" />'
           : '<img src="' . base_path() . drupal_get_path('module', 'uc_order') . '/images/false-icon.gif" />'),
         '#cell_attributes' => array('align' => 'center'),
       );
       $data['status'] = array(
-        '#value' => $comment->title,
+        '#markup' => $comment->title,
         '#cell_attributes' => array('align' => 'center'),
       );
       $data['comment'] = array(
-        '#value' => filter_xss_admin($comment->message),
+        '#markup' => filter_xss_admin($comment->message),
       );
       $table['#rows'][] = $data;
     }
   }
   else {
     $data['comment'] = array(
-      '#value' => t('This order has no comments associated with it.'),
+      '#markup' => t('This order has no comments associated with it.'),
       '#cell_attributes' => array('colspan' => 'full'),
     );
     $table['#rows'][] = $data;
@@ -1045,19 +1045,19 @@ function uc_op_admin_comments_view_table($comments) {
     'weight' => 2,
   );
 
-  if (is_array($comments)) {
+  if (is_array($comments) && !empty($comments)) {
     foreach ($comments as $comment) {
       $data = array();
       $data['date'] = array(
-        '#value' => format_date($comment->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y') . '<\b\r />g:i:s A'),
+        '#markup' => format_date($comment->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y') . '<\b\r />g:i:s A'),
         '#cell_attributes' => array('align' => 'center', 'nowrap' => 'true', 'valign' => 'top'),
       );
       $data['user'] = array(
-        '#value' => uc_get_initials($comment->uid),
+        '#markup' => uc_get_initials($comment->uid),
         '#cell_attributes' => array('align' => 'center', 'valign' => 'top'),
       );
       $data['comment'] = array(
-        '#value' => filter_xss_admin($comment->message),
+        '#markup' => filter_xss_admin($comment->message),
         '#cell_attributes' => array('valign' => 'top'),
       );
       $table['#rows'][] = $data;
@@ -1065,7 +1065,7 @@ function uc_op_admin_comments_view_table($comments) {
   }
   else {
     $data['comment'] = array(
-      '#value' => t('This order has no admin comments associated with it.'),
+      '#markup' => t('This order has no admin comments associated with it.'),
       '#cell_attributes' => array('colspan' => 'full'),
     );
     $table['#rows'][] = $data;
