@@ -497,7 +497,7 @@ function uc_catalog_uc_store_status() {
     // Don't display a status if the taxonomy_index table has no data.
     if (variable_get('taxonomy_maintain_index_table', TRUE)) {
       $statuses[] = array('status' => 'ok', 'title' => t('Catalog vocabulary'),
-        'desc' => t('Vocabulary !name has been identified as the Ubercart catalog.', array('!name' => l($catalog->name, 'admin/structure/taxonomy/' . $catalog->vid)))
+        'desc' => t('Vocabulary !name has been identified as the Ubercart catalog.', array('!name' => l($catalog->name, 'admin/structure/taxonomy/' . $catalog->machine_name)))
       );
 
       $product_types = uc_product_types();
@@ -507,13 +507,13 @@ function uc_catalog_uc_store_status() {
       $result = db_query("SELECT COUNT(DISTINCT n.nid) FROM {node} AS n LEFT JOIN {taxonomy_index} AS ti ON n.nid = ti.nid LEFT JOIN {taxonomy_term_data} AS td ON ti.tid = td.tid WHERE n.type IN (:types) AND ti.tid IS NULL AND td.vid = :vid", array(':types' => $types, ':vid' => $catalog->vid));
       if ($excluded = $result->fetchField()) {
         $description = format_plural($excluded, 'There is 1 product not listed in the catalog.', 'There are @count products not listed in the catalog.')
-          . t(' Products are listed by assigning a category from the <a href="!cat_url">Product Catalog</a> vocabulary to them.', array('!cat_url' => url('admin/structure/taxonomy/' . $catalog->vid)));
+          . t(' Products are listed by assigning a category from the <a href="!cat_url">Product Catalog</a> vocabulary to them.', array('!cat_url' => url('admin/structure/taxonomy/' . $catalog->machine_name)));
         $terms = db_query("SELECT COUNT(1) FROM {taxonomy_term_data} WHERE vid = :vid", array(':vid' => $catalog->vid))->fetchField();
         if ($terms) {
           $description .= ' ' . l(t('Find orphaned products here.'), 'admin/store/products/orphans');
         }
         else {
-          $description .= ' ' . l(t('Add terms for the products to inhabit.'), 'admin/structure/taxonomy/' . $catalog->vid . '/add/term');
+          $description .= ' ' . l(t('Add terms for the products to inhabit.'), 'admin/structure/taxonomy/' . $catalog->machine_name . '/add/term');
         }
         $statuses[] = array(
           'status' => 'warning',
