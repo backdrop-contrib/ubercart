@@ -74,8 +74,8 @@ function uc_cart_ca_predicate() {
         ),
         '#settings' => array(
           'from' => uc_store_email_from(),
-          'addresses' => '[order-email]',
-          'subject' => t('Your Order at [store-name]'),
+          'addresses' => '[uc_order:email]',
+          'subject' => t('Your Order at [store:name]'),
           'template' => 'customer',
           'view' => 'checkout-mail',
         ),
@@ -100,7 +100,7 @@ function uc_cart_ca_predicate() {
         '#settings' => array(
           'from' => uc_store_email_from(),
           'addresses' => variable_get('uc_store_email', ''),
-          'subject' => t('New Order at [store-name]'),
+          'subject' => t('New Order at [store:name]'),
           'template' => 'admin',
           'view' => 'admin-mail',
         ),

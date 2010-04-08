@@ -1258,7 +1258,7 @@ function uc_order_action_email_invoice_form($form_state, $settings = array()) {
   $form['addresses'] = array(
     '#type' => 'textarea',
     '#title' => t('Recipients'),
-    '#default_value' => isset($settings['addresses']) ? $settings['addresses'] : '[order-email]',
+    '#default_value' => isset($settings['addresses']) ? $settings['addresses'] : '[uc_order:email]',
     '#description' => t('Enter the email addresses to receive the notifications, one on each line. You may use order tokens for dynamic email addresses.'),
     '#required' => TRUE,
   );
