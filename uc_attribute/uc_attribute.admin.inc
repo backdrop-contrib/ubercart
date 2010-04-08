@@ -26,22 +26,24 @@ function uc_attribute_admin() {
   $query = db_select('uc_attributes', 'a')->extend('PagerDefault')->extend('TableSort')
     ->orderByHeader($header)
     ->limit(30);
-  $table_ao = $query->leftJoin('uc_attribute_options', 'ao', 'a.aid = ao.aid');
+  $query->leftJoin('uc_attribute_options', 'ao', 'a.aid = ao.aid');
 
-  $a_aid = $query->addField('a', 'aid');
-  $a_name = $query->addField('a', 'name');
-  $a_label = $query->addField('a', 'label');
-  $a_required = $query->addField('a', 'required');
-  $a_ordering = $query->addField('a', 'ordering');
-  $a_display = $query->addField('a', 'display');
-  $ao_options = $query->addExpression('COUNT(ao.oid)', 'options');
+  $query->fields('a', array(
+    'aid',
+    'name',
+    'label',
+    'required',
+    'ordering',
+    'display',
+  ));
+  $query->addExpression('COUNT(ao.oid)', 'options');
 
-  $query->groupBy($a_aid)
-    ->groupBy($a_name)
-    ->groupBy($a_label)
-    ->groupBy($a_required)
-    ->groupBy($a_ordering)
-    ->groupBy($a_display);
+  $query->groupBy('a.aid')
+    ->groupBy('a.name')
+    ->groupBy('a.label')
+    ->groupBy('a.required')
+    ->groupBy('a.ordering')
+    ->groupBy('a.display');
 
   $result = $query->execute();
   foreach ($result as $attr) {
@@ -270,6 +272,8 @@ function uc_attribute_options_form($form, &$form_state, $attribute) {
       'attribute' => $attribute,
     ),
   );
+
+  $form['options'] = array();
 
   // Loop through all the options on an attribute.
   foreach ($attribute->options as $key => $data) {
@@ -588,6 +592,8 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
   if ($view == 'overview') {
     $form['#tree'] = TRUE;
 
+    $form['attributes'] = array();
+
     $context = array(
       'revision' => 'themed',
       'type' => 'attribute_option',
@@ -716,9 +722,18 @@ function theme_uc_object_attributes_form($variables) {
       }
     }
     else {
-      $rows[] = array(
-        array('data' => t('You must first <a href="!url">add attributes to this !type</a>.', array('!url' => request_uri() . '/add', '!type' => $form['type']['#value'])), 'colspan' => 6),
-      );
+      if ($form['type']['#value'] == 'class') {
+        $path = url('admin/store/products/classes/' . $form['id']['#value'] . '/attributes/add');
+      }
+      elseif ($form['type']['#value'] == 'product') {
+        $path = url('node/' . $form['id']['#value'] . '/edit/attributes/add');
+      }
+
+      if ($path) {
+        $rows[] = array(
+          array('data' => t('You must first <a href="!url">add attributes to this !type</a>.', array('!url' => $path, '!type' => $form['type']['#value'])), 'colspan' => 6),
+        );
+      }
     }
 
     drupal_add_tabledrag('uc-attribute-table', 'order', 'sibling', 'uc-attribute-table-weight');
@@ -800,10 +815,8 @@ function uc_object_attributes_form_submit($form, &$form_state) {
       // Enable all options for added attributes.
       $attribute = uc_attribute_load($aid);
       foreach ($attribute->options as $option) {
-        $option->aid = $id;
-        db_insert($opt_table)
-          ->fields((array) $option)
-          ->execute();
+        drupal_write_record($opt_table, $option);
+        $option->aid = $aid;
       }
       // Make the first option (if any) the default.
       $option = reset($attribute->options);
@@ -893,13 +906,13 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
     if ($base_attr->options) {
       $options = array();
 
-      $query = db_select('uc_attribute_options', 'ao');
-      $query->leftJoin($table, 'po', "ao.oid = po.oid AND po.$id_type = :id", array(':id' => $id))
+      $query = db_select('uc_attribute_options', 'ao')
         ->fields('ao', array(
           'aid',
           'oid',
           'name',
         ));
+      $query->leftJoin($table, 'po', "ao.oid = po.oid AND po.$id_type = :id", array(':id' => $id));
 
       $query->addField('ao', 'cost', 'default_cost');
       $query->addField('ao', 'price', 'default_price');
@@ -1221,7 +1234,7 @@ function uc_product_adjustments_form($form, &$form_state, $node) {
 
   if ($num_prod_attr) {
     //Get previous values
-    $old_val = db_query("SELECT * FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $nid))->fetchAll();
+    $old_vals = db_query("SELECT * FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $nid))->fetchAll();
 
     $result = $query->execute();
 
