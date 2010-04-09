@@ -476,8 +476,6 @@ function ca_actions_form($form, &$form_state, $pid, $title = TRUE) {
     '#submit' => array('ca_actions_form_save_changes_submit'),
   );
 
-  filter_configure_form($form);
-
   return $form;
 }
 
@@ -663,8 +661,6 @@ function ca_conditions_form($form, &$form_state, $pid, $title = TRUE) {
     '#value' => t('Add condition group'),
     '#submit' => array('ca_conditions_form_add_condition_group_submit'),
   );
-
-  filter_configure_form($form);
 
   return $form;
 }
