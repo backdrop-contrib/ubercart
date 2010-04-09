@@ -8,6 +8,8 @@
  * Development sponsored by Digital Dollhouse - http://www.digitaldollhouse.com
  */
 
+define('UC_AUTHORIZENET_TEST_GATEWAY_URL', 'https://test.authorize.net/gateway/transact.dll');
+define('UC_AUTHORIZENET_LIVE_GATEWAY_URL', 'https://secure.authorize.net/gateway/transact.dll');
 
 /**
  * Implement hook_menu().
@@ -104,7 +106,7 @@ function uc_authorizenet_settings_form($form, &$form_state) {
   $form['api_id_key'] = array(
     '#type' => 'fieldset',
     '#title' => t('API Login ID and Transaction Key'),
-    '#description' => t('This information is required for Ubercart to interact with your payment gateway account.  It is different from your login ID and password and may be found through your account settings page.'),
+    '#description' => t('This information is required for Ubercart to interact with your payment gateway account.  It is different from your login ID and password and may be found through your account settings page.  Do not change the gateway URLs unless you are using this module with an Authorize.net-compatible gateway that requires different URLs.'),
   );
   $form['api_id_key']['uc_authnet_api_login_id'] = array(
     '#type' => 'textfield',
@@ -115,6 +117,18 @@ function uc_authorizenet_settings_form($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Transaction Key'),
     '#default_value' => variable_get('uc_authnet_api_transaction_key', ''),
+  );
+  $form['api_id_key']['uc_authnet_api_test_gateway_url'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Authorize.net Test Gateway URL'),
+    '#default_value' => variable_get('uc_authnet_api_test_gateway_url',
+                                     UC_AUTHORIZENET_TEST_GATEWAY_URL),
+  );
+  $form['api_id_key']['uc_authnet_api_live_gateway_url'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Authorize.net Live Gateway URL'),
+    '#default_value' => variable_get('uc_authnet_api_live_gateway_url',
+                                     UC_AUTHORIZENET_LIVE_GATEWAY_URL),
   );
 
   $form['aim_settings'] = array(
@@ -517,10 +531,12 @@ function _uc_authorizenet_charge($order, $amount, $data) {
 
   // Determine the correct URL based on the transaction mode.
   if (variable_get('uc_authnet_aim_txn_mode', 'live_test') == 'developer_test') {
-    $post_url = 'https://test.authorize.net/gateway/transact.dll';
+    $post_url = variable_get('uc_authnet_api_test_gateway_url',
+                             UC_AUTHORIZENET_TEST_GATEWAY_URL);
   }
   else {
-    $post_url = 'https://secure.authorize.net/gateway/transact.dll';
+    $post_url = variable_get('uc_authnet_api_live_gateway_url',
+                             UC_AUTHORIZENET_LIVE_GATEWAY_URL);
   }
 
   // Translate the data array into a string we can POST.
