@@ -87,7 +87,7 @@ function uc_file_user_downloads($account) {
   $files = array();
 
   $query = db_select('uc_file_users', 'u')->extend('PagerDefault')->extend('TableSort')
-    ->ondition('uid', $account->uid)
+    ->condition('uid', $account->uid)
     ->orderByHeader($header)
     ->limit(UC_FILE_PAGER_SIZE);
   $query->leftJoin('uc_files', 'f', 'u.fid = f.fid');
