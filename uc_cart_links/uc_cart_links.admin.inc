@@ -145,7 +145,7 @@ function uc_cart_links_creation_help() {
   $build['commands'] = array(
     '#theme' => 'table',
     '#header' => $header,
-    'rows' => $rows,
+    '#rows' => $rows,
   );
   $build['rules'] = array(
     '#theme' => 'item_list',
