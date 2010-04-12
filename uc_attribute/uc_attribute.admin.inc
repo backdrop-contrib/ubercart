@@ -194,21 +194,24 @@ function uc_attribute_delete_confirm_submit($form, &$form_state) {
     $attribute = uc_attribute_load($form_state['values']['aid']);
     $options = array_keys($attribute->options);
 
-    db_delete('uc_class_attribute_options')
-      ->condition('oid', $options, 'IN')
-      ->execute();
+    if ($options) {
+      db_delete('uc_class_attribute_options')
+        ->condition('oid', $options, 'IN')
+        ->execute();
+
+      db_delete('uc_product_options')
+        ->condition('oid', $options, 'IN')
+        ->execute();
+    }
+
+    if ($nodes = db_query("SELECT nid FROM {uc_product_attributes} WHERE aid = :aid", array(':aid' => $attribute->aid))->fetchCol()) {
+      db_delete('uc_product_adjustments')
+        ->condition('nid', $nodes, 'IN')
+        ->execute();
+    }
 
     db_delete('uc_class_attributes')
       ->condition('aid', $form_state['values']['aid'])
-      ->execute();
-
-    db_delete('uc_product_options')
-      ->condition('oid', $options, 'IN')
-      ->execute();
-
-    $nodes = db_query("SELECT nid FROM {uc_product_attributes} WHERE aid = :aid", array(':aid' => $attribute->aid))->fetchCol();
-    db_delete('uc_product_adjustments')
-      ->condition('nid', $nodes, 'IN')
       ->execute();
 
     db_delete('uc_product_attributes')
