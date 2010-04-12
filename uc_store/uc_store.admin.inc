@@ -1160,7 +1160,7 @@ function uc_country_remove_form_submit($form, &$form_state) {
     ->condition('country_id', $country_id)
     ->execute();
   db_delete('uc_zones')
-    ->condition('country_id', $country_id)
+    ->condition('zone_country_id', $country_id)
     ->execute();
   variable_del('uc_address_format_' . $country_id);
 
