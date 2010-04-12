@@ -410,7 +410,7 @@ function uc_country_settings_overview() {
  * @see uc_country_import_form_submit()
  */
 function uc_country_import_form($form, &$form_state) {
-  $countries = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC")->fetchAll(PDO::FETCH_ASSOC);
+  $countries = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC")->fetchAll();
   $files = _uc_country_import_list();
 
   $header = array(t('Country'), t('Code'), t('Version'), t('Operations'));
@@ -463,7 +463,7 @@ function uc_country_import_form($form, &$form_state) {
   );
 
   $form['country_import']['text'] = array(
-    '#markup' => t('To import new country data, select it in the list and click the import button. If you are using a custom or contributed import file, it must be placed in the Ubercart folder uc_store/countries.'),
+    '#markup' => '<p>' . t('To import new country data, select it in the list and click the import button. If you are using a custom or contributed import file, it must be placed in the Ubercart folder uc_store/countries.') . '</p>',
   );
   $form['country_import']['import_file'] = array(
     '#type' => 'select',
