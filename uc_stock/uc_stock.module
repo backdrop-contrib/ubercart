@@ -270,12 +270,25 @@ function uc_stock_views_api() {
 }
 
 /**
- * Decrement a product's stock.
+ * Deprecated. Wrapper function for uc_stock_adjust_product_stock().
  *
- * @param $product
- *   The product whose stock is decrementing.
+ * Keeps backwards compatibility with contributed modules.
  */
 function uc_stock_decrement_product_stock($product, $key, $order) {
+  return uc_stock_adjust_product_stock($product, $key, $order);
+}
+
+/**
+ * Adjust a product's stock.
+ *
+ * @param $product
+ *   The product whose stock is being adjusted.
+ * @param $key
+ *   Internal, so this function can be used as a callback of array_walk().
+ * @param $order
+ *   Order object.
+ */
+function uc_stock_adjust_product_stock($product, $key, $order) {
   // Product has an active stock?
   if (!uc_stock_is_active($product->model)) {
     return;
@@ -286,7 +299,7 @@ function uc_stock_decrement_product_stock($product, $key, $order) {
     return;
   }
 
-  // Decrement the product's stock.
+  // Adjust the product's stock.
   uc_stock_adjust($product->model, -$product->qty);
 
   // Load the new stock record
@@ -298,6 +311,6 @@ function uc_stock_decrement_product_stock($product, $key, $order) {
   }
 
   // Save a comment about the stock level.
-  uc_order_comment_save($order->order_id, 0, t('The stock level for %model_name has been decreased to !qty.', array('%model_name' => $product->model, '!qty' => $stock->stock)));
+  uc_order_comment_save($order->order_id, 0, t('The stock level for %model_name has been !action to !qty.', array('%model_name' => $product->model, '!qty' => $stock->stock, '!action' => (-$product->qty <= 0) ? t('decreased') : t('increased') )));
 }
 

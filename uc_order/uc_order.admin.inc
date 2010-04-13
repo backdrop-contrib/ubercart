@@ -1381,7 +1381,7 @@ function uc_order_edit_form_submit($form, &$form_state) {
         if (module_exists('uc_stock')) {
           $temp = $product->qty;
           $product->qty = $product->qty - $qtys[$product->order_product_id];
-          uc_stock_decrement_product_stock($product, 0, $order);
+          uc_stock_adjust_product_stock($product, 0, $order);
           $product->qty = $temp;
         }
       }
@@ -1477,7 +1477,7 @@ function uc_order_edit_products($order) {
 
       // Decrement stock?
       if (module_exists('uc_stock')) {
-        uc_stock_decrement_product_stock($product, 0, $order);
+        uc_stock_adjust_product_stock($product, 0, $order);
       }
       break;
     case 'remove':

@@ -59,6 +59,6 @@ function uc_stock_ca_action() {
  */
 function uc_stock_action_decrement_stock($order, $settings) {
   if (is_array($order->products)) {
-    array_walk($order->products, 'uc_stock_decrement_product_stock', $order);
+    array_walk($order->products, 'uc_stock_adjust_product_stock', $order);
   }
 }
