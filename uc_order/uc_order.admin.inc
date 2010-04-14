@@ -825,7 +825,8 @@ function uc_order_address_book() {
   $type = $_POST['type'];
   $func = $_POST['func'];
 
-  print drupal_render(drupal_get_form('uc_order_address_book_form', $uid, $type, $func));
+  $form = drupal_get_form('uc_order_address_book_form', $uid, $type, $func);
+  print drupal_render($form);
   exit();
 }
 
