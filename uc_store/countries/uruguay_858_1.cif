@@ -2,11 +2,21 @@
 // $Id$ 1.0.0
 
 /**
- * First implement hook_install() using the name of the country as the base of
+ * Implements hook_install() using the name of the country as the base of
  * the function name.
  */
 function uruguay_install() {
-  db_query("INSERT INTO {uc_countries} (country_id, country_name, country_iso_code_2, country_iso_code_3, version) VALUES (858, 'Uruguay', 'UY', 'URY', 1)");
+  // Make the entry in the country table.
+  // VALUES = Country ID, Country Name, 2-digit Code, 3-digit Code, File Version
+  db_insert('uc_countries')
+    ->fields(array(
+      'country_id' => 858,
+      'country_name' => 'Uruguay',
+      'country_iso_code_2' => 'UY',
+      'country_iso_code_3' => 'URY',
+      'version' => 1,
+    ))
+    ->execute();
 
   // Make the entries in the zones table.
   $zones = array(
@@ -29,14 +39,22 @@ function uruguay_install() {
     array(858, 'SO', 'Soriano'),
     array(858, 'TA', 'Tacuarembo'),
     array(858, 'TT', 'Treinta y Tres'),
-         );
+  );
 
+  $query = db_insert('uc_zones')->fields(array('zone_country_id', 'zone_code', 'zone_name'));
   foreach ($zones as $zone) {
-    db_query("INSERT INTO {uc_zones} (zone_country_id, zone_code, zone_name) VALUES (%d, '%s', '%s')", $zone);
+    $query->values($zone);
   }
+  $query->execute();
 
-  uc_set_address_format(858,
-    "!company\r\n!first_name !last_name\r\n!street1\r\n!street2"
-   ."\r\n!city !zone_code !postal_code\r\n!country_name_if");
+  // Set address format
+  uc_set_address_format(
+    858,
+    "!company\r\n".
+    "!first_name !last_name\r\n".
+    "!street1\r\n".
+    "!street2\r\n".
+    "!city !zone_code !postal_code\r\n".
+    "!country_name_if"
+  );
 }
-

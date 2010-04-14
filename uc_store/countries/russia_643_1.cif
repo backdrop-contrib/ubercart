@@ -2,7 +2,17 @@
 // $Id$
 
 function russia_install() {
-  db_query("INSERT INTO {uc_countries} (country_id, country_name, country_iso_code_2, country_iso_code_3, version) VALUES ('643', 'Russia', 'RU', 'RUS', 1)");
+  // Make the entry in the country table.
+  // VALUES = Country ID, Country Name, 2-digit Code, 3-digit Code, File Version
+  db_insert('uc_countries')
+    ->fields(array(
+      'country_id' => 643,
+      'country_name' => 'Russia',
+      'country_iso_code_2' => 'RU',
+      'country_iso_code_3' => 'RUS',
+      'version' => 1,
+    ))
+    ->execute();
 
   // Make the entries in the zones table.
   $zones = array(
@@ -94,15 +104,20 @@ function russia_install() {
     array(643, 'YAN', 'Ямало-Ненецкий автономный округ'),
   );
 
+  $query = db_insert('uc_zones')->fields(array('zone_country_id', 'zone_code', 'zone_name'));
   foreach ($zones as $zone) {
-    db_query("INSERT INTO {uc_zones} (zone_country_id, zone_code, zone_name) VALUES (%d, '%s', '%s')", $zone);
+    $query->values($zone);
   }
+  $query->execute();
 
-  uc_set_address_format(643, "!company\n!first_name !last_name\n!street1\n!street2\n!postal_code !city\n!country_name_if");
-}
-
-function russia_update($version) {
-}
-
-function russia_uninstall() {
+  // Set address format
+  uc_set_address_format(
+    643,
+    "!company\r\n".
+    "!first_name !last_name\r\n".
+    "!street1\r\n".
+    "!street2\r\n".
+    "!postal_code !city\r\n".
+    "!country_name_if"
+  );
 }

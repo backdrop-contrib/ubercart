@@ -2,13 +2,21 @@
 // $Id$
 
 /**
-* First implement hook_install() using the name of the country as the base of
+* Implements hook_install() using the name of the country as the base of
 * the function name.
 */
 function taiwan_install() {
   // Make the entry in the country table.
   // VALUES = Country ID, Country Name, 2-digit Code, 3-digit Code, File Version
-  db_query("INSERT INTO {uc_countries} (country_id, country_name, country_iso_code_2, country_iso_code_3, version) VALUES (158, 'Taiwan', 'TW', 'TWN', 1)");
+  db_insert('uc_countries')
+    ->fields(array(
+      'country_id' => 158,
+      'country_name' => 'Taiwan',
+      'country_iso_code_2' => 'TW',
+      'country_iso_code_3' => 'TWN',
+      'version' => 1,
+    ))
+    ->execute();
 
   // Make the entries in the zones table.
   $zones = array(
@@ -66,19 +74,20 @@ function taiwan_install() {
     array(158, '52', '高雄縣'),
   );
 
+  $query = db_insert('uc_zones')->fields(array('zone_country_id', 'zone_code', 'zone_name'));
   foreach ($zones as $zone) {
-    db_query("INSERT INTO {uc_zones} (zone_country_id, zone_code, zone_name) VALUES (%d, '%s', '%s')", $zone);
+    $query->values($zone);
   }
+  $query->execute();
 
-  uc_set_address_format(158,
-    "!company\r\n!last_name !first_name\r\n!street1\r\n!street2\r\n"
-    ."!city, !zone_name !postal_code\r\n!country_name_if");
+  // Set address format
+  uc_set_address_format(
+    158,
+    "!company\r\n".
+    "!last_name !first_name\r\n".
+    "!street1\r\n".
+    "!street2\r\n".
+    "!city, !zone_code !postal_code\r\n".
+    "!country_name_if"
+  );
 }
-
-function taiwan_update($version) {
-}
-
-
-function taiwan_uninstall() {
-}
-?>

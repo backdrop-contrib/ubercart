@@ -2,7 +2,17 @@
 // $Id$
 
 function antigua_barbuda_install() {
-  db_query("INSERT INTO {uc_countries} (country_id, country_name, country_iso_code_2, country_iso_code_3, version) VALUES (28, 'Antigua and Barbuda', 'AG', 'ATG', 1)");
+  // Make the entry in the country table.
+  // VALUES = Country ID, Country Name, 2-digit Code, 3-digit Code, File Version
+  db_insert('uc_countries')
+    ->fields(array(
+      'country_id' => 28,
+      'country_name' => 'Antigua and Barbuda',
+      'country_iso_code_2' => 'AG',
+      'country_iso_code_3' => 'ATG',
+      'version' => 1,
+    ))
+    ->execute();
 
   $zones = array(
     array(28, 'GE', 'St. George'),
@@ -15,9 +25,20 @@ function antigua_barbuda_install() {
     array(28, 'PH', 'St. Philip'),
   );
 
+  $query = db_insert('uc_zones')->fields(array('zone_country_id', 'zone_code', 'zone_name'));
   foreach ($zones as $zone) {
-    db_query("INSERT INTO {uc_zones} (zone_country_id, zone_code, zone_name) VALUES (%d, '%s', '%s')", $zone);
+    $query->values($zone);
   }
+  $query->execute();
 
-  uc_set_address_format(28, "!company\r\n!first_name !last_name\r\n!street1\r\n!street2\r\n!city, !zone_code !postal_code\r\n!country_name_if");
+  // Set address format
+  uc_set_address_format(
+    28,
+    "!company\r\n".
+    "!first_name !last_name\r\n".
+    "!street1\r\n".
+    "!street2\r\n".
+    "!city, !zone_code !postal_code\r\n".
+    "!country_name_if"
+  );
 }

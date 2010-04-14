@@ -2,54 +2,54 @@
 // $Id$
 
 /**
- * First implement hook_install() using the name of the country as the base of
+ * Implements hook_install() using the name of the country as the base of
  * the function name.
  */
-function Saudi_Arabia_install() {
+function saudi_arabia_install() {
   // Make the entry in the country table.
   // VALUES = Country ID, Country Name, 2-digit Code, 3-digit Code, File Version
-  db_query("INSERT INTO {uc_countries} (country_id, country_name, country_iso_code_2, country_iso_code_3, version) VALUES ('682', 'Saudi Arabia', 'SA', 'SAU', 2)");
+  db_insert('uc_countries')
+    ->fields(array(
+      'country_id' => 682,
+      'country_name' => 'Saudi Arabia',
+      'country_iso_code_2' => 'SA',
+      'country_iso_code_3' => 'SAU',
+      'version' => 2,
+    ))
+    ->execute();
 
-  // Make the entries in the zones table.  Use %d for the zone_id and the
+  // Make the entries in the zones table.
   // VALUES = Parent Country ID, Zone Abbreviation, Zone Name
-  db_query("INSERT INTO {uc_zones} (zone_country_id, zone_code, zone_name) VALUES "
-      ."(682, 'AL BAHAH', 'Al Bahah'),"
-      ."(682, 'NORTHERN BORDER', 'Northern Border'),"
-      ."(682, 'AL JAWF', 'Al Jawf'),"
-      ."(682, 'AL MADINAH', 'Al Madinah'),"
-      ."(682, 'AL QASIM', 'Al Qasim'),"
-      ."(682, 'HAIL', 'Hail'),"
-      ."(682, 'ASIR', 'Asir'),"
-      ."(682, 'EASTERN PROVINCE', 'Eastern Province'),"
-      ."(682, 'AL RIYADH', 'Al Riyadh'),"
-      ."(682, 'TABUK', 'Tabuk'),"
-      ."(682, 'NAJRAN', 'Najran'),"
-      ."(682, 'MAKKAH', 'Makkah'),"
-      ."(682, 'JIZAN', 'Jizan')");
+  $zones = array(
+    array(682, 'AL BAHAH', 'Al Bahah'),
+    array(682, 'NORTHERN BORDER', 'Northern Border'),
+    array(682, 'AL JAWF', 'Al Jawf'),
+    array(682, 'AL MADINAH', 'Al Madinah'),
+    array(682, 'AL QASIM', 'Al Qasim'),
+    array(682, 'HAIL', 'Hail'),
+    array(682, 'ASIR', 'Asir'),
+    array(682, 'EASTERN PROVINCE', 'Eastern Province'),
+    array(682, 'AL RIYADH', 'Al Riyadh'),
+    array(682, 'TABUK', 'Tabuk'),
+    array(682, 'NAJRAN', 'Najran'),
+    array(682, 'MAKKAH', 'Makkah'),
+    array(682, 'JIZAN', 'Jizan'),
+  );
 
-  // Use uc_set_address_format() with the country ID as the first argument and
-  // an address format string as the second.  Documentation on address formats
-  // is available at:
-  // http://www.ubercart.org/ubercart_users_guide/country_settings#address_format_docs
-  uc_set_address_format(682,
-    "!company\r\n!first_name !last_name\r\n!street1\r\n!street2"
-   ."\r\n!city, !postal_code\r\n!country_name_if");
-}
+  $query = db_insert('uc_zones')->fields(array('zone_country_id', 'zone_code', 'zone_name'));
+  foreach ($zones as $zone) {
+    $query->values($zone);
+  }
+  $query->execute();
 
-/**
- * If necessary, implement hook_update() with $version being the only argument.
- * Add a new case for each version update, and be sure to always include the
- * latest changes in the install function.
- */
-function Saudi_Arabia_update($version) {
-}
-
-/**
- * If necessary, implement hook_uninstall().  This requires no argument.  The
- * store module automatically removes rows from the country and zones tables
- * related to the country, and it unsets the address format.  This function is
- * only necessary for other things you may have included in your country's
- * installation process.
- */
-function Saudi_Arabia_uninstall() {
+  // Set address format
+  uc_set_address_format(
+    682,
+    "!company\r\n".
+    "!first_name !last_name\r\n".
+    "!street1\r\n".
+    "!street2\r\n".
+    "!city, !postal_code\r\n".
+    "!country_name_if"
+  );
 }

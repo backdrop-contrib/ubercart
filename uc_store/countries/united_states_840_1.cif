@@ -2,8 +2,9 @@
 // $Id$
 
 function united_states_install() {
+  // Make the entry in the country table.
   // VALUES = Country ID, Country Name, 2-digit Code, 3-digit Code, File Version
-  $id = db_insert('uc_countries')
+  db_insert('uc_countries')
     ->fields(array(
       'country_id' => 840,
       'country_name' => 'United States',
@@ -88,7 +89,18 @@ function united_states_install() {
   }
   $query->execute();
 
-  variable_set('uc_address_format_840',
-               "!company\r\n!first_name !last_name\r\n!street1\r\n!street2"
-              ."\r\n!city, !zone_code !postal_code\r\n!country_name_if");
+  // Set address format
+  // Have to call variable_set() instead of uc_set_address_format()
+  // because the Canada .cif file is loaded during the installation
+  // of the uc_store module, before uc_set_address_format() is available
+  // to use.
+  variable_set(
+    'uc_address_format_840',
+    "!company\r\n".
+    "!first_name !last_name\r\n".
+    "!street1\r\n".
+    "!street2\r\n".
+    "!city, !zone_code !postal_code\r\n".
+    "!country_name_if"
+  );
 }
