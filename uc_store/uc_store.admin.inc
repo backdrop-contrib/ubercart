@@ -414,6 +414,7 @@ function uc_country_import_form($form, &$form_state) {
   $files = _uc_country_import_list();
 
   $header = array(t('Country'), t('Code'), t('Version'), t('Operations'));
+  $rows = array();
   if (is_array($countries)) {
     foreach ($countries as $country) {
       $row = array(
@@ -440,6 +441,7 @@ function uc_country_import_form($form, &$form_state) {
     }
   }
 
+  $import_list = array();
   foreach ($files as $file) {
     $import_list[$file['file']] = $file['file'];
   }
@@ -562,7 +564,7 @@ function uc_country_formats_form($form, &$form_state) {
     '#header' => $header,
     '#rows' => $rows,
     '#prefix' => '<div><p>' . t('The following variables should be used in configuring addresses for the countries you ship to:') . '</p>',
-    '#suffix' => '<p>' . t('*Adding _if to any country variable will make it only display for addresses<br />whose country is different than the default store country.') . '</p></div>',
+    '#suffix' => '<p>' . t('*Adding _if to any country variable will make it display only for addresses<br />whose country is different than the default store country.') . '</p></div>',
   );
 
   $countries = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC")->fetchAll();
