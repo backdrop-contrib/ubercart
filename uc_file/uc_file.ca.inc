@@ -306,7 +306,7 @@ function uc_file_action_order_renew($order) {
       else {
         $comment = t('User can now download the file %file.', array('%file' => basename($file->filename)));
       }
-      uc_order_comment_save($order->order_id, $user->uid, $comment);
+      uc_order_comment_save($order->order_id, $order_user->uid, $comment);
     }
   }
 

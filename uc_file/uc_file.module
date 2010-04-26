@@ -156,10 +156,9 @@ function uc_file_user_cancel($edit, $account, $method) {
  */
 function uc_file_form_user_profile_form_alter(&$form, &$form_state) {
   $account = $form_state['build_info']['args'][0];
-  $category = $form_state['build_info']['args'][1];
 
   // We only want the account edit form.
-  if (!user_access('administer users') || (is_null($category) || $category != 'account')) {
+  if (!user_access('administer users') || (!is_null($category) && $category != 'account')) {
     return;
   }
 
@@ -448,7 +447,7 @@ function theme_uc_file_hook_user_file_downloads($variables) {
     array('data' => t('Addresses' )),
   );
 
-  foreach ($form['file_download'] as $key => $data) {
+  foreach (element_children($form['file_download']) as $key) {
 
     if (!isset($data['addresses_in'])) {
       continue;
@@ -895,14 +894,11 @@ function uc_file_feature_form_submit($form, &$form_state) {
     'description' => $description,
   );
 
-  // TODO: Pass $data byref so that we can use drupal_write_record within and automatically return the pfid.
   $form_state['redirect'] = uc_product_feature_save($data);
 
-  // Insert or update uc_file_product table
-  if (empty($file_product['pfid'])) {
-    $file_product['pfid'] = db_last_insert_id('uc_product_features', 'pfid');
-  }
+  $file_product['pfid'] = $data['pfid'];
 
+  // Insert or update uc_file_product table
   $key = NULL;
   if ($fpid = _uc_file_get_fpid($file_product['pfid'])) {
     $key = 'fpid';

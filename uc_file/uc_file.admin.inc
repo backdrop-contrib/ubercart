@@ -33,14 +33,14 @@ function uc_file_admin_files_form($form, &$form_state) {
         '#theme'  => 'uc_file_admin_files_form_show',
         '#validate' => array('uc_file_admin_files_form_show_validate'),
         '#submit' => array('uc_file_admin_files_form_show_submit'),
-      ) + $form + uc_file_admin_files_form_show_files($form_state);
+      ) + $form + uc_file_admin_files_form_show_files($form, $form_state);
 
     case UC_FILE_FORM_ACTION:
 
       return array(
         '#validate' => array('uc_file_admin_files_form_action_validate'),
         '#submit'   => array('uc_file_admin_files_form_action_submit'),
-      ) + $form + uc_file_admin_files_form_action($form_state);
+      ) + $form + uc_file_admin_files_form_action($form, $form_state);
 
   }
 }

@@ -1926,7 +1926,7 @@ function uc_product_feature_form($form) {
  *   - fid: the string ID of the feature type
  *   - description: the string description of the feature for the overview table
  */
-function uc_product_feature_save($data) {
+function uc_product_feature_save(&$data) {
   if (empty($data['nid']) && arg(0) == 'node' && intval(arg(1)) > 0) {
     $data['nid'] = intval(arg(1));
   }
@@ -1937,22 +1937,17 @@ function uc_product_feature_save($data) {
   }
 
   // First attempt to update an existing row.
-  $result = db_merge('uc_product_features')
-    ->key(array('pfid' => $data['pfid']))
-    ->fields(array(
-      'nid' => $data['nid'],
-      'fid' => $data['fid'],
-      'description' => $data['description'],
-    ))
-    ->update(array('description' => $data['description']))
-    ->execute();
+  $result = drupal_write_record('uc_product_features', $data, $data['pfid'] ? 'pfid' : NULL);
 
   // Otherwise insert this feature as a new row.
-  if ($result == MergeQuery::STATUS_INSERT) {
+  if ($result == SAVED_NEW) {
     drupal_set_message(t('The product feature has been added.'));
   }
-  else {
+  elseif ($result == SAVED_UPDATED) {
     drupal_set_message(t('The product feature has been updated.'));
+  }
+  else {
+    drupal_set_message(t('The product feature was unable to be saved.'));
   }
 
   return 'node/' . $data['nid'] . '/edit/features';

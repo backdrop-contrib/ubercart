@@ -464,7 +464,7 @@ function uc_roles_user_view($account, $view_mode) {
   $form = array();
 
   $expirations = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid", array(':uid' => $account->uid));
-  foreach ($expirations as $expiriation) {
+  foreach ($expirations as $expiration) {
     $substitution = array('!role_name' => _uc_roles_get_name($expiration->rid), '!date' => format_date($expiration->expiration, 'small'));
     $form[$expiration->rid] = array(
       '#type' => 'user_profile_item',
@@ -855,11 +855,9 @@ function uc_roles_feature_form_submit($form, &$form_state) {
 
   $form_state['redirect'] = uc_product_feature_save($data);
 
-  // Insert or update uc_file_product table
-  if (empty($product_role['pfid'])) {
-    $product_role['pfid'] = db_last_insert_id('uc_product_features', 'pfid');
-  }
+  $product_role['pfid'] = $data['pfid'];
 
+  // Insert or update uc_file_product table
   uc_roles_product_write_record($product_role);
 }
 
