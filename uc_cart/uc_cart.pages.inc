@@ -507,7 +507,7 @@ function uc_cart_checkout_review_form_back($form, &$form_state) {
  * @see uc_cart_checkout_review_form()
  */
 function uc_cart_checkout_review_form_submit($form, &$form_state) {
-  // Invoke hook_order($op = 'submit') to test to make sure the order can
+  // Invoke hook_uc_order($op = 'submit') to test to make sure the order can
   // be completed... used for auto payment in uc_credit.module.
   $order = uc_order_load($_SESSION['cart_order']);
   $error = FALSE;

@@ -6,9 +6,9 @@
  * This file contains the callbacks for the default order panes supplied with
  * Ubercart and their corresponding helper functions.
  *
- * Order panes are defined using hook_order_pane() and use a callback to handle
- * the different processes involved in order viewing/editing.  The default order
- * panes are defined in uc_order_order_pane() in uc_order.module.
+ * Order panes are defined using hook_uc_order_pane() and use a callback to
+ * handle the different processes involved in order viewing/editing. The
+ * default order panes are defined in uc_order_order_pane() in uc_order.module.
  */
 
 /**
