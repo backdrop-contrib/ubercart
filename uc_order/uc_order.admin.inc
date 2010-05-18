@@ -1173,7 +1173,7 @@ function uc_order_history($user) {
 }
 
 /**
- * Display the order view screen, constructed via hook_order_pane().
+ * Display the order view screen, constructed via hook_uc_order_pane().
  */
 function uc_order_view($order, $view = 'view') {
   $build = array();
@@ -1238,7 +1238,7 @@ function uc_order_view($order, $view = 'view') {
 }
 
 /**
- * Display the order edit screen, constructed via hook_order_pane().
+ * Display the order edit screen, constructed via hook_uc_order_pane().
  *
  * @ingroup forms
  * @see

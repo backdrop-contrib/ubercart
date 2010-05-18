@@ -549,7 +549,7 @@ function uc_product_feature_add_form_submit($form, &$form_state) {
  *   to fill this bitmap: an imagefield exists, an imagefield is attached to
  *   product, the imagecache presets exist, and each preset has at least one
  *   action.
- * @see uc_product_store_status()
+ * @see uc_product_uc_store_status()
  */
 function uc_product_image_defaults() {
   uc_product_add_default_image_field();

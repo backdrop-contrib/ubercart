@@ -211,7 +211,7 @@ function theme_uc_ups_confirm_shipment($variables) {
   $output .= '<br />' . check_plain($_SESSION['ups']['destination']->email);
   $output .= '</div>';
   $output .= '<div class="shipment-data">';
-  $method = uc_ups_shipping_method();
+  $method = uc_ups_uc_shipping_method();
   $output .= '<b>' . $method['ups']['quote']['accessorials'][$_SESSION['ups']['service']] . '</b><br />';
   $context = array(
     'revision' => 'themed',

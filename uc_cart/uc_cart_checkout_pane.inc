@@ -6,9 +6,9 @@
  * This file contains the callbacks for the default checkout panes supplied with
  * Ubercart and their corresponding helper functions.
  *
- * Checkout panes are defined using hook_checkout_pane() and use a callback to
- * handle the different processes involved in completing the checkout form.  The
- * default checkout panes are defined in uc_cart_checkout_pane() in
+ * Checkout panes are defined using hook_uc_checkout_pane() and use a callback
+ * to handle the different processes involved in completing the checkout form.
+ * The default checkout panes are defined in uc_cart_uc_checkout_pane() in
  * uc_cart.module.
  */
 

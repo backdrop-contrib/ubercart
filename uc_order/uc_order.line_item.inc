@@ -6,9 +6,10 @@
  * This file contains the callbacks for the default line items for orders and
  * the various functions that make line items work.
  *
- * Line items are defined using hook_line_item() and use a callback to handle
- * the different processes involved in line item viewing/editing/calculating.
- * The default line items are defined in uc_order_line_item() in uc_order.module.
+ * Line items are defined using hook_uc_line_item() and use a callback to
+ * handle the different processes involved in line item
+ * viewing/editing/calculating. The default line items are defined in
+ * uc_order_uc_line_item() in uc_order.module.
  */
 
 /**

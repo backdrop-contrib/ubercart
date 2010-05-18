@@ -6,9 +6,10 @@
  * This file contains the callbacks for the payment order pane supplied with
  * Ubercart and their corresponding helper functions.
  *
- * Order panes are defined using hook_order_pane() and use a callback to handle
- * the different processes involved in order viewing/editing.  The payment order
- * pane is defined in uc_payment_order_pane() in uc_payment.module.
+ * Order panes are defined using hook_uc_order_pane() and use a callback to
+ * handle the different processes involved in order viewing/editing. The
+ * payment order pane is defined in uc_payment_uc_order_pane() in
+ * uc_payment.module.
  */
 
 /**
