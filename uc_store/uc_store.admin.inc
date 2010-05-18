@@ -863,7 +863,7 @@ function uc_store_format_settings_form($form, &$form_state) {
     '#collapsed' => TRUE,
   );
   $form['length']['instructions'] = array(
-    '#markup' => '<div>' . t('Supply a format string for each unit. !value represents the weight value.') . '</div>',
+    '#markup' => '<div>' . t('Supply a format string for each unit. !value represents the length value.') . '</div>',
   );
   $units = array(
     'in' => t('Inches'),
