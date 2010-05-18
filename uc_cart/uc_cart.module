@@ -1307,17 +1307,21 @@ function uc_cart_complete_sale($order, $login = FALSE) {
     }
   }
 
-  $output = '<p>' . check_markup(token_replace(variable_get('uc_msg_order_submit', uc_get_message('completion_message')), array('uc_order' => $order)),
-                         variable_get('uc_msg_order_submit_format', filter_default_format())) . '</p>';
-  $show_message = check_markup(token_replace(variable_get('uc_msg_order_' . $message_type, uc_get_message('completion_' . $message_type)), array('uc_order' => $order)), variable_get('uc_msg_order_' . $message_type . '_format', filter_default_format()));
-
-  if ($show_message != '') {
+  $messages['uc_msg_order_submit_format'] = variable_get('uc_msg_order_submit', uc_get_message('completion_message'));
+  $message = variable_get('uc_msg_order_'.$message_type, uc_get_message('completion_'.$message_type));
+  if ($message != '') {
     $variables['!new_username'] = check_plain($_SESSION['new_user']['name']);
     $variables['!new_password'] = check_plain($_SESSION['new_user']['pass']);
-    $output .= '<p>' . strtr($show_message, $variables) . '</p>';
+    $messages['uc_msg_order_'.$message_type.'_format'] = strtr($message, $variables);
   }
-  $output .= '<p>' . check_markup(token_replace(variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping')), array('uc_order' => $order)),
-                      variable_get('uc_msg_continue_shopping_format', filter_default_format())) . '</p>';
+  $messages['uc_msg_continue_shopping_format'] = variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping'));
+
+  $output_message = '';
+  foreach ($messages as $format => $message) {
+    $message = token_replace($message, array('uc_order' => $order));
+    $message = check_markup($message, variable_get($format, filter_default_format()));
+    $output_message .= $message;
+  }
 
   // Move an order's status from "In Checkout" to "Pending"
   $status = db_query("SELECT order_status FROM {uc_orders} WHERE order_id = :id", array(':id' => $order->order_id))->fetchField();
@@ -1336,7 +1340,7 @@ function uc_cart_complete_sale($order, $login = FALSE) {
 
   return array(
     '#theme' => 'uc_cart_complete_sale',
-    '#message' => $output,
+    '#message' => $output_message,
   );
 }
 
