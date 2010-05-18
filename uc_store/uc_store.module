@@ -525,7 +525,31 @@ function uc_store_exit() {
  * Implement hook_form_alter().
  */
 function uc_store_form_uc_product_table_alter(&$form, &$form_state, $form_id) {
-    unset($form['table']['#value']['columns']['list_price']);
+  unset($form['table']['#value']['columns']['list_price']);
+}
+
+/**
+ * Implement hook_reviews().
+ *
+ * Provide code reviews for coder_review.module.
+ */
+function uc_store_reviews() {
+  $coder_reviews = array();
+  $path = drupal_get_path('module', 'uc_store') . '/includes';
+  $files = drupal_system_listing('/coder_review_.*\.inc$/', $path, 'filepath', 0);
+
+  foreach ($files as $file) {
+    require_once DRUPAL_ROOT . '/' . $file->uri;
+
+    $function = $file->name . '_reviews';
+    if (function_exists($function)) {
+      if ($review = call_user_func($function)) {
+        $coder_reviews = array_merge($coder_reviews, $review);
+      }
+    }
+  }
+
+  return $coder_reviews;
 }
 
 /******************************************************************************
