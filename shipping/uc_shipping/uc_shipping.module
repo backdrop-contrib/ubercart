@@ -664,12 +664,12 @@ function uc_shipping_shipment_delete($shipment_id) {
  *
  * @see uc_shipping_uc_order_pane()
  */
-function uc_shipping_order_pane_packages($op, $arg1) {
+function uc_shipping_order_pane_packages($op, $order) {
   switch ($op) {
     case 'view':
     case 'customer':
       $tracking = array();
-      $result = db_query("SELECT sid FROM {uc_shipments} WHERE order_id = :id", array(':id' => $arg1->order_id));
+      $result = db_query("SELECT sid FROM {uc_shipments} WHERE order_id = :id", array(':id' => $order->order_id));
       foreach ($result as $shipment) {
         $shipment = uc_shipping_shipment_load($shipment->sid);
         if ($shipment->tracking_number) {
@@ -704,7 +704,7 @@ function uc_shipping_select_address($addresses, $onchange = '', $title = NULL, $
   if (!is_array($addresses) || count($addresses) == 0) {
     $addresses = array();
   }
-  $store_address = variable_get('uc_quote_store_default_address', new stdClass());
+  $store_address = variable_get('uc_quote_store_default_address', new UcAddress());
   if (!in_array($store_address, $addresses)) {
     $addresses[] = $store_address;
   }

@@ -1308,11 +1308,16 @@ function uc_cart_complete_sale($order, $login = FALSE) {
   }
 
   $messages['uc_msg_order_submit_format'] = variable_get('uc_msg_order_submit', uc_get_message('completion_message'));
-  $message = variable_get('uc_msg_order_'.$message_type, uc_get_message('completion_'.$message_type));
+  $message = variable_get('uc_msg_order_' . $message_type, uc_get_message('completion_' . $message_type));
   if ($message != '') {
-    $variables['!new_username'] = check_plain($_SESSION['new_user']['name']);
-    $variables['!new_password'] = check_plain($_SESSION['new_user']['pass']);
-    $messages['uc_msg_order_'.$message_type.'_format'] = strtr($message, $variables);
+    if (isset($_SESSION['new_user'])) {
+      $variables['!new_username'] = check_plain($_SESSION['new_user']['name']);
+      $variables['!new_password'] = check_plain($_SESSION['new_user']['pass']);
+      $messages['uc_msg_order_' . $message_type . '_format'] = strtr($message, $variables);
+    }
+    else {
+      $messages['uc_msg_order_' . $message_type . '_format'] = $message;
+    }
   }
   $messages['uc_msg_continue_shopping_format'] = variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping'));
 

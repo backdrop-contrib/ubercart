@@ -408,7 +408,6 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
       $package_schema .= "<Package>";
         $package_schema .= "<PackagingType>";
           $package_schema .= "<Code>" . $package_type['code'] . "</Code>";
-          //$package_schema .= "<Description>" . $package_type['description'] . "</Description>";
         $package_schema .= "</PackagingType>";
         if ($package->pkg_type == '02' && $package->length && $package->width && $package->height) {
           if ($package->length < $package->width) {
@@ -751,7 +750,7 @@ function uc_ups_quote($products, $details) {
 
   $method = uc_ups_uc_shipping_method();
 
-  $addresses = array((array)variable_get('uc_quote_store_default_address', new stdClass()));
+  $addresses = array(variable_get('uc_quote_store_default_address', new UcAddress()));
   $key = 0;
   $last_key = 0;
   $packages = array();
@@ -762,7 +761,7 @@ function uc_ups_quote($products, $details) {
         // shipped. We will keep track of the different addresses in an array
         // and use their keys for the array of packages.
 
-        $address = (array)uc_quote_get_default_shipping_address($product->nid);
+        $address = uc_quote_get_default_shipping_address($product->nid);
         $key = array_search($address, $addresses);
         if ($key === FALSE) {
           // This is a new address. Increment the address counter $last_key
@@ -858,7 +857,7 @@ function uc_ups_quote($products, $details) {
   $dest = (object)$details;
 
   foreach ($packages as $key => $ship_packages) {
-    $orig = (object)$addresses[$key];
+    $orig = $addresses[$key];
     $orig->email = variable_get('uc_store_email', '');
     foreach (array_keys(array_filter(variable_get('uc_ups_services', array()))) as $ups_service) {
       $request = uc_ups_shipping_quote($ship_packages, $orig, $dest, $ups_service);
@@ -867,7 +866,7 @@ function uc_ups_quote($products, $details) {
         'data' => $request,
       ));
       if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
-        $quotes[$ups_service]['debug'] .= /* '<pre>' . print_r($ship_packages, TRUE) . '</pre>' . */ htmlentities($request) . ' <br /><br /> ' . htmlentities($resp->data);
+        $quotes[$ups_service]['debug'] .= htmlentities($request) . ' <br /><br /> ' . htmlentities($resp->data);
       }
       $response = new SimpleXMLElement($resp->data);
       if (isset($response->Response->Error)) {
@@ -1139,17 +1138,14 @@ function uc_ups_fulfill_order_validate($form, &$form_state) {
   $_SESSION['ups']['order_id'] = $form_state['values']['order_id'];
 
   $request = uc_ups_shipment_request($_SESSION['ups']['packages'], $origin, $destination, $form_state['values']['service']);
-  //print htmlentities($request);
   $response_obj = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') . 'ShipConfirm', array(
     'method' => 'POST',
     'data' => $request,
   ));
   $response = new SimpleXMLElement($response_obj->data);
-  //drupal_set_message('<pre>' . htmlentities($response->asXML()) . '</pre>');
   if (isset($response->Response->Error)) {
     $error = $response->Response->Error;
     $error_msg = (string)$error->ErrorSeverity . ' Error ' . (string)$error->ErrorCode . ': ' . (string)$error->ErrorDescription;
-    //drupal_set_message('<pre>' . print_r($_SESSION['ups']['packages'], TRUE) . '</pre>' . htmlentities($request) . ' <br /><br /> ' . htmlentities($response->data));
     if (strpos((string)$error->ErrorSeverity, 'Hard') !== FALSE) {
       form_set_error('', $error_msg);
       return FALSE;

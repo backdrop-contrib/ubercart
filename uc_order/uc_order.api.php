@@ -129,17 +129,17 @@ function hook_uc_line_item_data_alter(&$items) {
  *
  * @param $op
  *   The action being performed.
- * @param &$arg1
+ * @param &$order
  *   This is the order object or a reference to it as noted below.
  * @param $arg2
  *   This is variable and is based on the value of $op:
- *   - new: Called when an order is created. $arg1 is a reference to the new
+ *   - new: Called when an order is created. $order is a reference to the new
  *       order object, so modules may add to or modify the order at creation.
  *   - save: When an order object is being saved, the hook gets invoked with this
- *       op to let other modules do any necessary saving. $arg1 is a reference to
+ *       op to let other modules do any necessary saving. $order is a reference to
  *       the order object.
  *   - load: Called when an order is loaded after the order and product data has
- *       been loaded from the database. Passes $arg1 as the reference to the
+ *       been loaded from the database. Passes $order as the reference to the
  *       order object, so modules may add to or modify the order object when it's
  *       loaded.
  *   - submit: When a sale is being completed and the customer has clicked the
@@ -155,25 +155,25 @@ function hook_uc_line_item_data_alter(&$items) {
  *         return array(array('pass' => FALSE, 'message' => t('We were unable to process your credit card.')));
  *       @endcode
  *   - can_update: Called before an order's status is changed to make sure the
- *       order can be updated. $arg1 is the order object with the old order
- *       status ID ($arg1->order_status), and $arg2 is simply the new order
+ *       order can be updated. $order is the order object with the old order
+ *       status ID ($order->order_status), and $arg2 is simply the new order
  *       status ID. Return FALSE to stop the update for some reason.
- *   - update: Called when an order's status is changed. $arg1 is the order
- *       object with the old order status ID ($arg1->order_status), and $arg2 is
+ *   - update: Called when an order's status is changed. $order is the order
+ *       object with the old order status ID ($order->order_status), and $arg2 is
  *       the new order status ID.
  *   - can_delete: Called before an order is deleted to verify that the order may
  *       be deleted. Returning FALSE will prevent a delete from happening. (For
  *       example, the payment module returns FALSE by default when an order has
  *       already received payments.)
  *   - delete: Called when an order is deleted and before the rest of the order
- *       information is removed from the database. Passes $arg1 as the order
+ *       information is removed from the database. Passes $order as the order
  *       object to let your module clean up it's tables.
  *   - total: Called when the total for an order is being calculated after the
- *       total of the products has been added. Passes $arg1 as the order object.
+ *       total of the products has been added. Passes $order as the order object.
  *       Expects in return a value (positive or negative) by which to modify the
  *       order total.
  */
-function hook_uc_order($op, &$arg1, $arg2) {
+function hook_uc_order($op, &$order, $arg2) {
   switch ($op) {
     case 'save':
       // Do something to save payment info!

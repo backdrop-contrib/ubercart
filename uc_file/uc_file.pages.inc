@@ -330,7 +330,8 @@ function _uc_file_download_transfer($file_user, $ip) {
 
   ob_end_clean();
 
-  //Only send partial content header if downloading a piece of the file (IE workaround)
+  // Only send partial content header if downloading a piece of the file (IE
+  // workaround).
   if ($seek_start > 0 || $seek_end < ($size - 1)) {
     drupal_set_header('206 Partial Content');
   }

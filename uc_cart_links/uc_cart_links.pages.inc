@@ -9,17 +9,17 @@
 /**
  * Process a cart link to fiddle with the cart and redirect the user.
  *
- * @param $arg1
+ * @param $cart_action
  *   An action.
  */
-function uc_cart_links_process($arg1) {
+function uc_cart_links_process($cart_action) {
   $messages = array();
 
   // Fail if the link is restricted.
   $data = variable_get('uc_cart_links_restrictions', '');
   if (!empty($data)) {
     $restrictions = explode("\n", variable_get('uc_cart_links_restrictions', ''));
-    if (!empty($restrictions) && !in_array($arg1, $restrictions)) {
+    if (!empty($restrictions) && !in_array($cart_action, $restrictions)) {
       $url = variable_get('uc_cart_links_invalid_page', '');
       if (empty($url)) {
         $url = '<front>';
@@ -30,7 +30,7 @@ function uc_cart_links_process($arg1) {
   }
 
   // Split apart the cart link on the -.
-  $actions = explode('-', urldecode($arg1));
+  $actions = explode('-', urldecode($cart_action));
   $rebuild_cart = FALSE;
 
   foreach ($actions as $action) {

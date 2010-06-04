@@ -484,20 +484,15 @@ function uc_order_admin($query = NULL, $args = NULL, $search = FALSE) {
 
     if (arg(3) == 'sort' && !is_null(arg(4))) {
       $_SESSION['sort_status'] = arg(4);
-      $query->condition($o_order_status, arg(4));
     }
-    else {
-      if (isset($_SESSION['sort_status']) && !is_null($_SESSION['sort_status'])) {
+
+    if (!isset($_SESSION['sort_status']) || $_SESSION['sort_status'] != 'all') {
+      if (!empty($_SESSION['sort_status']) && is_string($_SESSION['sort_status'])) {
         $query->condition($o_order_status, $_SESSION['sort_status']);
       }
       else {
         $query->condition($o_order_status, uc_order_status_list('general', TRUE), 'IN');
       }
-    }
-
-    if (isset($_SESSION['sort_status']) && $_SESSION['sort_status'] == 'all') {
-      $conditions =& $query->conditions();
-      $conditions = array();
     }
   }
 
@@ -1250,15 +1245,14 @@ function uc_order_edit_form($form, &$form_state, $order) {
   $form['order_id'] = array('#type' => 'hidden', '#value' => $order->order_id);
   $form['order_uid'] = array('#type' => 'hidden', '#value' => $order->uid);
 
-  $modified = isset($form_state['post']['order_modified']) ? $form_state['post']['order_modified'] : REQUEST_TIME;
+  $modified = isset($form_state['values']['order_modified']) ? $form_state['values']['order_modified'] : REQUEST_TIME;
   $form['order_modified'] = array('#type' => 'hidden', '#value' => $modified);
 
   $panes = _uc_order_pane_list('edit');
   foreach ($panes as $pane) {
-    if (in_array('edit', $pane['show']) &&
-        variable_get('uc_order_pane_' . $pane['id'] . '_show_edit', $pane['enabled'])) {
+    if (in_array('edit', $pane['show']) && variable_get('uc_order_pane_' . $pane['id'] . '_show_edit', $pane['enabled'])) {
       $func = $pane['callback'];
-      if (function_exists($func) && ($contents = $func('edit-form', $order)) != NULL) {
+      if (function_exists($func) && ($contents = $func('edit-form', $order, array(), $form_state)) != NULL) {
         $form = array_merge($form, $contents);
       }
     }
@@ -1275,6 +1269,7 @@ function uc_order_edit_form($form, &$form_state, $order) {
     $form['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete'),
+      '#submit' => array('uc_order_edit_form_delete'),
     );
   }
 
@@ -1311,9 +1306,10 @@ function theme_uc_order_edit_form($variables) {
   }
 
   $output .= '<div class="order-pane abs-left">' . drupal_render($form['order_id']) . drupal_render($form['order_modified'])
-           . drupal_render($form['form_id']) . drupal_render($form['form_token'])
-           . drupal_render($form['submit-changes']) . drupal_render($form['delete'])
-            . '</div>';
+    . drupal_render($form['form_id']) . drupal_render($form['form_token'])
+    . drupal_render($form['form_build_id'])
+    . drupal_render($form['submit-changes']) . drupal_render($form['delete'])
+    . '</div>';
 
   return $output;
 }
@@ -1334,20 +1330,15 @@ function uc_order_edit_form_validate($form, &$form_state) {
  * @see uc_order_edit_form()
  */
 function uc_order_edit_form_submit($form, &$form_state) {
-  if ($form_state['values']['op'] == t('Delete')) {
-    drupal_goto('admin/store/orders/' . $form_state['values']['order_id'] . '/delete');
-  }
-
   $order = uc_order_load($form_state['values']['order_id']);
   $log = array();
 
   $panes = _uc_order_pane_list();
   foreach ($panes as $pane) {
-    if (in_array('edit', $pane['show']) &&
-        variable_get('uc_order_pane_' . $pane['id'] . '_show_edit', TRUE)) {
+    if (in_array('edit', $pane['show']) && variable_get('uc_order_pane_' . $pane['id'] . '_show_edit', TRUE)) {
       $func = $pane['callback'];
       if (function_exists($func)) {
-        if (($changes = $func('edit-process', $form_state['values'])) != NULL) {
+        if (($changes = $func('edit-process', $form_state['values'], $form, $form_state)) != NULL) {
           foreach ($changes as $key => $value) {
             if ($order->$key != $value) {
               if (!is_array($value)) {
@@ -1372,8 +1363,8 @@ function uc_order_edit_form_submit($form, &$form_state) {
   }
 
   unset($order->products);
-  if (is_array($_POST['products'])) {
-    foreach ($_POST['products'] as $product) {
+  if (is_array($form_state['values']['products'])) {
+    foreach ($form_state['values']['products'] as $product) {
       if (!isset($product['remove']) && intval($product['qty']) > 0) {
         $product['data'] = unserialize($product['data']);
         $product = (object)$product;
@@ -1417,205 +1408,10 @@ function uc_order_edit_form_submit($form, &$form_state) {
 }
 
 /**
- * Populate the product add/edit div on the order edit screen.
+ * @see uc_order_edit_form()
  */
-function uc_order_edit_products($order) {
-  if (is_array($_POST['products'])) {
-    foreach ($_POST['products'] as $key => $product) {
-      $product['data'] = unserialize($product['data']);
-      uc_order_product_save($order->order_id, (object) $product);
-    }
-  }
-
-  switch ($_POST['action']) {
-    case 'add_blank':
-      db_insert('uc_order_products')
-        ->fields(array(
-          'order_id' => $order->order_id,
-          'qty' => 1,
-        ))
-        ->execute();
-      if (variable_get('uc_order_logging', TRUE)) {
-        uc_order_log_changes($order->order_id, array('add' => 'Added new product line to order.'));
-      }
-      break;
-    case 'add':
-      $form_state['values'] = $_POST;
-      $product = node_load(intval($_POST['nid']));
-      $product->qty = intval($_POST['qty']);
-      $product->price = $product->sell_price;
-      $product->data = module_invoke_all('uc_add_to_cart_data', $form_state['values']);
-
-      foreach (module_implements('uc_cart_item') as $module) {
-        $function = $module . '_uc_cart_item';
-        if (function_exists($function)) {
-          // $product must be passed by reference.
-          $function('load', $product);
-        }
-      }
-
-      $price_info = array(
-        'price' => $product->price,
-        'qty' => 1,
-      );
-      $context = array(
-        'revision' => 'original',
-        'type' => 'order_product',
-        'subject' => array(
-          'order' => $order,
-          'product' => $product,
-          'node' => clone $product,
-        ),
-      );
-      $product->price = uc_price($price_info, $context);
-
-      drupal_alter('uc_order_product', $product, $order);
-      uc_order_product_save($order->order_id, $product);
-
-      if (variable_get('uc_order_logging', TRUE)) {
-        uc_order_log_changes($order->order_id, array('add' => 'Added (' . $product->qty . ') ' . $product->title . ' to order.'));
-      }
-
-      // Decrement stock?
-      if (module_exists('uc_stock')) {
-        uc_stock_adjust_product_stock($product, 0, $order);
-      }
-      break;
-    case 'remove':
-      $order_product_id = intval($_POST['opid']);
-      // Put back the stock?
-      if (module_exists('uc_stock')) {
-        $product = db_query("SELECT model, qty FROM {uc_order_products} WHERE order_product_id = :id", array(':id' => $order_product_id))->fetchObject();
-        uc_stock_adjust($product->model, $product->qty);
-      }
-      db_delete('uc_order_products')
-        ->condition('order_product_id', $order_product_id)
-        ->execute();
-      break;
-  }
-
-  $products = db_query("SELECT * FROM {uc_order_products} WHERE order_id = :id ORDER BY order_product_id", array(':id' => $order->order_id))->fetchAll();
-
-  print drupal_render(uc_strip_form(drupal_get_form('uc_order_edit_products_form', $products)));
-  exit();
-}
-
-/**
- * Form to allow ordered products' data to be changed.
- *
- * @see
- *   uc_op_products_edit_table()
- *   theme_uc_order_edit_products_form()
- *   theme_uc_order_remove_product()
- */
-function uc_order_edit_products_form($form, &$form_state, $products) {
-  if (($product_count = count($products)) > 0) {
-    $form['products'] = tapir_get_table('uc_op_products_edit_table');
-    for ($i = 0; $i < $product_count; $i++) {
-      $form['products'][$i]['remove'] = array(
-        '#type' => 'checkbox',
-        '#name' => "products[$i][remove]",
-        '#theme' => 'uc_order_remove_product',
-        '#parents' => array(),
-        '#img_id' => $products[$i]->order_product_id,
-      );
-      $form['products'][$i]['order_product_id'] = array(
-        '#type' => 'hidden',
-        '#value' => $products[$i]->order_product_id,
-        '#name' => "products[$i][order_product_id]",
-        '#parents' => array(),
-      );
-      $form['products'][$i]['nid'] = array(
-        '#type' => 'hidden',
-        '#value' => $products[$i]->nid,
-        '#name' => "products[$i][nid]",
-        '#parents' => array(),
-      );
-      $form['products'][$i]['qty'] = array(
-        '#type' => 'textfield',
-        '#value' => $products[$i]->qty,
-        '#name' => "products[$i][qty]",
-        '#parents' => array(),
-        '#size' => 2,
-        '#maxlength' => 6,
-      );
-      $form['products'][$i]['title'] = array(
-        '#type' => 'textfield',
-        '#value' => $products[$i]->title,
-        '#name' => "products[$i][title]",
-        '#parents' => array(),
-        '#size' => 30,
-      );
-      $form['products'][$i]['model'] = array(
-        '#type' => 'textfield',
-        '#value' => $products[$i]->model,
-        '#name' => "products[$i][model]",
-        '#parents' => array(),
-        '#size' => 6,
-      );
-      $form['products'][$i]['weight'] = array(
-        '#type' => 'textfield',
-        '#value' => $products[$i]->weight,
-        '#name' => "products[$i][weight]",
-        '#parents' => array(),
-        '#size' => 3,
-      );
-      $form['products'][$i]['cost'] = array(
-        '#type' => 'textfield',
-        '#value' => uc_store_format_price_field_value($products[$i]->cost),
-        '#name' => "products[$i][cost]",
-        '#parents' => array(),
-        '#size' => 5,
-      );
-      $form['products'][$i]['price'] = array(
-        '#type' => 'textfield',
-        '#value' => uc_store_format_price_field_value($products[$i]->price),
-        '#name' => "products[$i][price]",
-        '#parents' => array(),
-        '#size' => 5,
-      );
-      $form['products'][$i]['data'] = array(
-        '#type' => 'hidden',
-        '#value' => $products[$i]->data,
-        '#name' => "products[$i][data]",
-        '#parents' => array(),
-      );
-    }
-  }
-  else {
-    $form['products'][]['remove'] = array(
-      '#value' => t('This order contains no products.'),
-      '#cell_attributes' => array('colspan' => 'full'),
-    );
-  }
-
-  return $form;
-}
-
-/**
- * @ingroup themeable
- * @see uc_order_edit_products_form()
- */
-function theme_uc_order_edit_products_form($variables) {
-  return drupal_render_children($variables['form']);
-}
-
-/**
- * Format the button to remove products from an order.
- *
- * @ingroup themeable
- * @see uc_op_products_edit_table()
- */
-function theme_uc_order_remove_product($variables) {
-  $form = $variables['form'];
-
-  return '<img id="' . $form['#img_id'] . '" src="'
-    . base_path() . drupal_get_path('module', 'uc_store')
-    . '/images/error.gif" style="padding-top: 1px; padding-left: .8em; '
-    . 'padding-right: 2px; float: left; cursor: pointer;" '
-    . 'alt="' . t('Remove this product.') . '" onclick="'
-    . 'remove_product_button(\'' . t('Remove product from order?') . '\', this.id);" />'
-    . drupal_render_children($form);
+function uc_order_edit_form_delete($form, &$form_state) {
+  $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/delete';
 }
 
 /**
@@ -1695,132 +1491,6 @@ function uc_order_add_line_item_form_submit($form, &$form_state) {
   }
 
   $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/edit';
-}
-
-/**
- * Select a product to add to the order.
- *
- * @see uc_order_load_product_select_form()
- */
-function uc_order_load_product_select($order) {
-  $types = uc_product_types();
-
-  if (!empty($_POST['search'])) {
-    $search = strtolower(str_replace('*', '%', check_plain($_POST['search'])));
-    $search_args = array(
-      ':types' => $types,
-      ':title' => $search,
-      ':model' => $search,
-    );
-
-    $result = db_query("SELECT n.nid, n.title FROM {node} AS n LEFT JOIN "
-                      . "{uc_products} AS p ON n.nid = p.nid WHERE n.type IN "
-                      . "(:types) AND (n.title LIKE :title OR p.model LIKE :model)"
-                      . " ORDER BY n.title", $search_args);
-  }
-  else {
-    $result = db_query("SELECT nid, title FROM {node} WHERE type IN (:types) ORDER BY title", array(':types' => $types));
-  }
-  foreach ($result as $row) {
-    $options[$row->nid] = $row->title;
-  }
-
-  $output = drupal_get_form('uc_order_product_select_form', $order->order_id, $options);
-
-  print drupal_render($output);
-  exit();
-}
-
-/**
- * Form to choose a product to add to the order.
- */
-function uc_order_product_select_form($form, &$form_state, $order_id, $options = array()) {
-  if (count($options) == 0) {
-    $options[0] = t('No products found.');
-  }
-
-  $form['unid'] = array(
-    '#type' => 'select',
-    '#title' => t('Select a product'),
-    '#options' => $options,
-    '#size' => 7,
-    '#attributes' => array('ondblclick' => 'return select_product();'),
-  );
-  $form['product_search'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Search by name or model/SKU (* is the wildcard)'),
-  );
-
-  $form['select'] = array(
-    '#type' => 'button',
-    '#value' => t('Select'),
-    '#attributes' => array('onclick' => 'return select_product();'),
-  );
-  $form['search'] = array(
-    '#type' => 'button',
-    '#value' => t('Search'),
-    '#attributes' => array('onclick' => 'return load_product_select(' . $order_id . ', true);'),
-  );
-  $form['close'] = array(
-    '#type' => 'button',
-    '#value' => t('Close'),
-    '#attributes' => array('onclick' => 'return close_product_select();'),
-  );
-
-  return $form;
-}
-
-/**
- * Intermediate div that lets you set the qty and attributes for a product.
- *
- * @see uc_order_add_product_form()
- */
-function uc_order_add_product($order, $product) {
-  $build = array();
-  $build['form'] = drupal_get_form('uc_order_add_product_form', $order, $product) + array(
-    '#prefix' => '<div style="margin: 1em;"><strong>Add ' . check_plain($product->title) . '</strong>',
-    '#suffix' => '</div>',
-  );
-
-  print drupal_render($build);
-  exit();
-}
-
-/**
- * Set the quantity and attributes of a product added to the order.
- *
- * @see uc_order_add_product_form()
- */
-function uc_order_add_product_form($form, &$form_state, $order, $node) {
-  $form['nid'] = array(
-    '#type' => 'hidden',
-    '#value' => $node->nid,
-  );
-  $form['add-qty'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Qty'),
-    '#default_value' => '1',
-    '#size' => 2,
-    '#maxlength' => 5,
-  );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Add to order'),
-    '#attributes' => array('onclick' => 'return add_product_to_order(' . $order->order_id . ', ' . $node->nid . ');')
-  );
-  $form['cancel'] = array(
-    '#type' => 'submit',
-    '#value' => t('Cancel'),
-    '#attributes' => array('onclick' => "\$('#add-product-button').click(); return false;"),
-  );
-  $form['node'] = array(
-    '#type' => 'value',
-    '#value' => $node,
-  );
-
-  uc_form_alter($form, $form_state, __FUNCTION__);
-
-  return $form;
 }
 
 /**

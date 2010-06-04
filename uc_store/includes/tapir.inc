@@ -89,17 +89,6 @@ function theme_tapir_table($variables) {
     $attributes = array();
     $row = array();
 
-    /* // If the row combines cell data with attributes...
-    if (isset($data['data'])) {
-      // Set the attributes array to be everything in the row array except the
-      // data array.
-      $attributes = $data;
-      unset($attributes['data']);
-
-      // Filter the data array down to just the cell data.
-      $data = $data['data'];
-    } */
-
     // Loop through each column in the header.
     foreach ($element['#columns'] as $col_id => $col_data) {
       // If this row defines cell data for the current column...

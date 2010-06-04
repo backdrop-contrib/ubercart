@@ -35,7 +35,7 @@ function uc_quote_overview() {
  * @see uc_quote_admin_settings_submit()
  */
 function uc_quote_admin_settings($form, &$form_state) {
-  $address = variable_get('uc_quote_store_default_address', new stdClass());
+  $address = variable_get('uc_quote_store_default_address', new UcAddress());
 
   $form['uc_quote_log_errors'] = array(
     '#type' => 'checkbox',
@@ -141,7 +141,7 @@ function uc_quote_admin_settings($form, &$form_state) {
  * @see uc_quote_admin_settings()
  */
 function uc_quote_admin_settings_submit($form, &$form_state) {
-  $address = new stdClass();
+  $address = new UcAddress();
   $address->first_name = $form_state['values']['first_name'];
   $address->last_name = $form_state['values']['last_name'];
   $address->company = $form_state['values']['company'];

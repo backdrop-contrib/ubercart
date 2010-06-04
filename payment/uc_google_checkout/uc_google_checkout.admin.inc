@@ -90,13 +90,6 @@ function uc_google_checkout_settings($form, &$form_state) {
     '#options' => array('right' => t('Right'), 'left' => t('Left')),
   );
 
-  /* $form['options'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Merchant options'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  ); */
-
   return system_settings_form($form);
 }
 
@@ -262,7 +255,6 @@ function theme_uc_google_checkout_taxes_settings($variables) {
     else {
       $row[] = $form['taxes'][$zone]['zone']['#value'];
     }
-    //$form['taxes'][$zone]['zone']['#printed'] = TRUE;
     $row[] = drupal_render($form['taxes'][$zone]['rate']);
     $row[] = drupal_render($form['taxes'][$zone]['tax_shipping']);
     $rows[] = $row;

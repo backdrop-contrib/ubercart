@@ -400,10 +400,8 @@ function uc_usps_uc_shipping_method() {
  *   JSON object containing rate, error, and debugging information.
  */
 function uc_usps_quote($products, $details, $method) {
-  //drupal_set_message('<pre>' . print_r($products, TRUE) . '</pre>');
-  //drupal_set_message('<pre>' . print_r($details, TRUE) . '</pre>');
   $services = array();
-  $addresses = array((array)variable_get('uc_quote_store_default_address', new stdClass()));
+  $addresses = array(variable_get('uc_quote_store_default_address', new UcAddress()));
   $packages = _uc_usps_package_products($products, $addresses);
   if (!count($packages)) {
     return array();
@@ -416,7 +414,7 @@ function uc_usps_quote($products, $details, $method) {
   $connection_url = 'http://' . $usps_server . '/' . $api_dll;
 
   foreach ($packages as $key => $ship_packages) {
-    $orig = (object)$addresses[$key];
+    $orig = $addresses[$key];
     $orig->email = variable_get('uc_store_email', '');
 
     if (strpos($method['id'], 'intl')) {
@@ -643,7 +641,7 @@ function _uc_usps_package_products($products, &$addresses) {
   if (variable_get('uc_usps_all_in_one', TRUE) && count($products) > 1) {
     foreach ($products as $product) {
       if ($product->nid) {
-        $address = (array)uc_quote_get_default_shipping_address($product->nid);
+        $address = uc_quote_get_default_shipping_address($product->nid);
         $key = array_search($address, $addresses);
         if ($key === FALSE) {
           $addresses[++$last_key] = $address;

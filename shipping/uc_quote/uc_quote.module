@@ -69,12 +69,6 @@ function uc_quote_menu() {
     'weight' => -10,
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  $items['cart/checkout/shipping/quote'] = array(
-    'page callback' => 'uc_quote_request_quotes',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-    'file' => 'uc_quote.pages.inc',
-  );
 
   return $items;
 }
@@ -100,6 +94,9 @@ function uc_quote_theme() {
       'file' => 'uc_quote.admin.inc',
     ),
     'uc_cart_pane_quotes' => array(
+      'render element' => 'form',
+    ),
+    'uc_quote_returned_rates' => array(
       'render element' => 'form',
     ),
   );
@@ -134,7 +131,6 @@ function uc_quote_node_update($node) {
           'zone' => $node->zone,
           'postal_code' => $node->postal_code,
           'country' => $node->country,
-          'phone' => $node->phone,
         ))
         ->execute();
     }
@@ -159,7 +155,7 @@ function uc_quote_node_load($nodes, $types) {
   $shipping_type = variable_get('uc_store_shipping_type', 'small_package');
   $shipping_types = db_query("SELECT id, shipping_type FROM {uc_quote_shipping_types} WHERE id_type = :type AND id IN (:ids)", array(':type' => 'product', ':ids' => array_keys($nodes)))->fetchAllKeyed();
 
-  $addresses = db_query("SELECT nid, first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid IN (:nids)", array(':nids' => array_keys($nodes)))->fetchAllAssoc('nid');
+  $addresses = db_query("SELECT nid, first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid IN (:nids)", array(':nids' => array_keys($nodes)), array('fetch' => 'UcAddress'))->fetchAllAssoc('nid');
 
   foreach ($nodes as $nid => &$node) {
     if (!in_array($node->type, $product_types)) {
@@ -178,7 +174,7 @@ function uc_quote_node_load($nodes, $types) {
       unset($node->shipping_address->nid);
     }
     else {
-      $node->shipping_address = variable_get('uc_quote_store_default_address', new stdClass());
+      $node->shipping_address = variable_get('uc_quote_store_default_address', new UcAddress());
     }
   }
 }
@@ -213,17 +209,7 @@ function uc_quote_form_alter(&$form, &$form_state, $form_id) {
 
     // Use the store default if the product does not have an address set.
     if (empty($address)) {
-      $address = variable_get('uc_quote_store_default_address', (object) array(
-        'first_name' => '',
-        'last_name' => '',
-        'company' => '',
-        'street1' => '',
-        'street2' => '',
-        'city' => '',
-        'zone' => 0,
-        'postal_code' => '',
-        'country' => 0,
-      ));
+      $address = variable_get('uc_quote_store_default_address', new UcAddress());
     }
 
     // Store the country to use for the zone select based on $_POST.
@@ -279,10 +265,31 @@ function uc_quote_form_alter(&$form, &$form_state, $form_id) {
     $form['shipping']['default_address']['postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $address->postal_code, FALSE, NULL, 10, 10);
     $form['shipping']['default_address']['country'] = uc_country_select(uc_get_field_name('country'), $address->country);
   }
-  // Add quote selection form handlers to the checkout form.
-  if ($form_id == 'uc_cart_checkout_form' && isset($form['panes']['quotes'])) {
-    $form['#validate'][] = 'uc_quote_save_choice';
-    $form['#pre_render'][] = 'uc_quote_cache_quotes';
+}
+
+function uc_quote_form_uc_cart_checkout_form_alter(&$form, &$form_state) {
+  $ajax = array(
+    'callback' => 'uc_quote_returned_rates',
+    'effect' => 'slide',
+    'progress' => array(
+      'type' => 'throbber',
+      'message' => t('Receiving shipping quotes...'),
+    ),
+  );
+
+  if (isset($form['panes']['delivery']['delivery_postal_code'])) {
+    $form['panes']['delivery']['delivery_postal_code']['#ajax'] = $ajax;
+  }
+  if (isset($form['panes']['delivery']['delivery_address_select'])) {
+    $form['panes']['delivery']['delivery_address_select']['#ajax'] = $ajax;
+  }
+  // @todo: Figure out what needs to be done when the copy-address box is checked.
+
+  if (isset($form['panes']['payment']['line_items'])) {
+    $form['panes']['quotes']['quotes']['quote_option']['#ajax'] = array(
+      'callback' => 'uc_payment_get_totals',
+      'wrapper' => 'line-items-div',
+    );
   }
 }
 
@@ -506,7 +513,7 @@ function uc_quote_action_get_quote($order, $method) {
   }
   $messages = ob_get_contents();
   ob_end_clean();
-  //drupal_set_message('<pre>' . print_r($quote_data, TRUE) . '</pre>');
+
   if ($messages && variable_get('uc_quote_log_errors', FALSE)) {
     watchdog('quote', '!messages', array('!messages' => $messages), WATCHDOG_WARNING);
     watchdog('quote', '<pre>@data</pre>', array('@data' => print_r($quote_data, TRUE)), WATCHDOG_WARNING);
@@ -526,12 +533,18 @@ function uc_quote_uc_cart_pane($items) {
     if (!variable_get('uc_cap_quotes_enabled', FALSE) || (variable_get('uc_cart_delivery_not_shippable', TRUE) && !uc_cart_is_shippable())) {
       return array();
     }
+
+    $body = drupal_get_form('uc_cart_pane_quotes', $items);
   }
+  else {
+    $body = '';
+  }
+
   $panes[] = array('id' => 'quotes',
     'title' => t('Shipping quotes'),
     'enabled' => FALSE,
     'weight' => 5,
-    'body' => drupal_get_form('uc_cart_pane_quotes', $items),
+    'body' => $body,
   );
 
   return $panes;
@@ -541,7 +554,8 @@ function uc_quote_uc_cart_pane($items) {
  * Define the shipping quote checkout pane.
  */
 function uc_quote_uc_checkout_pane() {
-  $panes[] = array('id' => 'quotes',
+  $panes[] = array(
+    'id' => 'quotes',
     'callback' => 'uc_checkout_pane_quotes',
     'title' => t('Calculate shipping cost'),
     'desc' => t('Extra information necessary to ship.'),
@@ -571,48 +585,31 @@ function uc_quote_uc_order_pane() {
 }
 
 /**
- * Implement hook_uc_add_to_cart().
- */
-function uc_quote_uc_add_to_cart() {
-  unset($_SESSION['quote']);
-}
-
-/**
- * Implement hook_uc_update_cart_item().
- */
-function uc_quote_uc_update_cart_item() {
-  unset($_SESSION['quote']);
-}
-
-/**
  * Implement hook_uc_order().
  */
-function uc_quote_uc_order($op, &$arg1, $arg2) {
+function uc_quote_uc_order($op, &$order, $arg2) {
   switch ($op) {
-    case 'submit':
-      unset($_SESSION['quote']);
-    break;
     case 'save':
-      if (isset($arg1->quote['method'])) {
+      if (isset($order->quote['method'])) {
         db_merge('uc_order_quotes')
-          ->key(array('order_id' => $arg1->order_id))
+          ->key(array('order_id' => $order->order_id))
           ->fields(array(
-            'method' => $arg1->quote['method'],
-            'accessorials' => $arg1->quote['accessorials'],
-            'rate' => $arg1->quote['rate'],
-            'quote_form' => $arg1->quote['quote_form'],
+            'method' => $order->quote['method'],
+            'accessorials' => $order->quote['accessorials'],
+            'rate' => $order->quote['rate'],
+            'quote_form' => $order->quote['quote_form'],
           ))
           ->execute();
       }
     break;
     case 'load':
-      $quote = db_query("SELECT method, accessorials, rate, quote_form FROM {uc_order_quotes} WHERE order_id = :id", array(':id' => $arg1->order_id))->fetchAssoc();
-      $arg1->quote = $quote;
-      $arg1->quote['accessorials'] = strval($quote['accessorials']);
+      $quote = db_query("SELECT method, accessorials, rate, quote_form FROM {uc_order_quotes} WHERE order_id = :id", array(':id' => $order->order_id))->fetchAssoc();
+      $order->quote = $quote;
+      $order->quote['accessorials'] = strval($quote['accessorials']);
     break;
     case 'delete':
       db_delete('uc_order_quotes')
-        ->condition('order_id', $arg1->order_id)
+        ->condition('order_id', $order->order_id)
         ->execute();
     break;
   }
@@ -732,10 +729,10 @@ function uc_product_get_shipping_type($product) {
  *   An address object.
  */
 function uc_quote_get_default_shipping_address($nid) {
-  $address = db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid = :nid", array(':nid' => $nid))->fetchObject();
+  $address = db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid = :nid", array(':nid' => $nid), array('fetch' => 'UcAddress'))->fetchObject();
 
   if (empty($address)) {
-    $address = variable_get('uc_quote_store_default_address', new stdClass());
+    $address = variable_get('uc_quote_store_default_address', new UcAddress());
   }
 
   return $address;
@@ -749,86 +746,52 @@ function uc_quote_get_default_shipping_address($nid) {
  */
 function uc_cart_pane_quotes($form, &$form_state, $items) {
   global $user;
-  // Get all quote types neccessary to fulfill order.
-  $shipping_types = array();
-  foreach ($items as $product) {
-    $shipping_types[] =  uc_product_get_shipping_type($product);
-  }
-  $shipping_types = array_unique($shipping_types);
-  $all_types = uc_quote_get_shipping_types();
-  $shipping_type = '';
-  $type_weight = 1000; // arbitrary large number
-  foreach ($shipping_types as $type) {
-    if ($all_types[$type]['weight'] < $type_weight) {
-      $shipping_type = $all_types[$type]['id'];
-      $type_weight = $all_types[$type]['weight'];
-    }
-  }
-  $methods = array_filter(module_invoke_all('uc_shipping_method'), '_uc_quote_method_enabled');
-  uasort($methods, '_uc_quote_type_sort');
-  $method_choices = array();
-  foreach ($methods as $method) {
-    if ($method['quote']['type'] == 'order' || $method['quote']['type'] == $shipping_type) {
-      $method_choices[$method['id']] = $method['title'];
-    }
-  }
-  $form['delivery_country'] = uc_country_select(uc_get_field_name('country'), uc_store_default_country(), NULL, 'name', TRUE);
+
+  $form['delivery_country'] = uc_country_select(uc_get_field_name('country'), isset($form_state['values']['delivery_country']) ? $form_state['values']['delivery_country'] : uc_store_default_country(), NULL, 'name', TRUE);
   $country_id = isset($_POST['delivery_country']) ? intval($_POST['delivery_country']) : uc_store_default_country();
-  $form['delivery_zone'] = uc_zone_select(uc_get_field_name('zone'), NULL, NULL, $country_id, 'name', TRUE);
-  $form['delivery_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), '', TRUE, NULL, 10, 10);
-  $form['quote_method'] = array(
-    '#type' => 'hidden',
-    '#value' => key($method_choices),
-  );
+  $form['delivery_zone'] = uc_zone_select(uc_get_field_name('zone'), isset($form_state['values']['delivery_zone']) ? $form_state['values']['delivery_zone'] : NULL, NULL, $country_id, 'name', TRUE);
+  $form['delivery_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), isset($form_state['values']['delivery_postal_code']) ? $form_state['values']['delivery_postal_code'] : '', TRUE, NULL, 10, 10);
   $form['get_quote'] = array(
     '#type' => 'button',
     '#value' => t('Calculate'),
+    '#ajax' => array(
+      'callback' => 'uc_quote_cart_returned_rates',
+      'wrapper' => 'quote',
+    ),
   );
   $form['page'] = array(
     '#type' => 'hidden',
     '#value' => 'cart',
   );
-  $form['uid'] = array(
-    '#type' => 'hidden',
-    '#value' => $user->uid,
-  );
-  $form['quote'] = array(
-    '#markup' => '<div id="quote"></div>',
-  );
 
-  drupal_add_js(array(
-    'uc_quote' => array(
-      'progress_msg' => t('Receiving quotes:'),
-      'err_msg' => check_markup(variable_get('uc_quote_err_msg', t("There were problems getting a shipping quote. Please verify the delivery and product information and try again.\nIf this does not resolve the issue, please call in to complete your order.")), variable_get('uc_quote_msg_format', filter_default_format())),
-    ),
-    'ucURL' => array(
-      'shippingQuotes' => url('cart/checkout/shipping/quote'),
-    ),
-  ), 'setting');
-  drupal_add_js('misc/progress.js');
-  drupal_add_js(drupal_get_path('module', 'uc_quote') . '/uc_quote.js');
-  $prod_string = '';
-  foreach (uc_cart_get_contents() as $item) {
-    $prod_string .= '|' . $item->nid;
-    $prod_string .= '^' . $item->title;
-    $prod_string .= '^' . $item->model;
-    $prod_string .= '^' . $item->manufacturer;
-    $prod_string .= '^' . $item->qty;
-    $prod_string .= '^' . $item->cost;
-    $prod_string .= '^' . $item->price;
-    $prod_string .= '^' . $item->weight;
-    $prod_string .= '^' . serialize($item->data);
+  $order = new UcOrder();
+  $order->uid = $user->uid;
+  $order->delivery_country = $form['delivery_country']['#default_value'];
+  $order->delivery_zone = $form['delivery_zone']['#default_value'];
+  $order->delivery_postal_code = $form['delivery_postal_code']['#default_value'];
+  $order->products = $items;
+
+  module_load_include('inc', 'uc_quote', 'uc_quote.pages');
+  $quotes = uc_quote_assemble_quotes($order);
+
+  if (!empty($quotes)) {
+    foreach ($quotes as $method => $data) {
+      foreach ($data as $accessorial => $quote) {
+        $key = $method . '---' . $accessorial;
+
+        if (isset($quote['rate'])) {
+          $quote_options[$key] = t('!label: !price', array('!label' => $quote['option_label'], '!price' => $quote['format']));
+        }
+      }
+    }
   }
-  $prod_string = substr($prod_string, 1);
-  // If a previous quote gets loaded, make sure it gets saved again.
-  // Also, make sure the previously checked option is checked by default.
-  drupal_add_js('jQuery(function() {
-    setQuoteCallbacks("' . drupal_encode_path($prod_string) . '");
-    jQuery("#uc-cart-pane-quotes").submit(function() {
-      quoteCallback("' . drupal_encode_path($prod_string) . '");
-      return false;
-    });
-  })', 'inline');
+
+  $form['quote'] = array(
+    '#theme' => 'item_list',
+    '#items' => $quote_options,
+    '#prefix' => '<div id="quote"><div class="solid-border">',
+    '#suffix' => '</div></div>',
+  );
 
   return $form;
 }
@@ -862,8 +825,9 @@ function theme_uc_cart_pane_quotes($variables) {
  *
  * Adds a line item to the order that records the chosen shipping quote.
  */
-function uc_checkout_pane_quotes($op, &$arg1, $arg2) {
+function uc_checkout_pane_quotes($op, &$order, $form = NULL, &$form_state = NULL) {
   global $user;
+
   switch ($op) {
     case 'view':
       $description = check_markup(variable_get('uc_quote_pane_description', t('Shipping quotes are generated automatically when you enter your address and may be updated manually with the button below.')), variable_get('uc_quote_desc_format', filter_default_format()));
@@ -881,70 +845,50 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2) {
         '#type' => 'button',
         '#value' => t('Click to calculate shipping'),
         '#weight' => 0,
+        '#ajax' => array(
+          'callback' => 'uc_quote_checkout_returned_rates',
+          'effect' => 'slide',
+          'progress' => array(
+            'type' => 'bar',
+            'message' => t('Receiving quotes...'),
+          ),
+        ),
+      );
+      $contents['quotes'] = array(
+        '#tree' => TRUE,
+        '#prefix' => '<div id="quote">',
+        '#suffix' => '</div>',
+        '#weight' => 1,
       );
 
-      drupal_add_js(array(
-        'uc_quote' => array(
-          'progress_msg' => t('Receiving quotes...'),
-          'err_msg' => check_markup(variable_get('uc_quote_err_msg', t("There were problems getting a shipping quote. Please verify the delivery address and product information and try again.\nIf this does not resolve the issue, please call @phone to complete your order.", array('@phone' => variable_get('uc_store_phone', NULL)))), variable_get('uc_quote_msg_format', filter_default_format())),
-        ),
-        'ucURL' => array(
-          'shippingQuotes' => url('cart/checkout/shipping/quote'),
-        ),
-      ), 'setting');
-      drupal_add_js('misc/progress.js');
-      drupal_add_js(drupal_get_path('module', 'uc_quote') . '/uc_quote.js');
-
-      if (!empty($arg1->quote)) {
-        $default = $arg1->quote['method'] . '---' . ($arg1->quote['accessorials'] ? $arg1->quote['accessorials'] : 0);
-      }
-      else {
-        $default = '---';
-      }
-
-      $prod_string = '';
-      foreach (uc_cart_get_contents() as $item) {
-        $prod_string .= '|' . $item->nid;
-        $prod_string .= '^' . $item->title;
-        $prod_string .= '^' . $item->model;
-        $prod_string .= '^' . $item->qty;
-        $prod_string .= '^' . $item->cost;
-        $prod_string .= '^' . $item->price;
-        $prod_string .= '^' . $item->weight;
-        $prod_string .= '^' . serialize($item->data);
-      }
-      $prod_string = substr($prod_string, 1);
-      // If a previous quote gets loaded, make sure it gets saved again.
-      // Also, make sure the previously checked option is checked by default.
-      drupal_add_js('
-        Drupal.behaviors.getQuotes = {
-          attach: function (context) {
-            setQuoteCallbacks("' . drupal_encode_path($prod_string) . '", context);
-          }
-        };
-        jQuery(function() {
-        var quoteButton = jQuery("input:radio[name=quote-option]").click(function() {
-          var quoteButton = jQuery(this);
-          var label = quoteButton.parent("label").text().split(":", 2)[0];
-          var rate = jQuery("input:hidden[name=\'rate[" + quoteButton.val() + "]\']").val();
-          set_line_item("shipping", label, rate, 1, 1, false);
-          if (window.getTax) {
-            getTax();
-          }
-          else if (window.render_line_items) {
-            render_line_items();
-          }
-        }).filter("[value=' . $default . ']").click();
-        var quoteDiv = jQuery("#quote");
-        if (quoteDiv.length && jQuery("#quote input[name=quote-form]").length == 0) {
-          quoteDiv.append("<input type=\"hidden\" name=\"quote-form\" value=\"" + Drupal.encodePath(quoteDiv.html()) + "\" />");
-        }
-      });', 'inline');
+      $contents['quotes'] += uc_quote_build_quote_form($order);
 
       return array('description' => $description, 'contents' => $contents);
 
     case 'process':
-      if (!isset($_POST['quote-option'])) {
+      if (!isset($form_state['values']['panes']['quotes']['quotes']['quote_option'])) {
+        // Get first returned quote as a default value.
+        module_load_include('inc', 'uc_quote', 'uc_quote.pages');
+
+        $quotes = uc_quote_assemble_quotes($order);
+
+        $quote_options = array();
+        if ($quotes) {
+          foreach ($quotes as $method => $data) {
+            foreach ($data as $accessorial => $quote) {
+              $key = $method . '---' . $accessorial;
+              if (isset($quote['rate'])) {
+                $form_state['values']['panes']['quotes']['quotes']['quote_option'] = $key;
+                $form_state['values']['panes']['quotes']['quotes'][$key]['rate'] = $quote['rate'];
+
+                break 2;
+              }
+            }
+          }
+        }
+      }
+
+      if (!isset($form_state['values']['panes']['quotes']['quotes']['quote_option'])) {
         if (variable_get('uc_quote_require_quote', TRUE)) {
           drupal_set_message(t('You must select a shipping option before continuing.'), 'error');
           return FALSE;
@@ -953,84 +897,46 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2) {
           return TRUE;
         }
       }
-      $details = array();
-      foreach ($arg1 as $key => $value) {
-        if (strpos($key, 'delivery_') !== FALSE) {
-          $details[substr($key, 9)] = $value;
-        }
-      }
-      $products = array();
-      foreach ($arg1->products as $id => $product) {
-        $node = (array)node_load($product->nid);
-        foreach ($node as $key => $value) {
-          if (!isset($product->$key)) {
-            $product->$key = $value;
-          }
-        }
-        $arg1->products[$id] = $product;
-      }
-      $quote_option = explode('---', $_POST['quote-option']);
-      $arg1->quote['method'] = $quote_option[0];
-      $arg1->quote['accessorials'] = $quote_option[1];
-      $_SESSION['quote']['quote_form'] = rawurldecode($_POST['quote-form']);
+
+      $quote_option = explode('---', $form_state['values']['panes']['quotes']['quotes']['quote_option']);
+      $order->quote['method'] = $quote_option[0];
+      $order->quote['accessorials'] = $quote_option[1];
       $methods = array_filter(module_invoke_all('uc_shipping_method'), '_uc_quote_method_enabled');
       $method = $methods[$quote_option[0]];
-      $quote_data = array();
-
-      $arguments = array(
-        'order' => array(
-          '#entity' => 'uc_order',
-          '#title' => t('Order'),
-          '#data' => $arg1,
-        ),
-        'method' => array(
-          '#entity' => 'quote_method',
-          '#title' => t('Quote method'),
-          '#data' => $method,
-        ),
-        'account' => array(
-          '#entity' => 'user',
-          '#title' => t('User'),
-          '#data' => $user,
-        ),
-      );
-
-      $predicates = ca_load_trigger_predicates('get_quote_from_' . $method['id']);
-      $predicate = array_shift($predicates);
-      if ($predicate && ca_evaluate_conditions($predicate, $arguments)) {
-        $quote_data = uc_quote_action_get_quote($arg1, $method, $user);
-      }
-
-      if (!isset($quote_data[$quote_option[1]])) {
-        drupal_set_message(t('Invalid option selected. Recalculate shipping quotes to continue.'), 'error');
-        return FALSE;
-      }
 
       $label = $method['quote']['accessorials'][$quote_option[1]];
-      $arg1->quote['rate'] = $quote_data[$quote_option[1]]['rate'];
 
-      $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = :id AND type = :type", array(':id' => $arg1->order_id, ':type' => 'shipping'));
+      $quote_option = $form_state['values']['panes']['quotes']['quotes']['quote_option'];
+      $order->quote['rate'] = $form_state['values']['panes']['quotes']['quotes'][$quote_option]['rate'];
+
+      $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = :id AND type = :type", array(':id' => $order->order_id, ':type' => 'shipping'));
       if ($lid = $result->fetchField()) {
         uc_order_update_line_item($lid,
           $label,
-          $arg1->quote['rate']
+          $order->quote['rate']
         );
       }
       else {
-        uc_order_line_item_add($arg1->order_id, 'shipping',
+        uc_order_line_item_add($order->order_id, 'shipping',
           $label,
-          $arg1->quote['rate']
+          $order->quote['rate']
         );
       }
+
+      // Update line items.
+      $order->line_items = uc_order_load_line_items($order, TRUE);
+      // Update calculated line items.
+      $order->line_items = array_merge($order->line_items, uc_order_load_line_items($order, FALSE));
+      usort($order->line_items, 'uc_weight_sort');
 
       return TRUE;
     case 'review':
       $context = array(
         'revision' => 'themed',
         'type' => 'line_item',
-        'subject' => array('order' => $arg1),
+        'subject' => array('order' => $order),
       );
-      $result = db_query("SELECT * FROM {uc_order_line_items} WHERE order_id = :id AND type = :type", array(':id' => $arg1->order_id, ':type' => 'shipping'));
+      $result = db_query("SELECT * FROM {uc_order_line_items} WHERE order_id = :id AND type = :type", array(':id' => $order->order_id, ':type' => 'shipping'));
       if ($line_item = $result->fetchAssoc()) {
         $context['subject']['line_item'] = $line_item;
         $review[] = array('title' => $line_item['title'], 'data' => uc_price($line_item['amount'], $context));
@@ -1043,7 +949,7 @@ function uc_checkout_pane_quotes($op, &$arg1, $arg2) {
 /**
  * Shipping quote order pane callback.
  */
-function uc_order_pane_quotes($op, $arg1) {
+function uc_order_pane_quotes($op, $order, $form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'edit-form':
       // Let Javascript know where we are.
@@ -1054,183 +960,220 @@ function uc_order_pane_quotes($op, $arg1) {
       $form['quotes']['quote_button'] = array(
         '#type' => 'submit',
         '#value' => t('Get shipping quotes'),
+        '#submit' => array('uc_quote_order_pane_quotes_submit'),
+        '#ajax' => array(
+          'callback' => 'uc_quote_order_returned_rates',
+          'effect' => 'slide',
+          'progress' => array(
+            'type' => 'bar',
+            'message' => t('Receiving quotes...'),
+          ),
+        ),
       );
       $form['quotes']['add_quote'] = array(
         '#type' => 'submit',
         '#value' => t('Apply to order'),
         '#attributes' => array('class' => array('save-button')),
         '#disabled' => TRUE,
+        '#submit' => array('uc_quote_apply_quote_to_order'),
       );
 
-      $form['quotes']['quote'] = array(
-        '#markup' => '<div id="quote"></div>',
+      $form['quotes']['quotes'] = array(
+        '#tree' => TRUE,
+        '#prefix' => '<div id="quote">',
+        '#suffix' => '</div>',
       );
 
-      drupal_add_js(array(
-        'uc_quote' => array(
-          'progress_msg' => t('Receiving quotes...'),
-          'err_msg' => check_markup(variable_get('uc_quote_err_msg', t("There were problems getting a shipping quote. Please verify the delivery and product information and try again.\nIf this does not resolve the issue, please call in to complete your order.")), variable_get('uc_quote_msg_format', filter_default_format())),
-        ),
-        'ucURL' => array(
-          'shippingQuotes' => url('cart/checkout/shipping/quote'),
-        ),
-      ), 'setting');
+      if (isset($form_state['quote_requested']) && $form_state['quote_requested'] == TRUE) {
+        $form['quotes']['quotes'] += uc_quote_build_quote_form($order);
+      }
 
-      drupal_add_js('misc/progress.js');
-      drupal_add_js(drupal_get_path('module', 'uc_quote') . '/uc_quote.js');
-
-      $default = $arg1->quote['accessorials'] ? $arg1->quote['accessorials'] : 0;
-      // If a previous quote gets loaded, make sure it gets saved again.
-      // Also, make sure the previously checked option is checked by default.
-      drupal_add_js('jQuery(function() {
-        setQuoteCallbacks();
-        jQuery("input:radio[name=quote-option]").filter("[value=' . $default . ']").attr("checked", "checked");
-        var quoteDiv = jQuery("#quote");
-        if (quoteDiv.length && jQuery("#quote input[name=quote-form]").length == 0) {
-          quoteDiv.append("<input type=\"hidden\" name=\"quote-form\" value=\"" + Drupal.encodePath(quoteDiv.html()) + "\" />");
-        }
-      })', 'inline');
       return $form;
+
     case 'edit-theme':
-      return drupal_render($arg1['quotes']);
-    case 'edit-process':
-      //drupal_set_message('<pre>' . print_r($_POST, TRUE) . '</pre>');
-      if (isset($_POST['quote-option'])) {
-        list($changes['quote']['method'], $changes['quote']['accessorials']) = explode('---', $_POST['quote-option']);
+      return drupal_render($order['quotes']);
+  }
+}
+
+function uc_quote_order_pane_quotes_submit($form, &$form_state) {
+  $form_state['quote_requested'] = ($form_state['triggering_element']['#value'] == $form['quotes']['quote_button']['#value']);
+}
+
+function uc_quote_apply_quote_to_order($form, &$form_state) {
+  if (isset($form_state['values']['quotes']['quote_option'])) {
+    if ($order = $form_state['build_info']['args'][0]) {
+      $user = user_load($order->uid);
+
+      $quote_option = explode('---', $form_state['values']['quotes']['quote_option']);
+      $order->quote['method'] = $quote_option[0];
+      $order->quote['accessorials'] = $quote_option[1];
+      $methods = array_filter(module_invoke_all('uc_shipping_method'), '_uc_quote_method_enabled');
+      $method = $methods[$quote_option[0]];
+
+      $label = $method['quote']['accessorials'][$quote_option[1]];
+
+      $quote_option = $form_state['values']['quotes']['quote_option'];
+      $order->quote['rate'] = $form_state['values']['quotes'][$quote_option]['rate'];
+
+      $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = :id AND type = :type", array(':id' => $order->order_id, ':type' => 'shipping'));
+      if ($lid = $result->fetchField()) {
+        uc_order_update_line_item($lid,
+          $label,
+          $order->quote['rate']
+        );
       }
-      $changes['quote']['rate'] = $_POST['rate'][$_POST['quote-option']];
-      $changes['quote']['quote_form'] = rawurldecode($_POST['quote-form']);
-      return $changes;
-    case 'edit-ops':
-      return array(t('Apply to order'));
-    case t('Apply to order'):
-      if (isset($_POST['quote-option'])) {
-        if ($order = uc_order_load($arg1['order_id'])) {
-          $user = user_load($order->uid);
-          $products = array();
-          foreach ($order->products as $product) {
-            if ($product->nid) {
-              $node = (array)node_load($product->nid);
-              foreach ($node as $key => $value) {
-                if (!isset($product->$key)) {
-                  $product->$key = $value;
-                }
-              }
-            }
-            $products[] = $product;
-          }
+      else {
+        uc_order_line_item_add($order->order_id, 'shipping',
+          $label,
+          $order->quote['rate']
+        );
+      }
 
-          //drupal_set_message('<pre>' . print_r($order, TRUE) . '</pre>');
-          $quote_option = explode('---', $_POST['quote-option']);
-          $order->quote['method'] = $quote_option[0];
-          $order->quote['accessorials'] = $quote_option[1];
-          $order->quote['quote_form'] = rawurldecode($_POST['quote-form']);
-          $methods = array_filter(module_invoke_all('uc_shipping_method'), '_uc_quote_method_enabled');
-          $method = $methods[$quote_option[0]];
-          $quote_data = array();
+      // Update line items.
+      $order->line_items = uc_order_load_line_items($order, TRUE);
+      // Update calculated line items.
+      $order->line_items = array_merge($order->line_items, uc_order_load_line_items($order, FALSE));
+      usort($order->line_items, 'uc_weight_sort');
+    }
+  }
+}
 
-          $predicate = ca_load_trigger_predicates('get_quote_from_' . $method['id']);
-          $arguments = array(
-            'order' => array(
-              '#entity' => 'uc_order',
-              '#title' => t('Order'),
-              '#data' => $arg1,
-            ),
-            'method' => array(
-              '#entity' => 'quote_method',
-              '#title' => t('Quote method'),
-              '#data' => $method,
-            ),
-            'account' => array(
-              '#entity' => 'user',
-              '#title' => t('User'),
-              '#data' => $user,
-            ),
+function uc_quote_build_quote_form($order) {
+  $return = array();
+
+  module_load_include('inc', 'uc_quote', 'uc_quote.pages');
+  $quotes = uc_quote_assemble_quotes($order);
+
+  if (!empty($quotes)) {
+    foreach ($quotes as $method => $data) {
+      foreach ($data as $accessorial => $quote) {
+        $key = $method . '---' . $accessorial;
+
+        if (isset($quote['rate'])) {
+          $quote_options[$key] = t('!label: !price', array('!label' => $quote['option_label'], '!price' => $quote['format']));
+          $return[$key]['rate'] = array(
+            '#type' => 'hidden',
+            '#value' => $quote['rate'],
           );
-          if (ca_evaluate_conditions($predicate, $arguments)) {
-            $quote_data = uc_quote_action_get_quote($order, $method, $user);
-          }
+        }
 
-          //drupal_set_message('Chosen quote method:<pre>' . print_r($method, TRUE) . '</pre>');
-          //drupal_set_message('Chosen quote data:<pre>' . print_r($quote_data, TRUE) . '</pre>');
-          if (!isset($quote_data[$quote_option[1]])) {
-            drupal_set_message(t('Invalid option selected. Recalculate shipping quotes to continue.'), 'error');
-            break;
-          }
-          $label = $method['quote']['accessorials'][$quote_option[1]];
-          $order->quote['rate'] = $quote_data[$quote_option[1]]['rate'];
-          $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = :id AND type = :type", array(':id' => $arg1['order_id'], ':type' => 'shipping'));
-          if ($lid = $result->fetchField()) {
-            uc_order_update_line_item($lid,
-              $label,
-              $order->quote['rate']
-            );
-          }
-          else {
-            uc_order_line_item_add($order->order_id, 'shipping',
-              $label,
-              $order->quote['rate']
-            );
-          }
+        if (!empty($quote['error'])) {
+          $return[$key]['error'] = array(
+            '#markup' => '<div class="quote-error">' . $quote['error'] . '</div>',
+          );
+        }
+
+        if (!empty($quote['notes'])) {
+          $return[$key]['notes'] = array(
+            '#markup' => '<div class="quote-notes">' . $quote['notes'] . '</div>',
+          );
+        }
+
+        if (!empty($quote['debug'])) {
+          $return[$key]['debug'] = array(
+            '#markup' => '<pre>' . $quote['debug'] . '</pre>',
+          );
+        }
+
+        if (!isset($quote['rate']) && count($return[$key])) {
+          $return[$key]['#prefix'] = $quote['label'] . ': ';
         }
       }
-    break;
+    }
   }
+
+  $num_quotes = count($quote_options);
+  $default = key($quote_options);
+  if ($num_quotes > 1) {
+    if (isset($order->quote['method']) && isset($order->quote['accessorials'])) {
+      $default = $order->quote['method'] . '---' . $order->quote['accessorials'];
+    }
+
+    $return['quote_option'] = array(
+      '#type' => 'radios',
+      '#options' => $quote_options,
+      '#default_value' => $default,
+    );
+  }
+  elseif ($num_quotes == 1) {
+    $return['quote_option'] = array(
+      '#type' => 'hidden',
+      '#value' => $default,
+      '#suffix' => $quote_options[$default],
+    );
+  }
+  else {
+    $return['error'] = array(
+      '#markup' => check_markup(variable_get('uc_quote_err_msg', t("There were problems getting a shipping quote. Please verify the delivery address and product information and try again.\nIf this does not resolve the issue, please call @phone to complete your order.", array('@phone' => variable_get('uc_store_phone', NULL)))), variable_get('uc_quote_msg_format', filter_default_format())),
+    );
+  }
+
+  $return['#theme'] = 'uc_quote_returned_rates';
+
+  return $return;
+}
+
+function uc_quote_cart_returned_rates($form, $form_state) {
+  $commands[] = ajax_command_replace('#quote', drupal_render($form['quote']));
+  $commands[] = ajax_command_prepend('#quote', theme('status_messages'));
+
+  return array('#type' => 'ajax', '#commands' => $commands);
 }
 
 /**
- * Validate handler added to uc_cart_checkout_form().
- *
- * Save the choice of shipping method in the customer's session.
+ * AJAX callback for calculated shipping rates.
  */
-function uc_quote_save_choice($form, &$form_state) {
-  $quote_option = explode('---', $_POST['quote-option']);
-  $_SESSION['quote'] = array('method' => $quote_option[0],
-    'accessorials' => $quote_option[1],
-    'rate' => $_POST['rate'][$_POST['quote-option']],
-    'quote_form' => $_POST['quote-form'],
-  );
+function uc_quote_checkout_returned_rates($form, $form_state) {
+  $commands[] = ajax_command_replace('#quote', drupal_render($form['panes']['quotes']['quotes']));
+  $commands[] = ajax_command_prepend('#quote', theme('status_messages'));
+
+  // Show default shipping rate as a line item.
+  if (isset($form['panes']['payment']['line_items'])) {
+    $commands[] = ajax_command_replace('#line-items-div', drupal_render($form['panes']['payment']['line_items']));
+    $commands[] = ajax_command_prepend('#line-items-div', theme('status_messages'));
+  }
+
+  return array('#type' => 'ajax', '#commands' => $commands);
 }
 
 /**
- * Pre-render callback added to uc_cart_checkout_form().
- *
- * Render the shipping quotes without an asynchronous call to create them if a
- * choice had been cached in the session.
+ * AJAX callback for calculated shipping rates.
  */
-function uc_quote_cache_quotes($form) {
-  if ($form['#id'] == 'uc-cart-checkout-form') {
-    if (isset($_SESSION['quote']) && isset($_SESSION['quote']['rate'])) {
-      $quote = $_SESSION['quote'];
-        $form['panes']['quotes']['quote'] = array(
-          '#markup' => '<div id="quote" class="solid-border">' . rawurldecode($_SESSION['quote']['quote_form']) . '</div>',
-          '#weight' => 1,
-        );
-        $methods = module_invoke_all('uc_shipping_method');
-        $method = $methods[$quote['method']];
+function uc_quote_order_returned_rates($form, $form_state) {
+  $commands[] = ajax_command_replace('#quote', drupal_render($form['quotes']['quotes']));
+  $commands[] = ajax_command_prepend('#quote', theme('status_messages'));
 
-        drupal_add_js('jQuery(document).ready(function() {
-          jQuery("#quote").find("input:radio[value=' . $quote['method'] . '---' . $quote['accessorials'] . ']").eq(0).change().attr("checked", "checked");
-          if (window.set_line_item) {
-            set_line_item("shipping", "' . $method['quote']['accessorials'][$quote['accessorials']] . '", ' . $quote['rate'] . ', 1, 1, false);
-          }
-          if (window.getTax) {
-            getTax();
-            setTaxCallbacks();
-          }
-          else if (window.render_line_items) {
-            render_line_items();
-          }
-        });', 'inline');
-    }
-    else {
-      $form['panes']['quotes']['quote'] = array(
-        '#markup' => '<div id="quote"></div>',
-        '#weight' => 1,
-      );
+  return array('#type' => 'ajax', '#commands' => $commands);
+}
+
+/**
+ * Display the returned shipping rates.
+ *
+ * @ingroup themeable
+ */
+function theme_uc_quote_returned_rates($variables) {
+  $form = $variables['form'];
+  $output = '';
+
+  $keys = element_children($form);
+
+  // Render notes and error messages after each radio button.
+  if (count($keys) > 1) {
+    foreach ($keys as $key) {
+      if ($key == 'quote_option') {
+        continue;
+      }
+
+      if (isset($form['quote_option'][$key])) {
+        $output .= drupal_render($form['quote_option'][$key]);
+      }
+      $output .= drupal_render($form[$key]);
     }
   }
-  return $form;
+
+  $output .= drupal_render_children($form);
+
+  return '<div class="solid-border">' . $output . '</div>';
 }
 
 /**

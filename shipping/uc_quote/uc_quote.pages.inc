@@ -7,76 +7,12 @@
  */
 
 /**
- * Callback to return the shipping quote(s) of the appropriate quoting method(s).
- */
-function uc_quote_request_quotes() {
-
-  /* print '<pre>';
-  print_r($_POST);
-  print '</pre>'; */
-
-  $products = array();
-  foreach (explode('|', urldecode($_POST['products'])) as $item) {
-    $props = explode('^', $item);
-    $product = new stdClass();
-    $product->nid = $props[0];
-    $product->title = $props[1];
-    $product->model = $props[2];
-    $product->qty = $props[3];
-    $product->cost = $props[4];
-    $product->price = $props[5];
-    $product->weight = $props[6];
-    if ($data = unserialize($props[7])) {
-      $product->data = $data;
-    }
-    else {
-      $product->data = $props[7];
-    }
-    if ($product->nid) {
-      $node = (array)node_load($product->nid);
-      foreach ($node as $key => $value) {
-        if (!isset($product->$key)) {
-          $product->$key = $value;
-        }
-      }
-    }
-    $products[] = $product;
-  }
-  $fake_order = new stdClass();
-  $fake_order->uid = $_POST['uid'];
-  $fake_order->products = $products;
-  foreach ((array) $_POST['details'] as $type => $address) {
-    foreach ($address as $key => $value) {
-      if ($key == 'country' AND $value == '') {
-        $value = variable_get('uc_store_country', 840);
-      }
-      $field = $type . '_' . $key;
-      $fake_order->$field = $value;
-    }
-  }
-  // Consider the total to be from products only, because line items are
-  // mostly non-existent at this point.
-  $fake_order->order_total = uc_order_get_total($fake_order, TRUE);
-  // Get all quote types neccessary to fulfill order.
-  $quote_data = _uc_quote_assemble_quotes($fake_order);
-  //drupal_set_message('<pre>' . print_r($methods, TRUE) . '</pre>');
-  //drupal_set_message('<pre>' . print_r($quote_data, TRUE) . '</pre>');
-  $return_quotes = array();
-  foreach ($quote_data as $method_id => $options) {
-    foreach ($options as $accsrl => $data) {
-      $return_quotes[$method_id . '---' . $accsrl] = $data;
-    }
-  }
-  drupal_json_output($return_quotes);
-}
-
-/**
  * Pull the get_quote_from_* triggers and assemble their returned data.
  */
-function _uc_quote_assemble_quotes($order) {
+function uc_quote_assemble_quotes($order) {
   global $user;
-  $account = user_load($order->uid);
-  if (!$account) {
+
+  if (!$order->uid || !($account = user_load($order->uid))) {
     $account = $user;
   }
 
@@ -115,7 +51,6 @@ function _uc_quote_assemble_quotes($order) {
     ),
   );
 
-  //drupal_set_message('<pre>' . print_r($products, TRUE) . '</pre>');
   $quote_data = array();
   $arguments = array(
     'order' => array(

@@ -15,6 +15,50 @@ require_once('uc_order.order_pane.inc');
 require_once('uc_order.line_item.inc');
 require_once('uc_order.ca.inc');
 
+class UcOrder {
+
+  public $order_id = 0;
+  public $uid = 0;
+  public $order_status = '';
+  public $order_total = 0;
+  public $primary_email = '';
+
+  public $delivery_first_name = '';
+  public $delivery_last_name = '';
+  public $delivery_phone = '';
+  public $delivery_company = '';
+  public $delivery_street1 = '';
+  public $delivery_street2 = '';
+  public $delivery_city = '';
+  public $delivery_zone = 0;
+  public $delivery_postal_code = '';
+  public $delivery_country = 0;
+
+  public $billing_first_name = '';
+  public $billing_last_name = '';
+  public $billing_phone = '';
+  public $billing_company = '';
+  public $billing_street1 = '';
+  public $billing_street2 = '';
+  public $billing_city = '';
+  public $billing_zone = 0;
+  public $billing_postal_code = '';
+  public $billing_country = 0;
+
+  public $products = array();
+  public $line_items = array();
+
+  public $payment_method = '';
+  public $data = '';
+  public $created = 0;
+  public $modified = 0;
+
+  function __construct() {
+    $this->order_status = uc_order_state_default('in_checkout');
+  }
+
+}
+
 /*******************************************************************************
  * Hook Functions (Drupal)
  ******************************************************************************/
@@ -332,11 +376,15 @@ function uc_order_theme() {
     ),
     'uc_order_edit_products_form' => array(
       'render element' => 'form',
-      'file' => 'uc_order.admin.inc',
+      'file' => 'uc_order.order_pane.inc',
     ),
     'uc_order_remove_product' => array(
       'render element' => 'form',
-      'file' => 'uc_order.admin.inc',
+      'file' => 'uc_order.order_pane.inc',
+    ),
+    'uc_order_pane_line_items' => array(
+      'render element' => 'form',
+      'file' => 'uc_order.order_pane.inc',
     ),
     'uc_order_view_update_controls' => array(
       'render element' => 'form',
@@ -870,51 +918,6 @@ function uc_order_search_form_submit($form, &$form_state) {
 
   drupal_goto('admin/store/orders/search/results/' . implode('/', $args));
 }
-
-/**
- * TAPIr table for products pane on the order edit page.
- *
- * @see uc_order_edit_products_form()
- */
-function uc_op_products_edit_table() {
-  $table = array(
-    '#type' => 'tapir_table',
-    '#tree' => TRUE,
-    '#attributes' => array('class' => array('order-pane-table')),
-  );
-
-  $table['#columns']['remove'] = array(
-    'cell' => t('Remove'),
-    'weight' => 0,
-  );
-  $table['#columns']['qty'] = array(
-    'cell' => t('Qty'),
-    'weight' => 1,
-  );
-  $table['#columns']['title'] = array(
-    'cell' => t('Name'),
-    'weight' => 2,
-  );
-  $table['#columns']['model'] = array(
-    'cell' => t('SKU'),
-    'weight' => 4,
-  );
-  $table['#columns']['weight'] = array(
-    'cell' => t('Weight'),
-    'weight' => 5,
-  );
-  $table['#columns']['cost'] = array(
-    'cell' => t('Cost'),
-    'weight' => 6,
-  );
-  $table['#columns']['price'] = array(
-    'cell' => t('Price'),
-    'weight' => 7,
-  );
-
-  return $table;
-}
-
 
 /*******************************************************************************
  * Module and Helper Functions

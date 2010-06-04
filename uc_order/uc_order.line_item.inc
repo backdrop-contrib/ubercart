@@ -15,70 +15,28 @@
 /**
  * Handle the subtotal line item.
  */
-function uc_line_item_subtotal($op, $arg1) {
+function uc_line_item_subtotal($op, $order) {
   switch ($op) {
     case 'load':
       $lines[] = array(
         'id' => 'subtotal',
         'title' => t('Subtotal'),
-        'amount' => uc_order_get_total($arg1, TRUE),
+        'amount' => uc_order_get_total($order, TRUE),
       );
       return $lines;
-    case 'cart-preview':
-      if (module_exists('uc_payment') && variable_get('uc_pane_payment_enabled', TRUE)) {
-        $context = array(
-          'revision' => 'altered',
-          'type' => 'cart_item',
-        );
-        $subtotal = 0;
-        foreach ($arg1 as $item) {
-          $price_info = array(
-            'price' => $item->price,
-            'qty' => ($item->qty) ? $item->qty : 1,
-          );
-          $context['subject'] = array(
-            'cart_item' => $item,
-            'node' => node_load($item->nid),
-          );
-          $total = uc_price($price_info, $context);
-          $subtotal += $total;
-        }
-
-        $line_item = array(
-          'type' => 'subtotal',
-          'name' => t('Subtotal'),
-          'amount' => $subtotal,
-          'weight' => -10,
-        );
-
-        $order = new stdClass();
-        $order->products = $arg1;
-
-        $context = array(
-          'revision' => 'altered',
-          'type' => 'line_item',
-          'subject' => array(
-            'order' => $order,
-            'line_item' => $line_item,
-          ),
-        );
-
-        drupal_add_js("jQuery(document).ready( function() { set_line_item('subtotal', '" . $line_item['name'] . "', " . uc_price($line_item['amount'], $context) . ", " . $line_item['weight'] . "); } );", 'inline');
-      }
-      break;
   }
 }
 
 /**
  * Handle the total line item.
  */
-function uc_line_item_total($op, $arg1) {
+function uc_line_item_total($op, $order) {
   switch ($op) {
     case 'display':
       $lines[] = array(
         'id' => 'total',
         'title' => t('Total'),
-        'amount' => uc_order_get_total($arg1),
+        'amount' => uc_order_get_total($order),
       );
       return $lines;
   }

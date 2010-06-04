@@ -340,7 +340,6 @@ function uc_ups_request_pickup($digest, $order_id = 0, $packages = array()) {
   <ShipmentDigest>" . $digest . "</ShipmentDigest>
 </ShipmentAcceptRequest>";
 
-  //drupal_set_message('<pre>' . htmlentities($schema) . '</pre>');
   return $schema;
 }
 

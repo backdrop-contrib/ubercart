@@ -275,24 +275,24 @@ function uc_google_checkout_uc_line_item() {
   return $items;
 }
 
-function uc_google_checkout_uc_order($op, &$arg1, $arg2) {
+function uc_google_checkout_uc_order($op, &$order, $arg2) {
   switch ($op) {
     case 'load':
-      $result = db_query("SELECT * FROM {uc_gc_orders} WHERE order_id = :id", array(':id' => $arg1->order_id));
+      $result = db_query("SELECT * FROM {uc_gc_orders} WHERE order_id = :id", array(':id' => $order->order_id));
       if ($gc = $result->fetchObject()) {
-        $arg1->google_order_number = $gc->gc_order_number;
-        $arg1->financial_state = $gc->financial_state;
-        $arg1->fulfillment_state = $gc->fulfillment_state;
-        $arg1->gc_total = $gc->gc_total;
+        $order->google_order_number = $gc->gc_order_number;
+        $order->financial_state = $gc->financial_state;
+        $order->fulfillment_state = $gc->fulfillment_state;
+        $order->gc_total = $gc->gc_total;
       }
     break;
     case 'can_update':
-      if (!isset($arg1->google_order_number) || isset($_SESSION['google_updates']) && $_SESSION['google_updates']) {
+      if (!isset($order->google_order_number) || isset($_SESSION['google_updates']) && $_SESSION['google_updates']) {
         return TRUE;
       }
       switch ($arg2) {
         case 'canceled':
-          if (uc_google_checkout_cancel_order($arg1)) {
+          if (uc_google_checkout_cancel_order($order)) {
             drupal_set_message(t('Cancel order request sent to Google Checkout. The order will be updated momentarily.'));
           }
           else {
@@ -568,8 +568,9 @@ function uc_google_checkout_cart_request($order) {
         $output .= $shipping_options;
         $output .= '</carrier-calculated-shipping-options>';
 
-        $address = variable_get('uc_quote_store_default_address', new stdClass());
+        $address = variable_get('uc_quote_store_default_address');
         if (empty($address)) {
+          $address = new UcAddress();
           $address->city = variable_get('uc_store_city', NULL);
           $address->zone = uc_get_zone_code(variable_get('uc_store_zone', NULL));
           $address->postal_code = variable_get('uc_store_postal_code', NULL);
@@ -713,11 +714,11 @@ function uc_google_checkout_send_request($api, $request) {
   return $response;
 }
 
-function uc_google_checkout_pane_email_allowed($op, $arg1) {
+function uc_google_checkout_pane_email_allowed($op, $order) {
   switch ($op) {
     case 'customer':
     case 'view':
-      if ($arg1->data['email_allowed']) {
+      if ($order->data['email_allowed']) {
         $build = array('#markup' => t('Customer will accept marketing emails.'));
       }
       else {
@@ -732,10 +733,10 @@ function uc_google_checkout_pane_email_allowed($op, $arg1) {
  * Add setting callbacks to the payment settings section
  *  The fulfillment sections need coded still. JS.
  */
-function uc_payment_method_google_checkout($op, &$arg1) {
+function uc_payment_method_google_checkout($op, &$order) {
   switch ($op) {
     case 'order-view':
-      $build['#markup'] = l(t('Google Checkout terminal'), 'admin/store/orders/' . $arg1->order_id . '/google_checkout');
+      $build['#markup'] = l(t('Google Checkout terminal'), 'admin/store/orders/' . $order->order_id . '/google_checkout');
 
       return $build;
     case 'settings':

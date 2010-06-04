@@ -73,7 +73,7 @@ function theme_uc_catalog_browse($variables) {
         $j++;
       }
     }
-    //$grandchildren = array_slice($grandchildren, 0, intval(count($grandchildren) / 2) + 1, TRUE);
+
     if ($j > $max_gc_display) {
       array_push($grandchildren, l(t('More...'), uc_catalog_path($child), array('class' => array('subcategory'))));
     }

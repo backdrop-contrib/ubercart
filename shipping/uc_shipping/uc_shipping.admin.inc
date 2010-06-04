@@ -290,7 +290,7 @@ function uc_shipping_package_edit($form, &$form_state, $order, $package) {
 
   $result = db_query("SELECT order_product_id, SUM(qty) AS quantity FROM {uc_packaged_products} AS pp LEFT JOIN {uc_packages} AS p ON pp.package_id = p.package_id WHERE p.order_id = :id GROUP BY order_product_id", array(':id' => $order->order_id));
   foreach ($result as $packaged_product) {
-    //Make already packaged products unavailable, except those in this package.
+    // Make already packaged products unavailable, except those in this package.
     $products[$packaged_product->order_product_id]->qty = $products[$packaged_product->order_product_id]->qty - $packaged_product->quantity + $package->products[$packaged_product->order_product_id]->qty;
   }
 
@@ -579,7 +579,6 @@ function uc_shipping_new_shipment($form, &$form_state, $order) {
       '#value' => t('Ship packages'),
     );
   }
-  //drupal_set_message('<pre>' . print_r($form, TRUE) . '</pre>');
   return $form;
 }
 
@@ -610,7 +609,6 @@ function theme_uc_shipping_new_shipment($variables) {
         '#rows' => $rows,
       );
     }
-    //$output .= drupal_render($form[$shipping_type]['methods']);
   }
 
   $output .= drupal_render_children($form);
@@ -1004,9 +1002,6 @@ EOHTML;
       )) . "\n";
     }
   }
-
-  //$output .= dpr($order, TRUE, 'order');
-  //$output .= dpr($shipment, TRUE, 'shipment');
 
   $output .= '</body></html>';
 

@@ -90,40 +90,8 @@ function uc_taxes_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'uc_taxes.admin.inc',
   );
-  $items['taxes/calculate'] = array(
-    'page callback' => 'uc_taxes_javascript',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-  );
 
   return $items;
-}
-
-/**
- * Implement hook_form_alter().
- */
-function uc_taxes_form_alter(&$form, &$form_state, $form_id) {
-  if ($form_id == 'uc_cart_checkout_form') {
-    if (isset($form['panes']['payment'])) {
-      drupal_add_js(array(
-        'ucTaxWeight' => variable_get('uc_li_tax_weight', 9),
-        'ucURL' => array(
-          'calculateTax' => url('taxes/calculate'),
-        ),
-      ), 'setting');
-      drupal_add_js(drupal_get_path('module', 'uc_taxes') . '/uc_taxes.js');
-    }
-  }
-  elseif ($form_id == 'uc_order_edit_form') {
-    if (isset($form['quotes'])) {
-      drupal_add_js(array(
-        'ucURL' => array(
-          'calculateTax' => url('taxes/calculate'),
-        ),
-      ), 'setting');
-      drupal_add_js(drupal_get_path('module', 'uc_taxes') . '/uc_taxes.js');
-    }
-  }
 }
 
 /*******************************************************************************
@@ -161,22 +129,20 @@ function uc_taxes_uc_line_item() {
  *
  * Update and save tax line items to the order.
  */
-function uc_taxes_uc_order($op, $arg1, $arg2) {
+function uc_taxes_uc_order($op, $order, $arg2) {
   switch ($op) {
     case 'save':
       $changes = array();
-      $line_items = uc_line_item_tax('load', $arg1);
-      //$arg1->line_items = uc_order_load_line_items($arg1, TRUE);
+      $line_items = uc_line_item_tax('load', $order);
       $context = array(
         'revision' => 'formatted',
         'type' => 'line_item',
         'subject' => array(
-          'order' => $arg1,
+          'order' => $order,
         ),
       );
-      if (is_array($arg1->line_items)) {
-        //drupal_set_message('<pre>' . var_export($arg1->line_items, TRUE) . '</pre>');
-        foreach ($arg1->line_items as $i => $line) {
+      if (is_array($order->line_items)) {
+        foreach ($order->line_items as $i => $line) {
           if ($line['type'] == 'tax') {
             $delete = TRUE;
             foreach ($line_items as $id => $new_line) {
@@ -184,7 +150,7 @@ function uc_taxes_uc_order($op, $arg1, $arg2) {
                 if ($new_line['amount'] != $line['amount']) {
                   $context['subject']['line_item'] = $new_line;
                   uc_order_update_line_item($line['line_item_id'], $new_line['title'], $new_line['amount'], $new_line['data']);
-                  $arg1->line_items[$i]['amount'] = $new_line['amount'];
+                  $order->line_items[$i]['amount'] = $new_line['amount'];
                   $changes[] = t('Changed %title to %amount.', array('%amount' => uc_price($new_line['amount'], $context), '%title' => $new_line['title']));
                 }
                 unset($line_items[$id]);
@@ -194,7 +160,7 @@ function uc_taxes_uc_order($op, $arg1, $arg2) {
             }
             if ($delete) {
               uc_order_delete_line_item($line['line_item_id']);
-              unset($arg1->line_items[$i]);
+              unset($order->line_items[$i]);
               $changes[] = t('Removed %title.', array('%title' => $line['title']));
             }
           }
@@ -202,15 +168,15 @@ function uc_taxes_uc_order($op, $arg1, $arg2) {
       }
       if (is_array($line_items)) {
         foreach ($line_items as $line) {
-          uc_order_line_item_add($arg1->order_id, $line['id'], $line['title'], $line['amount'], $line['weight'], $line['data']);
+          uc_order_line_item_add($order->order_id, $line['id'], $line['title'], $line['amount'], $line['weight'], $line['data']);
           $line['type'] = 'tax';
-          $arg1->line_items[] = $line;
+          $order->line_items[] = $line;
           $context['subject']['line_item'] = $line;
           $changes[] = t('Added %amount for %title.', array('%amount' => uc_price($line['amount'], $context), '%title' => $line['title']));
         }
       }
       if (count($changes)) {
-        uc_order_log_changes($arg1->order_id, $changes);
+        uc_order_log_changes($order->order_id, $changes);
       }
     break;
   }
@@ -246,46 +212,45 @@ function uc_line_item_tax($op, $order) {
  */
 function uc_line_item_tax_subtotal($op, $order) {
   $amount = 0;
-//  if ($different && $has_taxes) {
-    switch ($op) {
-      case 'cart-preview':
-        drupal_add_js("jQuery(document).ready(function() {
-          if (window.set_line_item) {
-            set_line_item('tax_subtotal', '" . t('Subtotal excluding taxes') . "', " . $amount . ", " . variable_get('uc_li_tax_subtotal_weight', 8) . ");
+  switch ($op) {
+    case 'load':
+      $has_taxes = FALSE;
+      $different = FALSE;
+
+      if (is_array($order->products)) {
+        foreach ($order->products as $item) {
+          $amount += $item->price * $item->qty;
+        }
+      }
+      if (is_array($order->line_items)) {
+        foreach ($order->line_items as $key => $line_item) {
+          if ($line_item['type'] == 'subtotal') {
+            continue;
           }
-        });", 'inline');
-      break;
-      case 'load':
-  if (is_array($order->products)) {
-    foreach ($order->products as $item) {
-      $amount += $item->price * $item->qty;
-    }
-  }
-  if (is_array($order->line_items)) {
-    foreach ($order->line_items as $key => $line_item) {
-      if ($line_item['type'] == 'subtotal') {
-        continue;
+          if (substr($line_item['type'], 0, 3) != 'tax') {
+            $amount += $line_item['amount'];
+            $different = TRUE;
+          }
+          else {
+            $has_taxes = TRUE;
+          }
+        }
       }
-      if (substr($line_item['type'], 0, 3) != 'tax') {
-        $amount += $line_item['amount'];
-        $different = TRUE;
-      }
-      else {
+
+      if (isset($order->taxes) && is_array($order->taxes)) {
         $has_taxes = TRUE;
       }
-    }
-  }
-  if (isset($order->taxes) && is_array($order->taxes)) {
-    $has_taxes = TRUE;
-  }
+
+      if ($different && $has_taxes) {
         return array(array(
           'id' => 'tax_subtotal',
           'title' => t('Subtotal excluding taxes'),
           'amount' => $amount,
           'weight' => variable_get('uc_li_tax_subtotal_weight', 7),
         ));
-    }
-//  }
+      }
+      break;
+  }
 }
 
 
@@ -461,31 +426,6 @@ function uc_taxes_uc_calculate_tax($order) {
   return $order->taxes;
 }
 
-/**
- * AJAX callback for order preview.
- *
- * Calculate tax amounts for an order in the payment checkout pane.
- */
-function uc_taxes_javascript() {
-  $order = $_POST['order'];
-  if ($order = unserialize(rawurldecode($order))) {
-    $taxes = module_invoke_all('uc_calculate_tax', $order);
-    $callback = _uc_line_item_data('tax_subtotal', 'callback');
-    if (function_exists($callback)) {
-      $subtotal = $callback('load', $order);
-      if (is_array($subtotal) && !empty($taxes)) {
-        $taxes['subtotal'] = (object)array(
-          'id' => 'subtotal',
-          'name' => $subtotal[0]['title'],
-          'amount' => $subtotal[0]['amount'],
-          'weight' => -10,
-          'summed' => 0,
-        );
-      }
-    }
-  }
-  drupal_json_output((array) $taxes);
-}
 
 /**
  * Calculate tax for a single product.

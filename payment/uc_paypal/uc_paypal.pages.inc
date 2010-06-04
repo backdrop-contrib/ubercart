@@ -258,9 +258,6 @@ function uc_paypal_ec_review_form($form, &$form_state, $order) {
       '#markup' => '<div id="quote"></div>',
     );
 
-    // small hack; automatically looks for shipping quotes on page load
-    drupal_add_js("jQuery(document).ready(function() { jQuery('#edit-quote-button').click(); });", 'inline');
-
     // Fake the checkout form delivery information.
     $form['delivery_first_name'] = array('#type' => 'hidden', '#value' => $order->delivery_first_name);
     $form['delivery_last_name'] = array('#type' => 'hidden', '#value' => $order->delivery_last_name);

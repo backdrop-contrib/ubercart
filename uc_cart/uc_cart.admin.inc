@@ -443,7 +443,7 @@ function uc_cart_checkout_panes_form($form, &$form_state) {
     );
 
     $null = NULL;
-    $pane_settings = $pane['callback']('settings', $null, NULL);
+    $pane_settings = $pane['callback']('settings', $null, array());
     if (is_array($pane_settings)) {
       $form['pane_' . $pane['id']] = array(
         '#type' => 'fieldset',

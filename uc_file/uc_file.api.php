@@ -121,7 +121,8 @@ function hook_uc_file_action($op, $args) {
     case 'info':
       return array('uc_image_watermark_add_mark' => 'Add Watermark');
     case 'insert':
-      //automatically adds watermarks to any new files that are uploaded to the file download directory
+      // Automatically adds watermarks to any new files that are uploaded to
+      // the file download directory.
       _add_watermark($args['file_object']->filepath);
     break;
     case 'form':
@@ -140,7 +141,7 @@ function hook_uc_file_action($op, $args) {
       _add_watermark($args['file_object']->filepath);
       break;
     case 'upload_validate':
-      //Given a file path, function checks if file is valid JPEG
+      // Given a file path, function checks if file is valid JPEG.
       if(!_check_image($args['file_object']->filepath)) {
         form_set_error('upload',t('Uploaded file is not a valid JPEG'));
       }
@@ -156,7 +157,7 @@ function hook_uc_file_action($op, $args) {
       if ($args['form_values']['action'] == 'uc_image_watermark_add_mark') {
         foreach ($args['form_values']['file_ids'] as $file_id) {
           $filename = db_query("SELECT filename FROM {uc_files} WHERE fid = :fid", array(':fid' => $file_id))->fetchField();
-          //Function adds watermark to image
+          // Function adds watermark to image.
           _add_watermark($filename);
         }
       }
@@ -187,7 +188,8 @@ function hook_uc_file_action($op, $args) {
  *   The path of the new file to transfer to customer.
  */
 function hook_uc_file_transfer_alter($file_user, $ip, $fid, $file) {
-  $file_data = file_get_contents($file)." [insert personalized data]"; //for large files this might be too memory intensive
+  // For large files this might be too memory intensive.
+  $file_data = file_get_contents($file)." [insert personalized data]";
   $new_file = tempnam(file_directory_temp(),'tmp');
   file_put_contents($new_file,$file_data);
   return $new_file;

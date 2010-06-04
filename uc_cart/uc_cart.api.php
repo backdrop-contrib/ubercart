@@ -185,7 +185,7 @@ function hook_uc_cart_item($op, &$item) {
   switch ($op) {
     case 'load':
       $term = array_shift(taxonomy_node_get_terms_by_vocabulary($item->nid, variable_get('uc_manufacturer_vid', 0)));
-      $arg1->manufacturer = $term->name;
+      $item->manufacturer = $term->name;
       break;
   }
 }

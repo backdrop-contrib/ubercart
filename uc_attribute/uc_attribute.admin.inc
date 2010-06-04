@@ -972,8 +972,7 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
       $form['attributes'][$aid]['default'] = array(
         '#type' => 'radios',
         '#options' => $options,
-        '#default_value' => /* $attribute->required ? NULL : */ $attribute->default_option,
-        //'#disabled' => $attribute->required,
+        '#default_value' => $attribute->default_option,
       );
     }
     else {
@@ -1200,7 +1199,7 @@ function uc_product_adjustments_form($form, &$form_state, $node) {
   drupal_set_title($node->title);
   $nid = $node->nid;
 
-  //Populate table and such.
+  // Populate table and such.
   $model = $node->model;
   $query_select = "SELECT DISTINCT";
   $query_from = " FROM";
@@ -1236,7 +1235,7 @@ function uc_product_adjustments_form($form, &$form_state, $node) {
   $num_prod_attr = count($attribute_ids);
 
   if ($num_prod_attr) {
-    //Get previous values
+    // Get previous values
     $old_vals = db_query("SELECT * FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $nid))->fetchAll();
 
     $result = $query->execute();

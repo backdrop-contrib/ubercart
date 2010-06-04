@@ -15,7 +15,7 @@
 /**
  * Handle the Payment order pane.
  */
-function uc_order_pane_payment($op, $arg1) {
+function uc_order_pane_payment($op, $order) {
   switch ($op) {
     case 'view':
       if (variable_get('uc_payment_tracking', TRUE)) {
@@ -23,20 +23,20 @@ function uc_order_pane_payment($op, $arg1) {
           'revision' => 'formatted-original',
           'type' => 'amount',
         );
-        $build['balance'] = array('#markup' => t('Balance: @balance', array('@balance' => uc_price(uc_payment_balance($arg1), $context))));
+        $build['balance'] = array('#markup' => t('Balance: @balance', array('@balance' => uc_price(uc_payment_balance($order), $context))));
         $build['view_payments'] = array(
-          '#markup' => ' (' . l(t('View'), 'admin/store/orders/' . $arg1->order_id . '/payments') . ')',
+          '#markup' => ' (' . l(t('View'), 'admin/store/orders/' . $order->order_id . '/payments') . ')',
           '#suffix' => '<br />',
         );
       }
-      $method_name = _uc_payment_method_data($arg1->payment_method, 'review');
+      $method_name = _uc_payment_method_data($order->payment_method, 'review');
       if (empty($method_name)) {
-        $method_name = _uc_payment_method_data($arg1->payment_method, 'name');
+        $method_name = _uc_payment_method_data($order->payment_method, 'name');
       }
       $build['method'] = array('#markup' => t('Method: @payment_method', array('@payment_method' => $method_name)));
-      $func = _uc_payment_method_data($arg1->payment_method, 'callback');
+      $func = _uc_payment_method_data($order->payment_method, 'callback');
       if (function_exists($func)) {
-        $method_output = $func('order-view', $arg1);
+        $method_output = $func('order-view', $order);
         if (!empty($method_output)) {
           $build['output'] = $method_output + array(
             '#prefix' => '<br />',
@@ -47,14 +47,14 @@ function uc_order_pane_payment($op, $arg1) {
       return $build;
 
     case 'customer':
-      $method_name = _uc_payment_method_data($arg1->payment_method, 'review');
+      $method_name = _uc_payment_method_data($order->payment_method, 'review');
       if (empty($method_name)) {
-        $method_name = _uc_payment_method_data($arg1->payment_method, 'name');
+        $method_name = _uc_payment_method_data($order->payment_method, 'name');
       }
       $build['method'] = array('#markup' => t('Method: @payment_method', array('@payment_method' => $method_name)));
-      $func = _uc_payment_method_data($arg1->payment_method, 'callback');
+      $func = _uc_payment_method_data($order->payment_method, 'callback');
       if (function_exists($func)) {
-        $method_output = $func('customer-view', $arg1);
+        $method_output = $func('customer-view', $order);
         if (!empty($method_output)) {
           $build['output'] = $method_output + array(
             '#prefix' => '<br />',
@@ -81,9 +81,9 @@ function uc_order_pane_payment($op, $arg1) {
       $form['payment']['payment_method'] = array(
         '#type' => 'select',
         '#title' => t('Payment method'),
-        '#default_value' => $arg1->payment_method,
+        '#default_value' => $order->payment_method,
         '#options' => (is_array($options)) ? $options : array(t('None available')),
-        '#attributes' => array('onchange' => "add_order_save_hold(); get_payment_details(Drupal.settings.ucURL.adminOrders + '" . $arg1->order_id . "/payment_details/' + this.value);"),
+        '#attributes' => array('onchange' => "add_order_save_hold(); get_payment_details(Drupal.settings.ucURL.adminOrders + '" . $order->order_id . "/payment_details/' + this.value);"),
         '#disabled' => (is_array($options)) ? FALSE : TRUE,
       );
       return $form;
@@ -103,19 +103,19 @@ function uc_order_pane_payment($op, $arg1) {
       drupal_add_js(array('ucOrderInitiate' => TRUE), 'setting');
 
       $output = '<table class="order-edit-table">';
-      foreach (element_children($arg1['payment']) as $field) {
-        $title = $arg1['payment'][$field]['#title'];
-        $arg1['payment'][$field]['#title'] = NULL;
+      foreach (element_children($order['payment']) as $field) {
+        $title = $order['payment'][$field]['#title'];
+        $order['payment'][$field]['#title'] = NULL;
         $output .= '<tr><td class="oet-label">' . $title . ':</td><td>'
-                 . drupal_render($arg1['payment'][$field]) . '</td></tr>';
+                 . drupal_render($order['payment'][$field]) . '</td></tr>';
       }
       $output .= '</table><div id="payment_details"></div>';
       return $output;
 
     case 'edit-process':
-      $changes['payment_method'] = $arg1['payment_method'];
-      $func = _uc_payment_method_data($arg1['payment_method'], 'callback');
-      if (function_exists($func) && ($return = $func('edit-process', $arg1)) != NULL && is_array($return)) {
+      $changes['payment_method'] = $order['payment_method'];
+      $func = _uc_payment_method_data($order['payment_method'], 'callback');
+      if (function_exists($func) && ($return = $func('edit-process', $order)) != NULL && is_array($return)) {
         $changes = array_merge($changes, $return);
       }
       return $changes;

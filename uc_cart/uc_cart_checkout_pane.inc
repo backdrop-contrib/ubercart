@@ -15,9 +15,11 @@
 /**
  * Display the cart contents for review during checkout.
  */
-function uc_checkout_pane_cart($op) {
+function uc_checkout_pane_cart($op, &$order, $form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
+      $order->products = uc_cart_get_contents();
+
       $contents['cart_review_table'] = array(
         '#theme' => 'uc_cart_review_table',
         '#weight' => variable_get('uc_pane_cart_field_cart_weight', 2),
@@ -56,12 +58,12 @@ function uc_checkout_pane_cart($op) {
 /**
  * Get the user's email address for login.
  */
-function uc_checkout_pane_customer($op, &$arg1, $arg2) {
+function uc_checkout_pane_customer($op, &$order, $form = NULL, &$form_state = NULL) {
   global $user;
 
   switch ($op) {
     case 'view':
-      $email = (is_null($arg1) || empty($arg1->primary_email)) ? $user->mail : $arg1->primary_email;
+      $email = empty($order->primary_email) ? $user->mail : $order->primary_email;
 
       if ($user->uid) {
         $description = t('Order information will be sent to your account e-mail listed below.');// . '<br />'
@@ -90,7 +92,7 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
           $contents['new_account']['name'] = array(
             '#type' => 'textfield',
             '#title' => t('Username'),
-            '#default_value' => $arg1->data['new_user']['name'],
+            '#default_value' => $order->data['new_user']['name'],
             '#maxlength' => 60,
             '#size' => 32,
           );
@@ -135,15 +137,17 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
       return array('description' => $description, 'contents' => $contents);
 
     case 'process':
-      if (!empty($arg2['primary_email']) && !valid_email_address($arg2['primary_email'])) {
+      $pane = $form_state['values']['panes']['customer'];
+
+      if (!empty($pane['primary_email']) && !valid_email_address($pane['primary_email'])) {
         drupal_set_message(t('You must enter a valid e-mail address.'), 'error');
         return FALSE;
       }
 
-      $arg1->primary_email = $arg2['primary_email'];
+      $order->primary_email = $pane['primary_email'];
 
       if (variable_get('uc_cart_email_validation', FALSE) && !$user->uid &&
-          $arg2['primary_email'] !== $arg2['primary_email_confirm']) {
+          $pane['primary_email'] !== $pane['primary_email_confirm']) {
         drupal_set_message(t('The e-mail address did not match.'), 'error');
         $_SESSION['email_match'] = FALSE;
         return FALSE;
@@ -155,41 +159,41 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
           variable_get('uc_cart_new_account_password', FALSE)) &&
           $user->uid == 0) {
         // Skip if an account already exists for this e-mail address.
-        if (db_query("SELECT uid FROM {users} WHERE mail LIKE :email", array(':email' => $arg2['primary_email']))->fetchField()) {
+        if (db_query("SELECT uid FROM {users} WHERE mail LIKE :email", array(':email' => $pane['primary_email']))->fetchField()) {
           drupal_set_message(t('An account already exists for your e-mail address. The new account details you entered will be disregarded.'));
         }
         else {
           // Validate the username.
-          if (variable_get('uc_cart_new_account_name', FALSE) && !empty($arg2['new_account']['name'])) {
-            $message = user_validate_name($arg2['new_account']['name']);
+          if (variable_get('uc_cart_new_account_name', FALSE) && !empty($pane['new_account']['name'])) {
+            $message = user_validate_name($pane['new_account']['name']);
             if (!empty($message)) {
               drupal_set_message($message, 'error');
               return FALSE;
             }
-            if (db_query("SELECT uid FROM {users} WHERE name LIKE :name", array(':name' => $arg2['new_account']['name']))->fetchField()) {
-              drupal_set_message(t('The username %name is already taken. Please enter a different name or leave the field blank for your username to be your e-mail address.', array('%name' => $arg2['new_account']['name'])), 'error');
+            if (db_query("SELECT uid FROM {users} WHERE name LIKE :name", array(':name' => $pane['new_account']['name']))->fetchField()) {
+              drupal_set_message(t('The username %name is already taken. Please enter a different name or leave the field blank for your username to be your e-mail address.', array('%name' => $pane['new_account']['name'])), 'error');
               return FALSE;
             }
-            $arg1->data['new_user']['name'] = $arg2['new_account']['name'];
+            $order->data['new_user']['name'] = $pane['new_account']['name'];
           }
           // Validate the password.
           if (variable_get('uc_cart_new_account_password', FALSE)) {
-            if (strcmp($arg2['new_account']['pass'], $arg2['new_account']['pass_confirm'])) {
+            if (strcmp($pane['new_account']['pass'], $pane['new_account']['pass_confirm'])) {
               drupal_set_message(t('The passwords you entered did not match. Please try again.'), 'error');
               return FALSE;
             }
-            $arg1->data['new_user']['pass'] = $arg2['new_account']['pass'];
+            $order->data['new_user']['pass'] = $pane['new_account']['pass'];
           }
         }
       }
 
       if ($user->uid) {
-        $arg1->uid = $user->uid;
+        $order->uid = $user->uid;
       }
       return TRUE;
 
     case 'review':
-      $review[] = array('title' => t('E-mail'), 'data' => check_plain($arg1->primary_email));
+      $review[] = array('title' => t('E-mail'), 'data' => check_plain($order->primary_email));
       return $review;
 
     case 'settings':
@@ -222,7 +226,7 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
 /**
  * Get the delivery information.
  */
-function uc_checkout_pane_delivery($op, &$arg1, $arg2) {
+function uc_checkout_pane_delivery($op, &$order, $form = NULL, &$form_state = NULL) {
   global $user;
 
   switch ($op) {
@@ -247,31 +251,31 @@ function uc_checkout_pane_delivery($op, &$arg1, $arg2) {
       }
 
       if (uc_address_field_enabled('first_name')) {
-        $delivery_first_name = $arg1 ? $arg1->delivery_first_name : '';
+        $delivery_first_name = $order ? $order->delivery_first_name : '';
         $contents['delivery_first_name'] = uc_textfield(uc_get_field_name('first_name'), $delivery_first_name, uc_address_field_required('first_name'));
       }
       if (uc_address_field_enabled('last_name')) {
-        $delivery_last_name = $arg1 ? $arg1->delivery_last_name : '';
+        $delivery_last_name = $order ? $order->delivery_last_name : '';
         $contents['delivery_last_name'] = uc_textfield(uc_get_field_name('last_name'), $delivery_last_name, uc_address_field_required('last_name'));
       }
       if (uc_address_field_enabled('company')) {
-        $delivery_company = $arg1 ? $arg1->delivery_company : '';
+        $delivery_company = $order ? $order->delivery_company : '';
         $contents['delivery_company'] = uc_textfield(uc_get_field_name('company'), $delivery_company, uc_address_field_required('company'), NULL, 64);
       }
       if (uc_address_field_enabled('street1')) {
-        $delivery_street1 = $arg1 ? $arg1->delivery_street1 : '';
+        $delivery_street1 = $order ? $order->delivery_street1 : '';
         $contents['delivery_street1'] = uc_textfield(uc_get_field_name('street1'), $delivery_street1, uc_address_field_required('street1'), NULL, 64);
       }
       if (uc_address_field_enabled('street2')) {
-        $delivery_street2 = $arg1 ? $arg1->delivery_street2 : '';
+        $delivery_street2 = $order ? $order->delivery_street2 : '';
         $contents['delivery_street2'] = uc_textfield(uc_get_field_name('street2'), $delivery_street2, uc_address_field_required('street2'), NULL, 64);
       }
       if (uc_address_field_enabled('city')) {
-        $delivery_city = $arg1 ? $arg1->delivery_city : '';
+        $delivery_city = $order ? $order->delivery_city : '';
         $contents['delivery_city'] = uc_textfield(uc_get_field_name('city'), $delivery_city, uc_address_field_required('city'));
       }
       if (uc_address_field_enabled('country')) {
-        $delivery_country = $arg1 ? $arg1->delivery_country : NULL;
+        $delivery_country = $order ? $order->delivery_country : NULL;
         $contents['delivery_country'] = uc_country_select(uc_get_field_name('country'), $delivery_country, NULL, 'name', uc_address_field_required('country'));
       }
       if (uc_address_field_enabled('zone')) {
@@ -281,40 +285,42 @@ function uc_checkout_pane_delivery($op, &$arg1, $arg2) {
         else {
           $country_id = $delivery_country;
         }
-        $delivery_zone = $arg1 ? $arg1->delivery_zone : NULL;
+        $delivery_zone = $order ? $order->delivery_zone : NULL;
         $contents['delivery_zone'] = uc_zone_select(uc_get_field_name('zone'), $delivery_zone, NULL, $country_id, 'name', uc_address_field_required('zone'));
         if (isset($_POST['panes']) && count($contents['delivery_zone']['#options']) == 1) {
           $contents['delivery_zone']['#required'] = FALSE;
         }
       }
       if (uc_address_field_enabled('postal_code')) {
-        $delivery_postal_code = $arg1 ? $arg1->delivery_postal_code : '';
+        $delivery_postal_code = $order ? $order->delivery_postal_code : '';
         $contents['delivery_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $delivery_postal_code, uc_address_field_required('postal_code'), NULL, 10, 10);
       }
       if (uc_address_field_enabled('phone')) {
-        $delivery_phone = $arg1 ? $arg1->delivery_phone : '';
+        $delivery_phone = $order ? $order->delivery_phone : '';
         $contents['delivery_phone'] = uc_textfield(uc_get_field_name('phone'), $delivery_phone, uc_address_field_required('phone'), NULL, 32, 16);
       }
 
       return array('description' => $description, 'contents' => $contents, 'theme' => 'uc_address_pane');
 
     case 'process':
-      $arg1->delivery_first_name = $arg2['delivery_first_name'];
-      $arg1->delivery_last_name = $arg2['delivery_last_name'];
-      $arg1->delivery_company = $arg2['delivery_company'];
-      $arg1->delivery_street1 = $arg2['delivery_street1'];
-      $arg1->delivery_street2 = $arg2['delivery_street2'];
-      $arg1->delivery_city = $arg2['delivery_city'];
-      $arg1->delivery_zone = $arg2['delivery_zone'];
-      $arg1->delivery_postal_code = $arg2['delivery_postal_code'];
-      $arg1->delivery_country = $arg2['delivery_country'];
-      $arg1->delivery_phone = $arg2['delivery_phone'];
+      $pane = $form_state['values']['panes']['delivery'];
+
+      $order->delivery_first_name = $pane['delivery_first_name'];
+      $order->delivery_last_name = $pane['delivery_last_name'];
+      $order->delivery_company = $pane['delivery_company'];
+      $order->delivery_street1 = $pane['delivery_street1'];
+      $order->delivery_street2 = $pane['delivery_street2'];
+      $order->delivery_city = $pane['delivery_city'];
+      $order->delivery_zone = $pane['delivery_zone'];
+      $order->delivery_postal_code = $pane['delivery_postal_code'];
+      $order->delivery_country = $pane['delivery_country'];
+      $order->delivery_phone = $pane['delivery_phone'];
       return TRUE;
 
     case 'review':
-      $review[] = array('title' => t('Address'), 'data' => uc_order_address($arg1, 'delivery', FALSE));
-      if (uc_address_field_enabled('phone') && !empty($arg1->delivery_phone)) {
-        $review[] = array('title' => t('Phone'), 'data' => check_plain($arg1->delivery_phone));
+      $review[] = array('title' => t('Address'), 'data' => uc_order_address($order, 'delivery', FALSE));
+      if (uc_address_field_enabled('phone') && !empty($order->delivery_phone)) {
+        $review[] = array('title' => t('Phone'), 'data' => check_plain($order->delivery_phone));
       }
       return $review;
   }
@@ -323,7 +329,7 @@ function uc_checkout_pane_delivery($op, &$arg1, $arg2) {
 /**
  * Get the billing information.
  */
-function uc_checkout_pane_billing($op, &$arg1, $arg2) {
+function uc_checkout_pane_billing($op, &$order, $form = NULL, &$form_state = NULL) {
   global $user;
 
   switch ($op) {
@@ -347,31 +353,31 @@ function uc_checkout_pane_billing($op, &$arg1, $arg2) {
         }
       }
       if (uc_address_field_enabled('first_name')) {
-        $billing_first_name = $arg1 ? $arg1->billing_first_name : '';
+        $billing_first_name = $order ? $order->billing_first_name : '';
         $contents['billing_first_name'] = uc_textfield(uc_get_field_name('first_name'), $billing_first_name, uc_address_field_required('first_name'));
       }
       if (uc_address_field_enabled('last_name')) {
-        $billing_last_name = $arg1 ? $arg1->billing_last_name : '';
+        $billing_last_name = $order ? $order->billing_last_name : '';
         $contents['billing_last_name'] = uc_textfield(uc_get_field_name('last_name'), $billing_last_name, uc_address_field_required('last_name'));
       }
       if (uc_address_field_enabled('company')) {
-        $billing_company = $arg1 ? $arg1->billing_company : '';
+        $billing_company = $order ? $order->billing_company : '';
         $contents['billing_company'] = uc_textfield(uc_get_field_name('company'), $billing_company, uc_address_field_required('company'), NULL, 64);
       }
       if (uc_address_field_enabled('street1')) {
-        $billing_street1 = $arg1 ? $arg1->billing_street1 : '';
+        $billing_street1 = $order ? $order->billing_street1 : '';
         $contents['billing_street1'] = uc_textfield(uc_get_field_name('street1'), $billing_street1, uc_address_field_required('street1'), NULL, 64);
       }
       if (uc_address_field_enabled('street2')) {
-        $billing_street2 = $arg1 ? $arg1->billing_street2 : '';
+        $billing_street2 = $order ? $order->billing_street2 : '';
         $contents['billing_street2'] = uc_textfield(uc_get_field_name('street2'), $billing_street2, uc_address_field_required('street2'), NULL, 64);
       }
       if (uc_address_field_enabled('city')) {
-        $billing_city = $arg1 ? $arg1->billing_city : '';
+        $billing_city = $order ? $order->billing_city : '';
         $contents['billing_city'] = uc_textfield(uc_get_field_name('city'), $billing_city, uc_address_field_required('city'));
       }
       if (uc_address_field_enabled('country')) {
-        $billing_country = $arg1 ? $arg1->billing_country : NULL;
+        $billing_country = $order ? $order->billing_country : NULL;
         $contents['billing_country'] = uc_country_select(uc_get_field_name('country'), $billing_country, NULL, 'name', uc_address_field_required('country'));
       }
       if (uc_address_field_enabled('zone')) {
@@ -381,40 +387,42 @@ function uc_checkout_pane_billing($op, &$arg1, $arg2) {
         else {
           $country_id = $billing_country;
         }
-        $billing_zone = $arg1 ? $arg1->billing_zone : NULL;
+        $billing_zone = $order ? $order->billing_zone : NULL;
         $contents['billing_zone'] = uc_zone_select(uc_get_field_name('zone'), $billing_zone, NULL, $country_id, 'name', uc_address_field_required('zone'));
         if (isset($_POST['panes']) && count($contents['billing_zone']['#options']) == 1) {
           $contents['billing_zone']['#required'] = FALSE;
         }
       }
       if (uc_address_field_enabled('postal_code')) {
-        $billing_postal_code = $arg1 ? $arg1->billing_postal_code : '';
+        $billing_postal_code = $order ? $order->billing_postal_code : '';
         $contents['billing_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $billing_postal_code, uc_address_field_required('postal_code'), NULL, 10, 10);
       }
       if (uc_address_field_enabled('phone')) {
-        $billing_phone = $arg1 ? $arg1->billing_phone : '';
+        $billing_phone = $order ? $order->billing_phone : '';
         $contents['billing_phone'] = uc_textfield(uc_get_field_name('phone'), $billing_phone, uc_address_field_required('phone'), NULL, 32, 16);
       }
 
       return array('description' => $description, 'contents' => $contents, 'theme' => 'uc_address_pane');
 
     case 'process':
-      $arg1->billing_first_name = $arg2['billing_first_name'];
-      $arg1->billing_last_name = $arg2['billing_last_name'];
-      $arg1->billing_company = $arg2['billing_company'];
-      $arg1->billing_street1 = $arg2['billing_street1'];
-      $arg1->billing_street2 = $arg2['billing_street2'];
-      $arg1->billing_city = $arg2['billing_city'];
-      $arg1->billing_zone = $arg2['billing_zone'];
-      $arg1->billing_postal_code = $arg2['billing_postal_code'];
-      $arg1->billing_country = $arg2['billing_country'];
-      $arg1->billing_phone = $arg2['billing_phone'];
+      $pane = $form_state['values']['panes']['billing'];
+
+      $order->billing_first_name = $pane['billing_first_name'];
+      $order->billing_last_name = $pane['billing_last_name'];
+      $order->billing_company = $pane['billing_company'];
+      $order->billing_street1 = $pane['billing_street1'];
+      $order->billing_street2 = $pane['billing_street2'];
+      $order->billing_city = $pane['billing_city'];
+      $order->billing_zone = $pane['billing_zone'];
+      $order->billing_postal_code = $pane['billing_postal_code'];
+      $order->billing_country = $pane['billing_country'];
+      $order->billing_phone = $pane['billing_phone'];
       return TRUE;
 
     case 'review':
-      $review[] = array('title' => t('Address'), 'data' => uc_order_address($arg1, 'billing', FALSE));
-      if (uc_address_field_enabled('phone') && !empty($arg1->billing_phone)) {
-        $review[] = array('title' => t('Phone'), 'data' => check_plain($arg1->billing_phone));
+      $review[] = array('title' => t('Address'), 'data' => uc_order_address($order, 'billing', FALSE));
+      if (uc_address_field_enabled('phone') && !empty($order->billing_phone)) {
+        $review[] = array('title' => t('Phone'), 'data' => check_plain($order->billing_phone));
       }
       return $review;
   }
@@ -423,13 +431,13 @@ function uc_checkout_pane_billing($op, &$arg1, $arg2) {
 /**
  * Allow a customer to make comments on the order.
  */
-function uc_checkout_pane_comments($op, &$arg1, $arg2) {
+function uc_checkout_pane_comments($op, &$order, $form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
       $description = t('Use this area for special instructions or questions regarding your order.');
 
-      if (!empty($arg1->order_id)) {
-        $default = db_query("SELECT message FROM {uc_order_comments} WHERE order_id = :id", array(':id' => $arg1->order_id))->fetchField();
+      if (!empty($order->order_id)) {
+        $default = db_query("SELECT message FROM {uc_order_comments} WHERE order_id = :id", array(':id' => $order->order_id))->fetchField();
       }
       else {
         $default = NULL;
@@ -443,17 +451,17 @@ function uc_checkout_pane_comments($op, &$arg1, $arg2) {
       return array('description' => $description, 'contents' => $contents);
 
     case 'process':
-      if (strlen($arg2['comments']) > 0) {
+      if (strlen($form_state['values']['panes']['comments']['comments']) > 0) {
         db_delete('uc_order_comments')
-          ->condition('order_id', $arg1->order_id)
+          ->condition('order_id', $order->order_id)
           ->execute();
-        uc_order_comment_save($arg1->order_id, 0, $arg2['comments'], 'order', uc_order_state_default('post_checkout'), TRUE);
+        uc_order_comment_save($order->order_id, 0, $form_state['values']['panes']['comments']['comments'], 'order', uc_order_state_default('post_checkout'), TRUE);
       }
       return TRUE;
 
     case 'review':
       $review = NULL;
-      $result = db_query("SELECT message FROM {uc_order_comments} WHERE order_id = :id", array(':id' => $arg1->order_id));
+      $result = db_query("SELECT message FROM {uc_order_comments} WHERE order_id = :id", array(':id' => $order->order_id));
       if ($comment = $result->fetchObject()) {
         $review[] = array('title' => t('Comment'), 'data' => check_plain($comment->message));
       }

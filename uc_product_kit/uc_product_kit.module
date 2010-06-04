@@ -380,9 +380,6 @@ function uc_product_kit_load($nodes) {
     $nodes[$prod->nid]->products[$product->nid] = $product;
   }
 
-  // I hope this is unnecessary since the query should pre-sort them.
-  //uasort($products, '_uc_product_kit_sort_products');
-
   // Add product data to kits.
   uc_product_load($nodes);
 }
@@ -524,7 +521,6 @@ function uc_product_kit_form(&$node, $form_state) {
     foreach ($node->products as $i => $product) {
       $form['base']['items'][$i] = array(
         '#type' => 'fieldset',
-        //'#title' => $product->title,
       );
       $form['base']['items'][$i]['link'] = array(
         '#type' => 'item',
@@ -777,7 +773,7 @@ function uc_product_kit_add_to_cart_form($form, &$form_state, $node) {
   $form['nid'] = array('#type' => 'value', '#value' => $node->nid, );
   $form['products'] = array('#tree' => TRUE);
   foreach ($node->products as $i => $product) {
-    $form['products'][$i] = array(/* '#type' => 'fieldset',  */'#title' => $product->title);
+    $form['products'][$i] = array('#title' => $product->title);
     $form['products'][$i]['nid'] = array('#type' => 'hidden', '#value' => $product->nid);
     $form['products'][$i]['qty'] = array('#type' => 'hidden', '#value' => $product->qty);
   }
@@ -841,7 +837,7 @@ function uc_product_kit_buy_it_now_form($form, &$form_state, $node) {
   if ($node->type == 'product_kit') {
     $form['products'] = array('#tree' => TRUE);
     foreach ($node->products as $i => $product) {
-      $form['products'][$i] = array(/* '#type' => 'fieldset',  */'#title' => $product->title);
+      $form['products'][$i] = array('#title' => $product->title);
       $form['products'][$i]['nid'] = array('#type' => 'hidden', '#value' => $product->nid);
       $form['products'][$i]['qty'] = array('#type' => 'hidden', '#value' => $product->qty);
     }
@@ -1086,7 +1082,6 @@ function uc_product_kit_uc_cart_display($item) {
   static $products;
   $unique_id = $item->data['unique_id'];
   $kit = node_load($item->data['kit_id']);
-  //print '<pre>' . print_r($kit, TRUE) . '</pre>';
   if ($kit->mutable == UC_PRODUCT_KIT_MUTABLE) {
     return uc_product_uc_cart_display($item);
   }
