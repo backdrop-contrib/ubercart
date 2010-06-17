@@ -595,12 +595,13 @@ function uc_catalog_get_page($tid) {
   $children = taxonomy_term_load_multiple(array_keys($children));
 
   foreach ($children as $child) {
-    $conditions = array(
-      array('tid', $child->tid),
-      array('type', 'node'),
-      array('bundle', $types),
-    );
-    $child->nodes = field_attach_query($field['id'], $conditions, array('count' => TRUE));
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'node')
+      ->entityCondition('bundle', $types)
+      ->fieldCondition($field, 'tid', $child->tid)
+      ->count();
+
+    $child->nodes = $query->execute();
 
     // Set bundle for field_attach_load() later.
     $child->bundle = 'taxonomy_catalog';
@@ -760,12 +761,12 @@ function uc_catalog_set_breadcrumb($tid) {
     while (count($parents)) {
       $current = array_pop($parents);
       if (!in_array($current->tid, $terms)) {
-        $conditions = array(
-          array('tid', $current->tid),
-          array('type', 'node'),
-          array('bundle', $types),
-        );
-        $current->nodes = field_attach_query($field['id'], $conditions, array('count' => TRUE));
+        $query = new EntityFieldQuery();
+        $query->entityCondition('entity_type', 'node')
+          ->entityCondition('bundle', $types)
+          ->fieldCondition($field, 'tid', $current->tid)
+          ->count();
+        $current->nodes = $query->execute();
 
         $breadcrumbs[] = l($current->name . (variable_get('uc_catalog_breadcrumb_nodecount', FALSE) && $current->nodes ? ' (' . $current->nodes . ')' : ''), uc_catalog_path($current));
         $terms[] = $current->tid;
@@ -804,13 +805,12 @@ function _uc_catalog_navigation($branch) {
     $types = uc_product_types();
   }
 
-  $field = field_info_field('taxonomy_catalog');
-  $conditions = array(
-    array('tid', $branch->tid),
-    array('type', 'node'),
-    array('bundle', $types),
-  );
-  $num = field_attach_query($field['id'], $conditions, array('count' => TRUE));
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', $types)
+    ->fieldCondition('taxonomy_catalog', 'tid', $branch->tid)
+    ->count();
+  $num = $query->execute();
 
   // No nodes in category or descendants. Not in path and display nothing.
   if (!$num) {
