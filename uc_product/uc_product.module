@@ -1598,13 +1598,13 @@ function theme_uc_product_image($variables) {
 
   // Get the current product image widget.
   $image_widget = uc_product_get_image_widget();
-  $image_widget_func = $image_widget['callback'];
 
   $first = array_shift($images);
 
   $output = '<div class="product-image"><div class="main-product-image">';
   $output .= '<a href="' . image_style_url('uc_product_full', $first['uri']) . '" title="' . $first['title'] . '"';
   if ($image_widget) {
+    $image_widget_func = $image_widget['callback'];
     $output .= $image_widget_func($rel_count);
   }
   $output .= '>';
@@ -1804,8 +1804,10 @@ function uc_product_get_image_widget() {
       // Widget to use has not been chosen, so default to
       // first element of array, if any
       $keys = array_keys($image_widgets);
-      $image_widget = $image_widgets[$keys[0]];
-      variable_set('uc_product_image_widget', $keys[0]);
+      if ($keys) {
+        $image_widget = $image_widgets[$keys[0]];
+        variable_set('uc_product_image_widget', $keys[0]);
+      }
     }
 
     $got_widget = TRUE;
