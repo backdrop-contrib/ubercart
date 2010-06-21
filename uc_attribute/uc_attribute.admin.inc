@@ -244,7 +244,7 @@ function uc_attribute_admin_settings($form, &$form_state) {
       'adjustment' => t('Display price adjustment'),
       'total' => t('Display total price'),
     ),
-    '#description' => t('Formats the price in the attribute selection form when the customer adds a product to their cart. The total price will only be displayed on products with only one price affecting attribute.'),
+    '#description' => t('Determines how price variations are displayed to the customer. Prices may be displayed directly next to each attribute option in the attribute selection form either as a total price for the product with that option or as an adjustment (+ or -) showing how that option affects the product base price. However, the total price will not be displayed if a product has more than one attribute that can affect the price.'),
   );
 
   return system_settings_form($form);
