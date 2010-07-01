@@ -647,6 +647,9 @@ function uc_roles_feature_form($form, &$form_state, $node, $feature) {
 
   $roles = _uc_roles_get_choices();
   if (!count($roles)) {
+    // No actions can be done. Remove submit buttons.
+    unset($form['buttons']);
+
     $form['no_roles'] = array(
       '#markup' => t('You need to <a href="!url">create new roles</a> before any can be added as product features.', array('!url' => url('admin/people/permissions/roles', array('query' => array('destination' => 'admin/store/settings/products/edit/features'))))),
       '#prefix' => '<p>',
@@ -736,7 +739,7 @@ function uc_roles_feature_form($form, &$form_state, $node, $feature) {
     '#description' => t('Check if the role duration should be multiplied by the quantity purchased.'),
   );
 
-  return uc_product_feature_form($form);
+  return $form;
 }
 
 /**
@@ -769,7 +772,7 @@ function uc_roles_feature_form_validate($form, &$form_state) {
   }
 
   // This role already set on this SKU?
-  if ($form_state['values']['pfid'] == 0 && ($product_roles = db_query("SELECT * FROM {uc_roles_products} WHERE nid = :nid AND model = :model AND rid = :rid", array(':nid' => $form_state['values']['nid'], ':model' => $form_state['values']['uc_roles_model'], ':rid' => $form_state['values']['uc_roles_role']))->fetchObject())) {
+  if (!isset($form_state['values']['pfid']) && ($product_roles = db_query("SELECT * FROM {uc_roles_products} WHERE nid = :nid AND model = :model AND rid = :rid", array(':nid' => $form_state['values']['nid'], ':model' => $form_state['values']['uc_roles_model'], ':rid' => $form_state['values']['uc_roles_role']))->fetchObject())) {
     form_set_error('uc_roles_role', t('The combination of SKU and role already exists for this product.'));
     form_set_error('uc_roles_model', ' ');
   }
@@ -796,8 +799,8 @@ function uc_roles_product_write_record($product_role) {
  */
 function uc_roles_feature_form_submit($form, &$form_state) {
   $product_role = array(
-    'pfid'        => $form_state['values']['pfid'],
-    'rpid'        => $form_state['values']['rpid'],
+    'pfid'        => isset($form_state['values']['pfid']) ? $form_state['values']['pfid'] : NULL,
+    'rpid'        => isset($form_state['values']['rpid']) ? $form_state['values']['rpid'] : NULL,
     'nid'         => $form_state['values']['nid'],
     'model'       => $form_state['values']['uc_roles_model'],
     'rid'         => $form_state['values']['uc_roles_role'],

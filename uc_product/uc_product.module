@@ -114,6 +114,25 @@ function uc_product_menu() {
       'type' => MENU_LOCAL_TASK,
       'file' => 'uc_product.admin.inc',
     );
+
+    $items['node/%node/edit/features/%/%'] = array(
+      'page callback' => 'uc_product_feature_edit',
+      'page arguments' => array(1, 4, 5),
+      'access callback' => 'uc_product_feature_access',
+      'access arguments' => array(1),
+      'type' => MENU_CALLBACK,
+      'file' => 'uc_product.admin.inc',
+    );
+
+    $items['node/%node/edit/features/%/%uc_product_feature/delete'] = array(
+      'title' => 'Delete feature',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('uc_product_feature_confirm_delete', 1, 4, 5),
+      'access callback' => 'uc_product_feature_access',
+      'access arguments' => array(1),
+      'type' => MENU_CALLBACK,
+      'file' => 'uc_product.admin.inc',
+    );
   }
 
   $items['admin/store/settings/products/defaults'] = array(
@@ -1890,26 +1909,29 @@ function uc_product_feature_data($fid, $key) {
  *     cancel link.
  * @ingroup forms
  */
-function uc_product_feature_form($form) {
-  if (!isset($form['nid'])) {
-    $form['nid'] = array(
-      '#type' => 'hidden',
-      '#value' => intval(arg(1)),
-    );
-  }
-  if (!isset($form['pfid'])) {
+function uc_product_feature_form($form, &$form_state, $node, $feature) {
+  $form['nid'] = array(
+    '#type' => 'hidden',
+    '#value' => $node->nid,
+  );
+
+  // Forms to add a feature are only given an empty array.
+  if (!empty($feature)) {
     $form['pfid'] = array(
       '#type' => 'hidden',
-      '#value' => intval(arg(5)),
+      '#value' => $feature['pfid'],
     );
   }
 
-  $form['submit'] = array(
+  $form['buttons'] = array(
+    '#weight' => 20,
+  );
+  $form['buttons']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save feature'),
   );
-  $form['cancel'] = array(
-    '#markup' => l(t('Cancel'), 'node/' . intval(arg(1)) . '/edit/features'),
+  $form['buttons']['cancel'] = array(
+    '#markup' => l(t('Cancel'), 'node/' . $node->nid . '/edit/features'),
   );
 
   return $form;
@@ -1950,6 +1972,61 @@ function uc_product_feature_save(&$data) {
   }
 
   return 'node/' . $data['nid'] . '/edit/features';
+}
+
+/**
+ * Load all product feature for a node.
+ *
+ * @param $nid
+ *   The product node ID.
+ * @returns
+ *   The array of all product features object.
+ */
+function uc_product_feature_load_multiple($nid) {
+  $features = db_query("SELECT * FROM {uc_product_features} WHERE nid = :nid ORDER BY pfid ASC", array(':nid' => $nid))->fetchAllAssoc('pfid');
+
+  return $features;
+}
+
+/**
+ * Load a product feature object.
+ *
+ * @todo: should return an object instead of array.
+ *
+ * @param $pfid
+ *   The product feature ID.
+ * @param $fid
+ *   Optional. Specify a specific feature id.
+ * @returns
+ *   The product feature array.
+ */
+function uc_product_feature_load($pfid) {
+  $feature = db_query("SELECT * FROM {uc_product_features} WHERE pfid = :pfid", array(':pfid' => $pfid))->fetchAssoc();
+
+  return $feature;
+}
+
+/**
+ * Delete a product feature object.
+ *
+ * @param $pfid
+ *   The product feature ID.
+ * @returns
+ *   The product feature object.
+ */
+function uc_product_feature_delete($pfid) {
+  $feature = uc_product_feature_load($pfid);
+
+  // Call the delete function for this product feature if it exists.
+  $func = uc_product_feature_data($feature['fid'], 'delete');
+  if (function_exists($func)) {
+    $func($feature);
+  }
+  db_delete('uc_product_features')
+    ->condition('pfid', $pfid)
+    ->execute();
+
+  return SAVED_DELETED;
 }
 
 /**

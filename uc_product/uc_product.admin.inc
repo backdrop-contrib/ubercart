@@ -393,99 +393,34 @@ function _uc_product_features_summarize($form, $titles) {
 /**
  * Displays the product features tab on a product node edit form.
  */
-function uc_product_features($node) {
+function uc_product_features($node, $fid = NULL, $pfid = NULL) {
   drupal_set_title($node->title);
 
   $build = array();
-  if (arg(4)) {
-    // First check to see if we're trying to remove a feature.
-    if (intval(arg(5)) > 0 && arg(6) == 'delete') {
-      $result = db_query("SELECT * FROM {uc_product_features} WHERE pfid = :pfid AND fid = :fid", array(
-        ':pfid' => arg(5),
-        ':fid' => arg(4),
-      ));
-      if ($feature = $result->fetchAssoc()) {
-        // If the user confirmed the delete, process it!
-        if ($_POST['pf_delete']) {
-          // Call the delete function for this product feature if it exists.
-          $func = uc_product_feature_data($feature['fid'], 'delete');
-          if (function_exists($func)) {
-            $func($feature);
-          }
-
-          // Remove the product feature data from the database.
-          db_delete('uc_product_features')
-            ->condition('pfid', arg(5))
-            ->execute();
-
-          drupal_set_message(t('The product feature has been deleted.'));
-          drupal_goto('node/' . arg(1) . '/edit/features');
-        }
-
-        // Show the confirmation form for deleting this feature.
-        $question = $node->title;
-        $description = t('Are you sure you wish to delete this %feature?', array('%feature' => uc_product_feature_data($feature['fid'], 'title')))
-                      . '<div><b>' . t('Description') . ':</b><br />' . $feature['description'] . '</div><br />';
-        $form = array();
-        return confirm_form($form, $question, 'node/' . arg(1) . '/edit/features', $description, t('Delete'), t('Cancel'), 'pf_delete');
-      }
-      else {
-        drupal_set_message(t("That product feature doesn't exist."), 'error');
-        drupal_goto('node/' . arg(1) . '/edit/features');
-      }
-    }
-
-    // Handle adding or editing product features.
-    $func = uc_product_feature_data(arg(4), 'callback');
-    if (function_exists($func)) {
-      if (arg(5) == 'add') {
-        $build = drupal_get_form($func, $node, array());
-      }
-      elseif (intval(arg(5)) > 0) {
-        $result = db_query("SELECT * FROM {uc_product_features} WHERE pfid = :pfid AND fid = :fid", array(
-          ':pfid' => arg(5),
-          ':fid' => arg(4),
-        ));
-        if ($feature = $result->fetchAssoc()) {
-          $build = drupal_get_form($func, $node, $feature);
-        }
-      }
-    }
-    else {
-      drupal_set_message(t('Error: Attempted to add a non-existent product feature type.'), 'error');
-      drupal_goto('node/' . $node->nid . '/edit/features');
-    }
-
-    if (empty($build)) {
-      drupal_set_message(t('Error: No form data was returned for that operation.'), 'error');
-      drupal_goto('node/' . $node->nid . '/edit/features');
-    }
-
-    return $build;
-  }
 
   $header = array(t('Type'), t('Description'), t('Operations'));
 
-  $result = db_query("SELECT * FROM {uc_product_features} WHERE nid = :nid ORDER BY pfid ASC", array(':nid' => $node->nid));
-  foreach ($result as $feature) {
-    $operations = array(
-      l(t('edit'), 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid),
-      l(t('delete'), 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid . '/delete'),
-    );
-    $rows[] = array(
-      'data' => array(
-        array('data' => uc_product_feature_data($feature->fid, 'title'), 'nowrap' => 'nowrap'),
-        array('data' => $feature->description, 'width' => '100%'),
-        array('data' => implode(' ', $operations), 'nowrap' => 'nowrap'),
-      ),
-      'valign' => 'top',
-    );
-  }
-
-  if (empty($rows)) {
+  $features = uc_product_feature_load_multiple($node->nid);
+  if (empty($features)) {
     $rows[] = array(
       array('data' => t('No features found for this product.'), 'colspan' => 3),
     );
+  }
+  else {
+    foreach ($features as $feature) {
+      $operations = array(
+        l(t('edit'), 'node/'. $node->nid .'/edit/features/'. $feature->fid .'/'. $feature->pfid),
+        l(t('delete'), 'node/'. $node->nid .'/edit/features/'. $feature->fid .'/'. $feature->pfid .'/delete'),
+      );
+      $rows[] = array(
+        'data' => array(
+          array('data' => uc_product_feature_data($feature->fid, 'title'), 'nowrap' => 'nowrap'),
+          array('data' => $feature->description, 'width' => '100%'),
+          array('data' => implode(' ', $operations), 'nowrap' => 'nowrap'),
+        ),
+        'valign' => 'top',
+      );
+    }
   }
 
   $build['features'] = array(
@@ -493,7 +428,52 @@ function uc_product_features($node) {
     '#header' => $header,
     '#rows' => $rows,
   );
-  $build['add_form'] = drupal_get_form('uc_product_feature_add_form');
+  $build['add_form'] = drupal_get_form('uc_product_feature_add_form', $node);
+
+  return $build;
+}
+
+/**
+ * Handle adding or editing product features.
+ */
+function uc_product_feature_edit($node, $fid, $pfid) {
+  $func = uc_product_feature_data($fid, 'callback');
+
+  if (function_exists($func)) {
+    $form_state = array(
+      'build_info' => array(
+        'args' => array(
+          $node,
+        ),
+      ),
+      'wrapper_callback' => 'uc_product_feature_form',
+    );
+
+    if ($pfid == 'add') {
+      $form_state['build_info']['args'][] = array();
+      $build = drupal_build_form($func, $form_state);
+    }
+    elseif (intval($pfid) > 0) {
+      $feature = uc_product_feature_load($pfid);
+
+      if (isset($feature)) {
+        $form_state['build_info']['args'][] = $feature;
+        $build = drupal_build_form($func, $form_state);
+      }
+    }
+    else {
+      drupal_goto('node/' . $node->nid . '/edit/features');
+    }
+  }
+  else {
+    drupal_set_message(t('Error: Attempted to add a non-existent product feature type.'), 'error');
+    drupal_goto('node/' . $node->nid . '/edit/features');
+  }
+
+  if (empty($build)) {
+    drupal_set_message(t('Error: No form data was returned for that operation.'), 'error');
+    drupal_goto('node/' . $node->nid . '/edit/features');
+  }
 
   return $build;
 }
@@ -506,7 +486,7 @@ function uc_product_features($node) {
  *   theme_uc_product_feature_add_form()
  *   uc_product_feature_add_form_submit()
  */
-function uc_product_feature_add_form($form, &$form_state) {
+function uc_product_feature_add_form($form, &$form_state, $node) {
   foreach (module_invoke_all('uc_product_feature') as $feature) {
     $options[$feature['id']] = $feature['title'];
   }
@@ -538,7 +518,39 @@ function theme_uc_product_feature_add_form($variables) {
  * @see uc_product_feature_add_form().
  */
 function uc_product_feature_add_form_submit($form, &$form_state) {
-  $form_state['redirect'] = 'node/' . arg(1) . '/edit/features/' . $form_state['values']['feature'] . '/add';
+  $node = $form_state['build_info']['args'][0];
+
+  $form_state['redirect'] = 'node/' . $node->nid . '/edit/features/' . $form_state['values']['feature'] . '/add';
+}
+
+/**
+ * Confirmation form to delete a product feature.
+ *
+ * @ingroup forms
+ * @see uc_product_feature_confirm_delete_submit()
+ */
+function uc_product_feature_confirm_delete($form, &$form_state, $node, $fid, $feature) {
+  $question = $node->title;
+  $description = t('Are you sure you wish to delete this %feature?', array('%feature' => uc_product_feature_data($fid, 'title')))
+    . '<div><b>' . t('Description') . ':</b><br />' . $feature['description'] . '</div><br />';
+
+  return confirm_form($form, $question, 'node/' . $node->nid . '/edit/features', $description, t('Delete'), t('Cancel'), 'pf_delete');
+}
+
+/**
+ * @see uc_product_feature_confirm_delete()
+ */
+function uc_product_feature_confirm_delete_submit($form, &$form_state) {
+  $node = $form_state['build_info']['args'][0];
+  $feature = $form_state['build_info']['args'][2];
+
+  if ($form_state['values']['pf_delete']) {
+    uc_product_feature_delete($feature['pfid']);
+
+    drupal_set_message(t('The product feature has been deleted.'));
+  }
+
+  $form_state['redirect'] = 'node/' . $node->nid . '/edit/features';
 }
 
 /**
