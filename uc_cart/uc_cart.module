@@ -1362,18 +1362,23 @@ function theme_uc_cart_complete_sale($variables) {
 
 /**
  * Return the unique cart_id of the user.
+ *
+ * @param $create
+ * Toggle auto creation of cart id.
+ * @return
+ * Cart id. If $create is FALSE will return FALSE if there is no cart id.
  */
-function uc_cart_get_id() {
+function uc_cart_get_id($create = TRUE) {
   global $user;
 
   if ($user->uid) {
     return $user->uid;
   }
-  elseif (!isset($_SESSION['uc_cart_id'])) {
+  elseif (!isset($_SESSION['uc_cart_id']) && $create) {
     $_SESSION['uc_cart_id'] = md5(uniqid(rand(), TRUE));
   }
 
-  return $_SESSION['uc_cart_id'];
+  return isset($_SESSION['uc_cart_id']) ? $_SESSION['uc_cart_id'] : FALSE;
 }
 
 /**
@@ -1384,7 +1389,13 @@ function uc_cart_get_id() {
  */
 function uc_cart_get_contents($cid = NULL, $action = NULL) {
   static $items = array();
-  $cid = $cid ? $cid : uc_cart_get_id();
+
+  $cid = $cid ? $cid : uc_cart_get_id(FALSE);
+
+  // If we didn't get a cid, return empty.
+  if (!$cid) {
+    return array();
+  }
 
   if ($action == 'rebuild') {
     unset($items[$cid]);
@@ -1423,6 +1434,11 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
 
     // Allow other modules a chance to alter the fully loaded cart object.
     drupal_alter('uc_cart', $items[$cid]);
+
+    if (empty($items[$cid]) && isset($_SESSION['uc_cart_id'])) {
+      // As their cart is now empty, there is no need to keep the cart ID in the session anymore
+      unset($_SESSION['uc_cart_id']);
+    }
   }
 
   return $items[$cid];
@@ -1443,14 +1459,17 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
  *   An integer representing the total number of items in the cart.
  */
 function uc_cart_get_total_qty($cid = NULL) {
-  if (empty($cid)) {
-    $cid = uc_cart_get_id();
-  }
 
   $qty = 0;
 
-  foreach (uc_cart_get_contents($cid) as $item) {
-    $qty += $item->qty;
+  if (empty($cid)) {
+    $cid = uc_cart_get_id(FALSE);
+  }
+
+  if ($cid) {
+    foreach (uc_cart_get_contents($cid) as $item) {
+      $qty += $item->qty;
+    }
   }
 
   return $qty;
