@@ -118,7 +118,7 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
 
   foreach ((array) $order->data['cc_txns']['authorizations'] as $auth_id => $data) {
     if (empty($data['captured'])) {
-      $options[$auth_id] = t('@auth_id - @date - @amount authorized', array('@auth_id' => strtoupper($auth_id), '@date' => format_date($data['authorized'], 'small'), '@amount' => uc_price($data['amount'], $context)));
+      $options[$auth_id] = t('@auth_id - @date - @amount authorized', array('@auth_id' => strtoupper($auth_id), '@date' => format_date($data['authorized'], 'short'), '@amount' => uc_price($data['amount'], $context)));
     }
   }
 
@@ -167,7 +167,7 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
   // $order->data = uc_credit_log_reference($order->order_id, substr(md5(REQUEST_TIME), 0, 16), '4111111111111111');
 
   foreach ((array) $order->data['cc_txns']['references'] as $ref_id => $data) {
-    $options[$ref_id] = t('@ref_id - @date - (Last 4) @card', array('@ref_id' => strtoupper($ref_id), '@date' => format_date($data['created'], 'small'), '@card' => $data['card']));
+    $options[$ref_id] = t('@ref_id - @date - (Last 4) @card', array('@ref_id' => strtoupper($ref_id), '@date' => format_date($data['created'], 'short'), '@card' => $data['card']));
   }
 
   // If any references existed...

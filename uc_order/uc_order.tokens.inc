@@ -276,11 +276,11 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'created':
-          $values[$original] = format_date($order->created, 'small');
+          $values[$original] = format_date($order->created, 'short');
           break;
 
         case 'modified':
-          $values[$original] = format_date($order->modified, 'small');
+          $values[$original] = format_date($order->modified, 'short');
           break;
       }
     }

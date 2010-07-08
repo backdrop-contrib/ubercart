@@ -327,7 +327,7 @@ function theme_uc_roles_user_expiration($variables) {
     $rows[] = array(
       array('data' => drupal_render($data['remove'])),
       array('data' => $data['name']['#value']),
-      array('data' => format_date($data['expiration']['#value'], 'small')),
+      array('data' => format_date($data['expiration']['#value'], 'short')),
 
       // Options to adjust the expiration.
       array('data' => '<a name="role-expiration-' . $rid . '">' .
@@ -379,7 +379,7 @@ function uc_roles_user_validate($form, &$form_state, &$account, $category) {
 
     $new_expiration = _uc_roles_get_expiration($qty, $value['granularity'], $value['expiration']);
     if (REQUEST_TIME > $new_expiration) {
-      form_set_error('qty', t("The new expiration date, %date, has already occurred.", array('%date' => format_date($new_expiration, 'small'))));
+      form_set_error('qty', t("The new expiration date, %date, has already occurred.", array('%date' => format_date($new_expiration, 'short'))));
     }
   }
 }
@@ -465,7 +465,7 @@ function uc_roles_user_view($account, $view_mode) {
 
   $expirations = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid", array(':uid' => $account->uid));
   foreach ($expirations as $expiration) {
-    $substitution = array('!role_name' => _uc_roles_get_name($expiration->rid), '!date' => format_date($expiration->expiration, 'small'));
+    $substitution = array('!role_name' => _uc_roles_get_name($expiration->rid), '!date' => format_date($expiration->expiration, 'short'));
     $form[$expiration->rid] = array(
       '#type' => 'user_profile_item',
       '#title' => strtr(variable_get('uc_roles_default_expiration_title', uc_get_message('uc_roles_user_expiration_title')), $substitution),
@@ -1228,7 +1228,7 @@ function uc_roles_grant(&$account, $rid, $timestamp, $save_user = TRUE, $silent 
     }
 
     if ($timestamp) {
-      $message .= t(' It will expire on %date', array('%date' => format_date($timestamp, 'small')));
+      $message .= t(' It will expire on %date', array('%date' => format_date($timestamp, 'short')));
     }
 
     drupal_set_message($message);
@@ -1274,7 +1274,7 @@ function uc_roles_renew($account, $rid, $timestamp, $silent = FALSE) {
   if (!$silent) {
     $role_name = db_query("SELECT name FROM {role} WHERE rid = :rid", array(':rid' => $rid))->fetchField();
     if ($user->uid == $account->uid) {
-      $message = t('Your %role role has been renewed. It will expire on %date.', array('%role' => $role_name, '%date' => format_date($timestamp, 'small')));
+      $message = t('Your %role role has been renewed. It will expire on %date.', array('%role' => $role_name, '%date' => format_date($timestamp, 'short')));
     }
     else {
       $message = t("!user's %role role has been renewed. It will expire on %date.", array(
@@ -1284,7 +1284,7 @@ function uc_roles_renew($account, $rid, $timestamp, $silent = FALSE) {
           'link_path' => 'user/' . $account->uid,
         )),
         '%role' => $role_name,
-        '%date' => format_date($timestamp, 'small'),
+        '%date' => format_date($timestamp, 'short'),
       ));
     }
 
