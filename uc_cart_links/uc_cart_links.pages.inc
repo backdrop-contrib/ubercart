@@ -24,7 +24,7 @@ function uc_cart_links_process($cart_action) {
       if (empty($url)) {
         $url = '<front>';
       }
-      unset($_REQUEST['destination']);
+      unset($_GET['destination']);
       drupal_goto($url);
     }
   }
