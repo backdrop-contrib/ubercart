@@ -210,7 +210,7 @@ function uc_summarize_child_form_pages($path, $trim = FALSE, $only_parent = FALS
       $form_id = $item['page_arguments'][0];
 
       if (!function_exists($form_id)) {
-        require_once($item['file']);
+        require_once($item['include_file']);
       }
 
       $form_state = form_state_defaults();

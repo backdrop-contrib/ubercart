@@ -199,7 +199,7 @@ function uc_product_field_settings_form($form, &$form_state) {
   ));
 
   $weight = variable_get('uc_product_field_weight', array(
-    'display_price' -1,
+    'display_price' => -1,
     'model' => 0,
     'list_price' => 2,
     'cost' => 3,
@@ -213,7 +213,7 @@ function uc_product_field_settings_form($form, &$form_state) {
   foreach ($options as $field => $value) {
     $fields[$field] = array(
       'title' => $value,
-      'enabled' => $enabled[$field],
+      'enabled' => isset($enabled[$field]) ? $enabled[$field] : FALSE,
       'weight' => $weight[$field],
     );
   }
@@ -259,8 +259,9 @@ function _uc_product_fields_summarize($form, $options, $enabled, $weight) {
 
   $fields = array();
   foreach ($options as $field => $label) {
-    if ($enabled[$field]) {
-      $fields[$field] = array('enabled' => $enabled[$field],
+    if (isset($enabled[$field]) ? $enabled[$field] : FALSE) {
+      $fields[$field] = array(
+        'enabled' => $enabled[$field],
         'weight' => $weight[$field],
         'data' => $label,
       );
@@ -298,7 +299,7 @@ function theme_uc_product_field_settings_form($variables) {
     $row[] = drupal_render($form['fields'][$field]['weight']);
     $rows[] = $row;
   }
-  $output .= theme('table', array('header' => $header, 'rows' => $rows));
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
 
   $output .= drupal_render_children($form);
   return $output;
