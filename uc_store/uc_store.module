@@ -71,7 +71,7 @@ class UcAddress {
   public $postal_code = 0;
   public $country = 0;
   public $phone = '';
-  public $emial = '';
+  public $email = '';
 
   function __construct() { }
 
@@ -1342,12 +1342,14 @@ function uc_country_select($title, $default = NULL, $description = NULL, $displa
 /**
  * Create a day select box for a form.
  */
-function uc_select_day($title = NULL, $default = NULL) {
+function uc_select_day($title = NULL, $default = NULL, $allow_empty = FALSE) {
+  $options = $allow_empty ? array('' => '') : array();
+
   $select = array(
     '#type' => 'select',
     '#title' => (is_null($title) ? t('Day') : $title),
-    '#options' => drupal_map_assoc(range(1, 31)),
-    '#default_value' => (is_null($default) ? 1 : $default),
+    '#options' => $options + drupal_map_assoc(range(1, 31)),
+    '#default_value' => (is_null($default) ? 0 : $default),
   );
 
   return $select;
@@ -1362,10 +1364,14 @@ function uc_select_month($title = NULL, $default = NULL, $allow_empty = FALSE) {
   $select = array(
     '#type' => 'select',
     '#title' => (is_null($title) ? t('Month') : $title),
-    '#options' => $options + array(1 => t('01 - January'), 2 => t('02 - February'), 3 => t('03 - March'),
-                        4 => t('04 - April'), 5 => t('05 - May'), 6 => t('06 - June'),
-                        7 => t('07 - July'), 8 => t('08 - August'), 9 => t('09 - September'),
-                        10 => t('10 - October'), 11 => t('11 - November'), 12 => t('12 - December')),
+    '#options' => $options +
+                  array(1 => t('01 - January'), 2 => t('02 - February'),
+                        3 => t('03 - March'), 4 => t('04 - April'),
+                        5 => t('05 - May'), 6 => t('06 - June'),
+                        7 => t('07 - July'), 8 => t('08 - August'),
+                        9 => t('09 - September'), 10 => t('10 - October'),
+                        11 => t('11 - November'), 12 => t('12 - December')
+                  ),
     '#default_value' => (is_null($default) ? 0 : $default),
   );
 
@@ -2045,11 +2051,17 @@ function uc_store_get_image_widgets() {
 /**
  * Implement hook_uc_image_widget().
  *
- * Built-in support for thickbox and lightbox2.
+ * Built-in support for Colorbox, Thickbox and Lightbox2.
  */
 function uc_store_uc_image_widget() {
   $widgets = array();
 
+  if (module_exists('colorbox')) {
+    $widgets['colorbox'] = array(
+      'name' => t('Colorbox'),
+      'callback' => 'uc_store_image_widget_colorbox',
+    );
+  }
   if (module_exists('thickbox')) {
     $widgets['thickbox'] = array(
       'name' => t('Thickbox'),
@@ -2067,7 +2079,20 @@ function uc_store_uc_image_widget() {
 }
 
 /**
- * This function generates the thickbox-specific HTML attributes.
+ * This function generates the Colorbox-specific HTML attributes.
+ */
+function uc_store_image_widget_colorbox($rel_count) {
+  if (!is_null($rel_count)) {
+    $img_index = 'uc_image_'. $rel_count;
+  }
+  else {
+    $img_index = 'uc_image';
+  }
+  return ' class="colorbox" rel="'. $img_index .'"';
+}
+
+/**
+ * This function generates the Thickbox-specific HTML attributes.
  */
 function uc_store_image_widget_thickbox($rel_count) {
   if (!is_null($rel_count)) {
@@ -2080,7 +2105,7 @@ function uc_store_image_widget_thickbox($rel_count) {
 }
 
 /**
- * This function generates the lightbox2-specific HTML attributes.
+ * This function generates the Lightbox2-specific HTML attributes.
  */
 function uc_store_image_widget_lightbox2($rel_count) {
   if (!is_null($rel_count)) {

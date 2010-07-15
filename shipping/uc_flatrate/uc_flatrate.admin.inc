@@ -208,4 +208,3 @@ function uc_flatrate_admin_method_confirm_delete_submit($form, &$form_state) {
   drupal_set_message(t('Flat rate shipping method deleted.'));
   $form_state['redirect'] = 'admin/store/settings/quotes/methods/flatrate';
 }
-

@@ -156,4 +156,3 @@ function theme_uc_catalog_browse($variables) {
 
   return $output;
 }
-

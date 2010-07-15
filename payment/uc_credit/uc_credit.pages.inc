@@ -36,4 +36,3 @@ function uc_credit_cvv_info() {
   print $output;
   exit();
 }
-

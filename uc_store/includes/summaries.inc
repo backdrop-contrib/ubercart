@@ -283,4 +283,3 @@ function theme_uc_summary_overview($variables) {
 
   return $output;
 }
-

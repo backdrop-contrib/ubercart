@@ -374,17 +374,18 @@ function uc_order_condition_check_order_status_form($form_state, $settings = arr
  * @see uc_order_condition_total_form()
  */
 function uc_order_condition_total($order, $settings) {
+  $total = uc_order_get_total($order, TRUE);
   switch ($settings['order_total_comparison']) {
     case 'less':
-      return $order->order_total < $settings['order_total_value'];
+      return $total < $settings['order_total_value'];
     case 'less_equal':
-      return $order->order_total <= $settings['order_total_value'];
+      return $total <= $settings['order_total_value'];
     case 'equal':
-      return $order->order_total == $settings['order_total_value'];
+      return $total == $settings['order_total_value'];
     case 'greater_equal':
-      return $order->order_total >= $settings['order_total_value'];
+      return $total >= $settings['order_total_value'];
     case 'greater':
-      return $order->order_total > $settings['order_total_value'];
+      return $total > $settings['order_total_value'];
   }
 }
 

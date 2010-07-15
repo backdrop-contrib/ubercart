@@ -158,4 +158,3 @@ function tapirsort_sql($columns) {
   // Return the result of a tablesort on our header.
   return tablesort_sql($header);
 }
-

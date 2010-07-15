@@ -163,4 +163,3 @@ function _uc_line_item_data($item_id, $key) {
     }
   }
 }
-

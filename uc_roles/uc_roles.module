@@ -326,14 +326,14 @@ function theme_uc_roles_user_expiration($variables) {
 
     $rows[] = array(
       array('data' => drupal_render($data['remove'])),
-      array('data' => $data['name']['#value']),
+      array('data' => check_plain($data['name']['#value'])),
       array('data' => format_date($data['expiration']['#value'], 'short')),
 
       // Options to adjust the expiration.
       array('data' => '<a name="role-expiration-' . $rid . '">' .
                       '<div class="expiration">' .
                         drupal_render($data['polarity']) . drupal_render($data['qty']) . drupal_render($data['granularity']) .
-                      '</div>'),
+                      '</div></a>'),
     );
   }
 
@@ -465,7 +465,7 @@ function uc_roles_user_view($account, $view_mode) {
 
   $expirations = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid", array(':uid' => $account->uid));
   foreach ($expirations as $expiration) {
-    $substitution = array('!role_name' => _uc_roles_get_name($expiration->rid), '!date' => format_date($expiration->expiration, 'short'));
+    $substitution = array('!role_name' => check_plain(_uc_roles_get_name($expiration->rid)), '!date' => format_date($expiration->expiration, 'short'));
     $form[$expiration->rid] = array(
       '#type' => 'user_profile_item',
       '#title' => strtr(variable_get('uc_roles_default_expiration_title', uc_get_message('uc_roles_user_expiration_title')), $substitution),
@@ -815,7 +815,7 @@ function uc_roles_feature_form_submit($form, &$form_state) {
   );
 
   $description = empty($product_role['model']) ? t('<strong>SKU:</strong> Any<br />') : t('<strong>SKU:</strong> !sku<br />', array('!sku' => $product_role['model']));
-  $description .=  t('<strong>Role:</strong> !role_name<br />', array('!role_name' => _uc_roles_get_name($product_role['rid'])));
+  $description .=  t('<strong>Role:</strong> @role_name<br />', array('@role_name' => _uc_roles_get_name($product_role['rid'])));
 
   if ($product_role['end_override']) {
     if ($product_role['end_time']) {

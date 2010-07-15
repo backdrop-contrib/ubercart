@@ -45,7 +45,7 @@ function uc_roles_expiration($form, &$form_state) {
       '#account' => $account,
       '#name' => $name,
     );
-    $form['role'][$row->uid . ' ' . $row->rid] = array('#markup' => _uc_roles_get_name($row->rid));
+    $form['role'][$row->uid . ' ' . $row->rid] = array('#markup' => check_plain(_uc_roles_get_name($row->rid)));
     $form['expiration'][$row->uid . ' ' . $row->rid] = array('#markup' => format_date($row->expiration, 'short'));
     $form['edit'][$row->uid . ' ' . $row->rid] = array('#markup' => l(t('edit'), 'user/' . $row->uid . '/edit', array('fragment' => 'role-expiration-' . $row->rid, 'query' => array('destination' => 'admin/people/expiration'))));
     $form['delete'][$row->uid . ' ' . $row->rid] = array('#markup' => l(t('delete'), 'admin/people/expiration/delete/' . $row->uid . '/' . $row->rid));
@@ -144,4 +144,3 @@ function uc_roles_deletion_form_submit($form, &$form_state) {
 
   drupal_goto('admin/people/expiration');
 }
-

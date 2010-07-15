@@ -101,4 +101,3 @@ function uc_payment_pack_receive_check_form_submit($form, &$form_state) {
 
   $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'];
 }
-

@@ -461,4 +461,3 @@ function uc_payment_delete_confirm_form_submit($form, &$form_state) {
 
   $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/payments';
 }
-

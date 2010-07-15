@@ -508,3 +508,60 @@ function _ca_custom_php_eval($php, $arguments) {
   extract($argument_data);
   return eval($php);
 }
+
+/**
+ * Build an email settings form.
+ */
+function ca_build_email_form($form_state, $settings, $token_filters) {
+  $form = array();
+
+  $form['from'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Sender'),
+    '#default_value' => $settings['from'],
+    '#description' => t('The "From" address.'),
+    '#required' => TRUE,
+  );
+  $form['addresses'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Recipients'),
+    '#default_value' => $settings['addresses'],
+    '#description' => t('Enter the email addresses to receive the notifications, one on each line. You may use order tokens for dynamic email addresses.'),
+    '#required' => TRUE,
+  );
+  $form['subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Subject'),
+    '#default_value' => $settings['subject'],
+    '#required' => TRUE,
+  );
+  $form['message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Message'),
+    '#default_value' => $settings['message'],
+  );
+
+  // We add the #is_format element to allow us to locate and configure the filters.
+  $form['format'] = filter_form($settings['format']) + array('#is_format' => TRUE);
+
+  $form['token_help'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Replacement patterns'),
+    '#description' => t('You can make use of the replacement patterns in the recipients field, the subject, and the message body.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  foreach ($token_filters as $name) {
+    $form['token_help'][$name] = array(
+      '#type' => 'fieldset',
+      '#title' => t('@name replacement patterns', array('@name' => drupal_ucfirst($name))),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $form['token_help'][$name]['content'] = array(
+      '#value' => theme('token_help', $name),
+    );
+  }
+
+  return $form;
+}

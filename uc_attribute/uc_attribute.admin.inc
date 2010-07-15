@@ -1354,4 +1354,3 @@ function uc_product_adjustments_form_submit($form, &$form_state) {
   }
   $form_state['redirect'] = $goto;
 }
-

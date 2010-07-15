@@ -52,4 +52,3 @@ function uc_google_checkout_callback() {
       $output = uc_google_checkout_notification_acknowledgement($xml->{'serial-number'});
   }
 }
-

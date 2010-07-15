@@ -112,4 +112,3 @@ function uc_usps_admin_settings_validate($form, &$form_state) {
     form_set_error('uc_usps_markup', t('Rate markup must be a numeric value.'));
   }
 }
-

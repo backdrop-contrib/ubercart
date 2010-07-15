@@ -1078,4 +1078,3 @@ function uc_shipping_make_shipment() {
     drupal_goto('admin/store/orders/' . $args[0]->order_id . '/shipments/new');
   }
 }
-

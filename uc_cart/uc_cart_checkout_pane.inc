@@ -568,6 +568,9 @@ function _uc_checkout_pane_list($action = NULL) {
   }
 
   $panes = module_invoke_all('uc_checkout_pane', NULL);
+  // Allow other modules to alter the panes.
+  drupal_alter('uc_checkout_pane', $panes);
+
   foreach ($panes as $i => $value) {
     $panes[$i]['enabled'] = variable_get('uc_pane_' . $panes[$i]['id'] . '_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
     $panes[$i]['weight'] = variable_get('uc_pane_' . $panes[$i]['id'] . '_weight', (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));
@@ -662,4 +665,3 @@ function theme_uc_cart_review_table($variables) {
 
   return theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('cart-review'))));
 }
-

@@ -729,4 +729,3 @@ function uc_product_class_delete_confirm_submit($form, &$form_state) {
 
   $form_state['redirect'] = 'admin/store/products/classes';
 }
-

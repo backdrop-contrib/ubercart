@@ -26,4 +26,3 @@ function uc_product_kit_settings_form($form, &$form_state) {
 
   return system_settings_form($form);
 }
-

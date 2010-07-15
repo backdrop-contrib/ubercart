@@ -107,4 +107,3 @@ function uc_stock_views_handlers() {
     ),
   );
 }
-

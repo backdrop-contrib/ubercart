@@ -93,4 +93,3 @@ function uc_2checkout_finalize() {
 
   return $build;
 }
-

@@ -463,4 +463,3 @@ function uc_google_checkout_terminal_form_submit($form, &$form_state) {
     $form_state['redirect'] = uc_google_checkout_refund($form_state['values']['order_id'], $form_state['values']['amount'], $form_state['values']['reason'], $form_state['values']['comment']);
   }
 }
-

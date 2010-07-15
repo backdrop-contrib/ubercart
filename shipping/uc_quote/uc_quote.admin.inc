@@ -308,4 +308,3 @@ function uc_quote_method_settings_submit($form, &$form_state) {
   variable_set('uc_store_shipping_type', $form_state['values']['uc_store_shipping_type']);
   drupal_set_message(t('The configuration options have been saved.'));
 }
-

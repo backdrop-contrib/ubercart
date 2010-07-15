@@ -92,4 +92,3 @@ function uc_authorizenet_arb_admin_cancel_form_submit($form, &$form_state) {
 
   $form_state['redirect'] = 'admin/store/orders/recurring';
 }
-

@@ -35,4 +35,3 @@ function uc_product_title_sku_autocomplete($string = '') {
 
   drupal_json_output($matches);
 }
-

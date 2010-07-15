@@ -71,7 +71,7 @@ function uc_roles_ca_predicate() {
         '#name' => 'uc_roles_order_renew',
         '#title' => t('Update all role expirations for this order.'),
         '#argument_map' => array(
-          'order' => 'order',
+          'order' => 'updated_order',
         ),
         '#settings' => array(
           'message' => FALSE,
@@ -372,57 +372,7 @@ function uc_roles_action_user_email($account, $role_expiration, $settings) {
  * @see uc_roles_action_user_email()
  */
 function uc_roles_action_user_email_form($form_state, $settings = array()) {
-  return uc_roles_build_email_form($form_state, $settings, array('global', 'uc_roles', 'user'));
-}
-
-/**
- * Build an email settings form.
- */
-function uc_roles_build_email_form($form, &$form_state, $settings, $token_filters) {
-  $form['from'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Sender'),
-    '#default_value' => $settings['from'],
-    '#description' => t('The "From" address.'),
-    '#required' => TRUE,
-  );
-  $form['addresses'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Recipients'),
-    '#default_value' => $settings['addresses'],
-    '#description' => t('Enter the email addresses to receive the notifications, one on each line. You may use order tokens for dynamic email addresses.'),
-    '#required' => TRUE,
-  );
-  $form['subject'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Subject'),
-    '#default_value' => $settings['subject'],
-    '#required' => TRUE,
-  );
-  $form['message'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Message'),
-    '#default_value' => $settings['message'],
-    '#text_format' => $settings['format'],
-  );
-
-  $form['token_help'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Replacement patterns'),
-    '#description' => t('You can make use of the replacement patterns in the recipients field, the subject, and the message body.'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-  foreach ($token_filters as $name) {
-    $form['token_help'][$name] = array(
-      '#type' => 'fieldset',
-      '#title' => t('@name replacement patterns', array('@name' => drupal_ucfirst($name))),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-  }
-
-  return $form;
+  return ca_build_email_form($form_state, $settings, array('global', 'uc_roles', 'user'));
 }
 
 /**
@@ -507,4 +457,3 @@ function uc_roles_action_order_renew_form($form, &$form_state, $settings = array
 
   return $form;
 }
-

@@ -297,4 +297,3 @@ function uc_stock_edit_form_submit($form, &$form_state) {
 
   drupal_set_message(t('Stock settings saved.'));
 }
-
