@@ -1179,7 +1179,7 @@ function uc_order_view($order, $view = 'view') {
   }
 
   if ($view == 'invoice') {
-    $output = uc_order_load_invoice($order, 'print', variable_get('uc_cust_order_invoice_template', 'customer'));
+    $output = theme('uc_order', $order, 'print', variable_get('uc_cust_order_invoice_template', 'customer'));
     $output .= '<div align="right" style="margin-top: 1em; margin-right: 1em;"><input type="button" value="' . t('Print invoice') . '" onclick="window.print();" /> '
               . '<input type="button" value="' . t('Close window') . '" onclick="window.close();" /></div>';
     print $output;
@@ -1497,7 +1497,7 @@ function uc_order_add_line_item_form_submit($form, &$form_state) {
  * Display an invoice in the browser, convert it to PDF, or e-mail it as HTML.
  */
 function uc_order_invoice($order, $op = 'view') {
-  $output = uc_order_load_invoice($order, $op, variable_get('uc_cust_order_invoice_template', 'customer'));
+  $output = theme('uc_order', $order, $op, variable_get('uc_cust_order_invoice_template', 'customer'));
 
   if ($op == 'print') {
     print $output;

@@ -17,16 +17,16 @@
             <table width="100%" style="font-family: verdana, arial, helvetica; font-size: small;">
               <tr>
                 <td>
-                  [site:logo]
+                  <?php echo $site_logo; ?>
                 </td>
                 <td width="98%">
                   <div style="padding-left: 1em;">
-                  <span style="font-size: large;">[store:name]</span><br />
-                  [site:slogan]
+                  <span style="font-size: large;"><?php echo $store_name; ?></span><br />
+                  <?php echo $site_slogan; ?>
                   </div>
                 </td>
                 <td nowrap="nowrap">
-                [store:address]<br />[store:phone]
+                  <?php echo $store_address; ?><br /><?php echo $store_phone; ?>
                 </td>
               </tr>
             </table>
@@ -38,17 +38,17 @@
           <td>
 
             <?php if ($thank_you_message) { ?>
-            <p><b><?php echo t('Thanks for your order, [uc_order:first-name]!'); ?></b></p>
+            <p><b><?php echo t('Thanks for your order, !order_first_name!', array('!order_first_name' => $order_first_name)); ?></b></p>
 
             <?php if (isset($_SESSION['new_user'])) { ?>
             <p><b><?php echo t('An account has been created for you with the following details:'); ?></b></p>
-            <p><b><?php echo t('Username:'); ?></b> [uc_order:new-username]<br />
-            <b><?php echo t('Password:'); ?></b> [uc_order:new-password]</p>
+            <p><b><?php echo t('Username:'); ?></b> <?php echo $order_new_username; ?><br />
+            <b><?php echo t('Password:'); ?></b> <?php echo $order_new_password; ?></p>
             <?php } ?>
 
             <p><b><?php echo t('Want to manage your order online?'); ?></b><br />
-            <?php echo t('If you need to check the status of your order, please visit our home page at [store:link] and click on "My account" in the menu or login with the following link:'); ?>
-            <br /><br />[site:login-link]</p>
+            <?php echo t('If you need to check the status of your order, please visit our home page at !store_link and click on "My account" in the menu or login with the following link:', array('!store_link' => $store_link)); ?>
+            <br /><br /><?php echo $site_login_link; ?></p>
             <?php } ?>
 
             <table cellpadding="4" cellspacing="0" border="0" width="100%" style="font-family: verdana, arial, helvetica; font-size: small;">
@@ -62,7 +62,7 @@
                   <b><?php echo t('E-mail Address:'); ?></b>
                 </td>
                 <td width="98%">
-                  [uc_order:email]
+                  <?php echo $order_email; ?>
                 </td>
               </tr>
               <tr>
@@ -72,18 +72,18 @@
                     <tr>
                       <td valign="top" width="50%">
                         <b><?php echo t('Billing Address:'); ?></b><br />
-                        [uc_order:billing-address]<br />
+                        <?php echo $order_billing_address; ?><br />
                         <br />
                         <b><?php echo t('Billing Phone:'); ?></b><br />
-                        [uc_order:billing-phone]<br />
+                        <?php echo $order_billing_phone; ?><br />
                       </td>
                       <?php if (uc_order_is_shippable($order)) { ?>
                       <td valign="top" width="50%">
                         <b><?php echo t('Shipping Address:'); ?></b><br />
-                        [uc_order:shipping-address]<br />
+                        <?php echo $order_shipping_address; ?><br />
                         <br />
                         <b><?php echo t('Shipping Phone:'); ?></b><br />
-                        [uc_order:shipping-phone]<br />
+                        <?php echo $order_shipping_phone; ?><br />
                       </td>
                       <?php } ?>
                     </tr>
@@ -96,7 +96,7 @@
                   <b><?php echo t('Order Grand Total:'); ?></b>
                 </td>
                 <td width="98%">
-                  <b>[uc_order:total]</b>
+                  <b><?php echo $order_total; ?></b>
                 </td>
               </tr>
               <tr>
@@ -104,7 +104,7 @@
                   <b><?php echo t('Payment Method:'); ?></b>
                 </td>
                 <td width="98%">
-                  [uc_order:payment-method]
+                  <?php echo $order_payment_method; ?>
                 </td>
               </tr>
 
@@ -131,7 +131,7 @@
                         <b><?php echo t('Order #:'); ?></b>
                       </td>
                       <td width="98%">
-                        [uc_order:link]
+                        <?php echo $order_link; ?>
                       </td>
                     </tr>
 
@@ -140,7 +140,7 @@
                         <b><?php echo t('Order Date: '); ?></b>
                       </td>
                       <td width="98%">
-                        [uc_order:created]
+                        <?php echo $order_created; ?>
                       </td>
                     </tr>
 
@@ -150,7 +150,7 @@
                         <b><?php echo t('Shipping Method:'); ?></b>
                       </td>
                       <td width="98%">
-                        [uc_order:shipping-method]
+                        <?php echo $order_shipping_method; ?>
                       </td>
                     </tr>
                     <?php } ?>
@@ -160,7 +160,7 @@
                         <?php echo t('Products Subtotal:'); ?>&nbsp;
                       </td>
                       <td width="98%">
-                        [uc_order:subtotal]
+                        <?php echo $order_subtotal; ?>
                       </td>
                     </tr>
 
@@ -201,7 +201,7 @@
                         <b><?php echo t('Total for this Order:'); ?>&nbsp;</b>
                       </td>
                       <td>
-                      <b>[uc_order:total]</b>
+                        <b><?php echo $order_total; ?></b>
                       </td>
                     </tr>
 
@@ -265,7 +265,7 @@
 
                   <?php if ($help_text) { ?>
                   <p><b><?php echo t('Where can I get help with reviewing my order?'); ?></b><br />
-                  <?php echo t('To learn more about managing your orders on [store:link], please visit our <a href="[store:help-url]">help page</a>.'); ?>
+                  <?php echo t('To learn more about managing your orders on !store_link, please visit our <a href="!store_help_url">help page</a>.', array('!store_link' => $store_link, '!store_help_url' => $store_help_url)); ?>
                   <br /></p>
                   <?php } ?>
 
@@ -276,7 +276,7 @@
                   <?php } ?>
 
                   <?php if ($store_footer) { ?>
-                  <p><b>[store:link]</b><br /><b>[site:slogan]</b></p>
+                  <p><b><?php echo $store_link; ?></b><br /><b><?php echo $site_slogan; ?></b></p>
                   <?php } ?>
                 </td>
               </tr>

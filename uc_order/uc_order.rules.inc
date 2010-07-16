@@ -563,7 +563,7 @@ function uc_order_action_email_invoice($order, $from, $addresses, $subject, $tem
     $recipients[] = trim($address);
   }
 
-  $settings['message'] = uc_order_load_invoice($order, $settings['view'], $settings['template']);
+  $settings['message'] = theme('uc_order', $order, $settings['view'], $settings['template']);
 
   if (empty($recipients)) {
     watchdog('uc_order', 'Attempted to e-mail an invoice with no recipient.', array(), WATCHDOG_ERROR);
