@@ -139,11 +139,9 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
     '#default_value' => $rate_id ? $rate->weight : 0,
   );
 
-  if (module_exists('rules')) {
-    $conditions = rules_config_load('uc_taxes_' . $rate->id);
-    if ($conditions) {
-      $conditions->form($form, $form_state);
-    }
+  $conditions = rules_config_load('uc_taxes_' . $rate->id);
+  if ($conditions) {
+    $conditions->form($form, $form_state);
   }
 
   $form['submit'] = array(
@@ -191,12 +189,10 @@ function uc_taxes_form_submit($form, &$form_state) {
   uc_taxes_rate_save((object) $rate);
 
   // Update the name of the associated conditions.
-  if (module_exists('rules')) {
-    $conditions = rules_config_load('uc_taxes_' . $rate['id']);
-    if ($conditions) {
-      $conditions->label = $rate['name'];
-      $conditions->save();
-    }
+  $conditions = rules_config_load('uc_taxes_' . $rate['id']);
+  if ($conditions) {
+    $conditions->label = $rate['name'];
+    $conditions->save();
   }
 
   // Display a message and redirect back to the overview.
