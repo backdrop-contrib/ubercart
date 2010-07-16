@@ -4,7 +4,6 @@
 /**
  * @file
  * Weight quote shipping method administration menu items.
- *
  */
 
 /**
@@ -29,15 +28,14 @@ function uc_weightquote_admin_methods() {
     $row[] = uc_price($method->base_rate, $context);
     $row[] = uc_price($method->product_rate, $context);
     $row[] = l(t('edit'), 'admin/store/settings/quotes/methods/weightquote/' . $method->mid);
-    $row[] = l(t('conditions'), CA_UI_PATH . '/uc_weightquote_get_quote_' . $method->mid . '/edit/conditions');
     $rows[] = $row;
   }
   if (count($rows)) {
-    $header = array(t('Title'), t('Label'), t('Base rate'), t('Default product rate'), array('data' => t('Operations'), 'colspan' => 2));
+    $header = array(t('Title'), t('Label'), t('Base rate'), t('Default product rate'), array('data' => t('Operations'), 'colspan' => 1));
     $build['methods'] = array(
       '#theme' => 'table',
       '#header' => $header,
-      'rows' => $rows,
+      '#rows' => $rows,
     );
   }
 
@@ -104,6 +102,11 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
     '#field_prefix' => $sign_flag ? '' : $currency_sign,
     '#field_suffix' => t('!sign per !unit', array('!sign' => $sign_flag ? $currency_sign : '', '!unit' => variable_get('uc_weight_unit', 'lb'))),
   );
+
+  $conditions = rules_config_load('get_quote_from_weightquote_' . $mid);
+  if ($conditions) {
+    $conditions->form($form, $form_state);
+  }
 
   $form['buttons']['submit'] = array(
     '#type' => 'submit',
@@ -199,7 +202,8 @@ function uc_weightquote_admin_method_confirm_delete_submit($form, &$form_state) 
   db_delete('uc_weightquote_products')
     ->condition('mid', $mid)
     ->execute();
-  ca_delete_predicate('uc_weightquote_get_quote_' . $form_state['values']['mid']);
+
+  rules_config_delete('get_quote_from_weightquote_' . $mid);
 
   $enabled = variable_get('uc_quote_enabled', array());
   unset($enabled['weightquote_' . $mid]);

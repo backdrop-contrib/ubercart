@@ -167,41 +167,6 @@ function uc_flatrate_node_revision_delete($node) {
  ******************************************************************************/
 
 /**
- * Implement hook_ca_predicate().
- *
- * Connect the quote action with the quote event.
- */
-function uc_flatrate_ca_predicate() {
-  $enabled = variable_get('uc_quote_enabled', array());
-  $predicates = array();
-
-  $result = db_query("SELECT mid, title FROM {uc_flatrate_methods}");
-  foreach ($result as $method) {
-    // Ensure default status is set.
-    $enabled += array('flatrate_' . $method->mid => TRUE);
-
-    $predicates['uc_flatrate_get_quote_' . $method->mid] = array(
-      '#title' => t('Shipping quote via @method', array('@method' => $method->title)),
-      '#trigger' => 'get_quote_from_flatrate_' . $method->mid,
-      '#class' => 'uc_flatrate',
-      '#status' => $enabled['flatrate_' . $method->mid],
-      '#actions' => array(
-        array(
-          '#name' => 'uc_quote_action_get_quote',
-          '#title' => t('Fetch a flatrate shipping quote.'),
-          '#argument_map' => array(
-            'order' => 'order',
-            'method' => 'method',
-          ),
-        ),
-      ),
-    );
-  }
-
-  return $predicates;
-}
-
-/**
  * Implement hook_uc_shipping_method().
  */
 function uc_flatrate_uc_shipping_method() {

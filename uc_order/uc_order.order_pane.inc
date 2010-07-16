@@ -678,14 +678,7 @@ function uc_order_edit_products_remove($form, &$form_state) {
 
   $order_product_id = intval($form_state['triggering_element']['#return_value']);
 
-  // Put back the stock.
-  if (module_exists('uc_stock')) {
-    $product = db_query("SELECT model, qty FROM {uc_order_products} WHERE order_product_id = :id", array(':id' => $order_product_id))->fetchObject();
-    uc_stock_adjust($product->model, $product->qty);
-  }
-  db_delete('uc_order_products')
-    ->condition('order_product_id', $order_product_id)
-    ->execute();
+  uc_order_product_delete($order_product_id);
 
   $order = $form_state['build_info']['args'][0];
   $matches = array();
@@ -1148,7 +1141,7 @@ function uc_order_view_update_form_submit($form, &$form_state) {
   // Let conditional actions send email if requested.
   if ($form_state['values']['notify']) {
     $order = uc_order_load($form_state['values']['order_id']);
-    ca_pull_trigger('uc_order_status_email_update', $order);
+    rules_invoke_event('uc_order_status_email_update', $order);
   }
 
   drupal_set_message(t('Order updated.'));

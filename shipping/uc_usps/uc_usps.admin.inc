@@ -42,6 +42,17 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
   );
 
+  $form['domestic']['env_conditions'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Envelope service conditions'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $conditions = rules_config_load('get_quote_from_usps_env');
+  if ($conditions) {
+    $conditions->form($form['domestic']['env_conditions'], $form_state);
+  }
+
   $form['domestic']['uc_usps_services'] = array(
     '#type' => 'checkboxes',
     '#title' => t('USPS parcel services'),
@@ -49,6 +60,17 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#options' => _uc_usps_services(),
     '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
   );
+
+  $form['domestic']['parcel_conditions'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Parcel service conditions'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $conditions = rules_config_load('get_quote_from_usps');
+  if ($conditions) {
+    $conditions->form($form['domestic']['parcel_conditions'], $form_state);
+  }
 
   $form['international'] = array(
     '#type' => 'fieldset',
@@ -66,6 +88,17 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
   );
 
+  $form['international']['env_conditions'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Envelope service conditions'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $conditions = rules_config_load('get_quote_from_usps_intl_env');
+  if ($conditions) {
+    $conditions->form($form['international']['env_conditions'], $form_state);
+  }
+
   $form['international']['uc_usps_intl_services'] = array(
     '#type' => 'checkboxes',
     '#title' => t('USPS international parcel services'),
@@ -73,6 +106,17 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#options' => _uc_usps_intl_services(),
     '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
   );
+
+  $form['international']['parcel_conditions'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Parcel service conditions'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $conditions = rules_config_load('get_quote_from_usps_intl');
+  if ($conditions) {
+    $conditions->form($form['international']['parcel_conditions'], $form_state);
+  }
 
   $form['uc_usps_markup_type'] = array(
     '#type' => 'select',
@@ -101,7 +145,7 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Indicate whether each product is quoted as shipping separately or all in one package. Orders with one kind of product will still use the package quantity to determine the number of packages needed, however.'),
   );
 
-  return system_settings_form($form);
+  return $form;
 }
 
 /**
@@ -111,4 +155,35 @@ function uc_usps_admin_settings_validate($form, &$form_state) {
   if (!is_numeric($form_state['values']['uc_usps_markup'])) {
     form_set_error('uc_usps_markup', t('Rate markup must be a numeric value.'));
   }
+}
+
+/**
+ * Submit handler for uc_usps_admin_settings form.
+ */
+function uc_usps_admin_settings_submit($form, &$form_state) {
+  $fields = array(
+    'uc_usps_user_id',
+    'uc_usps_online_rates',
+    'uc_usps_env_services',
+    'uc_usps_services',
+    'uc_usps_intl_env_services',
+    'uc_usps_intl_services',
+    'uc_usps_markup_type',
+    'uc_usps_markup',
+    'uc_usps_all_in_once',
+  );
+
+  foreach ($fields as $key) {
+    $value = $form_state['values'][$key];
+
+    if (is_array($value) && isset($form_state['values']['array_filter'])) {
+      $value = array_keys(array_filter($value));
+    }
+    variable_set($key, $value);
+  }
+
+  drupal_set_message(t('The configuration options have been saved.'));
+
+  cache_clear_all();
+  drupal_theme_rebuild();
 }

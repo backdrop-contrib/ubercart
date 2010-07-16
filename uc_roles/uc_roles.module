@@ -13,8 +13,6 @@
  * Development sponsored by the Ubercart project.  http://www.ubercart.org
  */
 
-require_once 'uc_roles.ca.inc';
-
 /******************************************************************************
  * Hook Functions (Drupal)                                                    *
  ******************************************************************************/
@@ -24,7 +22,7 @@ require_once 'uc_roles.ca.inc';
  */
 function uc_roles_help($path, $arg) {
   if ($path == 'node/%/edit/features' && $arg[4] == 'role') {
-    return t('Add roles through this page and then use the <a href="!url">conditional actions interface</a> to limit which orders they are applied to. Most important is the order status on which role granting will be triggered.', array('!url' => url(CA_UI_PATH)));
+    return t('Add roles through this page and then use the <a href="!url">Rules interface</a> to limit which orders they are applied to. Most important is the order status on which role granting will be triggered.', array('!url' => url(RULES_UI_PATH)));
   }
   switch ($path) {
     case 'admin/people/expiration':
@@ -56,7 +54,7 @@ function uc_roles_cron() {
     // Role expired.
     elseif ($expiration->expiration <= REQUEST_TIME) {
       uc_roles_revoke($account, $expiration->rid);
-      ca_pull_trigger('uc_roles_notify_revoke', $account, $expiration);
+      rules_invoke_event('uc_roles_notify_revoke', $account, $expiration);
     }
 
     // Remind the user about an upcoming expiration.
@@ -69,7 +67,7 @@ function uc_roles_cron() {
       // If we're past the expiration time minus the reminder time.
       $threshold = _uc_roles_get_expiration(-$reminder_qty, $reminder_granularity, $expiration->expiration);
       if ($threshold <= REQUEST_TIME) {
-        ca_pull_trigger('uc_roles_notify_reminder', $account, $expiration);
+        rules_invoke_event('uc_roles_notify_reminder', $account, $expiration);
 
         db_update('uc_roles_expirations')
           ->fields(array('notified' => 1))

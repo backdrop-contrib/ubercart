@@ -3,22 +3,23 @@
 
 /**
  * @file
- * Conditional Actions file for Ubercart attributes.
+ * Rules hooks for Ubercart attributes.
  */
 
 /**
- * Implement hook_ca_condition().
+ * Implement hook_rules_condition_info().
  */
-function uc_attribute_ca_condition() {
+function uc_attribute_rules_condition_info() {
   $conditions = array();
 
   $conditions['uc_attribute_ordered_product_option'] = array(
-    '#title' => t('Order has a product with a particular attribute option'),
-    '#description' => t('Search the products of an order for a particular option.'),
-    '#category' => t('Order: Product'),
-    '#callback' => 'uc_attribute_condition_ordered_product_option',
-    '#arguments' => array(
-      'order' => array('#entity' => 'uc_order', '#title' => t('Order')),
+    'label' => t('Order has a product with a particular attribute option'),
+    'description' => t('Search the products of an order for a particular option.'),
+    'group' => t('Order: Product'),
+    'base' => 'uc_attribute_condition_ordered_product_option',
+    'parameter' => array(
+      'product' => array('type' => 'uc_order_product', 'label' => t('Product')),
+      'option' => array('type' => 'integer', 'label' => t('Attribute option'), 'options list' => 'uc_attribute_condition_ordered_product_options_list'),
     ),
   );
 
@@ -30,7 +31,7 @@ function uc_attribute_ca_condition() {
  *
  * @see uc_attribute_condition_ordered_product_option_form()
  */
-function uc_attribute_condition_ordered_product_option($order, $settings) {
+function uc_attribute_condition_ordered_product_option($order) {
   $result = FALSE;
 
   $match = unserialize($settings['attribute_option']);
@@ -71,21 +72,16 @@ function uc_attribute_condition_ordered_product_option($order, $settings) {
 }
 
 /**
+ * Options callback.
+ *
  * @see uc_attribute_condition_ordered_product_option()
  */
-function uc_attribute_condition_ordered_product_option_form($form, &$form_state, $settings = array()) {
+function uc_attribute_condition_ordered_product_options_list() {
   $options = array();
   $result = db_query("SELECT a.aid, a.name AS attr_name, a.ordering, o.oid, o.name AS opt_name, o.ordering FROM {uc_attributes} AS a JOIN {uc_attribute_options} AS o ON a.aid = o.aid ORDER BY a.ordering, o.ordering");
   foreach ($result as $option) {
     $options[$option->attr_name][$option->oid] = $option->opt_name;
   }
 
-  $form['attribute_option'] = array(
-    '#type' => 'select',
-    '#title' => t('Attribute option'),
-    '#default_value' => $settings['attribute_option'],
-    '#options' => $options,
-  );
-
-  return $form;
+  return $options;
 }

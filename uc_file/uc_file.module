@@ -14,8 +14,6 @@
  * Development sponsored by the Ubercart project.  http://www.ubercart.org
  */
 
-require_once('uc_file.ca.inc');
-
 /**
  * The max amount of files shown on any page that displays files
  * in a table/pager.
@@ -26,15 +24,6 @@ define('UC_FILE_LIMIT_SENTINEL', -1);
 /******************************************************************************
  * Hook Functions (Drupal)                                                    *
  ******************************************************************************/
-
-/**
- * Implement hook_help().
- */
-function uc_file_help($path, $arg) {
-  if ($path == 'node/%/edit/features' && $arg[4] == 'file') {
-    return t('Add file downloads through this page and then use the <a href="!url">conditional actions interface</a> to limit which orders they are applied to. Most important is the order status on which file download access will be triggered.', array('!url' => url(CA_UI_PATH)));
-  }
-}
 
 /**
  * Implement hook_form_alter().
@@ -714,10 +703,24 @@ function uc_file_feature_form($form, &$form_state, $node, $feature) {
     $granularity_value   = $time_status ? $file_product->time_granularity : 'never';
   }
   else {
-    $default_shippable = $node->shippable;
-    $download_status   = FALSE;
-    $address_status    = FALSE;
-    $time_status       = FALSE;
+    $file_product      = FALSE;
+
+    $default_feature   = NULL;
+
+    $default_model       = '';
+    $default_filename    = '';
+    $default_description = '';
+    $default_shippable   = $node->shippable;
+
+    $download_status     = FALSE;
+    $download_value      = NULL;
+
+    $address_status      = FALSE;
+    $address_value       = NULL;
+
+    $time_status         = FALSE;
+    $quantity_value      = NULL;
+    $granularity_value   = 'never';
   }
 
   $form['nid'] = array(
@@ -1692,7 +1695,7 @@ function uc_file_user_renew($fid, $user, $pfid, $file_limits, $force_overwrite) 
     $file_user['expiration'] = $file_user['expiration'] ? $file_user['expiration'] : 0;
 
     // Calculate hash
-    $file_user['file_key'] = $file_user['file_key'] ? $file_user['file_key'] : drupal_get_token(serialize($file_user));
+    $file_user['file_key'] = isset($file_user['file_key']) && $file_user['file_key'] ? $file_user['file_key'] : drupal_get_token(serialize($file_user));
 
     // Write and queue the file_user object.
     drupal_write_record('uc_file_users', $file_user, $key);

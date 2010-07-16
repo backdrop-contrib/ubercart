@@ -52,29 +52,10 @@ function uc_quote_assemble_quotes($order) {
   );
 
   $quote_data = array();
-  $arguments = array(
-    'order' => array(
-      '#entity' => 'uc_order',
-      '#title' => t('Order'),
-      '#data' => $order,
-    ),
-    'method' => array(
-      '#entity' => 'quote_method',
-      '#title' => t('Quote method'),
-      // #data => each $method in the following foreach() loop;
-    ),
-    'account' => array(
-      '#entity' => 'user',
-      '#title' => t('User'),
-      '#data' => $account,
-    ),
-  );
   foreach ($methods as $method) {
-    $arguments['method']['#data'] = $method;
-    $predicates = ca_load_trigger_predicates('get_quote_from_' . $method['id']);
-    $predicate = array_shift($predicates);
-    if ($predicate && ca_evaluate_conditions($predicate, $arguments)) {
-      $data = uc_quote_action_get_quote($order, $method, $user);
+    $set = rules_config_load('get_quote_from_' . $method['id']);
+    if (!$set || $set->execute($order)) {
+      $data = uc_quote_action_get_quote($order, $method);
 
       foreach ($data as &$quote) {
         if (isset($quote['rate'])) {
@@ -90,6 +71,54 @@ function uc_quote_assemble_quotes($order) {
       }
       $quote_data[$method['id']] = $data;
     }
+  }
+  return $quote_data;
+}
+
+/**
+ * Retrieve shipping quote.
+ *
+ * @param $order
+ *   The order the quote is for.
+ * @param $method
+ *   The shipping method to generate the quote.
+ * @return
+ *   Array of shipping quotes.
+ */
+function uc_quote_action_get_quote($order, $method) {
+  $details = array();
+  foreach ($order as $key => $value) {
+    if (substr($key, 0, 9) == 'delivery_') {
+      $field = substr($key, 9);
+      $details[$field] = $value;
+    }
+  }
+  ob_start();
+  // Load include file containing quote callback, if there is one
+  if (isset($method['quote']['file'])) {
+    $inc_file = drupal_get_path('module', $method['module']) . '/' . $method['quote']['file'];
+    if (is_file($inc_file)) {
+      require_once $inc_file;
+    }
+  }
+
+  if (function_exists($method['quote']['callback'])) {
+    // This feels wrong, but it's the only way I can ensure that shipping
+    // methods won't mess up the products in their methods.
+    $products = array();
+    foreach ($order->products as $key => $item) {
+      if (uc_cart_product_is_shippable($item)) {
+        $products[$key] = clone $item;
+      }
+    }
+    $quote_data = call_user_func($method['quote']['callback'], $products, $details, $method);
+  }
+  $messages = ob_get_contents();
+  ob_end_clean();
+
+  if ($messages && variable_get('uc_quote_log_errors', FALSE)) {
+    watchdog('quote', '!messages', array('!messages' => $messages), WATCHDOG_WARNING);
+    watchdog('quote', '<pre>@data</pre>', array('@data' => print_r($quote_data, TRUE)), WATCHDOG_WARNING);
   }
   return $quote_data;
 }

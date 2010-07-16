@@ -157,8 +157,12 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
             break;
           }
 
-          $values[$tokens['url']] = $url;
-          $values[$tokens['link']] = l($order->order_id, $url);
+          if (isset($tokens['url'])) {
+            $values[$tokens['url']] = $url;
+          }
+          if (isset($tokens['link'])) {
+            $values[$tokens['link']] = l($order->order_id, $url);
+          }
           break;
 
         case 'admin-url':
@@ -170,8 +174,12 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
             break;
           }
 
-          $values[$tokens['admin-url']] = $admin_url;
-          $values[$tokens['admin-link']] = l($order->order_id, $admin_url);
+          if (isset($tokens['admin-url'])) {
+            $values[$tokens['admin-url']] = $admin_url;
+          }
+          if (isset($tokens['admin-link'])) {
+            $values[$tokens['admin-link']] = l($order->order_id, $admin_url);
+          }
           break;
 
         case 'subtotal':

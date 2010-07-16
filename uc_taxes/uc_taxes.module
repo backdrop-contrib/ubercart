@@ -8,25 +8,9 @@
  * Allows tax rules to be set up and applied to orders.
  */
 
-require_once('uc_taxes.ca.inc');
-
 /******************************************************************************
  * Drupal Hooks                                                               *
  ******************************************************************************/
-
-/**
- * Implement hook_help().
- */
-function uc_taxes_help($path, $arg) {
-  $output = '';
-
-  switch ($path) {
-    case 'admin/store/settings/taxes':
-      return t('Add tax rates through this page and then use the <a href="!url">conditional actions interface</a> to add conditions to the taxes that limit which orders they are applied to. Especially important are the geographic area conditions for the delivery address.  Use the conditions link to jump to a particular tax rate conditions configuration page.', array('!url' => url(CA_UI_PATH)));
-  }
-
-  return $output;
-}
 
 /**
  * Implement hook_permission().
@@ -276,6 +260,10 @@ function uc_taxes_rate_save($rate) {
     drupal_write_record('uc_taxes', $rate, array('id'));
   }
 
+  if (module_exists('rules')) {
+    rules_clear_cache();
+  }
+
   return $rate;
 }
 
@@ -328,8 +316,10 @@ function uc_taxes_rate_delete($rate_id) {
     ->condition('id', $rate_id)
     ->execute();
 
-  // Delete the associated predicated if it has been saved to the database.
-  ca_delete_predicate('uc_taxes_' . $rate_id);
+  // Delete the associated conditions if they have been saved to the database.
+  if (module_exists('rules')) {
+    rules_config_delete(array('uc_taxes_' . $rate_id));
+  }
 }
 
 /**
@@ -351,17 +341,6 @@ function uc_taxes_calculate($order) {
  * Calculate the amount and types of taxes that apply to an order.
  */
 function uc_taxes_uc_calculate_tax($order) {
-  global $user;
-  if (is_numeric($order)) {
-    $order = uc_order_load($order);
-    $account = user_load($order->uid);
-  }
-  elseif ((int)$order->uid) {
-    $account = user_load(intval($order->uid));
-  }
-  else {
-    $account = $user;
-  }
   if (!is_object($order)) {
     return array();
   }
@@ -385,25 +364,8 @@ function uc_taxes_uc_calculate_tax($order) {
     $use_same_rates = FALSE;
   }
 
-  $arguments = array(
-    'order' => array(
-      '#entity' => 'uc_order',
-      '#title' => t('Order'),
-      '#data' => $order,
-    ),
-    'tax' => array(
-      '#entity' => 'tax',
-      '#title' => t('Tax rule'),
-      // #data => each $tax in the following foreach() loop;
-    ),
-    'account' => array(
-      '#entity' => 'user',
-      '#title' => t('User'),
-      '#data' => $account,
-    ),
-  );
+  $use_rules = module_exists('rules');
 
-  $predicates = ca_load_trigger_predicates('calculate_taxes');
   foreach (uc_taxes_rate_load() as $tax) {
     if ($use_same_rates) {
       foreach ((array)$order->line_items as $old_line) {
@@ -414,9 +376,16 @@ function uc_taxes_uc_calculate_tax($order) {
       }
     }
 
-    $arguments['tax']['#data'] = $tax;
-    if (ca_evaluate_conditions($predicates['uc_taxes_' . $tax->id], $arguments)) {
-      $line_item = uc_taxes_action_apply_tax($order, $tax);
+    if ($use_rules) {
+      $set = rules_config_load('uc_taxes_' . $tax->id);
+      $apply = $set->execute($order);
+    }
+    else {
+      $apply = TRUE;
+    }
+
+    if ($apply) {
+      $line_item = uc_taxes_apply_tax($order, $tax);
       if ($line_item) {
         $order->taxes[$line_item->id] = $line_item;
       }

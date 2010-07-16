@@ -12,7 +12,7 @@
 function uc_taxes_admin_settings() {
   $rows = array();
 
-  $header = array(t('Name'), t('Rate'), t('Taxed products'), t('Taxed product types'), t('Taxed line items'), t('Weight'), array('data' => t('Operations'), 'colspan' => 4));
+  $header = array(t('Name'), t('Rate'), t('Taxed products'), t('Taxed product types'), t('Taxed line items'), t('Weight'), array('data' => t('Operations'), 'colspan' => 3));
 
   // Loop through all the defined tax rates.
   foreach (uc_taxes_rate_load() as $rate_id => $rate) {
@@ -27,7 +27,6 @@ function uc_taxes_admin_settings() {
       implode(', ', $rate->taxed_line_items),
       $rate->weight,
       l(t('edit'), 'admin/store/settings/taxes/' . $rate_id . '/edit'),
-      l(t('conditions'), CA_UI_PATH . '/uc_taxes_' . $rate_id . '/edit/conditions'),
       l(t('clone'), 'admin/store/settings/taxes/' . $rate_id . '/clone'),
       l(t('delete'), 'admin/store/settings/taxes/' . $rate_id . '/delete'),
     );
@@ -35,7 +34,7 @@ function uc_taxes_admin_settings() {
 
   // Let the user know if no tax rates are defined.
   if (empty($rows)) {
-    $rows[] = array(array('data' => t('No rates available.'), 'colspan' => 10));
+    $rows[] = array(array('data' => t('No rates available.'), 'colspan' => 9));
   }
 
   // Build the output including the table and a link to add a new rate.
@@ -140,6 +139,13 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
     '#default_value' => $rate_id ? $rate->weight : 0,
   );
 
+  if (module_exists('rules')) {
+    $conditions = rules_config_load('uc_taxes_' . $rate->id);
+    if ($conditions) {
+      $conditions->form($form, $form_state);
+    }
+  }
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
@@ -184,11 +190,14 @@ function uc_taxes_form_submit($form, &$form_state) {
   );
   uc_taxes_rate_save((object) $rate);
 
-  // Update the name of the associated predicate.
-  db_update('ca_predicates')
-    ->fields(array('title' => $rate['name']))
-    ->condition('pid', 'uc_taxes_' . $rate['id'])
-    ->execute();
+  // Update the name of the associated conditions.
+  if (module_exists('rules')) {
+    $conditions = rules_config_load('uc_taxes_' . $rate['id']);
+    if ($conditions) {
+      $conditions->label = $rate['name'];
+      $conditions->save();
+    }
+  }
 
   // Display a message and redirect back to the overview.
   drupal_set_message(t('Tax rate %name saved.', array('%name' => $form_state['values']['name'])));
@@ -211,10 +220,10 @@ function uc_taxes_clone($rate_id) {
   // Save the new rate.
   $rate = uc_taxes_rate_save($rate);
 
-  // Clone the associated predicate as well.
-  if ($predicate = ca_load_predicate('uc_taxes_' . $rate_id)) {
-    $predicate['#pid'] = 'uc_taxes_' . $rate->id;
-    ca_save_predicate($predicate);
+  // Clone the associated conditions as well.
+  if ($conditions = rules_config_load('uc_taxes_' . $rate_id)) {
+    unset($conditions->id);
+    $conditions->save('uc_taxes_' . $rate->id);
   }
 
   // Display a message and redirect back to the overview.

@@ -130,9 +130,12 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#description' => t('When enabled, products are insured for their full value.'),
   );
 
-  $form['#validate'][] = 'uc_ups_admin_settings_validate';
+  $conditions = rules_config_load('get_quote_from_ups');
+  if ($conditions) {
+    $conditions->form($form, $form_state);
+  }
 
-  return system_settings_form($form);
+  return $form;
 }
 
 /**
@@ -156,6 +159,47 @@ function uc_ups_admin_settings_validate($form, &$form_state) {
   if (!is_numeric($form_state['values']['uc_ups_markup'])) {
     form_set_error('uc_ups_markup', t('Rate markup must be a numeric value.'));
   }
+}
+
+/**
+ * Submit handler for uc_ups_admin_settings().
+ *
+ * Emulate system_settings_form_submit(), but only on a subset of the form values.
+ *
+ * @see uc_ups_admin_settings()
+ */
+function uc_ups_admin_settings_submit($form, &$form_state) {
+  $fields = array(
+    'uc_ups_access_license',
+    'uc_ups_shipper_number',
+    'uc_ups_user_id',
+    'uc_ups_password',
+    'uc_ups_connection_address',
+    'uc_ups_services',
+    'uc_ups_pickup_type',
+    'uc_ups_classification',
+    'uc_ups_negotiated_rates',
+    'uc_ups_residential_quotes',
+    'uc_ups_markup_type',
+    'uc_ups_markup',
+    'uc_ups_all_in_one',
+    'uc_ups_unit_system',
+    'uc_ups_insurance',
+  );
+
+  foreach ($fields as $key) {
+    $value = $form_state['values'][$key];
+
+    if (is_array($value) && isset($form_state['values']['array_filter'])) {
+      $value = array_keys(array_filter($value));
+    }
+    variable_set($key, $value);
+  }
+
+  drupal_set_message(t('The configuration options have been saved.'));
+
+  cache_clear_all();
+  drupal_theme_rebuild();
 }
 
 /**

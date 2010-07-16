@@ -68,7 +68,7 @@ class UcAddress {
   public $street2 = '';
   public $city = '';
   public $zone = 0;
-  public $postal_code = 0;
+  public $postal_code = '';
   public $country = 0;
   public $phone = '';
   public $email = '';
@@ -691,6 +691,74 @@ function theme_uc_store_footer($variables) {
 }
 
 /**
+ * Helper function for hook_entity_property_info() and hook_rules_data_info().
+ *
+ * Should be used by implementations of those hooks that wish to wrap address
+ * selectors.
+ */
+function uc_address_property_info() {
+  return array(
+    'first-name' => array(
+      'type' => 'text',
+      'label' => t('First name'),
+      'description' => t('First name of the addressee.'),
+    ),
+    'last-name' => array(
+      'type' => 'text',
+      'label' => t('Last name'),
+      'description' => t('Last naem of the addressee.'),
+    ),
+    'company' => array(
+      'type' => 'text',
+      'label' => t('Company'),
+      'description' => t('Name of the company at the address.'),
+    ),
+    'street1' => array(
+      'type' => 'text',
+      'label' => t('Street line 1'),
+      'description' => t('First line of the street address.'),
+    ),
+    'street2' => array(
+      'type' => 'text',
+      'label' => t('Street line 2'),
+      'description' => t('Second line of the street address.'),
+    ),
+    'city' => array(
+      'type' => 'text',
+      'label' => t('City'),
+      'description' => t('Address city.'),
+    ),
+    'zone' => array(
+      'type' => 'integer',
+      'label' => t('Zone'),
+      'description' => t('Address state/province/zone.'),
+      'options list' => 'uc_zone_option_list',
+    ),
+    'postal-code' => array(
+      'type' => 'text',
+      'label' => t('Postal code'),
+      'description' => t('Address post code.'),
+    ),
+    'country' => array(
+      'type' => 'integer',
+      'label' => t('Country'),
+      'description' => t('Address country.'),
+      'options list' => 'uc_country_option_list',
+    ),
+    'phone' => array(
+      'type' => 'text',
+      'label' => t('Phone'),
+      'description' => t('Contact phone number.'),
+    ),
+    'email' => array(
+      'type' => 'text',
+      'label' => t('Email'),
+      'description' => t('Contact email address.'),
+    ),
+  );
+}
+
+/**
  * Form to configure address fields.
  *
  * @ingroup forms
@@ -1289,6 +1357,19 @@ function uc_zone_select($title, $default = NULL, $description = NULL, $country_i
 }
 
 /**
+ * Helper function to return zone options, grouped by country.
+ */
+function uc_zone_option_list() {
+  $result = db_query("SELECT z.*, c.country_name FROM {uc_zones} AS z LEFT JOIN {uc_countries} AS c ON z.zone_country_id = c.country_id ORDER BY c.country_name, z.zone_name");
+
+  foreach ($result as $zone) {
+    $options[$zone->country_name][$zone->zone_id] = $zone->zone_name;
+  }
+
+  return $options;
+}
+
+/**
  * Retrieve a country's name from the database, using its ID.
  *
  * @param $id
@@ -1337,6 +1418,20 @@ function uc_country_select($title, $default = NULL, $description = NULL, $displa
   drupal_add_js(drupal_get_path('module', 'uc_store') . '/uc_country_select.js');
 
   return $select;
+}
+
+function uc_country_option_list() {
+  $result = db_query("SELECT * FROM {uc_countries} WHERE version > :version ORDER BY :sort", array(':version' => 0, ':sort' => 'country_name'));
+
+  $options = array();
+  while ($country = $result->fetchAssoc()) {
+    $options[$country['country_id']] = $country['country_name'];
+  }
+  if (count($options) == 0) {
+    $options[] = t('No countries found.');
+  }
+
+  return $options;
 }
 
 /**

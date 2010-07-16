@@ -13,7 +13,6 @@
 
 require_once('uc_order.order_pane.inc');
 require_once('uc_order.line_item.inc');
-require_once('uc_order.ca.inc');
 
 class UcOrder {
 
@@ -444,6 +443,56 @@ function uc_order_access_order_log() {
 }
 
 /**
+ * Implement hook_entity_info().
+ */
+function uc_order_entity_info() {
+  return array(
+    'uc_order' => array(
+      'label' => t('Order'),
+      'base table' => 'uc_orders',
+      'uri callback' => 'uc_order_uri',
+      'fieldable' => TRUE,
+      'entity keys' => array(
+        'id' => 'order_id',
+      ),
+      'bundles' => array(
+        'uc_order' => array(
+          'label' => t('Order'),
+        ),
+      ),
+      'view modes' => array(
+        'full' => array(
+          'label' => t('Invoice'),
+          'admin' => array(
+            'path' => 'admin/store/settings/orders',
+            'access arguments' => array('administer store'),
+          ),
+        ),
+      ),
+      'access callback' => 'uc_order_order_entity_access',
+      'create callback' => 'uc_order_new',
+      'save callback' => 'uc_order_save',
+      'delete callback' => 'uc_order_delete',
+    ),
+    'uc_order_product' => array(
+      'label' => t('Order product'),
+      'base table' => 'uc_order_products',
+      'entity keys' => array(
+        'id' => 'order_product_id',
+      ),
+      'bundles' => array(
+        'uc_order_product' => array(
+          'label' => t('Order product'),
+        ),
+      ),
+      'access callback' => 'uc_order_order_product_access',
+      'save callback' => 'uc_order_product_entity_save',
+      'delete callback' => 'uc_order_product_delete',
+    ),
+  );
+}
+
+/**
  * Implement hook_user_view().
  */
 function uc_order_user_view($account, $view_mode) {
@@ -494,10 +543,10 @@ function uc_order_mail($key, &$message, $params) {
 
       // Apply an input format to the message body if specified.
       if (isset($params['message_format'])) {
-        $message['body'] = check_markup($body, $params['message_format'], $langcode);
+        $message['body'] = explode("\n", check_markup($body, $params['message_format'], $langcode));
       }
       else {
-        $message['body'] = $body;
+        $message['body'] = explode("\n", $body);
       }
 
       break;
@@ -923,54 +972,47 @@ function uc_order_search_form_submit($form, &$form_state) {
  * Module and Helper Functions
  ******************************************************************************/
 
+function uc_order_order_entity_access($op, $order = NULL, $account = NULL) {
+  if ($op == 'delete') {
+    if (!empty($order)) {
+      return uc_order_can_delete($order, $account);
+    }
+    else {
+      return FALSE;
+    }
+  }
+
+  if ($op == 'edit') {
+    return user_access('edit orders', $account);
+  }
+
+  if ($op == 'view') {
+    if (user_access('view all_orders', $account)) {
+      return TRUE;
+    }
+
+    return (!empty($order) && $order->uid == $account->uid && user_access('view own orders', $account));
+  }
+}
+
 /**
  * Generate a new order for user $uid.
  */
 function uc_order_new($uid = 0, $state = 'in_checkout') {
-  $order = new stdClass();
+  $order = new UcOrder();
 
   if ($uid > 0) {
     $user = user_load($uid);
     $email = $user->mail;
+    $order->primary_email = $email;
   }
 
   $order->uid = $uid;
   $order->order_status = uc_order_state_default($state);
-  $order->primary_email = $email;
-  $order->products = array();
+  $order->created = REQUEST_TIME;
+  $order->modified = REQUEST_TIME;
 
-  $order->order_id = db_insert('uc_orders')
-    ->fields(array(
-      'uid' => $uid,
-      'order_status' => $order->order_status,
-      'order_total' => 0,
-      'primary_email' => $email,
-      'delivery_first_name' => '',
-      'delivery_last_name' => '',
-      'delivery_phone' => '',
-      'delivery_company' => '',
-      'delivery_street1' => '',
-      'delivery_street2' => '',
-      'delivery_city' => '',
-      'delivery_zone' => 0,
-      'delivery_postal_code' => '',
-      'delivery_country' => 0,
-      'billing_first_name' => '',
-      'billing_last_name' => '',
-      'billing_phone' => '',
-      'billing_company' => '',
-      'billing_street1' => '',
-      'billing_street2' => '',
-      'billing_city' => '',
-      'billing_zone' => 0,
-      'billing_postal_code' => '',
-      'billing_country' => 0,
-      'payment_method' => '',
-      'data' => '',
-      'created' => REQUEST_TIME,
-      'modified' => REQUEST_TIME,
-    ))
-    ->execute();
+  drupal_write_record('uc_orders', $order);
 
   uc_order_module_invoke('new', $order, NULL);
 
@@ -1021,6 +1063,15 @@ function uc_order_user_load($order) {
   return $user;
 }
 
+function uc_order_order_product_access($op, $product = NULL, $account = NULL) {
+  if (isset($product) && $product->order_id) {
+    $order = uc_order_load($product->order_id);
+    return uc_order_order_entity_access($op, $order, $account);
+  }
+
+  return FALSE;
+}
+
 /**
  * Save a product to an order.
  */
@@ -1036,6 +1087,26 @@ function uc_order_product_save($order_id, $product) {
   // @TODO order_id should be in the object by this point.
   $product->order_id = $order_id;
   return drupal_write_record('uc_order_products', $product, $key);
+}
+
+/**
+ * API wrapper for uc_order_product_save().
+ *
+ * @todo: Change the signature for uc_order_product_save() to this one.
+ */
+function uc_order_product_entity_save($product) {
+  return uc_order_product_save($product->order_id, $product);
+}
+
+/**
+ * Remove a product from an order.
+ */
+function uc_order_product_delete($order_product_id) {
+  db_delete('uc_order_products')
+    ->condition('order_product_id', $order_product_id)
+    ->execute();
+
+  module_invoke_all('uc_order_product_delete', $order_product_id);
 }
 
 /**
@@ -1297,7 +1368,7 @@ function uc_order_update_status($order_id, $status) {
     uc_order_log_changes($order->order_id, $change);
 
     $updated = uc_order_load($order_id);
-    ca_pull_trigger('uc_order_status_update', $order, $updated);
+    rules_invoke_event('uc_order_status_update', $order, $updated);
 
     return TRUE;
   }
@@ -1750,6 +1821,7 @@ function uc_order_status_list($scope = 'all', $sql = FALSE, $action = '') {
   }
 
   if ($sql) {
+    $ids = array();
     foreach ($statuses[$scope] as $status) {
       $ids[] = $status['id'];
     }
@@ -1816,38 +1888,14 @@ function uc_order_actions($order, $icon_html = FALSE) {
     );
   }
 
-  if (user_access('delete orders') || user_access('unconditionally delete orders')) {
-    // Unconditional deletion perms are always TRUE.
-    $can_delete = TRUE;
-    if (!user_access('unconditionally delete orders')) {
-      // Only users with unconditional deletion perms can delete completed orders.
-      if ($state == 'completed') {
-        $can_delete = FALSE;
-      }
-      else {
-        // See if any modules have a say in this order's eligibility for deletion
-        foreach (module_implements('uc_order') as $module) {
-          $function = $module . '_uc_order';
-          // $order must be passed by reference.
-          if (function_exists($function) && ($response = $function('can_delete', $order, NULL))) {
-            // Break out early if possible.
-            if ($response === FALSE) {
-              $can_delete = FALSE;
-              break;
-            }
-          }
-        }
-      }
-    }
-    if ($can_delete) {
-      $alt = t('Delete order @order_id.', $order_id);
-      $actions[] = array(
-        'name' => t('Delete'),
-        'url' => 'admin/store/orders/' . $order->order_id . '/delete',
-        'icon' => '<img src="' . base_path() . drupal_get_path('module', 'uc_store') . '/images/order_delete.gif" alt="' . $alt . '" />',
-        'title' => $alt,
-      );
-    }
+  if (uc_order_can_delete($order)) {
+    $alt = t('Delete order @order_id.', $order_id);
+    $actions[] = array(
+      'name' => t('Delete'),
+      'url' => 'admin/store/orders/' . $order->order_id . '/delete',
+      'icon' => '<img src="' . base_path() . drupal_get_path('module', 'uc_store') . '/images/order_delete.gif" alt="' . $alt . '" />',
+      'title' => $alt,
+    );
   }
 
   $extra = module_invoke_all('uc_order_actions', $order);
@@ -1872,13 +1920,84 @@ function uc_order_actions($order, $icon_html = FALSE) {
  *
  * Access callback for admin/store/orders/%uc_order/delete.
  */
-function uc_order_can_delete($order) {
-  $can_delete = FALSE;
-  foreach (uc_order_actions($order) as $action) {
-    if ($action['name'] == t('Delete')) {
+function uc_order_can_delete($order, $account = NULL) {
+  if (user_access('unconditionally delete orders', $account)) {
+    // Unconditional deletion perms are always TRUE.
+    return TRUE;
+  }
+  elseif (user_access('delete orders', $account)) {
+    // Only users with unconditional deletion perms can delete completed orders.
+    if ($state == 'completed') {
+      return FALSE;
+    }
+    else {
       $can_delete = TRUE;
+      // See if any modules have a say in this order's eligibility for deletion
+      foreach (module_implements('uc_order') as $module) {
+        $function = $module . '_uc_order';
+        // $order must be passed by reference.
+        if (function_exists($function) && ($response = $function('can_delete', $order, NULL))) {
+          // Break out early if possible.
+          if ($response === FALSE) {
+            $can_delete = FALSE;
+            break;
+          }
+        }
+      }
+
+      return $can_delete;
     }
   }
-
-  return $can_delete;
+  else {
+    return FALSE;
+  }
 }
+
+/**
+ * Entity metadata callback to get delivery or billing address of an order.
+ */
+function uc_order_address_property_get($order, array $options, $name, $entity_type) {
+  switch ($name) {
+    case 'delivery-address':
+      $type = 'delivery_';
+      break;
+
+    case 'billing-address':
+      $type = 'billing_';
+      break;
+
+    default:
+      return NULL;
+  }
+
+  $address = new UcAddress();
+
+  foreach ($address as $field => $value) {
+    $address->{$field} = $order->{$type . $field};
+  }
+
+  return $address;
+}
+
+/**
+ * Entity metadata callback to set delivery or billing address of an order.
+ */
+function uc_order_address_property_set($order, $name, $address) {
+  switch ($name) {
+    case 'delivery-address':
+      $type = 'delivery_';
+      break;
+
+    case 'billing-address':
+      $type = 'billing_';
+      break;
+
+    default:
+      return;
+  }
+
+  foreach ($address as $field => $value) {
+    $order->{$type . $field} = $value;
+  }
+}
+

@@ -14,8 +14,6 @@
  * Development sponsored by the Ubercart project. http://www.ubercart.org
  */
 
-require_once('uc_stock.ca.inc');
-
 /******************************************************************************
  *  Hook Functions (Drupal)                                                   *
  ******************************************************************************/
@@ -146,6 +144,15 @@ function uc_stock_uc_message() {
   $messages['uc_stock_threshold_notification_subject'] = t('[store:name]: Stock threshold limit reached');
   $messages['uc_stock_threshold_notification_message'] = t("This message has been sent to let you know that the stock level for the model [uc_stock:model] has reached [uc_stock:level]. There may not be enough units in stock to fulfill order #[uc_order:link].");
   return $messages;
+}
+
+/**
+ * Implement hook_uc_order_product_delete().
+ */
+function uc_stock_uc_order_product_delete($order_product_id) {
+  // Put back the stock.
+  $product = db_query("SELECT model, qty FROM {uc_order_products} WHERE order_product_id = :id", array(':id' => $order_product_id))->fetchObject();
+  uc_stock_adjust($product->model, $product->qty);
 }
 
 /******************************************************************************

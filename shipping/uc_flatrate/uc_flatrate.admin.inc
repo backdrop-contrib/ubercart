@@ -27,12 +27,11 @@ function uc_flatrate_admin_methods() {
     $row[] = uc_price($method->base_rate, $context);
     $row[] = uc_price($method->product_rate, $context);
     $row[] = l(t('edit'), 'admin/store/settings/quotes/methods/flatrate/' . $method->mid);
-    $row[] = l(t('conditions'), CA_UI_PATH . '/uc_flatrate_get_quote_' . $method->mid . '/edit/conditions');
     $rows[] = $row;
   }
 
   if (count($rows)) {
-    $header = array(t('Title'), t('Label'), t('Base rate'), t('Default product rate'), array('data' => t('Operations'), 'colspan' => 2));
+    $header = array(t('Title'), t('Label'), t('Base rate'), t('Default product rate'), array('data' => t('Operations'), 'colspan' => 1));
     $build['methods'] = array(
       '#theme' => 'table',
       '#header' => $header,
@@ -100,6 +99,11 @@ function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
     '#field_prefix' => $sign_flag ? '' : $currency_sign,
     '#field_suffix' => $sign_flag ? $currency_sign : '',
   );
+
+  $conditions = rules_config_load('get_quote_from_flatrate_' . $mid);
+  if ($conditions) {
+    $conditions->form($form, $form_state);
+  }
 
   $form['buttons']['submit'] = array(
     '#type' => 'submit',
@@ -195,7 +199,8 @@ function uc_flatrate_admin_method_confirm_delete_submit($form, &$form_state) {
   db_delete('uc_flatrate_products')
     ->condition('mid', $form_state['values']['mid'])
     ->execute();
-  ca_delete_predicate('uc_flatrate_get_quote_' . $form_state['values']['mid']);
+
+  rules_config_delete('get_quote_from_flatrate_' . $form_state['values']['mid']);
 
   $enabled = variable_get('uc_quote_enabled', array());
   unset($enabled['flatrate_' . $form_state['values']['mid']]);

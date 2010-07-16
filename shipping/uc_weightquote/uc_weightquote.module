@@ -169,41 +169,6 @@ function uc_weightquote_node_revision_delete($node) {
  ******************************************************************************/
 
 /**
- * Implement hook_ca_predicate().
- *
- * Connect the quote action with the quote event.
- */
-function uc_weightquote_ca_predicate() {
-  $enabled = variable_get('uc_quote_enabled', array());
-  $predicates = array();
-
-  $result = db_query("SELECT mid, title FROM {uc_weightquote_methods}");
-  foreach ($result as $method) {
-    // Ensure the default status is set.
-    $enabled += array('weightquote_' . $method->mid => FALSE);
-
-    $predicates['uc_weightquote_get_quote_' . $method->mid] = array(
-      '#title' => t('Shipping quote via @method', array('@method' => $method->title)),
-      '#trigger' => 'get_quote_from_weightquote_' . $method->mid,
-      '#class' => 'uc_weightquote',
-      '#status' => $enabled['weightquote_' . $method->mid],
-      '#actions' => array(
-        array(
-          '#name' => 'uc_quote_action_get_quote',
-          '#title' => t('Fetch a weightquote shipping quote.'),
-          '#argument_map' => array(
-            'order' => 'order',
-            'method' => 'method',
-          ),
-        ),
-      ),
-    );
-  }
-
-  return $predicates;
-}
-
-/**
  * Implement hook_uc_shipping_method().
  */
 function uc_weightquote_uc_shipping_method() {

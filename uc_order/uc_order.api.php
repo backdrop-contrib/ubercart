@@ -91,7 +91,7 @@ function hook_uc_line_item() {
  */
 function hook_uc_line_item_alter(&$item, $order) {
   $account = user_load($order->uid);
-  ca_pull_trigger('calculate_line_item_discounts', $item, $account);
+  rules_invoke_event('calculate_line_item_discounts', $item, $account);
 }
 
 /**
@@ -269,6 +269,15 @@ function hook_uc_order_product_alter(&$product, $order) {
   drupal_set_message('hook_order_product_alter(&$product, $order):');
   drupal_set_message('&$product: <pre>' . print_r($product, TRUE) . '</pre>');
   drupal_set_message('$order: <pre>' . print_r($order, TRUE) . '</pre>');
+}
+
+/**
+ * Respond to order product deletion.
+ */
+function hook_uc_order_product_delete($order_product_id) {
+  // Put back the stock.
+  $product = db_query("SELECT model, qty FROM {uc_order_products} WHERE order_product_id = :id", array(':id' => $order_product_id))->fetchObject();
+  uc_stock_adjust($product->model, $product->qty);
 }
 
 /**
