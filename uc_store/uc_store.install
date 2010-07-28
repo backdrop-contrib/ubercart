@@ -7,6 +7,32 @@
  */
 
 /**
+ * Implement hook_requirements().
+ */
+function uc_store_requirements($phase) {
+  $requirements = array();
+
+  if ($phase == 'runtime') {
+    $severities = array(
+      'ok' => REQUIREMENT_OK,
+      'warning' => REQUIREMENT_WARNING,
+      'error' => REQUIREMENT_ERROR,
+    );
+
+    $results = module_invoke_all('uc_store_status');
+    foreach ($results as $status) {
+      $requirements[] = array(
+        'severity' => isset($severities[$status['status']]) ? $severities[$status['status']] : REQUIREMENT_INFO,
+        'title' => $status['title'],
+        'value' => $status['desc'],
+      );
+    }
+  }
+
+  return $requirements;
+}
+
+/**
  * Implement hook_schema().
  */
 function uc_store_schema() {
