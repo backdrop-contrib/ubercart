@@ -340,6 +340,16 @@ function uc_order_page_title($order) {
 }
 
 /**
+ * Implement hook_admin_paths().
+ */
+function uc_order_admin_paths() {
+  return array(
+    // Don't show invoices with the admin theme, overlay, etc.
+    'admin/store/orders/*/invoice*' => FALSE,
+  );
+}
+
+/**
  * Implement hook_init().
  */
 function uc_order_init() {
@@ -358,11 +368,11 @@ function uc_order_init() {
 /**
  * Implement hook_theme().
  */
-function uc_order_theme() {
-  return array(
+function uc_order_theme($existing, $type, $theme, $path) {
+  $theme_hooks = array(
     'uc_order' => array(
-      'template' => 'uc_order',
-      'path' => drupal_get_path('module', 'uc_order') .'/templates',
+      'template' => 'uc-order',
+      'path' => $path .'/templates',
       'variables' => array('order' => NULL, 'op' => 'view', 'template' => 'customer'),
     ),
     'uc_order_state_table' => array(
@@ -394,6 +404,21 @@ function uc_order_theme() {
       'render element' => 'form',
     ),
   );
+
+  $theme_hooks += array(
+    'uc_order__customer' => array(
+      'template' => 'uc-order--customer',
+      'path' => $path . '/templates',
+      'variables' => $theme_hooks['uc_order']['variables'],
+    ),
+    'uc_order__admin' => array(
+      'template' => 'uc-order--admin',
+      'path' => $path . '/templates',
+      'variables' => $theme_hooks['uc_order']['variables'],
+    ),
+  );
+
+  return $theme_hooks;
 }
 
 /**
@@ -1630,7 +1655,7 @@ function template_preprocess_uc_order(&$variables) {
   }
 
   $variables['line_items'] = $variables['order']->line_items;
-  $items = _line_item_list();
+  $items = _uc_line_item_list();
   foreach ($items as $item) {
     if (isset($item['display_only']) && $item['display_only'] == TRUE) {
       $result = $item['callback']('display', $variables['order']);
@@ -1671,10 +1696,10 @@ function template_preprocess_uc_order(&$variables) {
     $variables[$key] = $value;
   }
 
-  // Add template file suggestions, default to customer template.
-  $variables['template_files'] = array(
-    'uc_order-customer',
-    'uc_order-'. $variables['template'],
+  // Add hook suggestions, default to customer template.
+  $variables['theme_hook_suggestions'] = array(
+    'uc_order__customer',
+    'uc_order__'. $variables['template'],
   );
 }
 

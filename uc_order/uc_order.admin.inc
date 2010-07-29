@@ -1497,14 +1497,19 @@ function uc_order_add_line_item_form_submit($form, &$form_state) {
  * Display an invoice in the browser, convert it to PDF, or e-mail it as HTML.
  */
 function uc_order_invoice($order, $op = 'view') {
-  $output = theme('uc_order', $order, $op, variable_get('uc_cust_order_invoice_template', 'customer'));
+  $output = array(
+    '#theme' => 'uc_order',
+    '#order' => $order,
+    '#op' => $op,
+    '#template' => variable_get('uc_cust_order_invoice_template', 'customer'),
+  );
 
   if ($op == 'print') {
-    print $output;
+    print drupal_render($output);
     exit();
   }
 
-  return array('#markup' => $output);
+  return $output;
 }
 
 /**
