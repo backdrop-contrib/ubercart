@@ -479,6 +479,7 @@ function uc_order_entity_info() {
   return array(
     'uc_order' => array(
       'label' => t('Order'),
+      'controller class' => 'UcOrderController',
       'base table' => 'uc_orders',
       'uri callback' => 'uc_order_uri',
       'fieldable' => TRUE,
@@ -488,15 +489,15 @@ function uc_order_entity_info() {
       'bundles' => array(
         'uc_order' => array(
           'label' => t('Order'),
+          'admin' => array(
+            'path' => 'admin/store/settings/orders',
+            'access arguments' => array('administer store'),
+          ),
         ),
       ),
       'view modes' => array(
         'full' => array(
           'label' => t('Invoice'),
-          'admin' => array(
-            'path' => 'admin/store/settings/orders',
-            'access arguments' => array('administer store'),
-          ),
         ),
       ),
       'access callback' => 'uc_order_order_entity_access',
@@ -1146,59 +1147,81 @@ function uc_order_product_delete($order_product_id) {
   module_invoke_all('uc_order_product_delete', $order_product_id);
 }
 
+class UcOrderController extends DrupalDefaultEntityController {
+
+  function attachLoad(&$orders, $revision_id = FALSE) {
+    foreach ($orders as &$order) {
+      $order->data = unserialize($order->data);
+
+      $result = db_query("SELECT * FROM {uc_order_products} WHERE order_id = :id ORDER BY order_product_id", array(':id' => $order->order_id));
+      $order->products = array();
+      foreach ($result as $product) {
+        $product->data = unserialize($product->data);
+        $product->order_uid = $order->uid;
+        $order->products[] = $product;
+      }
+
+      uc_order_module_invoke('load', $order, NULL);
+
+      // Load line items... has to be last after everything has been loaded.
+      $order->line_items = uc_order_load_line_items($order, TRUE);
+
+      // Merge it with the defaultish line items.
+      $order->line_items = array_merge($order->line_items, uc_order_load_line_items($order, FALSE));
+      usort($order->line_items, 'uc_weight_sort');
+
+      $fields = array();
+
+      // Make sure the total still matches up...
+      if (($total = uc_order_get_total($order)) !== $order->order_total) {
+        $fields['order_total'] = $total;
+        $order->order_total = $total;
+      }
+
+      if (($count = uc_order_get_product_count($order)) !== $order->product_count) {
+        $fields['product_count'] = $count;
+        $order->product_count = $count;
+      }
+
+      if (count($fields)) {
+        $query = db_update('uc_orders')
+          ->fields($fields)
+          ->condition('order_id', $order->order_id)
+          ->execute();
+      }
+    }
+
+    parent::attachLoad($orders, $revision_id);
+  }
+
+}
+
 /**
  * Load an order from the database.
  */
-function uc_order_load($order_id) {
+function uc_order_load($order_id, $reset = FALSE) {
   if (is_null($order_id) || $order_id < 1) {
     return FALSE;
   }
 
-  $order = db_query("SELECT * FROM {uc_orders} WHERE order_id = :id", array(':id' => $order_id))->fetchObject();
+  $orders = uc_order_load_multiple(array($order_id), array(), $reset);
 
-  if ($order == FALSE) {
-    return FALSE;
-  }
+  return $orders ? reset($orders) : FALSE;
+}
 
-  $order->data = unserialize($order->data);
-
-  $result = db_query("SELECT * FROM {uc_order_products} WHERE order_id = :id ORDER BY order_product_id", array(':id' => $order_id));
-  $order->products = array();
-  foreach ($result as $product) {
-    $product->data = unserialize($product->data);
-    $product->order_uid = $order->uid;
-    $order->products[] = $product;
-  }
-
-  uc_order_module_invoke('load', $order, NULL);
-
-  // Load line items... has to be last after everything has been loaded.
-  $order->line_items = uc_order_load_line_items($order, TRUE);
-
-  // Merge it with the defaultish line items.
-  $order->line_items = array_merge($order->line_items, uc_order_load_line_items($order, FALSE));
-  usort($order->line_items, 'uc_weight_sort');
-
-  $fields = array();
-
-  // Make sure the total still matches up...
-  if (($total = uc_order_get_total($order)) !== $order->order_total) {
-    $fields['order_total'] = $total;
-    $order->order_total = $total;
-  }
-
-  if (($count = uc_order_get_product_count($order)) !== $order->product_count) {
-    $fields['product_count'] = $count;
-    $order->product_count = $count;
-  }
-
-  if (count($fields)) {
-    $query = db_update('uc_orders')
-      ->fields($fields)
-      ->condition('order_id', $order->order_id)
-      ->execute();
-  }
-  return $order;
+/**
+ * Load order entities form the database.
+ *
+ * @param $ids
+ *   An array of order IDs.
+ * @param $conditions
+ *   An array of conditions on the {uc_orders} table in the form 'field' =>
+ *   $value.
+ * @return
+ *   An array of order objects indexed by order_id.
+ */
+function uc_order_load_multiple($ids, $conditions = array(), $reset = FALSE) {
+  return entity_load('uc_order', $ids, $conditions, $reset);
 }
 
 /**
@@ -1404,7 +1427,7 @@ function uc_order_update_status($order_id, $status) {
     $change = array(t('Order status') => array('old' => uc_order_status_data($order->order_status, 'title'), 'new' => uc_order_status_data($status, 'title')));
     uc_order_log_changes($order->order_id, $change);
 
-    $updated = uc_order_load($order_id);
+    $updated = uc_order_load($order_id, TRUE);
     rules_invoke_event('uc_order_status_update', $order, $updated);
 
     return TRUE;

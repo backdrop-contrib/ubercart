@@ -343,7 +343,7 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
 
   uc_order_save($order);
 
-  $form_state['storage']['order'] = uc_order_load($order->order_id);
+  $form_state['storage']['order'] = uc_order_load($order->order_id, TRUE);
 }
 
 /**
