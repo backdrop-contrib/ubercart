@@ -524,6 +524,32 @@ function uc_order_entity_info() {
 }
 
 /**
+ * Implement hook_field_extra_fields().
+ */
+function uc_order_field_extra_fields() {
+  $panes = module_invoke_all('uc_order_pane');
+  $extra = array();
+
+  foreach ($panes as $pane) {
+    $extra_field = array(
+      'label' => $pane['title'],
+      'description' => $pane['desc'],
+      'weight' => $pane['weight'],
+    );
+
+    if (in_array('edit', $pane['show'])) {
+      $extra['uc_order']['uc_order']['form'][$pane['id']] = $extra_field;
+    }
+
+    if (in_array('view', $pane['show']) || in_array('customer', $pane['show'])) {
+      $extra['uc_order']['uc_order']['display'][$pane['id']] = $extra_field;
+    }
+  }
+
+  return $extra;
+}
+
+/**
  * Implement hook_user_view().
  */
 function uc_order_user_view($account, $view_mode) {

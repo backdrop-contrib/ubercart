@@ -1283,6 +1283,8 @@ function uc_order_edit_form($form, &$form_state, $order) {
     );
   }
 
+  field_attach_form('uc_order', $order, $form, $form_state);
+
   return $form;
 }
 

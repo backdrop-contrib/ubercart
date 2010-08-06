@@ -1038,50 +1038,69 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
   );
 }
 
-/******************************************************************************
- * CCK Hooks                                                                  *
- ******************************************************************************/
-
 /**
- * Implement hook_content_extra_fields().
+ * Implement hook_field_extra_fields().
  *
  * Adds the "Product information"
  */
-function uc_product_content_extra_fields($type_name) {
-  $type = node_type_get_type($type_name);
+function uc_product_field_extra_fields() {
   $extra = array();
 
-  if ($type->base == 'uc_product') {
-    $extra['base'] = array(
-      'label' => t('Product information'),
-      'description' => t('Product module form.'),
-      'weight' => -1
+  foreach (uc_product_types() as $type) {
+    $extra['node'][$type] = array(
+      'form' => array(
+        'base' => array(
+          'label' => t('Product information'),
+          'description' => t('Product module form.'),
+          'weight' => -1,
+        ),
+      ),
+      'display' => array(
+        'display_price' => array(
+          'label' => t('Display price'),
+          'description' => t('High-visibility sell price.'),
+          'weight' => -1,
+        ),
+        'model' => array(
+          'label' => t('SKU'),
+          'description' => t('Product SKU/model.'),
+          'weight' => 0,
+        ),
+        'list_price' => array(
+          'label' => t('List price'),
+          'description' => t('The listed MSRP.'),
+          'weight' => 2,
+        ),
+        'cost' => array(
+          'label' => t('Cost'),
+          'description' => t("Your store's cost."),
+          'weight' => 3,
+        ),
+        'sell_price' => array(
+          'label' => t('Sell price'),
+          'description' => t('Customer purchase price.'),
+          'weight' => 4,
+        ),
+        'weight' => array(
+          'label' => t('Weight'),
+          'description' => t('Physical weight (lbs, kg, etc.).'),
+          'weight' => 5,
+        ),
+        'dimensions' => array(
+          'label' => t('Dimensions'),
+          'description' => t('Physical dimensions of the packaged product.'),
+          'weight' => 6,
+        ),
+        'add_to_cart' => array(
+          'label' => t('Add to cart form'),
+          'description' => t('Add to cart form'),
+          'weight' => 10,
+        ),
+      ),
     );
   }
 
   return $extra;
-}
-
-/**
- * Implement hook_content_extra_fields_alter().
- */
-function uc_product_content_extra_fields_alter(&$extra, $type_name) {
-  $type = node_type_get_type($type_name);
-
-  if ($type->base == 'uc_product') {
-    if (isset($extra['menu'])) {
-      $extra['menu']['weight'] = 0;
-    }
-    if ($type->has_body) {
-      $extra['body_field']['weight'] = -4;
-      unset($extra['body_field']['view']);
-      $extra['body'] = array(
-        'label' => t('Description'),
-        'description' => t('Node description. (View tab)'),
-        'weight' => 1,
-      );
-    }
-  }
 }
 
 /**
