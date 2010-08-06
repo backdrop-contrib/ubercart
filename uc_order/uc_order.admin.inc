@@ -237,12 +237,14 @@ function uc_order_workflow_form($form, &$form_state) {
     }
   }
 
-  $form['order_statuses']['create'] = array(
+  $form['order_statuses']['actions'] = array('#type' => 'actions');
+  $form['order_statuses']['actions']['create'] = array(
     '#type' => 'submit',
     '#value' => t('Create new status'),
   );
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit changes'),
   );
@@ -395,11 +397,12 @@ function uc_order_status_create_form($form, &$form_state) {
     '#default_value' => 0,
   );
 
-  $form['create'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['create'] = array(
     '#type' => 'submit',
     '#value' => t('Create'),
   );
-  $form['cancel'] = array(
+  $form['actions']['cancel'] = array(
     '#markup' => l(t('Cancel'), 'admin/store/settings/orders/edit/workflow'),
   );
 
@@ -603,7 +606,8 @@ function uc_order_admin_sort_form($form, &$form_state) {
     '#attributes' => array('onchange' => 'this.form.submit();')
   );
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => 'View',
     '#attributes' => array('style' => 'display: none;')
@@ -640,7 +644,8 @@ function uc_order_select_form($form, &$form_state) {
     '#maxlength' => 10
   );
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('View'),
     '#attributes' => array('style' => 'display: none;')
@@ -720,7 +725,8 @@ function uc_order_create_form($form, &$form_state) {
     '#disabled' => TRUE,
   );
 
-  $form['create'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['create'] = array(
     '#type' => 'submit',
     '#value' => t('Create order'),
   );
@@ -1033,8 +1039,9 @@ function uc_order_select_customer_form($form, &$form_state, $options = NULL) {
     );
   }
 
+  $form['actions'] = array('#type' => 'actions');
   if (is_null(arg(4))) {
-    $form['search'] = array(
+    $form['actions']['search'] = array(
       '#type' => 'submit',
       '#value' => t('Search'),
       '#attributes' => array('onclick' => 'return load_customer_search_results();'),
@@ -1042,13 +1049,13 @@ function uc_order_select_customer_form($form, &$form_state, $options = NULL) {
   }
   elseif (arg(4) == 'search') {
     if (!is_null($options)) {
-      $form['select'] = array(
+      $form['actions']['select'] = array(
         '#type' => 'submit',
         '#value' => t('Select'),
         '#attributes' => array('onclick' => 'return select_customer_search();'),
       );
     }
-    $form['back'] = array(
+    $form['actions']['back'] = array(
       '#type' => 'submit',
       '#value' => t('Back'),
       '#attributes' => array('onclick' => 'return load_customer_search();'),
@@ -1059,14 +1066,14 @@ function uc_order_select_customer_form($form, &$form_state, $options = NULL) {
       '#type' => 'checkbox',
       '#title' => t('E-mail customer account details.'),
     );
-    $form['submit'] = array(
+    $form['actions']['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Submit'),
       '#attributes' => array('onclick' => 'return check_new_customer_address();'),
     );
   }
 
-  $form['close'] = array(
+  $form['actions']['close'] = array(
     '#type' => 'submit',
     '#value' => t('Close'),
     '#attributes' => array('onclick' => 'return close_customer_select();'),
@@ -1258,7 +1265,8 @@ function uc_order_edit_form($form, &$form_state, $order) {
     }
   }
 
-  $form['submit-changes'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit-changes'] = array(
     '#type' => 'submit',
     '#value' => t('Submit changes'),
     '#attributes' => array('class' => array('save-button')),
@@ -1266,7 +1274,7 @@ function uc_order_edit_form($form, &$form_state, $order) {
   );
 
   if (uc_order_can_delete($order)) {
-    $form['delete'] = array(
+    $form['actions']['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete'),
       '#submit' => array('uc_order_edit_form_delete'),
@@ -1450,7 +1458,8 @@ function uc_order_add_line_item_form($form, &$form_state, $order, $line_item_id)
     '#type' => 'hidden',
     '#value' => $line_item_id,
   );
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Add line item'),
     '#suffix' => l(t('Cancel'), 'admin/store/orders/' . $order->order_id . '/edit'),
@@ -1530,7 +1539,8 @@ function uc_order_mail_invoice_form($form, &$form_state, $order) {
     '#title' => t('Recipient e-mail address'),
     '#default_value' => $order->primary_email,
   );
-  $form['submit' ] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit' ] = array(
     '#type' => 'submit',
     '#value' => t('Mail invoice'),
   );

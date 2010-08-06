@@ -211,7 +211,8 @@ function uc_ups_admin_settings_submit($form, &$form_state) {
  */
 function uc_ups_confirm_shipment($form, &$form_state, $order) {
   $form['digest'] = array('#type' => 'hidden', '#value' => $_SESSION['ups']['digest']);
-  $form['submit'] = array('#type' => 'submit', '#value' => t('Request Pickup'));
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Request Pickup'));
 
   return $form;
 }

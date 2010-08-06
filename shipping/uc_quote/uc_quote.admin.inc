@@ -133,7 +133,8 @@ function uc_quote_admin_settings($form, &$form_state) {
   $form['default_address']['zone'] = uc_zone_select(uc_get_field_name('zone'), $address->zone, NULL, $country);
   $form['default_address']['postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $address->postal_code, FALSE, NULL, 10, 10);
 
-  $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
   return $form;
 }
 
@@ -240,7 +241,8 @@ function uc_quote_method_settings($form, &$form_state) {
     '#default_value' => variable_get('uc_store_shipping_type', 'small_package'),
   );
 
-  $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
 
   return $form;
 }

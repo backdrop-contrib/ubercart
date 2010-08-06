@@ -157,7 +157,8 @@ function uc_stock_report_form($form, &$form_state) {
     '#attributes' => array('onchange' => 'this.form.submit();'),
   );
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Update'),
     '#attributes' => array('style' => "display:none;"),
@@ -242,7 +243,8 @@ function uc_stock_edit_form($form, &$form_state, $node) {
     '#value' => $node->nid,
   );
 
-  $form['save'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['save'] = array(
     '#type' => 'submit',
     '#value' => t('Save changes'),
   );

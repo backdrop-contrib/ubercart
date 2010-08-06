@@ -131,7 +131,8 @@ function hook_uc_file_action($op, $args) {
           '#type' => 'textfield',
           '#title' => t('Watermark Text'),
         );
-        $form['submit_watermark'] = array(
+        $form['actions'] = array('#type' => 'actions');
+        $form['actions']['submit_watermark'] = array(
           '#type' => 'submit',
           '#value' => t('Add Watermark'),
         );

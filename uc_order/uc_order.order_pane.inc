@@ -274,7 +274,8 @@ function uc_order_pane_products($op, $order, $form = NULL, &$form_state = NULL) 
       return tapir_get_table('uc_op_products_customer_table', $order);
 
     case 'edit-form':
-      $form['add_product_button'] = array(
+      $form['actions'] = array('#type' => 'actions');
+      $form['actions']['add_product_button'] = array(
         '#type' => 'submit',
         '#value' => t('Add product'),
         '#submit' => array('uc_order_pane_products_select'),
@@ -283,7 +284,7 @@ function uc_order_pane_products($op, $order, $form = NULL, &$form_state = NULL) 
           'wrapper' => 'product-controls',
         ),
       );
-      $form['add_blank_line_button'] = array(
+      $form['actions']['add_blank_line_button'] = array(
         '#type' => 'submit',
         '#value' => t('Add blank line'),
         '#submit' => array('uc_order_edit_products_add_blank'),
@@ -366,21 +367,22 @@ function uc_order_product_select_form($form, &$form_state, $order) {
     '#title' => t('Search by name or model/SKU (* is the wildcard)'),
   );
 
-  $form['buttons']['select'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['select'] = array(
     '#type' => 'submit',
     '#value' => t('Select'),
     '#submit' => array('uc_order_pane_products_add'),
     '#ajax' => $ajax,
     '#weight' => 0,
   );
-  $form['buttons']['search'] = array(
+  $form['actions']['search'] = array(
     '#type' => 'submit',
     '#value' => t('Search'),
     '#submit' => array('uc_order_pane_products_select'),
     '#ajax' => $ajax,
     '#weight' => 1,
   );
-  $form['buttons']['close'] = array(
+  $form['actions']['close'] = array(
     '#type' => 'submit',
     '#value' => t('Close'),
     '#submit' => array('uc_order_pane_products_close'),
@@ -424,12 +426,13 @@ function uc_order_add_product_form($form, &$form_state, $order, $node) {
     '#size' => 2,
     '#maxlength' => 5,
   );
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Add to order'),
     '#submit' => array('uc_order_edit_products_add', 'uc_order_edit_form_submit'),
   );
-  $form['cancel'] = array(
+  $form['actions']['cancel'] = array(
     '#type' => 'submit',
     '#value' => t('Cancel'),
     '#submit' => array('uc_order_pane_products_select'),
@@ -804,7 +807,8 @@ function uc_order_pane_line_items($op, $order) {
         '#title' => t('Select a type'),
         '#options' => $options,
       );
-      $form['add_line_item']['submit'] = array(
+      $form['add_line_item']['actions'] = array('#type' => 'actions');
+      $form['add_line_item']['actions']['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Add line'),
         '#attributes' => array('class' => array('save-button')),
@@ -1099,7 +1103,8 @@ function uc_order_view_update_form($form, &$form_state, $order) {
     '#weight' => 0,
   );
 
-  $form['controls']['submit'] = array(
+  $form['controls']['actions'] = array('#type' => 'actions');
+  $form['controls']['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Update'),
     '#weight' => 10,

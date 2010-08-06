@@ -105,13 +105,14 @@ function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
     $conditions->form($form, $form_state);
   }
 
-  $form['buttons']['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
   );
 
   if (isset($form['mid'])) {
-    $form['buttons']['delete'] = array(
+    $form['actions']['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete'),
       '#submit' => array('uc_flatrate_admin_method_edit_form_delete'),

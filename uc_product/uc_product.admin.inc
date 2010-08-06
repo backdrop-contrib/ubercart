@@ -237,11 +237,12 @@ function uc_product_field_settings_form($form, &$form_state) {
     );
   }
 
-  $form['buttons']['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save configuration'),
   );
-  $form['buttons']['reset'] = array(
+  $form['actions']['reset'] = array(
     '#type' => 'submit',
     '#value' => t('Reset to defaults'),
     '#submit' => array('uc_product_field_settings_form_reset'),
@@ -499,7 +500,8 @@ function uc_product_feature_add_form($form, &$form_state, $node) {
     '#options' => $options,
   );
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Add'),
   );
@@ -614,7 +616,8 @@ function uc_product_class_form($form, &$form_state, $class = NULL) {
     '#description' => t('This text describes the content type created for this product class to administrators.'),
     '#default_value' => $classdesc,
   );
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
   );

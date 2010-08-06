@@ -136,7 +136,8 @@ function uc_file_admin_files_form_show_files($form, &$form_state) {
     '#suffix' => '</div>',
   );
 
-  $form['uc_file_action']['submit'] = array(
+  $form['uc_file_actions']['actions'] = array('#type' => 'actions');
+  $form['uc_file_action']['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Perform action'),
     '#prefix' => '<div class="duration">',

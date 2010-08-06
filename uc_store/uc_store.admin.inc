@@ -292,7 +292,8 @@ function uc_store_customer_search_form($form, &$form_state) {
     '#maxlength' => 96,
   );
 
-  $form['search']['submit'] = array(
+  $form['search']['actions'] = array('#type' => 'actions');
+  $form['search']['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Search'),
   );
@@ -501,7 +502,8 @@ function uc_country_import_form($form, &$form_state) {
     '#multiple' => is_array($import_list),
     '#size' => min(10, count($options)),
   );
-  $form['country_import']['import_button'] = array(
+  $form['country_import']['actions'] = array('#type' => 'actions');
+  $form['country_import']['actions']['import_button'] = array(
     '#type' => 'submit',
     '#value' => t('Import'),
     '#disabled' => !is_array($import_list),
@@ -617,7 +619,8 @@ function uc_country_formats_form($form, &$form_state) {
     }
   }
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit changes'),
   );
@@ -954,7 +957,9 @@ function uc_store_initials($form, &$form_state) {
     '#size' => 6,
     '#maxlength' => 32,
   );
-  $form['submit'] = array(
+
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
   );
@@ -1314,7 +1319,8 @@ function uc_price_settings_form($form, &$form_state) {
     '#default_value' => variable_get('uc_price_caching', TRUE),
   );
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save configuration'),
     '#suffix' => l(t('Cancel changes'), 'admin/store/settings/price-handlers'),

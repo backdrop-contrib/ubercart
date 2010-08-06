@@ -136,7 +136,8 @@ function uc_google_checkout_shipping_settings($form, &$form_state) {
     );
   }
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save configuration'),
   );
@@ -232,7 +233,8 @@ function uc_google_checkout_taxes_settings($form, &$form_state) {
     '#default_value' => FALSE,
   );
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save taxes'),
   );
@@ -426,7 +428,8 @@ function uc_google_checkout_terminal_form($form, &$form_state, $order, $amount =
     '#type' => 'hidden',
     '#value' => $order->order_id,
   );
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
     '#weight' => 10,

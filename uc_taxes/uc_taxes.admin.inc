@@ -144,7 +144,8 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
     $conditions->form($form, $form_state);
   }
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
     '#suffix' => l(t('Cancel'), 'admin/store/settings/taxes'),

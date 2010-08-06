@@ -138,7 +138,8 @@ function uc_attribute_form($form, &$form_state, $attribute = NULL) {
     '#default_value' => isset($attribute->ordering) ? $attribute->ordering : 0,
   );
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
     '#suffix' => l(t('Cancel'), 'admin/store/attributes'),
@@ -314,7 +315,8 @@ function uc_attribute_options_form($form, &$form_state, $attribute) {
   if (count($form['options'])) {
     $form['options']['#tree'] = TRUE;
 
-    $form['submit'] = array(
+    $form['actions'] = array('#type' => 'actions');
+    $form['actions']['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Save changes'),
       '#weight' => 10,
@@ -448,7 +450,8 @@ function uc_attribute_option_form($form, &$form_state, $attribute, $option = NUL
     '#weight' => 3,
   );
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
     '#suffix' => l(t('Cancel'), 'admin/store/attributes/' . $aid . '/options'),
@@ -642,7 +645,8 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
         );
       }
 
-      $form['save'] = array(
+      $form['actions'] = array('#type' => 'actions');
+      $form['actions']['save'] = array(
         '#type' => 'submit',
         '#value' => t('Save changes'),
         '#weight' => -2,
@@ -668,7 +672,8 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
       '#multiple' => TRUE,
       '#weight' => -1
     );
-    $form['add'] = array(
+    $form['actions'] = array('#type' => 'actions');
+    $form['actions']['add'] = array(
       '#type' => 'submit',
       '#value' => t('Add attributes'),
       '#suffix' => l(t('Cancel'), $type == 'product' ? 'node/' . $id . '/edit/attributes' : 'admin/store/products/classes/' . $class->pcid . '/attributes'),
@@ -985,7 +990,8 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
   if (!empty($form['attributes'])) {
     $form['attributes']['#tree'] = TRUE;
 
-    $form['submit'] = array(
+    $form['actions'] = array('#type' => 'actions');
+    $form['actions']['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Submit'),
       '#weight' => 10,
@@ -1306,7 +1312,8 @@ function uc_product_adjustments_form($form, &$form_state, $node) {
       '#type' => 'hidden',
       '#value' => $nid,
     );
-    $form['submit'] = array(
+    $form['actions'] = array('#type' => 'actions');
+    $form['actions']['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Submit'),
     );

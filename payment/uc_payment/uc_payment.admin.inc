@@ -275,7 +275,8 @@ function uc_payment_gateway_select_form($form, &$form_state, $options, $method, 
     '#options' => $options,
     '#default_value' => variable_get('uc_payment_' . $method . '_gateway', ''),
   );
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Process'),
   );
@@ -385,7 +386,8 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
       '#size' => 32,
       '#maxlength' => 256,
     );
-    $form['payments']['new']['action'] = array(
+    $form['payments']['new']['actions'] = array('#type' => 'actions');
+    $form['payments']['new']['actions']['action'] = array(
       '#type' => 'submit',
       '#value' => t('Enter'),
     );

@@ -81,9 +81,11 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
   $form['specify_card']['cc_data'] += uc_payment_method_credit_form(array(), $order);
   unset($form['specify_card']['cc_data']['cc_policy']);
 
+  $form['specify_card']['actions'] = array('#type' => 'actions');
+
   // If available, let the card be charged now.
   if (in_array(UC_CREDIT_AUTH_CAPTURE, $types)) {
-    $form['specify_card']['charge_card'] = array(
+    $form['specify_card']['actions']['charge_card'] = array(
       '#type' => 'submit',
       '#value' => t('Charge amount'),
     );
@@ -91,7 +93,7 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
 
   // If available, let the amount be authorized.
   if (in_array(UC_CREDIT_AUTH_ONLY, $types)) {
-    $form['specify_card']['authorize_card'] = array(
+    $form['specify_card']['actions']['authorize_card'] = array(
       '#type' => 'submit',
       '#value' => t('Authorize amount only'),
     );
@@ -99,7 +101,7 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
 
   // If available, create a reference at the gateway.
   if (in_array(UC_CREDIT_REFERENCE_SET, $types)) {
-    $form['specify_card']['reference_set'] = array(
+    $form['specify_card']['actions']['reference_set'] = array(
       '#type' => 'submit',
       '#value' => t('Set a reference only'),
     );
@@ -107,7 +109,7 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
 
   // If available, create a reference at the gateway.
   if (in_array(UC_CREDIT_CREDIT, $types)) {
-    $form['specify_card']['credit_card'] = array(
+    $form['specify_card']['actions']['credit_card'] = array(
       '#type' => 'submit',
       '#value' => t('Credit amount to this card'),
     );
@@ -137,9 +139,11 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
       '#options' => $options,
     );
 
+    $form['authorizations']['actions'] = array('#type' => 'actions');
+
     // If available, capture a prior authorization.
     if (in_array(UC_CREDIT_PRIOR_AUTH_CAPTURE, $types)) {
-      $form['authorizations']['auth_capture'] = array(
+      $form['authorizations']['actions']['auth_capture'] = array(
         '#type' => 'submit',
         '#value' => t('Capture amount to this authorization'),
       );
@@ -147,14 +151,14 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
 
     // If available, void a prior authorization.
     if (in_array(UC_CREDIT_VOID, $types)) {
-      $form['authorizations']['auth_void'] = array(
+      $form['authorizations']['actions']['auth_void'] = array(
         '#type' => 'submit',
         '#value' => t('Void authorization'),
       );
     }
 
     // Collapse this fieldset if no actions are available.
-    if (!isset($form['authorizations']['auth_capture']) && !isset($form['authorizations']['auth_void'])) {
+    if (!isset($form['authorizations']['actions']['auth_capture']) && !isset($form['authorizations']['actions']['auth_void'])) {
       $form['authorizations']['#collapsible'] = TRUE;
       $form['authorizations']['#collapsed'] = TRUE;
     }
@@ -185,9 +189,11 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
       '#options' => $options,
     );
 
+    $form['references']['actions'] = array('#type' => 'actions');
+
     // If available, capture a prior references.
     if (in_array(UC_CREDIT_REFERENCE_TXN, $types)) {
-      $form['references']['ref_capture'] = array(
+      $form['references']['actions']['ref_capture'] = array(
         '#type' => 'submit',
         '#value' => t('Charge amount to this reference'),
       );
@@ -195,7 +201,7 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
 
     // If available, remove a previously stored reference.
     if (in_array(UC_CREDIT_REFERENCE_REMOVE, $types)) {
-      $form['references']['ref_remove'] = array(
+      $form['references']['actions']['ref_remove'] = array(
         '#type' => 'submit',
         '#value' => t('Remove reference'),
       );
@@ -203,14 +209,14 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
 
     // If available, remove a previously stored reference.
     if (in_array(UC_CREDIT_REFERENCE_CREDIT, $types)) {
-      $form['references']['ref_credit'] = array(
+      $form['references']['actions']['ref_credit'] = array(
         '#type' => 'submit',
         '#value' => t('Credit amount to this reference'),
       );
     }
 
     // Collapse this fieldset if no actions are available.
-    if (!isset($form['references']['ref_capture']) && !isset($form['references']['ref_remove']) && !isset($form['references']['ref_credit'])) {
+    if (!isset($form['references']['actions']['ref_capture']) && !isset($form['references']['actions']['ref_remove']) && !isset($form['references']['actions']['ref_credit'])) {
       $form['references']['#collapsible'] = TRUE;
       $form['references']['#collapsed'] = TRUE;
     }

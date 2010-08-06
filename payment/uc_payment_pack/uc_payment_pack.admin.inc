@@ -58,7 +58,8 @@ function uc_payment_pack_receive_check_form($form, &$form_state, $order) {
     $form['clear'][$key]['#prefix'] = '<div style="float: left; margin-right: 1em;">';
     $form['clear'][$key]['#suffix'] = '</div>';
   }
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Receive check'),
   );

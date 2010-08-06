@@ -111,7 +111,8 @@ function uc_authorizenet_arb_user_update_form($form, &$form_state, $user, $rfid)
   $form['cc_data'] += uc_payment_method_credit_form(array(), $order);
   unset($form['cc_data']['cc_policy']);
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Update'),
     '#suffix' => l(t('Cancel'), 'user/' . $user->uid),

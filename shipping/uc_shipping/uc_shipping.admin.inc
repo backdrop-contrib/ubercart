@@ -151,9 +151,11 @@ function uc_shipping_new_package($form, &$form_state, $order) {
   }
 
   $form['order_id'] = array('#type' => 'hidden', '#value' => $order->order_id);
-  $form['create'] = array('#type' => 'submit', '#value' => t('Make packages'));
-  $form['combine'] = array('#type' => 'submit', '#value' => t('Create one package'));
-  $form['cancel'] = array('#type' => 'submit', '#value' => t('Cancel'));
+
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['create'] = array('#type' => 'submit', '#value' => t('Make packages'));
+  $form['actions']['combine'] = array('#type' => 'submit', '#value' => t('Create one package'));
+  $form['actions']['cancel'] = array('#type' => 'submit', '#value' => t('Cancel'));
 
   return $form;
 }
@@ -321,7 +323,8 @@ function uc_shipping_package_edit($form, &$form_state, $order, $package) {
     '#options' => $options,
     '#default_value' => $package->shipping_type,
   );
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
   );
@@ -574,7 +577,8 @@ function uc_shipping_new_shipment($form, &$form_state, $order) {
       '#options' => $option_methods,
       '#default_value' => 'all',
     );
-    $form['ship'] = array(
+    $form['actions'] = array('#type' => 'actions');
+    $form['actions']['ship'] = array(
       '#type' => 'submit',
       '#value' => t('Ship packages'),
     );
@@ -882,7 +886,8 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
     '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
   );
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save shipment'),
     '#weight' => 10

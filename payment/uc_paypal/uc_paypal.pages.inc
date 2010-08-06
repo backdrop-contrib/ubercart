@@ -313,7 +313,8 @@ function uc_paypal_ec_review_form($form, &$form_state, $order) {
     drupal_goto('cart/echeckout/submit');
   }
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Continue checkout'),
   );
@@ -400,7 +401,8 @@ function uc_paypal_ec_submit() {
 
 // Submits an order, calling the NVP API to send the order total to PayPal.
 function uc_paypal_ec_submit_form($form, &$form_state) {
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit order'),
   );

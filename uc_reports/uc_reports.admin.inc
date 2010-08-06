@@ -581,7 +581,8 @@ function uc_reports_products_custom_form($form, &$form_state, $values, $statuses
     '#size' => 5,
   );
 
-  $form['search']['submit'] = array(
+  $form['search']['actions'] = array('#type' => 'actions');
+  $form['search']['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Update report'),
   );
@@ -987,7 +988,8 @@ function uc_reports_sales_year_form($form, &$form_state, $year) {
     '#suffix' => '</div>',
   );
 
-  $form['submit'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('View'),
     '#prefix' => '<div class="sales-year">',
@@ -1233,7 +1235,8 @@ function uc_reports_sales_custom_form($form, &$form_state, $values, $statuses) {
     '#default_value' => $values['detail'],
   );
 
-  $form['search']['submit'] = array(
+  $form['search']['actions'] = array('#type' => 'actions');
+  $form['search']['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Update report'),
   );

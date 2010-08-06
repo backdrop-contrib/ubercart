@@ -231,14 +231,15 @@ function uc_cart_checkout_form($form, &$form_state) {
     '#value' => serialize($contents),
   );
 
-  $form['cancel'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['cancel'] = array(
     '#type' => 'submit',
     '#value' => t('Cancel'),
     '#validate' => array(), // Disable validation to prevent a new order from being created.
     '#limit_validation_errors' => array(),
     '#submit' => array('uc_cart_checkout_form_cancel'),
   );
-  $form['continue'] = array(
+  $form['actions']['continue'] = array(
     '#type' => 'submit',
     '#value' => t('Review order'),
   );
@@ -494,12 +495,13 @@ function uc_cart_checkout_review_form($form, &$form_state) {
     $_SESSION['do_review'] = TRUE;
   }
 
-  $form['back'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['back'] = array(
     '#type' => 'submit',
     '#value' => t('Back'),
     '#submit' => array('uc_cart_checkout_review_form_back'),
   );
-  $form['submit'] = array(
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit order'),
   );
