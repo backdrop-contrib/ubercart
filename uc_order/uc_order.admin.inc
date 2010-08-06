@@ -1112,7 +1112,7 @@ function uc_order_history($user) {
   $o_order_id = $query->addField('o', 'order_id');
   $o_created = $query->addField('o', 'created');
   $o_status = $query->addField('o', 'order_status');
-  $o_total = $query->addField('o', 'total');
+  $o_total = $query->addField('o', 'order_total');
   $o_uid = $query->addField('o', 'uid');
 
   $query->condition($o_uid, $user->uid)
@@ -1135,7 +1135,7 @@ function uc_order_history($user) {
     ->limit(20);
   $query->setCountQuery($count_query);
 
-  $result = $query->execute;
+  $result = $query->execute();
 
   // Build a table based on the customer's orders.
   foreach ($result as $order) {

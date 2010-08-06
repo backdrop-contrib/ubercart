@@ -1733,23 +1733,24 @@ function template_preprocess_uc_order(&$variables) {
   );
 
   $token_info = token_info();
-  $tokens = array_merge(
-    array_keys($token_info['tokens']['site']),
-    array_keys($token_info['tokens']['store']),
-    array_keys($token_info['tokens']['uc_order']));
 
-  $replacements = token_generate('uc_order', $tokens, $types);
+  $replacements = array();
+  foreach (array('site', 'store', 'uc_order') as $type) {
+    $replacements[$type] = token_generate($type, drupal_map_assoc(array_keys($token_info['tokens'][$type])), $types);
+  }
 
-  foreach ($replacements as $token => $value) {
-    $key = str_replace(array(':', '-'), '_', $token);
-    $key = str_replace('uc_', '', $key);
-    $variables[$key] = $value;
+  foreach ($replacements as $type => $tokens) {
+    foreach ($tokens as $token => $value) {
+      $key = str_replace('-', '_', $type . '_' .$token);
+      $key = str_replace('uc_', '', $key);
+      $variables[$key] = $value;
+    }
   }
 
   // Add hook suggestions, default to customer template.
   $variables['theme_hook_suggestions'] = array(
     'uc_order__customer',
-    'uc_order__'. $variables['template'],
+    'uc_order__' . $variables['template'],
   );
 }
 
