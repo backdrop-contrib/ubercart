@@ -508,6 +508,8 @@ function uc_order_admin($query = NULL, $args = NULL, $search = FALSE) {
     ->orderByHeader($header)
     ->limit(variable_get('uc_order_number_displayed', 30));
 
+  $rows = array();
+
   $result = $query->execute();
   foreach ($result as $order) {
     if ($address == 'shipping') {

@@ -45,6 +45,8 @@ function uc_attribute_admin() {
     ->groupBy('a.ordering')
     ->groupBy('a.display');
 
+  $rows = array();
+
   $result = $query->execute();
   foreach ($result as $attr) {
     if (empty($attr->label)) {
