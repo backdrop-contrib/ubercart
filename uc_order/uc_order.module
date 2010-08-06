@@ -210,7 +210,6 @@ function uc_order_menu() {
     'access callback' => 'uc_order_can_view_order',
     'access arguments' => array(1, 3),
     'type' => MENU_CALLBACK,
-    'file' => 'uc_order.admin.inc',
   );
   $items['user/%user/order/%uc_order/invoice'] = array(
     'title' => 'View invoice',
@@ -220,7 +219,15 @@ function uc_order_menu() {
     'access callback' => 'uc_order_can_view_order',
     'access arguments' => array(1, 3),
     'type' => MENU_CALLBACK,
-    'file' => 'uc_order.admin.inc',
+  );
+  $items['user/%user/order/%uc_order/print'] = array(
+    'title' => 'Print invoice',
+    'description' => 'Print order invoice.',
+    'page callback' => 'uc_order_view',
+    'page arguments' => array(3, 'print'),
+    'access callback' => 'uc_order_can_view_order',
+    'access arguments' => array(1, 3),
+    'type' => MENU_CALLBACK,
   );
 
   $items['admin/store/orders/%uc_order'] = array(
@@ -281,12 +288,11 @@ function uc_order_menu() {
   );
   $items['admin/store/orders/%uc_order/invoice'] = array(
     'title' => 'Invoice',
-    'page callback' => 'uc_order_invoice',
-    'page arguments' => array(3),
+    'page callback' => 'uc_order_view',
+    'page arguments' => array(3, 'invoice'),
     'access arguments' => array('view all orders'),
     'type' => MENU_LOCAL_TASK,
     'weight' => 3,
-    'file' => 'uc_order.admin.inc',
   );
   $items['admin/store/orders/%uc_order/invoice/view'] = array(
     'title' => 'View invoice',
@@ -299,7 +305,6 @@ function uc_order_menu() {
     'access arguments' => array('view all orders'),
     'type' => MENU_LOCAL_TASK,
     'weight' => -5,
-    'file' => 'uc_order.admin.inc',
   );
   $items['admin/store/orders/%uc_order/invoice/mail'] = array(
     'title' => 'Mail invoice',
@@ -497,7 +502,16 @@ function uc_order_entity_info() {
       ),
       'view modes' => array(
         'full' => array(
+          'label' => t('Full order'),
+        ),
+        'customer' => array(
+          'label' => t('Customer view'),
+        ),
+        'invoice' => array(
           'label' => t('Invoice'),
+        ),
+        'print' => array(
+          'label' => t('Print invoice'),
         ),
       ),
       'access callback' => 'uc_order_order_entity_access',
@@ -1172,6 +1186,97 @@ function uc_order_product_delete($order_product_id) {
     ->execute();
 
   module_invoke_all('uc_order_product_delete', $order_product_id);
+}
+
+/**
+ * Display the order view screen, constructed via hook_uc_order_pane().
+ */
+function uc_order_view($order, $view_mode = 'full') {
+  // Retrieve all profile fields and attach to $account->content.
+  uc_order_build_content($order, $view_mode);
+
+  $build = $order->content;
+  // We don't need duplicate rendering info in $order->content.
+  unset($order->content);
+
+  if ($view_mode == 'customer') {
+    $breadcrumb = drupal_get_breadcrumb();
+    $breadcrumb[2] = l(t('Order history'), 'user/' . $order->uid . '/orders');
+    drupal_set_breadcrumb($breadcrumb);
+  }
+
+  if ($view_mode == 'invoice') {
+    $build += array(
+      '#theme' => 'uc_order',
+      '#order' => $order,
+      '#op' => 'view',
+      '#template' => variable_get('uc_cust_order_invoice_template', 'customer'),
+    );
+  }
+
+  if ($view_mode == 'print') {
+    $output = '<div align="right" style="margin-bottom: 1em; margin-right: 1em;"><input type="button" value="' . t('Print invoice') . '" onclick="window.print();" /> '
+              . '<input type="button" value="' . t('Close window') . '" onclick="window.close();" /></div>';
+    $output .= theme('uc_order', array('order' => $order, 'op' => 'print', 'template' => variable_get('uc_cust_order_invoice_template', 'customer')));
+    print $output;
+    exit();
+  }
+
+  return $build;
+}
+
+function uc_order_build_content($order, $view_mode = 'full') {
+  $order->content = array(
+    'order_panes' => array(),
+  );
+
+  // Build fields content.
+  // In case of a multiple view, node_view_multiple() already ran the
+  // 'prepare_view' step. An internal flag prevents the operation from running
+  // twice.
+  field_attach_prepare_view('uc_order', array($order->order_id => $order), $view_mode);
+  entity_prepare_view('uc_order', array($order->order_id => $order));
+  $order->content += field_attach_view('uc_order', $order, $view_mode);
+
+
+  $panes = _uc_order_pane_list($view_mode);
+  foreach ($panes as $pane) {
+    if (in_array($view_mode, $pane['show']) && variable_get('uc_order_pane_' . $pane['id'] . '_show_' . $view_mode, $pane['enabled'])) {
+      $func = $pane['callback'];
+      if (function_exists($func) && ($contents = $func($view_mode, $order)) != NULL) {
+        $title = array();
+
+        if ($func('show-title', NULL) !== FALSE) {
+          $title = array(
+            '#markup' => $pane['title'] . ': ' . $func('view-title', $order),
+            '#prefix' => '<div class="order-pane-title">',
+            '#suffix' => '</div>',
+          );
+        }
+
+        $order->content['order_panes'][$pane['id']] = array(
+          '#prefix' => '<div class="order-pane ' . $pane['class'] . '">',
+          '#suffix' => '</div>',
+        );
+
+        $order->content['order_panes'][$pane['id']]['title'] = $title;
+        $order->content['order_panes'][$pane['id']]['pane'] = $contents;
+      }
+    }
+  }
+
+  if ($view_mode == 'customer' && variable_get('uc_cust_view_order_invoices', TRUE)) {
+    $url = url('user/' . $order->uid . '/order/' . $order->order_id . '/print');
+    drupal_add_js("function open_invoice() { window.open('$url', '" . t('Invoice') . "', 'toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=1,width=600,height=480,left=50,top=50'); }", 'inline');
+    $contents = '<a href="#" onclick="open_invoice();">'
+               . uc_store_get_icon('file:print') . ' '
+               . t('Click to open a window with a printable invoice.') . '</a>';
+    $order->content['print_button'] = array(
+      '#markup' => $contents,
+      '#prefix' => '<div class="order-pane">',
+      '#suffix' => '</div>',
+    );
+  }
 }
 
 class UcOrderController extends DrupalDefaultEntityController {

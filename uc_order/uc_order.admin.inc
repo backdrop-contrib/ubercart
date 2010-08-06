@@ -1177,71 +1177,6 @@ function uc_order_history($user) {
 }
 
 /**
- * Display the order view screen, constructed via hook_uc_order_pane().
- */
-function uc_order_view($order, $view = 'view') {
-  $build = array();
-  if ($view == 'customer') {
-    $breadcrumb = drupal_get_breadcrumb();
-    $breadcrumb[2] = l(t('Order history'), 'user/' . arg(1) . '/orders');
-    drupal_set_breadcrumb($breadcrumb);
-  }
-
-  if ($view == 'invoice') {
-    $output = theme('uc_order', $order, 'print', variable_get('uc_cust_order_invoice_template', 'customer'));
-    $output .= '<div align="right" style="margin-top: 1em; margin-right: 1em;"><input type="button" value="' . t('Print invoice') . '" onclick="window.print();" /> '
-              . '<input type="button" value="' . t('Close window') . '" onclick="window.close();" /></div>';
-    print $output;
-    exit();
-  }
-
-  $build = array(
-    'order_panes' => array(),
-  );
-
-  $panes = _uc_order_pane_list($view);
-  foreach ($panes as $pane) {
-    if (in_array($view, $pane['show']) && variable_get('uc_order_pane_' . $pane['id'] . '_show_' . $view, $pane['enabled'])) {
-      $func = $pane['callback'];
-      if (function_exists($func) && ($contents = $func($view, $order)) != NULL) {
-        $title = array();
-
-        if ($func('show-title', NULL) !== FALSE) {
-          $title = array(
-            '#markup' => $pane['title'] . ': ' . $func('view-title', $order),
-            '#prefix' => '<div class="order-pane-title">',
-            '#suffix' => '</div>',
-          );
-        }
-
-        $build['order_panes'][$pane['id']] = array(
-          '#prefix' => '<div class="order-pane ' . $pane['class'] . '">',
-          '#suffix' => '</div>',
-        );
-
-        $build['order_panes'][$pane['id']]['title'] = $title;
-        $build['order_panes'][$pane['id']]['pane'] = $contents;
-      }
-    }
-  }
-
-  if ($view == 'customer' && variable_get('uc_cust_view_order_invoices', TRUE)) {
-    $url = url('user/' . arg(1) . '/order/' . arg(3) . '/invoice/print');
-    drupal_add_js("function open_invoice() { window.open('$url', '" . t('Invoice') . "', 'toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=1,width=600,height=480,left=50,top=50'); }", 'inline');
-    $contents = '<a href="#" onclick="open_invoice();">'
-               . uc_store_get_icon('file:print') . ' '
-               . t('Click to open a window with a printable invoice.') . '</a>';
-    $build['print_button'] = array(
-      '#markup' => $contents,
-      '#prefix' => '<div class="order-pane">',
-      '#suffix' => '</div>',
-    );
-  }
-
-  return $build;
-}
-
-/**
  * Display the order edit screen, constructed via hook_uc_order_pane().
  *
  * @ingroup forms
@@ -1504,25 +1439,6 @@ function uc_order_add_line_item_form_submit($form, &$form_state) {
   }
 
   $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/edit';
-}
-
-/**
- * Display an invoice in the browser, convert it to PDF, or e-mail it as HTML.
- */
-function uc_order_invoice($order, $op = 'view') {
-  $output = array(
-    '#theme' => 'uc_order',
-    '#order' => $order,
-    '#op' => $op,
-    '#template' => variable_get('uc_cust_order_invoice_template', 'customer'),
-  );
-
-  if ($op == 'print') {
-    print drupal_render($output);
-    exit();
-  }
-
-  return $output;
 }
 
 /**
