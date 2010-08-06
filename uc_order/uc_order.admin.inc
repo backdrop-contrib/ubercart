@@ -1318,7 +1318,7 @@ function theme_uc_order_edit_form($variables) {
   $output .= '<div class="order-pane abs-left">' . drupal_render($form['order_id']) . drupal_render($form['order_modified'])
     . drupal_render($form['form_id']) . drupal_render($form['form_token'])
     . drupal_render($form['form_build_id'])
-    . drupal_render($form['submit-changes']) . drupal_render($form['delete'])
+    . drupal_render($form['actions'])
     . '</div>';
 
   return $output;
