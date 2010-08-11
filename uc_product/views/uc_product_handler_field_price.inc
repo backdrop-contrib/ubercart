@@ -10,11 +10,13 @@
  * Return a formatted price value to display in the View.
  */
 class uc_product_handler_field_price extends views_handler_field_numeric {
-  function options(&$options) {
-    parent::options($options);
+  function option_definition() {
+    $options = parent::option_definition();
 
-    $options['format'] = 'uc_price';
-    $options['revision'] = 'themed';
+    $options['format'] = array('default' => 'uc_price');
+    $options['revision'] = array('default' => 'themed');
+
+    return $options;
   }
 
   function options_form(&$form, &$form_state) {

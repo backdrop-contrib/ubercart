@@ -18,12 +18,9 @@ function uc_google_checkout_callback() {
   }
 
   //watchdog('google', check_plain($_SERVER['PHP_AUTH_USER']), NULL, WATCHDOG_NOTICE);
-  if ($_SERVER['PHP_AUTH_USER'] != $merchant_id) {
-    watchdog('google', 'HTTP Authorization User does not match settings.', array(), WATCHDOG_ERROR);
-  }
-  //watchdog('google', check_plain($_SERVER['PHP_AUTH_PW']), NULL, WATCHDOG_NOTICE);
-  if ($_SERVER['PHP_AUTH_PW'] != $merchant_key) {
-    watchdog('google', 'HTTP Authorization Password does not match settings.', array(), WATCHDOG_ERROR);
+  if ($_SERVER['PHP_AUTH_USER'] != $merchant_id || $_SERVER['PHP_AUTH_PW'] != $merchant_key) {
+    watchdog('google', 'HTTP Authorization header does not match settings.', array(), WATCHDOG_ERROR);
+    return MENU_ACCESS_DENIED;
   }
   $input = file_get_contents('php://input');
   //watchdog('google', print_r(check_plain($input), TRUE), NULL, WATCHDOG_NOTICE);

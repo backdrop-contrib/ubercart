@@ -32,11 +32,6 @@ function uc_cart_links_settings_form($form, &$form_state) {
     '#description' => t('Enter in messages available to the cart links API for display through a link. Separate messages with a line break.<br />Messages should have a numeric key and text value. Example: 1337|Message text.'),
     '#default_value' => variable_get('uc_cart_links_messages', ''),
   );
-  $form['uc_cart_links_empty'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Allow cart links to empty customer carts.'),
-    '#default_value' => variable_get('uc_cart_links_empty', TRUE),
-  );
   $form['uc_cart_links_restrictions'] = array(
     '#type' => 'textarea',
     '#title' => t('Cart links restrictions'),

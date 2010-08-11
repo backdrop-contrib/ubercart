@@ -10,10 +10,11 @@
  * Return a formatted weight value to display in the View.
  */
 class uc_product_handler_field_weight extends views_handler_field_numeric {
-  function options(&$options) {
-    parent::options($options);
+  function option_definition() {
+    $options = parent::option_definition();
 
-    $options['format'] = 'uc_weight';
+    $options['format'] = array('default' => 'uc_weight');
+    return $options;
   }
 
   function options_form(&$form, &$form_state) {

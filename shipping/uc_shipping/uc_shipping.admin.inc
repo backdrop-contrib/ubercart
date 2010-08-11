@@ -452,7 +452,7 @@ function uc_shipping_package_delete_confirm_submit($form, &$form_state) {
  */
 function uc_shipping_order_shipments($order) {
   $result = db_query("SELECT * FROM {uc_shipments} WHERE order_id = :id", array(':id' => $order->order_id));
-  $header = array(t('Shipment ID'), t('Name'), t('Company'), t('Destination'), t('Ship date'), t('Estimated delivery'), t('Tracking number'), array('data' => t('Actions'), 'colspan' => 4));
+  $header = array(t('Shipment ID'), t('Name'), t('Company'), t('Destination'), t('Ship date'), t('Estimated delivery'), t('Tracking number'), array('data' => t('Actions'), 'colspan' => 5));
   $rows = array();
 
   foreach ($result as $shipment) {
@@ -467,12 +467,13 @@ function uc_shipping_order_shipments($order) {
     $row[] = l(t('view'), 'admin/store/orders/' . $order->order_id . '/shipments/' . $shipment->sid . '/view');
     $row[] = l(t('edit'), 'admin/store/orders/' . $order->order_id . '/shipments/' . $shipment->sid . '/edit');
     $row[] = l(t('print'), 'admin/store/orders/' . $order->order_id . '/shipments/' . $shipment->sid . '/print');
+    $row[] = l(t('packing slip'), 'admin/store/orders/' . $order->order_id . '/shipments/' . $shipment->sid . '/packing_slip');
     $row[] = l(t('delete'), 'admin/store/orders/' . $order->order_id . '/shipments/' . $shipment->sid . '/delete');
     $rows[] = $row;
   }
 
   if (empty($rows)) {
-    $rows[] = array(array('data' => t('No shipments have been made for this order.'), 'colspan' => 11));
+    $rows[] = array(array('data' => t('No shipments have been made for this order.'), 'colspan' => 12));
   }
 
   $build['shipments'] = array(
@@ -977,6 +978,7 @@ function uc_shipping_shipment_print($order, $shipment) {
 function theme_uc_shipping_shipment_print($variables) {
   $order = $variables['order'];
   $shipment = $variables['shipment'];
+  $labels = $variables['labels'];
 
   $language = $GLOBALS['language'];
   $output = <<<EOHTML
@@ -995,16 +997,18 @@ EOHTML;
 
   $output .= theme('uc_packing_slip', array('order' => $order, 'shipment' => $shipment));
 
-  foreach ($shipment->packages as $id => $package) {
-    if ($package->label_image && file_exists($package->label_image->uri)) {
-      // TODO: Find a way to store these magic numbers specifically for UPS.
-      list($width, $height) = array(672, 392);
-      $output .= '<br class="page-break" />' . "\n";;
-      $output .= theme('image', array(
-        'path' => $package->label_image->uri,
-        'attributes' => array('width' => $width, 'height' => $height),
-        'getsize' => FALSE,
-      )) . "\n";
+  if ($labels) {
+    foreach ($shipment->packages as $id => $package) {
+      if ($package->label_image && file_exists($package->label_image->uri)) {
+        // TODO: Find a way to store these magic numbers specifically for UPS.
+        list($width, $height) = array(672, 392);
+        $output .= '<br class="page-break" />' . "\n";;
+        $output .= theme('image', array(
+          'path' => $package->label_image->uri,
+          'attributes' => array('width' => $width, 'height' => $height),
+          'getsize' => FALSE,
+        )) . "\n";
+      }
     }
   }
 

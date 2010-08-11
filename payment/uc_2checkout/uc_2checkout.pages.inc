@@ -13,15 +13,21 @@ function uc_2checkout_complete($cart_id = 0) {
   $order = uc_order_load($_POST['merchant_order_id']);
 
   if ($order === FALSE || uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
-    print t('An error has occurred during payment.  Please contact us to ensure your order has submitted.');
-    exit();
+    return t('An error has occurred during payment.  Please contact us to ensure your order has submitted.');
   }
 
-  if ($_POST['demo'] != 'Y') {
-    $key = $_POST['key'];
-    $valid = md5(variable_get('uc_2checkout_secret_word', 'tango') . $_POST['sid'] . $_POST['merchant_order_id'] . $_POST['total']);
-    if (strtolower($key) != strtolower($valid)) {
-      uc_order_comment_save($order->order_id, 0, t('Attempted unverified 2Checkout completion for this order.'), 'admin');
+  $key = $_POST['key'];
+  $valid = md5(variable_get('uc_2checkout_secret_word', 'tango') . $_POST['sid'] . $_POST['merchant_order_id'] . $_POST['total']);
+  if (strtolower($key) != strtolower($valid)) {
+    uc_order_comment_save($order->order_id, 0, t('Attempted unverified 2Checkout completion for this order.'), 'admin');
+    return MENU_ACCESS_DENIED;
+  }
+
+  if ($_POST['demo'] == 'Y' xor variable_get('uc_2checkout_demo', TRUE)) {
+    watchdog('uc_2checkout', 'The 2checkout payment for order <a href="!order_url">@order_id</a> demo flag was set to %flag, but the module is set to %mode mode.',
+      array('!order_url' => url('admin/store/orders/'. $order->order_id), '@order_id' => $order->order_id, '%flag' => $_POST['demo'] == 'Y' ? 'Y' : 'N', '%mode' => variable_get('uc_2checkout_demo', TRUE) ? 'Y' : 'N'), WATCHDOG_ERROR);
+    if (!variable_get('uc_2checkout_demo', TRUE)) {
+      return MENU_ACCESS_DENIED;
     }
   }
 
@@ -57,28 +63,8 @@ function uc_2checkout_complete($cart_id = 0) {
   // Empty that cart...
   uc_cart_empty($cart_id);
 
-  // Save changes to order without it's completion (it will be on finalization step)
+  // Save changes to order without it's completion.
   uc_order_save($order);
-
-  $url = 'cart/2checkout/finalize/' . $order->order_id;
-
-  // Javascript redirect on the finalization page.
-  $output = '<script type="text/javascript">window.location = "' . url($url, array('absolute' => TRUE)) . '";</script>';
-
-  // Text link for users without Javascript enabled.
-  $output .= l(t('Click to complete checkout.'), $url, array('absolute' => TRUE));
-
-  // 2CO needs page larger than 255 characters to display.
-  while (strlen($output) < 255) {
-    $output .= '&nbsp;';
-  }
-
-  print $output;
-  exit();
-}
-
-function uc_2checkout_finalize() {
-  $order = uc_order_load(arg(3));
 
   // Add a comment to let sales team know this came in through the site.
   uc_order_comment_save($order->order_id, 0, t('Order created through website.'), 'admin');

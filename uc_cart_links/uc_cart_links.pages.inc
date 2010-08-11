@@ -85,24 +85,21 @@ function uc_cart_links_process($cart_action) {
           // If it's a product kit, we need black magic to make everything work
           // right. In other words, we have to simulate FAPI's form values.
           $node = node_load($p['nid']);
-          if (is_array($node->products)) {
-            foreach ($node->products as $nid => $product) {
-              $p['data']['products'][$nid] = array(
-                'nid' => $nid,
-                'qty' => $product->qty,
-              );
+          if ($node->status) {
+            if (is_array($node->products)) {
+              foreach ($node->products as $nid => $product) {
+                $p['data']['products'][$nid] = array(
+                  'nid' => $nid,
+                  'qty' => $product->qty,
+                );
+              }
             }
+            uc_cart_add_item($p['nid'], $p['qty'], $p['data'] + module_invoke_all('uc_add_to_cart_data', $p), NULL, $msg, FALSE, FALSE);
+            $rebuild_cart = TRUE;
           }
-          uc_cart_add_item($p['nid'], $p['qty'], $p['data'] + module_invoke_all('uc_add_to_cart_data', $p), NULL, $msg, FALSE, FALSE);
-          $rebuild_cart = TRUE;
-        }
-        break;
-
-      // Empty the shopping cart.
-      case 'e':
-      case 'E':
-        if (variable_get('uc_cart_links_empty', TRUE)) {
-          uc_cart_empty(uc_cart_get_id());
+          else {
+            watchdog('uc_cart_link', 'Cart link on %url tried to add an unpublished product to the cart.', array('%url' => uc_referer_uri()), WATCHDOG_ERROR);
+          }
         }
         break;
 
