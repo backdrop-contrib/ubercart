@@ -1208,7 +1208,6 @@ function uc_order_edit_form($form, &$form_state, $order) {
     '#type' => 'submit',
     '#value' => t('Submit changes'),
     '#attributes' => array('class' => array('save-button')),
-    '#disabled' => TRUE,
   );
 
   if (uc_order_can_delete($order)) {
@@ -1274,6 +1273,8 @@ function uc_order_edit_form_validate($form, &$form_state) {
   if ($form_state['values']['order_modified'] < $order->modified) {
     form_set_error('order_modified', t('This order has been modified by another user, changes cannot be saved.'));
   }
+
+  entity_form_field_validate('uc_order', $form, $form_state);
 }
 
 /**
@@ -1343,6 +1344,8 @@ function uc_order_edit_form_submit($form, &$form_state) {
   if (variable_get('uc_order_logging', TRUE)) {
     uc_order_log_changes($order->order_id, $log);
   }
+
+  field_attach_submit('uc_order', $order, $form, $form_state);
 
   uc_order_save($order);
 

@@ -1102,31 +1102,44 @@ function uc_order_new($uid = 0, $state = 'in_checkout') {
  * Save an order to the database.
  */
 function uc_order_save($order) {
-  if (is_null($order->order_id) || intval($order->order_id) == 0) {
-    return FALSE;
-  }
+  $transaction = db_transaction();
 
-  $order->order_total = uc_order_get_total($order);
-  $order->product_count = uc_order_get_product_count($order);
-  if (is_null($order->delivery_country) || $order->delivery_country == 0) {
-    $order->delivery_country = variable_get('uc_store_country', 840);
-  }
-  if (is_null($order->billing_country) || $order->billing_country == 0) {
-    $order->billing_country = variable_get('uc_store_country', 840);
-  }
-  $order->host = ip_address();
-  $order->modified = REQUEST_TIME;
-
-  drupal_write_record('uc_orders', $order, 'order_id');
-
-  if (is_array($order->products)) {
-    foreach ($order->products as $product) {
-      drupal_alter('uc_order_product', $product, $order);
-      uc_order_product_save($order->order_id, $product);
+  try {
+    if (is_null($order->order_id) || intval($order->order_id) == 0) {
+      return FALSE;
     }
-  }
 
-  uc_order_module_invoke('save', $order, NULL);
+    field_attach_presave('uc_order', $order);
+
+    $order->order_total = uc_order_get_total($order);
+    $order->product_count = uc_order_get_product_count($order);
+    if (is_null($order->delivery_country) || $order->delivery_country == 0) {
+      $order->delivery_country = variable_get('uc_store_country', 840);
+    }
+    if (is_null($order->billing_country) || $order->billing_country == 0) {
+      $order->billing_country = variable_get('uc_store_country', 840);
+    }
+    $order->host = ip_address();
+    $order->modified = REQUEST_TIME;
+
+    drupal_write_record('uc_orders', $order, 'order_id');
+
+    if (is_array($order->products)) {
+      foreach ($order->products as $product) {
+        drupal_alter('uc_order_product', $product, $order);
+        uc_order_product_save($order->order_id, $product);
+      }
+    }
+
+    field_attach_update('uc_order', $order);
+
+    uc_order_module_invoke('save', $order, NULL);
+  }
+  catch (Exception $e) {
+    $transaction->rollback('uc_order');
+    watchdog_exception('uc_order', $e);
+    throw $e;
+  }
 }
 
 /**
