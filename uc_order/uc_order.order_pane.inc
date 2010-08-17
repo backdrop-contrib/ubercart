@@ -14,7 +14,7 @@
 /**
  * Handle the "Ship to" order pane.
  */
-function uc_order_pane_ship_to($op, $order) {
+function uc_order_pane_ship_to($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'customer':
       if (!uc_order_is_shippable($order)) {
@@ -25,12 +25,8 @@ function uc_order_pane_ship_to($op, $order) {
       return $build;
 
     case 'edit-form':
-      $form['ship_to'] = array(
-        '#type' => 'fieldset',
-        '#title' => t("Modify 'Ship to' information"),
-        '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
-      );
+      $form['ship_to'] = array();
+
       if (uc_address_field_enabled('first_name')) {
         $form['ship_to']['delivery_first_name'] = uc_textfield(uc_get_field_name('first_name'), $order->delivery_first_name, FALSE);
       }
@@ -72,17 +68,17 @@ function uc_order_pane_ship_to($op, $order) {
     case 'edit-title':
       $output = ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
                 . '/images/address_book.gif" alt="' . t('Select from address book.') . '" '
-                . 'title="' . t('Select from address book.') . '" onclick="load_address_select(' . $order['order_uid']['#value'] . ', \'#delivery_address_select\', \'delivery\');" '
+                . 'title="' . t('Select from address book.') . '" onclick="load_address_select(' . $form['order_uid']['#value'] . ', \'#delivery_address_select\', \'delivery\');" '
                 . 'style="position: relative; top: 2px; cursor: pointer;" />';
       return $output;
 
     case 'edit-theme':
       $output = '<div id="delivery_address_select"></div><table class="order-edit-table">';
-      foreach (element_children($order['ship_to']) as $field) {
-        $title = $order['ship_to'][$field]['#title'];
-        $order['ship_to'][$field]['#title'] = NULL;
+      foreach (element_children($form['ship_to']) as $field) {
+        $title = $form['ship_to'][$field]['#title'];
+        $form['ship_to'][$field]['#title'] = NULL;
         $output .= '<tr><td class="oet-label">' . $title . ':</td><td>'
-                 . drupal_render($order['ship_to'][$field]) . '</td></tr>';
+                 . drupal_render($form['ship_to'][$field]) . '</td></tr>';
       }
       $output .= '</table>';
       return $output;
@@ -102,7 +98,7 @@ function uc_order_pane_ship_to($op, $order) {
 /**
  * Handle the "Bill to" order pane.
  */
-function uc_order_pane_bill_to($op, $order) {
+function uc_order_pane_bill_to($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
     case 'customer':
@@ -110,12 +106,8 @@ function uc_order_pane_bill_to($op, $order) {
       return $build;
 
     case 'edit-form':
-      $form['bill_to'] = array(
-        '#type' => 'fieldset',
-        '#title' => t("Modify 'Bill to' information"),
-        '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
-      );
+      $form['bill_to'] = array();
+
       if (uc_address_field_enabled('first_name')) {
         $form['bill_to']['billing_first_name'] = uc_textfield(uc_get_field_name('first_name'), $order->billing_first_name, FALSE);
       }
@@ -157,7 +149,7 @@ function uc_order_pane_bill_to($op, $order) {
     case 'edit-title':
       $output = ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
                 . '/images/address_book.gif" alt="' . t('Select from address book.') . '" '
-                . 'title="' . t('Select from address book.') . '" onclick="load_address_select(' . $order['order_uid']['#value'] . ', \'#billing_address_select\', \'billing\');" '
+                . 'title="' . t('Select from address book.') . '" onclick="load_address_select(' . $form['order_uid']['#value'] . ', \'#billing_address_select\', \'billing\');" '
                 . 'style="position: relative; top: 2px; cursor: pointer;" />';
       $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
                . '/images/copy.gif" alt="' . t('Copy shipping information.') . '" title="'
@@ -167,11 +159,11 @@ function uc_order_pane_bill_to($op, $order) {
 
     case 'edit-theme':
       $output = '<div id="billing_address_select"></div><table class="order-edit-table">';
-      foreach (element_children($order['bill_to']) as $field) {
-        $title = $order['bill_to'][$field]['#title'];
-        $order['bill_to'][$field]['#title'] = NULL;
+      foreach (element_children($form['bill_to']) as $field) {
+        $title = $form['bill_to'][$field]['#title'];
+        $form['bill_to'][$field]['#title'] = NULL;
         $output .= '<tr><td class="oet-label">' . $title . ':</td><td>'
-                 . drupal_render($order['bill_to'][$field]) . '</td></tr>';
+                 . drupal_render($form['bill_to'][$field]) . '</td></tr>';
       }
       $output .= '</table>';
       return $output;
@@ -191,7 +183,7 @@ function uc_order_pane_bill_to($op, $order) {
 /**
  * Handle the "Customer Info" order pane.
  */
-function uc_order_pane_customer($op, $order) {
+function uc_order_pane_customer($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
       $build['uid'] = array('#markup' => t('Customer number: !user_link', array('!user_link' => $order->uid ? l($order->uid, 'user/' . $order->uid) : '0')));
@@ -200,12 +192,8 @@ function uc_order_pane_customer($op, $order) {
       return $build;
 
     case 'edit-form':
-      $form['customer'] = array(
-        '#type' => 'fieldset',
-        '#title' => t("Modify 'Customer info'"),
-        '#collapsible' => TRUE,
-        '#collapsed' => FALSE
-      );
+      $form['customer'] = array();
+
       $form['customer']['uid'] = array(
         '#type' => 'hidden',
         '#default_value' => $order->uid,
@@ -245,14 +233,14 @@ function uc_order_pane_customer($op, $order) {
 
     case 'edit-theme':
       $output = '<div id="customer-select"></div><table class="order-edit-table">';
-      foreach (element_children($order['customer']['text']) as $field) {
-        $title = $order['customer']['text'][$field]['#title'];
-        $order['customer']['text'][$field]['#title'] = NULL;
+      foreach (element_children($form['customer']['text']) as $field) {
+        $title = $form['customer']['text'][$field]['#title'];
+        $form['customer']['text'][$field]['#title'] = NULL;
         $output .= '<tr><td class="oet-label">' . $title . ':</td><td>'
-                 . drupal_render($order['customer']['text'][$field]) . '</td></tr>';
+                 . drupal_render($form['customer']['text'][$field]) . '</td></tr>';
       }
-      $output .= '</table>' . drupal_render($order['customer']['primary_email'])
-               . drupal_render($order['customer']['uid']);
+      $output .= '</table>' . drupal_render($form['customer']['primary_email'])
+               . drupal_render($form['customer']['uid']);
       return $output;
 
     case 'edit-process':
@@ -265,7 +253,7 @@ function uc_order_pane_customer($op, $order) {
 /**
  * Handle the "Products" order pane.
  */
-function uc_order_pane_products($op, $order, $form = NULL, &$form_state = NULL) {
+function uc_order_pane_products($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
       return tapir_get_table('uc_op_products_view_table', $order);
@@ -274,8 +262,7 @@ function uc_order_pane_products($op, $order, $form = NULL, &$form_state = NULL) 
       return tapir_get_table('uc_op_products_customer_table', $order);
 
     case 'edit-form':
-      $form['actions'] = array('#type' => 'actions');
-      $form['actions']['add_product_button'] = array(
+      $form['add_product_button'] = array(
         '#type' => 'submit',
         '#value' => t('Add product'),
         '#submit' => array('uc_order_pane_products_select'),
@@ -284,7 +271,7 @@ function uc_order_pane_products($op, $order, $form = NULL, &$form_state = NULL) 
           'wrapper' => 'product-controls',
         ),
       );
-      $form['actions']['add_blank_line_button'] = array(
+      $form['add_blank_line_button'] = array(
         '#type' => 'submit',
         '#value' => t('Add blank line'),
         '#submit' => array('uc_order_edit_products_add_blank'),
@@ -320,10 +307,10 @@ function uc_order_pane_products($op, $order, $form = NULL, &$form_state = NULL) 
       return $form;
 
     case 'edit-theme':
-      $output = drupal_render($order['add_product_button']);
-      $output .= drupal_render($order['add_blank_line_button']);
-      $output .= drupal_render($order['product_controls']);
-      $output .= drupal_render($order['products']);
+      $output = drupal_render($form['add_product_button']);
+      $output .= drupal_render($form['add_blank_line_button']);
+      $output .= drupal_render($form['product_controls']);
+      $output .= drupal_render($form['products']);
 
       return $output;
 
@@ -711,7 +698,7 @@ function uc_order_pane_products_ajax_callback($form, &$form_state) {
 /**
  * Handle the "Line Items" order pane.
  */
-function uc_order_pane_line_items($op, $order) {
+function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
     case 'customer':
@@ -796,12 +783,8 @@ function uc_order_pane_line_items($op, $order) {
       }
       usort($line_items, 'uc_weight_sort');
 
-      $form['add_line_item'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Add line item'),
-        '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
-      );
+      $form['add_line_item'] = array();
+
       $form['add_line_item']['li_type_select'] = array(
         '#type' => 'select',
         '#title' => t('Select a type'),
@@ -874,14 +857,14 @@ function uc_order_pane_line_items($op, $order) {
       return $form;
 
     case 'edit-theme':
-      $order['add_line_item']['li_type_select']['#title'] = '';
+      $form['add_line_item']['li_type_select']['#title'] = '';
       $output = '<table class="full-width"><tr><td>';
       $output .= '<table><tr><td colspan="2"><b>' . t('Add a line item')
-                . ': </b></td></tr><tr><td>' . drupal_render($order['add_line_item']['li_type_select'])
-                . ' </td><td>' . drupal_render($order['add_line_item']['submit'])
+                . ': </b></td></tr><tr><td>' . drupal_render($form['add_line_item']['li_type_select'])
+                . ' </td><td>' . drupal_render($form['add_line_item']['actions'])
                 . '</td></tr></table>';
-      $output .= '</td><td>' . drupal_render($order['li_delete_id'])
-                . drupal_render($order['line_items']) . '</td></tr></table>';
+      $output .= '</td><td>' . drupal_render($form['li_delete_id'])
+                . drupal_render($form['line_items']) . '</td></tr></table>';
       return $output;
 
     case 'edit-process':
@@ -946,7 +929,7 @@ function uc_order_edit_line_items_recalculate($form, &$form_state) {
 /**
  * Handle the "Order Comments" order pane.
  */
-function uc_order_pane_order_comments($op, $order) {
+function uc_order_pane_order_comments($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
       $comments = uc_order_comments_load($order->order_id);
@@ -985,7 +968,7 @@ function uc_order_pane_order_comments($op, $order) {
 /**
  * Handle the "Admin Comments" order pane.
  */
-function uc_order_pane_admin_comments($op, $order) {
+function uc_order_pane_admin_comments($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
       $comments = uc_order_comments_load($order->order_id, TRUE);
@@ -1005,7 +988,7 @@ function uc_order_pane_admin_comments($op, $order) {
       return $form;
 
     case 'edit-theme':
-      $comments = uc_order_comments_load($order['order_id']['#value'], TRUE);
+      $comments = uc_order_comments_load($form['order_id']['#value'], TRUE);
       if (is_array($comments) && count($comments) > 0) {
         foreach ($comments as $comment) {
           $items[] = '[' . uc_get_initials($comment->uid) . '] ' . filter_xss_admin($comment->message);
@@ -1014,7 +997,7 @@ function uc_order_pane_admin_comments($op, $order) {
       else {
         $items = array(t('No admin comments have been entered for this order.'));
       }
-      $output = theme('item_list', array('items' => $items)) . drupal_render($order['admin_comment_field']);
+      $output = theme('item_list', array('items' => $items)) . drupal_render($form['admin_comment_field']);
       return $output;
 
     case 'edit-process':
@@ -1029,7 +1012,7 @@ function uc_order_pane_admin_comments($op, $order) {
 /**
  * Handle the "Update" order pane.
  */
-function uc_order_pane_update($op, $order) {
+function uc_order_pane_update($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
       return drupal_get_form('uc_order_view_update_form', $order);
@@ -1576,11 +1559,4 @@ function _uc_order_pane_data($pane_id, $key) {
       return $pane[$key];
     }
   }
-}
-
-/**
- * Call an order pane function with the argument passed by reference.
- */
-function _uc_order_call_order_pane_byref($func, $op, &$form) {
-  return $func($op, $form);
 }

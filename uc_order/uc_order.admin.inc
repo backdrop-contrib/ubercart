@@ -1186,6 +1186,7 @@ function uc_order_history($user) {
  *   uc_order_edit_form_submit()
  */
 function uc_order_edit_form($form, &$form_state, $order) {
+  $form['#order'] = $order;
   $form['order_id'] = array('#type' => 'hidden', '#value' => $order->order_id);
   $form['order_uid'] = array('#type' => 'hidden', '#value' => $order->uid);
 
@@ -1196,8 +1197,8 @@ function uc_order_edit_form($form, &$form_state, $order) {
   foreach ($panes as $pane) {
     if (in_array('edit', $pane['show']) && variable_get('uc_order_pane_' . $pane['id'] . '_show_edit', $pane['enabled'])) {
       $func = $pane['callback'];
-      if (function_exists($func) && ($contents = $func('edit-form', $order, array(), $form_state)) != NULL) {
-        $form = array_merge($form, $contents);
+      if (function_exists($func)) {
+        $func('edit-form', $order, $form, $form_state);
       }
     }
   }
@@ -1236,7 +1237,7 @@ function theme_uc_order_edit_form($variables) {
     if (in_array('edit', $pane['show']) &&
         variable_get('uc_order_pane_' . $pane['id'] . '_show_edit', TRUE)) {
       $func = $pane['callback'];
-      if (function_exists($func) && ($contents = _uc_order_call_order_pane_byref($func, 'edit-theme', $form)) != NULL) {
+      if (function_exists($func) && ($contents = $func('edit-theme', $form['#order'], $form)) != NULL) {
         if (isset($pane['theme_all']) && is_array($pane['theme_all']) && in_array('edit', $pane['theme_all'])) {
           $output .= $contents;
         }
@@ -1244,7 +1245,7 @@ function theme_uc_order_edit_form($variables) {
           $output .= '<div class="order-pane ' . $pane['class'] . '">';
           if ($func('show-title', NULL) !== FALSE) {
             $output .= '<div class="order-pane-title">' . $pane['title'] . ': '
-                     . $func('edit-title', $form) . '</div>';
+                     . $func('edit-title', $form['#order'], $form) . '</div>';
           }
           $output .= $contents . '</div>';
         }
@@ -1252,11 +1253,13 @@ function theme_uc_order_edit_form($variables) {
     }
   }
 
-  $output .= '<div class="order-pane abs-left">' . drupal_render($form['order_id']) . drupal_render($form['order_modified'])
+  $last = '<div class="order-pane abs-left">' . drupal_render($form['order_id']) . drupal_render($form['order_modified'])
     . drupal_render($form['form_id']) . drupal_render($form['form_token'])
     . drupal_render($form['form_build_id'])
     . drupal_render($form['actions'])
     . '</div>';
+
+  $output .= drupal_render_children($form) . $last;
 
   return $output;
 }

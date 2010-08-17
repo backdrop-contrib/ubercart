@@ -15,7 +15,7 @@
 /**
  * Handle the Payment order pane.
  */
-function uc_order_pane_payment($op, $order) {
+function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
       if (variable_get('uc_payment_tracking', TRUE)) {
@@ -68,12 +68,8 @@ function uc_order_pane_payment($op, $order) {
       drupal_add_js('misc/progress.js');
       drupal_add_js(array('defPaymentMsg' => ''), 'setting');
 
-      $form['payment'] = array(
-        '#type' => 'fieldset',
-        '#title' => t("Modify 'Payment info'"),
-        '#collapsible' => TRUE,
-        '#collapsed' => FALSE
-      );
+      $form['payment'] = array();
+
       $methods = _uc_payment_method_list();
       foreach ($methods as $method) {
         $options[$method['id']] = $method['name'];
@@ -103,11 +99,11 @@ function uc_order_pane_payment($op, $order) {
       drupal_add_js(array('ucOrderInitiate' => TRUE), 'setting');
 
       $output = '<table class="order-edit-table">';
-      foreach (element_children($order['payment']) as $field) {
-        $title = $order['payment'][$field]['#title'];
-        $order['payment'][$field]['#title'] = NULL;
+      foreach (element_children($form['payment']) as $field) {
+        $title = $form['payment'][$field]['#title'];
+        $form['payment'][$field]['#title'] = NULL;
         $output .= '<tr><td class="oet-label">' . $title . ':</td><td>'
-                 . drupal_render($order['payment'][$field]) . '</td></tr>';
+                 . drupal_render($form['payment'][$field]) . '</td></tr>';
       }
       $output .= '</table><div id="payment_details"></div>';
       return $output;
