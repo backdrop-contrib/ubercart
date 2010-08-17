@@ -15,7 +15,7 @@
 /**
  * Display the cart contents for review during checkout.
  */
-function uc_checkout_pane_cart($op, &$order, $form = NULL, &$form_state = NULL) {
+function uc_checkout_pane_cart($op, $order, $form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
       $order->products = uc_cart_get_contents();
@@ -58,7 +58,7 @@ function uc_checkout_pane_cart($op, &$order, $form = NULL, &$form_state = NULL) 
 /**
  * Get the user's email address for login.
  */
-function uc_checkout_pane_customer($op, &$order, $form = NULL, &$form_state = NULL) {
+function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NULL) {
   global $user;
 
   switch ($op) {
@@ -226,7 +226,7 @@ function uc_checkout_pane_customer($op, &$order, $form = NULL, &$form_state = NU
 /**
  * Get the delivery information.
  */
-function uc_checkout_pane_delivery($op, &$order, $form = NULL, &$form_state = NULL) {
+function uc_checkout_pane_delivery($op, $order, $form = NULL, &$form_state = NULL) {
   global $user;
 
   switch ($op) {
@@ -329,7 +329,7 @@ function uc_checkout_pane_delivery($op, &$order, $form = NULL, &$form_state = NU
 /**
  * Get the billing information.
  */
-function uc_checkout_pane_billing($op, &$order, $form = NULL, &$form_state = NULL) {
+function uc_checkout_pane_billing($op, $order, $form = NULL, &$form_state = NULL) {
   global $user;
 
   switch ($op) {
@@ -431,7 +431,7 @@ function uc_checkout_pane_billing($op, &$order, $form = NULL, &$form_state = NUL
 /**
  * Allow a customer to make comments on the order.
  */
-function uc_checkout_pane_comments($op, &$order, $form = NULL, &$form_state = NULL) {
+function uc_checkout_pane_comments($op, $order, $form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
       $description = t('Use this area for special instructions or questions regarding your order.');

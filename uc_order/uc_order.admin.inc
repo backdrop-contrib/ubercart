@@ -1289,7 +1289,7 @@ function uc_order_edit_form_submit($form, &$form_state) {
     if (in_array('edit', $pane['show']) && variable_get('uc_order_pane_' . $pane['id'] . '_show_edit', TRUE)) {
       $func = $pane['callback'];
       if (function_exists($func)) {
-        if (($changes = $func('edit-process', $form_state['values'], $form, $form_state)) != NULL) {
+        if (($changes = $func('edit-process', $order, $form, $form_state)) != NULL) {
           foreach ($changes as $key => $value) {
             if ($order->$key != $value) {
               if (!is_array($value)) {
@@ -1352,7 +1352,7 @@ function uc_order_edit_form_submit($form, &$form_state) {
   if (is_array($perform)) {
     foreach ($perform as $func => $ops) {
       if (in_array($form_state['values']['op'], $ops)) {
-        $func($form_state['values']['op'], $form_state['values']);
+        $func($form_state['values']['op'], $order, $form, $form_state['values']);
       }
     }
   }

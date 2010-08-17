@@ -313,35 +313,39 @@ function hook_uc_checkout_complete($order, $account) {
  *
  * @return
  *   An array of checkout pane arrays using the following keys:
- *   - "id"
+ *   - id:
  *     - type: string
  *     - value: The internal ID of the checkout pane, using a-z, 0-9, and - or _.
- *   - "title"
+ *   - title:
  *     - type: string
  *     - value:The name of the pane as it appears on the checkout form.
- *   - "desc"
+ *   - desc:
  *     - type: string
  *     - value: A short description of the pane for the admin pages.
- *   - "callback"
+ *   - callback:
  *     - type: string
  *     - value: The name of the callback function for this pane.  View
- *         @link http://www.ubercart.org/docs/developer/245/checkout this page @endlink
- *         for more documentation and examples of checkout pane callbacks.
- *   - "weight"
+ *       @link http://www.ubercart.org/docs/developer/245/checkout this page @endlink
+ *       for more documentation and examples of checkout pane callbacks.
+ *   - weight:
  *     - type: integer
  *     - value: Default weight of the pane, defining its order on the checkout form.
- *   - "enabled"
+ *   - enabled:
  *     - type: boolean
  *     - value: Optional. Whether or not the pane is enabled by default. Defaults
- *         to TRUE.
- *   - "process"
+ *       to TRUE.
+ *   - process:
  *     - type: boolean
  *     - value: Optional. Whether or not this pane needs to be processed when the
- *         checkout form is submitted. Defaults to TRUE.
- *   - "collapsible"
+ *       checkout form is submitted. Defaults to TRUE.
+ *   - collapsible:
  *     - type: boolean
  *     - value: Optional. Whether or not this pane is displayed as a collapsible
- *         fieldset. Defaults to TRUE.
+ *       fieldset. Defaults to TRUE.
+ *   - shippable:
+ *     - type: boolean
+ *     - value: Optional. If TRUE, the pane is only shown if the cart is shippable.
+ *       Defaults to NULL.
  */
 function hook_uc_checkout_pane() {
   $panes[] = array(
@@ -354,6 +358,69 @@ function hook_uc_checkout_pane() {
     'collapsible' => FALSE,
   );
   return $panes;
+}
+
+/**
+ * Build and process a pane defined by hook_uc_checkout_pane().
+ *
+ * @param string $op
+ *   The operation the pane is performing. Possible values are "view", "process",
+ *   "review", and "settings".
+ * @param UcOrder $order
+ *   The order being viewed or edited.
+ * @param array $form
+ *   The order's edit form. NULL for non-edit ops.
+ * @param array &$form_state
+ *   The form state array of the edit form. NULL for non-edit ops.
+ * @return
+ *   Varies according to the value of $op:
+ *   - view: An array with two keys, "contents" and an optional "description".
+ *     "contents" is a form array to collect the checkout data for the pane. The
+ *     description provides help text for the pane as a whole.
+ *   - process: A boolean indicating that checkout should continue. During this
+ *     op, $order should be modified with the values in $form_state['values']['panes'][PANE_ID].
+ *   - review: An array containing review sections. A review section contains
+ *     "title" and "data" keys which have HTML to be displayed on the checkout
+ *     review page.
+ *   - settings: A settings form which can be used with system_settings_form().
+ */
+function uc_checkout_pane_callback($op, $order, $form = NULL, &$form_state = NULL) {
+  // uc_checkout_pane_comments()
+  switch ($op) {
+    case 'view':
+      $description = t('Use this area for special instructions or questions regarding your order.');
+
+      if (!empty($order->order_id)) {
+        $default = db_query("SELECT message FROM {uc_order_comments} WHERE order_id = :id", array(':id' => $order->order_id))->fetchField();
+      }
+      else {
+        $default = NULL;
+      }
+      $contents['comments'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Order comments'),
+        '#default_value' => $default,
+      );
+
+      return array('description' => $description, 'contents' => $contents);
+
+    case 'process':
+      if (strlen($form_state['values']['panes']['comments']['comments']) > 0) {
+        db_delete('uc_order_comments')
+          ->condition('order_id', $order->order_id)
+          ->execute();
+        uc_order_comment_save($order->order_id, 0, $form_state['values']['panes']['comments']['comments'], 'order', uc_order_state_default('post_checkout'), TRUE);
+      }
+      return TRUE;
+
+    case 'review':
+      $review = NULL;
+      $result = db_query("SELECT message FROM {uc_order_comments} WHERE order_id = :id", array(':id' => $order->order_id));
+      if ($comment = $result->fetchObject()) {
+        $review[] = array('title' => t('Comment'), 'data' => check_plain($comment->message));
+      }
+      return $review;
+  }
 }
 
 /**

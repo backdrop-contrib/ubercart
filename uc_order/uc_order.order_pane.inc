@@ -84,7 +84,7 @@ function uc_order_pane_ship_to($op, $order, &$form = NULL, &$form_state = NULL) 
       return $output;
 
     case 'edit-process':
-      foreach ($order as $key => $value) {
+      foreach ($form_state['values'] as $key => $value) {
         if (substr($key, 0, 9) == 'delivery_') {
           if (uc_address_field_enabled(substr($key, 9))) {
             $changes[$key] = $value;
@@ -169,7 +169,7 @@ function uc_order_pane_bill_to($op, $order, &$form = NULL, &$form_state = NULL) 
       return $output;
 
     case 'edit-process':
-      foreach ($order as $key => $value) {
+      foreach ($form_state['values'] as $key => $value) {
         if (substr($key, 0, 8) == 'billing_') {
           if (uc_address_field_enabled(substr($key, 8))) {
             $changes[$key] = $value;
@@ -244,8 +244,8 @@ function uc_order_pane_customer($op, $order, &$form = NULL, &$form_state = NULL)
       return $output;
 
     case 'edit-process':
-      $changes['uid'] = $order['uid'];
-      $changes['primary_email'] = $order['primary_email'];
+      $changes['uid'] = $form_state['values']['uid'];
+      $changes['primary_email'] = $form_state['values']['primary_email'];
       return $changes;
   }
 }
@@ -875,8 +875,8 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
       return array(t('Add line'));
 
     case t('Add line'):
-      drupal_goto('admin/store/orders/' . $order['order_id']
-                 . '/add_line_item/' . $order['li_type_select']);
+      drupal_goto('admin/store/orders/' . $form_state['values']['order_id']
+                 . '/add_line_item/' . $form_state['values']['li_type_select']);
   }
 }
 
@@ -1001,9 +1001,9 @@ function uc_order_pane_admin_comments($op, $order, &$form = NULL, &$form_state =
       return $output;
 
     case 'edit-process':
-      if (!is_null($order['admin_comment']) && strlen(trim($order['admin_comment'])) > 0) {
+      if (!is_null($form_state['values']['admin_comment']) && strlen(trim($form_state['values']['admin_comment'])) > 0) {
         global $user;
-        uc_order_comment_save($order['order_id'], $user->uid, $order['admin_comment']);
+        uc_order_comment_save($form_state['values']['order_id'], $user->uid, $form_state['values']['admin_comment']);
       }
       return;
   }

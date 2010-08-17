@@ -109,9 +109,9 @@ function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) 
       return $output;
 
     case 'edit-process':
-      $changes['payment_method'] = $order['payment_method'];
-      $func = _uc_payment_method_data($order['payment_method'], 'callback');
-      if (function_exists($func) && ($return = $func('edit-process', $order)) != NULL && is_array($return)) {
+      $changes['payment_method'] = $form_state['values']['payment_method'];
+      $func = _uc_payment_method_data($form_state['values']['payment_method'], 'callback');
+      if (function_exists($func) && ($return = $func('edit-process', $form_state['values'])) != NULL && is_array($return)) {
         $changes = array_merge($changes, $return);
       }
       return $changes;

@@ -17,7 +17,7 @@ function coder_review_uc3x_reviews() {
       '#value' => '(?<!uc)_(add_to_cart|add_to_cart_data|calculate_tax|cart_display|(?<!update_)cart_item|cart_pane|checkout_pane|download_authorize|file_action|file_transfer_alter|line_item|line_item_alter|line_item_data_alter|order|order_actions|order_pane|order_product|order_product_alter|order_state|payment_method|payment_gagteway|product_class|product_description|product_description_alter|product_feature|product_types|shipment|shipping_type|shipping_method|store_status|update_cart_item)\s*\(',
       '#source' => 'all',
       '#warning_callback' => '_coder_review_uc3x_hook_warning',
-   ),
+    ),
 
     // Private functions were moved into uc_ namespace.
     array(
@@ -48,6 +48,12 @@ function coder_review_uc3x_reviews() {
       '#type' => 'regex',
       '#value' => '\buc_payment_process\s*\(',
       '#warning' => 'uc_payment_process() is now uc_payment_process_payment() because of hook_process().',
+    ),
+
+    array(
+      '#type' => 'regex',
+      '#value' => 'pane.*\(\$op,\s*&?\$(arg1|order)(,\s*&?\$arg2)?',
+      '#warning' => 'Checkout and order pane callbacks take the arguments ($op, $order, &$form = NULL, &$form_state = NULL).',
     ),
   );
 

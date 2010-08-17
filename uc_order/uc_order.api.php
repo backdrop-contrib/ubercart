@@ -254,18 +254,118 @@ function hook_uc_order_actions($order) {
  * and what data can be manipulated. That is all somewhat out of the scope of
  * this API page, so you'll have to click here to read more about what a callback
  * function should contain.
-*/
+ *
+ * @return
+ *   An array of order pane arrays using the following keys:
+ *   - id:
+ *     - type: string
+ *     - value: The internal ID of the checkout pane, using a-z, 0-9, and - or _.
+ *   - callback:
+ *     - type: string
+ *     - value: The name of the callback function for this pane.  View
+ *       @link http://www.ubercart.org/docs/developer/245/checkout this page @endlink
+ *       for more documentation and examples of checkout pane callbacks.
+ *   - title:
+ *     - type: string
+ *     - value:The name of the pane as it appears on the checkout form.
+ *   - desc:
+ *     - type: string
+ *     - value: A short description of the pane for the admin pages.
+ *   - class:
+ *     - type: string
+ *     - value: A CSS class that determines the relative position of the pane's
+ *       div. Choose "pos-left" to float left against the previous pane or
+ *       "abs-left" to start a new line of panes.
+ *   - weight:
+ *     - type: integer
+ *     - value: Default weight of the pane, defining its order on the checkout form.
+ *   - show:
+ *     - type: array
+ *     - value: The list of op values which will show the pane. "view", "edit",
+ *       "invoice", and "customer" are possible values.
+ */
 function hook_uc_order_pane() {
   $panes[] = array(
-    'id' => 'payment',
-    'callback' => 'uc_order_pane_payment',
-    'title' => t('Payment'),
-    'desc' => t('Specify and collect payment for an order.'),
-    'class' => 'pos-left',
-    'weight' => 4,
-    'show' => array('view', 'edit', 'customer'),
+    'id' => 'admin_comments',
+    'callback' => 'uc_order_pane_admin_comments',
+    'title' => t('Admin comments'),
+    'desc' => t('View the admin comments, used for administrative notes and instructions.'),
+    'class' => 'abs-left',
+    'weight' => 9,
+    'show' => array('view', 'edit'),
   );
   return $panes;
+}
+
+/**
+ * Builds and processes an order pane defined by hook_uc_order_pane().
+ *
+ * @param string $op
+ *   The operation the pane is performing. Possible values are "view", "customer",
+ *   "show-title", "edit-form", "edit-title", "edit-theme", "edit-process",
+ *   "edit-ops", and any of the strings returned when $op is "edit-ops".
+ * @param UcOrder $order
+ *   The order being viewed or edited.
+ * @param array $form
+ *   The order's edit form. NULL for non-edit ops.
+ * @param array &$form_state
+ *   The form state array of the edit form. NULL for non-edit ops.
+ * @return
+ *   Varies according to the value of $op:
+ *   - view: A render array showing admin-visible order data.
+ *   - customer: A render array showing customer-visible order data.
+ *   - show-title: A boolean flag indicating that the title of the pane should
+ *     be shown during the "view" and "customer" ops. Defaults to TRUE.
+ *   - edit-form: $form with the pane grafted in.
+ *   - edit-title: HTML to serve as the pane's title on the edit form.
+ *   - edit-theme: The rendered portion of the $form that the pane added.
+ *   - edit-process: An array of values to be modified on the order object,
+ *     keyed by the object's property, or NULL to signify no change on the order
+ *     object.
+ *   - edit-ops: An array of possible $op values that this pane may use to do
+ *     alternate processing on the edit form.
+ *   - edit-ops values: No return value expected.
+ */
+function uc_order_pane_callback($op, $order, &$form = NULL, &$form_state = NULL) {
+  // uc_order_pane_admin_comments()
+  switch ($op) {
+    case 'view':
+      $comments = uc_order_comments_load($order->order_id, TRUE);
+      return tapir_get_table('uc_op_admin_comments_view_table', $comments);
+
+    case 'edit-form':
+      $form['admin_comment_field'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Add an admin comment'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+      $form['admin_comment_field']['admin_comment'] = array(
+        '#type' => 'textarea',
+        '#description' => t('Admin comments are only seen by store administrators.'),
+      );
+      return $form;
+
+    case 'edit-theme':
+      $comments = uc_order_comments_load($form['order_id']['#value'], TRUE);
+      if (is_array($comments) && count($comments) > 0) {
+        foreach ($comments as $comment) {
+          $items[] = '[' . uc_get_initials($comment->uid) . '] ' . filter_xss_admin($comment->message);
+        }
+      }
+      else {
+        $items = array(t('No admin comments have been entered for this order.'));
+      }
+      $output = theme('item_list', array('items' => $items)) . drupal_render($form['admin_comment_field']);
+      return $output;
+
+    case 'edit-process':
+      if (!is_null($order['admin_comment']) && strlen(trim($order['admin_comment'])) > 0) {
+        global $user;
+        uc_order_comment_save($order['order_id'], $user->uid, $order['admin_comment']);
+      }
+      return;
+  }
 }
 
 /**
