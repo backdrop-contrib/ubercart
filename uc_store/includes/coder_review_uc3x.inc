@@ -50,9 +50,11 @@ function coder_review_uc3x_reviews() {
       '#warning' => 'uc_payment_process() is now uc_payment_process_payment() because of hook_process().',
     ),
 
+    // Checkout and order pane callback arguments changed.
     array(
       '#type' => 'regex',
       '#value' => 'pane.*\(\$op,\s*&?\$(arg1|order)(,\s*&?\$arg2)?',
+      '#never' => '\(\$op,\s*&?\$order,\s*&?\$form\s*=\s*NULL,\s*&\$form_state\s*=\s*NULL\)',
       '#warning' => 'Checkout and order pane callbacks take the arguments ($op, $order, &$form = NULL, &$form_state = NULL).',
     ),
   );
