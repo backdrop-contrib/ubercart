@@ -86,7 +86,13 @@ function theme_uc_catalog_browse($variables) {
     }
   }
   if (!empty($catalog->uc_catalog_image)) {
-    $output .= drupal_render(field_view_field('taxonomy_term', $catalog, 'uc_catalog_image', 'image_link_content__uc_thumbnail'));
+    $output .= drupal_render(field_view_field('taxonomy_term', $catalog, 'uc_catalog_image', array(
+      'type' => 'image',
+      'settings' => array(
+        'image_link' => 'content',
+        'style' => 'uc_thumbnail',
+      ),
+    )));
   }
 
   $query = db_select('node', 'n')->extend('PagerDefault')->extend('TableSort')->addTag('node_access');
