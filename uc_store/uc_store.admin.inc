@@ -1042,6 +1042,7 @@ function uc_store_customer_orders($uid) {
         array('data' => check_plain($sname)),
         array('data' => $item_count['COUNT(*)']),
         array('data' => array('#theme' => 'uc_price', '#price' => $order->order_total)),
+      ),
       'id' => 'order-' . $order->order_id,
     );
   }
