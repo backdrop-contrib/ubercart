@@ -27,7 +27,7 @@
  *   - "type": The quote and shipping types are ids of the product shipping type
  *       that these methods apply to. type may also be 'order' which indicates
  *       that the quote applies to the entire order, regardless of the shipping
- *       types of its products. This is used by quote methods that are base on
+ *       types of its products. This is used by quote methods that are based on
  *       the location of the customer rather than their purchase.
  *   - "callback": The function that is called by uc_quote when a shipping quote
  *       is requested. Its arguments are the array of products and an array of
@@ -40,10 +40,10 @@
  *       drupal_json_encode() is very useful for this.
  *       @code
  *         return array(
- *           '03' => array('rate' => 15.75, 'format' => uc_currency_format(15.75) 'option_label' => t('UPS Ground'),
+ *           '03' => array('rate' => 15.75,  'option_label' => t('UPS Ground'),
  *                         'error' => 'Additional handling charge automatically applied.'),
  *           '14' => array('error' => 'Invalid package type.'),
- *           '59' => array('rate' => 26.03, 'format' => uc_currency_format(26.03), 'option_label' => t('UPS 2nd Day Air A.M.'))
+ *           '59' => array('rate' => 26.03, 'option_label' => t('UPS 2nd Day Air A.M.'))
  *         );
  *       @endcode
  *   - "pkg_types": The list of package types that the shipping method can handle.
