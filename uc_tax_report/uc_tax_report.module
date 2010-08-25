@@ -126,10 +126,13 @@ function uc_tax_report_report_page($start_date = NULL, $end_date = NULL, $status
       $line['name'],
       $line['jurisdiction'],
       number_format($line['rate'] * 100, 3) . '%',
-      uc_currency_format($line['taxable_amount']),
-      uc_currency_format($line['amount']),
+      array('#theme' => 'uc_price', '#price' => $line['taxable_amount']),
+      array('#theme' => 'uc_price', '#price' => $line['amount']),
     );
     $rows[] = $row;
+    // Remove HTML for CSV files.
+    $row[3] = uc_currency_format($line['taxable_amount']);
+    $row[4] = uc_currency_format($line['amount']);
     $csv_rows[] = $row;
     $taxable_amount += $line['taxable_amount'];
     $amount += $line['amount'];
@@ -141,9 +144,11 @@ function uc_tax_report_report_page($start_date = NULL, $end_date = NULL, $status
       '*',
       '*',
       '*',
-      uc_currency_format($line['amount']),
+      array('#theme' => 'uc_price', '#price' => $line['amount']),
     );
     $rows[] = $row;
+    // Remove HTML for CSV files.
+    $row[4] = uc_currency_format($line['amount']);
     $csv_rows[] = $row;
     $amount += $line['amount'];
     // We have at least one no-meta-data line. Explain why.
@@ -155,10 +160,13 @@ function uc_tax_report_report_page($start_date = NULL, $end_date = NULL, $status
     t('Total'),
     '',
     '',
-    uc_currency_format($taxable_amount),
-    uc_currency_format($amount),
+    array('#theme' => 'uc_price', '#price' => $taxable_amount),
+    array('#theme' => 'uc_price', '#price' => $amount),
   );
   $rows[] = $row;
+  // Removes HTML for CSV files.
+  $row[3] = uc_currency_format($taxable_amount);
+  $row[4] = uc_currency_format($amount);
   $csv_rows[] = $row;
 
   // Cache the CSV export.

@@ -439,7 +439,7 @@ function uc_order_condition_is_shippable($order, $settings) {
  *
  * @see uc_order_action_update_status_form()
  */
-function uc_order_action_update_status(&$order, $status) {
+function uc_order_action_update_status($order, $status) {
   if (uc_order_update_status($order->order_id, $status)) {
     $order->order_status = $status;
   }

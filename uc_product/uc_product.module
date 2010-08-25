@@ -306,7 +306,7 @@ function uc_product_theme() {
       'variables' => array('node' => NULL, 'view_mode' => 'full'),
     ),
     'uc_product_price' => array(
-      'variables' => array('price' => 0, 'sign' => NULL, 'thou' => NULL, 'dec' => '.', 'attributes' => array()),
+      'variables' => array('price' => 0, 'label' => '', 'attributes' => array()),
     ),
     'uc_product_weight' => array(
       'variables' => array('weight' => 0, 'units' => NULL, 'view_mode' => 'full'),
@@ -756,8 +756,7 @@ function uc_product_view($node, $view_mode) {
     '#price' => $node->sell_price,
     '#attributes' => array(
       'class' => array(
-        'product',
-        'display',
+        'display-price',
       ),
     ),
     '#access' => $enabled['display_price'],
@@ -779,10 +778,10 @@ function uc_product_view($node, $view_mode) {
       '#price' => $node->list_price,
       '#attributes' => array(
         'class' => array(
-          'product',
-          'list',
+          'list-price',
         ),
       ),
+      '#label' => t('List price:'),
       '#access' => $enabled['list_price'],
       '#weight' => $weight['list_price'],
     );
@@ -792,10 +791,10 @@ function uc_product_view($node, $view_mode) {
       '#price' => $node->cost,
       '#attributes' => array(
         'class' => array(
-          'product',
           'cost',
         ),
       ),
+      '#label' => t('Cost:'),
       '#access' => $enabled['cost'] && user_access('administer products'),
       '#weight' => $weight['cost'],
     );
@@ -809,10 +808,10 @@ function uc_product_view($node, $view_mode) {
     '#price' => $node->sell_price,
     '#attributes' => array(
       'class' => array(
-        'product',
-        'sell',
+        'sell-price',
       ),
     ),
+    '#label' => t('Price:'),
     '#access' => $enabled['sell_price'],
     '#weight' => $weight['sell_price'],
   );
@@ -1325,13 +1324,12 @@ function uc_product_table($args = array()) {
             'list',
           ),
         ),
-        '#cell_attributes' => array('nowrap' => 'nowrap'),
       );
     }
     if ($enabled['sell_price']) {
       $context['class'][1] = 'sell';
       $context['field'] = 'sell_price';
-      $data['price'] = array('#markup' => uc_currency_format($node->sell_price), '#cell_attributes' => array('nowrap' => 'nowrap'));
+      $data['price'] = array('#theme' => 'uc_price', '#price' => $node->sell_price);
     }
 
     if (module_exists('uc_cart') && arg(0) != 'admin' && $enabled['add_to_cart']) {
@@ -1540,10 +1538,8 @@ function uc_product_add_to_cart_form_submit($form, &$form_state) {
  */
 function theme_uc_product_price($variables) {
   $price = $variables['price'];
-  $sign = $variables['sign'];
-  $thou = $variables['thou'];
-  $dec = $variables['dec'];
   $attributes = $variables['attributes'];
+  $label = $variables['label'];
 
   if (isset($attributes['class'])) {
     array_unshift($attributes['class'], 'product-info');
@@ -1553,7 +1549,10 @@ function theme_uc_product_price($variables) {
   }
 
   $output = '<div ' . drupal_attributes($attributes) . '">';
-  $output .= uc_currency_format($price, $sign, $thou, $dec);
+  if ($label) {
+    $output .= '<span class="uc-price-label">' . $label . '</span> ';
+  }
+  $output .= theme('uc_price', array('price' => $price));
   $output .= '</div>';
 
   return $output;

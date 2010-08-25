@@ -331,28 +331,28 @@ function uc_google_checkout_terminal($order) {
     '#suffix' => '</tr>',
   );
   $build['details']['order_total']['label'] = array('#markup' => '<strong>' . t('Order total:') . '</strong>');
-  $build['details']['order_total']['value'] = array('#markup' => uc_currency_format($order->order_total));
+  $build['details']['order_total']['value'] = array('#theme' => 'uc_price', '#price' => $order->order_total);
 
   $build['details']['balance'] = array(
     '#prefix' => '<tr>',
     '#suffix' => '</tr>',
   );
   $build['details']['balance']['label'] = array('#markup' => '<strong>' . t('Balance:') . '</strong>');
-  $build['details']['balance']['value'] = array('#markup' => uc_currency_format($balance));
+  $build['details']['balance']['value'] = array('#theme' => 'uc_price', '#price' => $balance);
 
   $build['details']['gco_total'] = array(
     '#prefix' => '<tr>',
     '#suffix' => '</tr>',
   );
   $build['details']['gco_total']['label'] = array('#markup' => '<strong>' . t('Google Checkout total:') . '</strong>');
-  $build['details']['gco_total']['value'] = array('#markup' => uc_currency_format($order->gc_total));
+  $build['details']['gco_total']['value'] = array('#theme' => 'uc_price', '#price' => $order->gc_total);
 
   $build['details']['gco_balance'] = array(
     '#prefix' => '<tr>',
     '#suffix' => '</tr>',
   );
   $build['details']['gco_balance']['label'] = array('#markup' => '<strong>' . t('Google Checkout balance:') . '</strong>');
-  $build['details']['gco_balance']['value'] = array('#markup' => uc_currency_format($gc_balance));
+  $build['details']['gco_balance']['value'] = array('#theme' => 'uc_price', '#price' => $gc_balance);
 
   if (in_array($order->financial_state, array('REVIEWING', 'CHARGEABLE', 'CHARGED'))) {
     $build['form'] = drupal_get_form('uc_google_checkout_terminal_form', $order, $gc_balance);

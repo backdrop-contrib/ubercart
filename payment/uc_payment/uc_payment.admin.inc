@@ -302,7 +302,7 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
   $total = $order->order_total;
   $payments = uc_payment_load_payments($order->order_id);
 
-  $form['order_total'] = array('#markup' => uc_currency_format($total));
+  $form['order_total'] = array('#theme' => 'uc_price', '#price' => $total);
   $form['payments'] = tapir_get_table('uc_payments_table');
 
   if ($payments !== FALSE) {
@@ -318,11 +318,13 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
         '#markup' => ($payment->method == '') ? t('Unknown') : $payment->method,
       );
       $form['payments'][$payment->receipt_id]['amount'] = array(
-        '#markup' => uc_currency_format($payment->amount),
+        '#theme' => 'uc_price',
+        '#price' => $payment->amount,
       );
       $total -= $payment->amount;
       $form['payments'][$payment->receipt_id]['balance'] = array(
-        '#markup' => uc_currency_format($total),
+        '#theme' => 'uc_price',
+        '#price' => $total,
       );
       $form['payments'][$payment->receipt_id]['comment'] = array(
         '#markup' => ($payment->comment == '') ? '-' : filter_xss_admin($payment->comment),
@@ -340,7 +342,7 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
     }
   }
 
-  $form['balance'] = array('#markup' => uc_currency_format($total));
+  $form['balance'] = array('#theme' => 'uc_price', '#price' => $total);
   $form['order_id'] = array(
     '#type' => 'hidden',
     '#value' => $order->order_id,

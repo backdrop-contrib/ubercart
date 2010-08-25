@@ -18,8 +18,8 @@ function uc_flatrate_admin_methods() {
     $row = array();
     $row[] = check_plain($method->title);
     $row[] = check_plain($method->label);
-    $row[] = uc_currency_format($method->base_rate);
-    $row[] = uc_currency_format($method->product_rate);
+    $row[] = array('#theme' => 'uc_price', '#price' => $method->base_rate);
+    $row[] = array('#theme' => 'uc_price', '#price' => $method->product_rate);
     $row[] = l(t('edit'), 'admin/store/settings/quotes/methods/flatrate/' . $method->mid);
     $rows[] = $row;
   }

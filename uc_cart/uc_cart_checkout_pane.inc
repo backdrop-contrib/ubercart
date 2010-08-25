@@ -33,7 +33,7 @@ function uc_checkout_pane_cart($op, $order, $form = NULL, &$form_state = NULL) {
         $desc = check_plain($item->title) . uc_product_get_description($item);
 
         $output .= '<tr valign="top"><td>' . $item->qty . '&times;</td><td width="100%">' . $desc
-                  . '</td><td nowrap="nowrap">' . uc_currency_format($item->price * $item->qty) . '</td></tr>';
+                  . '</td><td nowrap="nowrap">' . theme('uc_price', array('price' => $item->price * $item->qty)) . '</td></tr>';
       }
       $output .= '</table>';
       $review[] = $output;
@@ -615,14 +615,27 @@ function theme_uc_cart_review_table($variables) {
     $rows[] = array(
       array('data' => t('@qty&times;', array('@qty' => $item->qty)), 'class' => array('qty')),
       array('data' => $description, 'class' => array('products')),
-      array('data' => uc_currency_format($total), 'class' => array('price')),
+      array('data' => array('#theme' => 'uc_price', '#price' => $total), 'class' => array('price')),
     );
   }
 
   // Add the subtotal as the final row.
   if ($show_subtotal) {
     $rows[] = array(
-      'data' => array(array('data' => '<span id="subtotal-title">' . t('Subtotal:') . '</span> ' . uc_currency_format($subtotal), 'colspan' => 3, 'class' => array('subtotal'))),
+      'data' => array(
+        // One cell
+        array(
+          'data' => array(
+            '#theme' => 'uc_price',
+            '#prefix' => '<span id="subtotal-title">' . t('Subtotal:') . '</span> ',
+            '#price' => $subtotal,
+          ),
+          // Cell attributes
+          'colspan' => 3,
+          'class' => array('subtotal'),
+        ),
+      ),
+      // Row attributes
       'class' => array('subtotal'),
     );
   }

@@ -722,8 +722,9 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
         );
 
         $table_row['amount'] = array(
-          '#markup' => uc_currency_format($item['amount']),
-          '#prefix' => '<td class="li-amount" nowrap="nowrap">',
+          '#theme' => 'uc_price',
+          '#price' => $item['amount'],
+          '#prefix' => '<td class="li-amount">',
           '#suffix' => '</td>',
         );
 
@@ -818,7 +819,8 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
             '#markup' => check_plain($item['title']),
           );
           $form['line_items'][$item['line_item_id']]['amount'] = array(
-            '#markup' => uc_currency_format($item['amount']),
+            '#theme' => 'uc_price',
+            '#price' => $item['amount'],
           );
         }
       }
@@ -1170,23 +1172,26 @@ function uc_op_products_view_table($order) {
       );
       $data['model'] = array(
         '#markup' => check_plain($product->model),
-        '#cell_attributes' => array('align' => 'center', 'nowrap' => 'nowrap'),
+        '#cell_attributes' => array('align' => 'center'),
       );
 
       if (user_access('administer products')) {
         $data['cost'] = array(
-          '#markup' => uc_currency_format($product->cost),
-          '#cell_attributes' => array('align' => 'right', 'nowrap' => 'nowrap'),
+          '#theme' => 'uc_price',
+          '#price' => $product->cost,
+          '#cell_attributes' => array('align' => 'right'),
         );
       }
 
       $data['price'] = array(
-        '#markup' => uc_currency_format($product->price),
-        '#cell_attributes' => array('align' => 'right', 'nowrap' => 'nowrap'),
+        '#theme' => 'uc_price',
+        '#price' => $product->price,
+        '#cell_attributes' => array('align' => 'right'),
       );
       $data['total'] = array(
-        '#markup' => uc_currency_format($product->price * $product->qty),
-        '#cell_attributes' => array('align' => 'right', 'nowrap' => 'nowrap'),
+        '#theme' => 'uc_price',
+        '#price' => $product->price * $product->qty,
+        '#cell_attributes' => array('align' => 'right'),
       );
       $data['#attributes'] = array('valign' => 'top');
       $table['#rows'][] = $data;
@@ -1269,23 +1274,26 @@ function uc_op_products_customer_table($order) {
       );
       $data['model'] = array(
         '#markup' => check_plain($product->model),
-        '#cell_attributes' => array('align' => 'center', 'nowrap' => 'nowrap'),
+        '#cell_attributes' => array('align' => 'center'),
       );
 
       if (user_access('administer products')) {
         $data['cost'] = array(
-          '#markup' => uc_currency_format($product->cost),
-          '#cell_attributes' => array('align' => 'right', 'nowrap' => 'nowrap'),
+          '#theme' => 'uc_price',
+          '#price' => $product->cost,
+          '#cell_attributes' => array('align' => 'right'),
         );
       }
 
       $data['price'] = array(
-        '#markup' => uc_currency_format($product->price),
-        '#cell_attributes' => array('align' => 'right', 'nowrap' => 'nowrap'),
+        '#theme' => 'uc_price',
+        '#price' => $product->price,
+        '#cell_attributes' => array('align' => 'right'),
       );
       $data['total'] = array(
-        '#markup' => uc_currency_format($product->price * $product->qty),
-        '#cell_attributes' => array('align' => 'right', 'nowrap' => 'nowrap'),
+        '#theme' => 'uc_price',
+        '#price' => $product->price * $product->qty,
+        '#cell_attributes' => array('align' => 'right'),
       );
       $data['#attributes'] = array('valign' => 'top');
       $table['#rows'][] = $data;

@@ -530,7 +530,7 @@ function uc_order_admin($query = NULL, $args = NULL, $search = FALSE) {
         array('data' => uc_order_actions($order, TRUE), 'nowrap' => 'nowrap'),
         array('data' => $order->order_id),
         array('data' => check_plain($order_name), 'nowrap' => 'nowrap'),
-        array('data' => uc_currency_format($order->order_total), 'align' => 'right', 'nowrap' => 'true'),
+        array('data' => array('#theme' => 'uc_price', '#price' => $order->order_total), 'align' => 'right'),
         array('data' => format_date($order->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y')), 'align' => 'center'),
         array('data' => $order->title),
       ),
@@ -1140,7 +1140,7 @@ function uc_order_history($user) {
       array('data' => $link, 'nowrap' => 'nowrap'),
       array('data' => check_plain($order->title)),
       array('data' => (!is_null($order->products) ? $order->products : 0), 'align' => 'center'),
-      array('data' => uc_currency_format($order->total), 'align' => 'right'),
+      array('data' => array('#theme' => 'uc_price', '#price' => $order->total), 'align' => 'right'),
     );
   }
 

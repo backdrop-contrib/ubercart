@@ -1041,7 +1041,7 @@ function uc_store_customer_orders($uid) {
         array('data' => check_plain($bname)),
         array('data' => check_plain($sname)),
         array('data' => $item_count['COUNT(*)']),
-        array('data' => uc_currency_format($order->order_total), 'nowrap' => 'nowrap')),
+        array('data' => array('#theme' => 'uc_price', '#price' => $order->order_total)),
       'id' => 'order-' . $order->order_id,
     );
   }

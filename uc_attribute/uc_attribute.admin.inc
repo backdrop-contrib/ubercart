@@ -280,10 +280,12 @@ function uc_attribute_options_form($form, &$form_state, $attribute) {
         '#markup' => check_plain($data->name),
       ),
       'cost' => array(
-        '#markup' => $data->cost,
+        '#theme' => 'uc_price',
+        '#price' => $data->cost,
       ),
       'price' => array(
-        '#markup' => $data->price,
+        '#theme' => 'uc_price',
+        '#price' => $data->price,
       ),
       'weight' => array(
         '#markup' => $data->weight,
@@ -297,9 +299,6 @@ function uc_attribute_options_form($form, &$form_state, $attribute) {
       'edit' => array('#markup' => l(t('edit'), 'admin/store/attributes/' . $attribute->aid . '/options/' . $key . '/edit')),
       'delete' => array('#markup' => l(t('delete'), 'admin/store/attributes/' . $attribute->aid . '/options/' . $key . '/delete')),
     );
-
-    $form['options'][$key]['cost']['#markup'] = uc_currency_format($data->cost);
-    $form['options'][$key]['price']['#markup'] = uc_currency_format($data->price);
   }
 
   if (count($form['options'])) {
@@ -608,7 +607,7 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
             '#size' => 6,
           ),
           'option' => array(
-            '#markup' => $option ? (check_plain($option->name) . ' (' . uc_currency_format($option->price) . ')' ) : t('n/a'),
+            '#markup' => $option ? (check_plain($option->name) . ' (' . theme('uc_price', array('price' => $option->price)) . ')' ) : t('n/a'),
           ),
           'required' => array(
             '#type' => 'checkbox',
