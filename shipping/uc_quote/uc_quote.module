@@ -723,15 +723,9 @@ function uc_checkout_pane_quotes($op, &$order, $form = NULL, &$form_state = NULL
 
       return TRUE;
     case 'review':
-      $context = array(
-        'revision' => 'themed',
-        'type' => 'line_item',
-        'subject' => array('order' => $order),
-      );
       $result = db_query("SELECT * FROM {uc_order_line_items} WHERE order_id = :id AND type = :type", array(':id' => $order->order_id, ':type' => 'shipping'));
       if ($line_item = $result->fetchAssoc()) {
-        $context['subject']['line_item'] = $line_item;
-        $review[] = array('title' => $line_item['title'], 'data' => uc_price($line_item['amount'], $context));
+        $review[] = array('title' => $line_item['title'], 'data' => uc_currency_format($line_item['amount']));
       }
 
       return $review;

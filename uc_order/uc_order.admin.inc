@@ -499,11 +499,6 @@ function uc_order_admin($query = NULL, $args = NULL, $search = FALSE) {
     }
   }
 
-  $context = array(
-    'revision' => 'themed-original',
-    'type' => 'amount',
-  );
-
   $query = $query->extend('PagerDefault')->extend('TableSort')
     ->orderByHeader($header)
     ->limit(variable_get('uc_order_number_displayed', 30));
@@ -535,7 +530,7 @@ function uc_order_admin($query = NULL, $args = NULL, $search = FALSE) {
         array('data' => uc_order_actions($order, TRUE), 'nowrap' => 'nowrap'),
         array('data' => $order->order_id),
         array('data' => check_plain($order_name), 'nowrap' => 'nowrap'),
-        array('data' => uc_price($order->order_total, $context), 'align' => 'right', 'nowrap' => 'true'),
+        array('data' => uc_currency_format($order->order_total), 'align' => 'right', 'nowrap' => 'true'),
         array('data' => format_date($order->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y')), 'align' => 'center'),
         array('data' => $order->title),
       ),
@@ -1103,11 +1098,6 @@ function uc_order_history($user) {
 
   $rows = array();
 
-  $context = array(
-    'revision' => 'themed-original',
-    'type' => 'amount',
-  );
-
   $query = db_select('uc_orders', 'o');
   $o_order_id = $query->addField('o', 'order_id');
   $o_created = $query->addField('o', 'created');
@@ -1139,8 +1129,6 @@ function uc_order_history($user) {
 
   // Build a table based on the customer's orders.
   foreach ($result as $order) {
-    $context['subject'] = array('order' => $order);
-
     $link = l($order->order_id, 'user/' . $user->uid . '/order/' . $order->order_id);
 
     if (user_access('view all orders')) {
@@ -1152,7 +1140,7 @@ function uc_order_history($user) {
       array('data' => $link, 'nowrap' => 'nowrap'),
       array('data' => check_plain($order->title)),
       array('data' => (!is_null($order->products) ? $order->products : 0), 'align' => 'center'),
-      array('data' => uc_price($order->total, $context), 'align' => 'right'),
+      array('data' => uc_currency_format($order->total), 'align' => 'right'),
     );
   }
 

@@ -271,14 +271,6 @@ function uc_attribute_options_form($form, &$form_state, $attribute) {
     '#value' => $attribute->aid,
   );
 
-  $context = array(
-    'revision' => 'themed',
-    'type' => 'attribute_option',
-    'subject' => array(
-      'attribute' => $attribute,
-    ),
-  );
-
   $form['options'] = array();
 
   // Loop through all the options on an attribute.
@@ -306,12 +298,8 @@ function uc_attribute_options_form($form, &$form_state, $attribute) {
       'delete' => array('#markup' => l(t('delete'), 'admin/store/attributes/' . $attribute->aid . '/options/' . $key . '/delete')),
     );
 
-    $context['subject']['option'] = $data;
-    $context['field'] = 'cost';
-    $form['options'][$key]['cost']['#markup'] = uc_price($data->cost, $context);
-
-    $context['field'] = 'price';
-    $form['options'][$key]['price']['#markup'] = uc_price($data->price, $context);
+    $form['options'][$key]['cost']['#markup'] = uc_currency_format($data->cost);
+    $form['options'][$key]['price']['#markup'] = uc_currency_format($data->price);
   }
 
   if (count($form['options'])) {
@@ -602,17 +590,9 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
 
     $form['attributes'] = array();
 
-    $context = array(
-      'revision' => 'themed',
-      'type' => 'attribute_option',
-    );
     if (count($attributes) > 0) {
       foreach ($attributes as $attribute) {
         $option = $attribute->options[$attribute->default_option];
-        $context['subject'] = array(
-          'attribute' => $attribute,
-          'option' => $option,
-        );
 
         $form['attributes'][$attribute->aid] = array(
           'remove' => array(
@@ -628,7 +608,7 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
             '#size' => 6,
           ),
           'option' => array(
-            '#markup' => $option ? (check_plain($option->name) . ' (' . uc_price($option->price, $context) . ')' ) : t('n/a'),
+            '#markup' => $option ? (check_plain($option->name) . ' (' . uc_currency_format($option->price) . ')' ) : t('n/a'),
           ),
           'required' => array(
             '#type' => 'checkbox',

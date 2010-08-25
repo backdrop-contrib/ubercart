@@ -186,15 +186,7 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
           if (is_array($order->line_items)) {
             foreach ($order->line_items as $key => $value) {
               if ($value['type'] == 'subtotal') {
-                $context = array(
-                  'revision' => 'formatted',
-                  'type' => 'line_item',
-                  'subject' => array(
-                    'order' => $order,
-                    'line_item' => $order->line_items[$key],
-                  ),
-                );
-                $subtotal = uc_price($order->line_items[$key]['amount'], $context);
+                $subtotal = uc_currency_format($order->line_items[$key]['amount']);
               }
               if ($value['type'] == 'shipping' && is_null($ship_method)) {
                 $ship_method = $value['title'];
@@ -205,14 +197,7 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'total':
-          $context = array(
-            'revision' => 'formatted-original',
-            'type' => 'order_total',
-            'subject' => array(
-              'order' => $order,
-            ),
-          );
-          $values[$original] = uc_price($order->order_total, $context);
+          $values[$original] = uc_currency_format($order->order_total);
           break;
 
         case 'email':

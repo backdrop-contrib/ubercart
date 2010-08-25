@@ -43,11 +43,7 @@ function uc_payment_tokens($type, $tokens, $data = array(), $options = array()) 
 
     if (isset($tokens['payment-balance'])) {
       $original = $tokens['payment-method'];
-      $context = array(
-        'revision' => 'formatted',
-        'type' => 'amount',
-      );
-      $values[$original] = uc_price(uc_payment_balance($order), $context);
+      $values[$original] = uc_currency_format(uc_payment_balance($order));
     }
   }
 

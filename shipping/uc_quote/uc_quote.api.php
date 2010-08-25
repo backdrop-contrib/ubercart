@@ -40,10 +40,10 @@
  *       drupal_json_encode() is very useful for this.
  *       @code
  *         return array(
- *           '03' => array('rate' => 15.75, 'format' => uc_price(15.75, $context) 'option_label' => t('UPS Ground'),
+ *           '03' => array('rate' => 15.75, 'format' => uc_currency_format(15.75) 'option_label' => t('UPS Ground'),
  *                         'error' => 'Additional handling charge automatically applied.'),
  *           '14' => array('error' => 'Invalid package type.'),
- *           '59' => array('rate' => 26.03, 'format' => uc_price(26.03, $context), 'option_label' => t('UPS 2nd Day Air A.M.'))
+ *           '59' => array('rate' => 26.03, 'format' => uc_currency_format(26.03), 'option_label' => t('UPS 2nd Day Air A.M.'))
  *         );
  *       @endcode
  *   - "pkg_types": The list of package types that the shipping method can handle.

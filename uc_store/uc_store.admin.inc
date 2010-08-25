@@ -814,15 +814,11 @@ function uc_store_format_settings_form($form, &$form_state) {
     '#size' => 5,
   );
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'amount',
-  );
   $form['currency']['example'] = array(
     '#type' => 'textfield',
     '#title' => t('Current format'),
-    '#value' => uc_price(1000.1234, $context),
-    '#summary' => t('Currency format: @format', array('@format' => uc_price(1000.1234, $context))),
+    '#value' => uc_currency_format(1000.1234),
+    '#summary' => t('Currency format: @format', array('@format' => uc_currency_format(1000.1234))),
     '#disabled' => TRUE,
     '#size' => 10,
   );
@@ -1011,13 +1007,6 @@ function uc_store_customer_orders($uid) {
   $header = array(t('View'), t('Order ID'), t('Date'), t('Billing name'),
                   t('Shipping name'), t('Items'), t('Total'));
 
-  $context = array(
-    'revision' => 'themed-original',
-    'type' => 'order_total',
-    'subject' => array(
-      'order' => $order,
-    ),
-  );
   $totals = array('orders' => 0, 'items' => 0, 'total' => 0);
   foreach ($result as $order) {
     $icons = l(uc_store_get_icon('file:order_view'),
@@ -1052,7 +1041,7 @@ function uc_store_customer_orders($uid) {
         array('data' => check_plain($bname)),
         array('data' => check_plain($sname)),
         array('data' => $item_count['COUNT(*)']),
-        array('data' => uc_price($order->order_total, $context), 'nowrap' => 'nowrap')),
+        array('data' => uc_currency_format($order->order_total), 'nowrap' => 'nowrap')),
       'id' => 'order-' . $order->order_id,
     );
   }
@@ -1066,11 +1055,6 @@ function uc_store_customer_orders($uid) {
 
   $build = array();
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'amount',
-  );
-
   if (user_access('create orders')) {
     $build['order_link'] = array(
       '#markup' => '<p>' . l(t('Create an order for this customer.'), 'admin/store/orders/create/' . $uid) . '</p>',
@@ -1083,7 +1067,7 @@ function uc_store_customer_orders($uid) {
        array(
          '!totals_orders' => $totals['orders'],
          '!totals_items' => $totals['items'],
-         '!totals_total' => uc_price($totals['total'], $context)
+         '!totals_total' => uc_currency_format($totals['total']),
        )) . '</p>',
   );
   $build['orders'] = array(
@@ -1248,144 +1232,3 @@ function uc_country_update($country_id, $version) {
   drupal_goto('admin/store/settings/countries/edit/import');
 }
 
-/**
- * Form for enabling/weighting price alterers and selecting a price formatter.
- *
- * @ingroup forms
- * @see
- *   theme_uc_price_settings_form()
- *   uc_price_settings_form_submit()
- */
-function uc_price_settings_form($form, &$form_state) {
-  $options = array();
-
-  // Get all the handlers available.
-  $handlers = _uc_price_get_handlers(array('rebuild_handlers' => TRUE, 'all_handlers' => TRUE));
-
-  // Build a draggable price alterer table.
-  $form['uc_price_alterers']['#tree'] = TRUE;
-
-  // Loop through the handlers.
-  foreach ($handlers['hook_data'] as $module => $data) {
-    // If the handler defines an alterer, add it to the form.
-    if (isset($data['alter'])) {
-      $description = $data['alter']['title'];
-
-      if (!empty($data['alter']['description'])) {
-        $description .= '<div class="description">' . $data['alter']['description'] . '</div>';
-      }
-
-      $form['uc_price_alterers'][$module]['module'] = array(
-        '#markup' => $description,
-      );
-      $form['uc_price_alterers'][$module]['enabled'] = array(
-        '#type' => 'checkbox',
-        '#default_value' => $data['enabled'],
-      );
-      $form['uc_price_alterers'][$module]['weight'] = array(
-        '#type' => 'weight',
-        '#default_value' => $data['weight'],
-        '#attributes' => array('class' => array('uc-price-handler-table-weight')),
-      );
-    }
-
-    // If the handler defines a formatter, add it to the options array.
-    if (isset($data['format'])) {
-      $description = $data['format']['title'];
-
-      if (!empty($data['format']['description'])) {
-        $description .= '<div class="description">' . $data['format']['description'] . '</div>';
-      }
-
-      $options[$data['format']['callback']] = $description;
-    }
-  }
-
-  $form['price_alterers_description'] = array(
-    '#markup' => '<div class="description">' . t('Prices will be altered by enabled price alterers in their order in the table above.') . '</div>',
-  );
-
-  $form['uc_price_format_callback'] = array(
-    '#type' => 'radios',
-    '#title' => t('Price formatter'),
-    '#options' => $options,
-    '#default_value' => variable_get('uc_price_format_callback', 'uc_store_price_handler_format'),
-  );
-
-  $form['uc_price_caching'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Cache generated price values until the next cron run.'),
-    '#description' => t('It may be helpful to disable caching while configuring modules that alter prices or price displays.') . '<br />' . t("For high traffic sites or sites with multiple price alterers, leaving this disabled may hurt the site's performance."),
-    '#default_value' => variable_get('uc_price_caching', TRUE),
-  );
-
-  $form['actions'] = array('#type' => 'actions');
-  $form['actions']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save configuration'),
-    '#suffix' => l(t('Cancel changes'), 'admin/store/settings/price-handlers'),
-  );
-
-  // Rebuild the handler cache!
-  _uc_price_get_handlers(array('rebuild_handlers' => TRUE));
-
-  return $form;
-}
-
-/**
- * Render the price handler form, adding tabledrag.
- *
- * @ingroup themeable
- * @see uc_price_settings_form()
- */
-function theme_uc_price_settings_form($variables) {
-  $form = $variables['form'];
-
-  // Add the tabledrag to the alterer table.
-  drupal_add_tabledrag('uc-price-handler-table', 'order', 'sibling', 'uc-price-handler-table-weight');
-
-  $header = array(t('Price alterers'), t('Enabled'), t('Weight'));
-
-  if (count(element_children($form['uc_price_alterers'])) > 0) {
-    foreach (element_children($form['uc_price_alterers']) as $module) {
-      $row = array();
-
-      foreach (element_children($form['uc_price_alterers'][$module]) as $field) {
-        $row[] = drupal_render($form['uc_price_alterers'][$module][$field]);
-      }
-
-      $rows[] = array(
-        'data' => $row,
-        'class' => array('draggable'),
-      );
-    }
-  }
-
-  $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-price-handler-table')))
-          . drupal_render_children($form);
-
-  return $output;
-}
-
-/**
- * @see uc_price_settings_form()
- */
-function uc_price_settings_form_submit($form, &$form_state) {
-  // Save the selected price formatter and price caching setting.
-  variable_set('uc_price_format_callback', $form_state['values']['uc_price_format_callback']);
-  variable_set('uc_price_caching', $form_state['values']['uc_price_caching']);
-
-  // Save the alterer configuration based on the table form.
-  $config = array();
-
-  foreach ($form_state['values']['uc_price_alterers'] as $module => $alterer) {
-    $config[$module] = $alterer;
-  }
-
-  variable_set('uc_price_handler_config', $config);
-
-  // Empty out any cached price data.
-  cache_clear_all('*', 'cache_uc_price', TRUE);
-
-  drupal_set_message(t('Price handler configuration saved.'));
-}

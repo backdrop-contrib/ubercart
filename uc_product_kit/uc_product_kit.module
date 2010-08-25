@@ -498,10 +498,6 @@ function uc_product_kit_form(&$node, $form_state) {
   $total = 0;
   $base_total = 0;
   $form['base']['items'] = array('#tree' => TRUE, '#weight' => 1);
-  $context = array(
-    'revision' => 'formatted',
-    'type' => 'product',
-  );
   if (isset($node->products)) {
     foreach ($node->products as $i => $product) {
       $form['base']['items'][$i] = array(
@@ -523,14 +519,10 @@ function uc_product_kit_form(&$node, $form_state) {
         '#default_value' => isset($product->ordering) ? $product->ordering : 0,
       );
 
-      $context['field'] = 'sell_price';
-      $context['subject'] = array(
-        'node' => $product,
-      );
       $form['base']['items'][$i]['discount'] = array('#type' => 'textfield',
         '#title' => t('Discount'),
         '#description' => t('Enter a positive or negative value to raise or lower the item price by that amount. This change is applied to each %product in the kit.', array('%product' => $product->title)),
-        '#field_prefix' => t('@price + ', array('@price' => uc_price($product->sell_price, $context))),
+        '#field_prefix' => t('@price + ', array('@price' => uc_currency_format($product->sell_price))),
         '#default_value' => isset($product->discount) ? number_format($product->discount, 3, '.', '') : 0,
         '#size' => 5,
       );
@@ -550,15 +542,11 @@ function uc_product_kit_form(&$node, $form_state) {
         $form['base']['items'][$i]['discount']['#default_value'] = number_format($discount, 3, '.', '');
       }
     }
-    $context = array(
-      'revision' => 'formatted-original',
-      'type' => 'amount',
-    );
     $form['base']['kit_total'] = array(
       '#type' => 'textfield',
       '#title' => t('Total price'),
       '#default_value' => $node->synchronized ? '' : $total,
-      '#description' => t('If this field is set, the discounts of the individual products will be recalculated to equal this value. Currently, the total sell price is %price.', array('%price' => uc_price($total, $context))),
+      '#description' => t('If this field is set, the discounts of the individual products will be recalculated to equal this value. Currently, the total sell price is %price.', array('%price' => uc_currency_format($total))),
       '#weight' => 0,
       '#size' => 20,
       '#maxlength' => 35,
@@ -1028,21 +1016,6 @@ function uc_product_kit_uc_order_product_alter(&$product, $order) {
       }
     }
 
-    $price_info = array(
-      'price' => $kit_product->price,
-      'qty' => 1,
-    );
-    $context = array(
-      'revision' => 'altered',
-      'type' => 'order_product',
-      'subject' => array(
-        'order' => $order,
-        'product' => $kit_product,
-        'node' => node_load($kit_product->nid),
-      ),
-    );
-    $kit_product->price = uc_price($price_info, $context);
-
     drupal_alter('uc_order_product', $kit_product, $order);
 
     // Save the individual item to the order.
@@ -1107,22 +1080,7 @@ function uc_product_kit_uc_cart_display($item) {
       $elements[$unique_id]['#extra'][] = array('data' => $item->qty . ' x ' . $title . $extra, 'class' => array('kit-component-cart-desc'));
     }
 
-    $context = array(
-      'revision' => 'altered',
-      'type' => 'cart_item',
-      'field' => 'price',
-      'subject' => array(
-        'cart_item' => $item,
-        'node' => $kit->products[$item->nid],
-        'kit' => $kit,
-      ),
-    );
-    $price_info = array(
-      'price' => $item->price,
-      'qty' => $item->qty,
-    );
-
-    $elements[$unique_id]['#total'] += uc_price($price_info, $context);
+    $elements[$unique_id]['#total'] += $item->price * $item->qty;
     $elements[$unique_id]['data'][$item->nid] = $item;
     $products[$unique_id][] = $item->nid;
 

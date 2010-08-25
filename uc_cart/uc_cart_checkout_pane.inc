@@ -29,25 +29,11 @@ function uc_checkout_pane_cart($op, $order, $form = NULL, &$form_state = NULL) {
     case 'review':
       $items = uc_cart_get_contents();
       $output = '<table>';
-      $context = array(
-        'revision' => 'themed',
-        'type' => 'cart_item',
-        'subject' => array(),
-      );
       foreach ($items as $item) {
         $desc = check_plain($item->title) . uc_product_get_description($item);
 
-        $price_info = array(
-          'price' => $item->price,
-          'qty' => $item->qty,
-        );
-        $context['subject'] = array(
-          'cart' => $items,
-          'cart_item' => $item,
-          'node' => node_load($item->nid),
-        );
         $output .= '<tr valign="top"><td>' . $item->qty . '&times;</td><td width="100%">' . $desc
-                  . '</td><td nowrap="nowrap">' . uc_price($price_info, $context) . '</td></tr>';
+                  . '</td><td nowrap="nowrap">' . uc_currency_format($item->price * $item->qty) . '</td></tr>';
       }
       $output .= '</table>';
       $review[] = $output;
@@ -617,48 +603,26 @@ function theme_uc_cart_review_table($variables) {
     array('data' => t('Price'), 'class' => array('price')),
   );
 
-  $context = array();
-
   // Set up table rows.
   $contents = uc_cart_get_contents();
   foreach ($contents as $item) {
-    $price_info = array(
-      'price' => $item->price,
-      'qty' => $item->qty,
-    );
-
-    $context['revision'] = 'altered';
-    $context['type'] = 'cart_item';
-    $context['subject'] = array(
-      'cart' => $contents,
-      'cart_item' => $item,
-      'node' => node_load($item->nid),
-    );
-
-    $total = uc_price($price_info, $context);
+    $total = $item->price * $item->qty;
     $subtotal += $total;
 
     $description = check_plain($item->title) . uc_product_get_description($item);
 
     // Remove node from context to prevent the price from being altered.
-    $context['revision'] = 'themed-original';
-    $context['type'] = 'amount';
-    unset($context['subject']);
     $rows[] = array(
       array('data' => t('@qty&times;', array('@qty' => $item->qty)), 'class' => array('qty')),
       array('data' => $description, 'class' => array('products')),
-      array('data' => uc_price($total, $context), 'class' => array('price')),
+      array('data' => uc_currency_format($total), 'class' => array('price')),
     );
   }
 
   // Add the subtotal as the final row.
   if ($show_subtotal) {
-    $context = array(
-      'revision' => 'themed-original',
-      'type' => 'amount',
-    );
     $rows[] = array(
-      'data' => array(array('data' => '<span id="subtotal-title">' . t('Subtotal:') . '</span> ' . uc_price($subtotal, $context), 'colspan' => 3, 'class' => array('subtotal'))),
+      'data' => array(array('data' => '<span id="subtotal-title">' . t('Subtotal:') . '</span> ' . uc_currency_format($subtotal), 'colspan' => 3, 'class' => array('subtotal'))),
       'class' => array('subtotal'),
     );
   }

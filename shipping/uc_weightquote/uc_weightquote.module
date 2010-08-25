@@ -54,16 +54,10 @@ function uc_weightquote_form_alter(&$form, &$form_state, $form_id) {
     $currency_sign = variable_get('uc_currency_sign', '$');
     $weight = variable_get('uc_quote_method_weight', array());
     $result = db_query("SELECT mid, title, product_rate FROM {uc_weightquote_methods}");
-    $context = array(
-      'revision' => 'formatted',
-      'location' => 'shipping-weightquote-method-node-form',
-      'subject' => array(),
-    );
     foreach ($result as $method) {
       // Ensure the default weight is set.
       $weight += array('weightquote_' . $method->mid => 0);
 
-      $context['subject']['weightquote_method'] = $method;
       if (!isset($form['shipping']['weightquote'])) {
         $form['shipping']['weightquote'] = array(
           '#type' => 'fieldset',
@@ -79,7 +73,7 @@ function uc_weightquote_form_alter(&$form, &$form_state, $form_id) {
         '#type' => 'textfield',
         '#title' => $method->title,
         '#default_value' => $form['#node']->weightquote[$method->mid],
-        '#description' => t('Default rate: %price/%unit', array('%price' => uc_price($method->product_rate, $context), '%unit' => variable_get('uc_weight_unit', 'lb'))),
+        '#description' => t('Default rate: %price/%unit', array('%price' => uc_currency_format($method->product_rate), '%unit' => variable_get('uc_weight_unit', 'lb'))),
         '#size' => 16,
         '#field_prefix' => $sign_flag ? '' : $currency_sign,
         '#field_suffix' => t('@sign/@unit', array('@sign' => $sign_flag ? $currency_sign : '', '@unit' => variable_get('uc_weight_unit', 'lb'))),
@@ -219,42 +213,24 @@ function uc_weightquote_uc_shipping_method() {
 function uc_weightquote_quote($products, $details, $method) {
   $method = explode('_', $method['id']);
   $mid = $method[1];
-  $context = array(
-    'revision' => 'altered',
-    'type' => 'amount',
-  );
 
   if ($method = db_query("SELECT * FROM {uc_weightquote_methods} WHERE mid = :mid", array(':mid' => $mid))->fetchObject()) {
-    $context['extras']['weightquote_method'] = $method;
     // Start at the base rate.
     $rate = $method->base_rate;
 
     foreach ($products as $product) {
-      $context['subject']['order_product'] = $product;
       if (empty($product->weightquote) || is_null($product->weightquote[$mid])) {
-        $price_info = array(
-          'price' => $method->product_rate,
-          'qty' => $product->qty,
-        );
         // Add the method's default product rate.
-        $product_rate = uc_price($price_info, $context);
+        $product_rate = $method->product_rate * $product->qty;
       }
       else {
-        $price_info = array(
-          'price' => $product->weightquote[$mid],
-          'qty' => $product->qty,
-        );
         // Add the product-specific rate.
-        $product_rate = uc_price($price_info, $context);
+        $product_rate = $product->weightquote[$mid] * $product->qty;
       }
       $rate += $product_rate  * $product->weight * uc_weight_conversion($product->weight_units, variable_get('uc_weight_unit', 'lb'));
     }
 
-    unset($context['subject']['order_product']);
-    $altered = uc_price($rate, $context);
-    $context['revision'] = 'formatted';
-    $formatted = uc_price($rate, $context);
-    $quotes[] = array('rate' => $altered, 'format' => $formatted, 'option_label' => check_plain($method->label));
+    $quotes[] = array('rate' => $rate, 'format' => uc_currency_format($rate), 'option_label' => check_plain($method->label));
   }
 
   return $quotes;

@@ -142,35 +142,6 @@ function hook_uc_message() {
 }
 
 /**
- * Use this hook to define price handlers for your module. You may define one
- * price alterer and one price formatter. You may also define options that are
- * merged into the options array in order of each price alterer's weight.
- */
-function hook_uc_price_handler() {
-  return array(
-    'alter' => array(
-      'title' => t('My price handler'),
-      'description' => t('Handles my price alteration needs.'),
-      'callback' => 'my_price_handler_alter',
-    ),
-    'format' => array(
-      'title' => t('My price handler'),
-      'description' => t('Handles my price formatting needs.'),
-      'callback' => 'my_price_handler_format',
-    ),
-    'options' => array(
-      'sign' => variable_get('uc_currency_sign', '*'),
-      'sign_after' => TRUE,
-      'prec' => 4,
-      'dec' => ',',
-      'thou' => '.',
-      'label' => FALSE,
-      'my_option_that_my_formatter_recognizes' => 1337,
-    )
-  );
-}
-
-/**
  * Add status messages to the "Store administration" page.
  *
  * This hook is used to add items to the store status table on the main store

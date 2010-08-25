@@ -89,11 +89,6 @@ function uc_reports_customers() {
     ->orderByHeader($header)
     ->limit($page_size);
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'amount',
-  );
-
   $customers = $query->execute();
 
   foreach ($customers as $customer) {
@@ -103,8 +98,8 @@ function uc_reports_customers() {
     $customer_name = $customer['name'];
     $orders = (!empty($customer['orders']) ? $customer['orders'] : 0);
     $products = (!empty($customer['products']) ? $customer['products'] : 0);
-    $total_revenue = uc_price($customer['total'], $context);
-    $average_revenue = uc_price($customer['average'], $context);
+    $total_revenue = uc_currency_format($customer['total']);
+    $average_revenue = uc_currency_format($customer['average']);
     $rows[] = array(
       array('data' => $customer_number),
       array('data' => $name, 'nowrap' => 'nowrap'),
@@ -215,20 +210,15 @@ function uc_reports_products() {
     ->groupBy('n.nid')
     ->groupBy('n.title');
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'amount',
-  );
-
   $products = $query->execute();
   foreach ($products as $product) {
     $product_cell = l($product['title'], 'node/' . ($product['nid']));
     $product_csv = $product['title'];
     $sold_cell = (empty($product['sold'])) ? 0 : $product['sold'];
     $sold_csv = $sold_cell;
-    $revenue_cell = uc_price((empty($product['revenue'])) ? 0 : $product['revenue'], $context);
+    $revenue_cell = uc_currency_format((empty($product['revenue'])) ? 0 : $product['revenue']);
     $revenue_csv = $revenue_cell;
-    $gross_cell = uc_price((empty($product['gross'])) ? 0 : $product['gross'], $context);
+    $gross_cell = uc_currency_format((empty($product['gross'])) ? 0 : $product['gross']);
     $gross_csv = $gross_cell;
 
     $row = array(
@@ -265,13 +255,11 @@ function uc_reports_products() {
         $breakdown_sold = ((!empty($sold)) ? $sold : 0);
         $sold_csv = ((!empty($sold)) ? $sold : 0);
 
-        $context['revision'] = 'themed';
-        $breakdown_revenue = uc_price((!empty($revenue)) ? $revenue : 0, $context);
-        $breakdown_gross = uc_price((!empty($gross)) ? $gross : 0, $context);
+        $breakdown_revenue = uc_currency_format((!empty($revenue)) ? $revenue : 0);
+        $breakdown_gross = uc_currency_format((!empty($gross)) ? $gross : 0);
 
-        $context['revision'] = 'formatted';
-        $revenue_csv = uc_price((!empty($revenue)) ? $revenue : 0, $context);
-        $gross_csv = uc_price((!empty($gross)) ? $gross : 0, $context);
+        $revenue_csv = uc_currency_format((!empty($revenue)) ? $revenue : 0);
+        $gross_csv = uc_currency_format((!empty($gross)) ? $gross : 0);
 
         $row = array(
           'data' => array(
@@ -727,16 +715,11 @@ function uc_reports_sales_summary() {
   // Calculate and add today's sales summary to the report table.
   $today = _uc_reports_get_sales($today_start);
 
-  $context = array(
-    'revision' => 'themed-original',
-    'type' => 'amount',
-  );
-
   $rows[] = array(
     l(t('Today, !date', array('!date' => format_date($today_start, 'custom', $format, 0))), 'admin/store/orders/search/results/0/0/0/0/0/0/' . $today_start . '/' . $today_end),
     $today['total'],
-    uc_price($today['income'], $context),
-    uc_price($today['average'], $context),
+    uc_currency_format($today['income']),
+    uc_currency_format($today['average']),
   );
 
   // Calculate and add yesterday's sales summary to the report table.
@@ -745,8 +728,8 @@ function uc_reports_sales_summary() {
   $rows[] = array(
     l(t('Yesterday, !date', array('!date' => format_date($today_start - 86400, 'custom', $format, 0))), 'admin/store/orders/search/results/0/0/0/0/0/0/' . ($today_start - 86400) . '/' . ($today_end - 86400)),
     $yesterday['total'],
-    uc_price($yesterday['income'], $context),
-    uc_price($yesterday['average'], $context),
+    uc_currency_format($yesterday['income']),
+    uc_currency_format($yesterday['average']),
   );
 
   // Get the sales report for the month.
@@ -757,8 +740,8 @@ function uc_reports_sales_summary() {
   $rows[] = array(
     l(t('Month-to-date, @month', array('@month' => $month_title)), 'admin/store/orders/search/results/0/0/0/0/0/0/' . $month_start . '/' . $month_end),
     $month['total'],
-    uc_price($month['income'], $context),
-    uc_price($month['average'], $context),
+    uc_currency_format($month['income']),
+    uc_currency_format($month['average']),
   );
 
   // Calculate the daily averages for the month.
@@ -776,7 +759,7 @@ function uc_reports_sales_summary() {
   $rows[] = array(
     t('Daily average for @month', array('@month' => $month_title)),
     $daily_orders,
-    uc_price($daily_revenue, $context),
+    uc_currency_format($daily_revenue),
     '',
   );
 
@@ -787,7 +770,7 @@ function uc_reports_sales_summary() {
   $rows[] = array(
     t('Projected totals for @date', array('@date' => $month_title)),
     round($month['total'] + ($daily_orders * $remaining_days), 2),
-    uc_price(round($month['income'] + ($daily_revenue * $remaining_days), 2), $context),
+    uc_currency_format(round($month['income'] + ($daily_revenue * $remaining_days), 2)),
     '',
   );
 
@@ -803,7 +786,7 @@ function uc_reports_sales_summary() {
   $header = array(array('data' => t('Statistics'), 'width' => '50%'), '');
 
   $rows = array(
-    array(array('data' => t('Grand total sales')), array('data' => uc_price(db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField(), $context))),
+    array(array('data' => t('Grand total sales')), array('data' => uc_currency_format(db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField()))),
     array(array('data' => t('Customers total')), array('data' => db_query("SELECT COUNT(DISTINCT uid) FROM {uc_orders} WHERE order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField())),
     array(array('data' => t('New customers today')), array('data' => db_query("SELECT COUNT(DISTINCT uid) FROM {uc_orders} WHERE order_status IN (:statuses) AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $today_start, ':end' => $today_end))->fetchField())),
     array(array('data' => t('Online customers')), array('data' => db_query("SELECT COUNT(DISTINCT s.uid) FROM {sessions} as s LEFT JOIN {uc_orders} as o ON s.uid = o.uid WHERE s.uid > 0 AND o.order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField())),
@@ -878,11 +861,6 @@ function uc_reports_sales_year() {
   // Build the header to the CSV export.
   $csv_rows = array(array(t('Month'), t('Number of orders'), t('Total revenue'), t('Average order')));
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'amount',
-  );
-
   // For each month of the year...
   for ($i = 1; $i <= 12; $i++) {
     // Calculate the start and end timestamps for the month in local time.
@@ -904,16 +882,16 @@ function uc_reports_sales_year() {
     $rows[] = array(
       l(gmdate('M Y', $month_start), 'admin/store/orders/search/results/0/0/0/0/0/0/' . $month_start . '/' . $month_end),
       $month_sales['total'],
-      uc_price($month_sales['income'], $context),
-      uc_price($month_average, $context),
+      uc_currency_format($month_sales['income']),
+      uc_currency_format($month_average),
     );
 
     // Add the data to the CSV export.
     $csv_rows[] = array(
       gmdate('M Y', $month_start),
       $month_sales['total'],
-      uc_price($month_sales['income'], $context),
-      uc_price($month_average, $context),
+      uc_currency_format($month_sales['income']),
+      uc_currency_format($month_average),
     );
   }
 
@@ -936,16 +914,16 @@ function uc_reports_sales_year() {
   $rows[] = array(
     l(t('Total @year', array('@year' => $year)), 'admin/store/orders/search/results/0/0/0/0/0/0/' . $year_start . '/' . $year_end),
     $year_sales['total'],
-    uc_price($year_sales['income'], $context),
-    uc_price($year_average, $context),
+    uc_currency_format($year_sales['income']),
+    uc_currency_format($year_average),
   );
 
   // Add the total data to the CSV export.
   $csv_rows[] = array(
     t('Total @year', array('@year' => $year)),
     $year_sales['total'],
-    uc_price($year_sales['income'], $context),
-    uc_price($year_average, $context),
+    uc_currency_format($year_sales['income']),
+    uc_currency_format($year_average),
   );
 
   // Cache the CSV export.
@@ -1051,11 +1029,6 @@ function uc_reports_sales_custom() {
   // Grab the subreports based on the date range and the report breakdown.
   $subreports = _uc_reports_subreport_intervals($args['start_date'], $args['end_date'], $args['length']);
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'amount',
-  );
-
   // Loop through the subreports and build the report table.
   foreach ($subreports as $subreport) {
     $product_data = '';
@@ -1106,7 +1079,7 @@ function uc_reports_sales_custom() {
       array('data' => $date, 'nowrap' => 'nowrap'),
       empty($order_data) ? '0' : $order_data,
       empty($product_data) ? '0' : $product_data,
-      uc_price($revenue_count, $context),
+      uc_currency_format($revenue_count),
     );
 
     // Add the data to the CSV export.
@@ -1114,7 +1087,7 @@ function uc_reports_sales_custom() {
       $date,
       empty($order_csv) ? '0' : $order_csv,
       empty($product_csv) ? '0' : $product_csv,
-      uc_price($revenue_count, $context),
+      uc_currency_format($revenue_count),
     );
   }
 
@@ -1128,7 +1101,7 @@ function uc_reports_sales_custom() {
     t('Total'),
     $order_total,
     $product_total,
-    uc_price($revenue_total, $context),
+    uc_currency_format($revenue_total),
   );
 
   // Add the total data to the CSV export.
@@ -1136,7 +1109,7 @@ function uc_reports_sales_custom() {
     t('Total'),
     $order_total,
     $product_total,
-    uc_price($revenue_total, $context),
+    uc_currency_format($revenue_total),
   );
 
   // Cache the CSV export.

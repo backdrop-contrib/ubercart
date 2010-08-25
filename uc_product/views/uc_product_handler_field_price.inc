@@ -14,7 +14,6 @@ class uc_product_handler_field_price extends views_handler_field_numeric {
     $options = parent::option_definition();
 
     $options['format'] = array('default' => 'uc_price');
-    $options['revision'] = array('default' => 'themed');
 
     return $options;
   }
@@ -32,23 +31,6 @@ class uc_product_handler_field_price extends views_handler_field_numeric {
         'numeric' => t('Numeric'),
       ),
       '#default_value' => $options['format'],
-      '#weight' => 1,
-    );
-
-    $form['revision'] = array(
-      '#title' => t('Revision'),
-      '#type' => 'select',
-      '#options' => array(
-        'original' => t('Original'),
-        'altered' => t('Altered'),
-        'formatted-original' => t('Formatted original'),
-        'formatted' => t('Formatted'),
-        'themed-original' => t('Themed original'),
-        'themed' => t('Themed'),
-      ),
-      '#default_value' => $options['revision'],
-      '#process' => array('views_process_dependency'),
-      '#dependency' => array('radio:options[format]' => array('uc_price')),
       '#weight' => 1,
     );
 
@@ -75,22 +57,7 @@ class uc_product_handler_field_price extends views_handler_field_numeric {
     }
 
     if ($this->options['format'] == 'uc_price') {
-      $product = node_load($values->{$this->aliases['nid']});
-      $context = array(
-        'revision' => $this->options['revision'],
-        'type' => 'product',
-        'class' => array(
-          'product',
-          $this->field,
-        ),
-        'field' => $this->real_field,
-        'subject' => array(
-          'node' => $product,
-        ),
-      );
-      $options = array('label' => FALSE);
-
-      return uc_price($product->{$this->real_field}, $context, $options);
+      return uc_currency_format($values->{$this->field_alias});
     }
   }
 }

@@ -713,21 +713,12 @@ function theme_uc_cart_block_items($variables) {
     $output = '<table class="cart-block-items"><tbody>';
     $row_class = 'odd';
 
-    $context = array(
-      'revision' => 'themed',
-      'type' => 'price',
-    );
-
     // Loop through each item.
     foreach ($items as $item) {
-      $context['subject'] = array(
-        'cart_item' => $item,
-        'node' => node_load($item['nid']),
-      );
       // Add the basic row with quantity, title, and price.
       $output .= '<tr class="' . $row_class . '"><td class="cart-block-item-qty">' . $item['qty'] . '</td>'
                 . '<td class="cart-block-item-title">' . $item['title'] . '</td>'
-                . '<td class="cart-block-item-price">' . uc_price($item['price'], $context) . '</td></tr>';
+                . '<td class="cart-block-item-price">' . uc_currency_format($item['price']) . '</td></tr>';
 
       // Add a row of description if necessary.
       if ($item['desc']) {
@@ -767,15 +758,11 @@ function theme_uc_cart_block_summary($variables) {
   $total = $variables['total'];
   $summary_links = $variables['summary_links'];
 
-  $context = array(
-    'revision' => 'themed-original',
-    'type' => 'amount',
-  );
   // Build the basic table with the number of items in the cart and total.
   $output = '<table class="cart-block-summary"><tbody><tr>'
            . '<td class="cart-block-summary-items">' . $item_text . '</td>'
            . '<td class="cart-block-summary-total"><label>' . t('Total:')
-           . '</label> ' . uc_price($total, $context) . '</td></tr>';
+           . '</label> ' . uc_currency_format($total) . '</td></tr>';
 
   // If there are products in the cart...
   if ($item_count > 0) {
@@ -966,10 +953,6 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
     '#tree' => TRUE,
   );
 
-  $context = array(
-    'revision' => 'themed-original',
-    'type' => 'amount',
-  );
   $i = 0;
   foreach ($items as $item) {
     $display_item = module_invoke($item->module, 'uc_cart_display', $item);
@@ -990,7 +973,7 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
       }
 
       $form['items'][$i]['total'] = array(
-        '#markup' => uc_price($display_item['#total'], $context),
+        '#markup' => $display_item['#total'],
         '#theme' => 'uc_cart_view_price',
       );
       $i++;
@@ -1117,13 +1100,13 @@ function theme_uc_cart_view_form($variables) {
 }
 
 /**
- * Dumb wrapper function, as the price has been themed by uc_price() already.
+ * Display the total price of the cart items.
  *
  * @ingroup themeable
  * @see uc_cart_view_form()
  */
 function theme_uc_cart_view_price($variables) {
-  return $variables['form']['#markup'];
+  return uc_currency_format($variables['form']['#markup']);
 }
 
 /**
@@ -1167,13 +1150,9 @@ function uc_cart_view_table($table) {
     $table[$i]['#attributes'] = array('valign' => 'top');
   }
 
-  $context = array(
-    'revision' => 'themed-original',
-    'type' => 'amount',
-  );
   $table[] = array(
     'total' => array(
-      '#markup' => '<strong>' . t('Subtotal:') . '</strong> ' . uc_price($subtotal, $context),
+      '#markup' => '<strong>' . t('Subtotal:') . '</strong> ' . uc_currency_format($subtotal),
       '#cell_attributes' => array(
         'colspan' => 'full',
         'align' => 'right',

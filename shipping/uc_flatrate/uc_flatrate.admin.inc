@@ -11,12 +11,6 @@
  */
 function uc_flatrate_admin_methods() {
   $build = array();
-
-  $context = array(
-    'revision' => 'themed',
-    'type' => 'amount',
-  );
-
   $rows = array();
 
   $result = db_query("SELECT mid, title, label, base_rate, product_rate FROM {uc_flatrate_methods}");
@@ -24,8 +18,8 @@ function uc_flatrate_admin_methods() {
     $row = array();
     $row[] = check_plain($method->title);
     $row[] = check_plain($method->label);
-    $row[] = uc_price($method->base_rate, $context);
-    $row[] = uc_price($method->product_rate, $context);
+    $row[] = uc_currency_format($method->base_rate);
+    $row[] = uc_currency_format($method->product_rate);
     $row[] = l(t('edit'), 'admin/store/settings/quotes/methods/flatrate/' . $method->mid);
     $rows[] = $row;
   }

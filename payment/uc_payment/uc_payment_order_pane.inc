@@ -19,11 +19,7 @@ function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) 
   switch ($op) {
     case 'view':
       if (variable_get('uc_payment_tracking', TRUE)) {
-        $context = array(
-          'revision' => 'formatted-original',
-          'type' => 'amount',
-        );
-        $build['balance'] = array('#markup' => t('Balance: @balance', array('@balance' => uc_price(uc_payment_balance($order), $context))));
+        $build['balance'] = array('#markup' => t('Balance: @balance', array('@balance' => uc_currency_format(uc_payment_balance($order)))));
         $build['view_payments'] = array(
           '#markup' => ' (' . l(t('View'), 'admin/store/orders/' . $order->order_id . '/payments') . ')',
           '#suffix' => '<br />',

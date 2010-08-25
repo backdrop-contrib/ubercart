@@ -303,21 +303,11 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
 
   $order = uc_order_load($order_id);
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'amount',
-  );
-  $options = array(
-    'sign' => FALSE,
-    'thou' => FALSE,
-    'dec' => '.',
-  );
-
   if ($data['txn_type'] == UC_CREDIT_PRIOR_AUTH_CAPTURE) {
     $nvp_request = array(
       'METHOD' => 'DoCapture',
       'AUTHORIZATIONID' => $data['auth_id'],
-      'AMT' => uc_price($amount, $context, $options),
+      'AMT' => uc_currency_format($amount, FALSE, FALSE, '.'),
       'CURRENCYCODE' => variable_get('uc_paypal_wpp_currency', 'USD'),
       'COMPLETETYPE' => 'Complete',
     );
@@ -373,7 +363,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
       'METHOD' => 'DoDirectPayment',
       'PAYMENTACTION' => $data['txn_type'] == UC_CREDIT_AUTH_ONLY ? 'Authorization' : 'Sale',
       'IPADDRESS' => ip_address(),
-      'AMT' => uc_price($amount, $context, $options),
+      'AMT' => uc_currency_format($amount, FALSE, FALSE, '.'),
       'CREDITCARDTYPE' => $cc_type,
       'ACCT' =>  $order->payment_details['cc_number'],
       'EXPDATE' => $expdate,
@@ -428,7 +418,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
       );
       // fall through
     case 'Success':
-      $message = t('<b>@type</b><br /><b>Success: </b>@amount @currency', array('@type' => $types[$data['txn_type']], '@amount' => uc_price($nvp_response['AMT'], $context, array('sign' => FALSE)), '@currency' => $nvp_response['CURRENCYCODE']));
+      $message = t('<b>@type</b><br /><b>Success: </b>@amount @currency', array('@type' => $types[$data['txn_type']], '@amount' => uc_currency_format($nvp_response['AMT'], FALSE), '@currency' => $nvp_response['CURRENCYCODE']));
       if ($data['txn_type'] != UC_CREDIT_PRIOR_AUTH_CAPTURE) {
         $message .= '<br />' . t('<b>Address:</b> @avscode', array('@avscode' => _uc_paypal_avscode_message($nvp_response['AVSCODE'])));
         if (variable_get('uc_credit_cvv_enabled', TRUE)) {
@@ -670,24 +660,11 @@ function uc_paypal_ec_checkout($form, &$form_state) {
     $country = array(0 => array('country_iso_code_2' => 'US'));
   }
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'order_total',
-    'subject' => array(
-      'order' => $order,
-    ),
-  );
-  $options = array(
-    'sign' => FALSE,
-    'thou' => FALSE,
-    'dec' => '.',
-  );
-
   $nvp_request = array(
     'METHOD' => 'SetExpressCheckout',
     'RETURNURL' => url('cart/echeckout/selected', array('absolute' => TRUE)),
     'CANCELURL' => url('uc_paypal/wps/cancel', array('absolute' => TRUE)),
-    'AMT' => uc_price($order->order_total, $context, $options),
+    'AMT' => uc_currency_format($order->order_total, FALSE, FALSE, '.'),
     'CURRENCYCODE' => variable_get('uc_paypal_wpp_currency', 'USD'),
     'PAYMENTACTION' => variable_get('uc_paypal_wpp_payment_action', 'Sale'),
     'DESC' => substr($desc, 0, 127),
@@ -756,21 +733,11 @@ function uc_paypal_ec_form_submit($form, &$form_state) {
 
   $order = uc_order_new($user->uid);
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'amount',
-  );
-  $options = array(
-    'sign' => FALSE,
-    'thou' => FALSE,
-    'dec' => '.',
-  );
-
   $nvp_request = array(
     'METHOD' => 'SetExpressCheckout',
     'RETURNURL' => url('cart/echeckout/review', array('absolute' => TRUE)),
     'CANCELURL' => url('uc_paypal/wps/cancel', array('absolute' => TRUE)),
-    'AMT' => uc_price($subtotal, $context, $options),
+    'AMT' => uc_currency_format($subtotal, FALSE, FALSE, '.'),
     'CURRENCYCODE' => variable_get('uc_paypal_wpp_currency', 'USD'),
     'PAYMENTACTION' => variable_get('uc_paypal_wpp_payment_action', 'Sale'),
     'DESC' => substr($desc, 0, 127),
@@ -824,32 +791,19 @@ function uc_paypal_ec_submit_form_submit($form, &$form_state) {
     $country = array(0 => array('country_iso_code_2' => 'US'));
   }
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'order_total',
-    'subject' => array(
-      'order' => $order,
-    ),
-  );
-  $options = array(
-    'sign' => FALSE,
-    'thou' => FALSE,
-    'dec' => '.',
-  );
-
   $nvp_request = array(
     'METHOD' => 'DoExpressCheckoutPayment',
     'TOKEN' => $_SESSION['TOKEN'],
     'PAYMENTACTION' => variable_get('uc_paypal_wpp_payment_action', 'Sale'),
     'PAYERID' => $_SESSION['PAYERID'],
-    'AMT' => uc_price($order->order_total, $context, $options),
+    'AMT' => uc_currency_format($order->order_total, FALSE, FALSE, '.'),
     'DESC' => substr($desc, 0, 127),
     'INVNUM' => $order->order_id . '-' . REQUEST_TIME,
     'BUTTONSOURCE' => 'Ubercart_ShoppingCart_EC_US',
     'NOTIFYURL' => url('uc_paypal/ipn/' . $order->order_id, array('absolute' => TRUE)),
-    'ITEMAMT' => uc_price($subtotal, $context, $options),
-    'SHIPPINGAMT' => uc_price($shipping, $context, $options),
-    'TAXAMT' => uc_price($tax, $context, $options),
+    'ITEMAMT' => uc_currency_format($subtotal, FALSE, FALSE, '.'),
+    'SHIPPINGAMT' => uc_currency_format($shipping, FALSE, FALSE, '.'),
+    'TAXAMT' => uc_currency_format($tax, FALSE, FALSE, '.'),
     'CURRENCYCODE' => variable_get('uc_paypal_wpp_currency', 'USD'),
   );
 
@@ -906,16 +860,6 @@ function uc_paypal_wps_form($form, &$form_state, $order) {
     $phone_c = substr($phone, 6, 4);
   }
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'amount',
-  );
-  $options = array(
-    'sign' => FALSE,
-    'thou' => FALSE,
-    'dec' => '.',
-  );
-
   $data = array(
     // PayPal command variable
     'cmd' => '_cart',
@@ -935,9 +879,9 @@ function uc_paypal_wps_form($form, &$form_state, $order) {
 
     // Transaction information
     'currency_code' => variable_get('uc_paypal_wps_currency', 'USD'),
-    'handling_cart' => uc_price($shipping, $context, $options),
+    'handling_cart' => uc_currency_format($shipping, FALSE, FALSE, '.'),
     'invoice' => $order->order_id . '-' . REQUEST_TIME,
-    'tax_cart' => uc_price($tax, $context, $options),
+    'tax_cart' => uc_currency_format($tax, FALSE, FALSE, '.'),
 
     // Shopping cart specific variables
     'business' => variable_get('uc_paypal_wps_email', ''),
@@ -969,19 +913,12 @@ function uc_paypal_wps_form($form, &$form_state, $order) {
     $data['paymentaction'] = 'authorization';
   }
 
-  $context['subject'] = array(
-    'order' => $order,
-  );
   if (variable_get('uc_paypal_wps_submit_method', 'single') == 'itemized') {
     // List individual items
-    $context['type'] = 'order_product';
-
     $i = 0;
     foreach ($order->products as $item) {
       $i++;
-      $context['subject']['product'] = $item;
-      $context['subject']['node'] = node_load($item->nid);
-      $data['amount_' . $i] = uc_price($item->price, $context, $options);
+      $data['amount_' . $i] = uc_currency_format($item->price, FALSE, FALSE, '.');
       $data['item_name_' . $i] = $item->title;
       $data['item_number_' . $i] = $item->model;
       $data['quantity_' . $i] = $item->qty;
@@ -999,9 +936,7 @@ function uc_paypal_wps_form($form, &$form_state, $order) {
   }
   else {
     // List the whole cart as a single item to account for fees/discounts
-    $context['type'] = 'order_total';
-
-    $data['amount_1'] = uc_price($order->order_total - $shipping - $tax, $context, $options);
+    $data['amount_1'] = uc_currency_format($order->order_total - $shipping - $tax, FALSE, FALSE, '.');
     $data['item_name_1'] = t('Order @order_id at !store', array('@order_id' => $order->order_id, '!store' => variable_get('uc_store_name', url('<front>', array('absolute' => TRUE)))));
     $data['on0_1'] = t('Product count');
     $data['os0_1'] = count($order->products);

@@ -319,13 +319,6 @@ function uc_google_checkout_terminal($order) {
   }
   $balance = uc_payment_balance($order);
 
-  $context = array(
-    'revision' => 'themed-original',
-    'type' => 'order_total',
-    'subject' => array(
-      'order' => $order,
-    ),
-  );
   $build['instructions'] = array('#markup' => '<p>' . t('Use this terminal to process credit card payments:') . '</p>');
 
   $build['details'] = array(
@@ -338,28 +331,28 @@ function uc_google_checkout_terminal($order) {
     '#suffix' => '</tr>',
   );
   $build['details']['order_total']['label'] = array('#markup' => '<strong>' . t('Order total:') . '</strong>');
-  $build['details']['order_total']['value'] = array('#markup' => uc_price($order->order_total, $context));
+  $build['details']['order_total']['value'] = array('#markup' => uc_currency_format($order->order_total));
 
   $build['details']['balance'] = array(
     '#prefix' => '<tr>',
     '#suffix' => '</tr>',
   );
   $build['details']['balance']['label'] = array('#markup' => '<strong>' . t('Balance:') . '</strong>');
-  $build['details']['balance']['value'] = array('#markup' => uc_price($balance, $context));
+  $build['details']['balance']['value'] = array('#markup' => uc_currency_format($balance));
 
   $build['details']['gco_total'] = array(
     '#prefix' => '<tr>',
     '#suffix' => '</tr>',
   );
   $build['details']['gco_total']['label'] = array('#markup' => '<strong>' . t('Google Checkout total:') . '</strong>');
-  $build['details']['gco_total']['value'] = array('#markup' => uc_price($order->gc_total, $context));
+  $build['details']['gco_total']['value'] = array('#markup' => uc_currency_format($order->gc_total));
 
   $build['details']['gco_balance'] = array(
     '#prefix' => '<tr>',
     '#suffix' => '</tr>',
   );
   $build['details']['gco_balance']['label'] = array('#markup' => '<strong>' . t('Google Checkout balance:') . '</strong>');
-  $build['details']['gco_balance']['value'] = array('#markup' => uc_price($gc_balance, $context));
+  $build['details']['gco_balance']['value'] = array('#markup' => uc_currency_format($gc_balance));
 
   if (in_array($order->financial_state, array('REVIEWING', 'CHARGEABLE', 'CHARGED'))) {
     $build['form'] = drupal_get_form('uc_google_checkout_terminal_form', $order, $gc_balance);
@@ -397,20 +390,10 @@ function uc_google_checkout_terminal_form($form, &$form_state, $order, $amount =
     );
   }
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'amount',
-  );
-  $options = array(
-    'sign' => FALSE,
-    'thou' => FALSE,
-    'dec' => '.',
-  );
-
   $form['amount'] = array(
     '#type' => 'textfield',
     '#title' => t('Amount'),
-    '#default_value' => uc_price($amount, $context, $options),
+    '#default_value' => uc_currency_format($amount, FALSE, FALSE, '.'),
     '#size' => 10,
     '#weight' => 0,
     '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),

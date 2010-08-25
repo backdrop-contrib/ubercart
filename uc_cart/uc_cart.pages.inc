@@ -64,12 +64,7 @@ function uc_cart_checkout() {
     drupal_goto('cart');
   }
 
-  $context = array(
-    'revision' => 'altered',
-    'type' => 'amount',
-  );
-
-  if (($min = uc_price(variable_get('uc_minimum_subtotal', 0), $context)) > 0) {
+  if (($min = variable_get('uc_minimum_subtotal', 0)) > 0) {
     $subtotal = 0;
     if (is_array($items) && count($items) > 0) {
       foreach ($items as $item) {
@@ -81,11 +76,7 @@ function uc_cart_checkout() {
     }
 
     if ($subtotal < $min) {
-      $context = array(
-        'revision' => 'formatted-original',
-        'type' => 'amount',
-      );
-      drupal_set_message(variable_get('uc_minimum_subtotal_text', t('The minimum order subtotal for checkout is !min.', array('!min' => uc_price($min, $context)))), 'error');
+      drupal_set_message(variable_get('uc_minimum_subtotal_text', t('The minimum order subtotal for checkout is @min.', array('@min' => uc_currency_format($min)))), 'error');
       drupal_goto('cart');
     }
   }
@@ -300,30 +291,6 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
     ->condition('order_id', $order->order_id)
     ->execute();
   $order->products = unserialize($form_state['values']['cart_contents']);
-
-  $context = array(
-    'revision' => 'original',
-    'type' => 'order_product',
-  );
-  foreach ($order->products as $key => $item) {
-    $price_info = array(
-      'price' => $item->price,
-      'qty' => $item->qty,
-    );
-    $context['subject'] = array(
-      'order' => $order,
-      'product' => $item,
-      'node' => node_load($item->nid),
-    );
-
-    // Get the altered price per unit, as ordered products have a locked-in
-    // price. Price altering rules may change over time, but the amount paid
-    // by the customer does not after the fact.
-    $price = uc_price($price_info, $context) / $item->qty;
-    if ($order->products[$key]->price != $price) {
-      $order->products[$key]->data['altered_price'] = $price;
-    }
-  }
 
   $order->order_total = uc_order_get_total($order, TRUE);
 

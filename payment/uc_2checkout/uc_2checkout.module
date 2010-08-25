@@ -205,22 +205,9 @@ function uc_2checkout_form($form, &$form_state, $order) {
     $country = array(0 => array('country_iso_code_3' => 'USA'));
   }
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'order_total',
-    'subject' => array(
-      'order' => $order,
-    ),
-  );
-  $options = array(
-    'sign' => FALSE,
-    'dec' => '.',
-    'thou' => FALSE,
-  );
-
   $data = array(
     'sid' => variable_get('uc_2checkout_sid', ''),
-    'total' => uc_price($order->order_total, $context, $options),
+    'total' => uc_currency_format($order->order_total, FALSE, FALSE, '.'),
     'cart_order_id' => $order->order_id,
     'demo' => variable_get('uc_2checkout_demo', TRUE) ? 'Y' : 'N',
     'fixed' => 'Y',
@@ -241,13 +228,12 @@ function uc_2checkout_form($form, &$form_state, $order) {
   );
 
   $i = 0;
-  $context['type'] = 'order_product';
   foreach ($order->products as $product) {
     $i++;
     $data['c_prod_' . $i] = $product->model . ',' . $product->qty;
     $data['c_name_' . $i] = $product->title;
     $data['c_description_' . $i] = $desc;
-    $data['c_price_' . $i] = uc_price($product->price, $context, $options);
+    $data['c_price_' . $i] = uc_currency_format($product->price, FALSE, FALSE, '.');
   }
 
   $form['#action'] = _uc_2checkout_post_url(variable_get('uc_2checkout_checkout_type', 'multi'));

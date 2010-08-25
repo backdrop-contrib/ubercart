@@ -306,7 +306,7 @@ function uc_product_theme() {
       'variables' => array('node' => NULL, 'view_mode' => 'full'),
     ),
     'uc_product_price' => array(
-      'variables' => array('price' => 0, 'context' => array(), 'options' => array()),
+      'variables' => array('price' => 0, 'sign' => NULL, 'thou' => NULL, 'dec' => '.', 'attributes' => array()),
     ),
     'uc_product_weight' => array(
       'variables' => array('weight' => 0, 'units' => NULL, 'view_mode' => 'full'),
@@ -751,23 +751,15 @@ function uc_product_view($node, $view_mode) {
     'add_to_cart' => 10,
   ));
 
-  $context = array(
-    'revision' => 'themed',
-    'type' => 'product',
-    'class' => array(
-      'product',
-    ),
-    'subject' => array(
-      'node' => $node,
-    ),
-  );
-
-  $context['class'][1] = 'display';
-  $context['field'] = 'sell_price';
   $node->content['display_price'] = array(
     '#theme' => 'uc_product_price',
     '#price' => $node->sell_price,
-    '#context' => $context,
+    '#attributes' => array(
+      'class' => array(
+        'product',
+        'display',
+      ),
+    ),
     '#access' => $enabled['display_price'],
     '#weight' => $weight['display_price'],
   );
@@ -782,22 +774,28 @@ function uc_product_view($node, $view_mode) {
     );
     $node->content['body']['#weight'] = 1;
 
-    $context['class'][1] = 'list';
-    $context['field'] = 'list_price';
     $node->content['list_price'] = array(
       '#theme' => 'uc_product_price',
       '#price' => $node->list_price,
-      '#context' => $context,
+      '#attributes' => array(
+        'class' => array(
+          'product',
+          'list',
+        ),
+      ),
       '#access' => $enabled['list_price'],
       '#weight' => $weight['list_price'],
     );
 
-    $context['class'][1] = 'cost';
-    $context['field'] = 'cost';
     $node->content['cost'] = array(
       '#theme' => 'uc_product_price',
       '#price' => $node->cost,
-      '#context' => $context,
+      '#attributes' => array(
+        'class' => array(
+          'product',
+          'cost',
+        ),
+      ),
       '#access' => $enabled['cost'] && user_access('administer products'),
       '#weight' => $weight['cost'],
     );
@@ -806,14 +804,14 @@ function uc_product_view($node, $view_mode) {
     $node->content['#attributes'] = array('style' => 'display: inline');
   }
 
-  $context['class'][1] = 'sell';
-  $context['field'] = 'sell_price';
   $node->content['sell_price'] = array(
     '#theme' => 'uc_product_price',
     '#price' => $node->sell_price,
-    '#context' => $context,
-    '#options' => array(
-      'label' => $view_mode != 'teaser',
+    '#attributes' => array(
+      'class' => array(
+        'product',
+        'sell',
+      ),
     ),
     '#access' => $enabled['sell_price'],
     '#weight' => $weight['sell_price'],
@@ -1151,20 +1149,7 @@ function uc_product_uc_cart_display($item) {
     '#markup' => node_access('view', $node) ? l($item->title, 'node/' . $node->nid) : check_plain($item->title),
   );
 
-  $context = array(
-    'revision' => 'altered',
-    'type' => 'cart_item',
-    'subject' => array(
-      'cart_item' => $item,
-      'node' => $node,
-    ),
-  );
-  $price_info = array(
-    'price' => $item->price,
-    'qty' => $item->qty,
-  );
-
-  $element['#total'] = uc_price($price_info, $context);
+  $element['#total'] = $item->price * $item->qty;
   $element['data'] = array('#type' => 'hidden', '#value' => serialize($item->data));
   $element['qty'] = array(
     '#type' => 'textfield',
@@ -1307,13 +1292,6 @@ function uc_product_table($args = array()) {
     '#rows' => array(),
   );
 
-  $context = array(
-    'revision' => 'themed',
-    'type' => 'product',
-    'class' => array('product'),
-  );
-  $options = array('label' => FALSE);
-
   $remove_image_column = TRUE;
 
   foreach ($args as $nid) {
@@ -1337,16 +1315,23 @@ function uc_product_table($args = array()) {
       '#cell_attributes' => array('width' => '100%'),
     );
 
-    $context['subject'] = array('node' => $node);
     if ($enabled['list_price']) {
-      $context['class'][1] = 'list';
-      $context['field'] = 'list_price';
-      $data['list_price'] = array('#markup' => uc_price($node->list_price, $context, $options), '#cell_attributes' => array('nowrap' => 'nowrap'));
+      $data['list_price'] = array(
+        '#theme' => 'uc_product_price',
+        '#price' => $node->list_price,
+        '#attributes' => array(
+          'class' => array(
+            'product',
+            'list',
+          ),
+        ),
+        '#cell_attributes' => array('nowrap' => 'nowrap'),
+      );
     }
     if ($enabled['sell_price']) {
       $context['class'][1] = 'sell';
       $context['field'] = 'sell_price';
-      $data['price'] = array('#markup' => uc_price($node->sell_price, $context, $options), '#cell_attributes' => array('nowrap' => 'nowrap'));
+      $data['price'] = array('#markup' => uc_currency_format($node->sell_price), '#cell_attributes' => array('nowrap' => 'nowrap'));
     }
 
     if (module_exists('uc_cart') && arg(0) != 'admin' && $enabled['add_to_cart']) {
@@ -1544,10 +1529,6 @@ function uc_product_add_to_cart_form_submit($form, &$form_state) {
 /**
  * Format a product's price.
  *
- * This is an extra wrapper theme around the output of uc_price() when it is
- * used in the product body. For expedience, it takes the same parameters as
- * uc_price().
- *
  * @param $price
  *   The monetary amount.
  * @param $context
@@ -1556,15 +1537,23 @@ function uc_product_add_to_cart_form_submit($form, &$form_state) {
  * @param $options
  *   Toggles the label and other formatting.
  * @ingroup themeable
- * @see uc_price()
  */
 function theme_uc_product_price($variables) {
   $price = $variables['price'];
-  $context = $variables['context'];
-  $options = $variables['options'];
+  $sign = $variables['sign'];
+  $thou = $variables['thou'];
+  $dec = $variables['dec'];
+  $attributes = $variables['attributes'];
 
-  $output = '<div class="product-info ' . implode(' ', (array)$context['class']) . '">';
-  $output .= uc_price($price, $context, $options);
+  if (isset($attributes['class'])) {
+    array_unshift($attributes['class'], 'product-info');
+  }
+  else {
+    $attributes['class'] = array('product-info');
+  }
+
+  $output = '<div ' . drupal_attributes($attributes) . '">';
+  $output .= uc_currency_format($price, $sign, $thou, $dec);
   $output .= '</div>';
 
   return $output;

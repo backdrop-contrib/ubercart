@@ -364,11 +364,7 @@ function _uc_authorizenet_cim_profile_charge($order, $amount, $data) {
 
       // Build info message.
       $types = uc_credit_transaction_types();
-      $context = array(
-        'revision' => 'formatted-original',
-        'type' => 'amount',
-      );
-      $comment[] = t('<b>@type:</b> @amount', array('@type' => $types[$data['txn_type']], '@amount' => uc_price($amount, $context)));
+      $comment[] = t('<b>@type:</b> @amount', array('@type' => $types[$data['txn_type']], '@amount' => uc_currency_format($amount)));
 
       // Save a comment to the order.
       uc_order_comment_save($order->order_id, $user->uid, implode('<br />', $comment), 'admin');
@@ -457,16 +453,6 @@ function _uc_authorizenet_charge($order, $amount, $data) {
   $billing_country = uc_get_country_data(array('country_id' => $order->billing_country));
   $delivery_country = uc_get_country_data(array('country_id' => $order->delivery_country));
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'amount',
-  );
-  $options = array(
-    'sign' => FALSE,
-    'thou' => FALSE,
-    'dec' => '.',
-  );
-
   // Build the POST data for the transaction.
   $submit_data = array(
     // Merchant Information
@@ -479,7 +465,7 @@ function _uc_authorizenet_charge($order, $amount, $data) {
     // 'x_method' => $order->payment_method == 'credit' ? 'CC' : 'ECHECK',
     'x_method' => 'CC',
     // 'x_recurring_billing' => 'FALSE',
-    'x_amount' => uc_price($amount, $context, $options),
+    'x_amount' => uc_currency_format($amount, FALSE, FALSE, '.'),
     'x_card_num' => $order->payment_details['cc_number'],
     'x_exp_date' => $order->payment_details['cc_exp_month'] . '/' . $order->payment_details['cc_exp_year'],
     'x_card_code' => $order->payment_details['cc_cvv'],
@@ -633,12 +619,8 @@ function _uc_authorizenet_charge($order, $amount, $data) {
   }
 
   // Build an admin order comment.
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'amount',
-  );
   $comment = t('<b>@type</b><br /><b>@status:</b> @message<br />Amount: @amount<br />AVS response: @avs',
-    array('@type' => _uc_authorizenet_txn_type($response[11]), '@status' => $result['success'] ? t('ACCEPTED') : t('REJECTED'), '@message' => $response[3], '@amount' => uc_price($response[9], $context), '@avs' => _uc_authorizenet_avs($response[5])));
+    array('@type' => _uc_authorizenet_txn_type($response[11]), '@status' => $result['success'] ? t('ACCEPTED') : t('REJECTED'), '@message' => $response[3], '@amount' => uc_currency_format($response[9]), '@avs' => _uc_authorizenet_avs($response[5])));
 
   // Add the CVV response if enabled.
   if (variable_get('uc_credit_cvv_enabled', TRUE)) {

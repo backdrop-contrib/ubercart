@@ -165,27 +165,17 @@
                     </tr>
 
                     <?php
-                    $context = array(
-                      'revision' => 'themed',
-                      'type' => 'line_item',
-                      'subject' => array(
-                        'order' => $order,
-                      ),
-                    );
                     foreach ($line_items as $item) {
-                    if ($item['line_item_id'] == 'subtotal' || $item['line_item_id'] == 'total') {
-                      continue;
-                    }?>
+                      if ($item['line_item_id'] == 'subtotal' || $item['line_item_id'] == 'total') {
+                        continue;
+                      } ?>
 
                     <tr>
                       <td nowrap="nowrap">
                         <?php echo $item['title']; ?>:
                       </td>
                       <td>
-                        <?php
-                          $context['subject']['line_item'] = $item;
-                          echo uc_price($item['amount'], $context);
-                        ?>
+                        <?php echo uc_currency_format($item['amount']); ?>
                       </td>
                     </tr>
 
@@ -211,38 +201,26 @@
 
                         <table width="100%" style="font-family: verdana, arial, helvetica; font-size: small;">
 
-                          <?php if (is_array($order->products)) {
-                            $context = array(
-                              'revision' => 'formatted',
-                              'type' => 'order_product',
-                              'subject' => array(
-                                'order' => $order,
-                              ),
-                            );
+                          <?php
+                          if (is_array($order->products)) {
                             foreach ($order->products as $product) {
-                              $price_info = array(
-                                'price' => $product->price,
-                                'qty' => $product->qty,
-                              );
-                              $context['subject']['order_product'] = $product;
-                              $context['subject']['node'] = node_load($product->nid);
-                              ?>
+                          ?>
                           <tr>
                             <td valign="top" nowrap="nowrap">
                               <b><?php echo $product->qty; ?> x </b>
                             </td>
                             <td width="98%">
-                              <b><?php echo $product->title . ' - ' . uc_price($price_info, $context); ?></b>
+                              <b><?php echo $product->title . ' - ' . uc_currency_format($product->price * $product->qty); ?></b>
                               <?php if ($product->qty > 1) {
-                                $price_info['qty'] = 1;
-                                echo t('(!price each)', array('!price' => uc_price($price_info, $context)));
+                                echo t('(!price each)', array('!price' => uc_currency_format($product->price)));
                               } ?>
                               <br />
                               <?php echo t('SKU: ') . $product->model; ?><br />
-                              <?php if (is_array($product->data['attributes']) && count($product->data['attributes']) > 0) {?>
-                              <?php foreach ($product->data['attributes'] as $attribute => $option) {
-                                echo '<li>' . t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))) . '</li>';
-                              } ?>
+                              <?php if (is_array($product->data['attributes']) && count($product->data['attributes']) > 0) { ?>
+                              <?php
+                                foreach ($product->data['attributes'] as $attribute => $option) {
+                                  echo '<li>' . t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))) . '</li>';
+                                } ?>
                               <?php } ?>
                               <br />
                             </td>

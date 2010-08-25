@@ -10,9 +10,6 @@
  * settings pages for use in store administration.
  */
 
-// Ubercart price API may be required before hook_init() is invoked.
-require_once dirname(__FILE__) . '/includes/uc_price.inc';
-
 /**
  * Unit conversion ratios.
  *
@@ -329,16 +326,6 @@ function uc_store_menu() {
     'file' => 'uc_store.admin.inc',
   );
 
-  $items['admin/store/settings/price-handlers'] = array(
-    'title' => 'Price handler settings',
-    'description' => 'Select which price handlers to use for your store.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_price_settings_form'),
-    'access arguments' => array('administer store'),
-    'type' => MENU_NORMAL_ITEM,
-    'file' => 'uc_store.admin.inc',
-  );
-
   return $items;
 }
 
@@ -388,13 +375,6 @@ function uc_store_element_info() {
 }
 
 /**
- * Implement hook_flush_caches().
- */
-function uc_store_flush_caches() {
-  return array('cache_uc_price');
-}
-
-/**
  * Implement hook_theme().
  */
 function uc_store_theme() {
@@ -414,14 +394,8 @@ function uc_store_theme() {
     'tapir_table' => array(
       'render element' => 'element',
     ),
-    'uc_price_settings_form' => array(
-      'render element' => 'form',
-    ),
     'uc_summary_overview' => array(
       'variables' => array('summaries' => NULL, 'link' => TRUE),
-    ),
-    'uc_price' => array(
-      'variables' => array('value' => 0, 'context' => array(), 'options' => array()),
     ),
   );
 }
@@ -573,41 +547,6 @@ function uc_store_reviews() {
 /******************************************************************************
  * Callback Functions, Forms, and Tables
  ******************************************************************************/
-
-/**
- * Theme a formatted price for display.
- *
- * @ingroup themeable
- */
-function theme_uc_price($variables) {
-  $value = $variables['value'];
-  $context = $variables['context'];
-  $options = $variables['options'];
-
-  // Fixup class names.
-  if (!isset($context['class']) || !is_array($context['class'])) {
-    $context['class'] = array();
-  }
-  foreach ($context['class'] as $key => $class) {
-    $context['class'][$key] = 'uc-price-' . $class;
-  }
-  $context['class'][] = 'uc-price';
-  // Class the element.
-  $output = '<span class="' . implode(' ', $context['class']) . '">';
-  // Prefix(es).
-  if ($options['label'] && isset($options['prefixes'])) {
-    $output .= '<span class="price-prefixes">' . implode('', $options['prefixes']) . '</span>';
-  }
-  // Value.
-  $output .= $value;
-  // Suffix(es).
-  if ($options['label'] && isset($options['suffixes'])) {
-    $output .= '<span class="price-suffixes">' . implode('', $options['suffixes']) . '</span>';
-  }
-  $output .= '</span>';
-
-  return $output;
-}
 
 /**
  * Theme the dashboard on the admin/store page.
@@ -900,11 +839,8 @@ function uc_store_address_fields_form_reset($form_id, &$form_state) {
 function uc_store_js_util($func) {
   switch ($func) {
     case 'currency_format':
-      $context = array(
-        'revision' => 'formatted-original',
-      );
       $amount = is_numeric($_POST['amount']) ? $_POST['amount'] : 0;
-      $output = uc_price($amount, $context);
+      $output = uc_currency_format($amount);
       break;
     case 'zone_select':
       $country_id = intval($_POST['country_id']) > 0 ? intval($_POST['country_id']) : uc_store_default_country();
@@ -988,29 +924,50 @@ function uc_store_get_icon($path, $small = FALSE, $class = 'uc-store-icon', $alt
 /**
  * Format an amount for display with the store's currency settings.
  */
-function uc_currency_format($value, $sign = TRUE, $thou = TRUE, $dec = NULL) {
+function uc_currency_format($value, $sign = NULL, $thou = NULL, $dec = NULL) {
   if ($value === NULL) {
     return NULL;
   }
 
-  $context = array(
-    'revision' => 'formatted',
-    'type' => 'amount',
-  );
+  $output = '';
 
-  $options = array();
-
-  if (!$sign) {
-    $options['sign'] = '';
+  $sign_after = variable_get('uc_sign_after_amount', FALSE);
+  $prec = variable_get('uc_currency_prec', 2);
+  if (is_null($sign)) {
+    $sign = variable_get('uc_currency_sign', '$');
   }
-  if (!$thou) {
-    $options['thou'] = '';
+  if (is_null($thou)) {
+    $thou = variable_get('uc_currency_thou', ',');
   }
-  if (!is_null($dec)) {
-    $options['dec'] = $dec;
+  if (is_null($dec)) {
+    $dec = variable_get('uc_currency_dec', '.');
   }
 
-  return uc_price($value, $context, $options);
+  // If the value is significantly less than the minimum precision, zero it.
+  if ($prec > 0 && round(abs($value), $prec + 1) < pow(10, -$prec)) {
+    $value = 0;
+  }
+
+  // Force the price to a positive value and add a negative sign if necessary.
+  if ($value < 0) {
+    $value = abs($value);
+    $output .= '-';
+  }
+
+  // Add the currency sign first if specified.
+  if ($sign && !$sign_after) {
+    $output .= $sign;
+  }
+
+  // Format the number, like 1234.567 => 1,234.57
+  $output .= number_format($value, $prec, $dec, $thou);
+
+  // Add the currency sign last if specified.
+  if ($sign && $sign_after) {
+    $output .= $sign;
+  }
+
+  return $output;
 }
 
 /**

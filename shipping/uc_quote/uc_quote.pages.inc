@@ -43,14 +43,6 @@ function uc_quote_assemble_quotes($order) {
     }
   }
 
-  $context = array(
-    'revision' => 'formatted',
-    'type' => 'line_item',
-    'subject' => array(
-      'order' => $order,
-    ),
-  );
-
   $quote_data = array();
   foreach ($methods as $method) {
     $set = rules_config_load('get_quote_from_' . $method['id']);
@@ -59,14 +51,7 @@ function uc_quote_assemble_quotes($order) {
 
       foreach ($data as &$quote) {
         if (isset($quote['rate'])) {
-          $context['subject']['line_item'] = array(
-            'type' => 'shipping',
-            'name' => $quote['option_label'],
-            'amount' => $quote['rate'],
-            'weight' => 1,
-          );
-
-          $quote['format'] = uc_price($quote['rate'], $context);
+          $quote['format'] = uc_currency_format($quote['rate']);
         }
       }
       $quote_data[$method['id']] = $data;

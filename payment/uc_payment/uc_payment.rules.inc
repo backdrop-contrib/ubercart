@@ -73,11 +73,7 @@ function uc_payment_condition_order_balance($order, $balance_comparison) {
 }
 
 function uc_payment_condition_balance_options() {
-  $context = array(
-    'revision' => 'formatted',
-    'type' => 'amount',
-  );
-  $zero = array('!zero' => uc_price(0, $context));
+  $zero = array('!zero' => uc_currency_format(0));
   $options = array(
     'less' => t('Balance is less than !zero.', $zero),
     'less_equal' => t('Balance is less than or equal to !zero.', $zero),

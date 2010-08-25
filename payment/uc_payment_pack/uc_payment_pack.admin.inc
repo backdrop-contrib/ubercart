@@ -12,16 +12,7 @@
  */
 function uc_payment_pack_receive_check_form($form, &$form_state, $order) {
   $balance = uc_payment_balance($order);
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'amount',
-  );
-  $options = array(
-    'sign' => FALSE,
-    'thou' => FALSE,
-    'dec' => '.',
-  );
-  $form['balance'] = array('#markup' => uc_price($balance, $context));
+  $form['balance'] = array('#markup' => uc_currency_format($balance));
   $form['order_id'] = array(
     '#type' => 'hidden',
     '#value' => $order->order_id,
@@ -34,7 +25,7 @@ function uc_payment_pack_receive_check_form($form, &$form_state, $order) {
   $form['amount'] = array(
     '#type' => 'textfield',
     '#title' => t('Amount'),
-    '#default_value' => uc_price($balance, $context, $options),
+    '#default_value' => uc_currency_format($balance, FALSE, FALSE, '.'),
     '#size' => 10,
     '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
     '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',

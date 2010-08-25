@@ -352,17 +352,10 @@ function uc_usps_quote($products, $details, $method) {
       unset($services[$service]);
     }
   }
-  $context = array(
-    'revision' => 'themed',
-    'type' => 'amount',
-  );
   foreach ($services as $key => $quote) {
     if (isset($quote['rate'])) {
-      $context['subject']['quote'] = $quote;
-      $context['revision'] = 'altered';
-      $services[$key]['rate'] = uc_price($quote['rate'], $context);
-      $context['revision'] = 'formatted';
-      $services[$key]['format'] = uc_price($quote['rate'], $context);
+      $services[$key]['rate'] = $quote['rate'];
+      $services[$key]['format'] = uc_currency_format($quote['rate']);
       $services[$key]['option_label'] = theme('uc_usps_option_label', array('service' => $quote['label']));
     }
   }

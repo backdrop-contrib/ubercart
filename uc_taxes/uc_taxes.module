@@ -118,13 +118,6 @@ function uc_taxes_uc_order($op, $order, $arg2) {
     case 'save':
       $changes = array();
       $line_items = uc_line_item_tax('load', $order);
-      $context = array(
-        'revision' => 'formatted',
-        'type' => 'line_item',
-        'subject' => array(
-          'order' => $order,
-        ),
-      );
       if (is_array($order->line_items)) {
         foreach ($order->line_items as $i => $line) {
           if ($line['type'] == 'tax') {
@@ -135,7 +128,7 @@ function uc_taxes_uc_order($op, $order, $arg2) {
                   $context['subject']['line_item'] = $new_line;
                   uc_order_update_line_item($line['line_item_id'], $new_line['title'], $new_line['amount'], $new_line['data']);
                   $order->line_items[$i]['amount'] = $new_line['amount'];
-                  $changes[] = t('Changed %title to %amount.', array('%amount' => uc_price($new_line['amount'], $context), '%title' => $new_line['title']));
+                  $changes[] = t('Changed %title to %amount.', array('%amount' => uc_currency_format($new_line['amount']), '%title' => $new_line['title']));
                 }
                 unset($line_items[$id]);
                 $delete = FALSE;
@@ -156,7 +149,7 @@ function uc_taxes_uc_order($op, $order, $arg2) {
           $line['type'] = 'tax';
           $order->line_items[] = $line;
           $context['subject']['line_item'] = $line;
-          $changes[] = t('Added %amount for %title.', array('%amount' => uc_price($line['amount'], $context), '%title' => $line['title']));
+          $changes[] = t('Added %amount for %title.', array('%amount' => uc_currency_format($line['amount']), '%title' => $line['title']));
         }
       }
       if (count($changes)) {

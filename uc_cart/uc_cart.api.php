@@ -121,20 +121,8 @@ function hook_uc_cart_display($item) {
     '#markup' => node_access('view', $node) ? l($item->title, 'node/' . $node->nid) : check_plain($item->title),
   );
 
-  $context = array(
-    'revision' => 'altered',
-    'type' => 'cart_item',
-    'subject' => array(
-      'cart_item' => $item,
-      'node' => $node,
-    ),
-  );
-  $price_info = array(
-    'price' => $item->price,
-    'qty' => $item->qty,
-  );
 
-  $element['#total'] = uc_price($price_info, $context);
+  $element['#total'] = $item->price * $item->qty;
   $element['data'] = array('#type' => 'hidden', '#value' => serialize($item->data));
   $element['qty'] = array(
     '#type' => 'textfield',

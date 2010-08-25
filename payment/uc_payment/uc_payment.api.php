@@ -34,7 +34,7 @@ function hook_uc_payment_entered($order, $method, $amount, $account, $data, $com
     array(
       '@uid' => $account->uid,
       '@method' => $method,
-      '@amount' => uc_price($amount, array('location' => 'hook-payment', 'revision' => 'formatted-original')),
+      '@amount' => uc_currency_format($amount),
       '@order_id' => $order->order_id,
     ))
   );

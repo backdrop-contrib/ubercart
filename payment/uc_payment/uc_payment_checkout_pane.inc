@@ -115,16 +115,8 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
       }
       usort($line_items, 'uc_weight_sort');
 
-      $context = array(
-        'revision' => 'themed',
-        'type' => 'line_item',
-        'subject' => array(
-          'order' => $order,
-        ),
-      );
       foreach ($line_items as $line_item) {
-        $context['subject']['line_item'] = $line_item;
-        $review[] = array('title' => $line_item['title'], 'data' => uc_price($line_item['amount'], $context));
+        $review[] = array('title' => $line_item['title'], 'data' => uc_currency_format($line_item['amount']));
       }
       $review_data = _uc_payment_method_data($order->payment_method, 'review');
       if (empty($review_data)) {

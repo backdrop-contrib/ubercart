@@ -780,36 +780,19 @@ function _uc_attribute_alter_form($product) {
 
   $form_attributes = array();
 
-  $context = array(
-    'revision' => 'formatted',
-  );
-
   // Loop through each product attribute and generate its form element.
   foreach ($attributes as $attribute) {
-    $context['subject']['attribute'] = $attribute;
     // Build the attribute's options array.
     $options = array();
     foreach ($attribute->options as $option) {
-      $context['subject']['option'] = $option;
       switch (variable_get('uc_attribute_option_price_format', 'adjustment')) {
         case 'total':
-          $context['type'] = 'product';
-          $context['subject']['node'] = $product;
-          $price_info = array(
-            'price' => $product->sell_price + $option->price,
-            'qty' => $qty,
-          );
-          $display_price = in_array($attribute->aid, $priced_attributes) ? ', ' . uc_price($price_info, $context) : '';
+          $display_price = in_array($attribute->aid, $priced_attributes) ? ', ' . uc_currency_format(($product->sell_price + $option->price) * $qty) : '';
           if (count($priced_attributes) == 1 && $attribute->display != 3) {
             break;
           }
         case 'adjustment':
-          $context['type'] = 'attribute_option';
-          $price_info = array(
-            'price' => $option->price,
-            'qty' => $qty,
-          );
-          $display_price = ($option->price != 0 ? ', ' . ($option->price > 0 ? '+' : '') . uc_price($price_info, $context) : '');
+          $display_price = ($option->price != 0 ? ', ' . ($option->price > 0 ? '+' : '') . uc_currency_format($option->price * $qty) : '');
           break;
         case 'none':
         default:

@@ -54,10 +54,6 @@ function uc_flatrate_form_alter(&$form, &$form_state, $form_id) {
     $currency_sign = variable_get('uc_currency_sign', '$');
     $weight = variable_get('uc_quote_method_weight', array());
     $result = db_query("SELECT mid, title, product_rate FROM {uc_flatrate_methods}");
-    $context = array(
-      'revision' => 'formatted',
-      'type' => 'amount',
-    );
     foreach ($result as $method) {
       // Ensure default weight is set.
       $weight += array('flatrate_' . $method->mid => 0);
@@ -77,7 +73,7 @@ function uc_flatrate_form_alter(&$form, &$form_state, $form_id) {
         '#type' => 'textfield',
         '#title' => $method->title,
         '#default_value' => $form['#node']->flatrate[$method->mid],
-        '#description' => t('Default rate: %price', array('%price' => uc_price($method->product_rate, $context))),
+        '#description' => t('Default rate: %price', array('%price' => uc_currency_format($method->product_rate))),
         '#size' => 16,
         '#field_prefix' => $sign_flag ? '' : $currency_sign,
         '#field_suffix' => $sign_flag ? $currency_sign : '',
@@ -219,10 +215,6 @@ function uc_flatrate_uc_shipping_method() {
 function uc_flatrate_quote($products, $details, $method) {
   $method = explode('_', $method['id']);
   $mid = $method[1];
-  $context = array(
-    'revision' => 'altered',
-    'type' => 'amount',
-  );
 
   if ($method = db_query("SELECT * FROM {uc_flatrate_methods} WHERE mid = :mid", array(':mid' => $mid))->fetchObject()) {
     // Start at the base rate.
@@ -230,27 +222,16 @@ function uc_flatrate_quote($products, $details, $method) {
 
     foreach ($products as $product) {
       if (empty($product->flatrate) || is_null($product->flatrate[$mid])) {
-        $price_info = array(
-          'price' => $method->product_rate,
-          'qty' => $product->qty,
-        );
         // Add the method's default product rate.
-        $rate += uc_price($price_info, $context);
+        $rate += $method->product_rate * $product->qty;
       }
       else {
-        $price_info = array(
-          'price' => $product->flatrate[$mid],
-          'qty' => $product->qty,
-        );
         // Add the product-specific rate.
-        $rate += uc_price($price_info, $context);
+        $rate += $product->flatrate[$mid] * $product->qty;
       }
     }
 
-    $altered = uc_price($rate, $context);
-    $context['revision'] = 'formatted';
-    $formatted = uc_price($rate, $context);
-    $quotes[] = array('rate' => $altered, 'format' => $formatted, 'option_label' => check_plain($method->label));
+    $quotes[] = array('rate' => $rate, 'format' => uc_currency_format($rate), 'option_label' => check_plain($method->label));
   }
 
   return $quotes;

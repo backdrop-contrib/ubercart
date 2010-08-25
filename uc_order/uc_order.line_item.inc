@@ -48,19 +48,10 @@ function uc_line_item_total($op, $order) {
 function uc_line_items_calculate($order) {
   $total = 0;
 
-  $context = array(
-    'revision' => 'altered',
-    'type' => 'line_item',
-    'subject' => array(
-      'order' => $order,
-    ),
-  );
-
   if (is_array($order->line_items)) {
     foreach ($order->line_items as $item) {
-      $context['subject']['line_item'] = $item;
       if (_uc_line_item_data($item['type'], 'calculated') == TRUE) {
-        $total += uc_price($item['amount'], $context);
+        $total += $item['amount'];
       }
     }
   }

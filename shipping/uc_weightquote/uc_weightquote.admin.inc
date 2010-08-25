@@ -12,21 +12,14 @@
 function uc_weightquote_admin_methods() {
   $build = array();
 
-  $context = array(
-    'location' => 'shipping-weightquote-method-admin',
-    'subject' => array(),
-  );
-
   $rows = array();
   $result = db_query("SELECT mid, title, label, base_rate, product_rate FROM {uc_weightquote_methods}");
   foreach ($result as $method) {
-    $context['subject']['weightquote_method'] = $method;
-
     $row = array();
     $row[] = check_plain($method->title);
     $row[] = check_plain($method->label);
-    $row[] = uc_price($method->base_rate, $context);
-    $row[] = uc_price($method->product_rate, $context);
+    $row[] = uc_currency_format($method->base_rate);
+    $row[] = uc_currency_format($method->product_rate);
     $row[] = l(t('edit'), 'admin/store/settings/quotes/methods/weightquote/' . $method->mid);
     $rows[] = $row;
   }
