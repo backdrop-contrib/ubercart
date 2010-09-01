@@ -78,6 +78,62 @@ function uc_taxes_menu() {
   return $items;
 }
 
+/**
+ * Implement hook_node_view().
+ */
+function uc_taxes_node_view($node, $view_mode) {
+  if (uc_product_is_product($node)) {
+    $amount = 0;
+    $suffix = '';
+    foreach (uc_taxes_rate_load() as $tax) {
+      if ($tax->display_include && in_array($node->type, $tax->taxed_product_types) && ($tax->shippable == 0 || $node->shippable == 1)) {
+        $amount += $node->sell_price * $tax->rate;
+        $suffix .= $tax->inclusion_text;
+      }
+    }
+
+    $node->content['display_price']['#price'] += $amount;
+    $node->content['display_price']['tax_included']['#markup'] = filter_xss($suffix);
+
+    $node->content['sell_price']['#price'] += $amount;
+    $node->content['sell_price']['tax_included']['#markup'] = filter_xss($suffix);
+  }
+}
+
+function uc_taxes_form_uc_cart_view_form_alter(&$form, &$form_state) {
+  $taxes = uc_taxes_rate_load();
+
+  foreach (element_children($form['items']) as $i) {
+    if (!isset($form['items'][$i]['desc'])) {
+      continue;
+    }
+
+    $node = node_load($form['items'][$i]['nid']['#value']);
+    $data = unserialize($form['items'][$i]['data']['#value']);
+
+    $suffix = '';
+    foreach ($taxes as $tax) {
+      if ($tax->display_include && in_array($node->type, $tax->taxed_product_types) && ($tax->shippable == 0 || $data['shippable'] == 1)) {
+        // Amount has already been calculated through hook_uc_cart_item('view')
+        // because this cannot handle product kits.
+        $suffix .= $tax->inclusion_text;
+      }
+    }
+
+    if (!isset($form['items'][$i]['total']['#suffix'])) {
+      $form['items'][$i]['total']['#suffix'] = '';
+    }
+    $form['items'][$i]['total']['#suffix'] .= $suffix;
+  }
+}
+
+/**
+ * Implement hook_form_alter().
+ */
+function uc_taxes_form_alter(&$form, &$form_state, $form_id) {
+  // TODO: Include attribute prices in taxes.
+}
+
 /*******************************************************************************
  * Ubercart Hooks
  ******************************************************************************/
@@ -156,6 +212,60 @@ function uc_taxes_uc_order($op, $order, $arg2) {
         uc_order_log_changes($order->order_id, $changes);
       }
     break;
+  }
+}
+
+/**
+ * Implement hook_uc_cart_item().
+ */
+function uc_taxes_uc_cart_item($op, $item) {
+  switch ($op) {
+    case 'view':
+      $node = node_load($item->nid);
+      $amount = 0;
+      foreach (uc_taxes_rate_load() as $tax) {
+        if ($tax->display_include && in_array($node->type, $tax->taxed_product_types) && ($tax->shippable == 0 || $item->data['shippable'] == 1)) {
+          $amount += $item->price * $tax->rate;
+        }
+      }
+
+      $item->price += $amount;
+      break;
+  }
+}
+
+/**
+ * Implement hook_tapir_table_alter().
+ */
+function uc_taxes_tapir_table_alter(&$table, $table_id) {
+  switch ($table_id) {
+    case 'uc_product_table':
+      if (isset($table['#columns']['price'])) {
+        $nodes = node_load_multiple($table['#parameters'][1]);
+        $taxes = uc_taxes_rate_load();
+
+        $i = 0;
+        foreach ($nodes as $node) {
+          $amount = 0;
+          $suffix = '';
+          foreach ($taxes as $tax) {
+            if ($tax->display_include && in_array($node->type, $tax->taxed_product_types) && ($tax->shippable == 0 || $node->shippable == 1)) {
+              $amount += $node->sell_price * $tax->rate;
+              $suffix .= $tax->inclusion_text;
+            }
+          }
+
+          $table[$i]['price']['#price'] += $amount;
+
+          if (!isset($table[$i]['price']['#suffix'])) {
+            $table[$i]['price']['#suffix'] = '';
+          }
+          $table[$i]['price']['#suffix'] .= filter_xss($suffix);
+
+          ++$i;
+        }
+      }
+      break;
   }
 }
 
