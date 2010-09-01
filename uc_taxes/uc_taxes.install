@@ -78,6 +78,31 @@ function uc_taxes_schema() {
     'primary key' => array('id'),
   );
 
+  $schema['uc_taxed_product_types'] = array(
+    'fields' => array(
+      'tax_id' => array(
+        'description' => 'Tax rate id',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'type' => array(
+        'description' => 'Node type',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('tax_id', 'type'),
+    'indexes' => array(
+      'type' => array('type'),
+    ),
+  );
+
+  $schema['uc_taxed_line_items'] = $schema['uc_taxed_product_types'];
+  $schema['uc_taxed_line_items']['fields']['type']['description'] = 'Line item type';
+
   return $schema;
 }
 
@@ -102,5 +127,62 @@ function uc_taxes_update_7000() {
   ));
 
   return t('Added "price including tax" columns.');
+}
+
+/**
+ * Separate taxed product types and line items to joined tables.
+ */
+function uc_taxes_update_7001() {
+  $table = array(
+    'fields' => array(
+      'tax_id' => array(
+        'description' => 'Tax rate id',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'type' => array(
+        'description' => 'Node type',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('tax_id', 'type'),
+    'indexes' => array(
+      'type' => array('type'),
+    ),
+  );
+  db_create_table('uc_taxed_product_types', $table);
+
+  $table['fields']['type']['description'] = 'Line item type';
+  db_create_table('uc_taxed_line_items', $table);
+
+  $p_insert = db_insert('uc_taxed_product_types')->fields(array('tax_id', 'type'));
+  $l_insert = db_insert('uc_taxed_line_items')->fields(array('tax_id', 'type'));
+
+  $result = db_query("SELECT id, taxed_product_types, taxed_line_items FROM {uc_taxes}");
+  foreach ($result as $tax) {
+    $tax->taxed_product_types = unserialize($tax->taxed_product_types);
+    $tax->taxed_line_items = unserialize($tax->taxed_line_items);
+
+    foreach ($tax->taxed_product_types as $type) {
+      $p_insert->values(array(
+        'tax_id' => $tax->id,
+        'type' => $type,
+      ));
+    }
+
+    foreach ($tax->taxed_line_items as $type) {
+      $l_insert->values(array(
+        'tax_id' => $tax->id,
+        'type' => $type,
+      ));
+    }
+
+    $p_insert->execute();
+    $l_insert->execute();
+  }
 }
 

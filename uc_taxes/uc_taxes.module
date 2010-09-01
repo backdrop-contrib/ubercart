@@ -253,6 +253,33 @@ function uc_taxes_rate_save($rate) {
     drupal_write_record('uc_taxes', $rate, array('id'));
   }
 
+  db_delete('uc_taxed_product_types')
+    ->condition('tax_id', $rate->id)
+    ->execute();
+  db_delete('uc_taxed_line_items')
+    ->condition('tax_id', $rate->id)
+    ->execute();
+
+  $p_insert = db_insert('uc_taxed_product_types')->fields(array('tax_id', 'type'));
+  $l_insert = db_insert('uc_taxed_line_items')->fields(array('tax_id', 'type'));
+
+  foreach ($rate->taxed_product_types as $type) {
+    $p_insert->values(array(
+      'tax_id' => $rate->id,
+      'type' => $type,
+    ));
+  }
+
+  foreach ($rate->taxed_line_items as $type) {
+    $l_insert->values(array(
+      'tax_id' => $rate->id,
+      'type' => $type,
+    ));
+  }
+
+  $p_insert->execute();
+  $l_insert->execute();
+
   rules_clear_cache();
 
   return $rate;
@@ -277,11 +304,17 @@ function uc_taxes_rate_load($rate_id = NULL) {
 
     // Loop through each returned row.
     foreach ($result as $rate) {
-      // Unserialize some arrays and cache the rate in a static array.
-      $rate->taxed_product_types = unserialize($rate->taxed_product_types);
-      $rate->taxed_line_items = unserialize($rate->taxed_line_items);
+      $rate->taxed_product_types = array();
+      $rate->taxed_line_items = array();
 
       $rates[$rate->id] = $rate;
+    }
+
+    foreach (array('taxed_product_types', 'taxed_line_items') as $field) {
+      $result = db_select('uc_' . $field, 't')->fields('t', array('tax_id', 'type'))->execute();
+      foreach ($result as $record) {
+        $rates[$record->tax_id]->{$field}[] = $record->type;
+      }
     }
   }
 
@@ -305,6 +338,14 @@ function uc_taxes_rate_delete($rate_id) {
   // Delete the tax rate record.
   db_delete('uc_taxes')
     ->condition('id', $rate_id)
+    ->execute();
+
+  db_delete('uc_taxed_product_types')
+    ->condition('tax_id', $rate_id)
+    ->execute();
+
+  db_delete('uc_taxed_line_items')
+    ->condition('tax_id', $rate_id)
     ->execute();
 
   // Delete the associated conditions if they have been saved to the database.
