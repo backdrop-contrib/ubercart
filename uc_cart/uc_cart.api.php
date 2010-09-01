@@ -158,15 +158,18 @@ function hook_uc_cart_display($item) {
  *   The action that is occurring. Possible values:
  *   - "load" - Passed for each item when a cart is being loaded in the function
  *       uc_cart_get_contents(). This gives modules the chance to tweak information
- *       for items when the cart is being loaded prior to being view or added to
- *       an order. No return value is expected.
+ *       for items when the cart is being loaded prior to being added to an
+ *       order. No return value is expected.
+ *   - "view" - Passed for each item when it is about to be displayed on the
+ *       cart page. Modifications made affect only displayed information and are
+ *       not used in any calculations.
  *   - "can_ship" - Passed when a cart is being scanned for items that are not
- *       shippable items. Übercart will bypass cart and checkout operations
+ *       shippable items. Ubercart will bypass cart and checkout operations
  *       specifically related to tangible products if nothing in the cart is
  *       shippable. hook_cart_item functions that check for this op are expected
  *       to return TRUE or FALSE based on whether a product is shippable or not.
  * @return
- *   No return value for load.
+ *   No return value for load or view.
  *   TRUE or FALSE for can_ship.
  */
 function hook_uc_cart_item($op, &$item) {
