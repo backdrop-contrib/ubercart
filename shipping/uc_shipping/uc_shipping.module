@@ -206,15 +206,6 @@ function uc_shipping_theme() {
   );
 }
 
-/**
- * Implement hook_file_references().
- */
-function uc_shipping_file_references($file) {
-  $count = db_query("SELECT COUNT(package_id) FROM {uc_packages} WHERE label_image = :fid", array(':fid' => $file->fid))->fetchField();
-
-  return array('uc_shipping' => $count);
-}
-
 function template_preprocess_uc_packing_slip(&$variables) {
   $tokens = token_generate('store', array()) + token_generate('site', array());
   $variables['site_logo'] = $tokens['[site:logo]'];
@@ -558,6 +549,7 @@ function uc_shipping_package_delete($package_id) {
     ->execute();
 
   if ($package->label_image) {
+    file_usage_delete($package->label_image, 'uc_shipping', 'package', $package_id);
     file_delete($package->label_image);
   }
 

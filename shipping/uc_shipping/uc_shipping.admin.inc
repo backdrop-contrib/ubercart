@@ -409,6 +409,7 @@ function uc_shipping_package_cancel_confirm_submit($form, &$form_state) {
         ->execute();
 
       if ($package->label_image) {
+        file_usage_delete($package->label_image, 'uc_shipping', 'package', $package->package_id);
         file_delete($package->label_image);
         unset($package->label_image);
       }
