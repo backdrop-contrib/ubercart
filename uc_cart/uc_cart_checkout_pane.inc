@@ -19,17 +19,23 @@ function uc_checkout_pane_cart($op, $order, $form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
       $order->products = uc_cart_get_contents();
+      foreach ($order->products as $product) {
+        module_invoke_all('uc_cart_item', 'view', $product);
+      }
 
       $contents['cart_review_table'] = array(
         '#theme' => 'uc_cart_review_table',
+        '#items' => $order->products,
         '#weight' => variable_get('uc_pane_cart_field_cart_weight', 2),
       );
       return array('contents' => $contents, 'next-button' => FALSE);
 
     case 'review':
       $items = uc_cart_get_contents();
+
       $output = '<table>';
       foreach ($items as $item) {
+        module_invoke_all('uc_cart_item', 'view', $item);
         $desc = check_plain($item->title) . uc_product_get_description($item);
 
         $output .= '<tr valign="top"><td>' . $item->qty . '&times;</td><td width="100%">' . $desc
@@ -592,6 +598,7 @@ function _uc_checkout_pane_data($pane_id, $key) {
  * @ingroup themeable
  */
 function theme_uc_cart_review_table($variables) {
+  $items = $variables['items'];
   $show_subtotal = $variables['show_subtotal'];
 
   $subtotal = 0;
@@ -604,8 +611,7 @@ function theme_uc_cart_review_table($variables) {
   );
 
   // Set up table rows.
-  $contents = uc_cart_get_contents();
-  foreach ($contents as $item) {
+  foreach ($items as $item) {
     $total = $item->price * $item->qty;
     $subtotal += $total;
 
