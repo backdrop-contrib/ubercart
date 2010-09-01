@@ -91,15 +91,13 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
     '#required' => TRUE,
   );
 
-  $options = array(
-    '0' => t('Apply tax to any product regardless of its shipability.'),
-    1 => t('Apply tax to shippable products only.'),
-  );
-
   $form['shippable'] = array(
     '#type' => 'radios',
     '#title' => t('Taxed products'),
-    '#options' => $options,
+    '#options' => array(
+      t('Apply tax to any product regardless of its shippability.'),
+      t('Apply tax to shippable products only.'),
+    ),
     '#default_value' => $rate_id ? $rate->shippable : 0,
   );
 
@@ -137,6 +135,19 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
     '#title' => t('Weight'),
     '#description' => t('Taxes are sorted by weight and then applied to the order sequentially. This value is important when taxes need to include other tax line items.'),
     '#default_value' => $rate_id ? $rate->weight : 0,
+  );
+
+  $form['display_include'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Include this tax when displaying product prices.'),
+    '#default_value' => $rate_id ? $rate->display_include : 0,
+  );
+
+  $form['inclusion_text'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Tax inclusion text'),
+    '#description' => t('This text will be displayed near the price to indicate that it includes tax.'),
+    '#default_value' => $rate_id ? $rate->inclusion_text : '',
   );
 
   $conditions = rules_config_load('uc_taxes_' . $rate->id);
@@ -186,6 +197,8 @@ function uc_taxes_form_submit($form, &$form_state) {
     'taxed_line_items' => array_filter($form_state['values']['taxed_line_items']),
     'weight' => $form_state['values']['weight'],
     'shippable' => $form_state['values']['shippable'],
+    'display_include' => $form_state['values']['display_include'],
+    'inclusion_text' => $form_state['values']['inclusion_text'],
   );
   uc_taxes_rate_save((object) $rate);
 
