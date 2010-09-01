@@ -19,9 +19,6 @@ function uc_checkout_pane_cart($op, $order, $form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
       $order->products = uc_cart_get_contents();
-      foreach ($order->products as $product) {
-        module_invoke_all('uc_cart_item', 'view', $product);
-      }
 
       $contents['cart_review_table'] = array(
         '#theme' => 'uc_cart_review_table',
@@ -35,7 +32,6 @@ function uc_checkout_pane_cart($op, $order, $form = NULL, &$form_state = NULL) {
 
       $output = '<table>';
       foreach ($items as $item) {
-        module_invoke_all('uc_cart_item', 'view', $item);
         $desc = check_plain($item->title) . uc_product_get_description($item);
 
         $output .= '<tr valign="top"><td>' . $item->qty . '&times;</td><td width="100%">' . $desc

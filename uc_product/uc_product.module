@@ -306,7 +306,7 @@ function uc_product_theme() {
       'variables' => array('node' => NULL, 'view_mode' => 'full'),
     ),
     'uc_product_price' => array(
-      'variables' => array('price' => 0, 'label' => '', 'attributes' => array()),
+      'render element' => 'element',
     ),
     'uc_product_weight' => array(
       'variables' => array('weight' => 0, 'units' => NULL, 'view_mode' => 'full'),
@@ -753,7 +753,7 @@ function uc_product_view($node, $view_mode) {
 
   $node->content['display_price'] = array(
     '#theme' => 'uc_product_price',
-    '#price' => $node->sell_price,
+    '#value' => $node->sell_price,
     '#attributes' => array(
       'class' => array(
         'display-price',
@@ -775,26 +775,26 @@ function uc_product_view($node, $view_mode) {
 
     $node->content['list_price'] = array(
       '#theme' => 'uc_product_price',
-      '#price' => $node->list_price,
+      '#title' => t('List price:'),
+      '#value' => $node->list_price,
       '#attributes' => array(
         'class' => array(
           'list-price',
         ),
       ),
-      '#label' => t('List price:'),
       '#access' => $enabled['list_price'],
       '#weight' => $weight['list_price'],
     );
 
     $node->content['cost'] = array(
       '#theme' => 'uc_product_price',
-      '#price' => $node->cost,
+      '#title' => t('Cost:'),
+      '#value' => $node->cost,
       '#attributes' => array(
         'class' => array(
           'cost',
         ),
       ),
-      '#label' => t('Cost:'),
       '#access' => $enabled['cost'] && user_access('administer products'),
       '#weight' => $weight['cost'],
     );
@@ -805,13 +805,13 @@ function uc_product_view($node, $view_mode) {
 
   $node->content['sell_price'] = array(
     '#theme' => 'uc_product_price',
-    '#price' => $node->sell_price,
+    '#title' => t('Price:'),
+    '#value' => $node->sell_price,
     '#attributes' => array(
       'class' => array(
         'sell-price',
       ),
     ),
-    '#label' => t('Price:'),
     '#access' => $enabled['sell_price'],
     '#weight' => $weight['sell_price'],
   );
@@ -1138,7 +1138,6 @@ function uc_product_uc_store_status() {
  * Implement hook_uc_cart_display().
  */
 function uc_product_uc_cart_display($item) {
-  module_invoke_all('uc_cart_item', 'view', $item);
   $node = node_load($item->nid);
 
   $element = array();
@@ -1539,9 +1538,10 @@ function uc_product_add_to_cart_form_submit($form, &$form_state) {
  * @ingroup themeable
  */
 function theme_uc_product_price($variables) {
-  $price = $variables['price'];
-  $attributes = $variables['attributes'];
-  $label = $variables['label'];
+  $element = $variables['element'];
+  $price = $element['#value'];
+  $attributes = $element['#attributes'];
+  $label = $element['#title'];
 
   if (isset($attributes['class'])) {
     array_unshift($attributes['class'], 'product-info');
@@ -1555,6 +1555,7 @@ function theme_uc_product_price($variables) {
     $output .= '<span class="uc-price-label">' . $label . '</span> ';
   }
   $output .= theme('uc_price', array('price' => $price));
+  $output .= drupal_render_children($element);
   $output .= '</div>';
 
   return $output;
