@@ -252,17 +252,16 @@ function _uc_reports_get_csv($report_id, $user_id) {
   $csv_data = cache_get('uc_reports_' . $report_id . '_' . $user_id, 'cache');
 
   if (!$csv_data || $user_id != $user_check) {
-    drupal_set_message(t("The CSV data could not be retreived. It's possible the data might have expired. Refresh the report page and try to retrieve the CSV file again."), 'error');
+    drupal_set_message(t("The CSV data could not be retrieved. It's possible the data might have expired. Refresh the report page and try to retrieve the CSV file again."), 'error');
     drupal_not_found();
     exit();
   }
   else {
     ob_end_clean();
     $http_headers = array(
-      'Pragma' => 'no-cache',
+      'Pragma' => 'private',
       'Expires' => '0',
-      'Cache-Control' => 'no-cache, must-revalidate',
-      'Cache-Control' => 'private',
+      'Cache-Control' => 'private, must-revalidate',
       'Content-Transfer-Encoding' => 'binary',
       'Content-Length' => strlen($csv_data->data),
       'Content-Disposition' => 'attachment; filename="' . $report_id . '.csv"',

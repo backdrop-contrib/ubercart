@@ -116,7 +116,6 @@ function uc_cart_links_creation_help() {
   $header = array(t('Action'), t('Description'), t('Argument'));
   $rows = array(
     array('i', t('Sets the ID of the cart link.'), t('A custom text ID for the link.')),
-    array('e', t("Empties the customer's cart."), t('None.')),
     array('m', t('Displays a preset message to the customer.'), t('A message ID.')),
     array('p', t('Adds a product to the cart.'), t('A product string using the rules below...')),
   );
@@ -146,7 +145,7 @@ function uc_cart_links_creation_help() {
     '#theme' => 'item_list',
     '#items' => $items2,
   );
-  $build['example'] = array('#markup' => '<p>' . t('<b>Example:</b> /cart/add/e-p1_q5-imonday_special?destination=cart<br /><br />This example will empty the cart, add 5 of product 1 to the cart, track clicks with the ID "monday_special", and redirect the user to the cart. To use this on your site, simply create an HTML link to the URL you create:') . '</p><p>&lt;a href="http://www.example.com/cart/add/e-p1_q5-imonday_special?destination=cart"&gt;' . t('Link text.') . '&lt;/a&gt;</p>');
+  $build['example'] = array('#markup' => '<p>' . t('<b>Example:</b> /cart/add/p1_q5-imonday_special?destination=cart<br /><br />This example will add 5 of product 1 to the cart, track clicks with the ID "monday_special", and redirect the user to the cart. To use this on your site, simply create an HTML link to the URL you create:') . '</p><p>&lt;a href="http://www.example.com/cart/add/p1_q5-imonday_special?destination=cart"&gt;' . t('Link text.') . '&lt;/a&gt;</p>');
 
   return $build;
 }

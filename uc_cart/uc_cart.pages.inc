@@ -298,10 +298,12 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
   $form_state['checkout_valid'] = TRUE;
   foreach (element_children($form_state['values']['panes']) as $pane_id) {
     $func = _uc_checkout_pane_data($pane_id, 'callback');
-    $isvalid = $func('process', $order, $form, $form_state);
-    if ($isvalid === FALSE) {
-      $form_state['expanded_panes'][] = $pane_id;
-      $form_state['checkout_valid'] = FALSE;
+    if (is_string($func) && function_exists($func)) {
+      $isvalid = $func('process', $order, $form, $form_state);
+      if ($isvalid === FALSE) {
+        $form_state['expanded_panes'][] = $pane_id;
+        $form_state['checkout_valid'] = FALSE;
+      }
     }
   }
 
