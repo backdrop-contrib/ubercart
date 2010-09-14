@@ -8,14 +8,13 @@
 */
 function italy_install() {
   // Make the entry in the country table.
-  // VALUES = Country ID, Country Name, 2-digit Code, 3-digit Code, File Version
   db_insert('uc_countries')
     ->fields(array(
       'country_id' => 380,
       'country_name' => 'Italy',
       'country_iso_code_2' => 'IT',
       'country_iso_code_3' => 'ITA',
-      'version' => 2,
+      'version' => 3,
     ))
     ->execute();
 
@@ -38,12 +37,13 @@ function italy_install() {
     array(380, 'BO', 'Bologna'),
     array(380, 'BR', 'Brindisi'),
     array(380, 'BS', 'Brescia'),
+    array(380, 'BT', 'Barletta-Andria-Trani'),
     array(380, 'BZ', 'Bolzano'),
     array(380, 'CA', 'Cagliari'),
     array(380, 'CB', 'Campobasso'),
-    array(380, 'CI', 'Carbonia-Iglesias'),
     array(380, 'CE', 'Caserta'),
     array(380, 'CH', 'Chieti'),
+    array(380, 'CI', 'Carbonia-Iglesias'),
     array(380, 'CL', 'Caltanissetta'),
     array(380, 'CN', 'Cuneo'),
     array(380, 'CO', 'Como'),
@@ -52,10 +52,11 @@ function italy_install() {
     array(380, 'CT', 'Catania'),
     array(380, 'CZ', 'Catanzaro'),
     array(380, 'EN', 'Enna'),
+    array(380, 'FC', 'Forlì-Cesena'),
     array(380, 'FE', 'Ferrara'),
     array(380, 'FG', 'Foggia'),
     array(380, 'FI', 'Firenze'),
-    array(380, 'FC', 'Forlì-Cesena'),
+    array(380, 'FM', 'Fermo'),
     array(380, 'FR', 'Frosinone'),
     array(380, 'GE', 'Genova'),
     array(380, 'GO', 'Gorizia'),
@@ -69,20 +70,20 @@ function italy_install() {
     array(380, 'LO', 'Lodi'),
     array(380, 'LT', 'Latina'),
     array(380, 'LU', 'Lucca'),
+    array(380, 'MB', 'Monza e Brianza'),
     array(380, 'MC', 'Macerata'),
-    array(380, 'VS', 'Medio-Campidano'),
     array(380, 'ME', 'Messina'),
     array(380, 'MI', 'Milano'),
     array(380, 'MN', 'Mantova'),
     array(380, 'MO', 'Modena'),
-    array(380, 'MS', 'Massa Carrara'),
+    array(380, 'MS', 'Massa e Carrara'),
     array(380, 'MT', 'Matera'),
     array(380, 'NA', 'Napoli'),
     array(380, 'NO', 'Novara'),
     array(380, 'NU', 'Nuoro'),
     array(380, 'OG', 'Ogliastra'),
-    array(380, 'OT', 'Olbia-Tempio'),
     array(380, 'OR', 'Oristano'),
+    array(380, 'OT', 'Olbia-Tempio'),
     array(380, 'PA', 'Palermo'),
     array(380, 'PC', 'Piacenza'),
     array(380, 'PD', 'Padova'),
@@ -92,7 +93,7 @@ function italy_install() {
     array(380, 'PN', 'Pordenone'),
     array(380, 'PO', 'Prato'),
     array(380, 'PR', 'Parma'),
-    array(380, 'PU', 'Pesaro Urbino'),
+    array(380, 'PU', 'Pesaro e Urbino'),
     array(380, 'PT', 'Pistoia'),
     array(380, 'PV', 'Pavia'),
     array(380, 'PZ', 'Potenza'),
@@ -121,13 +122,14 @@ function italy_install() {
     array(380, 'TV', 'Treviso'),
     array(380, 'UD', 'Udine'),
     array(380, 'VA', 'Varese'),
-    array(380, 'VB', 'Verbania'),
+    array(380, 'VB', 'Verbano-Cusio-Ossola'),
     array(380, 'VC', 'Vercelli'),
     array(380, 'VE', 'Venezia'),
     array(380, 'VI', 'Vicenza'),
     array(380, 'VR', 'Verona'),
+    array(380, 'VS', 'Medio Campidano'),
     array(380, 'VT', 'Viterbo'),
-    array(380, 'VV', 'Vibo-Valentia'),
+    array(380, 'VV', 'Vibo Valentia'),
     array(380, 'RSM', 'Rep San Marino'),
     array(380, 'CTV', 'Città del Vaticano'),
   );
@@ -172,6 +174,35 @@ function italy_update($version) {
         $query->values($zone);
       }
       $query->execute();
+
+      break;
+
+    case 3:
+      $zones = array(
+        array(380, 'BT', 'Barletta-Andria-Trani'),
+        array(380, 'FM', 'Fermo'),
+        array(380, 'MB', 'Monza e Brianza'),
+      );
+
+      $query = db_insert('uc_zones')->fields(array('zone_country_id', 'zone_code', 'zone_name'));
+      foreach ($zones as $zone) {
+        $query->values($zone);
+      }
+      $query->execute();
+
+      $zones = array(
+        array(380, 'MS', 'Massa e Carrara'),
+        array(380, 'PU', 'Pesaro e Urbino'),
+        array(380, 'VB', 'Verbano-Cusio-Ossola'),
+        array(380, 'VV', 'Vibo Valentia'),
+      );
+
+      foreach ($zones as $zone) {
+        db_update('uc_zones')
+          ->fields(array('zone_name' => $zone[2]))
+          ->condition('zone_code', $zone[1])
+          ->execute();
+      }
 
       break;
   }
