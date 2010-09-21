@@ -19,7 +19,7 @@ class UcOrderTestCase extends DrupalWebTestCase {
   }
 
   public function setUp() {
-    parent::setUp(array('uc_store', 'uc_order'));
+    parent::setUp(array('uc_store', 'uc_product', 'uc_order'));
 
     $this->privileged_user = $this->drupalCreateUser(array('administer store', 'administer order workflow', 'view all orders', 'create orders', 'edit orders', 'delete orders', 'unconditionally delete orders'));
     $this->customer = $this->drupalCreateUser(array('view own orders'));
@@ -39,5 +39,85 @@ class UcOrderTestCase extends DrupalWebTestCase {
     $this->drupalGet('admin/store/orders');
     $this->assertLinkByHref('admin/store/orders/' . $order_id, 0, 'View link appears on order list.');
     $this->assertText('Pending', 'New order is "Pending".');
+  }
+
+  public function testOrderEditing() {
+    $order = $this->ucCreateOrder($this->customer);
+
+    $this->drupalLogin($this->customer);
+    $this->drupalGet('user/' . $this->customer->uid . '/orders');
+    $this->assertText(t('My order history'));
+
+    $this->drupalGet('user/' . $this->customer->uid . '/order/' . $order->order_id);
+    $this->assertResponse(200, 'Customer can view their own order.');
+
+    $this->drupalGet('admin/store/orders/' . $order->order_id);
+    $this->assertResponse(403, 'Customer may not edit orders.');
+
+    $this->drupalLogin($this->privileged_user);
+    $this->drupalGet('user/' . $this->customer->uid . '/order/' . $order->order_id);
+    $this->assertText(drupal_strtoupper($order->billing_first_name . ' ' . $order->billing_last_name), 'Found customer name.');
+
+    $edit = array(
+      'billing_first_name' => $this->randomName(8),
+      'billing_last_name' => $this->randomName(15),
+    );
+    $this->drupalPost('admin/store/orders/' . $order->order_id . '/edit', $edit, t('Submit changes'));
+    $this->assertText(t('Order changes saved.'));
+    $this->assertFieldByName('billing_first_name', $edit['billing_first_name'], 'Billing first name changed.');
+    $this->assertFieldByName('billing_last_name', $edit['billing_last_name'], 'Billing last name changed.');
+  }
+
+  protected function ucCreateOrder($customer) {
+    $order = uc_order_new($customer->uid);
+    uc_order_comment_save($order->order_id, 0, t('Order created programmatically.'), 'admin');
+
+    $order_exists = db_query("SELECT 1 FROM {uc_orders} WHERE order_id = :order_id", array(':order_id' => $order->order_id))->fetchField();
+    $this->assertTrue($order_exists, t('Found order ID @order_id', array('@order_id' => $order->order_id)));
+
+    $countries = uc_country_option_list();
+    $country = array_rand($countries);
+    $zones = uc_zone_option_list();
+
+    $order->delivery_first_name = $this->randomName(12);
+    $order->delivery_last_name = $this->randomName(12);
+    $order->delivery_street1 = $this->randomName(12);
+    $order->delivery_street2 = $this->randomName(12);
+    $order->delivery_city = $this->randomName(12);
+    $order->delivery_zone = array_rand($zones[$countries[$country]]);
+    $order->delivery_postal_code = $this->randomName(5);
+    $order->delivery_country = $country;
+
+    $order->billing_first_name = $this->randomName(12);
+    $order->billing_last_name = $this->randomName(12);
+    $order->billing_street1 = $this->randomName(12);
+    $order->billing_street2 = $this->randomName(12);
+    $order->billing_city = $this->randomName(12);
+    $order->billing_zone = array_rand($zones[$countries[$country]]);
+    $order->billing_postal_code = $this->randomName(5);
+    $order->billing_country = $country;
+
+    uc_order_save($order);
+
+    $db_order = db_query("SELECT * FROM {uc_orders} WHERE order_id = :order_id", array(':order_id' => $order->order_id))->fetchObject();
+    $this->assertEqual($order->delivery_first_name, $db_order->delivery_first_name);
+    $this->assertEqual($order->delivery_last_name, $db_order->delivery_last_name);
+    $this->assertEqual($order->delivery_street1, $db_order->delivery_street1);
+    $this->assertEqual($order->delivery_street2, $db_order->delivery_street2);
+    $this->assertEqual($order->delivery_city, $db_order->delivery_city);
+    $this->assertEqual($order->delivery_zone, $db_order->delivery_zone);
+    $this->assertEqual($order->delivery_postal_code, $db_order->delivery_postal_code);
+    $this->assertEqual($order->delivery_country, $db_order->delivery_country);
+
+    $this->assertEqual($order->billing_first_name, $db_order->billing_first_name);
+    $this->assertEqual($order->billing_last_name, $db_order->billing_last_name);
+    $this->assertEqual($order->billing_street1, $db_order->billing_street1);
+    $this->assertEqual($order->billing_street2, $db_order->billing_street2);
+    $this->assertEqual($order->billing_city, $db_order->billing_city);
+    $this->assertEqual($order->billing_zone, $db_order->billing_zone);
+    $this->assertEqual($order->billing_postal_code, $db_order->billing_postal_code);
+    $this->assertEqual($order->billing_country, $db_order->billing_country);
+
+    return $order;
   }
 }
