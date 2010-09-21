@@ -1,0 +1,43 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Tests for Ubercart orders.
+ */
+
+class UcOrderTestCase extends DrupalWebTestCase {
+  protected $privileged_user;
+  protected $customer;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Orders',
+      'description' => 'Ensure that orders function properly.',
+      'group' => 'Ubercart',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('uc_store', 'uc_order'));
+
+    $this->privileged_user = $this->drupalCreateUser(array('administer store', 'administer order workflow', 'view all orders', 'create orders', 'edit orders', 'delete orders', 'unconditionally delete orders'));
+    $this->customer = $this->drupalCreateUser(array('view own orders'));
+  }
+
+  public function testOrderCreation() {
+    $this->drupalLogin($this->privileged_user);
+
+    $edit = array('uid' => $this->customer->uid);
+    $this->drupalPost('admin/store/orders/create', $edit, t('Create order'));
+    $this->assertText(t('Order created by the administration.'), 'Order created by the administration.');
+    $this->assertFieldByName('uid_text', $this->customer->uid, 'The customer UID appears on the page.');
+
+    $order_id = db_query("SELECT order_id FROM {uc_orders} WHERE uid = :uid", array(':uid' => $this->customer->uid))->fetchField();
+    $this->assertTrue($order_id, t('Found order ID @order_id', array('@order_id' => $order_id)));
+
+    $this->drupalGet('admin/store/orders');
+    $this->assertLinkByHref('admin/store/orders/' . $order_id, 0, 'View link appears on order list.');
+    $this->assertText('Pending', 'New order is "Pending".');
+  }
+}
