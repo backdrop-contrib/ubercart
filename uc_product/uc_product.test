@@ -29,6 +29,43 @@ class UcProductTestCase extends DrupalWebTestCase {
     foreach (array('model', 'list_price', 'cost', 'sell_price', 'shippable', 'weight', 'weight_units', 'dim_length', 'dim_width', 'dim_height', 'length_units', 'pkg_qty', 'default_qty', 'ordering') as $field) {
       $this->assertFieldByName($field);
     }
+
+    $body_key = 'body[und][0][value]';
+
+    // Make a node with those fields.
+    $edit = array(
+      'title' => $this->randomName(32),
+      $body_key => $this->randomName(64),
+      'model' => $this->randomName(8),
+      'list_price' => mt_rand(1, 200),
+      'cost' => mt_rand(0, 100),
+      'sell_price' => mt_rand(1, 150),
+      'shippable' => mt_rand(0, 1),
+      'weight' => mt_rand(1, 50),
+      'weight_units' => array_rand(array(
+        'lb' => t('Pounds'),
+        'kg' => t('Kilograms'),
+        'oz' => t('Ounces'),
+        'g' => t('Grams'),
+      )),
+      'dim_length' => mt_rand(1, 50),
+      'dim_width' => mt_rand(1, 50),
+      'dim_height' => mt_rand(1, 50),
+      'length_units' => array_rand(array(
+        'in' => t('Inches'),
+        'ft' => t('Feet'),
+        'cm' => t('Centimeters'),
+        'mm' => t('Millimeters'),
+      )),
+    );
+
+    $this->drupalPost('node/add/product', $edit, t('Save'));
+    $this->assertText(t('Product @title has been created.', array('@title' => $edit['title'])));
+    $this->assertText($edit[$body_key], 'Product body found.');
+    $this->assertText(t('SKU: @model', array('@model' => $edit['model'])), 'Product model found.');
+    $this->assertText(t('Price: @price', array('@price' => uc_currency_format($edit['sell_price']))), 'Product sell price found.');
+    $this->assertNoUniqueText(uc_currency_format($edit['sell_price']), 'Price appears more than once.');
+
   }
 
   // Create a product node using the node form
