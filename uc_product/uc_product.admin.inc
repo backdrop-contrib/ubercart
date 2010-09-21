@@ -669,7 +669,7 @@ function uc_product_class_form_submit($form, &$form_state) {
     variable_set('node_options_' . $pcid, variable_get('node_options_product', array('status', 'promote')));
 
     if (module_exists('comment')) {
-      variable_set('comment_' . $pcid, variable_get('comment_product', COMMENT_NODE_READ_WRITE));
+      variable_set('comment_' . $pcid, variable_get('comment_product', COMMENT_NODE_OPEN));
     }
 
     module_invoke_all('uc_product_class', $pcid, 'insert');
