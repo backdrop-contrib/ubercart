@@ -102,22 +102,26 @@ function uc_paypal_init() {
 }
 
 /**
- * Implement hook_form_alter().
- * Notice how we alter the checkout review form to post the order to PayPal.
+ * Implement hook_page_alter().
+ *
+ * Alter the checkout review form to post the order to PayPal.
  */
-function uc_paypal_form_alter(&$form, &$form_state, $form_id) {
-  if ($form_id == 'uc_cart_checkout_review_form' && ($order_id = intval($_SESSION['cart_order'])) > 0) {
+function uc_paypal_page_alter(&$page) {
+  // Somebody is going to put the Main Content in a weird place just because they can.
+  $block = block_load('system', 'main');
+  if (isset($page[$block->region]['system_main']['#theme']) && $page[$block->region]['system_main']['#theme'] == 'uc_cart_checkout_review' && ($order_id = intval($_SESSION['cart_order'])) > 0) {
     $order = uc_order_load($order_id);
 
     if ($order->payment_method == 'paypal_wps') {
-      $checkout = drupal_get_form('uc_paypal_wps_form', $order);
-
-      unset($form['actions']['submit']);
-      $form['#prefix'] = '<table style="display: inline; padding-top: 1em;"><tr><td>';
-      $form['#suffix'] = '</td><td>' . drupal_render($checkout) . '</td></tr></table>';
+      $page[$block->region]['system_main']['#form'] = drupal_get_form('uc_paypal_wps_form', $order);
     }
   }
+}
 
+/**
+ * Implement hook_form_alter().
+ */
+function uc_paypal_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'uc_cart_checkout_form' && variable_get('uc_payment_method_paypal_ec_checkout', FALSE)) {
     $form['#submit'][] = 'uc_paypal_ec_checkout';
   }
