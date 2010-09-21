@@ -19,7 +19,7 @@ class UcProductTestCase extends DrupalWebTestCase {
 
   public function setUp() {
     parent::setUp('uc_product');
-    $this->privileged_user = $this->drupalCreateUser(array('create product content', 'edit any product content', 'delete any product content'));
+    $this->privileged_user = $this->drupalCreateUser(array('administer products', 'administer product classes', 'create product content', 'edit any product content', 'delete any product content'));
     $this->drupalLogin($this->privileged_user);
   }
 
@@ -65,48 +65,36 @@ class UcProductTestCase extends DrupalWebTestCase {
     $this->assertText(t('SKU: @model', array('@model' => $edit['model'])), 'Product model found.');
     $this->assertText(t('Price: @price', array('@price' => uc_currency_format($edit['sell_price']))), 'Product sell price found.');
     $this->assertNoUniqueText(uc_currency_format($edit['sell_price']), 'Price appears more than once.');
-
   }
 
-  // Create a product node using the node form
-  public function testProductCreate() {
-    // Create node to edit.
-    $edit = array();
-    $edit['title'] = $this->randomName(8);
-    $edit['body[und][0][value]'] = $this->randomName(16);
-    $edit['model'] = $this->randomName(8);
-    $edit['sell_price'] = mt_rand(1, 500);
-    $this->drupalPost('node/add/product', $edit, t('Save'));
-    $this->assertText(t('Product @title has been created.', array('@title' => $edit['title'])));
-  }
-
-/*   // Create a simpletest_example node and then see if our user can edit it
-  public function testSimpleTestExampleEdit() {
-    $settings = array(
-      'type' => 'simpletest_example',
-      'title' => $this->randomName(32),
-      'body' => array(LANGUAGE_NONE => array(array('value' => $this->randomName(64)))),
+  public function testProductClassForm() {
+    // Try making a new product class.
+    $class = $this->randomName(12);
+    $type = strtolower($class);
+    $edit = array(
+      'pcid' => $class,
+      'name' => $class,
+      'description' => $this->randomName(32),
     );
-    $node = $this->drupalCreateNode($settings);
 
-    // For debugging, we might output the node structure with $this->verbose()
-    $this->verbose('Node created: ' . var_export($node, TRUE));
-    // It would only be output if the testing settings had 'verbose' set.
+    $this->drupalPost('admin/store/products/classes', $edit, t('Submit'));
+    $this->assertText(t('Product class saved.'), 'Product class form submitted.');
 
-    // We'll run this test normally, but not on the testbot, as it would
-    // indicate that the examples module was failing tests.
-    if (!$this->runningOnTestbot()) {
-      // The debug() statement will output information into the test results.
-      // It can also be used in Drupal 7 anywhere in code and will come out
-      // as a drupal_set_message().
-      debug('We are not running on the PIFR testing server, so will go ahead and catch the failure.');
-      $this->drupalGet("node/{$node->nid}/edit");
-      // Make sure we don't get a 401 unauthorized response:
-      $this->assertResponse(200, t('User is allowed to edit the content.'));
+    $base = db_query('SELECT base FROM {node_type} WHERE type = :type', array(':type' => $type))->fetchField();
+    $this->assertEqual($base, 'uc_product', 'The new content type has been created in the database.');
 
-      // Looking for title text in the page to determine whether we were
-      // successful opening edit form.
-      $this->assertText(t("@title", array('@title' => $settings['title'])), "Found title in edit form");
-    }
-  } */
+    // Make an existing node type a product class.
+    $type = $this->drupalCreateContentType();
+    $edit = array(
+      'pcid' => $type->type,
+      'name' => $type->name,
+      'description' => $type->description,
+    );
+
+    $this->drupalPost('admin/store/products/classes', $edit, t('Submit'));
+    $this->assertText(t('Product class saved.'), 'Product class form submitted.');
+
+    $base = db_query('SELECT base FROM {node_type} WHERE type = :type', array(':type' => $type->type))->fetchField();
+    $this->assertEqual($base, 'uc_product', 'The new content type has been taken over by uc_product.');
+  }
 }
