@@ -363,7 +363,6 @@ function uc_product_field_formatter_view($entity_type, $entity, $field, $instanc
 function uc_product_node_info($reset = FALSE) {
   static $types = array();
   $title_label = t('Name');
-  $body_label = t('Description');
 
   if (empty($types) || $reset) {
     $types = array();
@@ -372,7 +371,6 @@ function uc_product_node_info($reset = FALSE) {
       'base' => 'uc_product',
       'description' => t('This node displays the representation of a product for sale on the website. It includes all the unique information that can be attributed to a specific model number.'),
       'title_label' => $title_label,
-      'body_label' => $body_label,
     );
 
     $result = db_query("SELECT pcid, name, description FROM {uc_product_classes}");
@@ -382,7 +380,6 @@ function uc_product_node_info($reset = FALSE) {
         'base' => 'uc_product',
         'description' => $class->description,
         'title_label' => $title_label,
-        'body_label' => $body_label,
       );
     }
   }
@@ -1534,8 +1531,8 @@ function uc_product_add_to_cart_form_submit($form, &$form_state) {
 function theme_uc_product_price($variables) {
   $element = $variables['element'];
   $price = $element['#value'];
-  $attributes = $element['#attributes'];
-  $label = $element['#title'];
+  $attributes = isset($element['#attributes']) ? $element['#attributes'] : array();
+  $label = isset($element['#title']) ? $element['#title'] : '';
 
   if (isset($attributes['class'])) {
     array_unshift($attributes['class'], 'product-info');
