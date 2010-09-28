@@ -1405,7 +1405,7 @@ function uc_op_order_comments_view_table($comments) {
         '#cell_attributes' => array('align' => 'center'),
       );
       $data['comment'] = array(
-        '#markup' => filter_xss_admin($comment->message),
+        '#markup' => check_plain($comment->message),
       );
       $table['#rows'][] = $data;
     }

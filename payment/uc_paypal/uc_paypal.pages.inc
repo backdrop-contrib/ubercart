@@ -16,8 +16,17 @@ function uc_paypal_ipn($order_id = 0) {
     return;
   }
 
-  if (($len = strpos($_POST['invoice'], '-')) > 0) {
-    $order_id = intval(substr($_POST['invoice'], 0, $len));
+  if (strpos($_POST['invoice'], '-') > 0) {
+    list($order_id, $cart_id) = explode('-', $_POST['invoice']);
+
+    // Sanitize order ID and cart ID
+    $order_id = intval($order_id);
+    $cart_id  = check_plain($cart_id);
+
+    if (!empty($cart_id)) {
+      // Needed later by uc_complete_sale to empty the correct cart
+      $_SESSION['uc_cart_id'] = $cart_id;
+    }
   }
   else {
     $order_id = intval($_POST['invoice']);
@@ -35,7 +44,7 @@ function uc_paypal_ipn($order_id = 0) {
   $payment_amount = check_plain($_POST['mc_gross']);
   $payment_currency = check_plain($_POST['mc_currency']);
   $payment_fee = check_plain($_POST['mc_fee']);
-  $receiver_email = check_plain($_POST['receiver_email']);
+  $receiver_email = check_plain($_POST['business']);
   $txn_id = check_plain($_POST['txn_id']);
   $txn_type = check_plain($_POST['txn_type']);
   $payer_email = check_plain($_POST['payer_email']);
@@ -218,6 +227,7 @@ function uc_paypal_ec_review() {
     }
 
     $order->delivery_street1 = check_plain($nvp_response['SHIPTOSTREET']);
+    $order->delivery_street2 = check_plain($nvp_response['SHIPTOSTREET2']);
     $order->delivery_city = check_plain($nvp_response['SHIPTOCITY']);
     $order->delivery_zone = !empty($zone_id) ? $zone_id : 0;
     $order->delivery_postal_code = check_plain($nvp_response['SHIPTOZIP']);

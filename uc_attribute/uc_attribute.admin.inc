@@ -1239,7 +1239,7 @@ function uc_product_adjustments_form($form, &$form_state, $node) {
       '#suffix' => '</table>',
     );
     $form['table']['head'] = array(
-      '#markup' => '<thead><tr>' . $attribute_names . '<th>Alternate SKU</th></tr></thead>',
+      '#markup' => '<thead><tr>' . $attribute_names . '<th>' . t('Alternate SKU') . '</th></tr></thead>',
       '#weight' => 0,
     );
     $form['table']['body'] = array(

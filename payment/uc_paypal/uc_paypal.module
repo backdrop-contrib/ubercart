@@ -884,7 +884,7 @@ function uc_paypal_wps_form($form, &$form_state, $order) {
     // Transaction information
     'currency_code' => variable_get('uc_paypal_wps_currency', 'USD'),
     'handling_cart' => uc_currency_format($shipping, FALSE, FALSE, '.'),
-    'invoice' => $order->order_id . '-' . REQUEST_TIME,
+    'invoice' => $order->order_id . '-' . uc_cart_get_id(),
     'tax_cart' => uc_currency_format($tax, FALSE, FALSE, '.'),
 
     // Shopping cart specific variables
@@ -936,6 +936,20 @@ function uc_paypal_wps_form($form, &$form_state, $order) {
           $o++;
         }
       }
+    }
+
+    // Apply discounts (negative amount line items). For example, this handles line items created by uc_coupon.
+    $discount = 0;
+
+    foreach ($order->line_items as $item) {
+      if ($item['amount'] < 0) {
+        // The minus sign is not an error! The discount amount must be positive.
+        $discount -= $item['amount'];
+      }
+    }
+
+    if ($discount != 0) {
+      $data['discount_amount_cart'] = $discount;
     }
   }
   else {
