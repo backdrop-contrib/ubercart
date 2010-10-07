@@ -151,7 +151,7 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
         case 'url':
         case 'link':
           if (!isset($url)) {
-            $url = url('user/' . $order->uid . '/order/' . $order->order_id, array('absolute' => TRUE));
+            $url = url('user/' . $order->uid . '/orders/' . $order->order_id, array('absolute' => TRUE));
           }
           else {
             break;

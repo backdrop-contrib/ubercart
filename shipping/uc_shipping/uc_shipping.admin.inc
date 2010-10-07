@@ -88,14 +88,6 @@ function uc_shipping_order_packages($order) {
  *   uc_shipping_new_package_submit()
  */
 function uc_shipping_new_package($form, &$form_state, $order) {
-  $breadcrumb = drupal_get_breadcrumb();
-  $breadcrumb[] = l(t('Administer'), 'admin');
-  $breadcrumb[] = l(t('Store administration'), 'admin/store');
-  $breadcrumb[] = l(t('Orders'), 'admin/store/orders');
-  $breadcrumb[] = l(t('Order @id', array('@id' => $order->order_id)), 'admin/store/orders/' . $order->order_id);
-  $breadcrumb[] = l(t('Packages'), 'admin/store/orders/' . $order->order_id . '/packages');
-  drupal_set_breadcrumb($breadcrumb);
-
   $form['#tree'] = TRUE;
   $form['instructions'] = array('#markup' => t('Organize products into packages.
  Package numbers in multiple shipping types are of the first shipping type they appear in. All
@@ -272,14 +264,6 @@ function uc_shipping_new_package_submit($form, &$form_state) {
  * @see uc_shipping_package_edit_submit()
  */
 function uc_shipping_package_edit($form, &$form_state, $order, $package) {
-  $breadcrumb = drupal_get_breadcrumb();
-  $breadcrumb[] = l(t('Administer'), 'admin');
-  $breadcrumb[] = l(t('Store administration'), 'admin/store');
-  $breadcrumb[] = l(t('Orders'), 'admin/store/orders');
-  $breadcrumb[] = l(t('Order @id', array('@id' => $order->order_id)), 'admin/store/orders/' . $order->order_id);
-  $breadcrumb[] = l(t('Packages'), 'admin/store/orders/' . $order->order_id . '/packages');
-  drupal_set_breadcrumb($breadcrumb);
-
   $products = array();
   $shipping_types_products = array();
   foreach ($order->products as $product) {
@@ -509,14 +493,6 @@ function uc_shipping_order_shipments($order) {
  * @see uc_shipping_new_shipment_submit()
  */
 function uc_shipping_new_shipment($form, &$form_state, $order) {
-  $breadcrumb = drupal_get_breadcrumb();
-  $breadcrumb[] = l(t('Administer'), 'admin');
-  $breadcrumb[] = l(t('Store administration'), 'admin/store');
-  $breadcrumb[] = l(t('Orders'), 'admin/store/orders');
-  $breadcrumb[] = l(t('Order @id', array('@id' => $order->order_id)), 'admin/store/orders/' . $order->order_id);
-  $breadcrumb[] = l(t('Shipments'), 'admin/store/orders/' . $order->order_id . '/shipments');
-  drupal_set_breadcrumb($breadcrumb);
-
   $checked_pkgs = (array) $_REQUEST['pkgs'];
 
   $form['#tree'] = TRUE;
@@ -647,14 +623,6 @@ function uc_shipping_new_shipment_submit($form, &$form_state) {
  * Display shipment details.
  */
 function uc_shipping_shipment_view($order, $shipment) {
-  $breadcrumb = drupal_get_breadcrumb();
-  $breadcrumb[] = l(t('Administer'), 'admin');
-  $breadcrumb[] = l(t('Store administration'), 'admin/store');
-  $breadcrumb[] = l(t('Orders'), 'admin/store/orders');
-  $breadcrumb[] = l(t('Order @id', array('@id' => $order->order_id)), 'admin/store/orders/' . $order->order_id);
-  $breadcrumb[] = l(t('Shipments'), 'admin/store/orders/' . $order->order_id . '/shipments');
-  drupal_set_breadcrumb($breadcrumb);
-
   $build = array();
 
   $origin = uc_order_address($shipment, 'o');
@@ -1056,6 +1024,10 @@ function uc_shipping_shipment_delete_confirm_submit($form, &$form_state) {
 function uc_shipping_make_shipment() {
   $args = func_get_args();
   if (count($args) > 2) {
+    $breadcrumb = drupal_get_breadcrumb();
+    $breadcrumb[] = l(t('Shipments'), 'admin/store/orders/' . $order->order_id . '/shipments');
+    drupal_set_breadcrumb($breadcrumb);
+
     $order = array_shift($args);
     $method_id = array_shift($args);
     $package_ids = $args;
