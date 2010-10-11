@@ -484,7 +484,7 @@ function uc_country_import_form($form, &$form_state) {
   }
 
   $form['country_import'] = array(
-    '#title' => 'Country importer',
+    '#title' => t('Country importer'),
     '#type' => 'fieldset',
     '#collapsed' => FALSE,
     '#collapsible' => FALSE,
@@ -569,7 +569,7 @@ function uc_country_formats_form($form, &$form_state) {
     '#title' => t('Address variables instructions'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
-    '#summary' => 'Tweak the address formatting for a specific country.',
+    '#summary' => t('Tweak the address formatting for a specific country.'),
     '#summary arguments' => array(FALSE),
   );
   $header = array(t('Variable'), t('Description'));

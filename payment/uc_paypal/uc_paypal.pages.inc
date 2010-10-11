@@ -6,11 +6,10 @@
  * Paypal administration menu items.
  */
 
-// Process Instant Payment Notifiations from PayPal.
-function uc_paypal_ipn($order_id = 0) {
-  watchdog('uc_paypal', 'Receiving IPN at URL for order @order_id. <pre>@debug</pre>',
-    array('@order_id' => $order_id, '@debug' => variable_get('uc_paypal_wps_debug_ipn', FALSE) ? print_r($_POST, TRUE) : ''));
-
+/**
+ * Process Instant Payment Notifiations from PayPal.
+ */
+function uc_paypal_ipn() {
   if (!isset($_POST['invoice'])) {
     watchdog('uc_paypal', 'IPN attempted with invalid order ID.', array(), WATCHDOG_ERROR);
     return;
@@ -32,10 +31,12 @@ function uc_paypal_ipn($order_id = 0) {
     $order_id = intval($_POST['invoice']);
   }
 
+  watchdog('uc_paypal', 'Receiving IPN at URL for order @order_id. <pre>@debug</pre>', array('@order_id' => $order_id, '@debug' => variable_get('uc_paypal_wps_debug_ipn', FALSE) ? print_r($_POST, TRUE) : ''));
+
   $order = uc_order_load($order_id);
 
   if ($order == FALSE) {
-    watchdog('uc_paypal', 'IPN attempted for non-existent order.', array(), WATCHDOG_ERROR);
+    watchdog('uc_paypal', 'IPN attempted for non-existent order @order_id.', array('@order_id' => $order_id), WATCHDOG_ERROR);
     return;
   }
 
