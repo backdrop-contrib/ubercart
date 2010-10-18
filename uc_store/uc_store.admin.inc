@@ -680,14 +680,14 @@ function uc_store_store_settings_form($form, &$form_state) {
     '#description' => NULL,
     '#size' => 32,
     '#maxlength' => 128,
-    '#required' => FALSE,
+    '#required' => TRUE,
     '#default_value' => variable_get('uc_store_email', NULL),
     '#summary' => variable_get('uc_store_email', NULL) ? t('Store e-mail address is %email.', array('%email' => variable_get('uc_store_email', ''))) : t('Store e-mail address is not set.'),
   );
 
   $form['uc_store_email_include_name'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Include the store name in the from line of store e-mails.'),
+    '#title' => t('Include the store name in the "From" line of store e-mails.'),
     '#description' => t('May not be available on all server configurations. Turn off if this causes problems.'),
 
     // don't show this element if there isn't an e-mail address set
@@ -724,7 +724,21 @@ function uc_store_store_settings_form($form, &$form_state) {
     '#summary' => variable_get('uc_store_help_page', '') ? t('Help page is <a href="!url">!url</a>.', array('!url' => url(variable_get('uc_store_help_page', ''), array('absolute' => TRUE)))) : t('Help page is not set.'),
   );
 
+  // Register additional validation handler
+  $form['#validate'][] = 'uc_store_store_settings_form_validate';
+
   return system_settings_form($form);
+}
+
+/**
+ * Validation handler for uc_store_store_settings_form.
+ * Validate store e-mail address
+ */
+function uc_store_store_settings_form_validate($form, &$form_state) {
+  $mail = trim($form_state['values']['uc_store_email']);
+  if (!valid_email_address($mail)) {
+    form_set_error('uc_store_email', t('The e-mail address %mail is not valid.', array('%mail' => $mail)));
+  }
 }
 
 /**

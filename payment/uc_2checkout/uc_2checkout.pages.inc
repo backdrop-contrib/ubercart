@@ -43,7 +43,7 @@ function uc_2checkout_complete($cart_id = 0) {
   }
 
   $country_id = db_query("SELECT country_id FROM {uc_countries} WHERE country_name LIKE :name", array(':name' => $_POST['country']))->fetchField();
-  if (!empty($zone_id)) {
+  if (!empty($country_id)) {
     $order->billing_country = $country_id;
   }
 

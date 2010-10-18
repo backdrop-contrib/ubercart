@@ -328,7 +328,8 @@ function uc_file_admin_files_form_action($form, &$form_state) {
           $max_bytes *= 1024;
       }
 
-      // Gather list of directories under the sleected one(s). '/' is always available.
+      // Gather list of directories under the selected one(s).
+      // '/' is always available.
       $directories = array('' => '/');
       $files = db_query("SELECT * FROM {uc_files}");
       foreach ($files as $file) {

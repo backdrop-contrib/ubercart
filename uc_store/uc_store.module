@@ -1749,24 +1749,51 @@ function uc_store_address() {
 }
 
 /**
- * Return the e-mail from string in the format of Store Name <store@email.com>.
+ * Return store name and e-mail address in an RFC 2822 compliant string
+ * for use as a "From" address when sending e-mail to customers.
+ * The return string will look something like: Store Name <store@example.com>
+ *
+ * @return An RFC 2822 compliant e-mail addres
  */
 function uc_store_email_from() {
+  // Use store e-mail address if set, else use site e-mail address
   $email_from = variable_get('uc_store_email', '');
   if (empty($email_from)) {
     $email_from = variable_get('site_mail', ini_get('sendmail_from'));
   }
 
-  // Add the store name to the e-mail from line.  Must be optional to prevent
-  // server conflicts.
+  // Add the store name to the e-mail "From" line.
+  // Must be optional to prevent server conflicts.
   if (variable_get('uc_store_email_include_name', TRUE)) {
     $store = variable_get('uc_store_name', '');
     if (!empty($store)) {
-      $email_from = '"' . $store . '" <' . $email_from . '>';
+      // Handle non-ASCII characters in store name and wrap in double quotes
+      // if it contains RFC 2822 'special' characters
+      $email_from = uc_store_rfc2822_display_name($store) . ' <' . $email_from . '>';
     }
   }
 
   return $email_from;
+}
+
+/**
+ * Turns a text string into a valid RFC 2822 quoted string.
+ *
+ * Any text string not consisting of a limited set of valid characters
+ * (notable printable non-valid characters include ',' and '.') needs
+ * to be quoted in order to be used an an e-mail header such as the "From"
+ * address. Double quotes in the original string are escaped (and nothing else).
+ */
+function uc_store_rfc2822_display_name($name) {
+  // Base64 encode $name string if it contains non-ASCII characters
+  $name = mime_header_encode($name);
+  // From RFC2822, section 3.4.2, define valid characters for an atom
+  $valid_chars = "[a-zA-Z0-9\!\#\$\%\&\'\*\+\-\/\=\?\^\_\`\{\|\}\~]";
+  // Display name is composed of 0 or more atoms separated by white space
+  if (!preg_match("/^(${valid_chars}*[ \t]*)*$/", $name)) {
+    return '"' . addcslashes($name, '"') . '"';
+  }
+  return $name;
 }
 
 /**
