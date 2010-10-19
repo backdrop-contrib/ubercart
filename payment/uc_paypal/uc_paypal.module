@@ -974,22 +974,6 @@ function uc_paypal_wps_form($form, &$form_state, $order) {
     '#value' => variable_get('uc_paypal_wps_checkout_button', t('Submit Order')),
   );
 
-  foreach (module_implements('order') as $module) {
-    $result = module_invoke($module, 'order', 'submit', $order, NULL);
-    $msg_type = 'status';
-    if ($result[0]['pass'] === FALSE) {
-      $error = TRUE;
-      $msg_type = 'error';
-    }
-    if (!empty($result[0]['message'])) {
-      drupal_set_message($result[0]['message'], $msg_type);
-    }
-    if ($error) {
-      $_SESSION['do_review'] = TRUE;
-      drupal_goto('cart/checkout/review');
-    }
-  }
-
   return $form;
 }
 
