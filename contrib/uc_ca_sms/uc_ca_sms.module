@@ -54,7 +54,9 @@ function uc_ca_sms_action_sms($order, $settings) {
   // Split up our recipient user ids
   $uids = array();
   foreach (explode(",", $uids_field) as $uid) {
-    $uids[] = trim($uid);
+    if (is_int($uid)) {
+      $uids[] = trim($uid);
+    }
   }
 
   foreach ($uids as $uid) {
@@ -62,7 +64,7 @@ function uc_ca_sms_action_sms($order, $settings) {
     $name = $user->name;
     $sent = sms_user_send($uid, $message);
 
-    if (!$sent) {
+    if ($sent == FALSE) {
       watchdog('ca', 'Attempt to send SMS to @name concerning order @order_id failed.', array('@name' => $name, '@order_id' => $order->order_id), WATCHDOG_ERROR);
     }
   }
@@ -70,18 +72,19 @@ function uc_ca_sms_action_sms($order, $settings) {
   // Split up our recipient user ids
   $numbers = array();
   foreach (explode(",", $numbers_field) as $number) {
-    $numbers[] = trim($number);
+    if (strlen($number) > 0) {
+      $numbers[] = trim($number);
+    }
   }
 
   foreach ($numbers as $number) {
     $sent = sms_send($number, $message);
 
-    if (!$sent) {
+    if ($sent == FALSE) {
       watchdog('ca', 'Attempt to send SMS to @number concerning order @order_id failed.', array('@number' => $number, '@order_id' => $order->order_id), WATCHDOG_ERROR);
     }
   }
 }
-
 /**
  * @see uc_ca_sms_action_sms(), 
  */
