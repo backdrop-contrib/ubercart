@@ -34,7 +34,7 @@ function uc_ca_sms_ca_action() {
  *
  * The recipients and message fields take order token replacements.
  *
- * @see uc_ca_sms_action_sms_form()
+ * @see uc_ca_sms_action_sms_form(), 
  */
 function uc_ca_sms_action_sms($order, $settings) {
   $account = uc_order_user_load($order);
@@ -83,7 +83,7 @@ function uc_ca_sms_action_sms($order, $settings) {
 }
 
 /**
- * @see uc_ca_sms_action_sms()
+ * @see uc_ca_sms_action_sms(), 
  */
 function uc_ca_sms_action_sms_form($form_state, $settings = array()) {
   $form['uids'] = array(
@@ -126,4 +126,33 @@ function uc_ca_sms_action_sms_form($form_state, $settings = array()) {
   }
 
   return $form;
+}
+
+/**
+ * Implementation of hook_ca_condition().
+ */
+function uc_ca_sms_ca_condition() {
+  return array(
+    'uc_ca_sms_condition_valid_mobile_phone' => array(
+      '#title' => t("Client Mobile phone number was verified"),
+      '#category' => t('Order'),
+      '#callback' => 'uc_ca_sms_condition_valid_mobile_phone',
+      '#arguments' => array(
+        'order' => array('#entity' => 'uc_order', '#title' => t('Order')),
+      ),
+    ),
+  );
+}
+
+/**
+ * Returns true if the user has a valid mobile phone
+ */
+function uc_ca_sms_condition_valid_mobile_phone($order, $settings) {
+  $uid = $order->uid;
+  if ($uid && db_result(db_query("SELECT uid FROM {sms_user} WHERE uid = '%s' AND status = 2", array($uid)))) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
 }
