@@ -1234,7 +1234,7 @@ function uc_order_build_content($order, $view_mode = 'full') {
         }
 
         $order->content['order_panes'][$pane['id']] = array(
-          '#prefix' => '<div class="order-pane ' . $pane['class'] . '">',
+          '#prefix' => '<div class="order-pane ' . $pane['class'] . '" id="order-pane-' . $pane['id'] . '">',
           '#suffix' => '</div>',
         );
 
@@ -1516,12 +1516,8 @@ function uc_order_update_status($order_id, $status) {
     foreach (module_implements('uc_order') as $module) {
       $function = $module . '_uc_order';
       // $order must be passed by reference.
-      if (function_exists($function) && ($return = $function('can_update', $order, $status))) {
-        for ($i = 0; $i < count($return); $i++) {
-          if ($return[$i] === FALSE) {
-            return FALSE;
-          }
-        }
+      if (function_exists($function) && $function('can_update', $order, $status) === FALSE) {
+        return FALSE;
       }
     }
 

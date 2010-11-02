@@ -3,10 +3,11 @@
 
 /**
  * @file
- * Tests for Ubercart Products.
+ * Ubercart Product Tests
  */
 
 class UcProductTestCase extends DrupalWebTestCase {
+
   protected $privileged_user;
 
   public static function getInfo() {
@@ -96,5 +97,65 @@ class UcProductTestCase extends DrupalWebTestCase {
 
     $base = db_query('SELECT base FROM {node_type} WHERE type = :type', array(':type' => $type->type))->fetchField();
     $this->assertEqual($base, 'uc_product', 'The new content type has been taken over by uc_product.');
+  }
+
+  /**
+   * @param $data
+   *   Data to potentially override the data used to create a product.
+   * @return (stdClass)
+   *  The product object.
+   */
+  public static function createProduct($data = array()) {
+
+    $weight_units = array(
+      'lb', 'kg', 'oz', 'g',
+    );
+    $weight_unit = $weight_units[array_rand($weight_units)];
+
+    $length_units = array(
+      'in', 'ft', 'cm', 'mm',
+    );
+    $length_unit = $length_units[array_rand($length_units)];
+
+    $product = $data + array(
+      'model' => DrupalWebTestCase::randomName(8),
+      'list_price' => rand(0, 1000),
+      'cost' => rand(0, 1000),
+      'sell_price' => rand(0, 1000),
+      'weight' => rand(0, 1000),
+      'weight_units' => $weight_unit,
+      'length' => rand(0, 1000),
+      'width' => rand(0, 1000),
+      'height' => rand(0, 1000),
+      'length_units' => $length_unit,
+      'pkg_qty' => rand(0, 50),
+      'default_qty' => rand(0, 50),
+      'ordering' => rand(-10, 10),
+      'shippable' => rand(0, 1),
+      'type' => 'product',
+      'title' => DrupalWebTestCase::randomName(8),
+      'uid' => 1,
+    );
+    $product = (object)$product;
+    $product->unique_hash = md5($product->vid . $product->nid . $product->model . $product->list_price . $product->cost . $product->sell_price . $product->weight . $product->weight_units . $product->length . $product->width . $product->height . $product->length_units . $product->pkg_qty . $product->default_qty . $product->shippable . time());
+
+    node_save($product);
+
+    return $product;
+  }
+
+  // Fix this after adding a proper API call for saving a product class.
+  public static function createProductClass($data = array()) {
+    $product_class = $data + array(
+      'pcid' => DrupalWebTestCase::randomName(8),
+      'name' => DrupalWebTestCase::randomName(8),
+      'description' => DrupalWebTestCase::randomName(8),
+    );
+    $product_class = (object) $product_class;
+
+    drupal_write_record('uc_product_classes', $product_class);
+
+    return $product_class;
+//    db_query("INSERT INTO {uc_product_classes} (pcid, name, description) VALUES ('%s', '%s', '%s')", $pcid, $form_state['values']['name'], $form_state['values']['description']);
   }
 }

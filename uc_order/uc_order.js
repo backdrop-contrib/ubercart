@@ -90,6 +90,24 @@ function uc_order_copy_shipping_to_billing() {
 }
 
 /**
+ * Copy the billing data on the order edit screen to the corresponding shipping
+ * fields if they exist.
+ */
+function uc_order_copy_billing_to_shipping() {
+  if ($('#edit-billing-zone').html() != $('#edit-delivery-zone').html()) {
+    $('#edit-delivery-zone').empty().append($('#edit-billing-zone').children().clone());
+  }
+
+  $('#uc-order-edit-form input, select, textarea').each(
+    function() {
+      if (this.id.substring(0, 12) == 'edit-billing') {
+        $('#edit-delivery' + this.id.substring(12)).val($(this).val());
+      }
+    }
+  );
+}
+
+/**
  * Load the address book div on the order edit screen.
  */
 function load_address_select(uid, div, address_type) {

@@ -309,6 +309,7 @@ function uc_usps_quote($products, $details, $method) {
       $services['data']['debug'] .= htmlentities($result->data) . "<br />\n";
     }
 
+    $rate_type = variable_get('uc_usps_online_rates', FALSE);
     $response = new SimpleXMLElement($result->data);
 
     if (isset($response->Package)) {
@@ -339,7 +340,12 @@ function uc_usps_quote($products, $details, $method) {
                 }
               }
               $services[$classid]['label'] = t('U.S.P.S. @service', array('@service' => (string)$postage->MailService));
-              $services[$classid]['rate'] += uc_usps_markup((string)$postage->Rate);
+              if ($rate_type) {
+                $services[$classid]['rate'] += uc_usps_markup((string)$postage->CommercialRate);
+              }
+              else {
+                $services[$classid]['rate'] += uc_usps_markup((string)$postage->Rate);
+              }
             }
           }
         }

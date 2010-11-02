@@ -49,8 +49,8 @@ function uc_credit_menu() {
     'file' => 'uc_credit.pages.inc',
   );
   $items['admin/store/orders/%uc_order/credit'] = array(
-    'title' => 'Credit card terminal: Order @order_id',
-    'title arguments' => array('@order_id' => arg(3)),
+    'title callback' => 'uc_credit_terminal_title',
+    'title arguments' => array(3),
     'description' => 'Displays a form to process a credit card payment.',
     'page callback' => 'uc_credit_terminal',
     'page arguments' => array(3),
@@ -249,12 +249,18 @@ function uc_credit_cron() {
  * Implement hook_exit().
  */
 function uc_credit_exit() {
-  // Separate the args ourself since the arg() function may not be loaded.
-  $args = explode('/', $_GET['q']);
-
   // Make sure sensitive checkout session data doesn't persist on other pages.
-  if (isset($_SESSION['sescrd']) && (!isset($args[1]) || $args[1] != 'checkout')) {
-    unset($_SESSION['sescrd']);
+  if (isset($_SESSION['sescrd'])) {
+    if (isset($_GET['q'])) {
+      // Separate the args ourself since the arg() function may not be loaded.
+      $args = explode('/', $_GET['q']);
+      if (!isset($args[1]) || $args[1] != 'checkout') {
+        unset($_SESSION['sescrd']);
+      }
+    }
+    else {
+      unset($_SESSION['sescrd']);
+    }
   }
 }
 
@@ -413,7 +419,9 @@ function uc_credit_uc_payment_method() {
  * Callback Functions, Forms, and Tables
  ******************************************************************************/
 
-// Callback function for the Credit Card payment method.
+/**
+ * Callback function for the Credit Card payment method.
+ */
 function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'cart-details':
@@ -850,7 +858,9 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
   }
 }
 
-// Makes sure the encryption key directory in the credit card settings is valid.
+/**
+ * Makes sure the encryption key directory in the credit card settings is valid.
+ */
 function uc_credit_settings_form_validate($form, &$form_state) {
   $dir = variable_get('uc_credit_encryption_path', t('Not configured, see below.'));
   $filename = rtrim($dir, '/\\') . '/uc_credit.key';
@@ -892,7 +902,9 @@ function uc_credit_settings_form_validate($form, &$form_state) {
   }
 }
 
-// Creates the encryption key file if it doesn't already exist.
+/**
+ * Creates the encryption key file if it doesn't already exist.
+ */
 function uc_credit_settings_form_submit($form, &$form_state) {
   if ($_SESSION['update_cc_encrypt_dir'] === TRUE) {
     $dir = rtrim($form_state['values']['uc_credit_encryption_path'], '/\\');
@@ -920,7 +932,9 @@ function uc_credit_settings_form_submit($form, &$form_state) {
   }
 }
 
-// Displays the credit card details form on the checkout screen.
+/**
+ * Displays the credit card details form on the checkout screen.
+ */
 function uc_payment_method_credit_form($form, &$form_state, $order) {
   // Normally the CC data is posted in via AJAX.
   if (!empty($form_state['values']['payment_details_data']) && arg(0) == 'cart') {
@@ -1105,7 +1119,9 @@ function uc_payment_method_credit_form($form, &$form_state, $order) {
   return $form;
 }
 
-// Themes the form to be in a compact table.
+/**
+ * Themes the credit form to be in a compact table.
+ */
 function theme_uc_payment_method_credit_form($variables) {
   $form = $variables['form'];
 
@@ -1203,7 +1219,9 @@ function theme_uc_payment_method_credit_form($variables) {
   return $output;
 }
 
-// Builds the "Process Card" button on the order view.
+/**
+ * Builds the "Process Card" button on the order view.
+ */
 function uc_credit_order_view_form($form, &$form_state, $order_id) {
   $form['order_id'] = array(
     '#type' => 'hidden',
@@ -1217,6 +1235,9 @@ function uc_credit_order_view_form($form, &$form_state, $order_id) {
   return $form;
 }
 
+/**
+ * Submit handler for order view form.
+ */
 function uc_credit_order_view_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/credit';
 }
@@ -1225,7 +1246,9 @@ function uc_credit_order_view_form_submit($form, &$form_state) {
  * Module and Helper Functions
  ******************************************************************************/
 
-// Returns a credit card number with appropriate masking.
+/**
+ * Returns a credit card number with appropriate masking.
+ */
 function uc_credit_display_number($number, $masked = FALSE) {
   if (strlen($number) == 4) {
     return t('(Last 4) ') . $number;
@@ -1273,7 +1296,9 @@ function uc_credit_cache($op, $data = NULL, $encrypted = TRUE) {
   return $cc_cache;
 }
 
-// Caches the encrypted CC data on the review order form for processing.
+/**
+ * Caches the encrypted CC data on the review order form for processing.
+ */
 function uc_credit_cart_review_back_submit($form, &$form_state) {
   $session_card_data = base64_decode($_POST['sescrd']);
 
@@ -1281,7 +1306,9 @@ function uc_credit_cart_review_back_submit($form, &$form_state) {
   uc_credit_cache('save', $session_card_data);
 }
 
-// Caches the encrypted CC data on the review order form for processing.
+/**
+ * Caches the encrypted CC data on the review order form for processing.
+ */
 function uc_credit_cart_review_pre_form_submit($form, &$form_state) {
   $session_card_data = base64_decode($_POST['sescrd']);
 
@@ -1289,7 +1316,9 @@ function uc_credit_cart_review_pre_form_submit($form, &$form_state) {
   uc_credit_cache('save', $session_card_data);
 }
 
-// Clears the temporary CC data if the review order form submits.
+/**
+ * Clears the temporary CC data if the review order form submits.
+ */
 function uc_credit_cart_review_post_form_submit($form, &$form_state) {
   if ($_SESSION['do_complete']) {
     // Otherwise stuff it back in the session for the next pageload.
@@ -1297,7 +1326,9 @@ function uc_credit_cart_review_post_form_submit($form, &$form_state) {
   }
 }
 
-// Validates a CVV number during checkout.
+/**
+ * Validates a CVV number during checkout.
+ */
 function _uc_credit_valid_cvv($cvv) {
   $digits = array();
 
@@ -1406,7 +1437,9 @@ function _uc_credit_valid_card_expiration($month, $year) {
   return TRUE;
 }
 
-// Validates an issue number on a card; returns TRUE or FALSE.
+/**
+ * Validates an issue number on a card; returns TRUE or FALSE.
+ */
 function _uc_credit_valid_card_issue($issue) {
   if (empty($issue) || (is_numeric($issue) && $issue > 0)) {
     return TRUE;
@@ -1448,7 +1481,9 @@ function uc_credit_encryption_key() {
   return $key;
 }
 
-// Saves a CC data array to an order's data array.
+/**
+ * Saves a CC data array to an order's data array.
+ */
 function _uc_credit_save_cc_data_to_order($cc_data, $order_id) {
   $crypt = new uc_encryption_class;
 

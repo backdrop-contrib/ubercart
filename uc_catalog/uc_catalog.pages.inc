@@ -143,7 +143,7 @@ function theme_uc_catalog_browse($variables) {
     $row = array();
     $i = 1;
     foreach ($child_list as $cell) {
-      $row[] = array('data' => $cell, 'class' => array('category'));
+      $row[] = array('data' => $cell, 'class' => array('category', 'width-' . $columns));
       if ($i % $columns == 0) {
         $cat_rows[] = $row;
         $row = array();
@@ -152,7 +152,7 @@ function theme_uc_catalog_browse($variables) {
     }
     if (count($row) > 0 && count($row) < $columns) {
       if (count($cat_rows) >= 1) {
-        $row = array_merge($row, array_fill(count($row), $columns - count($row), array('data' => '&nbsp;', 'class' => array('category'))));
+        $row = array_merge($row, array_fill(count($row), $columns - count($row), array('data' => '&nbsp;', 'class' => array('category', 'width-' . $columns))));
       }
       $cat_rows[] = $row;
     }
