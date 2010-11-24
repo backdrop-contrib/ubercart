@@ -182,36 +182,6 @@ function uc_product_views_data() {
   return $data;
 }
 
-
-/**
- * Implement hook_views_handlers().
- */
-function uc_product_views_handlers() {
-  return array(
-    'info' => array(
-      'path' => drupal_get_path('module', 'uc_product') . '/views',
-    ),
-    'handlers' => array(
-      'uc_product_handler_field_price' => array(
-        'parent' => 'views_handler_field_numeric',
-      ),
-      'uc_product_handler_field_weight' => array(
-        'parent' => 'views_handler_field_numeric',
-      ),
-      'uc_product_handler_filter_product' => array(
-        'parent' => 'views_handler_filter_boolean_operator',
-      ),
-      'uc_product_handler_field_addtocart' => array(
-        'parent' => 'views_handler_field',
-      ),
-      'uc_product_handler_field_buyitnow' => array(
-        'parent' => 'views_handler_field',
-      ),
-    ),
-  );
-}
-
-
 /**
  * Implement hook_views_tables_alter().
  *
