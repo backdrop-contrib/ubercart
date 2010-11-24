@@ -1000,47 +1000,50 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
 function theme_uc_object_options_form($variables) {
   $form = $variables['form'];
 
-  $header = array(array('data' => '&nbsp;&nbsp;' . t('Options')) + theme('table_select_header_cell'), t('Default'), t('Cost'), t('Price'), t('Weight'), t('List position'));
+  drupal_add_js('misc/tableselect.js');
+  $header = array(array('data' => '&nbsp;&nbsp;' . t('Options'), 'class' => array('select-all')), t('Default'), t('Cost'), t('Price'), t('Weight'), t('List position'));
   $table_id_num = $tables = 0;
 
-  foreach (element_children($form['attributes']) as $key) {
+  if (is_array($form['attributes'])) {
+    foreach (element_children($form['attributes']) as $key) {
 
-    $rows = array();
+      $rows = array();
 
-    if (element_children($form['attributes'][$key]['default'])) {
+      if (element_children($form['attributes'][$key]['default'])) {
 
-      foreach (element_children($form['attributes'][$key]['default']) as $oid) {
-        $row = array(
-          drupal_render($form['attributes'][$key]['options'][$oid]['select']),
-          drupal_render($form['attributes'][$key]['default'][$oid]),
-          drupal_render($form['attributes'][$key]['options'][$oid]['cost']),
-          drupal_render($form['attributes'][$key]['options'][$oid]['price']),
-          drupal_render($form['attributes'][$key]['options'][$oid]['weight']),
-          drupal_render($form['attributes'][$key]['options'][$oid]['ordering']),
-        );
+        foreach (element_children($form['attributes'][$key]['default']) as $oid) {
+          $row = array(
+            drupal_render($form['attributes'][$key]['options'][$oid]['select']),
+            drupal_render($form['attributes'][$key]['default'][$oid]),
+            drupal_render($form['attributes'][$key]['options'][$oid]['cost']),
+            drupal_render($form['attributes'][$key]['options'][$oid]['price']),
+            drupal_render($form['attributes'][$key]['options'][$oid]['weight']),
+            drupal_render($form['attributes'][$key]['options'][$oid]['ordering']),
+          );
 
-        $rows[] = array(
-          'data' => $row,
-          'class' => array('draggable'),
-        );
+          $rows[] = array(
+            'data' => $row,
+            'class' => array('draggable'),
+          );
+        }
+        $table_id = 'uc-attribute-option-table-' . $table_id_num++;
+        drupal_add_tabledrag($table_id, 'order', 'sibling', 'uc-attribute-option-table-ordering');
       }
-      $table_id = 'uc-attribute-option-table-' . $table_id_num++;
-      drupal_add_tabledrag($table_id, 'order', 'sibling', 'uc-attribute-option-table-ordering');
+      else {
+        $row = array();
+        $row[] = array('data' => drupal_render($form['attributes'][$key]['default']), 'colspan' => 6);
+        $rows[] = $row;
+      }
+
+      if (!count($rows)) {
+        $rows[] = array(array('data' => t('This !type does not have any attributes.', array('!type' => $form['type']['#value'] == 'product' ? t('product') : t('product class'))), 'colspan' => 6));
+      }
+
+
+      $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('product_attributes'), 'id' => $table_id), 'caption' => '<h2>' . drupal_render($form['attributes'][$key]['name']) . '</h2>'));
+
+      $tables++;
     }
-    else {
-      $row = array();
-      $row[] = array('data' => drupal_render($form['attributes'][$key]['default']), 'colspan' => 6);
-      $rows[] = $row;
-    }
-
-    if (!count($rows)) {
-      $rows[] = array(array('data' => t('This !type does not have any attributes.', array('!type' => $form['type']['#value'] == 'product' ? t('product') : t('product class'))), 'colspan' => 6));
-    }
-
-
-    $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('product_attributes'), 'id' => $table_id), 'caption' => '<h2>' . drupal_render($form['attributes'][$key]['name']) . '</h2>'));
-
-    $tables++;
   }
 
   if (!$tables) {
