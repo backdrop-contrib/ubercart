@@ -129,6 +129,10 @@ function uc_product_views_data() {
   $data['uc_products']['ordering'] = array(
     'title' => t('List position'),
     'help' => t('The default sort criteria in the catalog.'),
+    'field' => array(
+      'help' => t("The product list position."),
+      'handler' => 'views_handler_field_numeric',
+    ),
     'sort' => array(
       'handler' => 'views_handler_sort',
     ),
