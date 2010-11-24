@@ -158,25 +158,29 @@ function uc_cybersource_hop_post() {
   switch ($decision) {
     case 'ACCEPT':
       watchdog('uc_cybersource_hop', 'Cybersource verified successful payment.');
-      $duplicate = db_result(db_query("SELECT COUNT(*) FROM {uc_payment_cybersource_hop_post} WHERE order_id = '%s' AND decision = 'ACCEPT'", $order_id));
+      $duplicate = db_query("SELECT COUNT(*) FROM {uc_payment_cybersource_hop_post} WHERE order_id = :order_id AND decision = :decision", array(':order_id' => $order_id, ':decision' => 'ACCEPT'))->fetchField();
         if ($duplicate > 0) {
         watchdog('uc_cybersource_hop', 'CS HOP transaction for order @order-id has been processed before.', array('@order_id' => $order_id), WATCHDOG_NOTICE);
         return;
       }
-      $sql = "INSERT INTO {uc_payment_cybersource_hop_post} (order_id, request_id, request_token, reconciliation_id, gross, decision, reason_code, payer_email, received) VALUES (%d, '%s', '%s', '%s', %f, '%s', '%s', '%s', %d)";
+      db_insert('uc_payment_cybersource_hop_post')
+        ->fields(array(
+          'order_id' => $order_id,
+          'request_id' => $request_id,
+          'request_token' => $request_token,
+          'reconciliation_id' => $reconciliation_id,
+          'gross' => $payment_amount,
+          'decision' => $decision,
+          'reason_code' => $reason_code,
+          'payer_email' => $payer_email,
+          'received' => REQUEST_TIME,
+        ))
+        ->execute();
 
-      db_query($sql, $order_id, $request_id, $request_token, $reconciliation_id, $payment_amount, $decision, $reason_code, $payer_email, time());
-      $context = array(
-        'revision' => 'formatted-original',
-        'type' => 'amount',
-      );
-      $options = array(
-        'sign' => FALSE,
-      );
       $comment = t('CyberSource request ID: @txn_id', array('@txn_id' => $request_id));
       uc_payment_enter($order_id, 'cybersource_hop', $payment_amount, $order->uid, NULL, $comment);
       uc_cart_complete_sale($order);
-      uc_order_comment_save($order_id, 0, t('Payment of @amount @currency submitted through Cybersource with request ID @rid.', array('@amount' => uc_price($payment_amount, $context, $options), '@currency' => $payment_currency, '@rid' => $request_id)), 'order', 'payment_received');
+      uc_order_comment_save($order_id, 0, t('Payment of @amount @currency submitted through Cybersource with request ID @rid.', array('@amount' => $payment_amount, '@currency' => $payment_currency, '@rid' => $request_id)), 'order', 'payment_received');
       break;
     case 'ERROR':
       uc_order_comment_save($order_id, 0, t("Payment error:@reason with request ID @rid", array('@reason' => $reason, '@rid' => '@request_id')), 'admin');
@@ -407,7 +411,7 @@ function uc_cybersource_hop_complete($order) {
  *  Transaction data arrays are returned as hidden form values.
  *
  */
-function uc_cybersource_hop_form($form_state, $order) {
+function uc_cybersource_hop_form($form, $form_state, $order) {
   if (!uc_cybersource_hop_include()) {
     drupal_set_message(t('Hosted Order Page requires the HOP.php provided by CyberSource.'));
     // TODO - Does returning false here make sense?
@@ -455,16 +459,7 @@ function uc_cybersource_hop_form($form_state, $order) {
     }
   }
 
-  $context = array(
-    'revision' => 'formatted-original',
-    'type' => 'amount',
-  );
-  $options = array(
-    'sign' => FALSE,
-    'thou' => FALSE,
-    'dec' => '.',
-  );
-  $amount = uc_price($order->order_total - $shipping - $tax, $context, $options);
+  $amount = $order->order_total - $shipping - $tax;
   $currency = variable_get('uc_cybersource_hop_currency', 'USD');
   $merchantID = getMerchantID();
   $timestamp = getmicrotime();
