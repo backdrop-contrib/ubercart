@@ -536,7 +536,7 @@ function uc_cart_checkout_review_form_submit($form, &$form_state) {
  * Completes the sale and finishes checkout.
  */
 function uc_cart_checkout_complete() {
-  if (!$_SESSION['do_complete']) {
+  if (!isset($_SESSION['do_complete']) || !$_SESSION['do_complete']) {
     drupal_goto('cart');
   }
 
