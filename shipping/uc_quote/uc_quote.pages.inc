@@ -83,7 +83,7 @@ function uc_quote_action_get_quote($order, $method) {
   if (isset($method['quote']['file'])) {
     $inc_file = drupal_get_path('module', $method['module']) . '/' . $method['quote']['file'];
     if (is_file($inc_file)) {
-      require_once $inc_file;
+      require_once($inc_file);
     }
   }
 

@@ -520,7 +520,7 @@ function uc_country_import_form($form, &$form_state) {
 /**
  * Summary callback for country settings.
  *
- * @see uc_coutnry_settings_overview()
+ * @see uc_country_settings_overview()
  */
 function _uc_country_summarize() {
   $items = array();
