@@ -51,7 +51,15 @@ function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NUL
 
   switch ($op) {
     case 'view':
-      $email = empty($order->primary_email) ? $user->mail : $order->primary_email;
+      if (!empty($order->primary_email)) {
+        $email = $order->primary_email;
+      }
+      elseif (isset($user->mail)) {
+        $email = $user->mail;
+      }
+      else {
+        $email = '';
+      }
 
       if ($user->uid) {
         $description = t('Order information will be sent to your account e-mail listed below.');// . '<br />'
