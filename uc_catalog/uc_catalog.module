@@ -70,7 +70,6 @@ function uc_catalog_menu() {
     'page callback' => 'uc_catalog_browse',
     'access arguments' => array('view catalog'),
     'type' => MENU_SUGGESTED_ITEM,
-    'file' => 'uc_catalog.pages.inc',
   );
   $items['admin/store/settings/catalog'] = array(
     'title' => 'Catalog settings',
@@ -187,16 +186,6 @@ function uc_catalog_theme() {
   return array(
     'uc_catalog_block' => array(
       'variables' => array('menu_tree' => NULL),
-    ),
-    'uc_catalog_browse' => array(
-      'variables' => array('tid' => 0),
-      'file' => 'uc_catalog.pages.inc',
-    ),
-    'uc_catalog_products' => array(
-      'variables' => array('products' => NULL),
-    ),
-    'uc_catalog_product_grid' => array(
-      'variables' => array('products' => NULL),
     ),
     'uc_catalog_item' => array(
       'variables' => array(
@@ -568,144 +557,24 @@ function uc_catalog_uc_product_class($type, $op) {
  ******************************************************************************/
 
 /**
- * Load catalog information for display.
- *
- * Retrieve image, product, and subcategory information for the current term id.
- *
- * @param $tid
- *   Taxonomy term id.
- * @return
- *   A catalog object containing all the information needed to display a catalog page.
+ * Show the catalog page of the given category.
  */
-function uc_catalog_get_page($tid) {
-  $catalog = new stdClass();
-  $vid = variable_get('uc_catalog_vid', 0);
-
-  if ($tid) {
-    $catalog = taxonomy_term_load($tid);
+function uc_catalog_browse($tid = 0) {
+  $build = array();
+  if ($terms = views_get_view('uc_catalog_terms')) {
+    $build['terms'] = array(
+      '#markup' => $terms->preview('default', array($tid)),
+    );
   }
-  else {
-    $catalog->tid = 0;
-    $catalog->name = variable_get('uc_catalog_name', t('Catalog'));
-    $catalog->description = variable_get('uc_catalog_description', '');
-    $catalog->vocabulary_machine_name = 'catalog';
-  }
-  $catalog->children = array();
-
-  $field = field_info_field('taxonomy_catalog');
-  $types = uc_product_types();
-  $children = taxonomy_get_children($tid, $vid);
-
-  $children = taxonomy_term_load_multiple(array_keys($children));
-
-  foreach ($children as $child) {
-    $query = new EntityFieldQuery();
-    $query->entityCondition('entity_type', 'node')
-      ->entityCondition('bundle', $types)
-      ->fieldCondition($field, 'tid', $child->tid)
-      ->count();
-
-    $child->nodes = $query->execute();
-
-    // Set bundle for field_attach_load() later.
-    $child->bundle = 'taxonomy_catalog';
-
-    // Display list of child category's children categories.
-    // If more than $max_gc_display, show "More..." link to child.
-    $grandchildren_list = taxonomy_get_children($child->tid, $vid);
-    $child->children = $grandchildren_list;
-    $catalog->children[] = $child;
+  if ($products = views_get_view('uc_catalog')) {
+    // Force the breadcrumb path to this page.
+    $products->override_path = 'catalog';
+    $build['products'] = array(
+      '#markup' => $products->execute_display('catalog', array($tid)),
+    );
   }
 
-  return $catalog;
-}
-
-/**
- * Display a formatted list of products.
- *
- * @param $products
- *   An array of product nids.
- * @ingroup themeable
- */
-function theme_uc_catalog_products($variables) {
-  $products = $variables['products'];
-
-  if (!$products) {
-    $output .= '<div class="no-products">' . t('No products are available in this category.') . '</div>';
-    return $output;
-  }
-  else {
-    if (variable_get('uc_catalog_grid_display', FALSE)) {
-      return theme('uc_catalog_product_grid', array('products' => $products));
-    }
-    else {
-      $table = tapir_get_table('uc_product_table', $products);
-      return drupal_render($table);
-    }
-  }
-}
-
-/**
- * Display a list of products in grid format().
- *
- * @ingroup themeable
- */
-function theme_uc_catalog_product_grid($variables) {
-  $products = $variables['products'];
-
-  $product_table = '<div class="category-grid-products"><table>';
-  $count = 0;
-  foreach ($products as $nid) {
-    $product = node_load($nid);
-
-    if ($count == 0) {
-      $product_table .= "<tr>";
-    }
-    elseif ($count % variable_get('uc_catalog_grid_display_width', 3) == 0) {
-      $product_table .= "</tr><tr>";
-    }
-
-    $titlelink = l($product->title, "node/$nid", array('html' => TRUE));
-    if (($field = variable_get('uc_image_' . $product->type, '')) && isset($product->$field)) {
-      $imagelink = field_view_field('node', $product, $field, array(
-        'type' => 'image',
-        'label' => 'hidden',
-        'settings' => array(
-          'image_link' => 'content',
-          'image_style' => 'uc_product_list',
-        ),
-      ));
-    }
-    else {
-      $imagelink = '';
-    }
-
-    $product_table .= '<td>';
-    if (variable_get('uc_catalog_grid_display_title', TRUE)) {
-      $product_table .= '<span class="catalog-grid-title">' . $titlelink . '</span>';
-    }
-    if (variable_get('uc_catalog_grid_display_model', TRUE)) {
-      $product_table .= '<span class="catalog-grid-ref">' . $product->model . '</span>';
-    }
-    $product_table .= '<span class="catalog-grid-image">' . $imagelink . '</span>';
-    if (variable_get('uc_catalog_grid_display_sell_price', TRUE)) {
-      $product_table .= '<span class="catalog-grid-sell-price">' . theme('uc_price', array('price' => $product->sell_price)) . '</span>';
-    }
-    if (module_exists('uc_cart') && variable_get('uc_catalog_grid_display_add_to_cart', TRUE)) {
-      if (variable_get('uc_catalog_grid_display_attributes', TRUE)) {
-        $product_table .= theme('uc_product_add_to_cart', array('node' => $product));
-      }
-      else {
-        $form = drupal_get_form('uc_catalog_buy_it_now_form_' . $product->nid, $product);
-        $product_table .= drupal_render($form);
-      }
-    }
-    $product_table .= '</td>';
-
-    $count++;
-  }
-  $product_table .= "</tr></table></div>";
-  return $product_table;
+  return $build;
 }
 
 /******************************************************************************
@@ -733,57 +602,6 @@ function _uc_catalog_block_summarize($form) {
   );
 
   return $items;
-}
-
-/**
- * Format the breadcrumb to the current term's ancestry.
- *
- * @param $tid
- *   The currently viewed catalog term's id.
- * @param $is_node
- *   If true, include the current category page in the breadcrumb.
- * @return
- *   An array of breadcrumb links.
- */
-function uc_catalog_set_breadcrumb($tid) {
-  static $breadcrumbs = array();
-  static $terms = array();
-  if (variable_get('uc_catalog_breadcrumb', TRUE)) {
-    if (empty($breadcrumbs)) {
-      if (variable_get('site_frontpage', 'node') != 'catalog') {
-        $breadcrumbs[] = l(t('Home'), '');
-      }
-      if ($tid != 0) {
-        $breadcrumbs[] = l(variable_get('uc_catalog_name', t('Catalog')), 'catalog');
-      }
-    }
-    $parents = taxonomy_get_parents_all($tid);
-
-    // Remove current term from the breadcrumb.
-    array_shift($parents);
-    $types = uc_product_types();
-    $field = field_info_field('taxonomy_catalog');
-
-    while (count($parents)) {
-      $current = array_pop($parents);
-      if (!in_array($current->tid, $terms)) {
-        $query = new EntityFieldQuery();
-        $query->entityCondition('entity_type', 'node')
-          ->entityCondition('bundle', $types)
-          ->fieldCondition($field, 'tid', $current->tid)
-          ->count();
-        $current->nodes = $query->execute();
-
-        $breadcrumbs[] = l($current->name . (variable_get('uc_catalog_breadcrumb_nodecount', FALSE) && $current->nodes ? ' (' . $current->nodes . ')' : ''), uc_catalog_path($current));
-        $terms[] = $current->tid;
-      }
-    }
-
-    return $breadcrumbs;
-  }
-  else {
-    return NULL;
-  }
 }
 
 /**
@@ -945,25 +763,6 @@ function uc_catalog_path($term) {
 }
 
 /**
- * Load a catalog term's image.
- */
-function uc_catalog_image_load($term) {
-  if (is_object($term)) {
-    $tid = $term->tid;
-  }
-  elseif (is_array($term)) {
-    $tid = $term['tid'];
-  }
-  else {
-    $tid = $term;
-  }
-
-  $file = db_query("SELECT * FROM {uc_catalog_images} WHERE tid = :tid", array(':tid' => $tid))->fetchObject();
-
-  return $file;
-}
-
-/**
   * Add a node type to the catalog taxonomy term.
   */
 function uc_catalog_add_node_type($type) {
@@ -1037,4 +836,3 @@ function uc_catalog_add_image_field() {
     field_create_instance($instance);
   }
 }
-
