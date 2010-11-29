@@ -264,6 +264,7 @@ function uc_catalog_taxonomy_vocabulary_update($vocabulary) {
 function uc_catalog_taxonomy_term_insert($term) {
   if (module_exists('pathauto')) {
     if ($term->name) {
+      module_load_include('inc', 'uc_catalog', 'uc_catalog.pathauto');
       $count = _uc_catalog_pathauto_alias($term, 'insert');
     }
   }
@@ -275,6 +276,7 @@ function uc_catalog_taxonomy_term_insert($term) {
 function uc_catalog_taxonomy_term_update($term) {
   if (module_exists('pathauto')) {
     if ($term->name) {
+      module_load_include('inc', 'uc_catalog', 'uc_catalog.pathauto');
       $count = _uc_catalog_pathauto_alias($term, 'update');
     }
   }
@@ -284,7 +286,7 @@ function uc_catalog_taxonomy_term_update($term) {
  * Implement hook_taxonomy_term_delete().
  */
 function uc_catalog_taxonomy_term_delete($term) {
-  path_set_alias(uc_catalog_path($term));
+  path_delete(array('source' => uc_catalog_path($term)));
 }
 
 /**
@@ -387,84 +389,6 @@ function theme_uc_catalog_block($variables) {
 /******************************************************************************
  * Module Hooks                                                             *
  ******************************************************************************/
-
-/**
- * Implement hook_pathauto().
- */
-function uc_catalog_pathauto($op) {
-  switch ($op) {
-    case 'settings':
-      $settings = array();
-      $settings['module'] = 'uc_catalog';
-      $settings['token_type'] = 'taxonomy';
-      $settings['groupheader'] = t('Catalog path settings');
-      $settings['patterndescr'] = t('Pattern for catalog pages');
-      $settings['patterndefault'] = t('catalog/[catpath-raw]');
-      $patterns = token_get_list('taxonomy');
-      foreach ($patterns as $type => $pattern_set) {
-        if ($type != 'global') {
-          foreach ($pattern_set as $pattern => $description) {
-            $settings['placeholders']['[' . $pattern . ']'] = $description;
-          }
-        }
-      }
-      $settings['supportsfeeds'] = '0/feed';
-      $settings['bulkname'] = t('Bulk generate aliases for catalog pages that are not aliased');
-      $settings['bulkdescr'] = t('Generate aliases for all existing catalog pages which do not already have aliases. Note: Bulk Update may not complete on large or slow sites. See the README.txt for more information.');
-
-    return (object) $settings;
-  }
-}
-
-/**
- * Implement hook_pathauto_bulkupdate().
- *
- * Generate aliases for all categories without aliases
- */
-function uc_catalog_pathauto_bulkupdate() {
-  $catalog_vid = variable_get('uc_catalog_vid', 0);
-  $query = "SELECT tid, vid, name, src, dst FROM {taxonomy_term_data} LEFT JOIN {url_alias} ON src LIKE CONCAT(:path, CAST(tid AS CHAR)) WHERE src IS NULL AND vid = :vid";
-  $result = db_query_range($query, 0, variable_get('pathauto_max_bulk_update', 50), array(':path' => 'catalog/', ':vid' => $catalog_vid));
-
-  $count = 0;
-  $placeholders = array();
-  foreach ($result as $category) {
-    $count = _uc_catalog_pathauto_alias($category, 'bulkupdate') + $count;
-  }
-
-  drupal_set_message(format_plural($count,
-    "Bulk generation of terms completed, 1 alias generated.",
-    "Bulk generation of terms completed, @count aliases generated."));
-}
-
-/**
- * Create aliases for taxonomy objects
- *
- * @param $category
- *   A taxonomy object
- */
-function _uc_catalog_pathauto_alias($category, $op) {
-  module_load_include('inc', 'pathauto');
-  $count = 0;
-
-  if ($category->vid == variable_get('uc_catalog_vid', 0)) {
-    $placeholders = pathauto_get_placeholders('taxonomy', $category);
-
-    $src = uc_catalog_path($category);
-    if ($alias = pathauto_create_alias('uc_catalog', $op, $placeholders, $src, $category->vid)) {
-      $count++;
-    }
-  }
-
-  return $count;
-}
-
-/**
- * Implement hook_path_alias_types().
- */
-function uc_catalog_path_alias_types() {
-  return array('catalog/' => t('catalog pages'));
-}
 
 function uc_catalog_views_api() {
   return array(
