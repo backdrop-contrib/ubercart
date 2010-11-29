@@ -10,10 +10,21 @@
  * Show the catalog page of the given category.
  */
 function uc_catalog_browse($tid = 0) {
-  return array(
-    '#theme' => 'uc_catalog_browse',
-    '#tid' => $tid,
-  );
+  $build = array();
+  if ($terms = views_get_view('uc_catalog_terms')) {
+    $build['terms'] = array(
+      '#markup' => $terms->preview('default', array($tid)),
+    );
+  }
+  if ($products = views_get_view('uc_catalog')) {
+    // Force the breadcrumb path to this page.
+    $products->override_path = 'catalog';
+    $build['products'] = array(
+      '#markup' => $products->execute_display('catalog', array($tid)),
+    );
+  }
+
+  return $build;
 }
 
 /**
