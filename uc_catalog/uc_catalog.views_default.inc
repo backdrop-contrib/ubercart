@@ -12,7 +12,7 @@
 function uc_catalog_views_default_views() {
   $view = new view;
   $view->name = 'uc_catalog';
-  $view->description = 'Catalog';
+  $view->description = t('Catalog');
   $view->tag = '';
   $view->base_table = 'node';
   $view->api_version = '3.0-alpha1';
@@ -20,7 +20,7 @@ function uc_catalog_views_default_views() {
 
   /* Display: Defaults */
   $handler = $view->new_display('default', 'Defaults', 'default');
-  $handler->display->display_options['title'] = 'Catalog';
+  $handler->display->display_options['title'] = variable_get('uc_catalog_name', t('Catalog'));
   $handler->display->display_options['access']['type'] = 'none';
   $handler->display->display_options['cache']['type'] = 'none';
   $handler->display->display_options['query']['type'] = 'views_query';
@@ -83,6 +83,10 @@ function uc_catalog_views_default_views() {
   $handler->display->display_options['fields']['entity_id']['alter']['html'] = 0;
   $handler->display->display_options['fields']['entity_id']['hide_empty'] = 1;
   $handler->display->display_options['fields']['entity_id']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['entity_id']['settings'] = array(
+    'image_style' => 'uc_product_list',
+    'image_link' => 'content',
+  );
   /* Field: Product: SKU */
   $handler->display->display_options['fields']['model']['id'] = 'model';
   $handler->display->display_options['fields']['model']['table'] = 'uc_products';
@@ -240,7 +244,8 @@ function uc_catalog_views_default_views() {
   $handler->display->display_options['fields']['entity_id']['field'] = 'entity_id';
   $handler->display->display_options['fields']['entity_id']['label'] = 'Image';
   $handler->display->display_options['fields']['entity_id']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['entity_id']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['entity_id']['alter']['make_link'] = 1;
+  $handler->display->display_options['fields']['entity_id']['alter']['path'] = 'catalog/[tid]';
   $handler->display->display_options['fields']['entity_id']['alter']['absolute'] = 0;
   $handler->display->display_options['fields']['entity_id']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['entity_id']['alter']['word_boundary'] = 1;
@@ -249,6 +254,10 @@ function uc_catalog_views_default_views() {
   $handler->display->display_options['fields']['entity_id']['alter']['html'] = 0;
   $handler->display->display_options['fields']['entity_id']['hide_empty'] = 1;
   $handler->display->display_options['fields']['entity_id']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['entity_id']['settings'] = array(
+    'image_style' => 'uc_category',
+    'image_link' => '',
+  );
   /* Field: Taxonomy: Term */
   $handler->display->display_options['fields']['name']['id'] = 'name';
   $handler->display->display_options['fields']['name']['table'] = 'taxonomy_term_data';
@@ -283,11 +292,12 @@ function uc_catalog_views_default_views() {
   $handler->display->display_options['arguments']['parent']['break_phrase'] = 0;
   $handler->display->display_options['arguments']['parent']['not'] = 0;
   /* Filter: Taxonomy: Vocabulary */
+  $vid = variable_get('uc_catalog_vid', 0);
   $handler->display->display_options['filters']['vid']['id'] = 'vid';
   $handler->display->display_options['filters']['vid']['table'] = 'taxonomy_term_data';
   $handler->display->display_options['filters']['vid']['field'] = 'vid';
   $handler->display->display_options['filters']['vid']['value'] = array(
-    3 => '3',
+    $vid => "$vid",
   );
 
   $views[$view->name] = $view;
