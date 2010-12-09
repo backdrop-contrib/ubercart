@@ -104,7 +104,7 @@ function uc_store_customers($message = NULL, $query = NULL, $page_length = 25) {
   }
 
   if (is_null($query)) {
-    $query = uc_store_customer_query();
+    $query = uc_store_customer_query($page_length);
   }
 
   $header = array(
@@ -174,14 +174,14 @@ function uc_store_customers($message = NULL, $query = NULL, $page_length = 25) {
   return $build;
 }
 
-function uc_store_customer_query() {
+function uc_store_customer_query($page_length) {
   $address = variable_get('uc_customer_list_address', 'billing');
   if ($address == 'shipping') {
     $address = 'delivery';
   }
 
-  $query = db_select('uc_orders', 'o')
-    ->leftJoin('users', 'u', 'o.uid = u.uid');
+  $query = db_select('uc_orders', 'o');
+  $query->leftJoin('users', 'u', 'o.uid = u.uid');
 
   $o_uid = $query->addField('o', 'uid');
   $o_status = $query->addField('o', 'order_status');
@@ -194,22 +194,22 @@ function uc_store_customer_query() {
     ))
     ->addField('u', 'mail');
 
-  $query->condition($o_uid, 0, '>')
+  $query->condition('o.uid', 0, '>')
     ->condition($o_status, uc_order_status_list('general', TRUE), 'IN');
 
   $sub_query = clone $query;
-  $sub_query->groupBy('o_' . $address . '_last_name')
-    ->groupBy('o_' . $address . '_first_name')
-    ->groupBy('u_mail')
-    ->groupBy('o_uid');
+  $sub_query->groupBy('o.' . $address . '_last_name')
+    ->groupBy('o.' . $address . '_first_name')
+    ->groupBy('u.mail')
+    ->groupBy('o.uid');
 
-  $count_query = db_select($sub_query)
-    ->addExpression('COUNT(*)');
+  $count_query = db_select($sub_query);
+  $count_query->addExpression('COUNT(*)');
 
   $query = $query->extend('PagerDefault')
     ->distinct()
-    ->setCountQuery($count_query)
     ->limit($page_length);
+  $query->setCountQuery($count_query);
 
   return $query;
 }
