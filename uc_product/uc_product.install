@@ -288,7 +288,9 @@ function uc_product_update_7000() {
  * Use actual node permissions for product types.
  */
 function uc_product_update_7001() {
-  foreach (uc_product_node_info() as $type => $info) {
+  $types = db_query("SELECT pcid FROM {uc_product_classes}")->fetchCol();
+  array_unshift($types, 'product');
+  foreach ($types as $type) {
     $node_perms = array_keys(node_list_permissions($type));
 
     foreach ($node_perms as $node_perm) {
@@ -320,7 +322,7 @@ function uc_product_update_7001() {
  * Make sure Image is enabled.
  */
 function uc_product_update_7002() {
-  if (!module_exists('image')) {
+  if (module_exists('uc_product') && !module_exists('image')) {
     module_enable(array('file', 'image'), FALSE);
 
     return t('Enabled Image module.');

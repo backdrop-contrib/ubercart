@@ -76,13 +76,64 @@ function uc_catalog_update_dependencies() {
   $dependencies['uc_catalog'][7000] = array(
     'taxonomy' => 7002,
   );
+
+  // Try to alter vocabulary machine name before taxonomy reference field is
+  // created. If dependency is honored, uc_catalog_update_7003 is a no-op.
+  $dependencies['taxonomy'][7004] = array(
+    'uc_catalog' => 7002,
+  );
+
+  return $dependencies;
 }
 
 /**
  * Set up a default term image for the Catalog.
  */
 function uc_catalog_update_7000() {
-  uc_catalog_add_image_field();
+  if (!module_exists('image')) {
+    return;
+  }
+
+  // Copied from uc_catalog_add_image_field(), since the module won't be
+  // enabled during an upgrade.
+  $field = field_info_field('uc_catalog_image');
+
+  if (!$field) {
+    $field = array(
+      'field_name' => 'uc_catalog_image',
+      'type' => 'image',
+    );
+
+    field_create_field($field);
+  }
+
+  $instance = field_info_instance('taxonomy_term', 'uc_catalog_image', 'catalog');
+
+  // Only add the instance if it doesn't exist. Don't overwrite any changes.
+  if (!$instance) {
+    $label = t('Image');
+    $instance = array(
+      'field_name' => 'uc_catalog_image',
+      'entity_type' => 'taxonomy_term',
+      'bundle' => 'catalog',
+      'label' => $label,
+      'widget' => array(
+        'type' => 'image_image',
+      ),
+      'display' => array(
+        'full' => array(
+          'label' => 'hidden',
+          'type' => 'image',
+          'settings' => array(
+            'image_link' => 'content',
+            'image_style' => 'uc_category',
+          ),
+        ),
+      ),
+    );
+
+    field_create_instance($instance);
+  }
 }
 
 /**
@@ -103,7 +154,7 @@ function uc_catalog_update_7001(&$sandbox) {
 
   // The old {files} tables still exists.  We migrate core data from upload
   // module, but any contrib module using it will need to do its own update.
-  $result = db_query_range('SELECT tid, f.fid, uid, filename, filepath AS uri, filemime, filesize, status, timestamp FROM {files} f INNER JOIN {uc_catalog_images} u ON u.fid = f.fid WHERE f.fid > :current ORDER BY f.fid', 0, $limit, array(':current' => $sandbox['current_fid']), array('fetch' => PDO::FETCH_ASSOC));
+  $result = db_query_range('SELECT tid, f.fid, uid, u.filename, u.filepath AS uri, u.filemime, u.filesize, status, timestamp FROM {files} f INNER JOIN {uc_catalog_images} u ON u.fid = f.fid WHERE f.fid > :current ORDER BY f.fid', 0, $limit, array(':current' => $sandbox['current_fid']), array('fetch' => PDO::FETCH_ASSOC));
 
   // We will convert filepaths to uri using the default schmeme
   // and stripping off the existing file directory path.
@@ -147,6 +198,50 @@ function uc_catalog_update_7001(&$sandbox) {
   }
   else {
     $sandbox['#finished'] = 1;
+  }
+}
+
+/**
+ * Set Catalog vocbulary machine name.
+ */
+function uc_catalog_update_7002() {
+  db_query("UPDATE {taxonomy_vocabulary} SET machine_name = :name WHERE vid = :vid", array(':name' => 'catalog', ':vid' => variable_get('uc_catalog_vid', 0)));
+}
+
+/**
+ * Rename Catalog taxonomy reference field created in taxonomy_update_7004().
+ */
+function uc_catalog_update_7003() {
+  $vid = variable_get('uc_catalog_vid', 0);
+  $field_name = 'taxonomy_vocabulary_' . $vid;
+  if ($field = field_info_field($field_name)) {
+    $field['field_name'] = 'taxonomy_catalog';
+    unset($field['id']);
+    field_create_field($field);
+
+    $label = variable_get('uc_catalog_name', t('Catalog'));
+    foreach ($field['bundles'] as $type) {
+      $instance = array(
+        'field_name' => 'taxonomy_catalog',
+        'entity_type' => 'node',
+        'bundle' => $type,
+        'label' => $label,
+        'settings' => array(
+          'allowed_values' => array(
+            array(
+              'vid' => $vid,
+              'parent' => '0',
+            ),
+          ),
+        ),
+      );
+
+      field_create_instance($instance);
+    }
+
+    if (isset($field['id'])) {
+      field_delete_field($field_name);
+    }
   }
 }
 

@@ -400,16 +400,18 @@ function uc_shipping_update_7000(&$sandbox) {
 
       $sandbox['#finished'] = min(0.99, $sandbox['count'] / $sandbox['total']);
     }
-  }
 
-  if (!$found) {
-    db_drop_field('uc_pacakges', 'label_image');
-    db_change_field('uc_packages', 'label_image_id', 'label_image', $schema, array(
-      'foreign keys' => array(
-        'label_image' => array('file' => 'fid'),
-      ),
-    ));
+    if (!$found) {
+      db_drop_field('uc_packages', 'label_image');
+      db_change_field('uc_packages', 'label_image_id', 'label_image', $schema, array(
+        'foreign keys' => array(
+          'label_image' => array('file' => 'fid'),
+        ),
+      ));
 
-    return t('!number label images moved to the file table.', array('!number' => $sandbox['total']));
+      $sandbox['#finished'] = 1;
+
+      return t('!number label images moved to the file table.', array('!number' => $sandbox['total']));
+    }
   }
 }
