@@ -195,21 +195,11 @@ function uc_store_customer_query($page_length) {
     ->addField('u', 'mail');
 
   $query->condition('o.uid', 0, '>')
-    ->condition($o_status, uc_order_status_list('general', TRUE), 'IN');
+    ->condition('o.order_status', uc_order_status_list('general', TRUE), 'IN');
 
-  $sub_query = clone $query;
-  $sub_query->groupBy('o.' . $address . '_last_name')
-    ->groupBy('o.' . $address . '_first_name')
-    ->groupBy('u.mail')
-    ->groupBy('o.uid');
-
-  $count_query = db_select($sub_query);
-  $count_query->addExpression('COUNT(*)');
-
-  $query = $query->extend('PagerDefault')
-    ->distinct()
+  $query = $query->extend('PagerDefault');
+  $query->distinct()
     ->limit($page_length);
-  $query->setCountQuery($count_query);
 
   return $query;
 }
