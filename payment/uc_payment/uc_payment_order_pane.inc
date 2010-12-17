@@ -61,7 +61,7 @@ function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) 
       return $build;
 
     case 'edit-form':
-      drupal_add_js('misc/progress.js');
+      drupal_add_library('system', 'drupal.progress');
       drupal_add_js(array('defPaymentMsg' => ''), 'setting');
 
       $form['payment'] = array();
