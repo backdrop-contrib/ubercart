@@ -438,12 +438,19 @@ function uc_product_form($node, $form_state) {
     '#weight' => -5,
   );
 
-  $form['base'] = array('#type' => 'fieldset',
+  $form['base'] = array(
+    '#type' => 'fieldset',
     '#title' => t('Product information'),
     '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-    '#weight' => -1,
+    '#collapsed' => TRUE,
+    '#weight' => -3,
     '#attributes' => array('class' => array('product-field')),
+    '#group' => 'additional_settings',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_product') . '/uc_product.js',
+      ),
+    ),
   );
   $form['base']['model'] = array('#type' => 'textfield',
     '#title' => t('SKU'),
@@ -466,8 +473,8 @@ function uc_product_form($node, $form_state) {
     '#default_value' => isset($node->list_price) ? uc_store_format_price_field_value($node->list_price) : 0,
     '#description' => t('The listed MSRP.'),
     '#weight' => 0,
-    '#size' => 20,
-    '#maxlength' => 35,
+    '#size' => 15,
+    '#maxlength' => 15,
     '#field_prefix' => $sign_flag ? '' : $currency_sign,
     '#field_suffix' => $sign_flag ? $currency_sign : '',
   );
@@ -478,8 +485,8 @@ function uc_product_form($node, $form_state) {
     '#default_value' => isset($node->cost) ? uc_store_format_price_field_value($node->cost) : 0,
     '#description' => t("Your store's cost."),
     '#weight' => 1,
-    '#size' => 20,
-    '#maxlength' => 35,
+    '#size' => 15,
+    '#maxlength' => 15,
     '#field_prefix' => $sign_flag ? '' : $currency_sign,
     '#field_suffix' => $sign_flag ? $currency_sign : '',
   );
@@ -490,24 +497,31 @@ function uc_product_form($node, $form_state) {
     '#default_value' => isset($node->sell_price) ? uc_store_format_price_field_value($node->sell_price) : 0,
     '#description' => t('Customer purchase price.'),
     '#weight' => 2,
-    '#size' => 20,
-    '#maxlength' => 35,
+    '#size' => 15,
+    '#maxlength' => 15,
     '#field_prefix' => $sign_flag ? '' : $currency_sign,
     '#field_suffix' => $sign_flag ? $currency_sign : '',
   );
 
   $form['base']['shippable'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Product and its derivatives are shippable.'),
+    '#title' => t('Product is shippable.'),
     '#default_value' => isset($node->shippable) ? $node->shippable : variable_get('uc_product_shippable_' . $node->type, 1),
     '#weight' => 10,
   );
 
   $form['base']['weight'] = array(
+    '#type' => 'container',
+    '#states' => array(
+      'invisible' => array(
+        'input[name="shippable"]' => array('checked' => FALSE),
+      ),
+    ),
     '#weight' => 15,
     '#theme' => 'uc_product_form_weight',
   );
-  $form['base']['weight']['weight'] = array('#type' => 'textfield',
+  $form['base']['weight']['weight'] = array(
+    '#type' => 'textfield',
     '#title' => t('Weight'),
     '#default_value' => isset($node->weight) ? $node->weight : 0,
     '#size' => 10,
@@ -519,19 +533,44 @@ function uc_product_form($node, $form_state) {
     'oz' => t('Ounces'),
     'g' => t('Grams'),
   );
-  $form['base']['weight']['weight_units'] = array('#type' => 'select',
-    '#title' => t('Unit of measurement'),
+  $form['base']['weight']['weight_units'] = array(
+    '#type' => 'select',
+    '#title' => t('Units'),
     '#default_value' => isset($node->weight_units) ? $node->weight_units : variable_get('uc_weight_unit', 'lb'),
     '#options' => $units,
   );
-  $form['base']['dimensions'] = array('#type' => 'fieldset',
-    '#title' => t('Dimensions'),
-    '#description' => t('Physical dimensions of the packaged product.'),
+
+  $form['base']['dimensions'] = array(
+    '#type' => 'container',
+    '#states' => array(
+      'invisible' => array(
+        'input[name="shippable"]' => array('checked' => FALSE),
+      ),
+    ),
     '#weight' => 20,
     '#theme' => 'uc_product_dimensions_form',
   );
-  $form['base']['dimensions']['length_units'] = array('#type' => 'select',
-    '#title' => t('Units of measurement'),
+  $form['base']['dimensions']['dim_length'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Length'),
+    '#default_value' => isset($node->length) ? $node->length : '',
+    '#size' => 10,
+  );
+  $form['base']['dimensions']['dim_width'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Width'),
+    '#default_value' => isset($node->width) ? $node->width : '',
+    '#size' => 10,
+  );
+  $form['base']['dimensions']['dim_height'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Height'),
+    '#default_value' => isset($node->height) ? $node->height : '',
+    '#size' => 10,
+  );
+  $form['base']['dimensions']['length_units'] = array(
+    '#type' => 'select',
+    '#title' => t('Units'),
     '#options' => array(
       'in' => t('Inches'),
       'ft' => t('Feet'),
@@ -540,36 +579,41 @@ function uc_product_form($node, $form_state) {
     ),
     '#default_value' => isset($node->length_units) ? $node->length_units : variable_get('uc_length_unit', 'in'),
   );
-  $form['base']['dimensions']['dim_length'] = array('#type' => 'textfield',
-    '#title' => t('Length'),
-    '#default_value' => isset($node->length) ? $node->length : '',
-    '#size' => 10,
-  );
- $form['base']['dimensions']['dim_width'] = array('#type' => 'textfield',
-    '#title' => t('Width'),
-    '#default_value' => isset($node->width) ? $node->width : '',
-    '#size' => 10,
-  );
-  $form['base']['dimensions']['dim_height'] = array('#type' => 'textfield',
-    '#title' => t('Height'),
-    '#default_value' => isset($node->height) ? $node->height : '',
-    '#size' => 10,
-  );
-  $form['base']['pkg_qty'] = array('#type' => 'textfield',
-    '#title' => t('Package quantity'),
+  $form['base']['pkg_qty'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Maximum package quantity'),
     '#default_value' => isset($node->pkg_qty) ? $node->pkg_qty : 1,
-    '#description' => t('For a package containing only this product, how many are in it?'),
+    '#description' => t('At most, how many of these items can fit in your largest box? Orders that exceed this value will be split into multiple packages when retrieving shipping quotes.'),
     '#weight' => 25,
-  );
-  $form['base']['default_qty'] = array('#type' => 'textfield',
-    '#title' => t('Default quantity to add to cart'),
-    '#default_value' => isset($node->default_qty) ? $node->default_qty : 1,
-    '#description' => t('Leave blank or zero to disable the quantity field next to the add to cart button, if it is enabled <a href="!settings_url">in general</a>. If it is disabled, this field is ignored.', array('!settings_url' => url('admin/store/settings/products/edit'))),
-    '#weight' => 27,
     '#size' => 5,
     '#maxlength' => 6,
+    '#states' => array(
+      'invisible' => array(
+        'input[name="shippable"]' => array('checked' => FALSE),
+      ),
+    ),
   );
-  $form['base']['ordering'] = array('#type' => 'weight',
+
+  if (variable_get('uc_product_add_to_cart_qty', FALSE)) {
+    $form['base']['default_qty'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Default quantity to add to cart'),
+      '#default_value' => isset($node->default_qty) ? $node->default_qty : 1,
+      '#description' => t('Use 0 to disable the quantity field next to the add to cart button.'),
+      '#weight' => 27,
+      '#size' => 5,
+      '#maxlength' => 6,
+    );
+  }
+  else {
+    $form['base']['default_qty'] = array(
+      '#type' => 'value',
+      '#value' => isset($node->default_qty) ? $node->default_qty : 1,
+    );
+  }
+
+  $form['base']['ordering'] = array(
+    '#type' => 'weight',
     '#title' => t('List position'),
     '#description' => t("Specify a value to set this product's position in product lists.<br />Products in the same position will be sorted alphabetically."),
     '#delta' => 25,
@@ -610,11 +654,13 @@ function theme_uc_product_form_weight($variables) {
 function theme_uc_product_dimensions_form($variables) {
   $form = $variables['form'];
 
-  $row = array();
+  $output = '<table><tr>';
   foreach (element_children($form) as $dimension) {
-    $row[] = drupal_render($form[$dimension]);
+    $output .= '<td>' . drupal_render($form[$dimension]) . '</td>';
   }
-  return theme('table', array('rows' => array($row)));
+  $output .= '</tr></table>';
+
+  return $output;
 }
 
 /**
@@ -979,6 +1025,12 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
     '#title' => t('Ubercart product settings'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
+    '#group' => 'additional_settings',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_product') . '/uc_product.js',
+      ),
+    ),
   );
 
   // shippable
@@ -1021,13 +1073,6 @@ function uc_product_field_extra_fields() {
 
   foreach (uc_product_types() as $type) {
     $extra['node'][$type] = array(
-      'form' => array(
-        'base' => array(
-          'label' => t('Product information'),
-          'description' => t('Product module form.'),
-          'weight' => -1,
-        ),
-      ),
       'display' => array(
         'display_price' => array(
           'label' => t('Display price'),
