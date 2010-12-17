@@ -12,12 +12,12 @@ function uc_order_entity_property_info() {
   return array(
     'uc_order_product' => array(
       'properties' => array(
-        'order-product-id' => array(
+        'order_product_id' => array(
           'type' => 'integer',
           'label' => t('Order product ID'),
           'description' => t('The unique ID for the purchased product.'),
         ),
-        'order-id' => array(
+        'order_id' => array(
           'type' => 'integer',
           'label' => t('Order ID'),
           'description' => t('The order ID that owns the product.'),
@@ -68,7 +68,7 @@ function uc_order_entity_property_info() {
     ),
     'uc_order' => array(
       'properties' => array(
-        'order-id' => array(
+        'order_id' => array(
           'type' => 'integer',
           'label' => t('Order ID'),
           'description' => t('Primary key: the order ID.'),
@@ -91,7 +91,7 @@ function uc_order_entity_property_info() {
           'setter permission' => 'edit orders',
           'clear' => array('uid'),
         ),
-        'delivery-address' => array(
+        'delivery_address' => array(
           'type' => 'struct',
           'label' => t('Delivery address'),
           'description' => t('The destination of the shipped products.'),
@@ -100,7 +100,7 @@ function uc_order_entity_property_info() {
           'setter permission' => 'edit orders',
           'property info' => $address_info,
         ),
-        'billing-address' => array(
+        'billing_address' => array(
           'type' => 'struct',
           'label' => t('Billing address'),
           'description' => t('The destination of the bill and invoice.'),
@@ -109,7 +109,7 @@ function uc_order_entity_property_info() {
           'setter permission' => 'edit orders',
           'property info' => $address_info,
         ),
-        'order-status' => array(
+        'order_status' => array(
           'type' => 'text',
           'label' => t('Order status'),
           'description' => t('The status of the order.'),
@@ -118,21 +118,21 @@ function uc_order_entity_property_info() {
           'setter permission' => 'edit orders',
           'query callback' => 'entity_metadata_table_query',
         ),
-        'order-total' => array(
+        'order_total' => array(
           'type' => 'decimal',
           'label' => t('Order total'),
           'description' => t('The total amount due for the order.'),
           'getter callback' => 'uc_order_get_total',
           'query callback' => 'entity_metadata_table_query',
         ),
-        'primary-email' => array(
+        'primary_email' => array(
           'type' => 'text',
           'label' => t('Primary email'),
           'description' => t('The primary email address of the customer.'),
           'setter permission' => 'edit orders',
           'query callback' => 'entity_metadata_table_query',
         ),
-        'payment-method' => array(
+        'payment_method' => array(
           'type' => 'text',
           'label' => t('Payment method'),
           'description' => t('The method of payment.'),
