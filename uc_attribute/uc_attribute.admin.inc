@@ -804,6 +804,7 @@ function uc_object_attributes_form_submit($form, &$form_state) {
       // Enable all options for added attributes.
       $attribute = uc_attribute_load($aid);
       foreach ($attribute->options as $option) {
+        $option->$id = $form_state['values']['id'];
         drupal_write_record($opt_table, $option);
         $option->aid = $aid;
       }
@@ -822,7 +823,7 @@ function uc_object_attributes_form_submit($form, &$form_state) {
       $select->addField('a', 'aid');
       $select->addField('a', 'label');
       $select->addField('a', 'ordering');
-      $select->addExpression(':id', 'default_option', array(':id' => $oid));
+      $select->addExpression(':oid', 'default_option', array(':oid' => $oid));
       $select->addField('a', 'required');
       $select->addField('a', 'display');
 
