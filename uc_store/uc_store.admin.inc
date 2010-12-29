@@ -48,43 +48,36 @@ function uc_store_admin() {
       $blocks[(50000 + $item['weight']) . ' ' . $item['title'] . ' ' . $item['mlid']] = $block;
     }
   }
-  if ($blocks) {
-    ksort($blocks);
-    return theme('admin_page', array('blocks' => $blocks));
-  }
-  else {
-    return t('You do not have any administrative items.');
-  }
+
+  ksort($blocks);
+  $build['blocks'] = array(
+    '#theme' => 'admin_page',
+    '#blocks' => $blocks,
+  );
 
   $results = module_invoke_all('uc_store_status');
 
   foreach ($results as $message) {
     switch ($message['status']) {
-      case 'warning':
-        $icon = base_path() . drupal_get_path('module', 'uc_store') . '/images/alert.gif';
-        break;
-      case 'error':
-        $icon = base_path() . drupal_get_path('module', 'uc_store') . '/images/error.gif';
-        break;
-      case 'ok':
-      default:
-        $icon = base_path() . drupal_get_path('module', 'uc_store') . '/images/info.gif';
+      case 'warning': $icon = 'alert.gif'; break;
+      case 'error':   $icon = 'error.gif'; break;
+      default:        $icon = 'info.gif';
     }
 
-    $rows[] = array('data' => array(
-      array('data' => '<img src="' . $icon . '" />'),
-      array('data' => '<strong>' . $message['title'] . '</strong>', 'nowrap' => 'nowrap'),
-      array('data' => $message['desc'], 'width' => '100%')), 'valign' => 'top');
+    $rows[] = array(
+      'data' => array(
+        array('data' => theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/' . $icon))),
+        array('data' => '<strong>' . $message['title'] . '</strong>', 'nowrap' => 'nowrap'),
+        array('data' => $message['desc'], 'width' => '100%')
+      ),
+      'valign' => 'top',
+    );
   }
-
-  $header = array('&nbsp;', t('Title'), t('Description'));
 
   $build['status'] = array(
     '#theme' => 'table',
-    '#header' => $header,
+    '#caption' => '<h2>' . t('Store status') . '</h2>',
     '#rows' => $rows,
-    '#prefix' => '<div style="clear: both;"><h2>' . t('Status messages:') . '</h2>',
-    '#suffix' => '</div>',
   );
 
   return $build;
