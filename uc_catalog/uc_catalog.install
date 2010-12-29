@@ -76,6 +76,9 @@ function uc_catalog_update_dependencies() {
   $dependencies['uc_catalog'][7000] = array(
     'taxonomy' => 7002,
   );
+  $dependencies['uc_catalog'][7001] = array(
+    'system' => 7059,
+  );
 
   // Try to alter vocabulary machine name before taxonomy reference field is
   // created. If dependency is honored, uc_catalog_update_7003 is a no-op.
@@ -91,7 +94,7 @@ function uc_catalog_update_dependencies() {
  */
 function uc_catalog_update_7000() {
   if (!module_exists('image')) {
-    return;
+    module_enable(array('file', 'image'), FALSE);
   }
 
   // Copied from uc_catalog_add_image_field(), since the module won't be
@@ -170,8 +173,11 @@ function uc_catalog_update_7001(&$sandbox) {
 
     $file['uri'] = $scheme . str_replace($basename, '', $file['uri']);
     $file['uri'] = file_stream_wrapper_uri_normalize($file['uri']);
-    db_insert('file')->fields($file)->execute();
+    db_insert('file_managed')->fields($file)->execute();
     $fids[] = $file['fid'];
+
+    // Add the usage entry for the file.
+    file_usage_add((object) $file, 'file', 'taxonomy_term', $tid);
 
     $term = (object) array(
       'tid' => $tid,
@@ -179,13 +185,12 @@ function uc_catalog_update_7001(&$sandbox) {
         LANGUAGE_NONE => array(
           0 => array(
             'fid' => $file['fid'],
-            'uid' => $file['uid'],
           ),
         ),
       ),
     );
 
-    field_attach_update($term);
+    _update_7000_field_sql_storage_write('taxonomy_term', 'catalog', $term->tid, NULL, 'uc_catalog_image', $term->uc_catalog_image);
 
     $sandbox['progress']++;
     $sandbox['current_fid'] = $file['fid'];
