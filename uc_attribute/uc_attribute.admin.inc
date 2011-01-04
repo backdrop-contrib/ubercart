@@ -99,32 +99,42 @@ function uc_attribute_form($form, &$form_state, $attribute = NULL) {
     drupal_set_title(t('Edit attribute: %name', array('%name' => $attribute->name)), PASS_THROUGH);
   }
 
+  if (isset($attribute->name)) {
+    if (empty($attribute->label)) {
+      $attribute->label = $attribute->name;
+    }
+    $name = $attribute->name;
+    $label = $attribute->label;
+  }
+  else {
+    $name = $label = '';
+  }
   $form['name'] = array(
     '#type' => 'textfield',
     '#title' => t('Name'),
     '#description' => t('The name of the attribute used in administrative forms'),
-    '#default_value' => $attribute->name,
+    '#default_value' => $name,
     '#required' => TRUE,
   );
   $form['label'] = array(
     '#type' => 'textfield',
     '#title' => t('Label'),
     '#description' => t("Enter a label that customers will see instead of the attribute name. Use &lt;none&gt; if you don't want a title to appear at all."),
-    '#default_value' => empty($attribute->label) ? $attribute->name : $attribute->label,
+    '#default_value' => $label,
   );
   $form['description'] = array(
     '#type' => 'textfield',
     '#title' => t('Help text'),
     '#description' => t('<b>Optional.</b> Enter the help text that will display beneath the attribute on product add to cart forms.'),
-    '#default_value' => $attribute->description,
-    '#text_format' => $attribute->format,
+    '#default_value' => isset($attribute->description) ? $attribute->description : '',
+    '#text_format' => isset($attribute->format) ? $attribute->format : filter_default_format(),
     '#maxlength' => 255,
   );
   $form['required'] = array(
     '#type' => 'checkbox',
     '#title' => t('Make this attribute required, forcing the customer to choose an option.'),
     '#description' => t('Selecting this for an attribute will disregard any default option you specify.<br />May be overridden at the product level.'),
-    '#default_value' => $attribute->required,
+    '#default_value' => isset($attribute->required) ? $attribute->required : 0,
   );
   $form['display'] = array(
     '#type' => 'select',
@@ -178,7 +188,6 @@ function uc_attribute_delete_confirm($form, &$form_state, $attribute) {
   }
 
   $form['aid'] = array('#type' => 'value', '#value' => $attribute->aid);
-  $form['#redirect'] = 'admin/store/attributes';
 
   $count = db_query("SELECT COUNT(*) FROM {uc_product_attributes} WHERE aid = :aid", array(':aid' => $attribute->aid))->fetchField();
 
@@ -230,6 +239,8 @@ function uc_attribute_delete_confirm_submit($form, &$form_state) {
       ->execute();
 
     drupal_set_message(t('Product attribute deleted.'));
+
+    $form_state['redirect'] = 'admin/store/attributes';
   }
 }
 
