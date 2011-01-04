@@ -86,7 +86,7 @@ function uc_cart_links_process($cart_action) {
           // right. In other words, we have to simulate FAPI's form values.
           $node = node_load($p['nid']);
           if ($node->status) {
-            if (is_array($node->products)) {
+            if (isset($node->products) && is_array($node->products)) {
               foreach ($node->products as $nid => $product) {
                 $p['data']['products'][$nid] = array(
                   'nid' => $nid,
@@ -110,8 +110,8 @@ function uc_cart_links_process($cart_action) {
         if (empty($messages)) {
           $data = explode("\n", variable_get('uc_cart_links_messages', ''));
           foreach ($data as $message) {
-            $mdata = explode('|', $message);
-            $messages[$mdata[0]] = $mdata[1];
+            list($mkey, $mdata) = explode('|', $message, 2);
+            $messages[$mkey] = $mdata;
           }
         }
 
@@ -131,7 +131,7 @@ function uc_cart_links_process($cart_action) {
 
   if (variable_get('uc_cart_links_track', TRUE)) {
     db_merge('uc_cart_link_clicks')
-      ->key(array('cart_link_id' => $id))
+      ->key(array('cart_link_id' => (string) $id))
       ->fields(array(
         'clicks' => 1,
         'last_click' => REQUEST_TIME,
