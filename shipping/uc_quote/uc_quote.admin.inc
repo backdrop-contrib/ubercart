@@ -223,7 +223,7 @@ function uc_quote_method_settings($form, &$form_state) {
     foreach ($shipping_methods as $method) {
       $method_types[$method['quote']['type']][] = $method['title'];
     }
-    if (is_array($method_types['order'])) {
+    if (isset($method_types['order']) && is_array($method_types['order'])) {
       $count = count($method_types['order']);
       $form['uc_quote_type_weight']['#description'] .= format_plural($count, '<br />The %list method is compatible with any shipping type.', '<br />The %list methods are compatible with any shipping type.', array('%list' => implode(', ', $method_types['order'])));
     }
