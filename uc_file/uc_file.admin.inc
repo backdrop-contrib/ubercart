@@ -22,26 +22,21 @@ define('UC_FILE_FORM_ACTION', 1   );
  */
 function uc_file_admin_files_form($form, &$form_state) {
 
-  switch ($form_state['storage']['step']) {
-
-    case UC_FILE_FORM_FILES:
-
-      // Refresh our file list before display.
-      uc_file_refresh();
-
-      return array(
-        '#theme'  => 'uc_file_admin_files_form_show',
-        '#validate' => array('uc_file_admin_files_form_show_validate'),
-        '#submit' => array('uc_file_admin_files_form_show_submit'),
-      ) + $form + uc_file_admin_files_form_show_files($form, $form_state);
-
-    case UC_FILE_FORM_ACTION:
-
+  if (isset($form_state['storage']['step']) && $form_state['storage']['step'] == UC_FILE_FORM_ACTION) {
       return array(
         '#validate' => array('uc_file_admin_files_form_action_validate'),
         '#submit'   => array('uc_file_admin_files_form_action_submit'),
       ) + $form + uc_file_admin_files_form_action($form, $form_state);
+  }
+  else {
+    // Refresh our file list before display.
+    uc_file_refresh();
 
+    return array(
+      '#theme'  => 'uc_file_admin_files_form_show',
+      '#validate' => array('uc_file_admin_files_form_show_validate'),
+      '#submit' => array('uc_file_admin_files_form_show_submit'),
+    ) + $form + uc_file_admin_files_form_show_files($form, $form_state);
   }
 }
 
@@ -454,7 +449,7 @@ function uc_file_admin_files_form_action_submit($form, &$form_state) {
         $file_object = $form_state['storage']['temp_file'];
 
         // Copy the file to its final location.
-        if (copy($file_object->filepath, $dir . '/' . $file_object->filename)) {
+        if (copy($file_object->uri, $dir . '/' . $file_object->filename)) {
 
           // Check if any hook_uc_file_action('upload', $args) are implemented
           foreach (module_implements('uc_file_action') as $module) {

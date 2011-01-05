@@ -52,7 +52,7 @@ function theme_uc_file_user_downloads($variables) {
     $rows[] = array(array('data' => t('No downloads found'), 'colspan' => 5));
   }
 
-  $output .= theme('table', array('header' => $header, 'rows' => $rows));
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
   $output .= theme('pager');
   $output .= '<div class="form-item"><p class="description">' .
   t('Once your download is finished, you must refresh the page to download again. (Provided you have permission)') .
@@ -101,7 +101,7 @@ function uc_file_user_downloads($account) {
     ->fields('p', array('description'));
 
   $count_query = db_select('uc_file_users')
-    ->condition('uid', $account_uid);
+    ->condition('uid', $account->uid);
   $count_query->addExpression('COUNT(*)');
 
   $query->setCountQuery($count_query);
@@ -141,7 +141,7 @@ function uc_file_user_downloads($account) {
       'description' => $file->description,
       'accessed' => $file->accessed,
       'download_limit' => $file->download_limit,
-      'addresses' => $file->address,
+      'addresses' => $file->addresses,
       'address_limit' => $file->address_limit,
     );
     $row++;
@@ -327,23 +327,23 @@ function _uc_file_download_transfer($file_user, $ip) {
   // Only send partial content header if downloading a piece of the file (IE
   // workaround).
   if ($seek_start > 0 || $seek_end < ($size - 1)) {
-    drupal_set_header('206 Partial Content');
+    drupal_add_http_header('206 Partial Content');
   }
 
   // Standard headers, including content-range and length
-  drupal_set_header('Pragma', 'public');
-  drupal_set_header('Cache-Control', 'cache, must-revalidate');
-  drupal_set_header('Accept-Ranges', 'bytes');
-  drupal_set_header('Content-Range', 'bytes ' . $seek_start . '-' . $seek_end . '/' . $size);
-  drupal_set_header('Content-Type', $mimetype);
-  drupal_set_header('Content-Disposition', 'attachment; filename="' . $filename . '"');
-  drupal_set_header('Content-Length', $seek_end - $seek_start + 1);
+  drupal_add_http_header('Pragma', 'public');
+  drupal_add_http_header('Cache-Control', 'cache, must-revalidate');
+  drupal_add_http_header('Accept-Ranges', 'bytes');
+  drupal_add_http_header('Content-Range', 'bytes ' . $seek_start . '-' . $seek_end . '/' . $size);
+  drupal_add_http_header('Content-Type', $mimetype);
+  drupal_add_http_header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+  drupal_add_http_header('Content-Length', $seek_end - $seek_start + 1);
 
   // Last-Modified is required for content served dynamically
-  drupal_set_header('Last-Modified', gmdate("D, d M Y H:i:s", filemtime($file_user->full_path)) . " GMT");
+  drupal_add_http_header('Last-Modified', gmdate("D, d M Y H:i:s", filemtime($file_user->full_path)) . " GMT");
 
   // Etag header is required for Firefox3 and other managers
-  drupal_set_header('ETag', md5($file_user->full_path));
+  drupal_add_http_header('ETag', md5($file_user->full_path));
 
   // Open the file and seek to starting byte
   $fp = fopen($file_user->full_path, 'rb');

@@ -123,7 +123,7 @@ function hook_uc_file_action($op, $args) {
     case 'insert':
       // Automatically adds watermarks to any new files that are uploaded to
       // the file download directory.
-      _add_watermark($args['file_object']->filepath);
+      _add_watermark($args['file_object']->uri);
     break;
     case 'form':
       if ($args['action'] == 'uc_image_watermark_add_mark') {
@@ -139,11 +139,11 @@ function hook_uc_file_action($op, $args) {
       }
     return $form;
     case 'upload':
-      _add_watermark($args['file_object']->filepath);
+      _add_watermark($args['file_object']->uri);
       break;
     case 'upload_validate':
       // Given a file path, function checks if file is valid JPEG.
-      if(!_check_image($args['file_object']->filepath)) {
+      if(!_check_image($args['file_object']->uri)) {
         form_set_error('upload',t('Uploaded file is not a valid JPEG'));
       }
     break;
