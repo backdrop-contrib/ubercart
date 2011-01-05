@@ -792,7 +792,7 @@ function uc_object_attributes_form_submit($form, &$form_state) {
       // prevents the db_prefix from being appended.
       $select = db_select('uc_attribute_options', 'ao')
         ->where('{' . $opt_table . '}.oid = ao.oid')
-        ->condition('ao.oid', $remove_aids, 'IN');
+        ->condition('ao.aid', $remove_aids, 'IN');
       $select->addExpression('1');
       db_delete($opt_table)
         ->condition('', $select, 'EXISTS')
