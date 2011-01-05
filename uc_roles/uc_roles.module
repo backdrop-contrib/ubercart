@@ -178,7 +178,13 @@ function uc_roles_node_delete($node) {
  */
 function uc_roles_form_user_profile_form_alter(&$form, &$form_state) {
   $account = $form_state['build_info']['args'][0];
-  $cateogry = $form_state['build_info']['args'][1];
+  if (isset($form_state['build_info']['args'][1])) {
+    $category = $form_state['build_info']['args'][1];
+  }
+  else {
+    // user_profile_form() has a default value for $category.
+    $category = 'account';
+  }
 
   if (!user_access('administer users') || $category != 'account') {
     return;
@@ -316,6 +322,7 @@ function theme_uc_roles_user_expiration($variables) {
     array('data' => t('Add/remove time')),
   );
 
+  $rows = array();
   // The expiration table.
   foreach ((array)$form['table'] as $rid => $expiration) {
     // We only want numeric rid's

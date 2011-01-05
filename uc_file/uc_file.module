@@ -144,6 +144,13 @@ function uc_file_user_cancel($edit, $account, $method) {
  */
 function uc_file_form_user_profile_form_alter(&$form, &$form_state) {
   $account = $form_state['build_info']['args'][0];
+  if (isset($form_state['build_info']['args'][1])) {
+    $category = $form_state['build_info']['args'][1];
+  }
+  else {
+    // user_profile_form() has a default value for $category.
+    $category = 'account';
+  }
 
   // We only want the account edit form.
   if (!user_access('administer users') || (!is_null($category) && $category != 'account')) {
@@ -493,7 +500,7 @@ function theme_uc_file_hook_user_file($variables) {
   $form = $variables['form'];
 
   // Enclose this in <p> so it won't fall out of the fieldset if there are no downloads.
-  $output .= '<p>' . drupal_render($form['file_message']) . '</p>';
+  $output = '<p>' . drupal_render($form['file_message']) . '</p>';
 
   // Ensure the current files are above the new file dialog.
   $output .= drupal_render($form['download']);
