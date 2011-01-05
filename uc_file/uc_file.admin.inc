@@ -240,10 +240,12 @@ function theme_uc_file_admin_files_form_show($variables) {
  */
 function uc_file_admin_files_form_action($form, &$form_state) {
   $file_ids = array();
-  foreach ((array)$form_state['values']['file_select'] as $fid => $value) {
-    $value = $value['check'];
-    if ($value) {
-      $file_ids[] = $fid;
+  if (isset($form_state['values']['file_select'])) {
+    foreach ((array)$form_state['values']['file_select'] as $fid => $value) {
+      $value = $value['check'];
+      if ($value) {
+        $file_ids[] = $fid;
+      }
     }
   }
 
