@@ -406,6 +406,13 @@ function uc_attribute_option_form($form, &$form_state, $attribute, $option = NUL
     drupal_set_title(t('Edit option: %name', array('%name' => $option->name)), PASS_THROUGH);
   }
   else {
+    $option = new stdClass();
+    $option->name = '';
+    $option->ordering = 0;
+    $option->cost = 0;
+    $option->price = 0;
+    $option->weight = 0;
+
     drupal_set_title(t('Options for %name', array('%name' => $attribute->name)), PASS_THROUGH);
   }
 
@@ -421,7 +428,7 @@ function uc_attribute_option_form($form, &$form_state, $attribute, $option = NUL
     '#type' => 'weight',
     '#title' => t('List position'),
     '#description' => t('Options will be listed sorted by this value and then by their name.<br />May be overridden at the product level.'),
-    '#default_value' => isset($option->ordering) ? $option->ordering : 0,
+    '#default_value' => $option->ordering,
     '#weight' => 4,
   );
   $form['adjustments'] = array(
