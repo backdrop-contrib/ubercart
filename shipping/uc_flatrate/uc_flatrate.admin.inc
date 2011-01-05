@@ -82,6 +82,7 @@ function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
     '#title' => t('Base price'),
     '#description' => t('The starting price for shipping costs.'),
     '#default_value' => $method->base_rate,
+    '#required' => TRUE,
     '#size' => 16,
     '#field_prefix' => $sign_flag ? '' : $currency_sign,
     '#field_suffix' => $sign_flag ? $currency_sign : '',
@@ -89,6 +90,7 @@ function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
   $form['product_rate'] = array('#type' => 'textfield',
     '#title' => t('Default product shipping rate'),
     '#default_value' => $method->product_rate,
+    '#required' => TRUE,
     '#size' => 16,
     '#field_prefix' => $sign_flag ? '' : $currency_sign,
     '#field_suffix' => $sign_flag ? $currency_sign : '',
@@ -121,10 +123,10 @@ function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
  */
 function uc_flatrate_admin_method_edit_form_validate($form, &$form_state) {
   if ($form_state['values']['op'] == t('Submit')) {
-    if (!empty($form_state['values']['base_rate']) && !is_numeric($form_state['values']['base_rate'])) {
+    if (!is_numeric($form_state['values']['base_rate'])) {
       form_set_error('base_rate', t('The base rate must be a numeric amount.'));
     }
-    if (!empty($form_state['values']['product_rate']) && !is_numeric($form_state['values']['product_rate'])) {
+    if (!is_numeric($form_state['values']['product_rate'])) {
       form_set_error('product_rate', t('The product rate must be a numeric amount.'));
     }
   }

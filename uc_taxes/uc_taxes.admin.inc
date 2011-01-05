@@ -150,7 +150,7 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
     '#default_value' => $rate_id ? $rate->inclusion_text : '',
   );
 
-  $conditions = rules_config_load('uc_taxes_' . $rate->id);
+  $conditions = rules_config_load('uc_taxes_' . $rate_id);
   if ($conditions) {
     $conditions->form($form, $form_state);
   }

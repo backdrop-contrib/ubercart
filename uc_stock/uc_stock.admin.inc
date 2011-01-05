@@ -84,7 +84,7 @@ function uc_stock_report() {
     $query->where('threshold >= stock');
   }
 
-  $result = pager_query($sql . tablesort_sql($header), $page_size, 0, NULL);
+  $result = $query->execute();
   foreach ($result as $stock) {
     $op = array();
     if (user_access('administer products')) {
@@ -129,7 +129,7 @@ function uc_stock_report() {
     '#suffix' => '&nbsp;&nbsp;&nbsp;',
   );
 
-  if (!is_null($_GET['nopage'])) {
+  if (isset($_GET['nopage'])) {
     $build['links']['toggle_pager'] = array(
       '#markup' => l(t('Show paged records'), 'admin/store/reports/stock'),
     );

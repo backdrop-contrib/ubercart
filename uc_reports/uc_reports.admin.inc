@@ -43,9 +43,10 @@ function uc_reports_customers() {
   $address_preference = variable_get('uc_customer_list_address', 'billing');
   $first_name = ($address_preference == 'billing') ? 'billing_first_name' : 'delivery_first_name';
   $last_name = ($address_preference == 'billing') ? 'billing_last_name' : 'delivery_last_name';
-  $page = (!is_null($_GET['page'])) ? intval($_GET['page']) : 0;
-  $page_size = (!is_null($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
+  $page = (isset($_GET['page'])) ? intval($_GET['page']) : 0;
+  $page_size = (isset($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
   $order_statuses = _uc_reports_order_statuses();
+  $rows = array();
   $csv_rows = array();
 
   $header = array(
@@ -133,7 +134,7 @@ function uc_reports_customers() {
     '#markup' => l(t('Export to CSV file.'), 'admin/store/reports/getcsv/' . $csv_data['report'] . '/' . $csv_data['user']),
     '#suffix' => '&nbsp;&nbsp;&nbsp;',
   );
-  if (!is_null($_GET['nopage'])) {
+  if (isset($_GET['nopage'])) {
     $build['links']['toggle_pager'] = array(
       '#markup' => l(t('Show paged records'), 'admin/store/reports/customers'),
     );
@@ -160,8 +161,8 @@ function uc_reports_products() {
     $views_column = FALSE;
   }
 
-  $page = (!is_null($_GET['page'])) ? intval($_GET['page']) : 0;
-  $page_size = (!is_null($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
+  $page = (isset($_GET['page'])) ? intval($_GET['page']) : 0;
+  $page_size = (isset($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
   $order_statuses = _uc_reports_order_statuses();
   $row_cell = $page * variable_get('uc_reports_table_size', 30) + 1;
   $csv_rows = array();
@@ -307,7 +308,7 @@ function uc_reports_products() {
     '#markup' => l(t('Export to CSV file.'), 'admin/store/reports/getcsv/' . $csv_data['report'] . '/' . $csv_data['user']),
     '#suffix' => '&nbsp;&nbsp;&nbsp;',
   );
-  if (!is_null($_GET['nopage'])) {
+  if (isset($_GET['nopage'])) {
     $build['links']['toggle_pager'] = array(
       '#markup' => l(t('Show paged records'), 'admin/store/reports/products'),
     );

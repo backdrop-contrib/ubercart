@@ -33,12 +33,7 @@ function uc_store_admin() {
         $item['description'] = $item['localized_options']['attributes']['title'];
       }
       $block = $item;
-      $block['content'] = '';
-      if ($item['block_callback'] && function_exists($item['block_callback'])) {
-        $function = $item['block_callback'];
-        $block['content'] .= $function();
-      }
-      $block['content'] .= theme('admin_block_content', array('content' => system_admin_menu_block($item)));
+      $block['content'] = theme('admin_block_content', array('content' => system_admin_menu_block($item)));
       if (!empty($block['content'])) {
         $block['show'] = TRUE;
       }
