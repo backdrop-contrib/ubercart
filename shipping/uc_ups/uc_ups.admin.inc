@@ -16,10 +16,6 @@
  * @see uc_admin_settings_validate()
  */
 function uc_ups_admin_settings($form, &$form_state) {
-  $form['uc_ups_conditions'] = array(
-    '#markup' => '<p>' . l(t('Set the conditions that will return a UPS quote.'), CA_UI_PATH . '/uc_ups_get_quote/edit/conditions') . '</p>',
-  );
-
   $form['uc_ups_access_license'] = array('#type' => 'textfield',
     '#title' => t('UPS OnLine Tools XML Access Key'),
     '#default_value' => variable_get('uc_ups_access_license', ''),
@@ -140,6 +136,20 @@ function uc_ups_admin_settings($form, &$form_state) {
   $conditions = rules_config_load('get_quote_from_ups');
   if ($conditions) {
     $conditions->form($form, $form_state);
+  }
+
+  // Taken from system_settings_form(). Only, don't use its submit handler.
+  $form['actions']['#type'] = 'actions';
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+  );
+
+  if (!empty($_POST) && form_get_errors()) {
+    drupal_set_message(t('The settings have not been saved because of the errors.'), 'error');
+  }
+  if (!isset($form['#theme'])) {
+    $form['#theme'] = 'system_settings_form';
   }
 
   return $form;

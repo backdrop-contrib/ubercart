@@ -22,7 +22,7 @@ function uc_usps_admin_settings($form, &$form_state) {
   $form['domestic'] = array(
     '#type' => 'fieldset',
     '#title' => t('USPS Domestic'),
-    '#description' => l(t('Set the conditions that will return a USPS quote.'), CA_UI_PATH . '/uc_usps_get_quote/edit/conditions'),
+    '#description' => t('Set the conditions that will return a USPS quote.'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
@@ -75,7 +75,7 @@ function uc_usps_admin_settings($form, &$form_state) {
   $form['international'] = array(
     '#type' => 'fieldset',
     '#title' => t('USPS International'),
-    '#description' => l(t('Set the conditions that will return a USPS International quote.'), CA_UI_PATH . '/uc_usps_get_intl_quote/edit/conditions'),
+    '#description' => t('Set the conditions that will return a USPS International quote.'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
@@ -144,6 +144,20 @@ function uc_usps_admin_settings($form, &$form_state) {
     ),
     '#description' => t('Indicate whether each product is quoted as shipping separately or all in one package. Orders with one kind of product will still use the package quantity to determine the number of packages needed, however.'),
   );
+
+  // Taken from system_settings_form(). Only, don't use its submit handler.
+  $form['actions']['#type'] = 'actions';
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+  );
+
+  if (!empty($_POST) && form_get_errors()) {
+    drupal_set_message(t('The settings have not been saved because of the errors.'), 'error');
+  }
+  if (!isset($form['#theme'])) {
+    $form['#theme'] = 'system_settings_form';
+  }
 
   return $form;
 }
