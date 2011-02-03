@@ -6,7 +6,6 @@
  */
 
 var copy_box_checked = false;
-var uc_ce_submit_disable = false;
 
 /**
  * Scan the DOM and displays the cancel and continue buttons.
@@ -156,23 +155,3 @@ function apply_address(type, address_str) {
 
   jQuery('#edit-panes-' + temp + '-zone').val(address.zone).trigger('change');
 }
-
-/**
- * Behavior for the Review Order button.
- *
- * This function adds a cloned, disabled submit button, and appends a throbber
- * after it. This prevents multiple clicks on the submit button, and also gives
- * it that slick Web 2.0 feel :). The back button is also disabled upon submission.
- * This code was improved by quicksketch.
- */
-Drupal.behaviors.ucDisableNav = {
-  attach: function(context, settings) {
-    jQuery('form#uc-cart-checkout-review-form input#edit-submit:not(.ucDisableNav-processed)', context).addClass('ucDisableNav-processed').click(function() {
-      if (uc_ce_submit_disable) {
-        jQuery(this).clone().insertAfter(this).attr('disabled', true).after('<span id=\"submit-throbber\" style=\"background: url(' + settings.basePath + 'misc/throbber.gif) no-repeat 100% -20px;\">&nbsp;&nbsp;&nbsp;&nbsp;</span>').end().hide();
-        jQuery('#uc-cart-checkout-review-form #edit-back').attr('disabled', true);
-      }
-    });
-  }
-}
-
