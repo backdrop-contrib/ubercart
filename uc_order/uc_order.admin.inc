@@ -65,18 +65,6 @@ function uc_order_settings_form($form, &$form_state) {
     ),
     '#default_value' => variable_get('uc_order_capitalize_addresses', TRUE),
   );
-  if (module_exists('ubrowser') && module_exists('uc_catalog')) {
-    $form['admin']['uc_ubrowser_product_select'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Use the uBrowser product select on order edit screens'),
-      '#summary callback' => 'uc_summarize_checkbox',
-      '#summary arguments' => array(
-        t('You are using the uBrowser to add products to orders.'),
-        t('You are not using the uBrowser to add products to orders.'),
-      ),
-      '#default_value' => variable_get('uc_ubrowser_product_select', TRUE),
-    );
-  }
 
   $form['customer'] = array(
     '#type' => 'fieldset',
