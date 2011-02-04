@@ -349,32 +349,6 @@ function uc_cart_user_login(&$edit, $account) {
 }
 
 /**
- * Implement hook_form_alter().
- */
-function uc_cart_form_alter(&$form, &$form_state, $form_id) {
-  global $language;
-
-  // Redirect shopper back to checkout page if they go to login from there.
-  if ($form_id == 'user_login' || $form_id == 'user_edit' || $form_id == 'user_register') {
-
-    // Figure out the destination.
-    if (empty($_SESSION['checkout-redirect'])) {
-      // Compare the referer to checkout page URLs.
-      if (uc_referer_check('cart/checkout') && uc_referer_uri() != '') {
-        $_SESSION['checkout-redirect'] = TRUE;
-      }
-      elseif (isset($_SESSION['checkout-redirect']) && uc_referer_check(array('cart/checkout/review', 'cart/checkout/complete')) && uc_referer_uri() != '') {
-        unset($_SESSION['checkout-redirect']);
-      }
-    }
-
-    if (!empty($_SESSION['checkout-redirect'])) {
-      $form['#redirect'] = 'cart/checkout';
-    }
-  }
-}
-
-/**
  * Implement hook_block_info().
  */
 function uc_cart_block_info() {
