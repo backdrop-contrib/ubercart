@@ -173,7 +173,18 @@ function uc_catalog_update_7001(&$sandbox) {
 
     $file['uri'] = $scheme . str_replace($basename, '', $file['uri']);
     $file['uri'] = file_stream_wrapper_uri_normalize($file['uri']);
-    db_insert('file_managed')->fields($file)->execute();
+    db_merge('file_managed')
+      ->key(array('fid' => $file['fid']))
+      ->fields(array(
+        'uid' => $file['uid'],
+        'filename' => $file['filename'],
+        'uri' => $file['uri'],
+        'filemime' => $file['filemime'],
+        'filesize' => $file['filesize'],
+        'status' => $file['status'],
+        'timestamp' => $file['timestamp'],
+      ))
+      ->execute();
     $fids[] = $file['fid'];
 
     // Add the usage entry for the file.
