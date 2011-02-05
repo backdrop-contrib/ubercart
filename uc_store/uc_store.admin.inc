@@ -726,22 +726,6 @@ function uc_store_store_settings_form_validate($form, &$form_state) {
  * @ingroup forms
  */
 function uc_store_display_settings_form($form, &$form_state) {
-  $display_options = array(
-    1 => t('Dashboard with collapsed submenu links'),
-    2 => t('Dashboard with expanded submenu links'),
-    3 => t('Dashboard with no submenu links'),
-    4 => t('Normal Drupal submenu listing'),
-  );
-
-  $form['uc_store_admin_page_display'] = array(
-    '#type' => 'radios',
-    '#title' => t('Display type for the main store administration page'),
-    '#description' => t('Some options are better suited for different themes, so feel free to try them all out!'),
-    '#options' => $display_options,
-    '#summary' => t('Store admin page is displaying: <br />@display', array('@display' => $display_options[variable_get('uc_store_admin_page_display', 1)])),
-    '#default_value' => variable_get('uc_store_admin_page_display', 1),
-  );
-
   $address_options = array(
     'billing' => t('Billing address'),
     'shipping' => t('Shipping address'),
