@@ -168,6 +168,8 @@ function hook_uc_cart_display($item) {
  *       specifically related to tangible products if nothing in the cart is
  *       shippable. hook_cart_item functions that check for this op are expected
  *       to return TRUE or FALSE based on whether a product is shippable or not.
+ *   - "remove" - Passed when an item is removed from the cart.
+ *   - "checkout" - Passed for each item when the cart is being emptied for checkout.
  * @return
  *   No return value for load or view.
  *   TRUE or FALSE for can_ship.

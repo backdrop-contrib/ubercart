@@ -1308,7 +1308,7 @@ function uc_cart_complete_sale($order, $login = FALSE) {
   }
 
   // Empty that cart...
-  uc_cart_empty(uc_cart_get_id(FALSE));
+  uc_cart_empty(uc_cart_get_id(FALSE), 'checkout');
 
   // Clear our the session variables used to force the cart workflow.
   unset($_SESSION['cart_order'], $_SESSION['do_complete'], $_SESSION['new_user']);
@@ -1609,8 +1609,17 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
 
 /**
  * Remove an item from the cart
+ *
+ * @param $nid
+ *   The node ID of the item to remove.
+ * @param $cid
+ *   The cart ID of the item to remove.
+ * @param $data
+ *   The data array for the item to remove.
+ * @param $op
+ *   The $op parameter to pass to hook_cart_item(), if not the default 'remove'.
  */
-function uc_cart_remove_item($nid, $cid = NULL, $data = array()) {
+function uc_cart_remove_item($nid, $cid = NULL, $data = array(), $op = 'remove') {
   if (empty($nid)) {
     return;
   }
@@ -1624,7 +1633,7 @@ function uc_cart_remove_item($nid, $cid = NULL, $data = array()) {
       $func = $module . '_uc_cart_item';
       if (function_exists($func)) {
         // $item must be passed by reference.
-        $func('remove', $item);
+        $func($op, $item);
       }
     }
   }
@@ -1652,8 +1661,13 @@ function uc_cart_update_item_object($cart) {
 
 /**
  * Empty a cart of its contents.
+ *
+ * @param $cart_id
+ *   The ID of the cart.
+ * @param $op
+ *   The $op parameter to pass to hook_cart_item(), if not the default 'remove'.
  */
-function uc_cart_empty($cart_id) {
+function uc_cart_empty($cart_id, $op = 'remove') {
   if (is_null($cart_id) || empty($cart_id)) {
     return;
   }
@@ -1661,7 +1675,7 @@ function uc_cart_empty($cart_id) {
   // Empty cart one item at a time.  This will ensure the cart_item hook is fired with $op set to 'remove' for each item.
   $items = uc_cart_get_contents($cart_id);
   foreach ($items as $item) {
-    uc_cart_remove_item($item->nid, $cart_id, $item->data);
+    uc_cart_remove_item($item->nid, $cart_id, $item->data, $op);
   }
 
   // Probably don't need this query, but it will ensure anything not removed with the above loop is removed here.
