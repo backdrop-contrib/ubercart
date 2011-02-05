@@ -102,6 +102,7 @@ function uc_store_customers($message = NULL, $query = NULL, $page_length = 25) {
     array('data' => t('City'), 'field' => 'o.' . $address . '_city'),
     array('data' => t('ID'), 'field' => 'o.uid'),
   );
+  $rows = array();
 
   $query = $query->extend('TableSort')
     ->orderByHeader($header);
