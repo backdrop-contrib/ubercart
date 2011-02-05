@@ -7,14 +7,10 @@
  */
 
 /**
- * Process a cart link to fiddle with the cart and redirect the user.
- *
- * @param $cart_action
- *   An action.
+ * Preprocess a cart link and confirm with the user if a destructive action
+ * is included.
  */
-function uc_cart_links_process($cart_action) {
-  $messages = array();
-
+function uc_cart_links_form($form, &$form_state, $arg1) {
   // Fail if the link is restricted.
   $data = variable_get('uc_cart_links_restrictions', '');
   if (!empty($data)) {
@@ -29,9 +25,37 @@ function uc_cart_links_process($cart_action) {
     }
   }
 
-  // Split apart the cart link on the -.
+  // Confirm with the user if the form contains a destructive action.
+  $items = uc_cart_get_contents();
+  if (variable_get('uc_cart_links_empty', TRUE) && !empty($items)) {
+    $actions = explode('-', urldecode($arg1));
+    foreach ($actions as $action) {
+      $action = drupal_substr($action, 0, 1);
+      if ($action == 'e' || $action == 'E') {
+        return confirm_form(array(), t('The current contents of your shopping cart will be lost. Are you sure you want to continue?'), variable_get('uc_cart_links_invalid_page', ''));
+      }
+    }
+  }
+
+  // No destructive actions, so process the link immediately.
+  uc_cart_links_process($arg1);
+}
+
+function uc_cart_links_form_submit($form, &$form_state) {
+  uc_cart_links_process(arg(2));
+}
+
+/**
+ * Process a cart link to fiddle with the cart and redirect the user.
+ *
+ * @param $cart_action
+ *   An action.
+ */
+function uc_cart_links_process($cart_action) {
   $actions = explode('-', urldecode($cart_action));
   $rebuild_cart = FALSE;
+  $messages = array();
+  $id = '';
 
   foreach ($actions as $action) {
     switch (drupal_substr($action, 0, 1)) {
@@ -100,6 +124,14 @@ function uc_cart_links_process($cart_action) {
           else {
             watchdog('uc_cart_link', 'Cart link on %url tried to add an unpublished product to the cart.', array('%url' => uc_referer_uri()), WATCHDOG_ERROR);
           }
+        }
+        break;
+
+      // Empty the shopping cart.
+      case 'e':
+      case 'E':
+        if (variable_get('uc_cart_links_empty', TRUE)) {
+          uc_cart_empty(uc_cart_get_id());
         }
         break;
 
