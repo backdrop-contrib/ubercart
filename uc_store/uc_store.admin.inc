@@ -163,7 +163,7 @@ function uc_store_customers($message = NULL, $query = NULL, $page_length = 25) {
   return $build;
 }
 
-function uc_store_customer_query($page_length) {
+function uc_store_customer_query($page_length = 25) {
   $address = variable_get('uc_customer_list_address', 'billing');
   if ($address == 'shipping') {
     $address = 'delivery';
@@ -213,14 +213,14 @@ function uc_store_customer_search() {
     $email = str_replace('*', '%', db_like(arg(7)));
 
     if ($first_name !== '0' && $first_name !== '%') {
-      $query->condition('o_' . $address . '_first_name', $first_name, 'LIKE');
+      $query->condition('o.' . $address . '_first_name', $first_name, 'LIKE');
     }
     if ($last_name !== '0' && $last_name !== '%') {
-      $query->condition('o_' . $address . '_last_name', $first_name, 'LIKE');
+      $query->condition('o.' . $address . '_last_name', $first_name, 'LIKE');
     }
     if ($email !== '0' && $email !== '%') {
-      $query->addField('o', 'primary_email', 'o_primary_email');
-      $query->condition('o_primary_email', $email, 'LIKE');
+      $query->addField('o', 'primary_email');
+      $query->condition('o.primary_email', $email, 'LIKE');
     }
 
     $message = t('Search returned the following results:');
