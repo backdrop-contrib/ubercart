@@ -67,6 +67,7 @@ function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) 
       $form['payment'] = array();
 
       $methods = _uc_payment_method_list();
+      $options = array();
       foreach ($methods as $method) {
         $options[$method['id']] = $method['name'];
       }
@@ -74,9 +75,9 @@ function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) 
         '#type' => 'select',
         '#title' => t('Payment method'),
         '#default_value' => $order->payment_method,
-        '#options' => (is_array($options)) ? $options : array(t('None available')),
+        '#options' => !empty($options) ? $options : array(t('None available')),
         '#attributes' => array('onchange' => "add_order_save_hold(); get_payment_details(Drupal.settings.ucURL.adminOrders + '" . $order->order_id . "/payment_details/' + this.value);"),
-        '#disabled' => (is_array($options)) ? FALSE : TRUE,
+        '#disabled' => empty($options),
       );
       return $form;
 
