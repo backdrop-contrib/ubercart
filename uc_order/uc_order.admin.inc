@@ -204,13 +204,13 @@ function uc_order_workflow_form($form, &$form_state) {
       '#delta' => 20,
       '#default_value' => $status['weight'],
     );
+    $form['order_statuses'][$status['id']]['locked'] = array(
+      '#type' => 'value',
+      '#value' => $status['locked'],
+    );
     if ($status['locked']) {
       $form['order_statuses'][$status['id']]['state'] = array(
         '#markup' => uc_order_state_data($status['state'], 'title'),
-      );
-      $form['order_statuses'][$status['id']]['locked'] = array(
-        '#type' => 'hidden',
-        '#value' => TRUE,
       );
     }
     else {
@@ -224,12 +224,6 @@ function uc_order_workflow_form($form, &$form_state) {
       );
     }
   }
-
-  $form['order_statuses']['actions'] = array('#type' => 'actions');
-  $form['order_statuses']['actions']['create'] = array(
-    '#type' => 'submit',
-    '#value' => t('Create new status'),
-  );
 
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
@@ -273,13 +267,7 @@ function uc_order_workflow_form_submit($form, &$form_state) {
     }
   }
 
-  switch ($form_state['values']['op']) {
-    case t('Submit changes'):
-      drupal_set_message(t('Order workflow information saved.'));
-      break;
-    case t('Create new status'):
-      $form_state['redirect'] = 'admin/store/settings/orders/edit/workflow/create';
-  }
+  drupal_set_message(t('Order workflow information saved.'));
 }
 
 /**

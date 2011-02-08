@@ -120,11 +120,12 @@ function uc_order_menu() {
   );
 
   $items['admin/store/settings/orders/edit/workflow/create'] = array(
-    'title' => 'Create an order status',
+    'title' => 'Create custom order status',
     'description' => 'Create a custom order status for your store.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_order_status_create_form'),
     'access arguments' => array('administer order workflow'),
+    'type' => MENU_LOCAL_ACTION,
     'file' => 'uc_order.admin.inc',
   );
 
@@ -818,21 +819,16 @@ function theme_uc_order_status_table($variables) {
   $header = array(t('ID'), t('Title'), t('List position'), t('State'), t('Remove'));
 
   foreach (element_children($form) as $state_id) {
-    if ($state_id == 'create') {
-      $create = '<br />' . t('Use this button to create a custom order status: !create_form', array('!create_form' => drupal_render($form['create'])));
-    }
-    else {
-      $rows[] = array(
-        drupal_render($form[$state_id]['id']),
-        drupal_render($form[$state_id]['title']),
-        drupal_render($form[$state_id]['weight']),
-        drupal_render($form[$state_id]['state']),
-        array('data' => drupal_render($form[$state_id]['remove']), 'align' => 'center'),
-      );
-    }
+    $rows[] = array(
+      drupal_render($form[$state_id]['id']),
+      drupal_render($form[$state_id]['title']),
+      drupal_render($form[$state_id]['weight']),
+      drupal_render($form[$state_id]['state']),
+      array('data' => drupal_render($form[$state_id]['remove']), 'align' => 'center'),
+    );
   }
 
-  return theme('table', array('header' => $header, 'rows' => $rows)) . $create;
+  return theme('table', array('header' => $header, 'rows' => $rows));
 }
 
 /**
