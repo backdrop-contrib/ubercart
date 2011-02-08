@@ -258,9 +258,10 @@ function uc_stock_edit_form($form, &$form_state, $node) {
  */
 function theme_uc_stock_edit_form($variables) {
   $form = $variables['form'];
+  drupal_add_js('misc/tableselect.js');
 
   $header = array(
-    array('data' => '&nbsp;&nbsp;' . t('Active')) + theme('table_select_header_cell'),
+    array('data' => '&nbsp;&nbsp;' . t('Active'), 'class' => array('select-all')),
     array('data' => t('SKU')),
     array('data' => t('Stock')),
     array('data' => t('Threshold')),
