@@ -288,12 +288,16 @@ function uc_stock_edit_form_submit($form, &$form_state) {
 
     db_merge('uc_product_stock')
       ->key(array('sku' => $stock['sku']))
-      ->fields(array(
-        'active' => $stock['active'] ? 1 : 0,
+      ->updateFields(array(
+        'active' => $stock['active'],
         'stock' => $stock['stock'],
         'threshold' => $stock['threshold'],
       ))
       ->insertFields(array(
+        'sku' => $stock['sku'],
+        'active' => $stock['active'],
+        'stock' => $stock['stock'],
+        'threshold' => $stock['threshold'],
         'nid' => $form_state['values']['nid'],
       ))
       ->execute();
