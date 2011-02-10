@@ -214,6 +214,13 @@ function uc_payment_gateways_form($form, &$form_state) {
       }
     }
   }
+  else {
+    $form['gateways_info'] = array(
+      '#markup' => '<div><strong>' . t('Payment gateways') . '</strong><br />'
+                . t('Payment gateways are web services that allow you to process various types of payments remotely. No payment gateways are currently enabled.') . '</div>',
+      '#weight' => -10,
+    );
+  }
 
   return system_settings_form($form);
 }
