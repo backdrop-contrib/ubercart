@@ -143,7 +143,7 @@ function uc_flatrate_admin_method_edit_form_delete($form, &$form_state) {
  * @see uc_flatrate_admin_method_edit_form()
  */
 function uc_flatrate_admin_method_edit_form_submit($form, &$form_state) {
-  if ($form_state['values']['mid']) {
+  if (isset($form_state['values']['mid'])) {
     drupal_write_record('uc_flatrate_methods', $form_state['values'], 'mid');
 
     drupal_set_message(t("Flat rate shipping method was updated."));
@@ -197,7 +197,7 @@ function uc_flatrate_admin_method_confirm_delete_submit($form, &$form_state) {
     ->condition('mid', $form_state['values']['mid'])
     ->execute();
 
-  rules_config_delete('get_quote_from_flatrate_' . $form_state['values']['mid']);
+  rules_config_delete(array('get_quote_from_flatrate_' . $form_state['values']['mid']));
 
   $enabled = variable_get('uc_quote_enabled', array());
   unset($enabled['flatrate_' . $form_state['values']['mid']]);
