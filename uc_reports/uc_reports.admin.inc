@@ -1060,7 +1060,7 @@ function uc_reports_sales_custom() {
     // Build the product data for the subreport.
     if ($args['detail']) {
       // Grab the detailed product breakdown if selected.
-      $result = db_query("SELECT SUM(op.qty) as count, n.title, n.nid FROM {uc_order_products} as op LEFT JOIN {uc_orders} as o ON o.order_id = op.order_id LEFT JOIN {node} as n ON n.nid = op.nid WHERE :start <= o.created AND o.created <= :end AND o.order_status IN (:statuses) GROUP BY n.nid ORDER BY count DESC, n.title ASC", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']));
+      $result = db_query("SELECT SUM(op.qty) as count, n.title, n.nid FROM {uc_order_products} as op LEFT JOIN {uc_orders} as o ON o.order_id = op.order_id LEFT JOIN {node} as n ON n.nid = op.nid WHERE :start <= o.created AND o.created <= :end AND o.order_status IN (:statuses) GROUP BY n.nid, n.title ORDER BY count DESC, n.title ASC", array(':statuses' => $order_statuses, ':start' => $subreport['start'], ':end' => $subreport['end']));
       foreach ($result as $product_breakdown) {
         $product_data .= $product_breakdown->count . ' x ' . l($product_breakdown->title, 'node/' . $product_breakdown->nid) . "<br />\n";
         $product_csv .= $product_breakdown->count . ' x ' . $product_breakdown->title . "\n";
