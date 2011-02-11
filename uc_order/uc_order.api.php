@@ -151,6 +151,9 @@ function hook_uc_line_item_data_alter(&$items) {
  *   This is variable and is based on the value of $op:
  *   - new: Called when an order is created. $order is a reference to the new
  *       order object, so modules may add to or modify the order at creation.
+ *   - presave: Before an order object is saved, the hook gets invoked with this
+ *       op to let other modules alter order data before it is written to the
+ *       database. $order is a reference to the order object.
  *   - save: When an order object is being saved, the hook gets invoked with this
  *       op to let other modules do any necessary saving. $order is a reference to
  *       the order object.
