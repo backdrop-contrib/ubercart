@@ -685,10 +685,6 @@ function uc_order_create_form($form, &$form_state) {
     '#size' => 10,
     '#disabled' => TRUE,
   );
-  $form['customer']['primary_email'] = array(
-    '#type' => 'hidden',
-    '#default_value' => '',
-  );
   $form['customer']['text']['primary_email_text'] = array(
     '#type' => 'textfield',
     '#title' => t('Primary e-mail'),
@@ -845,37 +841,31 @@ function uc_order_select_customer($email = NULL) {
 
   // Return the search results and let them pick one!
   if (arg(4) == 'search') {
-    $first_name = str_replace('*', '%', db_like(arg(5)));
-    $last_name = str_replace('*', '%', db_like(arg(6)));
-    $email = str_replace('*', '%', db_like(arg(7)));
+    $first_name = str_replace('*', '%', db_like($_POST['first_name']));
+    $last_name = str_replace('*', '%', db_like($_POST['last_name']));
+    $email = str_replace('*', '%', db_like($_POST['email']));
 
     $query = db_select('users', 'u')->distinct();
-    $o = $query->leftJoin('uc_orders', 'o', 'u.uid = o.uid');
-
-    $u_uid = $query->addField('u', 'uid', 'u_uid');
-    $u_mail = $query->addField('u', 'mail', 'u_mail');
-    $o_email = $query->addField('o', 'primary_email', 'o_email');
-    $ob_first_name = $query->addField('o', 'billing_first_name', 'ob_first_name');
-    $ob_last_name = $query->addField('o', 'billing_last_name', 'ob_last_name');
-    $o_order_status = $query->addField('o', 'order_status', 'o_order_status');
-
-    $query->condition($u_uid, 0, '>')
+    $query->leftJoin('uc_orders', 'o', 'u.uid = o.uid');
+    $query->fields('u', array('uid', 'mail'))
+      ->fields('o', array('billing_first_name', 'billing_last_name'))
+      ->condition('u.uid', 0, '>')
       ->condition(db_or()
-        ->isNull($o_order_status)
-        ->condition($o_order_status, uc_order_status_list('general', TRUE), 'IN')
+        ->isNull('o.order_status')
+        ->condition('o.order_status', uc_order_status_list('general', TRUE), 'IN')
       )
-      ->orderBy($ob_last_name);
+      ->orderBy('o.billing_last_name');
 
-    if ($first_name !== '0' && $first_name !== '%') {
-      $query->condition($ob_first_name, $first_name, 'LIKE');
+    if ($first_name && $first_name !== '%') {
+      $query->condition('o.billing_first_name', $first_name, 'LIKE');
     }
-    if ($last_name !== '0' && $last_name !== '%') {
-      $query->condition($ob_last_name, $last_name, 'LIKE');
+    if ($last_name && $last_name !== '%') {
+      $query->condition('o.billing_last_name', $last_name, 'LIKE');
     }
-    if ($email !== '0' && $email !== '%') {
+    if ($email && $email !== '%') {
       $query->condition(db_or()
-        ->condition($o_email, $email, 'LIKE')
-        ->condition($u_mail, $email, 'LIKE')
+        ->condition('o.primary_email', $email, 'LIKE')
+        ->condition('u.mail', $email, 'LIKE')
       );
     }
 
@@ -903,7 +893,7 @@ function uc_order_select_customer($email = NULL) {
 
   // Check to see if the e-mail address for a new user is unique.
   if (arg(5) == 'check') {
-    $email = check_plain(arg(6));
+    $email = check_plain($_POST['email']);
     $build['email'] = array('#markup' => '');
     if (!valid_email_address($email)) {
       $build['email']['#markup'] .= t('Invalid e-mail address.') . '<br />';
@@ -912,7 +902,7 @@ function uc_order_select_customer($email = NULL) {
     if ($user = $result->fetchObject()) {
       $build['email']['#markup'] .= t('An account already exists for that e-mail.') . '<br /><br />';
       $build['email']['#markup'] .= '<b>' . t('Use this account now?') . '</b><br />'
-        . t('User !uid - !mail', array('!uid' => $user->uid, '!mail' => $user->mail)) . ' <input type="button" '
+        . t('User @uid - @mail', array('@uid' => $user->uid, '@mail' => $user->mail)) . ' <input type="button" '
         . 'onclick="select_existing_customer(' . $user->uid . ', \''
         . $user->mail . '\');" value="' . t('Apply') . '" /><br /><br /><hr /><br/>';
     }
