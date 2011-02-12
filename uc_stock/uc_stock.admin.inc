@@ -50,7 +50,7 @@ function uc_stock_settings_form($form, &$form_state) {
 function uc_stock_report() {
   drupal_add_css(drupal_get_path('module', 'uc_stock') . '/uc_stock.css');
 
-  $page_size = (!is_null($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
+  $page_size = (isset($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
   $csv_rows = array();
   $rows = array();
 
