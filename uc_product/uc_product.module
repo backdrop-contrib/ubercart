@@ -274,13 +274,7 @@ function uc_product_enable() {
  */
 function uc_product_theme() {
   return array(
-    'uc_product_form_prices' => array(
-      'render element' => 'form',
-    ),
-    'uc_product_form_weight' => array(
-      'render element' => 'form',
-    ),
-    'uc_product_dimensions_form' => array(
+    'uc_product_inline_form' => array(
       'render element' => 'form',
     ),
     'uc_product_field_settings_form' => array(
@@ -407,9 +401,7 @@ function uc_product_edit_access($node) {
  *
  * @ingroup forms
  * @see
- *   theme_uc_product_form_prices()
- *   theme_uc_product_form_weight()
- *   theme_uc_product_dimensions()
+ *   theme_uc_product_inline_form()
  *   uc_product_form_validate()
  */
 function uc_product_form($node, $form_state) {
@@ -463,7 +455,7 @@ function uc_product_form($node, $form_state) {
 
   $form['base']['prices'] = array(
     '#weight' => 5,
-    '#theme' => 'uc_product_form_prices',
+    '#theme' => 'uc_product_inline_form',
   );
 
   $form['base']['prices']['list_price'] = array(
@@ -518,7 +510,7 @@ function uc_product_form($node, $form_state) {
       ),
     ),
     '#weight' => 15,
-    '#theme' => 'uc_product_form_weight',
+    '#theme' => 'uc_product_inline_form',
   );
   $form['base']['weight']['weight'] = array(
     '#type' => 'textfield',
@@ -548,7 +540,7 @@ function uc_product_form($node, $form_state) {
       ),
     ),
     '#weight' => 20,
-    '#theme' => 'uc_product_dimensions_form',
+    '#theme' => 'uc_product_inline_form',
   );
   $form['base']['dimensions']['dim_length'] = array(
     '#type' => 'textfield',
@@ -625,38 +617,16 @@ function uc_product_form($node, $form_state) {
 }
 
 /**
- * @ingroup themeable
- */
-function theme_uc_product_form_prices($variables) {
-  $form = $variables['form'];
-
-  return "<table><tr><td>\n" . drupal_render($form['list_price'])
-    . '</td><td>' . drupal_render($form['cost'])
-    . '</td><td>' . drupal_render($form['sell_price'])
-    . "</td></tr></table>\n" . drupal_render_children($form);
-}
-
-/**
- * @ingroup themeable
- */
-function theme_uc_product_form_weight($variables) {
-  $form = $variables['form'];
-
-  return '<table><tr><td>' . drupal_render($form['weight']) . '</td><td>'
-       . drupal_render($form['weight_units']) . '</td></tr></table>';
-}
-
-/**
- * Put length, width, and height fields on the same line.
+ * Put form fields on the same line.
  *
  * @ingroup themeable
  */
-function theme_uc_product_dimensions_form($variables) {
+function theme_uc_product_inline_form($variables) {
   $form = $variables['form'];
 
   $output = '<table><tr>';
-  foreach (element_children($form) as $dimension) {
-    $output .= '<td>' . drupal_render($form[$dimension]) . '</td>';
+  foreach (element_children($form) as $element) {
+    $output .= '<td>' . drupal_render($form[$element]) . '</td>';
   }
   $output .= '</tr></table>';
 
