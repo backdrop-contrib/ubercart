@@ -340,7 +340,11 @@ function uc_usps_quote($products, $details, $method) {
                 }
               }
               $services[$classid]['label'] = t('U.S.P.S. @service', array('@service' => (string)$postage->MailService));
-              if ($rate_type) {
+              // Markup rate before customer sees it
+              // Rates are stored differently if ONLINE $rate_type is requested.
+              // First Class doesn't have online rates, so if CommercialRate
+              // is missing use Rate instead
+              if ($rate_type && !empty($postage->CommercialRate)) {
                 $services[$classid]['rate'] += uc_usps_markup((string)$postage->CommercialRate);
               }
               else {
