@@ -51,6 +51,7 @@ function uc_store_admin() {
   );
 
   $results = module_invoke_all('uc_store_status');
+  $rows = array();
 
   foreach ($results as $message) {
     switch ($message['status']) {
