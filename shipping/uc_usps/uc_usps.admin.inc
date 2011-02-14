@@ -184,7 +184,7 @@ function uc_usps_admin_settings_submit($form, &$form_state) {
     'uc_usps_intl_services',
     'uc_usps_markup_type',
     'uc_usps_markup',
-    'uc_usps_all_in_once',
+    'uc_usps_all_in_one',
   );
 
   foreach ($fields as $key) {
