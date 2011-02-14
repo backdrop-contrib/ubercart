@@ -50,31 +50,30 @@ function uc_store_admin() {
     '#blocks' => $blocks,
   );
 
-  $results = module_invoke_all('uc_store_status');
-  $rows = array();
+  if ($results = module_invoke_all('uc_store_status')) {
+    foreach ($results as $message) {
+      switch ($message['status']) {
+        case 'warning': $icon = 'alert.gif'; break;
+        case 'error':   $icon = 'error.gif'; break;
+        default:        $icon = 'info.gif';
+      }
 
-  foreach ($results as $message) {
-    switch ($message['status']) {
-      case 'warning': $icon = 'alert.gif'; break;
-      case 'error':   $icon = 'error.gif'; break;
-      default:        $icon = 'info.gif';
+      $rows[] = array(
+        'data' => array(
+          array('data' => theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/' . $icon))),
+          array('data' => '<strong>' . $message['title'] . '</strong>', 'nowrap' => 'nowrap'),
+          array('data' => $message['desc'], 'width' => '100%')
+        ),
+        'valign' => 'top',
+      );
     }
 
-    $rows[] = array(
-      'data' => array(
-        array('data' => theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/' . $icon))),
-        array('data' => '<strong>' . $message['title'] . '</strong>', 'nowrap' => 'nowrap'),
-        array('data' => $message['desc'], 'width' => '100%')
-      ),
-      'valign' => 'top',
+    $build['status'] = array(
+      '#theme' => 'table',
+      '#caption' => '<h2>' . t('Store status') . '</h2>',
+      '#rows' => $rows,
     );
   }
-
-  $build['status'] = array(
-    '#theme' => 'table',
-    '#caption' => '<h2>' . t('Store status') . '</h2>',
-    '#rows' => $rows,
-  );
 
   return $build;
 }
