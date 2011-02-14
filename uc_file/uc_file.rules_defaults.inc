@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_default_rules_configuration().
+ * Implements hook_default_rules_configuration().
  */
 function uc_file_default_rules_configuration() {
   // Renew all the files on an order when the status matches what's set in the files admin settings.

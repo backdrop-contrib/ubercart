@@ -2,7 +2,7 @@
 // $Id$
 
 /**
- * Implement hook_views_data().
+ * Implements hook_views_data().
  */
 function uc_cart_views_data() {
   //Make the uc_cart_products table visible for Views module

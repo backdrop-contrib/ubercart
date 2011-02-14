@@ -6,7 +6,7 @@
  */
 
 /**
- * Implement hook_default_rules_configuration().
+ * Implements hook_default_rules_configuration().
  */
 function uc_stock_default_rules_configuration() {
   $configs = array();

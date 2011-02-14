@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_rules_data_info().
+ * Implements hook_rules_data_info().
  *
  * An entity is defined in order to get role expiration tokens in the email.
  */
@@ -77,7 +77,7 @@ function uc_roles_set_expiration_properties($expiration, $name, $value) {
 }
 
 /**
- * Implement hook_rules_action_info().
+ * Implements hook_rules_action_info().
  */
 function uc_roles_rules_action_info() {
   // Renew a role expiration.
@@ -170,7 +170,7 @@ function uc_roles_message_formats() {
 }
 
 /**
- * Implement hook_rules_event_info().
+ * Implements hook_rules_event_info().
  */
 function uc_roles_rules_event_info() {
   $order = array(

@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_pathauto().
+ * Implements hook_pathauto().
  */
 function uc_catalog_pathauto($op) {
   switch ($op) {
@@ -27,7 +27,7 @@ function uc_catalog_pathauto($op) {
 }
 
 /**
- * Implement hook_pathauto_bulkupdate().
+ * Implements hook_pathauto_bulkupdate().
  *
  * Generate aliases for all categories without aliases
  */
@@ -106,7 +106,7 @@ function _uc_catalog_pathauto_alias($category, $op) {
 }
 
 /**
- * Implement hook_path_alias_types().
+ * Implements hook_path_alias_types().
  */
 function uc_catalog_path_alias_types() {
   return array('catalog/' => t('Catalog pages'));

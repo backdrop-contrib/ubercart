@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_rules_condition_info().
+ * Implements hook_rules_condition_info().
  */
 function uc_attribute_rules_condition_info() {
   $conditions = array();

@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_views_data().
+ * Implements hook_views_data().
  */
 function uc_stock_views_data() {
   $data['uc_product_stock']['table']['group'] = t('Stock');
@@ -93,7 +93,7 @@ function uc_stock_views_data() {
 }
 
 /**
- * Implement hook_views_handlers().
+ * Implements hook_views_handlers().
  */
 function uc_stock_views_handlers() {
   return array(

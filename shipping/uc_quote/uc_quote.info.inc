@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_entity_property_info_alter().
+ * Implements hook_entity_property_info_alter().
  */
 function uc_quote_entity_property_info_alter(&$info) {
   $info['uc_order_product']['properties']['shipping_type'] = array(

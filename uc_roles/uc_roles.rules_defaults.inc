@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_defualt_rules_configuration().
+ * Implements hook_defualt_rules_configuration().
  */
 function uc_roles_default_rules_configuration() {
   $configs = array();

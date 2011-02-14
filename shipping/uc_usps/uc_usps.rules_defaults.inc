@@ -2,7 +2,7 @@
 // $Id$
 
 /**
- * Implement hook_default_rules_configuration_alter().
+ * Implements hook_default_rules_configuration_alter().
  */
 function uc_usps_default_rules_configuration_alter(&$configs) {
   // Domestic areas include U.S., American Samoa, Guam, Puerto Rico, and the Virgin Islands

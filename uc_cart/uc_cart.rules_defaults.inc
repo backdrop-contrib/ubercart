@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_default_rules_configuration().
+ * Implements hook_default_rules_configuration().
  */
 function uc_cart_default_rules_configuration() {
   // Setup a default configuration for customer checkout notifications.

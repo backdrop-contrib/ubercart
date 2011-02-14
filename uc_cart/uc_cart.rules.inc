@@ -12,7 +12,7 @@
  ******************************************************************************/
 
 /**
- * Implement hook_rules_event_info().
+ * Implements hook_rules_event_info().
  */
 function uc_cart_rules_event_info() {
   $events['uc_checkout_complete'] = array(

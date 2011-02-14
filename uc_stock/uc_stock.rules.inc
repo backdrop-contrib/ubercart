@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_rules_action_info().
+ * Implements hook_rules_action_info().
  */
 function uc_stock_rules_action_info() {
   $actions['uc_stock_action_decrement_stock'] = array(

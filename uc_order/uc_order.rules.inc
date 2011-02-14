@@ -8,7 +8,7 @@
  */
 
 /**
- * Implement hook_rules_data_info().
+ * Implements hook_rules_data_info().
  */
 function uc_order_rules_data_info() {
   $types['uc_order'] = array(
@@ -34,7 +34,7 @@ function uc_order_rules_data_info() {
 }
 
 /**
- * Implement hook_rules_event_info().
+ * Implements hook_rules_event_info().
  */
 function uc_order_rules_event_info() {
   $events['uc_order_status_update'] = array(
@@ -67,7 +67,7 @@ function uc_order_rules_event_info() {
 }
 
 /**
- * Implement hook_rules_condition_info().
+ * Implements hook_rules_condition_info().
  */
 function uc_order_rules_condition_info() {
   $conditions['uc_order_condition_has_products'] = array(
@@ -170,7 +170,7 @@ function uc_order_rules_condition_info() {
 }
 
 /**
- * Implement hook_rules_action_info().
+ * Implements hook_rules_action_info().
  */
 function uc_order_rules_action_info() {
   $order_arg = array(

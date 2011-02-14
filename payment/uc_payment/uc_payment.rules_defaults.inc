@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_default_rules_configuration().
+ * Implements hook_default_rules_configuration().
  */
 function uc_payment_default_rules_configuration() {
   $configs = array();

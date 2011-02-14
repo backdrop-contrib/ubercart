@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_default_rules_configuration().
+ * Implements hook_default_rules_configuration().
  */
 function uc_order_default_rules_configuration() {
   $rule = rules_reaction_rule();

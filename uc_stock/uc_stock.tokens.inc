@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_token_info().
+ * Implements hook_token_info().
  */
 function uc_stock_token_info() {
   $type = array(
@@ -36,7 +36,7 @@ function uc_stock_token_info() {
 }
 
 /**
- * Implement hook_tokens().
+ * Implements hook_tokens().
  */
 function uc_stock_tokens($type, $tokens, $data = array(), $options = array()) {
   $values = array();

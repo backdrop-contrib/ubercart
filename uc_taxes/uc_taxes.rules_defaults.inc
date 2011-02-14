@@ -8,7 +8,7 @@
  */
 
 /**
- * Implement hook_default_rules_configuration().
+ * Implements hook_default_rules_configuration().
  *
  * Create a condition set for each tax rule.
  */

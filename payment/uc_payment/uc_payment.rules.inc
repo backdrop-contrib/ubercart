@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_rules_event_info().
+ * Implements hook_rules_event_info().
  */
 function uc_payment_rules_event_info() {
   $events['uc_payment_entered'] = array(
@@ -29,7 +29,7 @@ function uc_payment_rules_event_info() {
 }
 
 /**
- * Implement hook_rules_condition_info().
+ * Implements hook_rules_condition_info().
  */
 function uc_payment_rules_condition_info() {
   $conditions['uc_payment_condition_order_balance'] = array(

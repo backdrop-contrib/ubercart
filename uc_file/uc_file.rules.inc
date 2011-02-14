@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_rules_data_info().
+ * Implements hook_rules_data_info().
  *
  * An entity is defined in order to get file expiration(s) down to token in the
  * email.
@@ -121,7 +121,7 @@ function uc_file_set_expiration_properties($expiration, $name, $value) {
 }
 
 /**
- * Implement hook_rules_action_info().
+ * Implements hook_rules_action_info().
  */
 function uc_file_rules_action_info() {
   // Renew file expirations.
@@ -194,7 +194,7 @@ function uc_file_message_formats() {
 }
 
 /**
- * Implement hook_rules_event_info().
+ * Implements hook_rules_event_info().
  */
 function uc_file_rules_event_info() {
   $events['uc_file_notify_grant'] = array(

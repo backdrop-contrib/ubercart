@@ -10,7 +10,7 @@ define('UC_PAYER_PREFIX', "Payer's");
 define('UC_RECIPIENT_PREFIX', "Recipient's");
 
 /**
- * Implementation of hook_views_data().
+ * Implements hook_views_data().
  */
 function uc_order_views_data() {
   // Make the uc_orders table visible for Views module

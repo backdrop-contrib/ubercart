@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_views_default_view().
+ * Implements hook_views_default_view().
  */
 function uc_catalog_views_default_views() {
   $view = new view;

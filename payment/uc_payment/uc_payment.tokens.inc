@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_token_info().
+ * Implements hook_token_info().
  */
 function uc_payment_token_info() {
   $order['payment-method'] = array(
@@ -25,7 +25,7 @@ function uc_payment_token_info() {
 }
 
 /**
- * Implement hook_tokens().
+ * Implements hook_tokens().
  */
 function uc_payment_tokens($type, $tokens, $data = array(), $options = array()) {
   $values = array();

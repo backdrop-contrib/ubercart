@@ -7,7 +7,7 @@
  */
 
 /**
- * Implement hook_token_info().
+ * Implements hook_token_info().
  */
 function uc_product_token_info() {
   $product['model'] = array(
@@ -78,7 +78,7 @@ function uc_product_token_info() {
 }
 
 /**
- * Implement hook_tokens().
+ * Implements hook_tokens().
  */
 function uc_product_tokens($type, $tokens, $data = array(), $options = array()) {
   $values = array();
