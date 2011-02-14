@@ -89,6 +89,7 @@ function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
   );
   $form['product_rate'] = array('#type' => 'textfield',
     '#title' => t('Default product shipping rate'),
+    '#description' => t('Additional shipping cost per product in cart.'),
     '#default_value' => $method->product_rate,
     '#required' => TRUE,
     '#size' => 16,
