@@ -45,7 +45,7 @@ function uc_stock_settings_form($form, &$form_state) {
 }
 
 /**
- * Display a stock report for products with stock tracking enabled.
+ * Displays a stock report for products with stock tracking enabled.
  */
 function uc_stock_report() {
   drupal_add_css(drupal_get_path('module', 'uc_stock') . '/uc_stock.css');
@@ -146,8 +146,8 @@ function uc_stock_report() {
 /**
  * Form builder for stock report threshold filter.
  *
- * @ingroup forms
  * @see uc_stock_report_form_submit()
+ * @ingroup forms
  */
 function uc_stock_report_form($form, &$form_state) {
   $form['threshold'] = array(
@@ -168,6 +168,8 @@ function uc_stock_report_form($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_stock_report_form().
+ *
  * @see uc_stock_report_form()
  */
 function uc_stock_report_form_submit($form, &$form_state) {
@@ -182,10 +184,9 @@ function uc_stock_report_form_submit($form, &$form_state) {
 /**
  * Form builder for product stock edit form.
  *
+ * @see uc_stock_edit_form_submit()
+ * @see theme_uc_stock_edit_form()
  * @ingroup forms
- * @see
- *   theme_uc_stock_edit_form()
- *   uc_stock_edit_form_submit()
  */
 function uc_stock_edit_form($form, &$form_state, $node) {
   drupal_set_title($node->title);
@@ -253,34 +254,10 @@ function uc_stock_edit_form($form, &$form_state, $node) {
 }
 
 /**
- * @ingroup themeable
+ * Form submission handler for uc_stock_edit_form().
+ *
  * @see uc_stock_edit_form()
- */
-function theme_uc_stock_edit_form($variables) {
-  $form = $variables['form'];
-  drupal_add_js('misc/tableselect.js');
-
-  $header = array(
-    array('data' => '&nbsp;&nbsp;' . t('Active'), 'class' => array('select-all')),
-    array('data' => t('SKU')),
-    array('data' => t('Stock')),
-    array('data' => t('Threshold')),
-  );
-
-  foreach (element_children($form['stock']) as $id) {
-    $rows[] = array(
-      array('data' => drupal_render($form['stock'][$id]['active'])),
-      array('data' => drupal_render($form['stock'][$id]['display_sku'])),
-      array('data' => drupal_render($form['stock'][$id]['stock'])),
-      array('data' => drupal_render($form['stock'][$id]['threshold'])),
-    );
-  }
-
-  return theme('table', array('header' => $header, 'rows' => $rows)) . drupal_render_children($form);
-}
-
-/**
- * @see uc_stock_edit_form()
+ * @see theme_uc_stock_edit_form()
  */
 function uc_stock_edit_form_submit($form, &$form_state) {
   foreach (element_children($form_state['values']['stock']) as $id) {
@@ -304,4 +281,34 @@ function uc_stock_edit_form_submit($form, &$form_state) {
   }
 
   drupal_set_message(t('Stock settings saved.'));
+}
+
+/**
+ * Returns HTML for uc_stock_edit_form().
+ *
+ * @see uc_stock_edit_form()
+ * @see uc_stock_edit_form_submit()
+ * @ingroup themeable
+ */
+function theme_uc_stock_edit_form($variables) {
+  $form = $variables['form'];
+  drupal_add_js('misc/tableselect.js');
+
+  $header = array(
+    array('data' => '&nbsp;&nbsp;' . t('Active'), 'class' => array('select-all')),
+    array('data' => t('SKU')),
+    array('data' => t('Stock')),
+    array('data' => t('Threshold')),
+  );
+
+  foreach (element_children($form['stock']) as $id) {
+    $rows[] = array(
+      array('data' => drupal_render($form['stock'][$id]['active'])),
+      array('data' => drupal_render($form['stock'][$id]['display_sku'])),
+      array('data' => drupal_render($form['stock'][$id]['stock'])),
+      array('data' => drupal_render($form['stock'][$id]['threshold'])),
+    );
+  }
+
+  return theme('table', array('header' => $header, 'rows' => $rows)) . drupal_render_children($form);
 }

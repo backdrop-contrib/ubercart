@@ -98,4 +98,3 @@ function uc_roles_default_rules_configuration() {
 
   return $configs;
 }
-

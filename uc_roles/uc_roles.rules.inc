@@ -57,6 +57,7 @@ function uc_roles_rules_data_info() {
 
 /**
  * Callback for getting role expiration properties.
+ *
  * @see entity_metadata_node_entity_info_alter()
  */
 function uc_roles_get_expiration_properties($expiration, array $options, $name, $entity_type) {
@@ -68,6 +69,7 @@ function uc_roles_get_expiration_properties($expiration, array $options, $name, 
 
 /**
  * Callback for setting role expiration properties.
+ *
  * @see entity_metadata_node_entity_info_alter()
  */
 function uc_roles_set_expiration_properties($expiration, $name, $value) {
@@ -302,7 +304,7 @@ function uc_roles_action_user_email($account, $role_expiration, $from, $addresse
 }
 
 /**
- * Renew an orders product roles.
+ * Renews an order's product roles.
  *
  * This function updates expiration time on all roles found on all products
  * on a given order. First, the order user is loaded, then the order's products
@@ -314,6 +316,7 @@ function uc_roles_action_user_email($account, $role_expiration, $from, $addresse
  *
  * @param $order
  *   An Ubercart order object.
+ *
  * @see uc_roles_action_order_renew_form()
  */
 function uc_roles_action_order_renew($order) {

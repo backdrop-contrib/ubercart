@@ -20,4 +20,3 @@ function uc_stock_default_rules_configuration() {
 
   return $configs;
 }
-

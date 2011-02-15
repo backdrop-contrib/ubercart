@@ -26,7 +26,7 @@ function uc_stock_rules_action_info() {
 }
 
 /**
- * Decrease the stock of ordered products.
+ * Decreases the stock of ordered products.
  */
 function uc_stock_action_decrement_stock($order) {
   if (is_array($order->products)) {

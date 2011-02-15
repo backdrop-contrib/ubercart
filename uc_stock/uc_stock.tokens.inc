@@ -63,4 +63,3 @@ function uc_stock_tokens($type, $tokens, $data = array(), $options = array()) {
 
   return $values;
 }
-

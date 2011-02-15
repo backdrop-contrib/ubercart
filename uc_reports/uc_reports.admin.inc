@@ -37,7 +37,7 @@ function uc_reports_settings_form($form, &$form_state) {
 }
 
 /**
- * Display the customer report
+ * Displays the customer report.
  */
 function uc_reports_customers() {
   $address_preference = variable_get('uc_customer_list_address', 'billing');
@@ -149,7 +149,7 @@ function uc_reports_customers() {
 }
 
 /**
- * Display the product reports
+ * Displays the product reports.
  */
 function uc_reports_products() {
   $statistics = db_query("SELECT status FROM {system} WHERE name = :module", array(':module' => 'statistics'))->fetchField();
@@ -324,11 +324,12 @@ function uc_reports_products() {
 }
 
 /**
- * Get the SKUs on a product, first from the product itself, then from the
+ * Gets the SKUs on a product, first from the product itself, then from the
  * adjustments table, finally pulling any SKUs out of previous orders.
  *
  * @param $nid
  *   The product's node ID.
+ *
  * @return
  *   A unique sorted array of all skus.
  */
@@ -349,7 +350,7 @@ function _uc_reports_product_get_skus($nid) {
 }
 
 /**
- * Display the custom product report.
+ * Displays the custom product report.
  */
 function uc_reports_products_custom() {
   $timezone = _uc_reports_timezone_offset();
@@ -522,7 +523,13 @@ function uc_reports_products_custom() {
   return $output;
 }
 
-// Form builder for the custom product report.
+/**
+ * Form builder for the custom product report.
+ *
+ * @see uc_reports_products_custom_form_validate()
+ * @see uc_reports_products_custom_form_submit()
+ * @ingroup forms
+ */
 function uc_reports_products_custom_form($form, &$form_state, $values, $statuses) {
   $form['search'] = array(
     '#type' => 'fieldset',
@@ -579,12 +586,24 @@ function uc_reports_products_custom_form($form, &$form_state, $values, $statuses
   return $form;
 }
 
+/**
+ * Validation handler for the custom product report.
+ *
+ * @see uc_reports_products_custom_form()
+ * @see uc_reports_products_custom_form_submit()
+ */
 function uc_reports_products_custom_form_validate($form, &$form_state) {
   if (empty($form_state['values']['status'])) {
     form_set_error('status', t('You must select at least one order status.'));
   }
 }
 
+/**
+ * Submission handler for the custom product report.
+ *
+ * @see uc_reports_products_custom_form()
+ * @see uc_reports_products_custom_form_submit()
+ */
 function uc_reports_products_custom_form_submit($form, &$form_state) {
   $timezone_offset = _uc_reports_timezone_offset();
 
@@ -692,7 +711,7 @@ function theme_uc_reports_product_table($variables) {
 }
 
 /**
- * Display the sales summary report.
+ * Displays the sales summary report.
  */
 function uc_reports_sales_summary() {
   $timezone_offset = REQUEST_TIME + _uc_reports_timezone_offset();
@@ -842,7 +861,7 @@ function uc_reports_sales_summary() {
 }
 
 /**
- * Display the yearly sales report form and table.
+ * Displays the yearly sales report form and table.
  */
 function uc_reports_sales_year() {
   $timezone_offset = REQUEST_TIME + _uc_reports_timezone_offset();
@@ -953,8 +972,8 @@ function uc_reports_sales_year() {
 /**
  * Form to specify a year for the yearly sales report.
  *
- * @ingroup forms
  * @see uc_reports_sales_year_form_submit()
+ * @ingroup forms
  */
 function uc_reports_sales_year_form($form, &$form_state, $year) {
   $form['year'] = array(
@@ -979,6 +998,8 @@ function uc_reports_sales_year_form($form, &$form_state, $year) {
 }
 
 /**
+ * Submit handler for uc_reports_sales_year_form().
+ *
  * @see uc_reports_sales_year_form()
  */
 function uc_reports_sales_year_form_submit($form, &$form_state) {
@@ -986,7 +1007,7 @@ function uc_reports_sales_year_form_submit($form, &$form_state) {
 }
 
 /**
- * Display the custom sales report form and table.
+ * Displays the custom sales report form and table.
  */
 function uc_reports_sales_custom() {
   $timezone = _uc_reports_timezone_offset();
@@ -1138,10 +1159,9 @@ function uc_reports_sales_custom() {
 /**
  * Form builder for the custom sales report.
  *
+ * @see uc_reports_sales_custom_form_validate()
+ * @see uc_reports_sales_custom_form_submit()
  * @ingroup forms
- * @see
- *   uc_reports_sales_custom_form_validate()
- *   uc_reports_sales_custom_form_submit()
  */
 function uc_reports_sales_custom_form($form, &$form_state, $values, $statuses) {
   $form['search'] = array(
@@ -1222,6 +1242,7 @@ function uc_reports_sales_custom_form($form, &$form_state, $values, $statuses) {
  * Ensure an order status was selected.
  *
  * @see uc_reports_sales_custom_form()
+ * @see uc_reports_sales_custom_form_submit()
  */
 function uc_reports_sales_custom_form_validate($form, &$form_state) {
   if (empty($form_state['values']['status'])) {
@@ -1230,7 +1251,10 @@ function uc_reports_sales_custom_form_validate($form, &$form_state) {
 }
 
 /**
+ * Submission handler for uc_reports_sales_custom_form().
+ *
  * @see uc_reports_sales_custom_form()
+ * @see uc_reports_sales_custom_form_validate()
  */
 function uc_reports_sales_custom_form_submit($form, &$form_state) {
   $timezone_offset = _uc_reports_timezone_offset();

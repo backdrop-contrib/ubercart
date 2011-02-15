@@ -308,7 +308,8 @@ function theme_uc_roles_user_new($variables) {
 }
 
 /**
- * Theme the role expiration table within the roles dialog on the account edit page.
+ * Themes the role expiration table within the roles dialog on the
+ * account edit page.
  *
  * @ingroup themeable
  */
@@ -452,7 +453,7 @@ function uc_roles_user_presave(&$edit, $account, $category) {
 /**
  * Implements hook_user_view().
  *
- * Display role expirations on the user account screen.
+ * Displays role expirations on the user account screen.
  */
 function uc_roles_user_view($account, $view_mode) {
   global $user;
@@ -591,10 +592,9 @@ function uc_roles_uc_message() {
 /**
  * Form builder for hook_product_feature.
  *
+ * @see uc_roles_feature_form_validate()
+ * @see uc_roles_feature_form_submit()
  * @ingroup forms
- * @see
- *   uc_roles_feature_form_validate()
- *   uc_roles_feature_form_submit()
  */
 function uc_roles_feature_form($form, &$form_state, $node, $feature) {
   $models = uc_product_get_models($node);
@@ -755,6 +755,7 @@ function uc_roles_feature_form($form, &$form_state, $node, $feature) {
  * Validation function for the roles feature form.
  *
  * @see uc_roles_feature_form()
+ * @see uc_roles_feature_form_submit()
  */
 function uc_roles_feature_form_validate($form, &$form_state) {
   // Invalid quantity?
@@ -804,7 +805,10 @@ function uc_roles_product_write_record($product_role) {
 }
 
 /**
+ * Submission handler for uc_roles_feature_form().
+ *
  * @see uc_roles_feature_form()
+ * @see uc_roles_feature_form_validate()
  */
 function uc_roles_feature_form_submit($form, &$form_state) {
   $product_role = array(
@@ -1020,11 +1024,12 @@ function uc_roles_feature_settings($form, &$form_state) {
  ******************************************************************************/
 
 /**
- * Get role name
+ * Gets role name
  *
  * @param $rid
  *   The Drupal role id number
- * @return:
+ *
+ * @return
  *   A string containing the name of the role, returns FALSE if rid is invalid
  */
 function _uc_roles_get_name($rid) {
@@ -1033,11 +1038,12 @@ function _uc_roles_get_name($rid) {
 }
 
 /**
- * Get available roles for granting on product purchase
+ * Gets available roles for granting on product purchase
  *
  * @param $exclude
  *   A list of role ids to exclude from the list
- * @return:
+ *
+ * @return
  *   An assoc array with key = rid and value = role name
  */
 function _uc_roles_get_choices($exclude = array()) {
@@ -1066,7 +1072,7 @@ function _uc_roles_get_choices($exclude = array()) {
  ******************************************************************************/
 
 /**
- * Delete all data associated with a given product feature.
+ * Deletes all data associated with a given product feature.
  *
  * @param $pfid
  *   An Ubercart product feature ID.
@@ -1078,14 +1084,7 @@ function uc_roles_feature_delete($pfid) {
 }
 
 /**
- * Delete an expiration using user id or user id and rid.
- *
- * @param $account
- *   A Drupal user object.
- * @param $rid
- *   A Drupal role ID.
- * @param $silent
- *   When set to TRUE will suppress any Drupal messages from this function.
+ * Deletes an expiration using user id or user id and rid.
  *
  * This function deletes expirations associated with users and roles. If
  * no role ID is passed, the function deletes all role expirations associated
@@ -1093,6 +1092,13 @@ function uc_roles_feature_delete($pfid) {
  * user and role IDs match. If any roles were actually deleted, the function
  * notifies the user. The menu cache is then flushed, as privileges to view
  * menu items may have been lost in the process.
+ *
+ * @param $account
+ *   A Drupal user object.
+ * @param $rid
+ *   A Drupal role ID.
+ * @param $silent
+ *   When set to TRUE will suppress any Drupal messages from this function.
  */
 function uc_roles_delete($account, $rid = NULL, $silent = FALSE) {
   global $user;
@@ -1126,7 +1132,11 @@ function uc_roles_delete($account, $rid = NULL, $silent = FALSE) {
 }
 
 /**
- * Revoke a role on a given user
+ * Revokes a role on a given user
+ *
+ * This function deletes a given role from a user's list of roles, as
+ * well as removing any expiration data associated with the user/role.
+ * The function notifies the user of revocation.
  *
  * @param $account
  *   A Drupal user object.
@@ -1134,10 +1144,6 @@ function uc_roles_delete($account, $rid = NULL, $silent = FALSE) {
  *   A Drupal role ID.
  * @param $silent
  *   When set to TRUE will suppress any Drupal messages from this function.
- *
- * This function deletes a given role from a user's list of roles, as
- * well as removing any expiration data associated with the user/role.
- * The function notifies the user of revocation.
  */
 function uc_roles_revoke($account, $rid, $silent = FALSE) {
   global $user;
@@ -1171,7 +1177,14 @@ function uc_roles_revoke($account, $rid, $silent = FALSE) {
 }
 
 /**
- * Grant a role to a given user
+ * Grants a role to a given user
+ *
+ * This function grants a given role to a user's list of roles. If there
+ * is a previous record of this user/role combination, it is first removed.
+ * The function then saves the user (if $user_save is TRUE). Next, a check
+ * to verify the role actually exists, if not, no expiration data is stored.
+ * The menu cache is flushed, as new menu items may be visible after the
+ * new role is granted. The function notifies the user of the role grant.
  *
  * @param $account
  *   A Drupal user object.
@@ -1184,13 +1197,6 @@ function uc_roles_revoke($account, $rid, $silent = FALSE) {
  *   uc_roles_user_presave().
  * @param $silent
  *   When set to TRUE will suppress any Drupal messages from this function.
- *
- * This function grants a given role to a user's list of roles. If there
- * is a previous record of this user/role combination, it is first removed.
- * The function then saves the user (if $user_save is TRUE). Next, a check
- * to verify the role actually exists, if not, no expiration data is stored.
- * The menu cache is flushed, as new menu items may be visible after the
- * new role is granted. The function notifies the user of the role grant.
  */
 function uc_roles_grant(&$account, $rid, $timestamp, $save_user = TRUE, $silent = FALSE) {
   global $user;
@@ -1245,7 +1251,13 @@ function uc_roles_grant(&$account, $rid, $timestamp, $save_user = TRUE, $silent 
 }
 
 /**
- * Renew a given role on a user.
+ * Renews a given role on a user.
+ *
+ * This function updates expiration time on a role already granted to a
+ * user. First the function checks the new expiration. If it never expires,
+ * the function deletes the past expiration record and returns, leaving
+ * management up to Drupal. Otherwise, the record is updated with the new
+ * expiration time, and the user is notified of the change.
  *
  * @param $account
  *   A Drupal user object.
@@ -1255,12 +1267,6 @@ function uc_roles_grant(&$account, $rid, $timestamp, $save_user = TRUE, $silent 
  *   When this role will expire.
  * @param $silent
  *   When set to TRUE will suppress any Drupal messages from this function.
- *
- * This function updates expiration time on a role already granted to a
- * user. First the function checks the new expiration. If it never expires,
- * the function deletes the past expiration record and returns, leaving
- * management up to Drupal. Otherwise, the record is updated with the new
- * expiration time, and the user is notified of the change.
  */
 function uc_roles_renew($account, $rid, $timestamp, $silent = FALSE) {
   global $user;
@@ -1302,16 +1308,16 @@ function uc_roles_renew($account, $rid, $timestamp, $silent = FALSE) {
 }
 
 /**
- * Flush the menu cache.
+ * Flushes the menu cache.
+ *
+ * When roles are gained/lost, menu items might appear/disappear respectively,
+ * so we have to ensure the cache is rebuilt with any new values.
  *
  * @param $account
  *   A Drupal user object.
  *
  * @see uc_roles_delete()
  * @see uc_roles_grant()
- *
- * When roles are gained/lost, menu items might appear/disappear respectively,
- * so we have to ensure the cache is rebuilt with any new values.
  */
 function _uc_roles_flush_menu_cache($account) {
   cache_clear_all($account->uid . ':', 'cache_menu', TRUE);
@@ -1360,7 +1366,7 @@ function _uc_roles_product_get_expiration($role_product, $quantity, $time) {
 }
 
 /**
- * Function will return a expiration time stamp given a certain amount of time
+ * Returns an expiration time stamp given a certain amount of time
  * from a starting point (defaults to current time)
  *
  * @param $duration
@@ -1369,7 +1375,7 @@ function _uc_roles_product_get_expiration($role_product, $quantity, $time) {
  *   A string representing the granularity's name (e.g. "day", "month", etc.)
  * @param $start_time
  *   The starting date for when the role will last
- * @return:
+ * @return
  *   A UNIX timestamp representing the second that expiration takes place
  */
 function _uc_roles_get_expiration($duration, $granularity, $start_time = NULL) {
