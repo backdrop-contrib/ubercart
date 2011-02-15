@@ -7,7 +7,7 @@
  */
 
 /**
- * Menu callback; Provide the store administration overview page.
+ * Menu callback which provides the store administration overview page.
  */
 function uc_store_admin() {
   module_load_include('inc', 'system', 'system.admin');
@@ -79,7 +79,7 @@ function uc_store_admin() {
 }
 
 /**
- * Display customer administration page.
+ * Displays customer administration page.
  */
 function uc_store_customers($message = NULL, $query = NULL, $page_length = 25) {
   if (!module_exists('uc_order')) {
@@ -163,6 +163,9 @@ function uc_store_customers($message = NULL, $query = NULL, $page_length = 25) {
   return $build;
 }
 
+/**
+ * Assembles a query to list store customers.
+ */
 function uc_store_customer_query($page_length = 25) {
   $address = variable_get('uc_customer_list_address', 'billing');
   if ($address == 'shipping') {
@@ -194,7 +197,7 @@ function uc_store_customer_query($page_length = 25) {
 }
 
 /**
- * Display the customer search page.
+ * Displays the customer search page.
  */
 function uc_store_customer_search() {
   $build = array();
@@ -232,10 +235,10 @@ function uc_store_customer_search() {
 }
 
 /**
- * The customer search form.
+ * Form builder for the customer search form.
  *
- * @ingroup forms
  * @see uc_store_customer_search_form_submit()
+ * @ingroup forms
  */
 function uc_store_customer_search_form($form, &$form_state) {
   $form['search'] = array(
@@ -280,6 +283,11 @@ function uc_store_customer_search_form($form, &$form_state) {
   return $form;
 }
 
+/**
+ * Returns HTML for the customer search fieldset
+ *
+ * @ingroup themeable
+ */
 function theme_uc_store_customer_search_fieldset($variables) {
   $form = $variables['form'];
 
@@ -302,6 +310,8 @@ function theme_uc_store_customer_search_fieldset($variables) {
 }
 
 /**
+ * Form submission handler for uc_store_customer_search_form().
+ *
  * @see uc_store_customer_search_form()
  */
 function uc_store_customer_search_form_submit($form, &$form_state) {
@@ -331,7 +341,7 @@ function uc_store_customer_search_form_submit($form, &$form_state) {
 }
 
 /**
- * Display main reports page.
+ * Displays main reports page.
  */
 function uc_store_reports() {
   $menu = menu_get_item('admin/store/reports');
@@ -351,7 +361,7 @@ function uc_store_reports() {
 }
 
 /**
- * Display store configuration page.
+ * Displays store configuration page.
  */
 function uc_store_configuration_page() {
   $menu = menu_get_item('admin/store/settings');
@@ -366,7 +376,7 @@ function uc_store_configuration_page() {
 }
 
 /**
- * Display store help page.
+ * Displays store help page.
  */
 function uc_store_ubercart_help() {
   $build = array();
@@ -387,7 +397,7 @@ function uc_store_ubercart_help() {
 }
 
 /**
- * Display the tokens help page.
+ * Displays the tokens help page.
  */
 function uc_store_ubercart_help_tokens() {
   $build = array();
@@ -399,7 +409,7 @@ function uc_store_ubercart_help_tokens() {
 }
 
 /**
- * Display an overview of the country settings.
+ * Displays an overview of the country settings.
  */
 function uc_country_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
@@ -410,10 +420,10 @@ function uc_country_settings_overview() {
 }
 
 /**
- * Import settings from a country file.
+ * Imports settings from a country file.
  *
- * @ingroup forms
  * @see uc_country_import_form_submit()
+ * @ingroup forms
  */
 function uc_country_import_form($form, &$form_state) {
   $countries = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC")->fetchAll();
@@ -521,6 +531,8 @@ function _uc_country_summarize() {
 }
 
 /**
+ * Form submission handler for uc_country_import_form().
+ *
  * @see uc_country_import_form()
  */
 function uc_country_import_form_submit($form, &$form_state) {
@@ -537,10 +549,10 @@ function uc_country_import_form_submit($form, &$form_state) {
 }
 
 /**
- * Form to set country address formats.
+ * Form builder to set country address formats.
  *
- * @ingroup forms
  * @see uc_country_formats_form_submit()
+ * @ingroup forms
  */
 function uc_country_formats_form($form, &$form_state) {
   $form['instructions'] = array(
@@ -608,6 +620,8 @@ function uc_country_formats_form($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_country_formats_form().
+ *
  * @see uc_country_formats_form()
  */
 function uc_country_formats_form_submit($form, &$form_state) {
@@ -618,7 +632,7 @@ function uc_country_formats_form_submit($form, &$form_state) {
 }
 
 /**
- * Display an overview of the store settings.
+ * Displays an overview of the store settings.
  */
 function uc_store_store_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
@@ -629,7 +643,7 @@ function uc_store_store_settings_overview() {
 }
 
 /**
- * Summarize the store's address settings.
+ * Summarizes the store's address settings.
  *
  * @param $form
  *   The form passed from the summarizer
@@ -645,8 +659,9 @@ function _uc_store_address_summarize($form) {
 }
 
 /**
- * Display the form for store settings.
+ * Form builder for store settings.
  *
+ * @see uc_store_settings_form_submit()
  * @ingroup forms
  */
 function uc_store_store_settings_form($form, &$form_state) {
@@ -710,8 +725,11 @@ function uc_store_store_settings_form($form, &$form_state) {
 }
 
 /**
- * Validation handler for uc_store_store_settings_form.
+ * Form validation handler for uc_store_store_settings_form().
+ *
  * Validate store e-mail address
+
+ * @see uc_store_settings_form()
  */
 function uc_store_store_settings_form_validate($form, &$form_state) {
   $mail = trim($form_state['values']['uc_store_email']);
@@ -770,7 +788,7 @@ function uc_store_display_settings_form($form, &$form_state) {
 }
 
 /**
- * Display the form for format settings.
+ * Displays the form for format settings.
  *
  * @ingroup forms
  */
@@ -911,8 +929,8 @@ function uc_store_format_settings_form($form, &$form_state) {
 /**
  * Form to enter initials for an administrative user.
  *
- * @ingroup forms
  * @see uc_store_initials_submit()
+ * @ingroup forms
  */
 function uc_store_initials($form, &$form_state) {
   $form['username'] = array(
@@ -941,6 +959,8 @@ function uc_store_initials($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_store_initials().
+ *
  * @see uc_store_initials()
  */
 function uc_store_initials_submit($form, &$form_state) {
@@ -960,7 +980,7 @@ function uc_store_initials_submit($form, &$form_state) {
 }
 
 /**
- * List of extensible TAPIr tables used by Ubercart.
+ * Lists extensible TAPIr tables used by Ubercart.
  */
 function uc_store_tables() {
   $output = '<p>' . t('The following tables are used to display various parts of your store to your administrators and customers. Click on a table id to configure the display of that table.');
@@ -970,7 +990,10 @@ function uc_store_tables() {
 }
 
 /**
- * Display a list of orders made by a customer.
+ * Displays a list of orders made by a customer.
+ *
+ * $param $uid
+ *   The user id of the customer.
  */
 function uc_store_customer_orders($uid) {
   $result = db_select('uc_orders')->extend('PagerDefault')
@@ -1063,7 +1086,10 @@ function uc_store_customer_orders($uid) {
 }
 
 /**
- * Disable a country so it remains installed but is no longer selectable.
+ * Disables a country so it remains installed but is no longer selectable.
+ *
+ * @param $country_id
+ *   The ISO 3166-1 numeric country code.
  */
 function uc_country_disable($country_id) {
   $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id));
@@ -1088,7 +1114,10 @@ function uc_country_disable($country_id) {
 }
 
 /**
- * Enable a disabled country.
+ * Enables a disabled country.
+ *
+ * @param $country_id
+ *   The ISO 3166-1 numeric country code.
  */
 function uc_country_enable($country_id) {
   $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id));
@@ -1115,8 +1144,11 @@ function uc_country_enable($country_id) {
 /**
  * Form to completely remove a country.
  *
- * @ingroup forms
+ * @param $country_id
+ *   The ISO 3166-1 numeric country code.
+ *
  * @see uc_country_remove_form_submit()
+ * @ingroup forms
  */
 function uc_country_remove_form($form, &$form_state, $country_id) {
   // Fetch the country name from the database.
@@ -1140,6 +1172,8 @@ function uc_country_remove_form($form, &$form_state, $country_id) {
 }
 
 /**
+ * Form submission handler for uc_country_remove_form().
+ *
  * @see uc_country_remove_form()
  */
 function uc_country_remove_form_submit($form, &$form_state) {
@@ -1172,7 +1206,12 @@ function uc_country_remove_form_submit($form, &$form_state) {
 }
 
 /**
- * Update a country to its latest version.
+ * Updates a country definition to a specific CIF file version.
+ *
+ * @param $country_id
+ *   The ISO 3166-1 numeric country code.
+ * @param $version
+ *   Version number of CIF file.
  */
 function uc_country_update($country_id, $version) {
   $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id));
@@ -1209,4 +1248,3 @@ function uc_country_update($country_id, $version) {
 
   drupal_goto('admin/store/settings/countries/edit/import');
 }
-

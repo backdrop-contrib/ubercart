@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Add click events to the orders table and administration dashboard.
+ * Adds click events to the orders table and administration dashboard.
  */
 
 /**
- * Add the "show links" click behavior on the store admin display.
+ * Adds the "show links" click behavior on the store admin display.
  */
 Drupal.behaviors.ucStoreMoreLinks = {
   attach: function(context, settings) {
@@ -31,7 +31,7 @@ Drupal.behaviors.ucStoreMoreLinks = {
 }
 
 /**
- * Add the double click behavior to the order table rows
+ * Adds the double click behavior to the order table rows
  */
 Drupal.behaviors.ucCustomerOrder = {
   attach: function(context, settings) {
@@ -48,7 +48,7 @@ Drupal.behaviors.ucCustomerOrder = {
 }
 
 /**
- * Add the double click to the customer orders table rows.
+ * Adds the double click to the customer orders table rows.
  */
 Drupal.behaviors.ucCustomerOrders = {
   attach: function(context, settings) {
@@ -63,4 +63,3 @@ Drupal.behaviors.ucCustomerOrders = {
     );
   }
 }
-

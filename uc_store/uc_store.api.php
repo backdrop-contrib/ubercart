@@ -12,15 +12,16 @@
  */
 
 /**
- * Allow modules to alter the TAPIr table after the rows are populated.
+ * Allows modules to alter the TAPIr table after the rows are populated.
  *
  * The example below adds a value for the custom 'designer' column to the table
  * rows. Each table row has a numeric key in $table and these keys can be
  * accessed using element_children() from the Form API.
  *
- * @param $table Table declaration containing header and populated rows.
- * @param $table_id Table ID. Also the function called to build the table
- *   declaration.
+ * @param $table
+ *   Table declaration containing header and populated rows.
+ * @param $table_id
+ *   Table ID. Also the function called to build the table declaration.
  */
 function hook_tapir_table_alter(&$table, $table_id) {
   if ($table_id == 'uc_product_table') {
@@ -38,7 +39,7 @@ function hook_tapir_table_alter(&$table, $table_id) {
 }
 
 /**
- * Allow modules to alter TAPIr table headers.
+ * Allows modules to alter TAPIr table headers.
  *
  * This is most often done when a developer wants to add a sortable field to
  * the table. A sortable field is one where the header can be clicked to sort
@@ -55,10 +56,10 @@ function hook_tapir_table_alter(&$table, $table_id) {
  *
  * @see hook_db_rewrite_sql()
  *
- * @param $header Reference to the array header declaration
- *   (i.e $table['#header']).
- * @param $table_id Table ID. Also the function called to build the table
- *   declaration.
+ * @param $header
+ *   Reference to the array header declaration (i.e $table['#header']).
+ * @param $table_id
+ *   Table ID. Also the function called to build the table declaration.
  */
 function hook_tapir_table_header_alter(&$header, $table_id) {
   if ($table_id == 'uc_product_table') {
@@ -77,7 +78,7 @@ function hook_tapir_table_header_alter(&$header, $table_id) {
 }
 
 /**
- * Allow modules to modify forms before Drupal invokes hook_form_alter().
+ * Allows modules to modify forms before Drupal invokes hook_form_alter().
  *
  * This hook will normally be used by core modules so any form modifications
  * they make can be further modified by contrib modules using a normal
@@ -176,4 +177,3 @@ function hook_uc_store_status() {
 /**
  * @} End of "addtogroup hooks".
  */
-

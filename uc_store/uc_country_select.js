@@ -6,7 +6,7 @@
  */
 
 /**
- * Set the select box change behavior for the country selector
+ * Sets the select box change behavior for the country selector
  */
 Drupal.behaviors.ucCountrySelect = {
   attach: function(context, settings) {
@@ -19,7 +19,7 @@ Drupal.behaviors.ucCountrySelect = {
 }
 
 /**
- * Update the zone select element with new options.
+ * Updates the zone select element with new options.
  */
 function uc_update_zone_select(country_select, default_zone, settings) {
   settings = settings || Drupal.settings;
@@ -43,4 +43,3 @@ function uc_update_zone_select(country_select, default_zone, settings) {
          }
   );
 }
-
