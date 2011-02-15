@@ -980,16 +980,6 @@ function uc_store_initials_submit($form, &$form_state) {
 }
 
 /**
- * Lists extensible TAPIr tables used by Ubercart.
- */
-function uc_store_tables() {
-  $output = '<p>' . t('The following tables are used to display various parts of your store to your administrators and customers. Click on a table id to configure the display of that table.');
-  $output .= '<p>' . tapir_table_list('admin/store/settings/tables') . '</p>';
-
-  return $output;
-}
-
-/**
  * Displays a list of orders made by a customer.
  *
  * $param $uid
