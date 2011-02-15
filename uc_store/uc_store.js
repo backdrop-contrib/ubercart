@@ -2,33 +2,8 @@
 
 /**
  * @file
- * Adds click events to the orders table and administration dashboard.
+ * Adds click events to the order and customer tables.
  */
-
-/**
- * Adds the "show links" click behavior on the store admin display.
- */
-Drupal.behaviors.ucStoreMoreLinks = {
-  attach: function(context, settings) {
-    jQuery('.uc-store-admin-panel:not(.ucStoreMoreLinks-processed)', context).addClass('ucStoreMoreLinks-processed').each(
-      function() {
-        var panel_id = this.id.substring(6);
-        jQuery('#show-links-' + panel_id).click(
-          function() {
-            var panel_id = this.id.substring(11);
-            jQuery('#panel-' + panel_id + ' .panel-links').toggle();
-            if (jQuery('#panel-' + panel_id + ' .panel-show-link').html() == '<a>' + settings.ucTextShow + '</a>') {
-              jQuery('#panel-' + panel_id + ' .panel-show-link').html('<a>' + settings.ucTextHide + '</a>');
-            }
-            else {
-              jQuery('#panel-' + panel_id + ' .panel-show-link').html('<a>' + settings.ucTextShow + '</a>');
-            }
-          }
-        );
-      }
-    );
-  }
-}
 
 /**
  * Adds the double click behavior to the order table rows

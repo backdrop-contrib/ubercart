@@ -359,9 +359,6 @@ function uc_store_element_info() {
  */
 function uc_store_theme() {
   return array(
-    'uc_admin_dashboard' => array(
-      'variables' => array('type' => NULL, 'menus' => NULL),
-    ),
     'uc_store_footer' => array(
       'variables' => array('message' => ''),
     ),
@@ -537,64 +534,6 @@ function uc_store_reviews() {
  */
 function theme_uc_price($variables) {
   return '<span class="uc-price">' . uc_currency_format($variables['price']) . '</span>';
-}
-
-/**
- * Themes the dashboard on the admin/store page.
- *
- * @ingroup themeable
- */
-function theme_uc_admin_dashboard($variables) {
-  $type = $variables['type'];
-  $menus = $variables['menus'];
-
-  if ($type == 1) {
-    drupal_add_js(drupal_get_path('module', 'uc_store') . '/uc_store.js');
-    drupal_add_js(array('ucTextShow' => t('- Show links -'), 'ucTextHide' => t('- Hide links -')), 'setting');
-  }
-
-  $output = '<table class="uc-store-admin-table" align="center"><tr valign="top">';
-
-  $panel = 0;
-  if (is_array($menus)) {
-    foreach ($menus as $menu) {
-      $panel++;
-      if ($panel % 4 == 0) {
-        $output .= '</tr><tr valign="top">';
-      }
-      $panel_title = $menu['title'];
-      if ($type == 3) {
-        $panel_links = '';
-      }
-      else {
-        $panel_links = theme('admin_block_content', array('content' => system_admin_menu_block(menu_get_item($menu['href']))));
-      }
-      $panel_table = '<table width="100%"><tr>'
-                    . '<td>' . l(uc_store_get_icon($menu['href']), $menu['href'],
-                               array('html' => TRUE)) . '</td>'
-                    . '<td class="panel-title">' . l($menu['title'], $menu['href'])
-                    . '</td></tr>';
-      if (strlen($panel_links) > 0) {
-        if ($type == 1) {
-          $disp = 'display: none;';
-        }
-        $panel_table .= '<tr><td nowrap colspan="2" class="panel-links" '
-                       . 'style="' . $disp . '">' . $panel_links . '</td></tr>';
-        if ($type == 1) {
-          $panel_table .= '<tr><td align="center" colspan="2" '
-                         . 'class="panel-show-link" id="show-links-' . $panel
-                         . '"><a>' . t('- Show links -') . '</a></td></tr>';
-        }
-      }
-      $panel_table .= '</table>';
-      $output .= '<td class="uc-store-admin-panel" id="panel-' . $panel . '">'
-               . $panel_table . '</td>';
-    }
-  }
-
-  $output .= '</tr></table>';
-
-  return $output;
 }
 
 /**
