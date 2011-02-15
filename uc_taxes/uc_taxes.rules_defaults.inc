@@ -10,7 +10,7 @@
 /**
  * Implements hook_default_rules_configuration().
  *
- * Create a condition set for each tax rule.
+ * Creates a condition set for each tax rule.
  */
 function uc_taxes_default_rules_configuration() {
   $configs = array();

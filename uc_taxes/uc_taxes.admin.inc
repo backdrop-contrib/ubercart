@@ -7,7 +7,7 @@
  */
 
 /**
- * Display a list of tax rates.
+ * Displays a list of tax rates.
  */
 function uc_taxes_admin_settings() {
   $rows = array();
@@ -51,14 +51,14 @@ function uc_taxes_admin_settings() {
 }
 
 /**
- * Build a form to add or edit a tax rate.
+ * Builds a form to add or edit a tax rate.
  *
  * @param $rate_id
  *   The ID of the tax rate to edit; leave NULL to add a new rate.
+ *
+ * @see uc_taxes_form_validate()
+ * @see uc_taxes_form_submit()
  * @ingroup forms
- * @see
- *   uc_taxes_form_validate()
- *   uc_taxes_form_submit()
  */
 function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
   // If a rate ID was specified...
@@ -166,9 +166,10 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
 }
 
 /**
- * Ensure that tax rates are positive numbers.
+ * Ensures that tax rates are positive numbers.
  *
  * @see uc_taxes_form()
+ * @see uc_taxes_form_submit()
  */
 function uc_taxes_form_validate($form, &$form_state) {
   if (!empty($form_state['values']['rate']) && (floatval($form_state['values']['rate']) < 0)) {
@@ -177,7 +178,10 @@ function uc_taxes_form_validate($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_taxes_form().
+ *
  * @see uc_taxes_form()
+ * @see uc_taxes_form_validate()
  */
 function uc_taxes_form_submit($form, &$form_state) {
   // Determine the decimal rate value.
@@ -216,7 +220,7 @@ function uc_taxes_form_submit($form, &$form_state) {
 }
 
 /**
- * Clone a tax rate.
+ * Clones a tax rate.
  */
 function uc_taxes_clone($rate_id) {
   // Load the source rate object.
@@ -243,10 +247,10 @@ function uc_taxes_clone($rate_id) {
 }
 
 /**
- * Delete a tax rule.
+ * Deletes a tax rule.
  *
+ * @see uc_taxes_delete_form_submit()
  * @ingroup forms
- * @see uc_taxes_delete_submit()
  */
 function uc_taxes_delete_form($form, &$form_state, $rate_id) {
   // Bail if we got a bad rate ID.
@@ -268,6 +272,8 @@ function uc_taxes_delete_form($form, &$form_state, $rate_id) {
 }
 
 /**
+ * Form submission handler for uc_taxes_delete_form().
+ *
  * @see uc_taxes_delete_form()
  */
 function uc_taxes_delete_form_submit($form, &$form_state) {
