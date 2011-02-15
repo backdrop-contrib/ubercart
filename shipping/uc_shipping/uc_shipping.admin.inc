@@ -124,11 +124,11 @@ function uc_shipping_new_package($form, &$form_state, $order) {
         $product_row['model'] = array('#markup' => check_plain($product->model));
         $product_row['name'] = array('#markup' => filter_xss_admin($product->title));
         $product_row['qty'] = array('#type' => 'select',
-          '#options' => drupal_map_assoc(uc_range(1, $unboxed_qty)),
+          '#options' => drupal_map_assoc(range(1, $unboxed_qty)),
           '#default_value' => $unboxed_qty,
         );
 
-        $options = drupal_map_assoc(uc_range(0, count($order->products)));
+        $options = drupal_map_assoc(range(0, count($order->products)));
         $options[0] = t('Sep.');
         $product_row['package'] = array('#type' => 'select',
           '#options' => $options,
@@ -290,7 +290,7 @@ function uc_shipping_package_edit($form, &$form_state, $order, $package) {
       $product_row['model'] = array('#markup' => check_plain($product->model));
       $product_row['name'] = array('#markup' => filter_xss_admin($product->title));
       $product_row['qty'] = array('#type' => 'select',
-        '#options' => drupal_map_assoc(uc_range(1, $product->qty)),
+        '#options' => drupal_map_assoc(range(1, $product->qty)),
         '#default_value' => $package->products[$product->order_product_id]->qty,
       );
 

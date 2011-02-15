@@ -90,7 +90,7 @@ function uc_catalog_settings_form($form, &$form_state) {
     '#title' => t('Number of columns in the grid of categories'),
     '#default_value' => variable_get('uc_catalog_category_columns', 3),
     '#summary' => t('Subcategories are being displayed in @columns columns.', array('@columns' => variable_get('uc_catalog_category_columns', 3))),
-    '#options' => drupal_map_assoc(uc_range(1, 5)),
+    '#options' => drupal_map_assoc(range(1, 5)),
   );
 
   $form['catalog-products-list'] = array('#type' => 'fieldset',
@@ -168,7 +168,7 @@ function uc_catalog_grid_settings_form($form, &$form_state) {
   $form['uc_catalog_grid_display_width'] = array(
     '#type' => 'select',
     '#title' => t('Number of columns in the product grid'),
-    '#options' => drupal_map_assoc(uc_range(1, 5)),
+    '#options' => drupal_map_assoc(range(1, 5)),
     '#default_value' => variable_get('uc_catalog_grid_display_width', 3),
     '#summary' => t('The grid will be displayed in @columns columns.', array('@columns' => variable_get('uc_catalog_grid_display_width', 3))),
   );

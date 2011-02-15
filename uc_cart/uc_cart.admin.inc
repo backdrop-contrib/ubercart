@@ -103,7 +103,7 @@ function uc_cart_cart_settings_form($form, &$form_state) {
   $form['anonymous']['uc_cart_anon_duration'] = array(
     '#type' => 'select',
     '#title' => t('Duration'),
-    '#options' => drupal_map_assoc(uc_range(1, 60)),
+    '#options' => drupal_map_assoc(range(1, 60)),
     '#default_value' => variable_get('uc_cart_anon_duration', '4'),
     '#prefix' => '<div style="float: left; margin-right: 1em;">',
     '#suffix' => '</div>',
@@ -132,7 +132,7 @@ function uc_cart_cart_settings_form($form, &$form_state) {
   $form['authenticated']['uc_cart_auth_duration'] = array(
     '#type' => 'select',
     '#title' => t('Duration'),
-    '#options' => drupal_map_assoc(uc_range(1, 24)),
+    '#options' => drupal_map_assoc(range(1, 60)),
     '#default_value' => variable_get('uc_cart_auth_duration', '1'),
     '#prefix' => '<div style="float: left; margin-right: 1em;">',
     '#suffix' => '</div>',
