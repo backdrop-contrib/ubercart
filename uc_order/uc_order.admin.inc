@@ -1479,7 +1479,7 @@ function uc_order_log($order) {
 
   $build = array();
 
-  if (count($rows)) {
+  if (isset($rows)) {
     $header = array(t('Time'), t('User'), t('Changes'));
     $build['log'] = array(
       '#theme' => 'table',
@@ -1488,7 +1488,7 @@ function uc_order_log($order) {
     );
   }
   else {
-    $build['log'] = array('#markup' => t('No changes have been logged for this order.'));
+    $build['log'] = array('#markup' => '<p>' . t('No changes have been logged for this order.') . '</p>');
   }
 
   return $build;
