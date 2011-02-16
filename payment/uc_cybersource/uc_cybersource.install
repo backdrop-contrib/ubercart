@@ -15,6 +15,8 @@ function uc_cybersource_requirements($phase) {
   $has_curl = function_exists('curl_init');
   $has_dom = class_exists('DOMDocument');
   $has_soap = class_exists('SoapClient');
+
+  // Valid methods are 'soap' and 'post'.  Defaults here to 'post' on install.
   $method = variable_get('uc_cybersource_method', 'post');
 
   // Using SOAP.
@@ -25,7 +27,7 @@ function uc_cybersource_requirements($phase) {
     );
     if (!$has_soap || !$has_dom) {
       $requirements['uc_cybersource_soap_and_dom']['severity'] = REQUIREMENT_ERROR;
-      $requirements['uc_cybersource_soap_and_dom']['description'] = $t("Cybersource's SOAP Toolkit API requires the PHP <a href='!soap_url'>SOAP</a> and <a href='!dom_url'>DOM</a> libraries.", array('!soap_url' => 'http://php.net/manual/en/soap.setup.php', '!dom_url' => 'http://php.net/manual/en/dom.setup.php'));
+      $requirements['uc_cybersource_soap_and_dom']['description'] = $t("CyberSource's SOAP Toolkit API requires the PHP <a href='!soap_url'>SOAP</a> and <a href='!dom_url'>DOM</a> libraries.", array('!soap_url' => 'http://php.net/manual/en/soap.setup.php', '!dom_url' => 'http://php.net/manual/en/dom.setup.php'));
     }
   }
 
@@ -37,16 +39,18 @@ function uc_cybersource_requirements($phase) {
     );
     if (!$has_curl) {
       $requirements['uc_cybersource_curl']['severity'] = REQUIREMENT_ERROR;
-      $requirements['uc_cybersource_curl']['description'] = $t("Cybersource's Silent Order POST requires the PHP <a href='!curl_url'>cURL</a> library.", array('!curl_url' => 'http://php.net/manual/en/curl.setup.php'));
+      $requirements['uc_cybersource_curl']['description'] = $t("CyberSource's Silent Order POST requires the PHP <a href='!curl_url'>cURL</a> library.", array('!curl_url' => 'http://php.net/manual/en/curl.setup.php'));
     }
   }
-  // We need HOP.php if we're using the post method and also the Hosted Order page,
-  // which is a payment method rather than a gateway.
+
+  // We need HOP.php if we're using the post method and also the Hosted Order
+  // page, which is a payment method rather than a gateway.
   if ($method != 'soap') {
-    $requirements['uc_cybersource']['title'] = t('UC_CyberSource HOP.php inclusion');
+    $requirements['uc_cybersource']['title'] = t('CyberSource HOP.php');
+    $requirements['uc_cybersource']['value'] = t('Missing');
     require_once('uc_cybersource.module');
     if (!uc_cybersource_hop_include()) {
-      $requirements['uc_cybersource']['description'] = t('For instructions on how to generate this file, please refer to <a href="http://www.cybersource.com/support_center/implementation/downloads/hosted_order_page/">Cybersource\'s Hosted Order Pages Documentation</a>, specifically the "Downloading Security Scripts" in chapter 2 of the <a href="http://apps.cybersource.com/library/documentation/sbc/HOP_UG/html/">HOP User\'s Guide</a>.');
+      $requirements['uc_cybersource']['description'] = t('For instructions on how to generate this file, please refer to <a href="http://www.cybersource.com/support_center/implementation/downloads/hosted_order_page/">CyberSource\'s Hosted Order Pages Documentation</a>, specifically the "Downloading Security Scripts" in Chapter 2 of the <a href="http://apps.cybersource.com/library/documentation/sbc/HOP_UG/html/">HOP User\'s Guide</a>.');
       $severity = $phase == 'install' ? REQUIREMENT_INFO : REQUIREMENT_ERROR;
       $requirements['uc_cybersource']['severity'] = $severity;
     }
