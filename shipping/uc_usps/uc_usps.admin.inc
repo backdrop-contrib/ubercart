@@ -7,8 +7,10 @@
  */
 
 /**
- * Configure USPS settings.
+ * Configures USPS settings.
  *
+ * @see uc_usps_admin_settings_validate()
+ * @see uc_usps_admin_settings_submit()
  * @ingroup forms
  */
 function uc_usps_admin_settings($form, &$form_state) {
@@ -164,6 +166,9 @@ function uc_usps_admin_settings($form, &$form_state) {
 
 /**
  * Validation handler for uc_usps_admin_settings form.
+ *
+ * @see uc_usps_admin_settings()
+ * @see uc_usps_admin_settings_submit()
  */
 function uc_usps_admin_settings_validate($form, &$form_state) {
   if (!is_numeric($form_state['values']['uc_usps_markup'])) {
@@ -173,6 +178,9 @@ function uc_usps_admin_settings_validate($form, &$form_state) {
 
 /**
  * Submit handler for uc_usps_admin_settings form.
+ *
+ * @see uc_usps_admin_settings()
+ * @see uc_usps_admin_settings_validate()
  */
 function uc_usps_admin_settings_submit($form, &$form_state) {
   $fields = array(

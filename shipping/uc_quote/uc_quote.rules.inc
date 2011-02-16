@@ -24,7 +24,7 @@ function uc_quote_rules_condition_info() {
 }
 
 /**
- * Check an order's shipping method.
+ * Checks an order's shipping method.
  */
 function uc_quote_condition_order_shipping_method($order, $method) {
   // Check the easy way first.
@@ -64,4 +64,3 @@ function uc_quote_condition_order_shipping_method_options() {
 
   return $options;
 }
-

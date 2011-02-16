@@ -12,7 +12,7 @@
  */
 
 /**
- * Define callbacks and service options for shipping methods.
+ * Defines callbacks and service options for shipping methods.
  *
  * The shipping quote controller module, uc_quote, expects a very specific
  * structured array of methods from the implementations of this hook.
@@ -97,7 +97,7 @@ function hook_uc_shipping_method() {
 }
 
 /**
- * Define shipping types for shipping methods.
+ * Defines shipping types for shipping methods.
  *
  * This hook defines a shipping type that this module is designed to handle.
  * These types are specified by a machine- and human-readable name called 'id',
@@ -126,4 +126,3 @@ function hook_uc_shipping_type() {
 /**
  * @} End of "addtogroup hooks".
  */
-

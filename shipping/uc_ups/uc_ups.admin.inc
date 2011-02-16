@@ -9,11 +9,11 @@
 /**
  * UPS Online Tool settings.
  *
- * Record UPS account information neccessary to use the service. Allow testing
+ * Records UPS account information neccessary to use the service. Allow testing
  * or production mode. Configure which UPS services are quoted to customers.
  *
- * @ingroup forms
  * @see uc_admin_settings_validate()
+ * @ingroup forms
  */
 function uc_ups_admin_settings($form, &$form_state) {
   $form['uc_ups_access_license'] = array('#type' => 'textfield',
@@ -158,9 +158,10 @@ function uc_ups_admin_settings($form, &$form_state) {
 /**
  * Validation handler for uc_ups_admin_settings.
  *
- * Require password only if it hasn't been set.
+ * Requires password only if it hasn't been set.
  *
  * @see uc_ups_admin_settings()
+ * @see uc_ups_admin_settings_submit()
  */
 function uc_ups_admin_settings_validate($form, &$form_state) {
   $old_password = variable_get('uc_ups_password', '');
@@ -181,9 +182,11 @@ function uc_ups_admin_settings_validate($form, &$form_state) {
 /**
  * Submit handler for uc_ups_admin_settings().
  *
- * Emulate system_settings_form_submit(), but only on a subset of the form values.
+ * Emulates system_settings_form_submit(), but only on a subset of the
+ * form values.
  *
  * @see uc_ups_admin_settings()
+ * @see uc_ups_admin_settings_validate()
  */
 function uc_ups_admin_settings_submit($form, &$form_state) {
   $fields = array(
@@ -222,9 +225,9 @@ function uc_ups_admin_settings_submit($form, &$form_state) {
 /**
  * Last chance for user to review shipment.
  *
- * @ingroup forms
- * @see theme_uc_ups_confirm_shipment()
  * @see uc_ups_confirm_shipment_submit()
+ * @see theme_uc_ups_confirm_shipment()
+ * @ingroup forms
  */
 function uc_ups_confirm_shipment($form, &$form_state, $order) {
   $form['digest'] = array('#type' => 'hidden', '#value' => $_SESSION['ups']['digest']);
@@ -235,10 +238,10 @@ function uc_ups_confirm_shipment($form, &$form_state, $order) {
 }
 
 /**
- * Display final shipment information for review.
+ * Displays final shipment information for review.
  *
- * @ingroup themeable
  * @see uc_ups_confirm_shipment()
+ * @ingroup themeable
  */
 function theme_uc_ups_confirm_shipment($variables) {
   $form = $variables['form'];
@@ -287,7 +290,7 @@ function theme_uc_ups_confirm_shipment($variables) {
 }
 
 /**
- * Generate label and schedule pickup of the shipment.
+ * Generates label and schedules pickup of the shipment.
  *
  * @see uc_ups_confirm_shipment()
  */
@@ -365,7 +368,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
 }
 
 /**
- * Construct an XML label and pickup request.
+ * Constructs an XML label and pickup request.
  *
  * @param $digest
  *   Base-64 encoded shipment request.
@@ -373,6 +376,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
  *   The order id of the shipment.
  * @param $packages
  *   An array of package ids to be shipped.
+ *
  * @return
  *   ShipmentAcceptRequest XML document to send to UPS.
  */
@@ -403,7 +407,7 @@ function uc_ups_request_pickup($digest, $order_id = 0, $packages = array()) {
 }
 
 /**
- * Display the shipping label for printing.
+ * Displays the shipping label for printing.
  *
  * Each argument is a component of the file path to the image.
  *

@@ -260,7 +260,7 @@ function uc_ups_uc_shipping_method() {
 /**
  * Implements hook_uc_store_status().
  *
- * Let the administrator know that the UPS account information has not been
+ * Lets the administrator know that the UPS account information has not been
  * filled out.
  */
 function uc_ups_uc_store_status() {
@@ -288,7 +288,8 @@ function uc_ups_uc_store_status() {
  ******************************************************************************/
 
 /**
- * Return XML access request to be prepended to all requests to the UPS webservice.
+ * Returns XML access request to be prepended to all requests to the
+ * UPS webservice.
  */
 function uc_ups_access_request() {
   $access = variable_get('uc_ups_access_license', '');
@@ -304,7 +305,7 @@ function uc_ups_access_request() {
 }
 
 /**
- * Construct an XML quote request.
+ * Constructs an XML quote request.
  *
  * @param $packages
  *   Array of packages received from the cart.
@@ -314,6 +315,7 @@ function uc_ups_access_request() {
  *   Delivery destination address information.
  * @param $ups_service
  *   UPS service code (refers to UPS Ground, Next-Day Air, etc.).
+ *
  * @return
  *   RatingServiceSelectionRequest XML document to send to UPS
  */
@@ -493,7 +495,7 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
 }
 
 /**
- * Construct an XML shippment request.
+ * Constructs an XML shippment request.
  *
  * @param $packages
  *   Array of packages received from the cart.
@@ -503,6 +505,7 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
  *   Delivery destination address information.
  * @param $ups_service
  *   UPS service code (refers to UPS Ground, Next-Day Air, etc.).
+ *
  * @return
  *   ShipConfirm XML document to send to UPS
  */
@@ -701,13 +704,15 @@ $schema .= "</ShipmentConfirmRequest>";
 /**
  * Callback for retrieving a UPS shipping quote.
  *
- * Request a quote for each enabled UPS Service. Therefore, the quote will
- * take longer to display to the user for each option the customer has available.
+ * Requests a quote for each enabled UPS Service. Therefore, the quote will
+ * take longer to display to the user for each option the customer has
+ * available.
  *
  * @param $products
  *   Array of cart contents.
  * @param $details
  *   Order details other than product information.
+ *
  * @return
  *   JSON object containing rate, error, and debugging information.
  */
@@ -898,11 +903,12 @@ function uc_ups_quote($products, $details) {
 }
 
 /**
- * Theme function to format the UPS service name and rate amount line-item shown
- *   to the customer.
+ * Theme function to format the UPS service name and rate amount line-item
+ * shown to the customer.
  *
  * @param $service
  *   The UPS service name.
+ *
  * @ingroup themeable
  */
 function theme_uc_ups_option_label($variables) {
@@ -920,16 +926,16 @@ function theme_uc_ups_option_label($variables) {
 /**
  * Shipment creation callback.
  *
- * Confirm shipment data before requesting a shipping label.
+ * Confirms shipment data before requesting a shipping label.
  *
  * @param $order_id
  *   The order id for the shipment.
  * @param $package_ids
  *   Array of package ids to shipped.
+ *
+ * @see uc_ups_fulfill_order_validate()
+ * @see uc_ups_fulfill_order_submit()
  * @ingroup forms
- * @see
- *   uc_ups_fulfill_order_validate()
- *   uc_ups_fulfill_order_submit()
  */
 function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
   $pkg_types = _uc_ups_pkg_types();
@@ -1054,11 +1060,10 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
 }
 
 /**
- * Pass final information into shipment object.
+ * Passes final information into shipment object.
  *
- * @see
- *   uc_ups_fulfill_order()
- *   uc_ups_confirm_shipment()
+ * @see uc_ups_fulfill_order()
+ * @see uc_ups_confirm_shipment()
  */
 function uc_ups_fulfill_order_validate($form, &$form_state) {
   $origin = new stdClass();
@@ -1129,18 +1134,17 @@ function uc_ups_fulfill_order_validate($form, &$form_state) {
 }
 
 /**
- * Pass final information into shipment object.
+ * Passes final information into shipment object.
  *
- * @see
- *   uc_ups_fulfill_order()
- *   uc_ups_confirm_shipment()
+ * @see uc_ups_fulfill_order()
+ * @see uc_ups_confirm_shipment()
  */
 function uc_ups_fulfill_order_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/shipments/ups';
 }
 
 /**
- * Construct a void shipment request.
+ * Constructs a void shipment request.
  *
  * @param $shipment_number
  *   The UPS shipment tracking number.
@@ -1148,6 +1152,7 @@ function uc_ups_fulfill_order_submit($form, &$form_state) {
  *   Array of tracking numbers for individual packages in the shipment.
  *   Optional for shipments of only one package, as they have the same tracking
  *   number.
+ *
  * @return
  *   XML VoidShipmentRequest message.
  */
@@ -1175,7 +1180,7 @@ function uc_ups_void_shipment_request($shipment_number, $tracking_numbers = arra
 }
 
 /**
- * Instruct UPS to cancel (in whole or in part) a shipment.
+ * Instructs UPS to cancel (in whole or in part) a shipment.
  *
  * @param $shipment_number
  *   The UPS shipment tracking number.
@@ -1183,6 +1188,7 @@ function uc_ups_void_shipment_request($shipment_number, $tracking_numbers = arra
  *   Array of tracking numbers for individual packages in the shipment.
  *   Optional for shipments of only one package, as they have the same tracking
  *   number.
+ *
  * @return
  *   TRUE if the shipment or packages were successfully voided.
  */
@@ -1213,7 +1219,7 @@ function uc_ups_void_shipment($shipment_number, $tracking_numbers = array()) {
 }
 
 /**
- * Modify the rate received from UPS before displaying to the customer.
+ * Modifies the rate received from UPS before displaying to the customer.
  */
 function uc_ups_markup($rate) {
   $markup = variable_get('uc_ups_markup', '0');

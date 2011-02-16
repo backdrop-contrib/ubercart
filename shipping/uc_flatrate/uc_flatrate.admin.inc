@@ -7,7 +7,7 @@
  */
 
 /**
- * List and compare all flatrate shipping quote methods.
+ * Lists and compares all flatrate shipping quote methods.
  */
 function uc_flatrate_admin_methods() {
   $build = array();
@@ -37,13 +37,12 @@ function uc_flatrate_admin_methods() {
 }
 
 /**
- * Configure the store default product shipping rates.
+ * Configures the store default product shipping rates.
  *
+ * @see uc_flatrate_admin_method_edit_form_validate()
+ * @see uc_flatrate_admin_method_edit_form_submit()
+ * @see uc_flatrate_admin_method_edit_form_delete()
  * @ingroup forms
- * @see
- *   uc_flatrate_admin_method_edit_form_validate()
- *   uc_flatrate_admin_method_edit_form_delete()
- *   uc_flatrate_admin_method_edit_form_submit()
  */
 function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
   $sign_flag = variable_get('uc_sign_after_amount', FALSE);
@@ -116,7 +115,11 @@ function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
 }
 
 /**
+ * Form validation for uc_flatrate_admin_method_edit_form().
+ *
  * @see uc_flatrate_admin_method_edit_form()
+ * @see uc_flatrate_admin_method_edit_form_submit()
+ * @ingroup forms
  */
 function uc_flatrate_admin_method_edit_form_validate($form, &$form_state) {
   if (!is_numeric($form_state['values']['base_rate'])) {
@@ -128,6 +131,8 @@ function uc_flatrate_admin_method_edit_form_validate($form, &$form_state) {
 }
 
 /**
+ * Helper function to delete a flatrate method.
+ *
  * @see uc_flatrate_admin_method_edit_form()
  */
 function uc_flatrate_admin_method_edit_form_delete($form, &$form_state) {
@@ -135,7 +140,10 @@ function uc_flatrate_admin_method_edit_form_delete($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_flatrate_admin_method_edit_form().
+ *
  * @see uc_flatrate_admin_method_edit_form()
+ * @see uc_flatrate_admin_method_edit_form_validate()
  */
 function uc_flatrate_admin_method_edit_form_submit($form, &$form_state) {
   if (isset($form_state['values']['mid'])) {
@@ -170,9 +178,10 @@ function uc_flatrate_admin_method_edit_form_submit($form, &$form_state) {
  ******************************************************************************/
 
 /**
- * Confirm deletion of a flat rate shipping method.
+ * Confirms deletion of a flat rate shipping method.
  *
  * @see uc_flatrate_admin_method_confirm_delete_submit()
+ * @ingroup forms
  */
 function uc_flatrate_admin_method_confirm_delete($form, &$form_state, $mid) {
   $form['mid'] = array('#type' => 'value', '#value' => $mid);
@@ -184,6 +193,8 @@ function uc_flatrate_admin_method_confirm_delete($form, &$form_state, $mid) {
 }
 
 /**
+ * Form submission handler for uc_flatrate_admin_method_confirm_delete().
+ *
  * @see uc_flatrate_admin_method_confirm_delete()
  */
 function uc_flatrate_admin_method_confirm_delete_submit($form, &$form_state) {

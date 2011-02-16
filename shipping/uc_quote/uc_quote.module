@@ -195,8 +195,9 @@ function uc_quote_node_delete($node) {
 /**
  * Implements hook_form_alter().
  *
- * Add a default shipping address for products and manufacturers. If it is left
- * blank, products default to their manufacturers', which default to the store's.
+ * Adds a default shipping address for products and manufacturers. If it is
+ * left blank, products default to their manufacturers', which default to
+ * the store's.
  */
 function uc_quote_form_alter(&$form, &$form_state, $form_id) {
   // Alter the product node form.
@@ -347,7 +348,7 @@ function uc_quote_uc_cart_pane($items) {
 }
 
 /**
- * Define the shipping quote checkout pane.
+ * Defines the shipping quote checkout pane.
  */
 function uc_quote_uc_checkout_pane() {
   $panes[] = array(
@@ -448,13 +449,13 @@ function uc_quote_uc_shipping_type() {
  ******************************************************************************/
 
 /**
- * Store the shipping type of products and manufacturers.
+ * Stores the shipping type of products and manufacturers.
  *
  * Fulfillment modules are invoked for products that match their shipping type.
  * This function stores the shipping type of a product or a manufacturer.
  *
  * @param $id_type
- *   product | manufacturer
+ *   Type can be 'product' or 'manufacturer'.
  * @param $id
  *   Either the node id or term id of the object receiving the shipping type.
  * @param $shipping_type
@@ -479,13 +480,16 @@ function uc_quote_set_shipping_type($id_type, $id, $shipping_type) {
 }
 
 /**
- * Retrieve a product's or manufacturer's shipping type from the database.
+ * Retrieves a product's or manufacturer's shipping type from the database.
  *
  * @param $id_type
- *   product | manufacturer
+ *   Type can be 'product' or 'manufacturer'.
  * @param $id
- *   Either the node id or term id of the object that was assigned the shipping type.
- * @return The shipping type.
+ *   Either the node id or term id of the object that was assigned
+ *   the shipping type.
+ *
+ * @return
+ *   The shipping type.
  */
 function uc_quote_get_shipping_type($id_type, $id) {
   static $types = array();
@@ -498,11 +502,14 @@ function uc_quote_get_shipping_type($id_type, $id) {
 }
 
 /**
- * Get a product's shipping type, defaulting to the store's if it doesn't exist.
+ * Gets a product's shipping type, defaulting to the store's if it
+ * doesn't exist.
  *
  * @param $product
  *   The product object.
- * @return The shipping type.
+ *
+ * @return
+ *   The shipping type.
  */
 function uc_product_get_shipping_type($product) {
   $shipping_type = variable_get('uc_store_shipping_type', 'small_package');
@@ -513,13 +520,14 @@ function uc_product_get_shipping_type($product) {
 }
 
 /**
- * Get a product's default shipping address.
+ * Gets a product's default shipping address.
  *
- * Load the default shipping address of a product, it's manufacturer's, or the
+ * Loads the default shipping address of a product, it's manufacturer's, or the
  * store's, whichever is available.
  *
  * @param $nid
  *   A product node id.
+ *
  * @return
  *   An address object.
  */
@@ -536,8 +544,8 @@ function uc_quote_get_default_shipping_address($nid) {
 /**
  * Cart pane callback.
  *
- * @ingroup forms
  * @see theme_uc_cart_pane_quotes()
+ * @ingroup forms
  */
 function uc_cart_pane_quotes($form, &$form_state, $items) {
   global $user;
@@ -592,7 +600,7 @@ function uc_cart_pane_quotes($form, &$form_state, $items) {
 }
 
 /**
- * Display the formatted quote cart pane.
+ * Displays the formatted quote cart pane.
  *
  * @ingroup themeable
  */
@@ -615,8 +623,9 @@ function theme_uc_cart_pane_quotes($variables) {
  * Shipping quote checkout pane callback.
  *
  * Selects a quoting method based on the enabled methods' weight and the types
- * of products in the cart. The "Get Quotes" button fires a callback that returns
- * a form for the customer to select a rate based on their needs and preferences.
+ * of products in the cart. The "Get Quotes" button fires a callback that
+ * returns a form for the customer to select a rate based on their needs and
+ * preferences.
  *
  * Adds a line item to the order that records the chosen shipping quote.
  */
@@ -739,6 +748,9 @@ function uc_checkout_pane_quotes($op, &$order, $form = NULL, &$form_state = NULL
 
 /**
  * Shipping quote order pane callback.
+ *
+ * @see uc_quote_order_pane_quotes_submit()
+ * @see uc_quote_apply_quote_to_order()
  */
 function uc_order_pane_quotes($op, $order, $form = NULL, &$form_state = NULL) {
   switch ($op) {
@@ -786,10 +798,18 @@ function uc_order_pane_quotes($op, $order, $form = NULL, &$form_state = NULL) {
   }
 }
 
+/**
+ * Form submission handler for uc_order_pane_quotes().
+ *
+ * @see uc_order_pane_quotes()
+ */
 function uc_quote_order_pane_quotes_submit($form, &$form_state) {
   $form_state['quote_requested'] = ($form_state['triggering_element']['#value'] == $form['quotes']['quote_button']['#value']);
 }
 
+/**
+ *
+ */
 function uc_quote_apply_quote_to_order($form, &$form_state) {
   if (isset($form_state['values']['quotes']['quote_option'])) {
     if ($order = $form_state['build_info']['args'][0]) {
@@ -829,6 +849,9 @@ function uc_quote_apply_quote_to_order($form, &$form_state) {
   }
 }
 
+/**
+ *
+ */
 function uc_quote_build_quote_form($order) {
   $return = array();
 
@@ -905,6 +928,9 @@ function uc_quote_build_quote_form($order) {
   return $return;
 }
 
+/**
+ *
+ */
 function uc_quote_cart_returned_rates($form, $form_state) {
   $commands[] = ajax_command_replace('#quote', drupal_render($form['quote']));
   $commands[] = ajax_command_prepend('#quote', theme('status_messages'));
@@ -939,7 +965,7 @@ function uc_quote_order_returned_rates($form, $form_state) {
 }
 
 /**
- * Display the returned shipping rates.
+ * Displays the returned shipping rates.
  *
  * @ingroup themeable
  */
@@ -1006,7 +1032,7 @@ function uc_quote_price_sort($a, $b) {
 }
 
 /**
- * Return an array of quote types to be selected in a form.
+ * Returns an array of quote types to be selected in a form.
  */
 function uc_quote_type_options() {
   $methods = module_invoke_all('uc_shipping_method');
@@ -1019,7 +1045,7 @@ function uc_quote_type_options() {
 }
 
 /**
- * Return an options array of shipping types.
+ * Returns an options array of shipping types.
  */
 function uc_quote_shipping_type_options() {
   $types = array();
@@ -1039,7 +1065,7 @@ function uc_quote_shipping_type_options() {
 }
 
 /**
- * Return an array of shipping types.
+ * Returns an array of shipping types.
  */
 function uc_quote_get_shipping_types() {
   $args = array();
@@ -1060,7 +1086,7 @@ function uc_quote_get_shipping_types() {
 }
 
 /**
- * Return an options array of shipping methods.
+ * Returns an options array of shipping methods.
  */
 function uc_quote_shipping_method_options() {
   $methods = module_invoke_all('uc_shipping_method');

@@ -7,7 +7,7 @@
  */
 
 /**
- * Display an overview of the shipping quote settings.
+ * Displays an overview of the shipping quote settings.
  */
 function uc_quote_overview() {
   $summaries = array();
@@ -31,8 +31,8 @@ function uc_quote_overview() {
  * the others. Also sets the default quote and shipping types of all products
  * in the store. Individual products may be configured differently.
  *
- * @ingroup forms
  * @see uc_quote_admin_settings_submit()
+ * @ingroup forms
  */
 function uc_quote_admin_settings($form, &$form_state) {
   $address = variable_get('uc_quote_store_default_address', new UcAddress());
@@ -137,6 +137,8 @@ function uc_quote_admin_settings($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_quote_admin_settings().
+ *
  * @see uc_quote_admin_settings()
  */
 function uc_quote_admin_settings_submit($form, &$form_state) {
@@ -167,11 +169,10 @@ function uc_quote_admin_settings_submit($form, &$form_state) {
  *
  * Enable and reorder shipping quote methods. Set the default shipping type.
  *
+ * @see uc_quote_method_settings_validate()
+ * @see uc_quote_method_settings_submit()
+ * @see theme_uc_quote_method_settings()
  * @ingroup forms
- * @see
- *   theme_uc_quote_method_settings()
- *   uc_quote_method_settings_validate()
- *   uc_quote_method_settings_submit()
  */
 function uc_quote_method_settings($form, &$form_state) {
   $form['methods'] = array(
@@ -244,10 +245,10 @@ function uc_quote_method_settings($form, &$form_state) {
 }
 
 /**
- * Display a formatted list of shipping quote methods and form elements.
+ * Displays a formatted list of shipping quote methods and form elements.
  *
- * @ingroup themeable
  * @see uc_quote_method_settings()
+ * @ingroup themeable
  */
 function theme_uc_quote_method_settings($variables) {
   $form = $variables['form'];
@@ -271,9 +272,12 @@ function theme_uc_quote_method_settings($variables) {
 }
 
 /**
- * Require at least one enabled shipping method.
+ * Form validation for uc_quote_method_settinggs().
+ *
+ * Requires at least one enabled shipping method.
  *
  * @see uc_quote_method_settings()
+ * @see uc_quote_method_settings_submit()
  */
 function uc_quote_method_settings_validate($form, &$form_state) {
   $none_enabled = TRUE;
@@ -290,7 +294,10 @@ function uc_quote_method_settings_validate($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_quote_method_settinggs().
+ *
  * @see uc_quote_method_settings()
+ * @see uc_quote_method_settings_validate()
  */
 function uc_quote_method_settings_submit($form, &$form_state) {
   $enabled = array();

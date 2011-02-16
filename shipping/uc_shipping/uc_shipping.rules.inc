@@ -6,6 +6,9 @@
  * Rules hooks for uc_shipping.module.
  */
 
+/**
+ * Implements hook_rules_data_info().
+ */
 function uc_shipping_rules_data_info() {
   $address_info = uc_address_property_info();
 
@@ -200,6 +203,9 @@ function uc_shipping_address_property_set($shipment, $name, $address) {
   }
 }
 
+/**
+ * Implements hook_rules_event_info().
+ */
 function uc_shipping_rules_event_info() {
   $events['uc_shipment_save'] = array(
     'label' => t('A shipment is saved'),

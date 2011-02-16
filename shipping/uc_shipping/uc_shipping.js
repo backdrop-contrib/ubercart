@@ -6,7 +6,7 @@
  */
 
 /**
- * Autofill shipment address form from user selection.
+ * Autofills shipment address form from user selection.
  *
  * @param type
  *   Field prefix used to identify the address.
@@ -36,4 +36,3 @@ function apply_address(type, json_address) {
     jQuery('#edit-' + type + '-zone').val(address.zone);
   //}
 }
-

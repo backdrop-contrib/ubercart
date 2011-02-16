@@ -7,7 +7,7 @@
  */
 
 /**
- * Pull the get_quote_from_* triggers and assemble their returned data.
+ * Pulls the get_quote_from_* triggers and assemble their returned data.
  */
 function uc_quote_assemble_quotes($order) {
   global $user;
@@ -61,12 +61,13 @@ function uc_quote_assemble_quotes($order) {
 }
 
 /**
- * Retrieve shipping quote.
+ * Retrieves shipping quote.
  *
  * @param $order
  *   The order the quote is for.
  * @param $method
  *   The shipping method to generate the quote.
+ *
  * @return
  *   Array of shipping quotes.
  */

@@ -7,7 +7,7 @@
  */
 
 /**
- * Return the country name formatted according to the USPS requirements.
+ * Returns the country name formatted according to the USPS requirements.
  */
 function uc_usps_country_map($code = NULL) {
   $countries = array(

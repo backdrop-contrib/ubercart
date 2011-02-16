@@ -2,6 +2,11 @@
 // $Id$
 
 /**
+ * @file
+ * Rules configurations for uc_usps module.
+ */
+
+/**
  * Implements hook_default_rules_configuration_alter().
  */
 function uc_usps_default_rules_configuration_alter(&$configs) {
@@ -39,4 +44,3 @@ function uc_usps_default_rules_configuration_alter(&$configs) {
   $configs['get_quote_from_usps_intl']->condition($foreign);
   $configs['get_quote_from_usps_intl_env']->condition($foreign_env);
 }
-

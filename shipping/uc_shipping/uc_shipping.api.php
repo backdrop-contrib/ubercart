@@ -12,7 +12,7 @@
  */
 
 /**
- * Handle additional data for shipments.
+ * Handles additional data for shipments.
  *
  * @param $op
  *   The action being taken on the shipment. One of the following values:
@@ -22,6 +22,7 @@
  *     for reshipment.
  * @param &$shipment
  *   The shipment object.
+ *
  * @return
  *   Only given when $op is "load" . An array of extra data to be added to the
  *   shipment object.
@@ -95,4 +96,3 @@ function hook_uc_shipment($op, &$shipment) {
 /**
  * @} End of "addtogroup hooks".
  */
-

@@ -7,7 +7,7 @@
  */
 
 /**
- * List and compare all weight-based shipping quote methods.
+ * Lists and compares all weight-based shipping quote methods.
  */
 function uc_weightquote_admin_methods() {
   $build = array();
@@ -36,13 +36,12 @@ function uc_weightquote_admin_methods() {
 }
 
 /**
- * Configure the store default product shipping rates.
+ * Configures the store default product shipping rates.
  *
+ * @see uc_weightquote_admin_method_edit_form_validate()
+ * @see uc_weightquote_admin_method_edit_form_submit()
+ * @see uc_weightquote_admin_method_edit_form_delete()
  * @ingroup forms
- * @see
- *   uc_weightquote_admin_method_edit_form_validate()
- *   uc_weightquote_admin_method_edit_form_delete()
- *   uc_weightquote_admin_method_edit_form_submit()
  */
 function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
   $sign_flag = variable_get('uc_sign_after_amount', FALSE);
@@ -115,7 +114,10 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
 }
 
 /**
+ * Form validation for uc_weightquote_admin_method_edit_form().
+ *
  * @see uc_weightquote_admin_method_edit_form()
+ * @see uc_weightquote_admin_method_edit_form_submit()
  */
 function uc_weightquote_admin_method_edit_form_validate($form, &$form_state) {
   if (!empty($form_state['values']['base_rate']) && !is_numeric($form_state['values']['base_rate'])) {
@@ -134,7 +136,10 @@ function uc_weightquote_admin_method_edit_form_delete($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_weightquote_admin_method_edit_form().
+ *
  * @see uc_weightquote_admin_method_edit_form()
+ * @see uc_weightquote_admin_method_edit_form_validate()
  */
 function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
   if (isset($form_state['values']['mid'])) {
@@ -167,9 +172,10 @@ function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
  ******************************************************************************/
 
 /**
- * Confirm deletion of a weight-based shipping method.
+ * Confirms deletion of a weight-based shipping method.
  *
  * @see uc_weightquote_admin_method_confirm_delete_submit()
+ * @ingroup forms
  */
 function uc_weightquote_admin_method_confirm_delete($form, &$form_state, $mid) {
   $form['mid'] = array('#type' => 'value', '#value' => $mid);
@@ -181,6 +187,8 @@ function uc_weightquote_admin_method_confirm_delete($form, &$form_state, $mid) {
 }
 
 /**
+ * Form submission handler for uc_weightquote_admin_method_confirm_delete().
+ *
  * @see uc_weightquote_admin_method_confirm_delete()
  */
 function uc_weightquote_admin_method_confirm_delete_submit($form, &$form_state) {
