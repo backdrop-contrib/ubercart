@@ -8,15 +8,6 @@
 var copy_box_checked = false;
 
 /**
- * Scan the DOM and displays the cancel and continue buttons.
- */
-Drupal.behaviors.ucShowOnLoad = {
-  attach: function(context, settings) {
-    jQuery('.show-onload:not(.ucShowOnLoad-processed)', context).addClass('ucShowOnLoad-processed').show();
-  }
-}
-
-/**
  * Add a throbber to the submit order button on the review order form.
  */
 Drupal.behaviors.ucSubmitOrderThrobber = {

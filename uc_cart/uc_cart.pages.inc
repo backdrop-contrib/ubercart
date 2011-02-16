@@ -197,9 +197,9 @@ function uc_cart_checkout_form($form, &$form_state) {
           $form['panes'][$pane['id']]['next'] = array(
             '#type' => 'button',
             '#value' => t('Next'),
-            '#weight' => variable_get("uc_pane_{$pane_id}_field_button_weight", 20),
+            '#weight' => 20,
             '#attributes' => array('onclick' => "return uc_cart_next_button_click(this, '" . $pane['next'] . "', '" . $opt . "');"),
-            '#prefix' => '<div class="next-button show-onload">',
+            '#prefix' => '<div class="next-button">',
             '#suffix' => '</div>',
           );
         }
