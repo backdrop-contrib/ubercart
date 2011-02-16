@@ -7,7 +7,7 @@
  */
 
 /**
- * Define a form to configure the cart links settings.
+ * Defines a form to configure the cart links settings.
  *
  * @ingroup forms
  */
@@ -56,7 +56,7 @@ function uc_cart_links_settings_form($form, &$form_state) {
 }
 
 /**
- * Display the cart links report.
+ * Displays the cart links report.
  *
  * @return
  *   HTML output.

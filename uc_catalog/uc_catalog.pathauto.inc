@@ -29,7 +29,7 @@ function uc_catalog_pathauto($op) {
 /**
  * Implements hook_pathauto_bulkupdate().
  *
- * Generate aliases for all categories without aliases
+ * Generate aliases for all categories without aliases.
  */
 function uc_catalog_pathauto_bulkupdate(&$context) {
   if (!isset($context['sandbox']['current'])) {
@@ -79,10 +79,10 @@ function uc_catalog_pathauto_bulkupdate(&$context) {
 }
 
 /**
- * Create aliases for taxonomy objects
+ * Creates aliases for taxonomy objects.
  *
  * @param $category
- *   A taxonomy object
+ *   A taxonomy object.
  */
 function _uc_catalog_pathauto_alias($category, $op) {
   module_load_include('inc', 'pathauto');

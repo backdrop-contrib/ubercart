@@ -8,7 +8,7 @@
 
 
 /**
- * Display an overview of the catalog settings.
+ * Displays an overview of the catalog settings.
  */
 function uc_catalog_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
@@ -21,7 +21,7 @@ function uc_catalog_settings_overview() {
 /**
  * Catalog settings form.
  *
- * Configure the display of the catalog breadcrumb.
+ * Configures the display of the catalog breadcrumb.
  *
  * @ingroup forms
  */
@@ -180,7 +180,7 @@ function uc_catalog_grid_settings_form($form, &$form_state) {
 }
 
 /**
- * Display links to all products that have not been categorized.
+ * Displays links to all products that have not been categorized.
  */
 function uc_catalog_orphaned_products() {
   $build = array();

@@ -6,9 +6,10 @@
  * Ubercart Catalog module.
  *
  * Provides classification and navigation product nodes using taxonomy. When
- * installed, this module creates a vocabulary named "Product Catalog" and stores
- * the vocabulary id for future use. The user is responsible for maintaining the
- * terms in the taxonomy, though the Catalog will find products not listed in it.
+ * installed, this module creates a vocabulary named "Product Catalog" and
+ * stores the vocabulary id for future use. The user is responsible for
+ * maintaining the terms in the taxonomy, though the Catalog will find products
+ * not listed in it.
  */
 
 /**
@@ -34,13 +35,13 @@ class UcTreeNode {
   }
 
   /**
-   * Determine if new child is an immediate descendant or not.
+   * Determines if new child is an immediate descendant or not.
    *
-   * This function is completely dependent on the structure of the array returned
-   * by taxonomy_get_tree(). Each element in the array knows it's depth in the tree
-   * and the array is a preorder iteration of the logical tree structure. Therefore,
-   * if the parameter is more than one level deeper than $this, it should be passed
-   * to the last child of $this.
+   * This function is completely dependent on the structure of the array
+   * returned by taxonomy_get_tree(). Each element in the array knows its
+   * depth in the tree and the array is a preorder iteration of the logical
+   * tree structure. Therefore, if the parameter is more than one level
+   * deeper than $this, it should be passed to the last child of $this.
    */
   function add_child(&$child) {
     if ($child->depth - $this->depth == 1) {
@@ -365,7 +366,7 @@ function uc_catalog_block_view($delta = '') {
 /**
  * Implements hook_block_configure().
  *
- * Build the settings form used by the catalog block.
+ * Builds the settings form used by the catalog block.
  */
 function uc_catalog_block_configure($delta = '') {
   if ($delta == 'catalog') {
@@ -392,7 +393,7 @@ function uc_catalog_block_configure($delta = '') {
 /**
  * Implements hook_block_save().
  *
- * Save the catalog block settings.
+ * Saves the catalog block settings.
  */
 function uc_catalog_block_save($delta = '', $edit = array()) {
   if ($delta == 'catalog') {
@@ -403,10 +404,10 @@ function uc_catalog_block_save($delta = '', $edit = array()) {
 }
 
 /**
- * Theme the catalog block.
+ * Themes the catalog block.
  *
- * @ingroup themeable
  * @see theme_uc_catalog_item()
+ * @ingroup themeable
  */
 function theme_uc_catalog_block($variables) {
   $menu_tree = $variables['menu_tree'];
@@ -424,7 +425,7 @@ function theme_uc_catalog_block($variables) {
 }
 
 /**
- * Preprocess the catalog block output.
+ * Preprocesses the catalog block output.
  */
 function uc_catalog_preprocess_block(&$variables) {
   $block = &$variables['block'];
@@ -437,6 +438,9 @@ function uc_catalog_preprocess_block(&$variables) {
  * Module Hooks                                                             *
  ******************************************************************************/
 
+/**
+ * Implements hooks_views_api().
+ */
 function uc_catalog_views_api() {
   return array(
     'api' => '2.0',
@@ -450,7 +454,7 @@ function uc_catalog_views_api() {
 /**
  * Implements hook_uc_store_status().
  *
- * Provide status information about the "Product Catalog" and products not
+ * Provides status information about the "Product Catalog" and products not
  * listed in the catalog.
  */
 function uc_catalog_uc_store_status() {
@@ -501,7 +505,7 @@ function uc_catalog_uc_store_status() {
 /**
  * Implements hook_uc_product_class().
  *
- * Add product node types to the catalog vocabulary as they are created.
+ * Adds product node types to the catalog vocabulary as they are created.
  */
 function uc_catalog_uc_product_class($type, $op) {
   $vid = variable_get('uc_catalog_vid', 0);
@@ -528,7 +532,7 @@ function uc_catalog_uc_product_class($type, $op) {
  ******************************************************************************/
 
 /**
- * Show the catalog page of the given category.
+ * Shows the catalog page of the given category.
  */
 function uc_catalog_browse($tid = 0) {
   $build = array();
@@ -555,14 +559,15 @@ function uc_catalog_browse($tid = 0) {
 /**
  * Summarize the catalog's block settings.
  *
- * @param $form
- *   The form passed from the summarizer
- * @return
- *   An array of summary information
- *
  * This function lets the summarizer do most of the work, only taking
  * advantage of the callback to insert a parent node, specifying that
  * the following settings are block settings, for visual clarity.
+ *
+ * @param $form
+ *   The form passed from the summarizer.
+ *
+ * @return
+ *   An array of summary information.
  */
 function _uc_catalog_block_summarize($form) {
   $item = uc_summarize_form($form);
@@ -576,20 +581,24 @@ function _uc_catalog_block_summarize($form) {
 }
 
 /**
- * Emulate Drupal's menu system, but based soley on the structure of "Product Catalog".
+ * Emulates Drupal's menu system, but based soley on the structure of
+ * "Product Catalog".
  *
  * @param $branch
  *   A treeNode object. Determines if the URL points to itself,
  *   or possibly one of it's children, if present.
  *
- *   If the URL points to itself or one of its products, it displays its name, and
- *   expands to show its children, otherwise displays a link and a count of the products in it.
- *   If the URL points to one of it's children, it still displays a link and product count,
- *   but must still be expanded.
+ *   If the URL points to itself or one of its products, it displays its name,
+ *   and expands to show its children, otherwise displays a link and a count of
+ *   the products in it.
+ *   If the URL points to one of it's children, it still displays a link and
+ *   product count, but must still be expanded.
  *   Otherwise, it is collapsed and a link.
+ *
  * @return
- *   An array whose first element is true if the treeNode is in hierarchy of the URL path.
- *   The second element is the HTML of the list item of itself and it's children.
+ *   An array whose first element is true if the treeNode is in hierarchy of
+ *   the URL path. The second element is the HTML of the list item of itself
+ *   and it's children.
  */
 function _uc_catalog_navigation($branch) {
   static $terms;
@@ -678,7 +687,7 @@ function _uc_catalog_navigation($branch) {
 }
 
 /**
- * Display a formatted link in the catalog block.
+ * Displays a formatted link in the catalog block.
  *
  * @ingroup themeable
  */
@@ -727,15 +736,15 @@ function theme_uc_catalog_item($variables) {
 }
 
 /**
- * Create paths to the catalog from taxonomy term.
+ * Creates paths to the catalog from taxonomy term.
  */
 function uc_catalog_path($term) {
   return 'catalog/' . $term->tid;
 }
 
 /**
-  * Add a node type to the catalog taxonomy term.
-  */
+ * Adds a node type to the catalog taxonomy term.
+ */
 function uc_catalog_add_node_type($type) {
   if (!($vid = variable_get('uc_catalog_vid', 0))) {
     return;
@@ -764,7 +773,7 @@ function uc_catalog_add_node_type($type) {
 }
 
 /**
- * Set up a default image field on the Catalog vocabulary.
+ * Sets up a default image field on the Catalog vocabulary.
  */
 function uc_catalog_add_image_field() {
   $field = field_info_field('uc_catalog_image');

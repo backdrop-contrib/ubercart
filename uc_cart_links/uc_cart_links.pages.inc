@@ -7,7 +7,7 @@
  */
 
 /**
- * Preprocess a cart link and confirm with the user if a destructive action
+ * Preprocesses a cart link and confirm with the user if a destructive action
  * is included.
  */
 function uc_cart_links_form($form, &$form_state, $arg1) {
@@ -46,7 +46,7 @@ function uc_cart_links_form_submit($form, &$form_state) {
 }
 
 /**
- * Process a cart link to fiddle with the cart and redirect the user.
+ * Processes a cart link to fiddle with the cart and redirect the user.
  *
  * @param $cart_action
  *   An action.
