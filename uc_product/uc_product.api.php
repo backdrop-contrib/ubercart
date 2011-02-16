@@ -129,7 +129,7 @@ function hook_uc_product_models($node) {
  *
  * Trusts the duck philosophy of object identification: if it walks like a duck,
  * quacks like a duck, and has feathers like a duck, it's probably a duck.
- * Products are nodes with prices, SKUs, and everything else Übercart expects
+ * Products are nodes with prices, SKUs, and everything else Ubercart expects
  * them to have.
  *
  * @return
@@ -142,4 +142,3 @@ function hook_uc_product_types() {
 /**
  * @} End of "addtogroup hooks".
  */
-

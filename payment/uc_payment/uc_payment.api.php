@@ -75,7 +75,7 @@ function hook_uc_payment_gateway() {
 /**
  * Register callbacks for payment methods.
  *
- * Payment methods are different ways to collect payment. By default, Übercart
+ * Payment methods are different ways to collect payment. By default, Ubercart
  * comes with support for check, credit card, and generic payments. Payment
  * methods show up at checkout or on the order administration screens, and they
  * collect different sorts of information from the user that is used to process
@@ -100,4 +100,3 @@ function hook_uc_payment_method() {
 /**
  * @} End of "addtogroup hooks".
  */
-
