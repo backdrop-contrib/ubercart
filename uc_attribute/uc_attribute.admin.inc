@@ -4,11 +4,10 @@
 /**
  * @file
  * Attribute administration menu items.
- *
  */
 
 /**
- * Display a paged list and overview of existing product attributes.
+ * Displays a paged list and overview of existing product attributes.
  */
 function uc_attribute_admin() {
   $header = array(
@@ -89,8 +88,8 @@ function uc_attribute_admin() {
 /**
  * Form builder for product attributes.
  *
- * @ingroup forms
  * @see uc_attribute_form_submit()
+ * @ingroup forms
  */
 function uc_attribute_form($form, &$form_state, $attribute = NULL) {
   // If an attribute specified, add its ID as a hidden value.
@@ -161,6 +160,8 @@ function uc_attribute_form($form, &$form_state, $attribute = NULL) {
 }
 
 /**
+ * Form submission handler for uc_attribute_add_form().
+ *
  * @see uc_attribute_add_form()
  */
 function uc_attribute_form_submit($form, &$form_state) {
@@ -176,7 +177,7 @@ function uc_attribute_form_submit($form, &$form_state) {
 }
 
 /**
- * Confirm the deletion of the given attribute.
+ * Confirms the deletion of the given attribute.
  *
  * @see uc_attribute_delete_confirm_submit()
  */
@@ -199,6 +200,8 @@ function uc_attribute_delete_confirm($form, &$form_state, $attribute) {
 }
 
 /**
+ * Form submission handler for uc_attribute_delete_confirm().
+ *
  * @see uc_attribute_delete_confirm()
  */
 function uc_attribute_delete_confirm_submit($form, &$form_state) {
@@ -245,7 +248,7 @@ function uc_attribute_delete_confirm_submit($form, &$form_state) {
 }
 
 /**
- * Change the display of attribute option prices.
+ * Changes the display of attribute option prices.
  *
  * @ingroup forms
  */
@@ -265,12 +268,11 @@ function uc_attribute_admin_settings($form, &$form_state) {
 }
 
 /**
- * Display options and the modifications to products they represent.
+ * Displays options and the modifications to products they represent.
  *
+ * @see uc_attribute_options_form_validate()
+ * @see uc_attribute_options_form_submit()
  * @ingroup forms
- * @see
- *   uc_attribute_options_form_validate()
- *   uc_attribute_options_form_submit()
  */
 function uc_attribute_options_form($form, &$form_state, $attribute) {
   // Set an appropriate title.
@@ -326,6 +328,12 @@ function uc_attribute_options_form($form, &$form_state, $attribute) {
   return $form;
 }
 
+/**
+ * Form submission handler for uc_attribute_options_form().
+ *
+ * @see uc_attribute_options_form()
+ * @see uc_object_options_form_submit()
+ */
 function uc_attribute_options_form_submit($form, &$form_state) {
   foreach ($form_state['values']['options'] as $oid => $option) {
     db_update('uc_attribute_options')
@@ -340,7 +348,7 @@ function uc_attribute_options_form_submit($form, &$form_state) {
 }
 
 /**
- * Format an attribute and its options.
+ * Formats an attribute and its options.
  *
  * @ingroup themeable
  */
@@ -387,9 +395,9 @@ function theme_uc_attribute_options_form($variables) {
 /**
  * Form builder for attribute options.
  *
- * @ingroup forms
  * @see uc_attribute_option_form_validate()
  * @see uc_attribute_option_form_submit()
+ * @ingroup forms
  */
 function uc_attribute_option_form($form, &$form_state, $attribute, $option = NULL) {
   // If we got a bunk attribute, kick out an error message.
@@ -469,9 +477,10 @@ function uc_attribute_option_form($form, &$form_state, $attribute, $option = NUL
 }
 
 /**
- * Validate number formats.
+ * Validates number formats.
  *
  * @see uc_attribute_option_form()
+ * @see uc_attribute_option_form_submit()
  */
 function uc_attribute_option_form_validate($form, &$form_state) {
   $pattern = '/^-?\d*(\.\d*)?$/';
@@ -488,7 +497,10 @@ function uc_attribute_option_form_validate($form, &$form_state) {
 }
 
 /**
- * @see uc_attribute_option_form().
+ * Form submission handler for uc_attribute_option_form().
+ *
+ * @see uc_attribute_option_form()
+ * @see uc_attribute_option_form_validate()
  */
 function uc_attribute_option_form_submit($form, &$form_state) {
   if (!isset($form_state['values']['oid'])) {
@@ -506,7 +518,7 @@ function uc_attribute_option_form_submit($form, &$form_state) {
 }
 
 /**
- * Confirm deletion of the given attribute option.
+ * Confirms deletion of the given attribute option.
  *
  * @see uc_attribute_option_delete_confirm_submit()
  */
@@ -529,7 +541,9 @@ function uc_attribute_option_delete_confirm($form, &$form_state, $attribute, $op
 }
 
 /**
- * @see uc_attribute_option_delete_confirm().
+ * Form submission handler for uc_attribute_option_delete_confirm().
+ *
+ * @see uc_attribute_option_delete_confirm()
  */
 function uc_attribute_option_delete_confirm_submit($form, &$form_state) {
   if ($form_state['values']['confirm']) {
@@ -566,10 +580,9 @@ function uc_attribute_option_delete_confirm_submit($form, &$form_state) {
 /**
  * Form to associate attributes with products or classes.
  *
+ * @see uc_object_attributes_form_submit()
+ * @see theme_uc_object_attributes_form()
  * @ingroup forms
- * @see
- *   theme_uc_object_attributes_form()
- *   uc_object_attributes_form_submit()
  */
 function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 'overview') {
   switch ($type) {
@@ -697,10 +710,10 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
 }
 
 /**
- * Display the formatted attribute form.
+ * Displays the formatted attribute form.
  *
- * @ingroup themeable
  * @see uc_object_attributes_form()
+ * @ingroup themeable
  */
 function theme_uc_object_attributes_form($variables) {
   $form = $variables['form'];
@@ -758,6 +771,8 @@ function theme_uc_object_attributes_form($variables) {
 }
 
 /**
+ * Form submission handler for uc_object_attributes_form().
+ *
  * @see uc_object_attributes_form()
  */
 function uc_object_attributes_form_submit($form, &$form_state) {
@@ -870,11 +885,10 @@ function uc_object_attributes_form_submit($form, &$form_state) {
 /**
  * Form to assign and modify attribute options on products or classes.
  *
+ * @see uc_object_options_form_validate()
+ * @see uc_object_options_form_submit()
+ * @see theme_uc_object_options_form()
  * @ingroup forms
- * @see
- *   theme_uc_object_options_form()
- *   uc_object_options_form_validate()
- *   uc_object_options_form_submit()
  */
 function uc_object_options_form($form, &$form_state, $object, $type) {
   if ($type == 'product') {
@@ -1011,10 +1025,10 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
 }
 
 /**
- * Display the option form.
+ * Displays the option form.
  *
- * @ingroup themeable
  * @see uc_object_options_form()
+ * @ingroup themeable
  */
 function theme_uc_object_options_form($variables) {
   $form = $variables['form'];
@@ -1089,7 +1103,9 @@ function theme_uc_object_options_form($variables) {
  *   having a key of attribute ID and the following keys:
  *     #attribute_name - Attribute name
  *     #options - Array of option names
- * @return Themed set of attribute options.
+ *
+ * @return
+ *   Themed set of attribute options.
  */
 function theme_uc_product_attributes($variables) {
   $attributes = $variables['attributes'];
@@ -1119,9 +1135,10 @@ function theme_uc_product_attributes($variables) {
 }
 
 /**
- * Make sure that all selected default options are enabled.
+ * Makes sure that all selected default options are enabled.
  *
  * @see uc_object_options_form()
+ * @see uc_object_options_form_submit()
  */
 function uc_object_options_form_validate($form, &$form_state) {
   if (isset($form_state['values']['attributes'])) {
@@ -1147,7 +1164,10 @@ function uc_object_options_form_validate($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_object_options_form().
+ *
  * @see uc_object_options_form()
+ * @see uc_object_options_form_validate()
  */
 function uc_object_options_form_submit($form, &$form_state) {
   if ($form_state['values']['type'] == 'product') {
@@ -1199,10 +1219,11 @@ function uc_object_options_form_submit($form, &$form_state) {
 }
 
 /**
- * Form builder to associate option combinations with mutations of a product's model number.
+ * Form builder to associate option combinations with mutations of a
+ * product's model number.
  *
- * @ingroup forms
  * @see uc_product_adjustments_form_submit()
+ * @ingroup forms
  */
 function uc_product_adjustments_form($form, &$form_state, $node) {
   drupal_set_title($node->title);
@@ -1335,6 +1356,8 @@ function uc_product_adjustments_form($form, &$form_state, $node) {
 }
 
 /**
+ * Form builder for uc_product_adjustments_form().
+ *
  * @see uc_product_adjustments_form()
  */
 function uc_product_adjustments_form_submit($form, &$form_state) {

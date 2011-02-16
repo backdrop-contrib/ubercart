@@ -27,7 +27,7 @@ function uc_attribute_rules_condition_info() {
 }
 
 /**
- * Return TRUE if a product in the given order has the selected option.
+ * Returns TRUE if a product in the given order has the selected option.
  *
  * @see uc_attribute_condition_ordered_product_option_form()
  */
