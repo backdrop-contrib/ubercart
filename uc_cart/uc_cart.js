@@ -8,7 +8,7 @@
 var copy_box_checked = false;
 
 /**
- * Add a throbber to the submit order button on the review order form.
+ * Adds a throbber to the submit order button on the review order form.
  */
 Drupal.behaviors.ucSubmitOrderThrobber = {
   attach: function(context, settings) {
@@ -20,7 +20,7 @@ Drupal.behaviors.ucSubmitOrderThrobber = {
 }
 
 /**
- * Behavior for hte Next buttons.
+ * Behaviors for the Next buttons.
  *
  * When a customer clicks a Next button, expand the next pane, remove the
  * button, and don't let it collapse again.
@@ -41,7 +41,7 @@ function uc_cart_next_button_click(button, pane_id, current) {
 }
 
 /**
- * Behavior for the copy address checkbox.
+ * Behaviors for the copy address checkbox.
  *
  * Copy the delivery information to the payment information on the checkout
  * screen if corresponding fields exist.
@@ -89,7 +89,7 @@ function uc_cart_copy_address(checked, source, target) {
 }
 
 /**
- * Copy a value from the delivery address to the billing address.
+ * Copies a value from the delivery address to the billing address.
  */
 function update_billing_field(field) {
   if (copy_box_checked) {
@@ -103,7 +103,7 @@ function update_billing_field(field) {
 }
 
 /**
- * Copy a value from the billing address to the delivery address.
+ * Copies a value from the billing address to the delivery address.
  */
 function update_delivery_field(field) {
   if (copy_box_checked) {
@@ -117,7 +117,7 @@ function update_delivery_field(field) {
 }
 
 /**
- * Apply the selected address to the appropriate fields in the cart form.
+ * Applies the selected address to the appropriate fields in the cart form.
  */
 function apply_address(type, address_str) {
   if (address_str == '0') {

@@ -2,12 +2,13 @@
 // $Id$
 
 /**
- * Field handler to provide simple renderer that allows linking to a user from a cart id.
+ * Field handler to provide simple renderer that allows linking to a user
+ * from a cart id.
  */
 class uc_cart_handler_field_cart_user extends views_handler_field {
 
   /**
-   * Override init function to provide generic option to link to user.
+   * Overrides init function to provide generic option to link to user.
    */
   function init(&$view, &$data) {
     parent::init($view, $data);
@@ -16,6 +17,9 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
     }
   }
 
+  /**
+   *
+   */
   function option_definition() {
     $options = parent::option_definition();
     $options['link_to_user'] = array('default' => TRUE);
@@ -52,6 +56,9 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
     );
   }
 
+  /**
+   *
+   */
   function render_link($data, $values) {
     if (!empty($this->options['link_to_user']) &&
         user_access('access user profiles') &&
@@ -64,6 +71,9 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
     return $data;
   }
 
+  /**
+   *
+   */
   function render($values) {
     $result = db_result(db_query('SELECT name FROM {users} u WHERE u.uid = %d', $values->{$this->field_alias}));
     if ($result) {

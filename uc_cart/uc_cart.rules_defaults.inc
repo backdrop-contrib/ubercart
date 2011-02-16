@@ -44,4 +44,3 @@ function uc_cart_default_rules_configuration() {
 
   return $configs;
 }
-

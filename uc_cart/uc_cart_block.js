@@ -6,7 +6,7 @@
  */
 
 /**
- * Set the behavior to (un)collapse the cart block on a click
+ * Sets the behavior to (un)collapse the cart block on a click
  */
 Drupal.behaviors.ucCollapseBlock = {
   attach: function(context) {
@@ -19,7 +19,7 @@ Drupal.behaviors.ucCollapseBlock = {
 }
 
 /**
- * Collapse the shopping cart block at page load.
+ * Collapses the shopping cart block at page load.
  */
 jQuery(document).ready(
   function() {
@@ -38,7 +38,7 @@ jQuery(document).ready(
 );
 
 /**
- * Toggle the shopping cart block open and closed.
+ * Toggles the shopping cart block open and closed.
  */
 function cart_block_toggle() {
   // Toggle the display of the cart contents table.
@@ -52,4 +52,3 @@ function cart_block_toggle() {
     jQuery('.cart-block-arrow').removeClass('arrow-down').addClass('arrow-up');
   }
 }
-

@@ -7,7 +7,7 @@
  */
 
 /**
- * Display the cart view page.
+ * Displays the cart view page.
  *
  * Show the products in the cart with a form to adjust cart contents or go to
  * checkout.
@@ -54,7 +54,7 @@ function uc_cart_view() {
 }
 
 /**
- * Display the cart checkout page built of checkout panes from enabled modules.
+ * Displays the cart checkout page built of checkout panes from enabled modules.
  */
 function uc_cart_checkout() {
   global $user;
@@ -106,12 +106,11 @@ function uc_cart_checkout() {
 /**
  * The checkout form built up from the enabled checkout panes.
  *
+ * @see uc_cart_checkout_form_validate()
+ * @see uc_cart_checkout_form_review()
+ * @see uc_cart_checkout_review()
+ * @see theme_uc_cart_checkout_form()
  * @ingroup forms
- * @see
- *   theme_uc_cart_checkout_form()
- *   uc_cart_checkout_form_validate()
- *   uc_cart_checkout_form_review()
- *   uc_cart_checkout_review()
  */
 function uc_cart_checkout_form($form, &$form_state) {
   global $user;
@@ -235,10 +234,10 @@ function uc_cart_checkout_form($form, &$form_state) {
 }
 
 /**
- * Add markup and styling to the checkout panes.
+ * Adds markup and styling to the checkout panes.
  *
- * @ingroup themeable
  * @see uc_cart_checkout_form()
+ * @ingroup themeable
  */
 function theme_uc_cart_checkout_form($variables) {
   $form = $variables['form'];
@@ -269,7 +268,10 @@ function theme_uc_cart_checkout_form($variables) {
 }
 
 /**
+ * Form validation for uc_cart_checkout_form().
+ *
  * @see uc_cart_checkout_form()
+ * @see uc_cart_checkout_form_submit()
  */
 function uc_cart_checkout_form_validate($form, &$form_state) {
   global $user;
@@ -313,7 +315,10 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_cart_checkout_form().
+ *
  * @see uc_cart_checkout_form()
+ * @see uc_cart_checkout_form_validate()
  */
 function uc_cart_checkout_form_submit($form, &$form_state) {
   if ($form_state['checkout_valid'] === FALSE) {
@@ -342,7 +347,7 @@ function uc_cart_checkout_form_cancel($form, &$form_state) {
 }
 
 /**
- * Allow a customer to review their order before finally submitting it.
+ * Allows a customer to review their order before finally submitting it.
  *
  * @see uc_cart_checkout_form()
  */
@@ -391,7 +396,7 @@ function uc_cart_checkout_review() {
 }
 
 /**
- * Theme the checkout review order page.
+ * Themes the checkout review order page.
  *
  * @param $panes
  *   An associative array for each checkout pane that has information to add to
@@ -400,8 +405,10 @@ function uc_cart_checkout_review() {
  * @param $form
  *   The HTML version of the form that by default includes the 'Back' and
  *   'Submit order' buttons at the bottom of the review page.
+ *
  * @return
  *   A string of HTML for the page contents.
+ *
  * @ingroup themeable
  */
 function theme_uc_cart_checkout_review($variables) {
@@ -446,12 +453,11 @@ function theme_uc_cart_checkout_review($variables) {
 }
 
 /**
- * Give customers the option to finish checkout or go revise their information.
+ * Gives customers the option to finish checkout or go revise their information.
  *
+ * @see uc_cart_checkout_review_form_back()
+ * @see uc-cart_checkout_review_form_submit()
  * @ingroup forms
- * @see
- *   uc_cart_checkout_review_form_back()
- *   uc-cart_checkout_review_form_submit()
  */
 function uc_cart_checkout_review_form($form, &$form_state) {
   // Set the session variable to pass the redirect check on the pageload.

@@ -12,7 +12,7 @@
  */
 
 /**
- * Do extra processing when an item is added to the shopping cart.
+ * Performs extra processing when an item is added to the shopping cart.
  *
  * Some modules need to be able to hook into the process of adding items to a
  * cart. For example, an inventory system may need to check stock levels and
@@ -24,24 +24,26 @@
  * to perform some routine action when products are added to the cart.
  *
  * @param $nid
- *   The node ID of the product
+ *   The node ID of the product.
  * @param $qty
- *   The quantity being added
+ *   The quantity being added.
  * @param $data
- *   The data array, including attributes and model number adjustments
+ *   The data array, including attributes and model number adjustments.
+ *
  * @return
- *   The function can use this data to whatever purpose to see if the item can
- *   be added to the cart or not. The function should return an array containing
- *   the result array. (This is due to the nature of Drupal's module_invoke_all()
- *   function. You must return an array within an array or other module data will
- *   end up getting ignored.) At this moment, there are only three keys:
+ *   The function can use this data to whatever purpose to see if the item
+ *   can be added to the cart or not. The function should return an array
+ *   containing the result array. (This is due to the nature of Drupal's
+ *   module_invoke_all() function. You must return an array within an array
+ *   or other module data will end up getting ignored.) At this moment,
+ *   there are only three keys:
  *   - "success": TRUE or FALSE for whether the specified quantity of the item
  *       may be added to the cart or not; defaults to TRUE.
  *   - "message": the fail message to display in the event of a failure; if
  *       omitted, Ubercart will display a default fail message.
  *   - "silent": return TRUE to suppress the display of any messages; useful
- *       when a module simply needs to do some other processing during an add to
- *       cart or fail silently.
+ *       when a module simply needs to do some other processing during an add
+ *       to cart or fail silently.
  */
 function hook_uc_add_to_cart($nid, $qty, $data) {
   if ($qty > 1) {
@@ -54,7 +56,7 @@ function hook_uc_add_to_cart($nid, $qty, $data) {
 }
 
 /**
- * Add extra information to a cart item's "data" array.
+ * Adds extra information to a cart item's "data" array.
  *
  * This is effectively the submit handler of any alterations to the Add to Cart
  * form. It provides a standard way to store the extra information so that it
@@ -62,6 +64,7 @@ function hook_uc_add_to_cart($nid, $qty, $data) {
  *
  * @param $form_values
  *   The values submitted to the Add to Cart form.
+ *
  * @return
  *   An array of data to be merged into the item added to the cart.
  */
@@ -71,15 +74,16 @@ function hook_uc_add_to_cart_data($form_values) {
 }
 
 /**
- * Control the display of an item in the cart.
+ * Controls the display of an item in the cart.
  *
  * Product type modules allow the creation of nodes that can be added to the
  * cart. The cart determines how they are displayed through this hook. This is
- * especially important for product kits, because it may be displayed as a single
- * unit in the cart even though it is represented as several items.
+ * especially important for product kits, because it may be displayed as a
+ * single unit in the cart even though it is represented as several items.
  *
  * @param $item
  *   The item in the cart to display.
+ *
  * @return
  *   A form array containing the following elements:
  *   - "nid"
@@ -107,8 +111,8 @@ function hook_uc_add_to_cart_data($form_values) {
  *     - #value: The serialized $item->data.
  *   - "qty"
  *     - #type: textfield
- *     - #value: The quantity of $item in the cart. When "Update cart" is clicked,
- *         the customer's input is saved to the cart.
+ *     - #value: The quantity of $item in the cart. When "Update cart" is
+ *       clicked, the customer's input is saved to the cart.
  */
 function hook_uc_cart_display($item) {
   $node = node_load($item->nid);
@@ -139,7 +143,7 @@ function hook_uc_cart_display($item) {
 }
 
 /**
- * Add extra data about an item in the cart.
+ * Adds extra data about an item in the cart.
  *
  * Products that are added to a customer's cart are referred as items until the
  * sale is completed. Just think of a grocery store having a bunch of products
@@ -150,16 +154,17 @@ function hook_uc_cart_display($item) {
  * Here's the rationale for this hook: Products may change on a live site during
  * a price increase or change to attribute adjustments. If a user has previously
  * added an item to their cart, when they go to checkout or view their cart
- * screen we want the latest pricing and model numbers to show. So, the essential
- * product information is stored in the cart, but when the items in a cart are
- * loaded, modules are given a chance to adjust the data against the latest settings.
+ * screen we want the latest pricing and model numbers to show. So, the
+ * essential product information is stored in the cart, but when the items in
+ * a cart are loaded, modules are given a chance to adjust the data against
+ * the latest settings.
  *
  * @param $op
  *   The action that is occurring. Possible values:
  *   - "load" - Passed for each item when a cart is being loaded in the function
- *       uc_cart_get_contents(). This gives modules the chance to tweak information
- *       for items when the cart is being loaded prior to being added to an
- *       order. No return value is expected.
+ *       uc_cart_get_contents(). This gives modules the chance to tweak
+ *       information for items when the cart is being loaded prior to being
+ *       added to an order. No return value is expected.
  *   - "view" - Passed for each item when it is about to be displayed on the
  *       cart page. Modifications made affect only displayed information and are
  *       not used in any calculations.
@@ -169,10 +174,11 @@ function hook_uc_cart_display($item) {
  *       shippable. hook_cart_item functions that check for this op are expected
  *       to return TRUE or FALSE based on whether a product is shippable or not.
  *   - "remove" - Passed when an item is removed from the cart.
- *   - "checkout" - Passed for each item when the cart is being emptied for checkout.
+ *   - "checkout" - Passed for each item when the cart is being emptied for
+ *       checkout.
+ *
  * @return
- *   No return value for load or view.
- *   TRUE or FALSE for can_ship.
+ *   No return value for load or view. TRUE or FALSE for can_ship.
  */
 function hook_uc_cart_item($op, &$item) {
   switch ($op) {
@@ -184,7 +190,7 @@ function hook_uc_cart_item($op, &$item) {
 }
 
 /**
- * Register callbacks for a cart pane.
+ * Registers callbacks for a cart pane.
  *
  * The default cart view page displays a table of the cart contents and a few
  * simple form features to manage the cart contents. For a module to add
@@ -193,9 +199,10 @@ function hook_uc_cart_item($op, &$item) {
  *
  * @param $items
  *   The current contents of the shopping cart.
+ *
  * @return
- *   The function is expected to return an array of pane arrays with the following
- *   keys:
+ *   The function is expected to return an array of pane arrays with the
+ *   following keys:
  *   - "id"
  *     - type: string
  *     - value: The internal ID of the pane, using a-z, 0-9, and - or _.
@@ -214,8 +221,8 @@ function hook_uc_cart_item($op, &$item) {
  *     - value: The body of the pane to be rendered on the cart view screen.
  *
  * The body gets printed to the screen if it is on the cart view page.  For the
- * settings page, the body field is ignored.  You may want your function to check
- * for a NULL argument before processing any queries or foreach() loops.
+ * settings page, the body field is ignored.  You may want your function to
+ * check for a NULL argument before processing any queries or foreach() loops.
  */
 function hook_uc_cart_pane($items) {
   $body = array();
@@ -242,8 +249,8 @@ function hook_uc_cart_pane($items) {
  * Alter cart pane definitions.
  *
  * @param $panes
- *   The array of pane information in the format defined in hook_uc_cart_pane(), passed
- *   by reference.
+ *   The array of pane information in the format defined in hook_uc_cart_pane(),
+ *   passed by reference.
  *
  * @param $items
  *   The array of item information.
@@ -289,20 +296,21 @@ function hook_uc_checkout_complete($order, $account) {
 }
 
 /**
- * Register callbacks for a checkout pane.
+ * Registers callbacks for a checkout pane.
  *
  * The checkout screen for Ubercart is a compilation of enabled checkout panes.
  * A checkout pane can be used to display order information, collect data from
- * the customer, or interact with other panes. Panes are defined in enabled modules
- * with hook_checkout_pane() and displayed and processed through specified callback
- * functions. Some of the settings for each pane are configurable from the checkout
- * settings page with defaults being specified in the hooks.
+ * the customer, or interact with other panes. Panes are defined in enabled
+ * modules with hook_checkout_pane() and displayed and processed through
+ * specified callback functions. Some of the settings for each pane are
+ * configurable from the checkout settings page with defaults being specified
+ * in the hooks.
  *
  * The default panes are defined in uc_cart.module in the function
  * uc_cart_checkout_pane(). These include panes to display the contents of the
- * shopping cart and to collect essential site user information, a shipping address,
- * a payment address, and order comments. Other included modules offer panes for
- * shipping and payment purposes as well.
+ * shopping cart and to collect essential site user information, a shipping
+ * address, a payment address, and order comments. Other included modules offer
+ * panes for shipping and payment purposes as well.
  *
  * @return
  *   An array of checkout pane arrays using the following keys:
@@ -354,7 +362,7 @@ function hook_uc_checkout_pane() {
 }
 
 /**
- * Build and process a pane defined by hook_uc_checkout_pane().
+ * Builds and proceses a pane defined by hook_uc_checkout_pane().
  *
  * @param string $op
  *   The operation the pane is performing. Possible values are "view", "process",
@@ -365,6 +373,7 @@ function hook_uc_checkout_pane() {
  *   The order's edit form. NULL for non-edit ops.
  * @param array &$form_state
  *   The form state array of the edit form. NULL for non-edit ops.
+ *
  * @return
  *   Varies according to the value of $op:
  *   - view: An array with two keys, "contents" and an optional "description".
@@ -417,11 +426,11 @@ function uc_checkout_pane_callback($op, $order, $form = NULL, &$form_state = NUL
 }
 
 /**
- * Alter checkout pane definitions.
+ * Alters checkout pane definitions.
  *
  * @param $panes
- *   Array with the panes information as defined in hook_uc_checkout_pane(), passed
- *   by reference.
+ *   Array with the panes information as defined in hook_uc_checkout_pane(),
+ *   passed by reference.
  */
 function hook_uc_checkout_pane_alter(&$panes) {
   foreach ($panes as &$pane) {
@@ -432,7 +441,7 @@ function hook_uc_checkout_pane_alter(&$panes) {
 }
 
 /**
- * Handle requests to update a cart item.
+ * Handles requests to update a cart item.
  *
  * @param $nid
  *   Node id of the cart item.
@@ -472,4 +481,3 @@ function hook_uc_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
 /**
  * @} End of "addtogroup hooks".
  */
-

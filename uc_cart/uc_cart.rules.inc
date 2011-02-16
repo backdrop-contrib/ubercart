@@ -28,4 +28,3 @@ function uc_cart_rules_event_info() {
 
   return $events;
 }
-

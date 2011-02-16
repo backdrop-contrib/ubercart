@@ -7,7 +7,7 @@
  */
 
 /**
- * Display an overview of the cart settings.
+ * Displays an overview of the cart settings.
  */
 function uc_cart_cart_settings_overview() {
   // Load the form summaries for pages beneath this path.
@@ -42,8 +42,8 @@ function uc_cart_cart_settings_overview() {
 /**
  * General settings for the shopping cart.
  *
- * @ingroup forms
  * @see uc_cart_cart_settings_form_validate()
+ * @ingroup forms
  */
 function uc_cart_cart_settings_form($form, &$form_state) {
   $form['general'] = array(
@@ -213,6 +213,8 @@ function uc_cart_cart_settings_form($form, &$form_state) {
 }
 
 /**
+ * Form validation for uc_cart_cart_settings_form().
+ *
  * @see uc_cart_cart_settings_form()
  */
 function uc_cart_cart_settings_form_validate($form, &$form_state) {
@@ -265,7 +267,7 @@ function uc_cart_block_edit_info() {
 }
 
 /**
- * Display an overview of the checkout settings.
+ * Displays an overview of the checkout settings.
  */
 function uc_cart_checkout_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
@@ -389,17 +391,18 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
 }
 
 /**
- * Summarize cart and checkout panes.
- *
- * @param $form
- *   The form passed from the summarizer
- * @param $panes
- *   Any array of cart/checkout panes
- * @return
- *   An array of summary information
+ * Summarizes cart and checkout panes.
  *
  * Although this function is called 'cart_panes', it also operates on
  * checkout panes, which are structured the same way.
+ *
+ * @param $form
+ *   The form passed from the summarizer.
+ * @param $panes
+ *   Any array of cart/checkout panes.
+ *
+ * @return
+ *   An array of summary information.
  */
 function _uc_cart_panes_summarize($form, $panes) {
   $items = array();
