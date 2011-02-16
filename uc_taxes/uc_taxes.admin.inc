@@ -43,9 +43,6 @@ function uc_taxes_admin_settings() {
     '#header' => $header,
     '#rows' => $rows,
   );
-  $build['add_more'] = array(
-    '#markup' => l(t('Add a tax rate'), 'admin/store/settings/taxes/add'),
-  );
 
   return $build;
 }
