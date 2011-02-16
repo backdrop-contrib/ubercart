@@ -280,7 +280,7 @@ function uc_order_rules_action_info() {
  ******************************************************************************/
 
 /**
- * Check that the order has the selected combination of products.
+ * Checks that the order has the selected combination of products.
  */
 function uc_order_condition_has_products($order, $products, $required, $forbidden) {
   $order_products = array();
@@ -320,7 +320,7 @@ function uc_order_condition_has_products_options() {
 }
 
 /**
- * Check that the order has the selected number of products.
+ * Checks that the order has the selected number of products.
  *
  * @see uc_order_condition_count_products_form()
  */
@@ -377,7 +377,7 @@ function uc_order_condition_value_operator_options() {
 }
 
 /**
- * Checkt the weight of the order's products.
+ * Checks the weight of the order's products.
  *
  * @see uc_order_condition_products_weight_form()
  */
@@ -424,7 +424,7 @@ function uc_order_condition_weight_units_options() {
 }
 
 /**
- * Check that the order is shippable.
+ * Checks that the order is shippable.
  */
 function uc_order_condition_is_shippable($order, $settings) {
   return uc_order_is_shippable($order);
@@ -435,7 +435,7 @@ function uc_order_condition_is_shippable($order, $settings) {
  ******************************************************************************/
 
 /**
- * Update an order's status.
+ * Updates an order's status.
  *
  * @see uc_order_action_update_status_form()
  */
@@ -462,7 +462,7 @@ function uc_order_action_update_status_options() {
 }
 
 /**
- * Add a comment to an order.
+ * Adds a comment to an order.
  *
  * @see uc_order_action_add_comment_form()
  */
@@ -485,7 +485,7 @@ function uc_order_action_order_comment_types() {
 }
 
 /**
- * Send an email concerning an order.
+ * Sends an email concerning an order.
  *
  * The recipients, subject, and message fields take order token replacements.
  *
@@ -539,7 +539,7 @@ function uc_order_message_formats() {
 }
 
 /**
- * Email an invoice.
+ * Emails an invoice.
  *
  * The subject and addresses fields take order token replacements.
  */

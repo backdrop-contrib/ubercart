@@ -172,6 +172,7 @@ function uc_order_entity_property_info() {
 
 /**
  * Callback for getting node properties.
+ *
  * @see entity_metadata_node_entity_info_alter()
  */
 function uc_order_uc_order_get_properties($order, array $options, $name, $entity_type) {
@@ -183,6 +184,7 @@ function uc_order_uc_order_get_properties($order, array $options, $name, $entity
 
 /**
  * Callback for setting node properties.
+ *
  * @see entity_metadata_node_entity_info_alter()
  */
 function uc_order_uc_order_set_properties($order, $name, $value) {
@@ -190,4 +192,3 @@ function uc_order_uc_order_set_properties($order, $name, $value) {
     $order->uid = $value;
   }
 }
-

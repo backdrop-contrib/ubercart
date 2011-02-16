@@ -28,4 +28,3 @@ function uc_order_default_rules_configuration() {
 
   return $configs;
 }
-

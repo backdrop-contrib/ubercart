@@ -12,7 +12,7 @@
  */
 
 /**
- * Handle the "Ship to" order pane.
+ * Handles the "Ship to" order pane.
  */
 function uc_order_pane_ship_to($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
@@ -102,7 +102,7 @@ function uc_order_pane_ship_to($op, $order, &$form = NULL, &$form_state = NULL) 
 }
 
 /**
- * Handle the "Bill to" order pane.
+ * Handles the "Bill to" order pane.
  */
 function uc_order_pane_bill_to($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
@@ -187,7 +187,7 @@ function uc_order_pane_bill_to($op, $order, &$form = NULL, &$form_state = NULL) 
 }
 
 /**
- * Handle the "Customer Info" order pane.
+ * Handles the "Customer Info" order pane.
  */
 function uc_order_pane_customer($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
@@ -257,7 +257,7 @@ function uc_order_pane_customer($op, $order, &$form = NULL, &$form_state = NULL)
 }
 
 /**
- * Handle the "Products" order pane.
+ * Handles the "Products" order pane.
  */
 function uc_order_pane_products($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
@@ -334,6 +334,8 @@ function uc_order_pane_products($op, $order, &$form = NULL, &$form_state = NULL)
 
 /**
  * Form to choose a product to add to the order.
+ *
+ * @ingroup forms
  */
 function uc_order_product_select_form($form, &$form_state, $order) {
   $options = $form_state['product_select_options'];
@@ -403,9 +405,10 @@ function uc_order_add_product($order, $product) {
 }
 
 /**
- * Set the quantity and attributes of a product added to the order.
+ * Sets the quantity and attributes of a product added to the order.
  *
  * @see uc_order_add_product_form()
+ * @ingroup forms
  */
 function uc_order_add_product_form($form, &$form_state, $order, $node) {
   $form['nid'] = array(
@@ -447,10 +450,9 @@ function uc_order_add_product_form($form, &$form_state, $order, $node) {
 /**
  * Form to allow ordered products' data to be changed.
  *
- * @see
- *   uc_op_products_edit_table()
- *   theme_uc_order_edit_products_form()
- *   theme_uc_order_remove_product()
+ * @see uc_op_products_edit_table()
+ * @see theme_uc_order_edit_products_form()
+ * @see theme_uc_order_remove_product()
  */
 function uc_order_edit_products_form($form, &$form_state, $products) {
   if (($product_count = count($products)) > 0) {
@@ -522,18 +524,18 @@ function uc_order_edit_products_form($form, &$form_state, $products) {
 }
 
 /**
- * @ingroup themeable
  * @see uc_order_edit_products_form()
+ * @ingroup themeable
  */
 function theme_uc_order_edit_products_form($variables) {
   return drupal_render_children($variables['form']);
 }
 
 /**
- * Format the button to remove products from an order.
+ * Formats the button to remove products from an order.
  *
- * @ingroup themeable
  * @see uc_op_products_edit_table()
+ * @ingroup themeable
  */
 function theme_uc_order_remove_product($variables) {
   $form = $variables['form'];
@@ -546,7 +548,7 @@ function theme_uc_order_remove_product($variables) {
 }
 
 /**
- * Set the order pane to show the product selection form.
+ * Sets the order pane to show the product selection form.
  */
 function uc_order_pane_products_select($form, &$form_state) {
   $types = uc_product_types();
@@ -582,7 +584,7 @@ function uc_order_pane_products_select($form, &$form_state) {
 }
 
 /**
- * Set the order pane to show the add product to order form.
+ * Sets the order pane to show the add product to order form.
  */
 function uc_order_pane_products_add($form, &$form_state) {
   $form_state['products_action'] = 'add_product';
@@ -591,7 +593,7 @@ function uc_order_pane_products_add($form, &$form_state) {
 }
 
 /**
- * Hide the form to add another product to the order.
+ * Hides the form to add another product to the order.
  */
 function uc_order_pane_products_close($form, &$form_state) {
   unset($form_state['products_action']);
@@ -600,7 +602,7 @@ function uc_order_pane_products_close($form, &$form_state) {
 }
 
 /**
- * Populate the product add/edit div on the order edit screen.
+ * Populates the product add/edit div on the order edit screen.
  */
 function uc_order_edit_products_add_blank($form, &$form_state) {
   $form_state['refresh_products'] = TRUE;
@@ -619,6 +621,9 @@ function uc_order_edit_products_add_blank($form, &$form_state) {
   }
 }
 
+/**
+ *
+ */
 function uc_order_edit_products_add($form, &$form_state) {
   $form_state['products_action'] = 'products_select';
   $form_state['refresh_products'] = TRUE;
@@ -654,6 +659,9 @@ function uc_order_edit_products_add($form, &$form_state) {
   $form_state['values']['products'][] = (array) $product;
 }
 
+/**
+ *
+ */
 function uc_order_edit_products_remove($form, &$form_state) {
   $form_state['refresh_products'] = TRUE;
 
@@ -687,7 +695,7 @@ function uc_order_pane_products_ajax_callback($form, &$form_state) {
 }
 
 /**
- * Handle the "Line Items" order pane.
+ * Handles the "Line Items" order pane.
  */
 function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
@@ -856,6 +864,9 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
   }
 }
 
+/**
+ * @ingroup themeable
+ */
 function theme_uc_order_pane_line_items($variables) {
   $form = $variables['form'];
 
@@ -875,6 +886,9 @@ function theme_uc_order_pane_line_items($variables) {
   return $output;
 }
 
+/**
+ *
+ */
 function uc_order_pane_line_items_submit($form, &$form_state) {
   $values = $form_state['values'];
 
@@ -891,6 +905,9 @@ function uc_order_pane_line_items_submit($form, &$form_state) {
   }
 }
 
+/**
+ *
+ */
 function uc_order_edit_line_items_recalculate($form, &$form_state) {
   $order = $form_state['build_info']['args'][0];
 
@@ -903,7 +920,7 @@ function uc_order_edit_line_items_recalculate($form, &$form_state) {
 }
 
 /**
- * Handle the "Order Comments" order pane.
+ * Handles the "Order Comments" order pane.
  */
 function uc_order_pane_order_comments($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
@@ -942,7 +959,7 @@ function uc_order_pane_order_comments($op, $order, &$form = NULL, &$form_state =
 }
 
 /**
- * Handle the "Admin Comments" order pane.
+ * Handles the "Admin Comments" order pane.
  */
 function uc_order_pane_admin_comments($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
@@ -986,7 +1003,7 @@ function uc_order_pane_admin_comments($op, $order, &$form = NULL, &$form_state =
 }
 
 /**
- * Handle the "Update" order pane.
+ * Handles the "Update" order pane.
  */
 function uc_order_pane_update($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
@@ -998,10 +1015,9 @@ function uc_order_pane_update($op, $order, &$form = NULL, &$form_state = NULL) {
 /**
  * Form to save order comments and update the order status.
  *
+ * @see theme_uc_order_view_update_controls()
+ * @see uc_order_view_update_form_submit()
  * @ingroup forms
- * @see
- *   theme_uc_order_view_update_controls()
- *   uc_order_view_update_form_submit()
  */
 function uc_order_view_update_form($form, &$form_state, $order) {
   $form['order_comment_field'] = array(
@@ -1075,14 +1091,16 @@ function uc_order_view_update_form($form, &$form_state, $order) {
 }
 
 /**
- * @ingroup themeable
  * @see uc_order_view_update_form()
+ * @ingroup themeable
  */
 function theme_uc_order_view_update_controls($variables) {
   return '<div class="update-controls">' . drupal_render_children($variables['form']) . '</div>';
 }
 
 /**
+ * Form submit handler for uc_order_view_update_form().
+ *
  * @see uc_order_view_update_form()
  */
 function uc_order_view_update_form_submit($form, &$form_state) {
@@ -1114,7 +1132,7 @@ function uc_order_view_update_form_submit($form, &$form_state) {
 }
 
 /**
- * Build the order view products table.
+ * Builds the order view products table.
  */
 function uc_op_products_view_table($order) {
   $table = array(
@@ -1216,7 +1234,7 @@ function uc_op_products_view_table($order) {
 }
 
 /**
- * Build the order customer's view products table.
+ * Builds the order customer's view products table.
  */
 function uc_op_products_customer_table($order) {
   $table = array(
@@ -1362,7 +1380,7 @@ function uc_op_products_edit_table() {
 }
 
 /**
- * Build the order comments table.
+ * Builds the order comments table.
  */
 function uc_op_order_comments_view_table($comments) {
   $table = array(
@@ -1430,7 +1448,7 @@ function uc_op_order_comments_view_table($comments) {
 }
 
 /**
- * Build the order admin comments table.
+ * Builds the order admin comments table.
  */
 function uc_op_admin_comments_view_table($comments) {
   $table = array(
@@ -1481,7 +1499,7 @@ function uc_op_admin_comments_view_table($comments) {
 }
 
 /**
- * Build a list of order panes defined in the enabled modules.
+ * Builds a list of order panes defined in the enabled modules.
  */
 function _uc_order_pane_list($view = 'view') {
   static $panes;
@@ -1501,7 +1519,7 @@ function _uc_order_pane_list($view = 'view') {
 }
 
 /**
- * Return data from an order pane by pane ID and the array key.
+ * Returns data from an order pane by pane ID and the array key.
  */
 function _uc_order_pane_data($pane_id, $key) {
   $panes = _uc_order_pane_list();
