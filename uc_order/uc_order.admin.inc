@@ -87,14 +87,11 @@ function uc_order_settings_form($form, &$form_state) {
   $form['customer']['uc_cust_order_invoice_template'] = array(
     '#type' => 'select',
     '#title' => t('On-site invoice template'),
-    '#description' => t('Select the invoice template to use when invoices are viewed on the site.'),
+    '#description' => t('Select the invoice template to use when invoices are viewed on the site.<br />This is separate from the template used to e-mail invoices to customers which is configured through <a href="!url">Rules</a>.', array('!url' => url(RULES_UI_PATH))),
     '#options' => uc_order_template_options(),
     '#summary' => t('You are using the %template order invoice template.', array('%template' => variable_get('uc_cust_order_invoice_template', 'customer'))),
     '#default_value' => variable_get('uc_cust_order_invoice_template', 'customer'),
   );
-  if (module_exists('uc_cart')) {
-    $form['customer']['uc_cust_order_invoice_template']['#description'] .= '<br />' . t('This is separate from the template used to e-mail invoices to customers which is configured through <a href="!url">Rules</a>.', array('!url' => url('admin/store/settings/checkout/rules')));
-  }
 
   return system_settings_form($form);
 }
