@@ -32,10 +32,6 @@ function uc_weightquote_admin_methods() {
     );
   }
 
-  $build['add_more'] = array(
-    '#markup' => l(t('Add a new weight quote shipping method.'), 'admin/store/settings/quotes/methods/weightquote/add'),
-  );
-
   return $build;
 }
 
@@ -52,12 +48,11 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
   $sign_flag = variable_get('uc_sign_after_amount', FALSE);
   $currency_sign = variable_get('uc_currency_sign', '$');
 
-  if (is_numeric($mid) && ($method = db_query("SELECT * FROM {uc_weightquote_methods} WHERE mid = :mid", array(':mid' => $mid))->fetchObject())) {
+  if ($mid && ($method = db_query("SELECT * FROM {uc_weightquote_methods} WHERE mid = :mid", array(':mid' => $mid))->fetchObject())) {
     $form['mid'] = array('#type' => 'value', '#value' => $mid);
   }
   else {
     $method = (object) array(
-      'mid' => $mid,
       'title' => '',
       'label' => '',
       'base_rate' => '',
@@ -111,6 +106,7 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete'),
+      '#validate' => array(),
       '#submit' => array('uc_weightquote_admin_method_edit_form_delete'),
     );
   }
@@ -122,13 +118,11 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
  * @see uc_weightquote_admin_method_edit_form()
  */
 function uc_weightquote_admin_method_edit_form_validate($form, &$form_state) {
-  if ($form_state['values']['op'] == t('Submit')) {
-    if (!empty($form_state['values']['base_rate']) && !is_numeric($form_state['values']['base_rate'])) {
-      form_set_error('base_rate', t('The base rate must be a numeric amount.'));
-    }
-    if (!empty($form_state['values']['product_rate']) && !is_numeric($form_state['values']['product_rate'])) {
-      form_set_error('product_rate', t('The product rate must be a numeric amount.'));
-    }
+  if (!empty($form_state['values']['base_rate']) && !is_numeric($form_state['values']['base_rate'])) {
+    form_set_error('base_rate', t('The base rate must be a numeric amount.'));
+  }
+  if (!empty($form_state['values']['product_rate']) && !is_numeric($form_state['values']['product_rate'])) {
+    form_set_error('product_rate', t('The product rate must be a numeric amount.'));
   }
 }
 
@@ -159,6 +153,9 @@ function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
     $weight['weightquote_' . $mid] = 0;
     variable_set('uc_quote_method_weight', $weight);
 
+    // Ensure Rules picks up the new condition.
+    entity_flush_caches();
+
     drupal_set_message(t("Created and enabled new weight quote shipping method."));
   }
 
@@ -179,8 +176,7 @@ function uc_weightquote_admin_method_confirm_delete($form, &$form_state, $mid) {
 
   return confirm_form($form, t('Do you want to delete this shipping method?'),
     'admin/store/settings/quotes/methods/weightquote',
-    t('This will remove the shipping method, Conditional Action predicate, and the
-      product-specific overrides (if applicable). This action can not be undone.'),
+    t('This will remove the shipping method and the product-specific overrides (if applicable). This action can not be undone.'),
     t('Delete'));
 }
 

@@ -18,8 +18,8 @@ function uc_flatrate_admin_methods() {
     $row = array();
     $row[] = check_plain($method->title);
     $row[] = check_plain($method->label);
-    $row[] = array('#theme' => 'uc_price', '#price' => $method->base_rate);
-    $row[] = array('#theme' => 'uc_price', '#price' => $method->product_rate);
+    $row[] = uc_currency_format($method->base_rate);
+    $row[] = uc_currency_format($method->product_rate);
     $row[] = l(t('edit'), 'admin/store/settings/quotes/methods/flatrate/' . $method->mid);
     $rows[] = $row;
   }
@@ -32,10 +32,6 @@ function uc_flatrate_admin_methods() {
       '#rows' => $rows,
     );
   }
-
-  $build['add_more'] = array(
-    '#markup' => l(t('Add a new flat rate shipping method.'), 'admin/store/settings/quotes/methods/flatrate/add'),
-  );
 
   return $build;
 }
@@ -53,12 +49,11 @@ function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
   $sign_flag = variable_get('uc_sign_after_amount', FALSE);
   $currency_sign = variable_get('uc_currency_sign', '$');
 
-  if (is_numeric($mid) && ($method = db_query("SELECT * FROM {uc_flatrate_methods} WHERE mid = :mid", array(':mid' => $mid))->fetchObject())) {
+  if ($mid && ($method = db_query("SELECT * FROM {uc_flatrate_methods} WHERE mid = :mid", array(':mid' => $mid))->fetchObject())) {
     $form['mid'] = array('#type' => 'value', '#value' => $mid);
   }
   else {
     $method = (object) array(
-      'mid' => $mid,
       'title' => '',
       'label' => '',
       'base_rate' => '',
@@ -112,6 +107,7 @@ function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete'),
+      '#validate' => array(),
       '#submit' => array('uc_flatrate_admin_method_edit_form_delete'),
     );
   }
@@ -123,13 +119,11 @@ function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
  * @see uc_flatrate_admin_method_edit_form()
  */
 function uc_flatrate_admin_method_edit_form_validate($form, &$form_state) {
-  if ($form_state['values']['op'] == t('Submit')) {
-    if (!is_numeric($form_state['values']['base_rate'])) {
-      form_set_error('base_rate', t('The base rate must be a numeric amount.'));
-    }
-    if (!is_numeric($form_state['values']['product_rate'])) {
-      form_set_error('product_rate', t('The product rate must be a numeric amount.'));
-    }
+  if (!is_numeric($form_state['values']['base_rate'])) {
+    form_set_error('base_rate', t('The base rate must be a numeric amount.'));
+  }
+  if (!is_numeric($form_state['values']['product_rate'])) {
+    form_set_error('product_rate', t('The product rate must be a numeric amount.'));
   }
 }
 
@@ -162,6 +156,9 @@ function uc_flatrate_admin_method_edit_form_submit($form, &$form_state) {
     $weight['flatrate_' . $mid] = 0;
     variable_set('uc_quote_method_weight', $weight);
 
+    // Ensure Rules picks up the new condition.
+    entity_flush_caches();
+
     drupal_set_message(t("Created and enabled new flat rate shipping method."));
   }
 
@@ -182,8 +179,7 @@ function uc_flatrate_admin_method_confirm_delete($form, &$form_state, $mid) {
 
   return confirm_form($form, t('Do you want to delete this shipping method?'),
     'admin/store/settings/quotes/methods/flatrate',
-    t('This will remove the shipping method, Conditional Action predicate, and the
-      product-specific overrides (if applicable). This action can not be undone.'),
+    t('This will remove the shipping method and the product-specific overrides (if applicable). This action can not be undone.'),
     t('Delete'));
 }
 
