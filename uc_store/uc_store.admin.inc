@@ -759,29 +759,34 @@ function uc_store_display_settings_form($form, &$form_state) {
     '#default_value' => variable_get('uc_customer_list_address', 'billing'),
   );
 
-  $options = array_merge(array(t('Randomly select a message from the list below.')), _uc_store_footer_options());
+  $options = array_merge(
+    array(0 => t('Randomly select a message from the list below.')),
+    _uc_store_footer_options(),
+    array('none' => t('(Do not display a message in the footer.)'))
+  );
 
-  // format the message nicely for the user
-  switch (variable_get('uc_footer_message', 0)) {
+  // Format the message nicely for the user.
+  $id = variable_get('uc_footer_message', 0);
+  switch ($id) {
     case 'none':
-      $user_footer = 'no message.';
-    break;
+      $summary = t('Footer using no message.');
+      break;
 
     case 0:
-      $user_footer = 'a random message.';
-    break;
+      $summary = t('Footer using a random message.');
+      break;
 
     default:
-      $user_footer = '"' . $options[variable_get('uc_footer_message', 0)] . '"';
-    break;
+      $summary = t('Footer using "!message"', array('!message' => $options[$id]));
+      break;
   }
 
   $form['uc_footer_message'] = array(
     '#type' => 'radios',
     '#title' => t('Footer message for store pages'),
     '#options' => $options,
-    '#summary' => t('Footer using !footer', array('!footer' => $user_footer)),
-    '#default_value' => variable_get('uc_footer_message', 0),
+    '#summary' => $summary,
+    '#default_value' => $id,
   );
 
   return system_settings_form($form);

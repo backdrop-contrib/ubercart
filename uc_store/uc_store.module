@@ -413,8 +413,10 @@ function uc_store_permission() {
  * Implements hook_page_alter().
  */
 function uc_store_page_alter(&$page) {
+  $id = variable_get('uc_footer_message', 0);
+
   // Exit if the store footer is turned off.
-  if (variable_get('uc_footer_message', 0) === 'none') {
+  if ($id === 'none') {
     return;
   }
 
@@ -422,53 +424,51 @@ function uc_store_page_alter(&$page) {
   $path = drupal_get_normal_path($_GET['q']);
   $parts = explode('/', $path);
 
-  // Break out of the switch if the page isn't governed by Ubercart.
+  // Exit if the page isn't governed by Ubercart.
   switch ($parts[0]) {
     case 'admin':
       // No footer on /admin or /admin/*.
       // But add a footer on /admin/store and /admin/store/*
       if (!isset($parts[1]) || $parts[1] != 'store') {
-        break;
+        return;
       }
+      break;
+
     case 'node':
       // No footer on /node or /node/[type]/add.
       // Only add a footer on /node/[nid] if that node is a product.
       if (count($parts) != 2 || intval($parts[1]) == 0) {
-        break;
+        return;
       }
       else {
         $node = node_load($parts[1]);
         if ($node == FALSE || !function_exists('uc_product_node_info') || !uc_product_is_product($node->type)) {
-          break;
+          return;
         }
       }
-    // Add a footer to the following pages.
+      break;
+
     case 'catalog':
     case 'cart':
-    case 'manufacturer':
-      $messages = _uc_store_footer_options();
-      if (($message = variable_get('uc_footer_message', 0)) > 0) {
-        $message = $messages[$message];
-      }
-      else {
-        $message = db_query("SELECT message FROM {uc_store_footers} WHERE path_hash = :hash", array(':hash' => md5($path)))->fetchField();
-        if (!$message) {
-          unset($messages['none']);
-          $message = $messages[array_rand($messages)];
-          db_insert('uc_store_footers')
-            ->fields(array(
-              'path_hash' => md5($path),
-              'message' => $message,
-            ))
-            ->execute();
-        }
-      }
+      break;
 
-      $page['page_bottom']['ubercart_footer']= array(
-        '#theme' => 'uc_store_footer',
-        '#message' => $message,
-      );
+    default:
+      return;
   }
+
+  $messages = _uc_store_footer_options();
+
+  if ($id == 0) {
+    // Pseudorandom number based on the hash of the path and the site's private key,
+    // so messages are consistent between pages on the same site, but different
+    // on the same pages on different sites.
+    $id = (hexdec(substr(md5($path . drupal_get_private_key()), 0, 2)) % count($messages)) + 1;
+  }
+
+  $page['page_bottom']['ubercart_footer'] = array(
+    '#theme' => 'uc_store_footer',
+    '#message' => $messages[$id],
+  );
 }
 
 /**
@@ -537,7 +537,6 @@ function _uc_store_footer_options() {
     2 => t('<a href="!url">Drupal e-commerce</a> provided by Ubercart.', $url),
     3 => t('Supported by Ubercart, an <a href="!url">open source e-commerce suite</a>.', $url),
     4 => t('Powered by Ubercart, the <a href="!url">free shopping cart software</a>.', $url),
-    'none' => t('(Do not display a message in the footer.)'),
   );
 }
 
