@@ -96,6 +96,7 @@ function uc_file_rules_data_info() {
 
 /**
  * Callback for getting download expiration properties.
+ *
  * @see entity_metadata_node_entity_info_alter()
  */
 function uc_file_get_expiration_properties($expiration, array $options, $name, $entity_type) {
@@ -109,6 +110,7 @@ function uc_file_get_expiration_properties($expiration, array $options, $name, $
 
 /**
  * Callback for setting download expiration properties.
+ *
  * @see entity_metadata_node_entity_info_alter()
  */
 function uc_file_set_expiration_properties($expiration, $name, $value) {
@@ -253,16 +255,16 @@ function uc_file_action_order_email($order, $file_expiration, $from, $addresses,
 }
 
 /**
- * Renew an orders product files.
- *
- * @param $order
- *   An Ubercart order object.
+ * Renews an orders product files.
  *
  * This function updates access limits on all files found on all products
  * on a given order. First, the order user is loaded, then the order's products
- * are scanned for file product features. An order comment is saved, and the user is
- * notified in Drupal, as well as through the email address associated with the
- * order.
+ * are scanned for file product features. An order comment is saved, and the
+ * user is notified in Drupal, as well as through the email address associated
+ * with the order.
+ *
+ * @param $order
+ *   An Ubercart order object.
  */
 function uc_file_action_order_renew($order) {
 

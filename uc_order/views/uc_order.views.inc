@@ -703,4 +703,3 @@ function uc_order_views_data() {
 
   return $data;
 }
-

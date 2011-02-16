@@ -6,6 +6,9 @@
  * Provide default Views configurations for uc_order.module.
  */
 
+/**
+ *
+ */
 function uc_order_views_default_views() {
   $view = new view;
   $view->name = 'uc_orders';

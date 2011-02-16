@@ -6,8 +6,14 @@
  * CC data views field handler
  */
 
+/**
+ *
+ */
 class uc_order_handler_field_order_cc_data extends views_handler_field {
 
+  /**
+   *
+   */
   function render($values) {
     // Initialize the encryption key and class.
     $key = uc_credit_encryption_key();

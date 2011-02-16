@@ -167,24 +167,27 @@ function hook_uc_file_action($op, $args) {
 }
 
 /**
- * Make changes to a file before it is downloaded by the customer.
+ * Makes changes to a file before it is downloaded by the customer.
  *
- * Stores, either for customization, copy protection or other reasons, might want
- * to send customized downloads to customers. This hook will allow this to happen.
- * Before a file is opened to be transfered to a customer, this hook will be called
- * to make any altercations to the file that will be used to transfer the download
- * to the customer. This, in effect, will allow a developer to create a new,
- * personalized, file that will get transfered to a customer.
+ * Stores, either for customization, copy protection or other reasons, might
+ * want to send customized downloads to customers. This hook will allow this
+ * to happen.  Before a file is opened to be transfered to a customer, this
+ * hook will be called to make any altercations to the file that will be used
+ * to transfer the download to the customer. This, in effect, will allow a
+ * developer to create a new, personalized, file that will get transfered to
+ * a customer.
  *
  * @param $file_user
- *   The file_user object (i.e. an object containing a row from the uc_file_users
- *   table) that corresponds with the user download being accessed.
+ *   The file_user object (i.e. an object containing a row from the
+ *   uc_file_users table) that corresponds with the user download being
+ *   accessed.
  * @param $ip
- *   The IP address from which the customer is downloading the file
+ *   The IP address from which the customer is downloading the file.
  * @param $fid
- *   The file id of the file being transfered
+ *   The file id of the file being transfered.
  * @param $file
- *   The file path of the file to be transfered
+ *   The file path of the file to be transfered.
+ *
  * @return
  *   The path of the new file to transfer to customer.
  */
@@ -199,4 +202,3 @@ function hook_uc_file_transfer_alter($file_user, $ip, $fid, $file) {
 /**
  * @} End of "addtogroup hooks".
  */
-

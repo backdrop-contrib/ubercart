@@ -11,6 +11,9 @@
  */
 class uc_order_handler_field_order_status extends views_handler_field {
 
+  /**
+   *
+   */
   function render($values) {
     return check_plain($values->{$this->aliases['title']});
   }

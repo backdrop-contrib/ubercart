@@ -65,4 +65,3 @@ function theme_uc_file_downloads_token($variables) {
 
   return $output;
 }
-

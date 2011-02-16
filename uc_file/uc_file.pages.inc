@@ -31,6 +31,8 @@ define('UC_FILE_ERROR_HOOK_ERROR'             , 7);
 /**
  * @param $files
  *   Array of the files.
+ *
+ * @ingroup themeable
  */
 function theme_uc_file_user_downloads($variables) {
   $header = $variables['header'];
@@ -157,15 +159,14 @@ function uc_file_user_downloads($account) {
 /**
  * Handle file downloading and error states.
  *
- * @see _uc_file_download_validate()
- *
  * @param $fid
  *   The fid of the file specified to download.
  * @param $key
- *   The hash key of a user's download
+ *   The hash key of a user's download.
+ *
+ * @see _uc_file_download_validate()
  */
 function _uc_file_download($fid, $key) {
-
   global $user;
 
   // Error messages for various failed download states.
@@ -201,7 +202,7 @@ function _uc_file_download($fid, $key) {
 }
 
 /**
- * Perform first-pass authorization. Call authorization hooks afterwards.
+ * Performs first-pass authorization. Calls authorization hooks afterwards.
  *
  * Called when a user requests a file download, function checks download
  * limits then checks for any implementation of hook_uc_download_authorize().
@@ -210,7 +211,7 @@ function _uc_file_download($fid, $key) {
  * @param $fid
  *   The fid of the file specified to download.
  * @param $key
- *   The hash key of a user's download
+ *   The hash key of a user's download.
  */
 function _uc_file_download_validate($file_download, &$user, $ip) {
 
@@ -270,12 +271,13 @@ function _uc_file_download_validate($file_download, &$user, $ip) {
 }
 
 /**
- * Send the file's binary data to a user via HTTP and update the uc_file_users table.
+ * Sends the file's binary data to a user via HTTP and update the
+ * uc_file_users table.
  *
  * @param $file_user
- *   The file_user object from the uc_file_users
+ *   The file_user object from the uc_file_users.
  * @param $ip
- *   The string containing the ip address the download is going to
+ *   The string containing the IP address the download is going to.
  */
 function _uc_file_download_transfer($file_user, $ip) {
 

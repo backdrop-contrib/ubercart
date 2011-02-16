@@ -403,7 +403,8 @@ function uc_file_user_view($account, $view_mode) {
 }
 
 /**
- * The behaviors for each of the rows on the file download modification table.
+ * Attaches jQuery behaviors for each of the rows on the file download
+ * modification table.
  */
 function _uc_file_download_table_behavior($id, $fid) {
 
@@ -652,10 +653,9 @@ function uc_file_feature_delete($feature) {
 /**
  * Form builder for hook_product_feature.
  *
+ * @see uc_file_feature_form_validate()
+ * @see uc_file_feature_form_submit()
  * @ingroup forms
- * @see
- *   uc_file_feature_form_validate()
- *   uc_file_feature_form_submit()
  */
 function uc_file_feature_form($form, &$form_state, $node, $feature) {
   if (!is_dir(variable_get('uc_file_base_dir', NULL))) {
@@ -837,6 +837,7 @@ function uc_file_feature_form($form, &$form_state, $node, $feature) {
  * Sanity check for file download and expiration overrides.
  *
  * @see uc_file_feature_form()
+ * @see uc_file_feature_form_submit()
  */
 function uc_file_feature_form_validate($form, &$form_state) {
 
@@ -862,7 +863,10 @@ function uc_file_feature_form_validate($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_file_feature_form().
+ *
  * @see uc_file_feature_form()
+ * @see uc_file_feature_form_submit()
  */
 function uc_file_feature_form_submit($form, &$form_state) {
   global $user;
@@ -916,19 +920,18 @@ function uc_file_feature_form_submit($form, &$form_state) {
 }
 
 /**
- * Get a file_product id from a product feature id.
+ * Gets a file_product id from a product feature id.
  */
 function _uc_file_get_fpid($pfid) {
   return db_query("SELECT fpid FROM {uc_file_products} WHERE pfid = :pfid", array(':pfid' => $pfid))->fetchField();
 }
 
 /**
- * Form builder for file settings
+ * Form builder for file settings.
  *
+ * @see uc_file_feature_settings_validate()
+ * @see uc_file_feature_settings_submit()
  * @ingroup forms
- * @see
- *   uc_file_feature_settings_validate()
- *   uc_file_feature_settings_submit()
  */
 function uc_file_feature_settings($form, &$form_state) {
   $statuses = array();
@@ -1001,6 +1004,7 @@ function uc_file_feature_settings($form, &$form_state) {
  * Sanity check for feature settings.
  *
  * @see uc_file_feature_settings()
+ * @see uc_file_feature_settings_submit()
  */
 function uc_file_feature_settings_validate($form, &$form_state) {
   // Make sure our base directory is valid.
@@ -1027,7 +1031,10 @@ function uc_file_feature_settings_validate($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_file_feature_settings().
+ *
  * @see uc_file_feature_settings()
+ * @see uc_file_feature_settings_validate()
  */
 function uc_file_feature_settings_submit($form, &$form_state) {
   // No directory now; truncate the file list.
@@ -1045,7 +1052,7 @@ function uc_file_feature_settings_submit($form, &$form_state) {
  ******************************************************************************/
 
 /**
- * This is used to accumulate numeric limits (as of now, download and address).
+ * Accumulates numeric limits (as of now, download and address).
  *
  * We follow a couple simple rules here...
  *
@@ -1054,10 +1061,11 @@ function uc_file_feature_settings_submit($form, &$form_state) {
  * If proposal and current are limited, then accumulate, but only if it
  * wasn't a forced overwrite. (Think on the user account admin page where you
  * can set a download limit to '2'... you wouldn't then next time set it to '4'
- * and expect it to accumulate to '6' . You'd expect it to overwrite with your '4'.)
+ * and expect it to accumulate to '6' . You'd expect it to overwrite with
+ * your '4'.)
  *
- * If current is unlimited, then a limited proposal will only overwrite in the case
- * of the forced overwrite explained above.
+ * If current is unlimited, then a limited proposal will only overwrite in the
+ * case of the forced overwrite explained above.
  */
 function _uc_file_number_accumulate_equation(&$current, $proposed, $force_overwrite) {
   // Right side 'unlimited' always succeeds.
@@ -1085,7 +1093,7 @@ function _uc_file_number_accumulate_equation(&$current, $proposed, $force_overwr
 }
 
 /**
- * This is used to accumulate numeric limits (as of now, download and address).
+ * Accumulates numeric limits (as of now, download and address).
  *
  * We follow a couple simple rules here...
  *
@@ -1093,8 +1101,8 @@ function _uc_file_number_accumulate_equation(&$current, $proposed, $force_overwr
  *
  * If proposal and current are limited, then replace with the new expiration.
  *
- * If current is unlimited, then a limited proposal will only overwrite in the case
- * of the forced overwrited explained above.
+ * If current is unlimited, then a limited proposal will only overwrite in the
+ * case of the forced overwrited explained above.
  */
 function _uc_file_time_accumulate_equation(&$current, $proposed, $force_overwrite) {
   // Right side 'unlimited' always succeeds.
@@ -1128,9 +1136,9 @@ function _uc_file_accumulate_limits(&$file_user, $file_limits, $force_overwrite)
 }
 
 /**
- * Implements Drupal autocomplete textfield
+ * Implements Drupal autocomplete textfield.
  *
- * @return:
+ * @return
  *   Sends string containing javascript array of matched files
  */
 function _uc_file_autocomplete_filename() {
@@ -1149,18 +1157,21 @@ function _uc_file_autocomplete_filename() {
 }
 
 /**
- * Return a date given an incrementation.
+ * Returns a date given an incrementation.
+ *
+ * $file_limits['time_polarity'] is either '+' or '-', indicating whether to
+ * add or subtract the amount of time. $file_limits['time_granularity'] is a
+ * unit of time like 'day', 'week', or 'never'.  $file_limits['time_quantity']
+ * is an amount of the previously mentioned unit...
+ * e.g. $file_limits = array('time_polarity => '+', 'time_granularity' => 'day', 'time_quantity' => 4);
+ * would read "4 days in the future."
  *
  * @param $file_limits
- *   A keyed array containing the fields time_polarity, time_quantity, and time_granularity
- * @return:
- *   A UNIX timestamp representing the amount of time the limits apply.
+ *   A keyed array containing the fields time_polarity, time_quantity,
+ *   and time_granularity.
  *
- * $file_limits['time_polarity'] is either '+' or '-', indicating whether to add or subtract the
- * amount of time. $file_limits['time_granularity'] is a unit of time like 'day', 'week', or 'never'.
- * $file_limits['time_quantity'] is an amount of the previously mentioned unit... e.g.
- * $file_limits = array('time_polarity => '+', 'time_granularity' => 'day', 'time_quantity' => 4);
- * would read "4 days in the future."
+ * @return
+ *   A UNIX timestamp representing the amount of time the limits apply.
  */
 function _uc_file_expiration_date($file_limits, $timestamp) {
   // Never expires.
@@ -1182,7 +1193,7 @@ function _uc_file_expiration_date($file_limits, $timestamp) {
 }
 
 /**
- * Remove all downloadable files, as well as their associations.
+ * Removes all downloadable files, as well as their associations.
  */
 function uc_file_empty() {
   $files = db_query("SELECT * FROM {uc_files}");
@@ -1192,7 +1203,7 @@ function uc_file_empty() {
 }
 
 /**
- * Remove all db entries associated with a given $fid.
+ * Removes all db entries associated with a given $fid.
  */
 function _uc_file_prune_db($fid) {
   $pfids = db_query("SELECT pfid FROM {uc_file_products} WHERE fid = :fid", array(':fid' => $fid));
@@ -1217,7 +1228,7 @@ function _uc_file_prune_db($fid) {
 }
 
 /**
- * Remove non-existent files.
+ * Removes non-existent files.
  */
 function _uc_file_prune_files() {
   $files = db_query("SELECT * FROM {uc_files}");
@@ -1235,7 +1246,7 @@ function _uc_file_prune_files() {
 }
 
 /**
- * Retrieve an updated list of available downloads.
+ * Retrieves an updated list of available downloads.
  */
 function _uc_file_gather_files() {
   // Don't bother if the directory isn't set.
@@ -1277,7 +1288,7 @@ function _uc_file_gather_files() {
 }
 
 /**
- * Remove non-existent files and update the downloadable list.
+ * Removes non-existent files and update the downloadable list.
  */
 function uc_file_refresh() {
   _uc_file_prune_files();
@@ -1285,22 +1296,26 @@ function uc_file_refresh() {
 }
 
 /**
- * Delete files (or directories).
+ * Deletes files (or directories).
+ *
+ * First, the file IDs are gathered according to whether or not we're recurring.
+ * The list is sorted in descending file system order (i.e. directories come
+ * last) to ensure the directories are empty when we start deleting them.
+ * Checks are done to ensure directories are empty before deleting them. All
+ * return values from file I/O functions are evaluated, and if they fail
+ * (say, because of permissions), then db entries are untouched. However,
+ * if the given file/path is deleted correctly, then all associations with
+ * products, product features, and users will be deleted, as well as the
+ * uc_file db entries.
  *
  * @param $fid
- *   An Ubercart file id
+ *   An Ubercart file id.
  * @param $recur
- *   Whether or not all files below this (if it's a directory) should be deleted as well.
- * @return:
- *   A boolean stating whether or not all requested operations succeeded.
+ *   Whether or not all files below this (if it's a directory) should be
+ *   deleted as well.
  *
- * First, the file IDs are gathered according to whether or not we're recurring. The list
- * is sorted in descending file system order (i.e. directories come last) to ensure the
- * directories are empty when we start deleting them. Checks are done to ensure directories
- * are empty before deleting them. All return values from file I/O functions are evaluated,
- * and if they fail (say, because of permissions), then db entries are untouched. However,
- * if the given file/path is deleted correctly, then all associations with products,
- * product features, and users will be deleted, as well as the uc_file db entries.
+ * @return
+ *   A boolean stating whether or not all requested operations succeeded.
  */
 function uc_file_remove_by_id($fid, $recur) {
   // Store the overall status. Any fails will return FALSE through this.
@@ -1358,13 +1373,14 @@ function uc_file_remove_by_id($fid, $recur) {
 }
 
 /**
- * Return a list of file ids that are in the directory
+ * Returns a list of file ids that are in the directory
  *
  * @param $fid
  *   The file id associated with the directory
  * @param $recursive
  *   Whether or not to list recursive directories and their files
- * @return:
+ *
+ * @return
  *   If there are files in the directory an array of file ids, else return FALSE
  */
 function _uc_file_get_dir_file_ids($fids, $recursive = FALSE) {
@@ -1411,19 +1427,20 @@ function _uc_file_get_dir_file_ids($fids, $recursive = FALSE) {
 }
 
 /**
- * Sort by 'filename' values.
+ * Sorts by 'filename' values.
  */
 function _uc_file_sort_by_name($l, $r) {
   return strcasecmp($l['filename'], $r['filename']);
 }
 
 /**
- * Take a list of file ids and sort the list by the associated filenames.
+ * Takes a list of file ids and sort the list by the associated filenames.
  *
  * @param $fids
- *   The array of file ids
- * @return:
- *   The sorted array of file ids
+ *   The array of file ids.
+ *
+ * @return
+ *   The sorted array of file ids.
  */
 function _uc_file_sort_names($fids) {
 
@@ -1444,12 +1461,13 @@ function _uc_file_sort_names($fids) {
 }
 
 /**
- * Take a list of file ids and sort the list in descending order.
+ * Takes a list of file ids and sort the list in descending order.
  *
  * @param $fids
- *   The array of file ids
- * @return:
- *   The sorted array of file ids
+ *   The array of file ids.
+ *
+ * @return
+ *   The sorted array of file ids.
  */
 function _uc_file_sort_fids($fids) {
 
@@ -1492,11 +1510,12 @@ function _uc_file_sort_fids($fids) {
 }
 
 /**
- * Qualify a given path with the base Ubercart file download path.
+ * Qualifies a given path with the base Ubercart file download path.
  *
  * @param $filename
  *   The name of the path to qualify.
- * @return:
+ *
+ * @return
  *   The qualified path.
  */
 function uc_file_qualify_file($filename) {
@@ -1504,7 +1523,7 @@ function uc_file_qualify_file($filename) {
 }
 
 /**
- * Remove all of a user's downloadable files.
+ * Removes all of a user's downloadable files.
  *
  * @param $uid
  *   A Drupal user ID.
@@ -1526,7 +1545,7 @@ function uc_file_remove_user($user) {
 }
 
 /**
- * Remove a user's downloadable file by hash key.
+ * Removes a user's downloadable file by hash key.
  *
  * @param $uid
  *   A Drupal user ID.
@@ -1571,11 +1590,12 @@ function _uc_file_flush_cache() {
 }
 
 /**
- * Retrieve a file by name.
+ * Retrieves a file by name.
  *
  * @param $filename
  *   An unqualified file path.
- * @return:
+ *
+ * @return
  *   A uc_file object.
  */
 function &uc_file_get_by_name($filename) {
@@ -1589,11 +1609,12 @@ function &uc_file_get_by_name($filename) {
 }
 
 /**
- * Retrieve a file by ID.
+ * Retrieves a file by ID.
  *
  * @param $fid
  *   A file ID.
- * @return:
+ *
+ * @return
  *   A uc_file object.
  */
 function &uc_file_get_by_id($fid) {
@@ -1607,11 +1628,12 @@ function &uc_file_get_by_id($fid) {
 }
 
 /**
- * Retrieve a file by hash key.
+ * Retrieves a file by hash key.
  *
  * @param $key
- *   A hash key
- * @return:
+ *   A hash key.
+ *
+ * @return
  *   A uc_file object.
  */
 function &uc_file_get_by_key($key) {
@@ -1628,7 +1650,17 @@ function &uc_file_get_by_key($key) {
 }
 
 /**
- * Add a file (or files) to a user's list of downloadable files, accumulating limits.
+ * Adds a file (or files) to a user's list of downloadable files,
+ * accumulating limits.
+ *
+ * First the function sees if the given file ID is a file or a directory,
+ * if it's a directory, it gathers all the files under it recursively.
+ * Then all the gathered IDs are iterated over, loading each file and
+ * aggregating all the data necessary to save a file_user object. Limits derived
+ * from the file are accumulated with the current limits for this user on this
+ * file (if an association exists yet). The data is then hashed, and the hash
+ * is stored in the file_user object. The object is then written to the
+ * file_users table.
  *
  * @param $fid
  *   A file ID.
@@ -1640,17 +1672,9 @@ function &uc_file_get_by_key($key) {
  *   The limits inherited from this file.
  * @param $force_overwrite
  *   Don't accumulate, assign.
- * @return:
- *   An array of uc_file objects.
  *
- * First the function sees if the given file ID is a file or a directory,
- * if it's a directory, it gathers all the files under it recursively.
- * Then all the gathered IDs are iterated over, loading each file and
- * aggregating all the data necessary to save a file_user object. Limits derived
- * from the file are accumulated with the current limits for this user on this
- * file (if an association exists yet). The data is then hashed, and the hash
- * is stored in the file_user object. The object is then written to the
- * file_users table.
+ * @return
+ *   An array of uc_file objects.
  */
 function uc_file_user_renew($fid, $user, $pfid, $file_limits, $force_overwrite) {
   $result = array();
@@ -1715,7 +1739,7 @@ function uc_file_user_renew($fid, $user, $pfid, $file_limits, $force_overwrite) 
 }
 
 /**
- * Retrieve a file_user object by user and fid.
+ * Retrieves a file_user object by user and fid.
  */
 function _uc_file_user_get($user, $fid) {
   $file_user = db_query("SELECT * FROM {uc_file_users} WHERE uid = :uid AND fid = :fid", array(':uid' => $user->uid, ':fid' => $fid))->fetchObject();
@@ -1728,15 +1752,15 @@ function _uc_file_user_get($user, $fid) {
 }
 
 /**
- * Get the maximum number of downloads for a given file.
+ * Gets the maximum number of downloads for a given file.
+ *
+ * If there are no file-specific download limits set, the function returns
+ * the global limits. Otherwise the limits from the file are returned.
  *
  * @param $file
  *   A uc_file_products object.
- * @return:
+ * @return
  *   The maximum number of downloads.
- *
- * If there are no file-specific download limits set, the function returns the global
- * limits. Otherwise the limits from the file are returned.
  */
 function uc_file_get_download_limit($file) {
   if (!isset($file->download_limit) || $file->download_limit == UC_FILE_LIMIT_SENTINEL) {
@@ -1748,15 +1772,16 @@ function uc_file_get_download_limit($file) {
 }
 
 /**
- * Get the maximum number of locations a file can be downloaded from.
+ * Gets the maximum number of locations a file can be downloaded from.
+ *
+ * If there are no file-specific location limits set, the function returns
+ * the global limits. Otherwise the limits from the file are returned.
  *
  * @param $file
  *   A uc_file_products object.
- * @return:
- *   The maximum number of locations.
  *
- * If there are no file-specific location limits set, the function returns the global
- * limits. Otherwise the limits from the file are returned.
+ * @return
+ *   The maximum number of locations.
  */
 function uc_file_get_address_limit($file) {
   if (!isset($file->address_limit) || $file->address_limit == UC_FILE_LIMIT_SENTINEL) {
@@ -1768,15 +1793,16 @@ function uc_file_get_address_limit($file) {
 }
 
 /**
- * Get the time expiration for a given file.
+ * Gets the time expiration for a given file.
+ *
+ * If there are no file-specific time limits set, the function returns the
+ * global limits. Otherwise the limits from the file are returned.
  *
  * @param $file
  *   A uc_file_products object.
- * @return:
- *   An array with entries for the granularity and quantity.
  *
- * If there are no file-specific time limits set, the function returns the global
- * limits. Otherwise the limits from the file are returned.
+ * @return
+ *   An array with entries for the granularity and quantity.
  */
 function uc_file_get_time_limit($file) {
 

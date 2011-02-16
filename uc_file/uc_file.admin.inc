@@ -15,10 +15,9 @@ define('UC_FILE_FORM_ACTION', 1   );
 /**
  * Form builder for file products admin.
  *
+ * @see uc_file_admin_files_form_show_files()
+ * @see uc_file_admin_files_form_action()
  * @ingroup forms
- * @see
- *   uc_file_admin_files_form_show_files()
- *   uc_file_admin_files_form_action()
  */
 function uc_file_admin_files_form($form, &$form_state) {
 
@@ -41,14 +40,13 @@ function uc_file_admin_files_form($form, &$form_state) {
 }
 
 /**
- * Display all files that may be purchased and downloaded for administration.
+ * Displays all files that may be purchased and downloaded for administration.
  *
+ * @see uc_file_admin_files_form()
+ * @see uc_file_admin_files_form_show_validate()
+ * @see uc_file_admin_files_form_show_submit()
+ * @see theme_uc_file_admin_files_form_show()
  * @ingroup forms
- * @see
- *   uc_file_admin_files_form()
- *   uc_file_admin_files_form_show_validate()
- *   uc_file_admin_files_form_show_submit()
- *   theme_uc_file_admin_files_form_show()
  */
 function uc_file_admin_files_form_show_files($form, &$form_state) {
   $form['#tree'] = TRUE;
@@ -143,9 +141,10 @@ function uc_file_admin_files_form_show_files($form, &$form_state) {
 }
 
 /**
- * Ensure at least one file is selected when deleting.
+ * Ensures at least one file is selected when deleting.
  *
  * @see uc_file_admin_files_form_show_files()
+ * @see uc_file_admin_files_form_show_submit()
  */
 function uc_file_admin_files_form_show_validate($form, &$form_state) {
 
@@ -171,9 +170,10 @@ function uc_file_admin_files_form_show_validate($form, &$form_state) {
 }
 
 /**
- * Move to the next step of the administration form.
+ * Moves to the next step of the administration form.
  *
  * @see uc_file_admin_files_form_show_files()
+ * @see uc_file_admin_files_form_show_validate()
  */
 function uc_file_admin_files_form_show_submit($form, &$form_state) {
   // Increment the form step.
@@ -182,8 +182,10 @@ function uc_file_admin_files_form_show_submit($form, &$form_state) {
 }
 
 /**
- * @ingroup themeable
+ * Returns HTML for uc_file_admin_files_form_show().
+ *
  * @see uc_file_admin_files_form_show_files()
+ * @ingroup themeable
  */
 function theme_uc_file_admin_files_form_show($variables) {
   $form = $variables['form'];
@@ -230,13 +232,12 @@ function theme_uc_file_admin_files_form_show($variables) {
 }
 
 /**
- * Perform file action (upload, delete, hooked in actions).
+ * Performs file action (upload, delete, hooked in actions).
  *
+ * @see uc_file_admin_files_form()
+ * @see uc_file_admin_files_form_action_validate()
+ * @see uc_file_admin_files_form_action_submit()
  * @ingroup forms
- * @see
- *   uc_file_admin_files_form()
- *   uc_file_admin_files_form_action_validate()
- *   uc_file_admin_files_form_action_submit()
  */
 function uc_file_admin_files_form_action($form, &$form_state) {
   $file_ids = array();
@@ -510,7 +511,7 @@ function _uc_file_display_arrays_equivalent($recur, $no_recur) {
 }
 
 /**
- * Show all possible files in selectable list.
+ * Shows all possible files in selectable list.
  */
 function _uc_file_build_js_file_display($file_ids) {
 
