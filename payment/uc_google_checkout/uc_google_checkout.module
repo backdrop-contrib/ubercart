@@ -10,6 +10,9 @@
  * Drupal hooks                                                               *
  ******************************************************************************/
 
+/**
+ * Implements hook_help().
+ */
 function uc_google_checkout_help($page, $args) {
   $output = '';
 
@@ -28,6 +31,9 @@ function uc_google_checkout_help($page, $args) {
   return $output;
 }
 
+/**
+ * Implements hook_menu().
+ */
 function uc_google_checkout_menu() {
   $items = array();
 
@@ -80,14 +86,23 @@ function uc_google_checkout_menu() {
   return $items;
 }
 
+/**
+ * Access callback function.
+ */
 function uc_google_checkout_callback_access() {
   return TRUE;
 }
 
+/**
+ * Menu title callback function.
+ */
 function uc_google_checkout_terminal_title($order) {
   return t('Google Checkout terminal: Order @order_id', array('@order_id' => $order->order_id));
 }
 
+/**
+ * Implements hook_init().
+ */
 function uc_google_checkout_init() {
   // When an order comes in from Google Checkout, we need to unset some
   // $_SESSION data. Since this isn't done under the customer's user, we
@@ -103,6 +118,9 @@ function uc_google_checkout_init() {
   $conf['i18n_variables'][] = 'uc_google_checkout_order_cancel_reason';
 }
 
+/**
+ * Implements hook_theme().
+ */
 function uc_google_checkout_theme() {
   return array(
     'uc_google_checkout_shipping_settings' => array(
@@ -116,6 +134,9 @@ function uc_google_checkout_theme() {
   );
 }
 
+/**
+ * Implements hook_form_alter().
+ */
 function uc_google_checkout_form_alter(&$form, &$form_state, $form_id) {
   if (uc_product_is_product_form($form)) {
     $node = $form['#node'];
@@ -225,6 +246,9 @@ function uc_google_checkout_node_revision_delete($node) {
  * Hook Functions (Ubercart)                                                  *
  ******************************************************************************/
 
+/**
+ * Implements hook_uc_cart_pane().
+ */
 function uc_google_checkout_uc_cart_pane() {
   $panes[] = array(
     'id' => 'uc_google_checkout',
@@ -240,6 +264,9 @@ function uc_google_checkout_uc_cart_pane() {
   return $panes;
 }
 
+/**
+ * Implements hook_uc_order_pane().
+ */
 function uc_google_checkout_uc_order_pane() {
   $panes[] = array(
     'id' => 'email_allowed',
@@ -254,6 +281,9 @@ function uc_google_checkout_uc_order_pane() {
   return $panes;
 }
 
+/**
+ * Implements hook_uc_line_item().
+ */
 function uc_google_checkout_uc_line_item() {
   $items[] = array(
     'id' => 'gc_coupon',
@@ -273,6 +303,9 @@ function uc_google_checkout_uc_line_item() {
   return $items;
 }
 
+/**
+ * Implements hook_uc_order().
+ */
 function uc_google_checkout_uc_order($op, &$order, $arg2) {
   switch ($op) {
     case 'load':
@@ -319,6 +352,9 @@ function uc_google_checkout_uc_payment_method() {
   return $methods;
 }
 
+/**
+ * Implements hook_uc_payment_gateway().
+ */
 function uc_google_checkout_uc_payment_gateway() {
   $gateways[] = array(
     'id' => 'google_checkout',
@@ -329,6 +365,9 @@ function uc_google_checkout_uc_payment_gateway() {
   return $gateways;
 }
 
+/**
+ * Implements hook_uc_shipment().
+ */
 function uc_google_checkout_uc_shipment($op, $shipment) {
   switch ($op) {
     case 'save':
@@ -401,6 +440,12 @@ function uc_google_checkout_uc_shipment($op, $shipment) {
  * Callback Functions, Forms, and Tables                                      *
  ******************************************************************************/
 
+/**
+ * Form builder for uc_google_checkout_cart_form().
+ *
+ * @see uc_google_checkout_cart_form_submit()
+ * @ingroup forms
+ */
 function uc_google_checkout_cart_form($form, &$form_state) {
   if (variable_get('uc_google_checkout_mode', 'checkout') == 'checkout') {
     $merchant_id = variable_get('uc_google_checkout_merchant_id', '');
@@ -455,6 +500,11 @@ function uc_google_checkout_cart_form($form, &$form_state) {
   return $form;
 }
 
+/**
+ * Form submission handler for uc_google_checkout_cart_form().
+ *
+ * @see uc_google_checkout_cart_form()
+ */
 function uc_google_checkout_cart_form_submit($form, &$form_state) {
   global $user;
   $items = uc_cart_get_contents();
@@ -719,8 +769,8 @@ function uc_google_checkout_pane_email_allowed($op, $order) {
 }
 
 /**
- * Add setting callbacks to the payment settings section
- *  The fulfillment sections need coded still. JS.
+ * Adds setting callbacks to the payment settings section
+ * The fulfillment sections need coded still. JS.
  */
 function uc_payment_method_google_checkout($op, &$order) {
   switch ($op) {

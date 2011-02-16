@@ -4,9 +4,13 @@
 /**
  * @file
  * Google Checkout administration menu items.
- *
  */
 
+/**
+ * Form builder for administrative settings form.
+ *
+ * @ingroup forms
+ */
 function uc_google_checkout_settings($form, &$form_state) {
   $form['authentication'] = array(
     '#type' => 'fieldset',
@@ -93,6 +97,14 @@ function uc_google_checkout_settings($form, &$form_state) {
   return system_settings_form($form);
 }
 
+/**
+ * Form builder for shipping settings form.
+ *
+ * @see uc_google_checkout_shipping_settings_validate()
+ * @see uc_google_checkout_shipping_settings_submit()
+ * @see theme_uc_google_checkout_shipping_settings()
+ * @ingroup forms
+ */
 function uc_google_checkout_shipping_settings($form, &$form_state) {
   $form['#tree'] = TRUE;
 
@@ -145,6 +157,12 @@ function uc_google_checkout_shipping_settings($form, &$form_state) {
   return $form;
 }
 
+/**
+ * Themes shipping settings form.
+ *
+ * @see uc_google_checkout_shipping_settings()
+ * @ingroup themeable
+ */
 function theme_uc_google_checkout_shipping_settings($variables) {
   $form = $variables['form'];
 
@@ -170,6 +188,12 @@ function theme_uc_google_checkout_shipping_settings($variables) {
   return $output;
 }
 
+/**
+ * Form validation for shipping settings form.
+ *
+ * @see uc_google_checkout_shipping_settings()
+ * @see uc_google_checkout_shipping_settings_submit()
+ */
 function uc_google_checkout_shipping_settings_validate($form, &$form_state) {
   foreach ($form_state['values']['services'] as $key => $service) {
     if ($service['enable'] && empty($service['default'])) {
@@ -187,6 +211,12 @@ function uc_google_checkout_shipping_settings_validate($form, &$form_state) {
   }
 }
 
+/**
+ * Form submission handler for shipping settings form.
+ *
+ * @see uc_google_checkout_shipping_settings()
+ * @see uc_google_checkout_shipping_settings_validate()
+ */
 function uc_google_checkout_shipping_settings_submit($form, &$form_state) {
   foreach ($form_state['values']['services'] as $key => $service) {
     variable_set('uc_google_checkout_shipping_' . $key, $service);
@@ -194,6 +224,13 @@ function uc_google_checkout_shipping_settings_submit($form, &$form_state) {
   drupal_set_message(t('The configuration options have been saved.'));
 }
 
+/**
+ * Form builder for tax settings form.
+ *
+ * @see uc_google_checkout_taxes_settings_submit()
+ * @see theme_uc_google_checkout_taxes_settings()
+ * @ingroup forms
+ */
 function uc_google_checkout_taxes_settings($form, &$form_state) {
   $form['#tree'] = TRUE;
 
@@ -242,6 +279,12 @@ function uc_google_checkout_taxes_settings($form, &$form_state) {
   return $form;
 }
 
+/**
+ * Themse tax settings form.
+ *
+ * @see uc_google_checkout_taxes_settings()
+ * @ingroup themeable
+ */
 function theme_uc_google_checkout_taxes_settings($variables) {
   $form = $variables['form'];
 
@@ -268,6 +311,11 @@ function theme_uc_google_checkout_taxes_settings($variables) {
   return $output;
 }
 
+/**
+ * Form submission handler for tax settings form.
+ *
+ * @see uc_google_checkout_taxes_settings()
+ */
 function uc_google_checkout_taxes_settings_submit($form, &$form_state) {
   foreach ($form_state['values']['taxes'] as $zone => $tax_values) {
     if ($zone == 'new' && $tax_values['zone'] && $tax_values['rate']) {
@@ -296,6 +344,9 @@ function uc_google_checkout_taxes_settings_submit($form, &$form_state) {
   }
 }
 
+/**
+ * Terminal form.
+ */
 function uc_google_checkout_terminal($order) {
   $order_id = $order->order_id;
 
@@ -361,6 +412,13 @@ function uc_google_checkout_terminal($order) {
   return $build;
 }
 
+/**
+ * Form builder for virtual terminal form.
+ *
+ * @see uc_google_checkout_terminal_form_validate()
+ * @see uc_google_checkout_terminal_form_submit()
+ * @ingroup forms
+ */
 function uc_google_checkout_terminal_form($form, &$form_state, $order, $amount = 0) {
   if ($order->financial_state == 'CHARGED') {
     $form['action'] = array(
@@ -421,6 +479,12 @@ function uc_google_checkout_terminal_form($form, &$form_state, $order, $amount =
   return $form;
 }
 
+/**
+ * Form validation for virtual terminal form.
+ *
+ * @see uc_google_checkout_terminal_form()
+ * @see uc_google_checkout_terminal_form_submit()
+ */
 function uc_google_checkout_terminal_form_validate($form, &$form_state) {
   if (!is_numeric($form_state['values']['amount']) || $form_state['values']['amount'] == 0) {
     form_set_error('amount', t('You must enter a number for the amount.'));
@@ -441,6 +505,12 @@ function uc_google_checkout_terminal_form_validate($form, &$form_state) {
   }
 }
 
+/**
+ * Form submission handler for virtual terminal form.
+ *
+ * @see uc_google_checkout_terminal_form()
+ * @see uc_google_checkout_terminal_form_validate()
+ */
 function uc_google_checkout_terminal_form_submit($form, &$form_state) {
   if ($form_state['values']['action'] == 'charge') {
     $form_state['redirect'] = uc_google_checkout_charge($form_state['values']['order_id'], $form_state['values']['amount']);

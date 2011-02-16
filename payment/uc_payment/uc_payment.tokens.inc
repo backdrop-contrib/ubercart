@@ -49,4 +49,3 @@ function uc_payment_tokens($type, $tokens, $data = array(), $options = array()) 
 
   return $values;
 }
-

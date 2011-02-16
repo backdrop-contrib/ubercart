@@ -8,7 +8,7 @@
  */
 
 /**
- * Receive a check for an order and put in a clear date.
+ * Receives a check for an order and put in a clear date.
  */
 function uc_payment_pack_receive_check_form($form, &$form_state, $order) {
   $balance = uc_payment_balance($order);

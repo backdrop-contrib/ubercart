@@ -7,7 +7,7 @@
  */
 
 /**
- * Process Instant Payment Notifiations from PayPal.
+ * Processes Instant Payment Notifiations from PayPal.
  */
 function uc_paypal_ipn() {
   if (!isset($_POST['invoice'])) {
@@ -167,7 +167,9 @@ function uc_paypal_ipn() {
   }
 }
 
-// Handles the review page for Express Checkout Mark Flow.
+/**
+ * Handles the review page for Express Checkout Mark Flow.
+ */
 function uc_paypal_ec_review_redirect() {
   if (!isset($_SESSION['TOKEN']) || ($order = uc_order_load($_SESSION['cart_order'])) == FALSE) {
     unset($_SESSION['cart_order']);
@@ -189,7 +191,9 @@ function uc_paypal_ec_review_redirect() {
   drupal_goto('cart/checkout/review');
 }
 
-// Handles the review page for Express Checkout Shortcut Flow.
+/**
+ * Handles the review page for Express Checkout Shortcut Flow.
+ */
 function uc_paypal_ec_review() {
   if (!isset($_SESSION['TOKEN']) || ($order = uc_order_load($_SESSION['cart_order'])) == FALSE) {
     unset($_SESSION['cart_order']);
@@ -255,7 +259,9 @@ function uc_paypal_ec_review() {
   return $build;
 }
 
-// Returns the form for the custom Review Payment screen for Express Checkout.
+/**
+ * Returns the form for the custom Review Payment screen for Express Checkout.
+ */
 function uc_paypal_ec_review_form($form, &$form_state, $order) {
   if (module_exists('uc_quote') && variable_get('uc_paypal_ec_review_shipping', TRUE) && uc_order_is_shippable($order)) {
     $result = uc_checkout_pane_quotes('view', $order, NULL);
@@ -385,7 +391,9 @@ function uc_paypal_ec_review_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'cart/echeckout/submit';
 }
 
-// Present the final total to the user for checkout!
+/**
+ * Presents the final total to the user for checkout!
+ */
 function uc_paypal_ec_submit() {
   if (!isset($_SESSION['TOKEN']) || ($order = uc_order_load($_SESSION['cart_order'])) == FALSE) {
     unset($_SESSION['cart_order'], $_SESSION['have_details']);
@@ -415,7 +423,9 @@ function uc_paypal_ec_submit() {
   return $build;
 }
 
-// Submits an order, calling the NVP API to send the order total to PayPal.
+/**
+ * Submits an order, calling the NVP API to send the order total to PayPal.
+ */
 function uc_paypal_ec_submit_form($form, &$form_state) {
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
@@ -426,7 +436,9 @@ function uc_paypal_ec_submit_form($form, &$form_state) {
   return $form;
 }
 
-// Handles a complete Website Payments Standard sale.
+/**
+ * Handles a complete Website Payments Standard sale.
+ */
 function uc_paypal_complete($order) {
   // If the order ID specified in the return URL is not the same as the one in
   // the user's session, we need to assume this is either a spoof or that the
@@ -449,7 +461,9 @@ function uc_paypal_complete($order) {
   drupal_goto('cart/checkout/complete');
 }
 
-// Handles a canceled Website Payments Standard sale.
+/**
+ * Handles a canceled Website Payments Standard sale.
+ */
 function uc_paypal_cancel() {
   unset($_SESSION['cart_order']);
 

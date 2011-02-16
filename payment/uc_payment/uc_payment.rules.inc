@@ -72,6 +72,9 @@ function uc_payment_condition_order_balance($order, $balance_comparison) {
   }
 }
 
+/**
+ * Returns balance options.
+ */
 function uc_payment_condition_balance_options() {
   $zero = array('!zero' => uc_currency_format(0));
   $options = array(
@@ -83,4 +86,3 @@ function uc_payment_condition_balance_options() {
 
   return $options;
 }
-

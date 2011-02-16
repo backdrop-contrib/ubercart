@@ -3,11 +3,15 @@
 
 /**
  * @file
- * Includes page callbacks for administrative recurring fee operation pages.
+ * Page callbacks for administrative recurring fee operation pages.
  */
 
-
-// Displays a form to update a subscriptions's CC info.
+/**
+ * Displays a form to update a subscriptions's CC info.
+ *
+ * @see uc_authorizenet_arb_admin_update_form_submit()
+ * @ingroup forms
+ */
 function uc_authorizenet_arb_admin_update_form($form, &$form_state, $rfid) {
   $order = new stdClass();
 
@@ -40,6 +44,11 @@ function uc_authorizenet_arb_admin_update_form($form, &$form_state, $rfid) {
   return $form;
 }
 
+/**
+ * Form submission handler for uc_authorizenet_arb_admin_update_form().
+ *
+ * @see uc_authorizenet_arb_admin_update_form()
+ */
 function uc_authorizenet_arb_admin_update_form_submit($form, &$form_state) {
   $fee = uc_recurring_fee_load('user', $form_state['values']['rfid']);
 
@@ -65,7 +74,12 @@ function uc_authorizenet_arb_admin_update_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/store/orders/recurring';
 }
 
-// Displays a confirm form for cancelling a subscription.
+/**
+ * Displays a confirm form for cancelling a subscription.
+ *
+ * @see uc_authorizenet_arb_admin_cancel_form_submit()
+ * @ingroup forms
+ */
 function uc_authorizenet_arb_admin_cancel_form($form, &$form_state, $rfid) {
   $form['rfid'] = array(
     '#type' => 'value',
@@ -75,6 +89,11 @@ function uc_authorizenet_arb_admin_cancel_form($form, &$form_state, $rfid) {
   return confirm_form($form, t('Are you sure you wish to cancel this subscription?'), 'admin/store/orders/recurring', NULL, t('Confirm'), t('Cancel'));
 }
 
+/**
+ * Form submission handler for uc_authorizenet_arb_admin_cancel_form().
+ *
+ * @see uc_authorizenet_arb_admin_cancel_form()
+ */
 function uc_authorizenet_arb_admin_cancel_form_submit($form, &$form_state) {
   $fee = uc_recurring_fee_load('user', $form_state['values']['rfid']);
 

@@ -8,7 +8,7 @@ jQuery(document).ready(
 );
 
 /**
- * Toggle credit card details on the order view screen.
+ * Toggles credit card details on the order view screen.
  */
 function toggle_card_details() {
   jQuery('#cc_details').toggle();

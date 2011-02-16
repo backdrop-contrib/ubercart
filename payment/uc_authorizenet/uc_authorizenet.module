@@ -3,7 +3,7 @@
 
 /**
  * @file
- * Process payments using Authorize.net. Supports AIM and ARB.
+ * Processes payments using Authorize.net. Supports AIM and ARB.
  *
  * Development sponsored by Digital Dollhouse - http://www.digitaldollhouse.com
  */
@@ -67,7 +67,11 @@ function uc_authorizenet_menu() {
   return $items;
 }
 
-// Make sure Authorize.Net always has access to send Silent POSTs.
+/**
+ * Access callback.
+ *
+ * Ensures Authorize.Net always has access to send Silent POSTs.
+ */
 function uc_authorizenet_silent_post_access() {
   return TRUE;
 }
@@ -225,7 +229,9 @@ function uc_authorizenet_form_alter(&$form, &$form_state, $form_id) {
   }
 }
 
-// Submit handler for payment gateway settings form to encrypt fields.
+/**
+ * Submit handler for payment gateway settings form to encrypt fields.
+ */
 function uc_authorizenet_payment_gateway_settings_submit($form, &$form_state) {
   // If CC encryption has been configured properly.
   if ($key = uc_credit_encryption_key()) {
@@ -242,7 +248,9 @@ function uc_authorizenet_payment_gateway_settings_submit($form, &$form_state) {
   }
 }
 
-// Main handler for processing credit card transactions.
+/**
+ * Main handler for processing credit card transactions.
+ */
 function uc_authorizenet_charge($order_id, $amount, $data) {
   // Load the order.
   $order = uc_order_load($order_id);
@@ -270,7 +278,7 @@ function uc_authorizenet_charge($order_id, $amount, $data) {
 }
 
 /**
- * Create a CIM profile using an order's data.
+ * Creates a CIM profile using an order's data.
  */
 function _uc_authorizenet_cim_profile_create($order) {
   $server = variable_get('uc_authnet_cim_mode', 'disabled');
@@ -322,7 +330,7 @@ function _uc_authorizenet_cim_profile_create_request($order) {
 }
 
 /**
- * Use a reference to charge to a CIM profile.
+ * Uses a reference to charge to a CIM profile.
  */
 function _uc_authorizenet_cim_profile_charge($order, $amount, $data) {
   global $user;
@@ -405,7 +413,7 @@ function _uc_authorizenet_cim_profile_charge_request($order, $amount, $data) {
 }
 
 /**
- * Get a CIM profile stored at Authorize.Net.
+ * Gets a CIM profile stored at Authorize.Net.
  */
 function _uc_authorizenet_cim_profile_get($order, $profile_id) {
   $server = variable_get('uc_authnet_cim_mode', 'disabled');
@@ -423,7 +431,7 @@ function _uc_authorizenet_cim_profile_get($order, $profile_id) {
 }
 
 /**
- * Get a CIM payment profile stored at auth.net.
+ * Gets a CIM payment profile stored at auth.net.
  */
 function _uc_authorizenet_cim_payment_profile_get($order, $profile_id, $payment_profile_id) {
   $server = variable_get('uc_authnet_cim_mode', 'disabled');
@@ -681,6 +689,7 @@ function uc_authorizenet_recurring_fee_ops($context, $fee) {
  *   The XML to send to Authorize.Net.
  * @param $callback
  *   The name of the function that should process the response.
+ *
  * @return
  *   TRUE or FALSE indicating the success of the API request.
  */
@@ -722,6 +731,7 @@ function uc_authorizenet_xml_api($server, $xml) {
  *   The order object containing billing and shipping information.
  * @param $fee
  *   An array of data describing the recurring fee.
+ *
  * @return
  *   TRUE or FALSE indicating the success of the request.
  */
@@ -867,14 +877,15 @@ function uc_authorizenet_arb_create($order, $fee) {
 
 /**
  * Updates an ARB subscription; for simplicity's sake, payment schedule
- *   information cannot be updated at this time.
+ * information cannot be updated at this time.
  *
  * @param $subscription_id
  *   The ID of the subscription at Authorize.Net.
  * @param $updates
  *   An array of data to update using key/value pairs from the XML API for ARB;
- *     keys should be children of the subscription element in the XML.
+ *   keys should be children of the subscription element in the XML.
  *   See the ARB_guide.pdf from Authorize.Net for ARBCreateSubscriptionRequests.
+ *
  * @return
  *   TRUE or FALSE indicating the success of the cancellation.
  */
@@ -925,6 +936,7 @@ function uc_authorizenet_arb_update($subscription_id, $updates, $order_id = NULL
  *   Optional. The ID of the order the recurring fee was attached to.
  * @param $fee
  *   Optional. The data array for the recurring fee being canceled.
+ *
  * @return
  *   TRUE or FALSE indicating the success of the cancellation.
  */
@@ -969,8 +981,8 @@ function uc_authorizenet_arb_cancel($subscription_id, $order_id = NULL, $fee = a
 }
 
 /**
- * Wraps XML API request child elements in the request element and includes the
- *   merchant authentication information.
+ * Wraps XML API request child elements in the request element and includes
+ * the merchant authentication information.
  */
 function _uc_authorizenet_xml_api_wrapper($request, $xml) {
   return '<?xml version="1.0" encoding="utf-8"?><' . $request
@@ -980,7 +992,9 @@ function _uc_authorizenet_xml_api_wrapper($request, $xml) {
         . '</transactionKey></merchantAuthentication>' . $xml . '</' . $request . '>';
 }
 
-// Converts a hierarchical array of elements into an XML string.
+/**
+ * Converts a hierarchical array of elements into an XML string.
+ */
 function _uc_authorizenet_array_to_xml($data) {
   $xml = '';
 
@@ -999,7 +1013,9 @@ function _uc_authorizenet_array_to_xml($data) {
   return $xml;
 }
 
-// Returns the message text for an AVS response code.
+/**
+ * Returns the message text for an AVS response code.
+ */
 function _uc_authorizenet_avs($code) {
   $text = $code . ' - ';
 
@@ -1048,7 +1064,9 @@ function _uc_authorizenet_avs($code) {
   return $text;
 }
 
-// Returns the message text for a CVV match.
+/**
+ * Returns the message text for a CVV match.
+ */
 function _uc_authorizenet_cvv($code) {
   $text = $code . ' - ';
 
@@ -1073,7 +1091,9 @@ function _uc_authorizenet_cvv($code) {
   return $text;
 }
 
-// Returns the title of the transaction type.
+/**
+ * Returns the title of the transaction type.
+ */
 function _uc_authorizenet_txn_type($type) {
   switch (strtoupper($type)) {
     case 'AUTH_CAPTURE':
@@ -1091,7 +1111,9 @@ function _uc_authorizenet_txn_type($type) {
   }
 }
 
-// Returns the Auth.Net transaction type corresponding to a UC type.
+/**
+ * Returns the Auth.Net transaction type corresponding to a UC type.
+ */
 function _uc_authorizenet_txn_map($type) {
   switch ($type) {
     case UC_CREDIT_AUTH_ONLY:
@@ -1108,7 +1130,7 @@ function _uc_authorizenet_txn_map($type) {
 }
 
 /**
- * Map an order's billing information to an array for later XML conversion.
+ * Maps an order's billing information to an array for later XML conversion.
  */
 function _uc_authorize_cim_xml_billto($order) {
   $billing_country = uc_get_country_data(array('country_id' => $order->billing_country));
@@ -1125,7 +1147,7 @@ function _uc_authorize_cim_xml_billto($order) {
 }
 
 /**
- * Map an order's shipping information to an array for later XML conversion.
+ * Maps an order's shipping information to an array for later XML conversion.
  */
 function _uc_authorize_cim_xml_shipto($order) {
   $delivery_country = uc_get_country_data(array('country_id' => $order->delivery_country));
@@ -1142,7 +1164,7 @@ function _uc_authorize_cim_xml_shipto($order) {
 }
 
 /**
- * Parse an Authorize.Net XML CIM API response.
+ * Parses an Authorize.Net XML CIM API response.
  */
 function _uc_authorizenet_cim_parse_response($content) {
   // Find the elements in the XML and build the return array.
@@ -1160,7 +1182,9 @@ function _uc_authorizenet_cim_parse_response($content) {
   return $data;
 }
 
-// Parse an Authorize.Net XML API response; from sample PHP for ARB.
+/**
+ * Parses an Authorize.Net XML API response; from sample PHP for ARB.
+ */
 function _uc_authorizenet_arb_parse_response($content) {
   // Find the elements in the XML and build the return array.
   $data = array(
@@ -1174,7 +1198,9 @@ function _uc_authorizenet_arb_parse_response($content) {
   return $data;
 }
 
-// Helper function for parsing responses; adapted from sample PHP for ARB.
+/**
+ * Helper function for parsing responses; adapted from sample PHP for ARB.
+ */
 function _uc_authorizenet_substr_between($string, $element) {
   $open = '<' . $element . '>';
   $close = '</' . $element . '>';
@@ -1190,7 +1216,9 @@ function _uc_authorizenet_substr_between($string, $element) {
   return substr($string, $start, $end - $start);
 }
 
-// Decrypts the login data for using Auth.Net APIs.
+/**
+ * Decrypts the login data for using Auth.Net APIs.
+ */
 function _uc_authorizenet_login_data() {
   static $data;
 

@@ -1196,6 +1196,8 @@ function theme_uc_payment_method_credit_form($variables) {
 
 /**
  * Builds the "Process Card" button on the order view.
+ *
+ * @see uc_credit_order_view_form_submit()
  */
 function uc_credit_order_view_form($form, &$form_state, $order_id) {
   $form['order_id'] = array(
@@ -1212,6 +1214,8 @@ function uc_credit_order_view_form($form, &$form_state, $order_id) {
 
 /**
  * Submit handler for order view form.
+ *
+ * @see uc_credit_order_view_form()
  */
 function uc_credit_order_view_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/credit';
@@ -1244,6 +1248,7 @@ function uc_credit_display_number($number, $masked = FALSE) {
  *   The cache operation to perform; either 'save', 'load', or 'clear'.
  * @param $data
  *   The encrypted, serialized string containing the CC data.
+ *
  * @return
  *   An array of credit card details.
  */
@@ -1326,7 +1331,8 @@ function _uc_credit_valid_cvv($cvv) {
 
 /**
  * Validates a credit card number during checkout.
- * See: http://www.merriampark.com/anatomycc.htm
+ *
+ * Luhn algorithm.  See: http://www.merriampark.com/anatomycc.htm
  */
 function _uc_credit_valid_card_number($number) {
   $id = substr($number, 0, 1);
@@ -1364,6 +1370,7 @@ function _uc_credit_valid_card_number($number) {
  *   The 1 or 2-digit numeric representation of the month, i.e. 1, 6, 12.
  * @param $year
  *   The 4-digit numeric representation of the year, i.e. 2008.
+ *
  * @return
  *   TRUE for cards whose start date is blank (both month and year) or in the
  *   past, FALSE otherwise.
@@ -1396,6 +1403,7 @@ function _uc_credit_valid_card_start($month, $year) {
  *   The 1 or 2-digit numeric representation of the month, i.e. 1, 6, 12.
  * @param $year
  *   The 4-digit numeric representation of the year, i.e. 2008.
+ *
  * @return
  *   TRUE for non-expired cards, FALSE for expired.
  */
@@ -1426,7 +1434,8 @@ function _uc_credit_valid_card_issue($issue) {
 /**
  * Loads the key for CC number encryption from a file.
  *
- * @return FALSE if no encryption key is found.
+ * @return
+ *   FALSE if no encryption key is found.
  */
 function uc_credit_encryption_key() {
   static $key;
@@ -1479,7 +1488,7 @@ function _uc_credit_save_cc_data_to_order($cc_data, $order_id) {
 
 /**
  * Returns an array of credit card transaction types available to payment
- *   gateway modules that make sense for default usage.
+ * gateway modules that make sense for default usage.
  */
 function uc_credit_transaction_types() {
   $types = array(
@@ -1497,7 +1506,7 @@ function uc_credit_transaction_types() {
  *
  * @return
  *   A string containing the ID of the default gateway or FALSE if none exists
- *     or none have valid credit callbacks.
+ *   or none have valid credit callbacks.
  */
 function uc_credit_default_gateway() {
   // Get an array of enabled payment gateways available for the payment method.
@@ -1557,6 +1566,7 @@ function uc_credit_default_gateway() {
  *   The payment service's ID for the authorization.
  * @param $amount
  *   The amount that was authorized on the card.
+ *
  * @return
  *   The entire updated data array for the order.
  */
@@ -1587,9 +1597,10 @@ function uc_credit_log_authorization($order_id, $auth_id, $amount) {
  *   The order associated with the credit card capture.
  * @param $auth_id
  *   The payment service's ID for the authorization that was captured.
+ *
  * @return
  *   The entire updated data array for the order or FALSE to indicate the
- *     specified authorization was not found.
+ *   specified authorization was not found.
  */
 function uc_credit_log_prior_auth_capture($order_id, $auth_id) {
   // Load the existing order data array.
@@ -1624,6 +1635,7 @@ function uc_credit_log_prior_auth_capture($order_id, $auth_id) {
  * @param $cc_number
  *   The credit card number associated with this reference.  Only the last 4
  *     digits will be stored.
+ *
  * @return
  *   The entire updated data array for the order.
  */

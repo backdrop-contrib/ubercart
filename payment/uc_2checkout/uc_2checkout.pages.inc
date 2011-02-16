@@ -4,9 +4,11 @@
 /**
  * @file
  * 2checkout menu items.
- *
  */
 
+/**
+ * Finalizes 2checkout transaction.
+ */
 function uc_2checkout_complete($cart_id = 0) {
   watchdog('2Checkout', 'Receiving new order notification for order !order_id.', array('!order_id' => check_plain($_POST['merchant_order_id'])));
 

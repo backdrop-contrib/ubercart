@@ -4,10 +4,11 @@
 /**
  * @file
  * Credit menu items.
- *
  */
 
-// Prints the contents of the CVV information popup window.
+/**
+ * Prints the contents of the CVV information popup window.
+ */
 function uc_credit_cvv_info() {
   $output = '<b>' . t('What is the CVV?') . '</b><p>' . t('CVV stands for Card Verification Value. This number is used as a security feature to protect you from credit card fraud.  Finding the number on your card is a very simple process.  Just follow the directions below.') . '</p>';
   $cc_types = array('visa', 'mastercard', 'discover');

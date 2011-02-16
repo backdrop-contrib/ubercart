@@ -12,7 +12,7 @@
  */
 
 /**
- * Take action when a payment is entered for an order.
+ * Takes action when a payment is entered for an order.
  *
  * @param $order
  *   The order object.
@@ -41,7 +41,7 @@ function hook_uc_payment_entered($order, $method, $amount, $account, $data, $com
 }
 
 /**
- * Register payment gateway callbacks.
+ * Registers payment gateway callbacks.
  *
  * @see @link http://www.ubercart.org/docs/api/hook_payment_gateway @endlink
  *
@@ -73,7 +73,7 @@ function hook_uc_payment_gateway() {
 }
 
 /**
- * Register callbacks for payment methods.
+ * Registers callbacks for payment methods.
  *
  * Payment methods are different ways to collect payment. By default, Ubercart
  * comes with support for check, credit card, and generic payments. Payment

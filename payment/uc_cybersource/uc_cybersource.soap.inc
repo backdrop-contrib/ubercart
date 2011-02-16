@@ -13,7 +13,9 @@ class CyberSourceSoapClient extends SoapClient {
     parent::__construct($wsdl, $options);
   }
 
-  // This section inserts the UsernameToken information in the outgoing request.
+  /**
+   * Inserts the UsernameToken information in the outgoing request.
+   */
   function __doRequest($request, $location, $action, $version) {
     $login = _uc_cybersource_soap_login_data();
 

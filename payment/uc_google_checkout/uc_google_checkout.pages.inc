@@ -4,7 +4,6 @@
 /**
  * @file
  * Google Checkout administration menu items.
- *
  */
 
 function uc_google_checkout_callback() {

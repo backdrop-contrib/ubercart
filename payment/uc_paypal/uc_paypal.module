@@ -77,7 +77,9 @@ function uc_paypal_menu() {
   return $items;
 }
 
-// Make sure PayPal always has access to send IPNs.
+/**
+ * Makes sure PayPal always has access to send IPNs.
+ */
 function uc_paypal_ipn_access() {
   return TRUE;
 }
@@ -222,7 +224,9 @@ function uc_paypal_uc_payment_method() {
  * Callback Functions, Forms, and Tables
  ******************************************************************************/
 
-// Settings for Website Payments Pro on the Payment gateways form.
+/**
+ * Settings for Website Payments Pro on the Payment gateways form.
+ */
 function uc_paypal_wpp_settings_form($form, &$form_state) {
   // The DoDirectPayment API call allows fewer currencies than PayPal in general.
   $form['paypal_wpp']['uc_paypal_wpp_currency'] = array(
@@ -306,7 +310,9 @@ function uc_paypal_wpp_settings_form($form, &$form_state) {
   return $form;
 }
 
-// Process a credit card payment through Website Payments Pro.
+/**
+ * Process a credit card payment through Website Payments Pro.
+ */
 function uc_paypal_wpp_charge($order_id, $amount, $data) {
   global $user;
 
@@ -502,7 +508,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
 }
 
 /**
- * Build error message(s) from PayPal failure responses.
+ * Builds error message(s) from PayPal failure responses.
  */
 function _uc_paypal_build_error_messages($nvp_response) {
   $code = 0;
@@ -514,7 +520,9 @@ function _uc_paypal_build_error_messages($nvp_response) {
   return $message;
 }
 
-// Handles the Website Payments Standard payment method.
+/**
+ * Handles the Website Payments Standard payment method.
+ */
 function uc_payment_method_paypal_wps($op, &$order) {
   switch ($op) {
     case 'order-view':
@@ -624,7 +632,9 @@ function uc_payment_method_paypal_wps($op, &$order) {
   }
 }
 
-// Handles the Express Checkout payment method.
+/**
+ * Handles the Express Checkout payment method.
+ */
 function uc_payment_method_paypal_ec($op, &$order) {
   switch ($op) {
     case 'order-view':
@@ -647,7 +657,9 @@ function uc_payment_method_paypal_ec($op, &$order) {
  * Module and Helper Functions
  ******************************************************************************/
 
-// Redirects if a customer selects PayPal Express Checkout as a payment method.
+/**
+ * Redirects if a customer selects PayPal Express Checkout as a payment method.
+ */
 function uc_paypal_ec_checkout($form, &$form_state) {
   if ($form_state['values']['panes']['payment']['payment_method'] != 'paypal_ec') {
     return;
@@ -714,7 +726,9 @@ function uc_paypal_ec_checkout($form, &$form_state) {
   exit();
 }
 
-// Returns the form for Express Checkout Shortcut Flow.
+/**
+ * Returns the form for Express Checkout Shortcut Flow.
+ */
 function uc_paypal_ec_form($form, &$form_state) {
   if (!variable_get('uc_cap_uc_paypal_ec_enabled', FALSE)) {
     return;
@@ -824,7 +838,9 @@ function uc_paypal_ec_submit_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'cart/checkout/complete';
 }
 
-// Returns the form elements for the Website Payments Standard form.
+/**
+ * Returns the form elements for the Website Payments Standard form.
+ */
 function uc_paypal_wps_form($form, &$form_state, $order) {
   $shipping = 0;
   foreach ($order->line_items as $item) {
@@ -983,7 +999,9 @@ function uc_paypal_wps_form($form, &$form_state, $order) {
   return $form;
 }
 
-// Sends a request to PayPal and returns a response array.
+/**
+ * Sends a request to PayPal and returns a response array.
+ */
 function uc_paypal_api_request($request, $server) {
   // We use $request += to add API credentials so that
   // if a key already exists, it will not be overridden
@@ -1018,7 +1036,9 @@ function uc_paypal_api_request($request, $server) {
   return _uc_paypal_nvp_to_array($response);
 }
 
-// Returns the description and subtotal of the products on an order.
+/**
+ * Returns the description and subtotal of the products on an order.
+ */
 function _uc_paypal_product_details($items) {
   $desc = '';
   $subtotal = 0;
@@ -1036,7 +1056,9 @@ function _uc_paypal_product_details($items) {
   return array($desc, $subtotal);
 }
 
-// Returns the PayPal approved credit card type for a card number.
+/**
+ * Returns the PayPal approved credit card type for a card number.
+ */
 function _uc_paypal_card_type($cc_number) {
   switch (substr(strval($cc_number), 0, 1)) {
     case '3':
@@ -1052,7 +1074,9 @@ function _uc_paypal_card_type($cc_number) {
   return FALSE;
 }
 
-// Turns PayPal's NVP response to an API call into an associative array.
+/**
+ * Turns PayPal's NVP response to an API call into an associative array.
+ */
 function _uc_paypal_nvp_to_array($nvpstr) {
   foreach (explode('&', $nvpstr) as $nvp) {
     list($key, $value) = explode('=', $nvp);
@@ -1062,9 +1086,9 @@ function _uc_paypal_nvp_to_array($nvpstr) {
   return $nvp_array;
 }
 
-
-
-// Returns a human readable message for the AVS code.
+/**
+ * Returns a human readable message for the AVS code.
+ */
 function _uc_paypal_avscode_message($code) {
   if (is_numeric($code)) {
     switch ($code) {
@@ -1117,7 +1141,9 @@ function _uc_paypal_avscode_message($code) {
   }
 }
 
-// Returns a human readable message for the CVV2 match code.
+/**
+ * Returns a human readable message for the CVV2 match code.
+ */
 function _uc_paypal_cvvmatch_message($code) {
   if (is_numeric($code)) {
     switch ($code) {
@@ -1154,7 +1180,9 @@ function _uc_paypal_cvvmatch_message($code) {
   }
 }
 
-// Return a message for the pending reason of a PayPal payment.
+/**
+ * Returns a message for the pending reason of a PayPal payment.
+ */
 function _uc_paypal_pending_message($reason) {
   switch ($reason) {
     case 'address':
@@ -1179,7 +1207,9 @@ function _uc_paypal_pending_message($reason) {
   }
 }
 
-// Return a message for the reason code of a PayPal reversal.
+/**
+ * Returns a message for the reason code of a PayPal reversal.
+ */
 function _uc_paypal_reversal_message($reason) {
   switch ($reason) {
     case 'chargeback':
@@ -1196,7 +1226,9 @@ function _uc_paypal_reversal_message($reason) {
   }
 }
 
-// Returns an array of possible currency codes.
+/**
+ * Returns an array of possible currency codes.
+ */
 function _uc_paypal_currency_array() {
   return drupal_map_assoc(array('AUD', 'BRL', 'CAD', 'CHF', 'CZK', 'DKK', 'EUR', 'GBP', 'HKD', 'HUF', 'ILS', 'JPY', 'MXN', 'MYR', 'NOK', 'NZD', 'PHP', 'PLN', 'SEK', 'SGD', 'THB', 'TWD', 'USD'));
 }

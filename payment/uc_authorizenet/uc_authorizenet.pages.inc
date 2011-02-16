@@ -3,12 +3,14 @@
 
 /**
  * @file
- * Includes page callbacks for Authorize.Net's Silent POST feature and user
- *   specific recurring fee operation pages.
+ * Page callbacks for Authorize.Net's Silent POST feature and user
+ * specific recurring fee operation pages.
  */
 
 
-// Receives a payment notification and handles it appropriately.
+/**
+ * Receives a payment notification and handles it appropriately.
+ */
 function uc_authorizenet_silent_post() {
   // Determine if this is an ARB notification or not
   $arb = (isset($_POST['x_subscription_id']) and isset($_POST['x_subscription_paynum']));
@@ -86,7 +88,12 @@ function uc_authorizenet_silent_post() {
   exit();
 }
 
-// Displays a form for customers to update their CC info.
+/**
+ * Displays a form for customers to update their CC info.
+ *
+ * @see uc_authorizenet_arb_user_update_form_submit()
+ * @ingroup forms
+ */
 function uc_authorizenet_arb_user_update_form($form, &$form_state, $user, $rfid) {
   $fee = uc_recurring_fee_load('user', $rfid);
 
@@ -121,6 +128,11 @@ function uc_authorizenet_arb_user_update_form($form, &$form_state, $user, $rfid)
   return $form;
 }
 
+/**
+ * Form submission handler for uc_authorizenet_arb_user_update_form().
+ *
+ * @see uc_authorizenet_arb_user_update_form()
+ */
 function uc_authorizenet_arb_user_update_form_submit($form, &$form_state) {
   $fee = uc_recurring_fee_load('user', $form_state['values']['rfid']);
 
@@ -146,7 +158,12 @@ function uc_authorizenet_arb_user_update_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'user/' . $form_state['values']['uid'];
 }
 
-// Displays a confirm form for customers to cancel their fees.
+/**
+ * Displays a confirm form for customers to cancel their fees.
+ *
+ * @see uc_authorizenet_arb_user_cancel_form_submit()
+ * @ingroup forms
+ */
 function uc_authorizenet_arb_user_cancel_form($form, &$form_state, $user, $rfid) {
   $form['uid'] = array(
     '#type' => 'value',
@@ -160,6 +177,11 @@ function uc_authorizenet_arb_user_cancel_form($form, &$form_state, $user, $rfid)
   return confirm_form($form, t('Are you sure you wish to cancel this fee?'), 'user/' . $user->uid, t('This action cannot be undone and may result in the termination of subscription services.'), t('Confirm'), t('Cancel'));
 }
 
+/**
+ * Form submission handler for uc_authorizenet_arb_user_cancel_form().
+ *
+ * @see uc_authorizenet_arb_user_cancel_form()
+ */
 function uc_authorizenet_arb_user_cancel_form_submit($form, &$form_state) {
   $fee = uc_recurring_fee_load('user', $form_state['values']['rfid']);
 

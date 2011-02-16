@@ -44,6 +44,9 @@ function uc_cybersource_menu() {
   return $items;
 }
 
+/**
+ * Access callback function.
+ */
 function uc_cybersource_hop_post_access() {
   return TRUE;
 }
@@ -118,7 +121,9 @@ function uc_cybersource_uc_payment_gateway() {
   return $gateways;
 }
 
-// Processes a payment POST from the CyberSource Hosted Order Page API.
+/**
+ * Processes a payment POST from the CyberSource Hosted Order Page API.
+ */
 function uc_cybersource_hop_post() {
   if (!uc_cybersource_hop_include()) {
     watchdog('uc_cybersource_hop', 'Unable to receive HOP POST due to missing or unreadable HOP.php file.', array(), 'error');
@@ -212,7 +217,9 @@ function uc_cybersource_hop_include() {
   return FALSE;
 }
 
-// Adds the CyberSource fields to the payment gateway settings form.
+/**
+ * Adds the CyberSource fields to the payment gateway settings form.
+ */
 function uc_cybersource_settings_form($form, &$form_state) {
   // Check for the HOP.php for Silent Order POST.
   if (variable_get('uc_cybersource_method', 'post') == 'post' &&
@@ -341,7 +348,7 @@ function uc_cybersource_settings_form($form, &$form_state) {
  * Defines payment method properties.
  *
  * @return
- *  Returnes an array with properity and value pairs of CyberSource payment method.
+ *   An array with property and value pairs of CyberSource payment method.
  */
 function uc_cybersource_payment_method() {
   $methods[] = array(
@@ -359,6 +366,9 @@ function uc_cybersource_payment_method() {
   return $methods;
 }
 
+/**
+ * Payment method callback.
+ */
 function uc_payment_method_cybersource_hop($op, $arg1) {
   if ($op == 'settings') {
     $form['uc_cybersource_hop_server'] = array(
@@ -390,6 +400,9 @@ function uc_payment_method_cybersource_hop($op, $arg1) {
   }
 }
 
+/**
+ * Finalizes CyberSource transaction.
+ */
 function uc_cybersource_hop_complete($order) {
   // If the order ID specified in the return URL is not the same as the one in
   // the user's session, we need to assume this is either a spoof or that the
@@ -404,12 +417,12 @@ function uc_cybersource_hop_complete($order) {
   $_SESSION['do_complete'] = TRUE;
   drupal_goto('cart/checkout/complete');
 }
+
 /**
- * Define values to be posted to CyberSource.
+ * Defines values to be posted to CyberSource.
  *
- * @retun
- *  Transaction data arrays are returned as hidden form values.
- *
+ * @return
+ *   Transaction data arrays are returned as hidden form values.
  */
 function uc_cybersource_hop_form($form, $form_state, $order) {
   if (!uc_cybersource_hop_include()) {
@@ -513,6 +526,9 @@ function uc_cybersource_hop_form($form, $form_state, $order) {
   return $form;
 }
 
+/**
+ * Charges card.
+ */
 function uc_cybersource_charge($order_id, $amount, $data) {
   global $user;
 
@@ -588,6 +604,9 @@ function uc_cybersource_charge($order_id, $amount, $data) {
   }
 }
 
+/**
+ * POSTs transaction to CyberSource.
+ */
 function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country) {
   // Include the HOP.php per the module instructions.
   if (!uc_cybersource_hop_include()) {
@@ -707,7 +726,9 @@ function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country)
   return $result;
 }
 
-// Handles the SOAP charge request and Ubercart order save.
+/**
+ * Handles the SOAP charge request and Ubercart order save.
+ */
 function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country) {
   // Include the SOAP helper file.
   module_load_include('inc', 'uc_cybersource', 'uc_cybersource.soap');
@@ -970,7 +991,9 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
   return $result;
 }
 
-// Displays the taxes for an order.
+/**
+ * Displays the taxes for an order.
+ */
 function uc_cybersource_tax_test($order) {
   // Fetch the taxes for the order.
   $data = uc_cybersource_uc_calculate_tax($order);
@@ -999,9 +1022,10 @@ function uc_cybersource_tax_test($order) {
  *
  * @param $order
  *   An order object with address and product information.
+ *
  * @return
  *   An array of associative arrays representing tax information with the keys
- *     'id', 'name', and 'amount'.
+ *   'id', 'name', and 'amount'.
  */
 function uc_cybersource_uc_calculate_tax($order) {
   // Kick out if the tax service is not enabled.
@@ -1236,7 +1260,9 @@ function uc_cybersource_uc_calculate_tax($order) {
   return $result;
 }
 
-// Returns an array with the SOAP Merchant ID and Transaction key.
+/**
+ * Returns an array with the SOAP Merchant ID and Transaction key.
+ */
 function _uc_cybersource_soap_login_data() {
   static $data;
 
@@ -1272,7 +1298,9 @@ function _uc_cybersource_soap_login_data() {
   return $data;
 }
 
-// Returns the code for the credit card type.
+/**
+ * Returns the code for the credit card type.
+ */
 function _uc_cybersource_card_type($cc_number) {
   switch (substr(strval($cc_number), 0, 1)) {
     case '3':
@@ -1296,7 +1324,9 @@ function _uc_cybersource_card_type($cc_number) {
   return FALSE;
 }
 
-// Returns the meaning of the reason code given by CyberSource.
+/**
+ * Returns the meaning of the reason code given by CyberSource.
+ */
 function _uc_cybersource_parse_reason_code($code) {
   switch ($code) {
     case '100':
@@ -1358,7 +1388,9 @@ function _uc_cybersource_parse_reason_code($code) {
   }
 }
 
-// Returns the meaning of the code for Address Verification.
+/**
+ * Returns the meaning of the code for Address Verification.
+ */
 function _uc_cybersource_parse_avs_code($code) {
   switch ($code) {
     case 'A':
@@ -1412,7 +1444,9 @@ function _uc_cybersource_parse_avs_code($code) {
   }
 }
 
-// Returns the meaning of the code sent back for CVV verification.
+/**
+ * Returns the meaning of the code sent back for CVV verification.
+ */
 function _uc_cybersoure_parse_cvv_code($code) {
   switch ($code) {
     case 'D':

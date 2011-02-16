@@ -3,7 +3,7 @@
 
 /**
  * @file
- * This file contains the callbacks for the payment order pane supplied with
+ * Contains the callbacks for the payment order pane supplied with
  * Ubercart and their corresponding helper functions.
  *
  * Order panes are defined using hook_uc_order_pane() and use a callback to
@@ -13,7 +13,7 @@
  */
 
 /**
- * Handle the Payment order pane.
+ * Handles the Payment order pane.
  */
 function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {

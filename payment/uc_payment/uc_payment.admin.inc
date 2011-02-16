@@ -8,7 +8,9 @@
  */
 
 
-// Displays an overview of the payment settings.
+/**
+ * Displays an overview of the payment settings.
+ */
 function uc_payment_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
   return array(
@@ -141,6 +143,9 @@ function uc_payment_methods_form($form, &$form_state) {
   return system_settings_form($form);
 }
 
+/**
+ * @ingroup themeable
+ */
 function theme_uc_payment_method_table($variables) {
   $form = $variables['form'];
 
@@ -225,7 +230,9 @@ function uc_payment_gateways_form($form, &$form_state) {
   return system_settings_form($form);
 }
 
-// Returns an array of enabled payment gateways for the form summary.
+/**
+ * Returns an array of enabled payment gateways for the form summary.
+ */
 function _uc_payment_gateways_summarize($form, $gateways) {
   $items = array();
 
@@ -241,7 +248,7 @@ function _uc_payment_gateways_summarize($form, $gateways) {
 }
 
 /**
- * Select a payment gateway to process a payment when multiple gateways
+ * Selects a payment gateway to process a payment when multiple gateways
  * exist for a given payment method.
  */
 function uc_payment_gateway_select() {
@@ -304,7 +311,14 @@ function uc_payment_gateway_select_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'];
 }
 
-// Displays a list of payments attached to an order.
+/**
+ * Displays a list of payments attached to an order.
+ *
+ * @see uc_payment_by_order_form_validate()
+ * @see uc_payment_by_order_form_submit()
+ * @see theme_uc_payment_by_order_form()
+ * @ingroup forms
+ */
 function uc_payment_by_order_form($form, &$form_state, $order) {
   $total = $order->order_total;
   $payments = uc_payment_load_payments($order->order_id);
@@ -393,6 +407,12 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
   return $form;
 }
 
+/**
+ * Themes uc_payment_by_order_form().
+ *
+ * @see uc_payment_by_order_form()
+ * @ingroup themeable
+ */
 function theme_uc_payment_by_order_form($variables) {
   $form = $variables['form'];
 
@@ -405,6 +425,12 @@ function theme_uc_payment_by_order_form($variables) {
   return $output;
 }
 
+/**
+ * Form validation for uc_payment_by_order_form().
+ *
+ * @see uc_payment_by_order_form()
+ * @see uc_payment_by_order_form_submit()
+ */
 function uc_payment_by_order_form_validate($form, &$form_state) {
   if (!is_numeric($form_state['values']['payments']['new']['amount'])) {
     form_set_error('payments][new][amount', t('You must enter a number for the amount.'));
@@ -412,6 +438,12 @@ function uc_payment_by_order_form_validate($form, &$form_state) {
   return TRUE;
 }
 
+/**
+ * Form submission handler for uc_payment_by_order_form().
+ *
+ * @see uc_payment_by_order_form()
+ * @see uc_payment_by_order_form_validate()
+ */
 function uc_payment_by_order_form_submit($form, &$form_state) {
   global $user;
 
@@ -422,7 +454,12 @@ function uc_payment_by_order_form_submit($form, &$form_state) {
   drupal_set_message(t('Payment entered.'));
 }
 
-// Confirmation form to delete a payment from an order.
+/**
+ * Confirmation form to delete a payment from an order.
+ *
+ * @see uc_payment_delete_confirm_form_submit()
+ * @ingroup forms
+ */
 function uc_payment_delete_confirm_form($form, &$form_state, $order, $payment) {
   // Make sure the payment is for the specified order.
   if ($payment->order_id != $order->order_id) {
@@ -445,6 +482,11 @@ function uc_payment_delete_confirm_form($form, &$form_state, $order, $payment) {
   return confirm_form($form, t('Are you sure you want to delete this payment?'), 'admin/store/orders/' . $order->order_id . '/payments', $desc, t('Delete'));
 }
 
+/**
+ * Form submission handler for uc_payment_delete_confirm_form().
+ *
+ * @see uc_payment_delete_confirm_form()
+ */
 function uc_payment_delete_confirm_form_submit($form, &$form_state) {
   uc_payment_delete($form_state['values']['receipt_id']);
 
