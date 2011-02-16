@@ -109,42 +109,6 @@ function uc_catalog_settings_form($form, &$form_state) {
     '#size' => 2,
   );
 
-  $form['block-display'] = array('#type' => 'fieldset',
-    '#title' => t('Catalog block settings'),
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-    '#summary callback' => '_uc_catalog_block_summarize',
-    '#attributes' => array('class' => array('block-display')),
-  );
-  $form['block-display']['uc_catalog_block_title'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Make the block title a link to the top-level catalog page.'),
-    '#summary callback' => 'uc_summarize_checkbox',
-    '#summary arguments' => array(
-      t('Block title is pointing to the top-level catalog page.'),
-      t('Block title is not pointing to the top-level catalog page.'),
-    ),
-    '#default_value' => variable_get('uc_catalog_block_title', FALSE),
-  );
-  $form['block-display']['uc_catalog_expand_categories'] = array('#type' => 'checkbox',
-    '#title' => t('Always expand categories in the catalog block'),
-    '#summary callback' => 'uc_summarize_checkbox',
-    '#summary arguments' => array(
-      t('Expanding categories in the catalog block.'),
-      t('Not expanding categories in the catalog block.'),
-    ),
-    '#default_value' => variable_get('uc_catalog_expand_categories', FALSE),
-  );
-  $form['block-display']['uc_catalog_block_nodecount'] = array('#type' => 'checkbox',
-    '#title' => t('Display node counts in the catalog block'),
-    '#summary callback' => 'uc_summarize_checkbox',
-    '#summary arguments' => array(
-      t('The number of nodes in a category are being shown in the catalog block.'),
-      t('The number of nodes in a category are not being shown in the catalog block.'),
-    ),
-    '#default_value' => variable_get('uc_catalog_block_nodecount', TRUE),
-  );
-
   return system_settings_form($form);
 }
 

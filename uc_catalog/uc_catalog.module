@@ -354,14 +354,51 @@ function uc_catalog_block_view($delta = '') {
       $content = theme('uc_catalog_block', array('menu_tree' => $menu_tree));
 
       $subject = variable_get('uc_catalog_name', t('Catalog'));
-      if (variable_get('uc_catalog_block_title', FALSE)) {
-        $subject = l($subject, 'catalog');
-      }
 
       $block = array('subject' => $subject, 'content' => $content);
     }
 
     return $block;
+  }
+}
+
+/**
+ * Implements hook_block_configure().
+ *
+ * Build the settings form used by the catalog block.
+ */
+function uc_catalog_block_configure($delta = '') {
+  if ($delta == 'catalog') {
+    $form['uc_catalog_block_title'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Make the block title a link to the top-level catalog page.'),
+      '#default_value' => variable_get('uc_catalog_block_title', FALSE),
+    );
+    $form['uc_catalog_expand_categories'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Always expand categories.'),
+      '#default_value' => variable_get('uc_catalog_expand_categories', FALSE),
+    );
+    $form['uc_catalog_block_nodecount'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Display product counts.'),
+      '#default_value' => variable_get('uc_catalog_block_nodecount', TRUE),
+    );
+
+    return $form;
+  }
+}
+
+/**
+ * Implements hook_block_save().
+ *
+ * Save the catalog block settings.
+ */
+function uc_catalog_block_save($delta = '', $edit = array()) {
+  if ($delta == 'catalog') {
+    variable_set('uc_catalog_block_title', $edit['uc_catalog_block_title']);
+    variable_set('uc_catalog_expand_categories', $edit['uc_catalog_expand_categories']);
+    variable_set('uc_catalog_block_nodecount', $edit['uc_catalog_block_nodecount']);
   }
 }
 
@@ -384,6 +421,16 @@ function theme_uc_catalog_block($variables) {
   $output .= '</ul>';
 
   return $output;
+}
+
+/**
+ * Preprocess the catalog block output.
+ */
+function uc_catalog_preprocess_block(&$variables) {
+  $block = &$variables['block'];
+  if ($block->module == 'uc_catalog' && $block->delta == 'catalog' && $block->subject && variable_get('uc_catalog_block_title', FALSE)) {
+    $block->subject = l($block->subject, 'catalog');
+  }
 }
 
 /******************************************************************************
