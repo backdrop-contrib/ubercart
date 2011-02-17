@@ -48,82 +48,61 @@ function uc_attribute_help($path, $arg) {
  * Implements hook_menu().
  */
 function uc_attribute_menu() {
-  $items['admin/store/attributes'] = array(
+  $items['admin/store/products/attributes'] = array(
     'title' => 'Attributes',
-    'description' => 'Create and edit attributes and options.',
+    'description' => 'Create and edit product attributes and options.',
     'page callback' => 'uc_attribute_admin',
     'access arguments' => array('administer attributes'),
-    'weight' => -1,
+    'weight' => -8,
     'file' => 'uc_attribute.admin.inc',
   );
-  $items['admin/store/attributes/overview'] = array(
-    'title' => 'Overview',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => 0,
-  );
-  $items['admin/store/attributes/add'] = array(
+  $items['admin/store/products/attributes/add'] = array(
     'title' => 'Add an attribute',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_attribute_form'),
     'access arguments' => array('administer attributes'),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 5,
+    'type' => MENU_LOCAL_ACTION,
     'file' => 'uc_attribute.admin.inc',
   );
-  $items['admin/store/settings/attributes'] = array(
-    'title' => 'Attribute settings',
-    'description' => 'Configure the attribute settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_attribute_admin_settings'),
-    'access arguments' => array('administer attributes'),
-    'file' => 'uc_attribute.admin.inc',
-  );
-  $items['admin/store/attributes/%uc_attribute/edit'] = array(
+  $items['admin/store/products/attributes/%uc_attribute/edit'] = array(
     'title' => 'Edit attribute',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_attribute_form', 3),
+    'page arguments' => array('uc_attribute_form', 4),
     'access arguments' => array('administer attributes'),
     'file' => 'uc_attribute.admin.inc',
   );
-  $items['admin/store/attributes/%uc_attribute/delete'] = array(
+  $items['admin/store/products/attributes/%uc_attribute/delete'] = array(
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_attribute_delete_confirm', 3),
+    'page arguments' => array('uc_attribute_delete_confirm', 4),
     'access arguments' => array('administer attributes'),
     'file' => 'uc_attribute.admin.inc',
   );
-  $items['admin/store/attributes/%uc_attribute/options'] = array(
+  $items['admin/store/products/attributes/%uc_attribute/options'] = array(
     'title' => 'Options',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_attribute_options_form', 3),
+    'page arguments' => array('uc_attribute_options_form', 4),
     'access arguments' => array('administer attributes'),
     'file' => 'uc_attribute.admin.inc',
   );
-  $items['admin/store/attributes/%uc_attribute/options/overview'] = array(
-    'title' => 'Overview',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => 0,
-    'file' => 'uc_attribute.admin.inc',
-  );
-  $items['admin/store/attributes/%uc_attribute/options/add'] = array(
+  $items['admin/store/products/attributes/%uc_attribute/options/add'] = array(
     'title' => 'Add an option',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_attribute_option_form', 3, NULL),
+    'page arguments' => array('uc_attribute_option_form', 4, NULL),
     'access arguments' => array('administer attributes'),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 5,
+    'type' => MENU_LOCAL_ACTION,
     'file' => 'uc_attribute.admin.inc',
   );
-  $items['admin/store/attributes/%uc_attribute/options/%uc_attribute_option/edit'] = array(
+  $items['admin/store/products/attributes/%uc_attribute/options/%uc_attribute_option/edit'] = array(
     'title' => 'Edit option',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_attribute_option_form', 3, 5),
+    'page arguments' => array('uc_attribute_option_form', 4, 6),
     'access arguments' => array('administer attributes'),
     'file' => 'uc_attribute.admin.inc',
   );
-  $items['admin/store/attributes/%uc_attribute/options/%uc_attribute_option/delete'] = array(
+  $items['admin/store/products/attributes/%uc_attribute/options/%uc_attribute_option/delete'] = array(
     'title' => 'Delete option',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_attribute_option_delete_confirm', 3, 5),
+    'page arguments' => array('uc_attribute_option_delete_confirm', 4, 6),
     'access arguments' => array('administer attributes'),
     'file' => 'uc_attribute.admin.inc',
   );
@@ -145,6 +124,15 @@ function uc_attribute_menu() {
     'access callback' => 'uc_attribute_product_class_access',
     'type' => MENU_LOCAL_TASK,
     'weight' => 2,
+    'file' => 'uc_attribute.admin.inc',
+  );
+
+  $items['admin/store/settings/attributes'] = array(
+    'title' => 'Attribute settings',
+    'description' => 'Configure the attribute settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_attribute_admin_settings'),
+    'access arguments' => array('administer attributes'),
     'file' => 'uc_attribute.admin.inc',
   );
 
@@ -516,20 +504,16 @@ function uc_attribute_uc_product_class($type, $op) {
 function uc_attribute_uc_cart_item($op, $item) {
   switch ($op) {
     case 'load':
-      $options = _uc_cart_product_get_options($item);
-
-      $op_costs = 0;
-      $op_prices = 0;
-      $op_weight = 0;
-
-      foreach ($options as $option) {
-        $op_costs += $option['cost'];
-        $op_prices += $option['price'];
-        $op_weight += $option['weight'];
+      if (!isset($item->data['attributes'])) {
+        return;
       }
-      $item->cost += $op_costs;
-      $item->price += $op_prices;
-      $item->weight += $op_weight;
+
+      $options = _uc_cart_product_get_options($item);
+      foreach ($options as $option) {
+        $item->cost += $option['cost'];
+        $item->price += $option['price'];
+        $item->weight += $option['weight'];
+      }
 
       $combination = array();
       foreach ((array)$item->data['attributes'] as $aid => $value) {
@@ -685,7 +669,7 @@ function uc_attribute_load($aid, $id = NULL, $type = '') {
 
       // Read attribute data.
       $query = db_select('uc_attributes', 'a')
-        ->fields('a', array('aid', 'name', 'description', 'format'))
+        ->fields('a', array('aid', 'name', 'description'))
         ->condition('a.aid', $aid);
 
       $query->leftJoin($sql['attr_table'], 'pa', "a.aid = pa.aid AND pa.{$sql['id']} = :id", array(':id' => $id));
@@ -1302,7 +1286,7 @@ function _uc_attribute_alter_form($product) {
         if ($attribute->display == 1) {
           $options = array('' => t('Please select')) + $options;
         }
-        unset($attribute->default_option);
+        $attribute->default_option = '';
       }
       switch ($attribute->display) {
         case 1:
@@ -1313,22 +1297,28 @@ function _uc_attribute_alter_form($product) {
           break;
         case 3:
           $attr_type = 'checkboxes';
+          $attribute->default_option = array();
           break;
       }
       $form_attributes[$attribute->aid] = array(
         '#type' => $attr_type,
-        '#description' => check_markup($attribute->description, $attribute->format, $product->language),
-        '#default_value' => ($attr_type == "checkboxes" ? array() : $attribute->default_option),
+        '#default_value' => $attribute->default_option,
         '#options' => $options,
-        '#required' => $attribute->required,
       );
+    }
+    else if ($attribute->display > 0) {
+      $form_attributes[$attribute->aid] = array(
+        '#type' => 'textfield',
+        '#default_value' => '',
+      );
+      if (!$attribute->required && isset($attribute->options[$attribute->default_option])) {
+        $form_attributes[$attribute->aid]['#default_value'] = $attribute->options[$attribute->default_option]->name;
+      }
     }
     else {
       $form_attributes[$attribute->aid] = array(
         '#type' => 'textfield',
-        '#description' => check_markup($attribute->description, $attribute->format, $product->language),
-        '#default_value' => $attribute->required == FALSE ? $attribute->options[$attribute->default_option]->name : '',
-        '#required' => $attribute->required,
+        '#default_value' => '',
       );
     }
 
@@ -1336,6 +1326,9 @@ function _uc_attribute_alter_form($product) {
     if (!is_null($name)) {
       $form_attributes[$attribute->aid]['#title'] = check_plain($name);
     }
+
+    $form_attributes[$attribute->aid]['#description'] = filter_xss($attribute->description);
+    $form_attributes[$attribute->aid]['#required'] = $attribute->required;
 
     $form_attributes['#theme'] = 'uc_attribute_add_to_cart';
   }

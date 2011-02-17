@@ -58,9 +58,9 @@ function uc_attribute_admin() {
       array('data' => $attr->ordering, 'align' => 'center'),
       array('data' => $attr->options, 'align' => 'center'),
       $display_types[$attr->display],
-      l(t('edit'), 'admin/store/attributes/' . $attr->aid . '/edit'),
-      l(t('options'), 'admin/store/attributes/' . $attr->aid . '/options'),
-      l(t('delete'), 'admin/store/attributes/' . $attr->aid . '/delete'),
+      l(t('edit'), 'admin/store/products/attributes/' . $attr->aid . '/edit'),
+      l(t('options'), 'admin/store/products/attributes/' . $attr->aid . '/options'),
+      l(t('delete'), 'admin/store/products/attributes/' . $attr->aid . '/delete'),
     );
   }
 
@@ -78,9 +78,6 @@ function uc_attribute_admin() {
   $build['pager'] = array(
     '#theme' => 'pager',
   );
-  $build['add_more'] = array(
-    '#markup' => l(t('Add an attribute'), 'admin/store/attributes/add'),
-  );
 
   return $build;
 }
@@ -94,7 +91,7 @@ function uc_attribute_admin() {
 function uc_attribute_form($form, &$form_state, $attribute = NULL) {
   // If an attribute specified, add its ID as a hidden value.
   if (!empty($attribute)) {
-    $form['aid'] = array('#type' => 'hidden', '#value' => $attribute->aid);
+    $form['aid'] = array('#type' => 'value', '#value' => $attribute->aid);
     drupal_set_title(t('Edit attribute: %name', array('%name' => $attribute->name)), PASS_THROUGH);
   }
 
@@ -126,7 +123,6 @@ function uc_attribute_form($form, &$form_state, $attribute = NULL) {
     '#title' => t('Help text'),
     '#description' => t('<b>Optional.</b> Enter the help text that will display beneath the attribute on product add to cart forms.'),
     '#default_value' => isset($attribute->description) ? $attribute->description : '',
-    '#text_format' => isset($attribute->format) ? $attribute->format : filter_default_format(),
     '#maxlength' => 255,
   );
   $form['required'] = array(
@@ -153,27 +149,26 @@ function uc_attribute_form($form, &$form_state, $attribute = NULL) {
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
-    '#suffix' => l(t('Cancel'), 'admin/store/attributes'),
+    '#suffix' => l(t('Cancel'), 'admin/store/products/attributes'),
   );
 
   return $form;
 }
 
 /**
- * Form submission handler for uc_attribute_add_form().
+ * Form submission handler for uc_attribute_form().
  *
- * @see uc_attribute_add_form()
+ * @see uc_attribute_form()
  */
 function uc_attribute_form_submit($form, &$form_state) {
-  $form_state['values']['format'] = $form_state['values']['description_format'];
   if (!empty($form_state['values']['aid'])) {
     drupal_write_record('uc_attributes', $form_state['values'], 'aid');
+    $form_state['redirect'] = 'admin/store/products/attributes';
   }
   else {
     drupal_write_record('uc_attributes', $form_state['values']);
+    $form_state['redirect'] = 'admin/store/products/attributes/' . $form_state['values']['aid'] . '/options';
   }
-
-  $form_state['redirect'] = 'admin/store/attributes';
 }
 
 /**
@@ -185,7 +180,7 @@ function uc_attribute_delete_confirm($form, &$form_state, $attribute) {
   // If we got a bunk attribute, kick out an error message.
   if (empty($attribute)) {
     drupal_set_message(t('There is no attribute with that ID.'), 'error');
-    drupal_goto('admin/store/attributes');
+    drupal_goto('admin/store/products/attributes');
   }
 
   $form['aid'] = array('#type' => 'value', '#value' => $attribute->aid);
@@ -193,7 +188,7 @@ function uc_attribute_delete_confirm($form, &$form_state, $attribute) {
   $count = db_query("SELECT COUNT(*) FROM {uc_product_attributes} WHERE aid = :aid", array(':aid' => $attribute->aid))->fetchField();
 
   $output = confirm_form($form, t('Are you sure you want to delete the attribute %name?', array('%name' => $attribute->name)),
-              'admin/store/attributes', format_plural($count, 'There is 1 product with this attribute.', 'There are @count products with this attribute.'),
+              'admin/store/products/attributes', format_plural($count, 'There is 1 product with this attribute.', 'There are @count products with this attribute.'),
               t('Delete'), t('Cancel'));
 
   return $output;
@@ -243,7 +238,7 @@ function uc_attribute_delete_confirm_submit($form, &$form_state) {
 
     drupal_set_message(t('Product attribute deleted.'));
 
-    $form_state['redirect'] = 'admin/store/attributes';
+    $form_state['redirect'] = 'admin/store/products/attributes';
   }
 }
 
@@ -301,7 +296,7 @@ function uc_attribute_options_form($form, &$form_state, $attribute) {
         '#price' => $data->price,
       ),
       'weight' => array(
-        '#markup' => $data->weight,
+        '#markup' => (string)$data->weight,
       ),
       'ordering' => array(
         '#type' => 'weight',
@@ -309,8 +304,8 @@ function uc_attribute_options_form($form, &$form_state, $attribute) {
         '#default_value' => $data->ordering,
         '#attributes' => array('class' => array('uc-attribute-option-table-ordering')),
       ),
-      'edit' => array('#markup' => l(t('edit'), 'admin/store/attributes/' . $attribute->aid . '/options/' . $key . '/edit')),
-      'delete' => array('#markup' => l(t('delete'), 'admin/store/attributes/' . $attribute->aid . '/options/' . $key . '/delete')),
+      'edit' => array('#markup' => l(t('edit'), 'admin/store/products/attributes/' . $attribute->aid . '/options/' . $key . '/edit')),
+      'delete' => array('#markup' => l(t('delete'), 'admin/store/products/attributes/' . $attribute->aid . '/options/' . $key . '/delete')),
     );
   }
 
@@ -374,6 +369,8 @@ function theme_uc_attribute_options_form($variables) {
         'class' => array('draggable'),
       );
     }
+
+    drupal_add_tabledrag('uc-attribute-option-table', 'order', 'sibling', 'uc-attribute-option-table-ordering');
   }
   else {
     $rows[] = array(
@@ -381,13 +378,9 @@ function theme_uc_attribute_options_form($variables) {
     );
   }
 
-  drupal_add_tabledrag('uc-attribute-option-table', 'order', 'sibling', 'uc-attribute-option-table-ordering');
-
   $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-attribute-option-table')));
 
   $output .= drupal_render_children($form);
-
-  $output .= l(t('Add an option'), 'admin/store/attributes/' . $form['aid']['#value'] . '/options/add');
 
   return $output;
 }
@@ -403,7 +396,7 @@ function uc_attribute_option_form($form, &$form_state, $attribute, $option = NUL
   // If we got a bunk attribute, kick out an error message.
   if (empty($attribute)) {
     drupal_set_message(t('There is no attribute with that ID.'), 'error');
-    drupal_goto('admin/store/attributes');
+    drupal_goto('admin/store/products/attributes');
   }
   $aid = $attribute->aid;
 
@@ -469,7 +462,7 @@ function uc_attribute_option_form($form, &$form_state, $attribute, $option = NUL
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
-    '#suffix' => l(t('Cancel'), 'admin/store/attributes/' . $aid . '/options'),
+    '#suffix' => l(t('Cancel'), 'admin/store/products/attributes/' . $aid . '/options'),
     '#weight' => 10,
   );
 
@@ -506,14 +499,14 @@ function uc_attribute_option_form_submit($form, &$form_state) {
   if (!isset($form_state['values']['oid'])) {
     drupal_write_record('uc_attribute_options', $form_state['values']);
     drupal_set_message(t('Created new option %option.', array('%option' => $form_state['values']['name'])));
-    watchdog('uc_attribute', 'Created new option %option.', array('%option' => $form_state['values']['name']), WATCHDOG_NOTICE, 'admin/store/attributes/' . $form_state['values']['aid'] . '/options/add');
-    $form_state['redirect'] = 'admin/store/attributes/' . $form_state['values']['aid'] . '/options/add';
+    watchdog('uc_attribute', 'Created new option %option.', array('%option' => $form_state['values']['name']), WATCHDOG_NOTICE, 'admin/store/products/attributes/' . $form_state['values']['aid'] . '/options/add');
+    $form_state['redirect'] = 'admin/store/products/attributes/' . $form_state['values']['aid'] . '/options/add';
   }
   else {
     drupal_write_record('uc_attribute_options', $form_state['values'], array('aid', 'oid'));
     drupal_set_message(t('Updated option %option.', array('%option' => $form_state['values']['name'])));
-    watchdog('uc_attribute', 'Updated option %option.', array('%option' => $form_state['values']['name']), WATCHDOG_NOTICE, 'admin/store/attributes/' . $form_state['values']['aid'] . '/options/' . $form_state['values']['oid']);
-    $form_state['redirect'] = 'admin/store/attributes/' . $form_state['values']['aid'] . '/options';
+    watchdog('uc_attribute', 'Updated option %option.', array('%option' => $form_state['values']['name']), WATCHDOG_NOTICE, 'admin/store/products/attributes/' . $form_state['values']['aid'] . '/options/' . $form_state['values']['oid']);
+    $form_state['redirect'] = 'admin/store/products/attributes/' . $form_state['values']['aid'] . '/options';
   }
 }
 
@@ -525,7 +518,7 @@ function uc_attribute_option_form_submit($form, &$form_state) {
 function uc_attribute_option_delete_confirm($form, &$form_state, $attribute, $option) {
   if (empty($option)) {
     drupal_set_message(t('There is no option with that ID.'), 'error');
-    drupal_goto('admin/store/attributes/' . $attribute->aid . '/options');
+    drupal_goto('admin/store/products/attributes/' . $attribute->aid . '/options');
   }
   $aid = $attribute->aid;
   $oid = $option->oid;
@@ -534,7 +527,7 @@ function uc_attribute_option_delete_confirm($form, &$form_state, $attribute, $op
   $form['oid'] = array('#type' => 'value', '#value' => $oid);
 
   $output = confirm_form($form, t('Are you sure you want to delete the option %name?', array('%name' => $option->name)),
-             'admin/store/attributes/' . $aid . '/options', '',
+             'admin/store/products/attributes/' . $aid . '/options', '',
              t('Delete'), t('Cancel'));
 
   return $output;
@@ -574,7 +567,7 @@ function uc_attribute_option_delete_confirm_submit($form, &$form_state) {
       ->execute();
   }
 
-  $form_state['redirect'] = 'admin/store/attributes/' . $form_state['values']['aid'] . '/options';
+  $form_state['redirect'] = 'admin/store/products/attributes/' . $form_state['values']['aid'] . '/options';
 }
 
 /**
@@ -622,7 +615,7 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
 
     if (count($attributes) > 0) {
       foreach ($attributes as $attribute) {
-        $option = $attribute->options[$attribute->default_option];
+        $option = isset($attribute->options[$attribute->default_option]) ? $attribute->options[$attribute->default_option] : NULL;
 
         $form['attributes'][$attribute->aid] = array(
           'remove' => array(
@@ -635,7 +628,7 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
           'label' => array(
             '#type' => 'textfield',
             '#default_value' => empty($attribute->label) ? $attribute->name : $attribute->label,
-            '#size' => 6,
+            '#size' => 20,
           ),
           'option' => array(
             '#markup' => $option ? (check_plain($option->name) . ' (' . theme('uc_price', array('price' => $option->price)) . ')' ) : t('n/a'),
@@ -676,12 +669,10 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
     }
 
     $form['add_attributes'] = array(
-      '#type' => 'select',
+      '#type' => 'checkboxes',
       '#title' => t('Attributes'),
-      '#description' => t('Hold Ctrl + click to select multiple attributes.'),
       '#options' => count($unused_attributes) > 0 ? $unused_attributes : array(t('No attributes left to add.')),
       '#disabled' => count($unused_attributes) == 0 ? TRUE : FALSE,
-      '#multiple' => TRUE,
       '#weight' => -1
     );
     $form['actions'] = array('#type' => 'actions');
@@ -740,6 +731,8 @@ function theme_uc_object_attributes_form($variables) {
           'class' => array('draggable'),
         );
       }
+
+      drupal_add_tabledrag('uc-attribute-table', 'order', 'sibling', 'uc-attribute-table-weight');
     }
     else {
       if ($form['type']['#value'] == 'class') {
@@ -756,12 +749,11 @@ function theme_uc_object_attributes_form($variables) {
       }
     }
 
-    drupal_add_tabledrag('uc-attribute-table', 'order', 'sibling', 'uc-attribute-table-weight');
     $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-attribute-table')));
   }
   else {
     $output = '<div class="uc-attributes-add-link">';
-    $output .= t('You may add more attributes <a href="!url">here</a>.', array('!url' => url('admin/store/attributes/add')));
+    $output .= t('You may add more attributes <a href="!url">here</a>.', array('!url' => url('admin/store/products/attributes/add')));
     $output .= '</div>';
   }
 
@@ -800,7 +792,7 @@ function uc_object_attributes_form_submit($form, &$form_state) {
       }
     }
 
-    if (count($remove_aids) > 0) {
+    if (isset($remove_aids)) {
       $id_value = $form_state['values']['id'];
 
       // Can't use "{$opt_table}" because PHP will remove the braces, which
@@ -833,21 +825,20 @@ function uc_object_attributes_form_submit($form, &$form_state) {
     }
   }
   elseif ($form_state['values']['view'] == 'add') {
-    foreach ($form_state['values']['add_attributes'] as $aid) {
+    foreach (array_filter($form_state['values']['add_attributes']) as $aid) {
       // Enable all options for added attributes.
       $attribute = uc_attribute_load($aid);
-      foreach ($attribute->options as $option) {
-        $option->$id = $form_state['values']['id'];
-        drupal_write_record($opt_table, $option);
-        $option->aid = $aid;
-      }
-      // Make the first option (if any) the default.
-      $option = reset($attribute->options);
-      if ($option) {
-        $oid = $option->oid;
-      }
-      else {
-        $oid = 0;
+      $oid = 0;
+      if (isset($attribute->options)) {
+        foreach ($attribute->options as $option) {
+          $option->$id = $form_state['values']['id'];
+          drupal_write_record($opt_table, $option);
+          $option->aid = $aid;
+        }
+        // Make the first option (if any) the default.
+        if ($option = reset($attribute->options)) {
+          $oid = $option->oid;
+        }
       }
 
       $select = db_select('uc_attributes', 'a')
@@ -864,7 +855,7 @@ function uc_object_attributes_form_submit($form, &$form_state) {
         ->from($select)
         ->execute();
     }
-    if (count($form_state['values']['add_attributes']) > 0) {
+    if (count(array_filter($form_state['values']['add_attributes'])) > 0) {
       if ($form_state['values']['type'] == 'product') {
         db_delete('uc_product_adjustments')
           ->condition('nid', $form_state['values']['id'])
@@ -994,11 +985,6 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
         '#default_value' => $attribute->default_option,
       );
     }
-    else {
-      $form['attributes'][$aid]['default'] = array(
-        '#markup' => t('This attribute does not have any options.'),
-      );
-    }
   }
 
   if (!empty($form['attributes'])) {
@@ -1032,19 +1018,17 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
  */
 function theme_uc_object_options_form($variables) {
   $form = $variables['form'];
+  $output = '';
 
   drupal_add_js('misc/tableselect.js');
   $header = array(array('data' => '&nbsp;&nbsp;' . t('Options'), 'class' => array('select-all')), t('Default'), t('Cost'), t('Price'), t('Weight'), t('List position'));
-  $table_id_num = $tables = 0;
+  $tables = 0;
 
   if (is_array($form['attributes'])) {
     foreach (element_children($form['attributes']) as $key) {
-
       $rows = array();
-
-      if (element_children($form['attributes'][$key]['default'])) {
-
-        foreach (element_children($form['attributes'][$key]['default']) as $oid) {
+      if (element_children($form['attributes'][$key]['options'])) {
+        foreach (element_children($form['attributes'][$key]['options']) as $oid) {
           $row = array(
             drupal_render($form['attributes'][$key]['options'][$oid]['select']),
             drupal_render($form['attributes'][$key]['default'][$oid]),
@@ -1059,29 +1043,21 @@ function theme_uc_object_options_form($variables) {
             'class' => array('draggable'),
           );
         }
-        $table_id = 'uc-attribute-option-table-' . $table_id_num++;
+      }
+
+      $table_id = 'uc-attribute-option-table-' . $tables++;
+      if (!empty($rows)) {
         drupal_add_tabledrag($table_id, 'order', 'sibling', 'uc-attribute-option-table-ordering');
       }
       else {
-        $row = array();
-        $row[] = array('data' => drupal_render($form['attributes'][$key]['default']), 'colspan' => 6);
-        $rows[] = $row;
+        $rows[] = array(array('data' => t('This attribute does not have any options.'), 'colspan' => 6));
       }
-
-      if (!count($rows)) {
-        $rows[] = array(array('data' => t('This !type does not have any attributes.', array('!type' => $form['type']['#value'] == 'product' ? t('product') : t('product class'))), 'colspan' => 6));
-      }
-
 
       $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('product_attributes'), 'id' => $table_id), 'caption' => '<h2>' . drupal_render($form['attributes'][$key]['name']) . '</h2>'));
-
-      $tables++;
     }
   }
 
   if (!$tables) {
-
-    $output .= '<br /><br />';
     if ($form['type']['#value'] == 'product') {
       drupal_set_message(t('This product does not have any attributes.'), 'warning');
     }
@@ -1143,17 +1119,19 @@ function theme_uc_product_attributes($variables) {
  * @see uc_object_options_form_submit()
  */
 function uc_object_options_form_validate($form, &$form_state) {
+  $error = FALSE;
+
   if (isset($form_state['values']['attributes'])) {
     foreach ($form_state['values']['attributes'] as $aid => $attribute) {
       $selected_opts = array();
-      if (is_array($attribute['options'])) {
+      if (isset($attribute['options'])) {
         foreach ($attribute['options'] as $oid => $option) {
           if ($option['select'] == 1) {
             $selected_opts[] = $oid;
           }
         }
       }
-      if (!empty($selected_opts) && !$form['attributes'][$aid]['default']['#disabled'] && !in_array($attribute['default'], $selected_opts)) {
+      if (!empty($selected_opts) && !isset($form['attributes'][$aid]['default']['#disabled']) && !in_array($attribute['default'], $selected_opts)) {
         form_set_error($attribute['default']);
         $error = TRUE;
       }
@@ -1184,15 +1162,17 @@ function uc_object_options_form_submit($form, &$form_state) {
   }
 
   foreach ($form_state['values']['attributes'] as $attribute) {
-    db_update($attr_table)
-      ->fields(array(
-        'default_option' => $attribute['default'],
-      ))
-      ->condition($id, $form_state['values']['id'])
-      ->condition('aid', $attribute['aid'])
-      ->execute();
+    if (isset($attribute['default'])) {
+      db_update($attr_table)
+        ->fields(array(
+          'default_option' => $attribute['default'],
+        ))
+        ->condition($id, $form_state['values']['id'])
+        ->condition('aid', $attribute['aid'])
+        ->execute();
+    }
 
-    if (is_array($attribute['options'])) {
+    if (isset($attribute['options'])) {
       db_delete($opt_table)
         ->condition($id, $form_state['values']['id'])
         ->condition('oid', array_keys($attribute['options']), 'IN')
@@ -1273,7 +1253,7 @@ function uc_product_adjustments_form($form, &$form_state, $node) {
     $result = $query->execute();
 
     $form['original'] = array(
-      '#markup' => '<div><br /><b>' . t('Default product SKU: @sku', array('@sku' => $model)) . '</b></div>',
+      '#markup' => '<p><b>' . t('Default product SKU: @sku', array('@sku' => $model)) . '</b></p>',
     );
     $form['default'] = array(
       '#type' => 'value',
