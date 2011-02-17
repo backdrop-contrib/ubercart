@@ -7,7 +7,7 @@
  */
 
 /**
- * Display the simpler Add to cart form like the catalog.
+ * Displays the simpler Add to cart form like the catalog.
  */
 class uc_product_handler_field_buyitnow extends views_handler_field {
   function query() {

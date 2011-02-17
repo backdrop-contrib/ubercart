@@ -7,7 +7,7 @@
  */
 
 /**
- * Build the product kit settings form.
+ * Builds the product kit settings form.
  *
  * @ingroup forms
  */

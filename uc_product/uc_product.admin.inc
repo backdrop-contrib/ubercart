@@ -7,7 +7,7 @@
  */
 
 /**
- * List all products.
+ * Lists all products.
  */
 function uc_product_administration() {
   $build = array();
@@ -38,7 +38,7 @@ function uc_product_administration() {
 }
 
 /**
- * Display a list of product classes.
+ * Displays a list of product classes.
  */
 function uc_product_class_default() {
   $result = db_query("SELECT * FROM {uc_product_classes}");
@@ -75,11 +75,10 @@ function uc_product_class_default() {
 }
 
 /**
- * Display overview of product settings.
+ * Displays overview of product settings.
  *
- * @see
- *   uc_product_settings_form()
- *   uc_product_field_settings_form()
+ * @see uc_product_settings_form()
+ * @see uc_product_field_settings_form()
  */
 function uc_product_settings_overview() {
   // Load the form summaries for pages beneath this path.
@@ -95,8 +94,8 @@ function uc_product_settings_overview() {
 /**
  * Form to change product settings.
  *
- * @ingroup forms
  * @see uc_product_settings_overview()
+ * @ingroup forms
  */
 function uc_product_settings_form($form, &$form_state) {
   // Loop through all the integrated image widgets and build an options array.
@@ -171,13 +170,12 @@ function uc_product_settings_form($form, &$form_state) {
 /**
  * Allows store administrators to control what product information is relavent to their store.
  *
+ * @see uc_product_settings_overview()
+ * @see _uc_product_fields_summarize()
+ * @see theme_uc_product_field_settings_form()
+ * @see uc_product_field_settings_form_reset()
+ * @see uc_product_field_settings_form_submit()
  * @ingroup forms
- * @see
- *   uc_product_settings_overview()
- *   _uc_product_fields_summarize()
- *   theme_uc_product_field_settings_form()
- *   uc_product_field_settings_form_reset()
- *   uc_product_field_settings_form_submit()
  */
 function uc_product_field_settings_form($form, &$form_state) {
   $options = array(
@@ -283,7 +281,7 @@ function _uc_product_fields_summarize($form, $options, $enabled, $weight) {
 }
 
 /**
- * Display the product field settings form.
+ * Displays the product field settings form.
  *
  * @see uc_product_field_settings_form()
  * @ingroup themeable
@@ -307,7 +305,7 @@ function theme_uc_product_field_settings_form($variables) {
 }
 
 /**
- * Reset field settings to their default values.
+ * Resets field settings to their default values.
  *
  * @see uc_product_field_settings_form()
  */
@@ -319,7 +317,7 @@ function uc_product_field_settings_form_reset($form, &$form_state) {
 }
 
 /**
- * Save the product fields settings.
+ * Saves the product fields settings.
  *
  * @see uc_product_field_settings_form()
  */
@@ -337,10 +335,10 @@ function uc_product_field_settings_form_submit($form, &$form_state) {
 }
 
 /**
- * Display the settings form for all product features.
+ * Displays the settings form for all product features.
  *
- * @ingroup forms
  * @see _uc_product_features_summarize()
+ * @ingroup forms
  */
 function uc_product_feature_settings_form($form, &$form_state) {
   $titles = array();
@@ -436,7 +434,7 @@ function uc_product_features($node, $fid = NULL, $pfid = NULL) {
 }
 
 /**
- * Handle adding or editing product features.
+ * Handles adding or editing product features.
  */
 function uc_product_feature_edit($node, $fid, $pfid) {
   $func = uc_product_feature_data($fid, 'callback');
@@ -481,12 +479,11 @@ function uc_product_feature_edit($node, $fid, $pfid) {
 }
 
 /**
- * Add the form for adding a product feature to the features tab.
+ * Adds the form for adding a product feature to the features tab.
  *
+ * @see uc_product_feature_add_form_submit()
+ * @see theme_uc_product_feature_add_form()
  * @ingroup forms
- * @see
- *   theme_uc_product_feature_add_form()
- *   uc_product_feature_add_form_submit()
  */
 function uc_product_feature_add_form($form, &$form_state, $node) {
   foreach (module_invoke_all('uc_product_feature') as $feature) {
@@ -529,8 +526,8 @@ function uc_product_feature_add_form_submit($form, &$form_state) {
 /**
  * Confirmation form to delete a product feature.
  *
- * @ingroup forms
  * @see uc_product_feature_confirm_delete_submit()
+ * @ingroup forms
  */
 function uc_product_feature_confirm_delete($form, &$form_state, $node, $fid, $feature) {
   $question = $node->title;
@@ -564,6 +561,7 @@ function uc_product_feature_confirm_delete_submit($form, &$form_state) {
  *   to fill this bitmap: an imagefield exists, an imagefield is attached to
  *   product, the imagecache presets exist, and each preset has at least one
  *   action.
+ *
  * @see uc_product_uc_store_status()
  */
 function uc_product_image_defaults() {
@@ -577,10 +575,9 @@ function uc_product_image_defaults() {
 /**
  * Form builder for product classes.
  *
+ * @see uc_product_class_form_validate()
+ * @see uc_product_class_form_submit()
  * @ingroup forms
- * @see
- *   uc_product_class_form_validate()
- *   uc_product_class_form_submit()
  */
 function uc_product_class_form($form, &$form_state, $class = NULL) {
   if (!is_null($class)) {
@@ -626,7 +623,7 @@ function uc_product_class_form($form, &$form_state, $class = NULL) {
 }
 
 /**
- * Ensure the new product class is unique.
+ * Ensures the new product class is unique.
  *
  * @see uc_product_class_form()
  */
@@ -688,7 +685,7 @@ function uc_product_class_form_submit($form, &$form_state) {
 }
 
 /**
- * Confirm the deletion of a product class.
+ * Confirms the deletion of a product class.
  *
  * @see uc_product_class_delete_confirm_submit()
  */

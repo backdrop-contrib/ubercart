@@ -7,7 +7,7 @@
  */
 
 /**
- * Display the "Add to cart" form like the product page.
+ * Displays the "Add to cart" form like the product page.
  */
 class uc_product_handler_field_addtocart extends views_handler_field {
   function query() {

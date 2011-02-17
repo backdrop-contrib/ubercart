@@ -20,8 +20,8 @@
  * lets developers squeeze right in at the end of the process after the product
  * information is all loaded and the product is about to be added to the cart.
  * In the event that a product should not be added to the cart, you simply have
- * to return a failure message described below. This hook may also be used simply
- * to perform some routine action when products are added to the cart.
+ * to return a failure message described below. This hook may also be used
+ * simply to perform some routine action when products are added to the cart.
  *
  * @param $nid
  *   The node ID of the product.
@@ -37,13 +37,13 @@
  *   module_invoke_all() function. You must return an array within an array
  *   or other module data will end up getting ignored.) At this moment,
  *   there are only three keys:
- *   - "success": TRUE or FALSE for whether the specified quantity of the item
- *       may be added to the cart or not; defaults to TRUE.
- *   - "message": the fail message to display in the event of a failure; if
- *       omitted, Ubercart will display a default fail message.
- *   - "silent": return TRUE to suppress the display of any messages; useful
- *       when a module simply needs to do some other processing during an add
- *       to cart or fail silently.
+ *   - success: TRUE or FALSE for whether the specified quantity of the item
+ *     may be added to the cart or not; defaults to TRUE.
+ *   - message: The fail message to display in the event of a failure; if
+ *     omitted, Ubercart will display a default fail message.
+ *   - silent: Return TRUE to suppress the display of any messages; useful
+ *     when a module simply needs to do some other processing during an add
+ *     to cart or fail silently.
  */
 function hook_uc_add_to_cart($nid, $qty, $data) {
   if ($qty > 1) {
