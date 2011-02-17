@@ -677,6 +677,8 @@ function uc_product_class_form_submit($form, &$form_state) {
 
   node_types_rebuild();
   if ($is_new) {
+    $type = node_type_get_type($pcid);
+    node_add_body_field($type, t('Description'));
     uc_product_add_default_image_field($pcid);
   }
   menu_rebuild();

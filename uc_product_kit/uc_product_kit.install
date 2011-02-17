@@ -82,6 +82,28 @@ function uc_product_kit_schema() {
 }
 
 /**
+  * Implements hook_enable().
+  */
+ function uc_product_kit_enable() {
+   // Hack the product kit node type into the catalog if this module is enabled
+   // some time after uc_catalog.
+   if (module_exists('uc_catalog') && $vid = variable_get('uc_catalog_vid', 0)) {
+     $field = field_info_field('taxonomy_catalog');
+     if (!isset($field['bundles']['node']['product_kit'])) {
+       uc_catalog_add_node_type('product_kit');
+     }
+   }
+
+   // Add the body field.
+   node_types_rebuild();
+   $types = node_type_get_types();
+   node_add_body_field($types['product_kit'], t('Description'));
+
+   // Add a default image field to product kits.
+   uc_product_add_default_image_field('product_kit');
+ }
+
+ /**
  * Implements hook_uninstall().
  */
 function uc_product_kit_uninstall() {
