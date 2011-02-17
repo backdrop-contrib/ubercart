@@ -649,6 +649,16 @@ function uc_payment_method_paypal_ec($op, &$order) {
       $form['redirect'] = array(
         '#markup' => '<div>' . t('For Express Checkout, you need to <a href="!cp_link">enable the cart pane</a> and <a href="!wpp_link">configure the Website Payments Pro settings</a>.', array('!cp_link' => url('admin/store/settings/cart/edit/panes'), '!wpp_link' => url('admin/store/settings/payment/edit/gateways'))) . '</div>',
       );
+      $form['uc_paypal_ec_landingpage_style'] = array(
+        '#type' => 'radios',
+        '#title' => t('PayPal landing page style'),
+        '#description' => t('PayPal Express Checkout landing page may show a credit card submission form (allowing credit card payments without a PayPal account) or may show only a PayPal login form, thereby restricting payment to PayPal users.'),
+        '#options' => array(
+          'Billing' => t('Show credit card submission form.'),
+          'Login' => t('Do not show credit card submission form.'),
+        ),
+        '#default_value' => variable_get('uc_paypal_ec_landingpage_style', 'Billing'),
+      );
       return $form;
   }
 }
@@ -702,6 +712,7 @@ function uc_paypal_ec_checkout($form, &$form_state) {
     'SHIPTOCOUNTRYCODE' => $country[0]['country_iso_code_2'],
     'SHIPTOZIP' => substr($order->delivery_postal_code, 0, 20),
     'PHONENUM' => substr($order->delivery_phone, 0, 20),
+    'LANDINGPAGE' => variable_get('uc_paypal_ec_landingpage_style', 'Billing'),
   );
 
   if (!uc_cart_is_shippable()) {
@@ -768,6 +779,7 @@ function uc_paypal_ec_form_submit($form, &$form_state) {
     'REQCONFIRMSHIPPING' => variable_get('uc_paypal_ec_rqconfirmed_addr', 0),
     'BUTTONSOURCE' => 'Ubercart_ShoppingCart_EC_US',
     'NOTIFYURL' => url('uc_paypal/ipn/' . $order->order_id, array('absolute' => TRUE)),
+    'LANDINGPAGE' => variable_get('uc_paypal_ec_landingpage_style', 'Billing'),
   );
 
   $order->products = $items;
