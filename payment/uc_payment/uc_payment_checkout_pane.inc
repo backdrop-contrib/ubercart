@@ -153,6 +153,8 @@ function uc_payment_checkout_payment_details($form, $form_state) {
  * We need a theme function for the radios element in case another module alters
  * the default or available payment methods... we need the JS to grab the right
  * default payment details.
+ *
+ * @ingroup themeable
  */
 function theme_uc_payment_method_select($variables) {
   $form = $variables['form'];

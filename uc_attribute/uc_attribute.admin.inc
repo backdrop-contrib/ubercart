@@ -1106,6 +1106,8 @@ function theme_uc_object_options_form($variables) {
  *
  * @return
  *   Themed set of attribute options.
+ *
+ * @ingroup themeable
  */
 function theme_uc_product_attributes($variables) {
   $attributes = $variables['attributes'];

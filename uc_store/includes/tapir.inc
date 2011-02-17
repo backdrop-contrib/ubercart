@@ -63,8 +63,10 @@ function tapir_gather_rows($element) {
  *
  * @param $form
  *   The array of form information needing to be rendered into the table.
+ *
  * @return
  *   The table output rendered in HTML.
+ *
  * @ingroup themeable
  */
 function theme_tapir_table($variables) {

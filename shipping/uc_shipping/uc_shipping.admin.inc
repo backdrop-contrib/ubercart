@@ -958,6 +958,8 @@ function uc_shipping_shipment_print($order, $shipment) {
 
 /**
  * Displays the packing slip and shipping labels for printing.
+ *
+ * @ingroup themeable
  */
 function theme_uc_shipping_shipment_print($variables) {
   $order = $variables['order'];

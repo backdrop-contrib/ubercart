@@ -245,8 +245,10 @@ function uc_summarize_child_form_pages($path, $trim = FALSE, $only_parent = FALS
  * @param $link
  *   TRUE or FALSE indicating whether or not to display an edit icon linking to
  *     the settings form the summary represents.
+ *
  * @return
  *   The HTML output of the summary.
+ *
  * @ingroup themeable
  */
 function theme_uc_summary_overview($variables) {

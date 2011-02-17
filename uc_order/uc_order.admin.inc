@@ -1291,10 +1291,10 @@ function uc_order_edit_form_submit($form, &$form_state) {
 }
 
 /**
- * @ingroup themeable
  * @see uc_order_edit_form()
  * @see uc_order_edit_form_validate()
  * @see uc_order_edit_form_submit()
+ * @ingroup themeable
  */
 function theme_uc_order_edit_form($variables) {
   $form = $variables['form'];

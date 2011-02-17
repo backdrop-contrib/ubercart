@@ -58,6 +58,9 @@ function uc_payment_pack_receive_check_form($form, &$form_state, $order) {
   return $form;
 }
 
+/**
+ * @ingroup themeable
+ */
 function theme_uc_payment_pack_receive_check_form($variables) {
   $form = $variables['form'];
 

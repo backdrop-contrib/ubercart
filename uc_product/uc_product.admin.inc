@@ -285,8 +285,8 @@ function _uc_product_fields_summarize($form, $options, $enabled, $weight) {
 /**
  * Display the product field settings form.
  *
- * @ingroup themeable
  * @see uc_product_field_settings_form()
+ * @ingroup themeable
  */
 function theme_uc_product_field_settings_form($variables) {
   $form = $variables['form'];
@@ -510,8 +510,8 @@ function uc_product_feature_add_form($form, &$form_state, $node) {
 }
 
 /**
- * @ingroup themeable
  * @see uc_product_feature_add_form()
+ * @ingroup themeable
  */
 function theme_uc_product_feature_add_form($variables) {
   return '<table class="add-feature"><tr><td>' . drupal_render_children($variables['form']) . '</td></tr></table>';
