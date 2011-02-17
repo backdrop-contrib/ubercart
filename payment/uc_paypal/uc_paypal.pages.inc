@@ -113,7 +113,7 @@ function uc_paypal_ipn() {
         break;
 
       case 'Completed':
-        if ($payment_amount != $order->order_total) {
+        if (abs($payment_amount - $order->order_total) > 0.01) {
           watchdog('uc_paypal', 'Payment @txn_id for order @order_id did not equal the order total.', array('@txn_id' => $txn_id, '@order_id' => $order->order_id), WATCHDOG_WARNING, l(t('view'), 'admin/store/orders/'. $order->order_id));
         }
         $comment = t('PayPal transaction ID: @txn_id', array('@txn_id' => $txn_id));
