@@ -780,6 +780,8 @@ function uc_object_attributes_form_submit($form, &$form_state) {
   }
 
   if ($form_state['values']['view'] == 'overview' && is_array($form_state['values']['attributes'])) {
+    $changed = FALSE;
+
     foreach ($form_state['values']['attributes'] as $aid => $attribute) {
       if ($attribute['remove']) {
         $remove_aids[] = $aid;
@@ -855,13 +857,14 @@ function uc_object_attributes_form_submit($form, &$form_state) {
         ->from($select)
         ->execute();
     }
-    if (count(array_filter($form_state['values']['add_attributes'])) > 0) {
+    $num = count(array_filter($form_state['values']['add_attributes']));
+    if ($num > 0) {
       if ($form_state['values']['type'] == 'product') {
         db_delete('uc_product_adjustments')
           ->condition('nid', $form_state['values']['id'])
           ->execute();
       }
-      drupal_set_message(format_plural(count($form_state['values']['add_attributes']), '1 attribute has been added.', '@count attributes have been added.'));
+      drupal_set_message(format_plural($num, '1 attribute has been added.', '@count attributes have been added.'));
     }
   }
 
@@ -1226,6 +1229,7 @@ function uc_product_adjustments_form($form, &$form_state, $node) {
   $query = db_select('uc_product_options', "po$i")->extend('PagerDefault')
     ->limit(20);
 
+  $attribute_ids = array();
   foreach ($result as $prod_attr) {
     if ($i > 1) {
       $query->join('uc_product_options', "po$i");
@@ -1326,7 +1330,7 @@ function uc_product_adjustments_form($form, &$form_state, $node) {
   }
   else {
     $form['error'] = array(
-      '#markup' => '<div><br />' . t('This product does not have any attributes.') . '</div>',
+      '#markup' => '<div><br />' . t('This product does not have any attributes that can be used for SKU adjustments.') . '</div>',
     );
   }
 
