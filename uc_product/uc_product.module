@@ -334,7 +334,7 @@ function uc_product_field_formatter_view($entity_type, $entity, $field, $instanc
 /**
  * Implements hook_node_info().
  *
- * Create node types for each product class and other product modules.
+ * Creates node types for each product class and other product modules.
  */
 function uc_product_node_info($reset = FALSE) {
   static $types = array();
@@ -390,10 +390,9 @@ function uc_product_edit_access($node) {
 /**
  * Implements hook_form().
  *
+ * @see uc_product_form_validate()
+ * @see theme_uc_product_inline_form()
  * @ingroup forms
- * @see
- *   theme_uc_product_inline_form()
- *   uc_product_form_validate()
  */
 function uc_product_form($node, $form_state) {
   $type = node_type_get_type($node);
@@ -609,7 +608,7 @@ function uc_product_form($node, $form_state) {
 }
 
 /**
- * Put form fields on the same line.
+ * Puts form fields on the same line.
  *
  * @ingroup themeable
  */
@@ -628,7 +627,7 @@ function theme_uc_product_inline_form($variables) {
 /**
  * Implements hook_validate().
  *
- * Ensure that prices, weight, dimensions, and quantity are positive numbers.
+ * Ensures that prices, weight, dimensions, and quantity are positive numbers.
  */
 function uc_product_validate($node) {
   $pattern = '/^\d*(\.\d*)?$/';
@@ -871,7 +870,8 @@ function uc_product_view($node, $view_mode) {
  * Product classes default to use node-product.tpl.php if they don't have their
  * own template.
  *
- * @see theme(), MODULE_preprocess_HOOK()
+ * @see theme()
+ * @see MODULE_preprocess_HOOK()
  */
 function uc_product_preprocess_node(&$variables) {
   if (uc_product_is_product($variables['type'])) {
@@ -960,7 +960,7 @@ function uc_product_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
- * After the node is saved, redirect to the edit page.
+ * After the node is saved, redirects to the node edit page.
  *
  * Some modules add local tasks to product edit forms, but only after it has an
  * nid. Redirecting facilitates the common workflow of continuing to those
@@ -973,7 +973,7 @@ function uc_product_save_continue_submit($form, &$form_state) {
 /**
  * Implements hook_form_{$form_id}_alter().
  *
- * Add a default image field setting to product content types.
+ * Adds a default image field setting to product content types.
  */
 function uc_product_form_node_type_form_alter(&$form, &$form_state) {
   $type = $form['#node_type'];
@@ -1028,7 +1028,7 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
 /**
  * Implements hook_field_extra_fields().
  *
- * Adds the "Product information"
+ * Adds the "Product information".
  */
 function uc_product_field_extra_fields() {
   $extra = array();
@@ -1086,7 +1086,7 @@ function uc_product_field_extra_fields() {
 /**
  * Implements hook_field_delete_instance().
  *
- * Reset a content type's default image field setting when that field instance
+ * Resets a content type's default image field setting when that field instance
  * is removed.
  */
 function uc_product_field_delete_instance($instance) {
@@ -1109,7 +1109,7 @@ function uc_product_uc_product_types() {
 /**
  * Implements hook_uc_store_status().
  *
- * Display the status of the product image handlers.
+ * Displays the status of the product image handlers.
  *
  * @see uc_product_image_defaults()
  */
@@ -1240,7 +1240,7 @@ function uc_product_uc_product_class($pcid, $op) {
  ******************************************************************************/
 
 /**
- * Return the table header for the product view table.
+ * Returns the table header for the product view table.
  *
  * @see uc_product_table()
  */
@@ -1288,9 +1288,9 @@ function uc_product_table_header() {
 }
 
 /**
- * Display product fields in a TAPIr table.
+ * Displays product fields in a TAPIr table.
  *
- * Display image, name, price, and add to cart form.
+ * Displays image, name, price, and add to cart form.
  */
 function uc_product_table($args = array()) {
   $enabled = uc_product_field_enabled();
@@ -1361,11 +1361,10 @@ function uc_product_table($args = array()) {
 }
 
 /**
+ * @see uc_product_forms()
+ * @see uc_catalog_buy_it_now_form_validate()
+ * @see uc_catalog_buy_it_now_form_submit()
  * @ingroup forms
- * @see
- *   uc_product_forms()
- *   uc_catalog_buy_it_now_form_validate()
- *   uc_catalog_buy_it_now_form_submit()
  */
 function uc_catalog_buy_it_now_form($form, &$form_state, $node) {
   $form['nid'] = array('#type' => 'hidden', '#value' => $node->nid);
@@ -1385,7 +1384,7 @@ function uc_catalog_buy_it_now_form($form, &$form_state, $node) {
 }
 
 /**
- * Redirect to the product page if attributes need to be selected.
+ * Redirects to the product page if attributes need to be selected.
  *
  * @see uc_catalog_buy_it_now_form()
  */
@@ -1408,7 +1407,7 @@ function uc_catalog_buy_it_now_form_submit($form, &$form_state) {
 }
 
 /**
- * Format a product's model number.
+ * Formats a product's model number.
  *
  * @ingroup themeable
  */
@@ -1432,8 +1431,9 @@ function theme_uc_product_body($variables) {
 
   return $output;
 }
+
 /**
- * Wrap the "Add to Cart" form in a <div>.
+ * Wraps the "Add to Cart" form in a <div>.
  *
  * @ingroup themeable
  */
@@ -1502,7 +1502,7 @@ function uc_product_add_to_cart_form($form, &$form_state, $node) {
 }
 
 /**
- * Allow only positive, numeric quantities.
+ * Allows only positive, numeric quantities.
  *
  * @see uc_product_add_to_cart_form()
  */
@@ -1513,6 +1513,8 @@ function uc_product_add_to_cart_form_validate($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_product_add_to_cart_form().
+ *
  * @see uc_product_add_to_cart_form()
  */
 function uc_product_add_to_cart_form_submit($form, &$form_state) {
@@ -1520,7 +1522,7 @@ function uc_product_add_to_cart_form_submit($form, &$form_state) {
 }
 
 /**
- * Format a product's price.
+ * Formats a product's price.
  *
  * @param $variables
  *   A render element where: 'element' => array(), and has the following keys:
@@ -1555,7 +1557,7 @@ function theme_uc_product_price($variables) {
 }
 
 /**
- * Format a product's weight.
+ * Formats a product's weight.
  *
  * @ingroup themeable
  */
@@ -1571,7 +1573,7 @@ function theme_uc_product_weight($variables) {
 }
 
 /**
- * Format a product's length, width, and height.
+ * Formats a product's length, width, and height.
  *
  * @ingroup themeable
  */
@@ -1589,7 +1591,7 @@ function theme_uc_product_dimensions($variables) {
 }
 
 /**
- * Format a product's images with imagecache and an image widget
+ * Formats a product's images with imagecache and an image widget
  * (Colorbox, Thickbox, or Lightbox2).
  *
  * @ingroup themeable

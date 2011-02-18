@@ -507,6 +507,8 @@ function uc_product_feature_add_form($form, &$form_state, $node) {
 }
 
 /**
+ * Theme function for uc_product_feature_add_form().
+ *
  * @see uc_product_feature_add_form()
  * @ingroup themeable
  */
@@ -515,7 +517,9 @@ function theme_uc_product_feature_add_form($variables) {
 }
 
 /**
- * @see uc_product_feature_add_form().
+ * Form submission handler for uc_product_feature_add_form().
+ *
+ * @see uc_product_feature_add_form()
  */
 function uc_product_feature_add_form_submit($form, &$form_state) {
   $node = $form_state['build_info']['args'][0];
@@ -538,6 +542,8 @@ function uc_product_feature_confirm_delete($form, &$form_state, $node, $fid, $fe
 }
 
 /**
+ * Form submission handler for uc_product_feature_confirm_delete().
+ *
  * @see uc_product_feature_confirm_delete()
  */
 function uc_product_feature_confirm_delete_submit($form, &$form_state) {
@@ -554,7 +560,7 @@ function uc_product_feature_confirm_delete_submit($form, &$form_state) {
 }
 
 /**
- * Set up imagefield and imagecache for products.
+ * Sets up imagefield and imagecache for products.
  *
  * @param $checks
  *   A bitmap describing the state of the image modules. Four checks are made
@@ -626,6 +632,7 @@ function uc_product_class_form($form, &$form_state, $class = NULL) {
  * Ensures the new product class is unique.
  *
  * @see uc_product_class_form()
+ * @see uc_product_class_form_submit()
  */
 function uc_product_class_form_validate($form, &$form_state) {
   if ($form['pcid']['#type'] == 'textfield') {
@@ -642,7 +649,10 @@ function uc_product_class_form_validate($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_product_class_form().
+ *
  * @see uc_product_class_form()
+ * @see uc_product_class_form_validate()
  */
 function uc_product_class_form_submit($form, &$form_state) {
   $is_new = $form['pcid']['#type'] == 'textfield';
@@ -711,6 +721,8 @@ function uc_product_class_delete_confirm($form, &$form_state, $class) {
 }
 
 /**
+ * Form submission handler for uc_product_class_delete_confirm().
+ *
  * @see uc_product_class_delete_confirm()
  */
 function uc_product_class_delete_confirm_submit($form, &$form_state) {
