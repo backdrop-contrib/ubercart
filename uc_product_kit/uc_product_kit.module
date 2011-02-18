@@ -48,10 +48,10 @@ function uc_product_kit_permission() {
 }
 
 /**
- * Implements hook_form_alter().
+ * Implements hook_form_FORM_ID_alter() for node_delete_confirm().
  */
-function uc_product_kit_form_alter(&$form, &$form_state, $form_id) {
-  if ($form_id == 'node_delete_confirm' && uc_product_is_product((integer)$form['nid']['#value'])) {
+function uc_product_kit_form_node_delete_confirm_alter(&$form, &$form_state) {
+  if (uc_product_is_product((integer)$form['nid']['#value'])) {
     $kits = db_query("SELECT COUNT(k.nid) FROM {node} AS n JOIN {uc_product_kits} AS k ON n.vid = k.vid WHERE k.vid IN (SELECT DISTINCT vid FROM {uc_product_kits} WHERE product_id = :nid) GROUP BY k.nid HAVING COUNT(product_id) = 1", array(':nid' => $form['nid']['#value']))->fetchField();
 
     if ($kits) {
