@@ -72,7 +72,7 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
     '#theme' => 'uc_payment_method_credit_form',
     '#tree' => TRUE,
   );
-  $form['specify_card']['cc_data'] += uc_payment_method_credit_form(array(), $order);
+  $form['specify_card']['cc_data'] += uc_payment_method_credit_form(array(), $form_state, $order);
   unset($form['specify_card']['cc_data']['cc_policy']);
 
   $form['specify_card']['actions'] = array('#type' => 'actions');
@@ -112,9 +112,11 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
   // Find any uncaptured authorizations.
   $options = array();
 
-  foreach ((array) $order->data['cc_txns']['authorizations'] as $auth_id => $data) {
-    if (empty($data['captured'])) {
-      $options[$auth_id] = t('@auth_id - @date - @amount authorized', array('@auth_id' => strtoupper($auth_id), '@date' => format_date($data['authorized'], 'short'), '@amount' => uc_currency_format($data['amount'])));
+  if (isset($order->data['cc_txns']['authorizations'])) {
+    foreach ($order->data['cc_txns']['authorizations'] as $auth_id => $data) {
+      if (empty($data['captured'])) {
+        $options[$auth_id] = t('@auth_id - @date - @amount authorized', array('@auth_id' => strtoupper($auth_id), '@date' => format_date($data['authorized'], 'short'), '@amount' => uc_currency_format($data['amount'])));
+      }
     }
   }
 
@@ -164,8 +166,10 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
   // Log a reference to the order for testing.
   // $order->data = uc_credit_log_reference($order->order_id, substr(md5(REQUEST_TIME), 0, 16), '4111111111111111');
 
-  foreach ((array) $order->data['cc_txns']['references'] as $ref_id => $data) {
-    $options[$ref_id] = t('@ref_id - @date - (Last 4) @card', array('@ref_id' => strtoupper($ref_id), '@date' => format_date($data['created'], 'short'), '@card' => $data['card']));
+  if (isset($order->data['cc_txns']['references'])) {
+    foreach ($order->data['cc_txns']['references'] as $ref_id => $data) {
+      $options[$ref_id] = t('@ref_id - @date - (Last 4) @card', array('@ref_id' => strtoupper($ref_id), '@date' => format_date($data['created'], 'short'), '@card' => $data['card']));
+    }
   }
 
   // If any references existed...
@@ -223,7 +227,7 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
  * Validation handler for credit terminal form.
  */
 function uc_credit_terminal_form_validate($form, &$form_state) {
-  switch ($form_states['values']['op']) {
+  switch ($form_state['values']['op']) {
     case t('Charge amount'):
     case t('Authorize amount only'):
     case t('Capture amount to this authorization'):
@@ -252,8 +256,10 @@ function uc_credit_terminal_form_submit($form, &$form_state) {
     $cc_data['cc_number'] = $order->payment_details['cc_number'];
   }
 
-  if ($cc_data['cc_cvv'] == str_repeat('-', strlen($cc_data['cc_cvv']))) {
-    $cc_data['cc_cvv'] = $order->payment_details['cc_cvv'];
+  if (isset($cc_data['cc_cvv']) && isset($order->payment_details['cc_cvv'])) {
+    if ($cc_data['cc_cvv'] == str_repeat('-', strlen($cc_data['cc_cvv']))) {
+      $cc_data['cc_cvv'] = $order->payment_details['cc_cvv'];
+    }
   }
 
   // Cache the values for use during processing.
