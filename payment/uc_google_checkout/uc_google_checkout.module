@@ -757,7 +757,7 @@ function uc_google_checkout_pane_email_allowed($op, $order) {
   switch ($op) {
     case 'customer':
     case 'view':
-      if ($order->data['email_allowed']) {
+      if (isset($order->data['email_allowed']) && $order->data['email_allowed']) {
         $build = array('#markup' => t('Customer will accept marketing emails.'));
       }
       else {
@@ -1095,7 +1095,7 @@ function uc_google_checkout_refund_order($refund) {
 
 function uc_google_checkout_notify_update($form, &$form_state) {
   $order = uc_order_load($form_state['values']['order_id']);
-  if ($order !== FALSE && $order->google_order_number && isset($form_state['values']['order_comment']) && drupal_strlen($form_state['values']['order_comment'])) {
+  if ($order !== FALSE && isset($order->google_order_number) && isset($form_state['values']['order_comment']) && drupal_strlen($form_state['values']['order_comment'])) {
     $request = uc_google_checkout_buyer_message_request($order->google_order_number, $form_state['values']['order_comment']);
     $response = uc_google_checkout_send_request('request', $request);
   }
