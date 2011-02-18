@@ -201,7 +201,12 @@ function uc_cart_image_default_styles() {
 function uc_cart_theme() {
   return array(
     'uc_cart_block_title' => array(
-      'variables' => array('title' => NULL, 'icon_class' => 'cart-empty', 'collapsible' => TRUE),
+      'variables' => array(
+        'title' => NULL,
+        'icon_class' => 'cart-empty',
+        'collapsible' => TRUE,
+        'collapsed' => TRUE,
+      ),
     ),
     'uc_cart_block_title_icon' => array(
       'variables' => array('icon_class' => NULL),
@@ -217,10 +222,11 @@ function uc_cart_theme() {
         'item_text' => NULL,
         'total' => NULL,
         'summary_links' => NULL,
+        'collapsed' => TRUE,
       ),
     ),
     'uc_cart_block_items' => array(
-      'variables' => array('items' => NULL),
+      'variables' => array('items' => NULL, 'collapsed' => TRUE),
     ),
     'uc_cart_block_summary' => array(
       'variables' => array(
@@ -385,18 +391,10 @@ function uc_cart_block_view($delta = '') {
     drupal_add_css(drupal_get_path('module', 'uc_cart') . '/uc_cart_block.css');
 
     // If the block is collapsible, add the appropriate JS.
-    if (!$cachable && variable_get('uc_cart_block_collapsible', TRUE)) {
-      drupal_add_js(array('ucCollapsedBlock' => variable_get('uc_cart_block_collapsed', TRUE)), 'setting');
+    $collapsible = !$cachable && variable_get('uc_cart_block_collapsible', TRUE);
+    $collapsed = variable_get('uc_cart_block_collapsed', TRUE);
+    if ($collapsible) {
       drupal_add_js(drupal_get_path('module', 'uc_cart') . '/uc_cart_block.js');
-      $collapsible = TRUE;
-    }
-    else {
-      $collapsible = FALSE;
-    }
-
-    // Hack in some CSS to hide the block if necessary.
-    if (variable_get('uc_cart_block_collapsed', TRUE)) {
-      drupal_add_css("#cart-block-contents { display: none; }", 'inline');
     }
 
     // Build the cart image if enabled.
@@ -417,19 +415,16 @@ function uc_cart_block_view($delta = '') {
 
     // Set the text of the block title.
     $title = check_plain(trim(variable_get('uc_cart_block_title', '')));
-
     if (empty($title)) {
       $title = t('Shopping cart');
     }
+    $block['subject'] = theme('uc_cart_block_title', array('title' => $title, 'icon_class' => $icon_class, 'collapsible' => $collapsible, 'collapsed' => $collapsed));
 
     // Build the block array for display based on cache settings.
     if ($cachable) {
       // Caching is turned on and the user is not logged in, so we should
       // deliver a block that is safe for caching.
-      $block = array(
-        'subject' => theme('uc_cart_block_title', array('title' => $title, 'icon_class' => $icon_class, 'collapsible' => $collapsible)),
-        'content' => theme('uc_cart_block_content_cachable'),
-      );
+      $block['content'] = theme('uc_cart_block_content_cachable');
     }
     else {
       // Otherwise build the whole shebang.
@@ -484,10 +479,7 @@ function uc_cart_block_view($delta = '') {
         );
       }
 
-      $block = array(
-        'subject' => theme('uc_cart_block_title', array('title' => $title, 'icon_class' => $icon_class, 'collapsible' => $collapsible)),
-        'content' => theme('uc_cart_block_content', array('help_text' => $help_text, 'items' => $items, 'item_count' => $item_count, 'item_text' => $item_text, 'total' => $total, 'summary_links' => $summary_links)),
-      );
+      $block['content'] = theme('uc_cart_block_content', array('help_text' => $help_text, 'items' => $items, 'item_count' => $item_count, 'item_text' => $item_text, 'total' => $total, 'summary_links' => $summary_links, 'collapsed' => $collapsed));
     }
 
     return $block;
@@ -577,6 +569,7 @@ function theme_uc_cart_block_title($variables) {
   $title = $variables['title'];
   $icon_class = $variables['icon_class'];
   $collapsible = $variables['collapsible'];
+  $collapsed = $variables['collapsed'];
 
   $output = '';
 
@@ -588,7 +581,14 @@ function theme_uc_cart_block_title($variables) {
   // Add the main title span and text, with or without the arrow based on the
   // cart block collapsibility settings.
   if ($collapsible) {
-    $output .= '<span class="cart-block-title-bar" title="' . t('Show/hide shopping cart contents.') . '">' . $title . '<span class="cart-block-arrow"></span></span>';
+    $output .= '<span class="cart-block-title-bar" title="' . t('Show/hide shopping cart contents.') . '">' . $title;
+    if ($collapsed) {
+      $output .= '<span class="cart-block-arrow arrow-down"></span>';
+    }
+    else {
+      $output .= '<span class="cart-block-arrow"></span>';
+    }
+    $output .= '</span>';
   }
   else {
     $output .= '<span class="cart-block-title-bar">' . $title . '</span>';
@@ -647,6 +647,7 @@ function theme_uc_cart_block_content($variables) {
   $item_text = $variables['item_text'];
   $total = $variables['total'];
   $summary_links = $variables['summary_links'];
+  $collapsed = $variables['collapsed'];
 
   $output = '';
 
@@ -655,13 +656,8 @@ function theme_uc_cart_block_content($variables) {
     $output .= '<span class="cart-help-text">' . $help_text . '</span>';
   }
 
-  // Add a wrapper div for use when collapsing the block.
-  $output .= '<div id="cart-block-contents">';
-
   // Add a table of items in the cart or the empty message.
-  $output .= theme('uc_cart_block_items', array('items' => $items));
-
-  $output .= '</div>';
+  $output .= theme('uc_cart_block_items', array('items' => $items, 'collapsed' => $collapsed));
 
   // Add the summary section beneath the items table.
   $output .= theme('uc_cart_block_summary', array('item_count' => $item_count, 'item_text' => $item_text, 'total' => $total, 'summary_links' => $summary_links));
@@ -680,13 +676,14 @@ function theme_uc_cart_block_content($variables) {
  */
 function theme_uc_cart_block_items($variables) {
   $items = $variables['items'];
+  $class = $variables['collapsed'] ? 'cart-block-items collapsed' : 'cart-block-items';
 
   // If there are items in the shopping cart...
   if ($items) {
-    $output = '<table class="cart-block-items"><tbody>';
-    $row_class = 'odd';
+    $output = '<table class="' . $class . '"><tbody>';
 
     // Loop through each item.
+    $row_class = 'odd';
     foreach ($items as $item) {
       // Add the basic row with quantity, title, and price.
       $output .= '<tr class="' . $row_class . '"><td class="cart-block-item-qty">' . $item['qty'] . '</td>'
@@ -706,7 +703,7 @@ function theme_uc_cart_block_items($variables) {
   }
   else {
     // Otherwise display an empty message.
-    $output = '<p>' . t('There are no products in your shopping cart.') . '</p>';
+    $output = '<p class="' . $class . '">' . t('There are no products in your shopping cart.') . '</p>';
   }
 
   return $output;
