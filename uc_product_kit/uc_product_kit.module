@@ -475,12 +475,14 @@ function uc_product_kit_form(&$node, $form_state) {
   // Query the database and loop through the results.
   $products = db_query("SELECT nid, title FROM {node} WHERE type IN (:types) ORDER BY title, nid", array(':types' => $product_types))->fetchAllKeyed();
 
-  $form['base'] = array('#type' => 'fieldset',
-    '#title' => t('Product Information'),
+  $form['base'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Product kit information'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
-    '#weight' => -1,
+    '#weight' => -10,
     '#attributes' => array('class' => array('product-field')) ,
+    '#group' => 'additional_settings',
   );
   $form['base']['mutable'] = array('#type' => 'radios',
     '#title' => t('How is this product kit handled by the cart?'),
@@ -491,14 +493,14 @@ function uc_product_kit_form(&$node, $form_state) {
     ),
     '#default_value' => isset($node->mutable) ? $node->mutable : variable_get('uc_product_kit_mutable', UC_PRODUCT_KIT_UNMUTABLE_WITH_LIST),
   );
-  $form['base']['products'] = array('#type' => 'select',
+  $form['base']['products'] = array(
+    '#type' => 'select',
     '#multiple' => TRUE,
     '#required' => TRUE,
     '#title' => t('Products'),
     '#options' => $products,
     '#default_value' => isset($node->products) ? array_keys($node->products) : array(),
   );
-  $synchronized = FALSE;
   $total = 0;
   $base_total = 0;
   $form['base']['items'] = array('#tree' => TRUE, '#weight' => 1);
@@ -523,7 +525,8 @@ function uc_product_kit_form(&$node, $form_state) {
         '#default_value' => isset($product->ordering) ? $product->ordering : 0,
       );
 
-      $form['base']['items'][$i]['discount'] = array('#type' => 'textfield',
+      $form['base']['items'][$i]['discount'] = array(
+        '#type' => 'textfield',
         '#title' => t('Discount'),
         '#description' => t('Enter a positive or negative value to raise or lower the item price by that amount. This change is applied to each %product in the kit.', array('%product' => $product->title)),
         '#field_prefix' => t('@price + ', array('@price' => uc_currency_format($product->sell_price))),
@@ -558,16 +561,29 @@ function uc_product_kit_form(&$node, $form_state) {
       '#field_suffix' => $sign_flag ? $currency_sign : '',
     );
   }
-  $form['base']['default_qty'] = array('#type' => 'textfield',
-    '#title' => t('Default quantity to add to cart'),
-    '#default_value' => isset($node->default_qty) ? $node->default_qty : 1,
-    '#description' => t('Leave blank or zero to disable the quantity field in the add to cart form.'),
-    '#weight' => 27,
-    '#size' => 5,
-    '#maxlength' => 6,
-  );
-  $form['base']['ordering'] = array('#type' => 'weight',
+
+  if (variable_get('uc_product_add_to_cart_qty', FALSE)) {
+    $form['base']['default_qty'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Default quantity to add to cart'),
+      '#default_value' => isset($node->default_qty) ? $node->default_qty : 1,
+      '#description' => t('Use 0 to disable the quantity field next to the add to cart button.'),
+      '#weight' => 27,
+      '#size' => 5,
+      '#maxlength' => 6,
+    );
+  }
+  else {
+    $form['base']['default_qty'] = array(
+      '#type' => 'value',
+      '#value' => isset($node->default_qty) ? $node->default_qty : 1,
+    );
+  }
+
+  $form['base']['ordering'] = array(
+    '#type' => 'weight',
     '#title' => t('List position'),
+    '#description' => t("Specify a value to set this product's position in product lists.<br />Products in the same position will be sorted alphabetically."),
     '#delta' => 25,
     '#default_value' => isset($node->ordering) ? $node->ordering : 0,
     '#weight' => 30,
