@@ -409,17 +409,6 @@ function uc_store_ubercart_help_tokens() {
 }
 
 /**
- * Displays an overview of the country settings.
- */
-function uc_country_settings_overview() {
-  // Theme all the pages beneath this path into summary overviews.
-  return array(
-    '#theme' => 'uc_summary_overview',
-    '#summaries' => uc_summarize_child_form_pages('admin/store/settings/countries/edit'),
-  );
-}
-
-/**
  * Imports settings from a country file.
  *
  * @see uc_country_import_form_submit()
@@ -473,11 +462,10 @@ function uc_country_import_form($form, &$form_state) {
   }
 
   $form['country_import'] = array(
-    '#title' => t('Country importer'),
+    '#title' => t('Import countries'),
     '#type' => 'fieldset',
-    '#collapsed' => FALSE,
-    '#collapsible' => FALSE,
-    '#summary callback' => '_uc_country_summarize',
+    '#collapsed' => TRUE,
+    '#collapsible' => TRUE,
   );
 
   $form['country_import']['text'] = array(
@@ -507,30 +495,6 @@ function uc_country_import_form($form, &$form_state) {
 }
 
 /**
- * Summary callback for country settings.
- *
- * @see uc_country_settings_overview()
- */
-function _uc_country_summarize() {
-  $items = array();
-
-  $result = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC");
-  foreach ($result as $country) {
-    $items[] = $country->version > 0
-    ? t(
-      '!country version !version is enabled.',
-      array('!country' => $country->country_name, '!version' => abs($country->version))
-    )
-    : t(
-      '!country version !version is disabled.',
-      array('!country' => $country->country_name, '!version' => abs($country->version))
-    );
-  }
-
-  return $items;
-}
-
-/**
  * Form submission handler for uc_country_import_form().
  *
  * @see uc_country_import_form()
@@ -557,11 +521,9 @@ function uc_country_import_form_submit($form, &$form_state) {
 function uc_country_formats_form($form, &$form_state) {
   $form['instructions'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Address variables instructions'),
+    '#title' => t('Address format variables'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
-    '#summary' => t('Tweak the address formatting for a specific country.'),
-    '#summary arguments' => array(FALSE),
   );
   $header = array(t('Variable'), t('Description'));
   $rows = array(
@@ -583,28 +545,27 @@ function uc_country_formats_form($form, &$form_state) {
     '#header' => $header,
     '#rows' => $rows,
     '#prefix' => '<div><p>' . t('The following variables should be used in configuring addresses for the countries you ship to:') . '</p>',
-    '#suffix' => '<p>' . t('*Adding _if to any country variable will make it display only for addresses<br />whose country is different than the default store country.') . '</p></div>',
+    '#suffix' => '<p>' . t('Adding _if to any country variable will make it display only for addresses whose country is different than the default store country.') . '</p></div>',
   );
 
   $countries = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC")->fetchAll();
 
   if (is_array($countries)) {
     $form['countries'] = array(
+      '#type' => 'vertical_tabs',
       '#tree' => TRUE,
     );
     foreach ($countries as $country) {
       $form['countries'][$country->country_id] = array(
         '#type' => 'fieldset',
         '#title' => $country->country_name,
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-        '#summary callback' => 'uc_summarize_null',
+        '#group' => 'country',
       );
       $form['countries'][$country->country_id]['address_format'] = array(
         '#type' => 'textarea',
-        '#title' => t('Address format'),
+        '#title' => t('@country address format', array('@country' => $country->country_name)),
         '#default_value' => variable_get('uc_address_format_' . $country->country_id, ''),
-        '#description' => t('Uses the variables mentioned in the instructions to format an address for this country.'),
+        '#description' => t('Use the variables mentioned in the instructions to format an address for this country.'),
         '#rows' => 6,
       );
     }
@@ -1105,7 +1066,7 @@ function uc_country_disable($country_id) {
   else {
     drupal_set_message(t('Attempted to disable an invalid country.'), 'error');
   }
-  drupal_goto('admin/store/settings/countries/edit');
+  drupal_goto('admin/store/settings/countries');
 }
 
 /**
@@ -1133,7 +1094,7 @@ function uc_country_enable($country_id) {
   else {
     drupal_set_message(t('Attempted to enable an invalid country.'), 'error');
   }
-  drupal_goto('admin/store/settings/countries/edit');
+  drupal_goto('admin/store/settings/countries');
 }
 
 /**
@@ -1163,7 +1124,7 @@ function uc_country_remove_form($form, &$form_state, $country_id) {
     '#value' => $country_id,
   );
 
-  return confirm_form($form, t('Are you sure you want to remove @country from the system?', array('@country' => $country)), 'admin/store/settings/countries/edit', NULL, t('Remove'));
+  return confirm_form($form, t('Are you sure you want to remove @country from the system?', array('@country' => $country)), 'admin/store/settings/countries', NULL, t('Remove'));
 }
 
 /**
@@ -1177,7 +1138,7 @@ function uc_country_remove_form_submit($form, &$form_state) {
   $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id));
   if (!($country = $result->fetchObject())) {
     drupal_set_message(t('Attempted to remove an invalid country.'), 'error');
-    drupal_goto('admin/store/settings/countries/edit');
+    drupal_goto('admin/store/settings/countries');
   }
 
   db_delete('uc_countries')
@@ -1197,7 +1158,7 @@ function uc_country_remove_form_submit($form, &$form_state) {
   }
 
   drupal_set_message(t('!country removed.', array('!country' => $country->country_name)));
-  drupal_goto('admin/store/settings/countries/edit');
+  drupal_goto('admin/store/settings/countries');
 }
 
 /**
@@ -1241,5 +1202,5 @@ function uc_country_update($country_id, $version) {
     drupal_set_message(t('Attempted to update an invalid country.'));
   }
 
-  drupal_goto('admin/store/settings/countries/edit/import');
+  drupal_goto('admin/store/settings/countries');
 }
