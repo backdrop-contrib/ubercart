@@ -1219,8 +1219,9 @@ function uc_zone_select($title, $default = NULL, $description = NULL, $country_i
   if (empty($country_id)) {
     $country_id = uc_store_default_country();
   }
+  $order_by = ($display == 'code') ? 'zone_code' : 'zone_name';
 
-  $zones = db_query("SELECT * FROM {uc_zones} WHERE zone_country_id = :id ORDER BY :sort", array(':id' => $country_id, ':sort' => ($display == 'code') ? 'zone_code' : 'zone_name'));
+  $zones = db_query("SELECT * FROM {uc_zones} WHERE zone_country_id = :id ORDER BY $order_by", array(':id' => $country_id));
 
   $options[''] = t('Please select');
   foreach ($zones as $zone) {
@@ -1285,7 +1286,7 @@ function uc_country_select($title, $default = NULL, $description = NULL, $displa
     $order_by = 'country_name';
   }
 
-  $result = db_query("SELECT * FROM {uc_countries} WHERE version > :version ORDER BY :sort", array(':version' => 0, ':sort' => $order_by));
+  $result = db_query("SELECT * FROM {uc_countries} WHERE version > :version ORDER BY $order_by", array(':version' => 0));
 
   $options = array();
   while ($country = $result->fetchAssoc()) {
@@ -1315,7 +1316,7 @@ function uc_country_select($title, $default = NULL, $description = NULL, $displa
  * Returns a list of available countries.
  */
 function uc_country_option_list() {
-  $result = db_query("SELECT * FROM {uc_countries} WHERE version > :version ORDER BY :sort", array(':version' => 0, ':sort' => 'country_name'));
+  $result = db_query("SELECT * FROM {uc_countries} WHERE version > :version ORDER BY country_name", array(':version' => 0));
 
   $options = array();
   while ($country = $result->fetchAssoc()) {
