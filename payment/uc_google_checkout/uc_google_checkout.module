@@ -69,7 +69,7 @@ function uc_google_checkout_menu() {
   );
   $items['google_checkout'] = array(
     'page callback' => 'uc_google_checkout_callback',
-    'access callback' => 'uc_google_checkout_callback_access',
+    'access callback' => TRUE,
     'type' => MENU_CALLBACK,
     'file' => 'uc_google_checkout.pages.inc',
   );
@@ -84,13 +84,6 @@ function uc_google_checkout_menu() {
   );
 
   return $items;
-}
-
-/**
- * Access callback function.
- */
-function uc_google_checkout_callback_access() {
-  return TRUE;
 }
 
 /**
@@ -151,21 +144,36 @@ function uc_google_checkout_form_alter(&$form, &$form_state, $form_id) {
       );
     }
   }
-  elseif ($form_id == 'uc_payment_methods_form') {
-    // Make sure no one enables this for Ubercart checkout.
-    $form['pmtable']['google_checkout']['uc_payment_method_google_checkout_checkout']['#disabled'] = TRUE;
-    $form['pmtable']['google_checkout']['uc_payment_method_google_checkout_checkout']['#value'] = FALSE;
-  }
-  elseif ($form_id == 'uc_payment_by_order_form') {
-    // Don't use Google Checkout for manual payments either.
-    unset($form['payments']['new']['method']['#options']['google_checkout']);
-  }
-  elseif ($form_id == 'uc_order_view_update_form') {
-    $form['#submit'][] = 'uc_google_checkout_notify_update';
-  }
-  elseif ($form_id == 'uc_store_format_settings_form') {
-    $form['currency']['uc_currency_code']['#description'] .= ' ' . t('Google Checkout only accepts the following currencies: @list', array('@list' => implode(', ', _uc_google_checkout_currency_codes())));
-  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for uc_payment_methods_form().
+ */
+function uc_google_checkout_form_uc_payment_methods_form_alter(&$form, &$form_state) {
+  // Make sure no one enables this for Ubercart checkout.
+  $form['pmtable']['google_checkout']['uc_payment_method_google_checkout_checkout']['#disabled'] = TRUE;
+  $form['pmtable']['google_checkout']['uc_payment_method_google_checkout_checkout']['#value'] = FALSE;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for uc_payment_by_order_form().
+ */
+function uc_google_checkout_form_uc_payment_by_order_form_alter(&$form, &$form_state) {
+  unset($form['payments']['new']['method']['#options']['google_checkout']);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for uc_order_view_update_form().
+ */
+function uc_google_checkout_form_uc_order_view_update_form_alter(&$form, &$form_state) {
+  $form['#submit'][] = 'uc_google_checkout_notify_update';
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for uc_store_format_settings_form().
+ */
+function uc_google_checkout_form_uc_store_format_settings_form_alter(&$form, &$form_state) {
+  $form['currency']['uc_currency_code']['#description'] .= ' ' . t('Google Checkout only accepts the following currencies: @list', array('@list' => implode(', ', _uc_google_checkout_currency_codes())));
 }
 
 /**

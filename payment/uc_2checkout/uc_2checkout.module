@@ -16,7 +16,7 @@ function uc_2checkout_menu() {
   $items['cart/2checkout/complete'] = array(
     'title' => 'Order complete',
     'page callback' => 'uc_2checkout_complete',
-    'access callback' => 'uc_2checkout_completion_access',
+    'access callback' => TRUE,
     'type' => MENU_CALLBACK,
     'file' => 'uc_2checkout.pages.inc',
   );
@@ -34,13 +34,6 @@ function uc_2checkout_init() {
 }
 
 /**
- * Makes sure anyone can complete their 2Checkout orders.
- */
-function uc_2checkout_completion_access() {
-  return TRUE;
-}
-
-/**
  * Implements hook_ucga_display().
  */
 function uc_2checkout_ucga_display() {
@@ -52,10 +45,10 @@ function uc_2checkout_ucga_display() {
 }
 
 /**
- * Implements hook_form_alter().
+ * Implements hook_form_FORM_ID_alter() for uc_cart_checkout_review_form().
  */
-function uc_2checkout_form_alter(&$form, &$form_state, $form_id) {
-  if ($form_id == 'uc_cart_checkout_review_form' && ($order_id = intval($_SESSION['cart_order'])) > 0) {
+function uc_2checkout_form_uc_cart_checkout_review_form_alter(&$form, &$form_state) {
+  if (($order_id = intval($_SESSION['cart_order'])) > 0) {
     $order = uc_order_load($order_id);
 
     if ($order->payment_method == '2checkout') {

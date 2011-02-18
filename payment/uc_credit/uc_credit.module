@@ -102,112 +102,118 @@ function uc_credit_init() {
 }
 
 /**
- * Implements hook_form_alter().
+ * Implements hook_form_FORM_ID_alter() for uc_payment_methods_form().
  */
-function uc_credit_form_alter(&$form, &$form_state, $form_id) {
-  switch ($form_id) {
-    case 'uc_payment_methods_form':
-      if (user_access('administer credit cards')) {
-        if (empty($_POST) && uc_credit_encryption_key() === FALSE) {
-          // Report error and expand fieldset so the problem is easy to spot
-          form_set_error('uc_credit_encryption_path', t('Credit card encryption must be configured to accept credit card payments.'));
-          $form['method_credit']['#collapsed'] = FALSE;
-        }
-        $form['#validate'][] = 'uc_credit_settings_form_validate';
-        $form['#submit'][] = 'uc_credit_settings_form_submit';
+function uc_credit_form_uc_payment_methods_form_alter(&$form, &$form_state) {
+  if (user_access('administer credit cards')) {
+    if (empty($_POST) && uc_credit_encryption_key() === FALSE) {
+      // Report error and expand fieldset so the problem is easy to spot
+      form_set_error('uc_credit_encryption_path', t('Credit card encryption must be configured to accept credit card payments.'));
+      $form['method_credit']['#collapsed'] = FALSE;
+    }
+    $form['#validate'][] = 'uc_credit_settings_form_validate';
+    $form['#submit'][] = 'uc_credit_settings_form_submit';
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for uc_cart_checkout_form().
+ */
+function uc_credit_form_uc_cart_checkout_form_alter(&$form, &$form_state) {
+  // Cache the CC details for use in other functions.
+  if (isset($_SESSION['sescrd'])) {
+    uc_credit_cache('save', $_SESSION['sescrd']);
+
+    // Store the encrypted details to the form for processing on submit.
+    $form['payment_details_data'] = array(
+      '#type' => 'hidden',
+      '#value' => $_SESSION['sescrd'],
+    );
+
+    // Clear the session of the details.
+    unset($_SESSION['sescrd']);
+  }
+  unset($_SESSION['cc_pay']);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for uc_cart_checkout_review_form().
+ */
+function uc_credit_form_uc_cart_checkout_review_form_alter(&$form, &$form_state) {
+  // Check if the customer paid by CC and refreshed on the review page.
+  if (isset($_SESSION['cc_pay']) && !isset($_SESSION['sescrd']) && empty($_POST['sescrd'])) {
+    // Send them back to the checkout form to put in their details again.
+    drupal_set_message(t('To protect our customers from identity theft, credit card details are erased when a browser refreshes on the checkout review page.  Please enter your card details again and re-submit the form.'), 'error');
+
+    $_SESSION['clear_cc'] = TRUE;
+    unset($_SESSION['cc_pay']);
+    drupal_goto('cart/checkout');
+  }
+
+  if (isset($_SESSION['sescrd'])) {
+    // Cache the CC details for use in other functions.
+    uc_credit_cache('save', $_SESSION['sescrd']);
+
+    // Store the encrypted details to the form for processing on submit.
+    $form['sescrd'] = array(
+      '#type' => 'hidden',
+      '#value' => base64_encode($_SESSION['sescrd']),
+    );
+  }
+  else {
+    $form['sescrd'] = array(
+      '#type' => 'hidden',
+      '#value' => '',
+    );
+  }
+
+  // Add submit handler to preserve CC details for the back button and
+  // failed order submissions.
+  $form['actions']['back']['#submit'][] = 'uc_credit_cart_review_back_submit';
+
+  // Reconstruct the submit handler array for before and after processing.
+  $submit = array_merge(array('uc_credit_cart_review_pre_form_submit'), $form['#submit']);
+  $submit[] = 'uc_credit_cart_review_post_form_submit';
+
+  $form['#submit'] = $submit;
+
+  // Clear the session of the details.
+  unset($_SESSION['sescrd']);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for uc_payment_gateways_form().
+ */
+function uc_credit_form_uc_payment_gateways_form_alter(&$form, &$form_state) {
+  // Loop through each of the gateways on the form.
+  foreach (element_children($form['gateways']) as $key) {
+    // Get the transaction types associated with this gateway.
+    $gateway_types = uc_credit_gateway_txn_types($key);
+
+    // Loop through all the available transaction types.
+    $options = array();
+
+    $txn_types = array(
+      UC_CREDIT_AUTH_ONLY => t('Authorization only'),
+      UC_CREDIT_AUTH_CAPTURE => t('Authorize and capture immediately'),
+      UC_CREDIT_REFERENCE_SET => t('Set a reference only'),
+    );
+
+    foreach ($txn_types as $type => $title) {
+      // Add the current one to the options if the gateway supports it.
+      if (in_array($type, $gateway_types)) {
+        $options[$type] = $title;
       }
-      break;
+    }
 
-    case 'uc_cart_checkout_form':
-      // Cache the CC details for use in other functions.
-      if (isset($_SESSION['sescrd'])) {
-        uc_credit_cache('save', $_SESSION['sescrd']);
-
-        // Store the encrypted details to the form for processing on submit.
-        $form['payment_details_data'] = array(
-          '#type' => 'hidden',
-          '#value' => $_SESSION['sescrd'],
-        );
-
-        // Clear the session of the details.
-        unset($_SESSION['sescrd']);
-      }
-      unset($_SESSION['cc_pay']);
-      break;
-
-    case 'uc_cart_checkout_review_form':
-      // Check if the customer paid by CC and refreshed on the review page.
-      if (isset($_SESSION['cc_pay']) && !isset($_SESSION['sescrd']) && empty($_POST['sescrd'])) {
-        // Send them back to the checkout form to put in their details again.
-        drupal_set_message(t('To protect our customers from identity theft, credit card details are erased when a browser refreshes on the checkout review page.  Please enter your card details again and re-submit the form.'), 'error');
-
-        $_SESSION['clear_cc'] = TRUE;
-        unset($_SESSION['cc_pay']);
-        drupal_goto('cart/checkout');
-      }
-
-      if (isset($_SESSION['sescrd'])) {
-        // Cache the CC details for use in other functions.
-        uc_credit_cache('save', $_SESSION['sescrd']);
-
-        // Store the encrypted details to the form for processing on submit.
-        $form['sescrd'] = array(
-          '#type' => 'hidden',
-          '#value' => base64_encode($_SESSION['sescrd']),
-        );
-      }
-      else {
-        $form['sescrd'] = array(
-          '#type' => 'hidden',
-          '#value' => '',
-        );
-      }
-
-      // Add submit handler to preserve CC details for the back button and
-      // failed order submissions.
-      $form['actions']['back']['#submit'][] = 'uc_credit_cart_review_back_submit';
-
-      // Reconstruct the submit handler array for before and after processing.
-      $submit = array_merge(array('uc_credit_cart_review_pre_form_submit'), $form['#submit']);
-      $submit[] = 'uc_credit_cart_review_post_form_submit';
-
-      $form['#submit'] = $submit;
-
-      // Clear the session of the details.
-      unset($_SESSION['sescrd']);
-      break;
-
-    case 'uc_payment_gateways_form':
-      // Loop through each of the gateways on the form.
-      foreach (element_children($form['gateways']) as $key) {
-        // Get the transaction types associated with this gateway.
-        $gateway_types = uc_credit_gateway_txn_types($key);
-
-        // Loop through all the available transaction types.
-        $options = array();
-
-        $txn_types = array(
-          UC_CREDIT_AUTH_ONLY => t('Authorization only'),
-          UC_CREDIT_AUTH_CAPTURE => t('Authorize and capture immediately'),
-          UC_CREDIT_REFERENCE_SET => t('Set a reference only'),
-        );
-
-        foreach ($txn_types as $type => $title) {
-          // Add the current one to the options if the gateway supports it.
-          if (in_array($type, $gateway_types)) {
-            $options[$type] = $title;
-          }
-        }
-
-        $form['gateways'][$key]['uc_pg_' . $key . '_cc_txn_type'] = array(
-          '#type' => 'radios',
-          '#title' => t('Default credit transaction type'),
-          '#description' => t('Only available transaction types are listed. The default will be used unless an administrator chooses otherwise through the terminal.'),
-          '#options' => $options,
-          '#default_value' => variable_get('uc_pg_' . $key . '_cc_txn_type', UC_CREDIT_AUTH_CAPTURE),
-          '#weight' => -5,
-        );
-      }
+    $form['gateways'][$key]['uc_pg_' . $key . '_cc_txn_type'] = array(
+      '#type' => 'radios',
+      '#title' => t('Default credit transaction type'),
+      '#description' => t('Only available transaction types are listed. The default will be used unless an administrator chooses otherwise through the terminal.'),
+      '#options' => $options,
+      '#default_value' => variable_get('uc_pg_' . $key . '_cc_txn_type', UC_CREDIT_AUTH_CAPTURE),
+      '#weight' => -5,
+    );
   }
 }
 

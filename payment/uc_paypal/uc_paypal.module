@@ -29,7 +29,7 @@ function uc_paypal_menu() {
   $items['uc_paypal/ipn'] = array(
     'title' => 'PayPal IPN',
     'page callback' => 'uc_paypal_ipn',
-    'access callback' => 'uc_paypal_ipn_access',
+    'access callback' => TRUE,
     'type' => MENU_CALLBACK,
     'file' => 'uc_paypal.pages.inc',
   );
@@ -78,13 +78,6 @@ function uc_paypal_menu() {
 }
 
 /**
- * Makes sure PayPal always has access to send IPNs.
- */
-function uc_paypal_ipn_access() {
-  return TRUE;
-}
-
-/**
  * Implements hook_permission().
  */
 function uc_paypal_permission() {
@@ -121,14 +114,19 @@ function uc_paypal_page_alter(&$page) {
 }
 
 /**
- * Implements hook_form_alter().
+ * Implements hook_form_FORM_ID_alter() for uc_cart_checkout_form().
  */
-function uc_paypal_form_alter(&$form, &$form_state, $form_id) {
-  if ($form_id == 'uc_cart_checkout_form' && variable_get('uc_payment_method_paypal_ec_checkout', FALSE)) {
+function uc_paypal_form_uc_cart_checkout_form_alter(&$form, &$form_state, $form_id) {
+  if (variable_get('uc_payment_method_paypal_ec_checkout', FALSE)) {
     $form['#submit'][] = 'uc_paypal_ec_checkout';
   }
+}
 
-  if ($form_id == 'uc_cart_checkout_review_form' && !empty($_SESSION['TOKEN'])) {
+/**
+ * Implements hook_form_alter() for uc_cart_checkout_review_form().
+ */
+function uc_paypal_form_uc_cart_checkout_review_form_alter(&$form, &$form_state, $form_id) {
+  if (!empty($_SESSION['TOKEN'])) {
     $form['#submit'][] = 'uc_paypal_ec_submit_form_submit';
   }
 }
