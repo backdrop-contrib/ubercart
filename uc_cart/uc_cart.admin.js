@@ -12,6 +12,20 @@ Drupal.behaviors.ucCartAdminFieldsetSummaries = {
         + $('#edit-uc-cart-auth-duration', context).val() + ' '
         + $('#edit-uc-cart-auth-unit', context).val();
     });
+
+    $('fieldset#edit-checkout', context).drupalSetSummary(function(context) {
+      if ($('#edit-uc-checkout-enabled').is(':checked')) {
+        if ($('#edit-uc-checkout-anonymous').is(':checked')) {
+          return Drupal.t('Anonymous checkout is enabled.');
+        }
+        else {
+          return Drupal.t('Anonymous checkout is disabled.');
+        }
+      }
+      else {
+        return Drupal.t('Checkout is disabled.');
+      }
+    });
   }
 };
 

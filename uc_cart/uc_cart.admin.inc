@@ -245,135 +245,162 @@ function uc_cart_checkout_settings_overview() {
  * @ingroup forms
  */
 function uc_cart_checkout_settings_form($form, &$form_state) {
-  $form['general'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('General checkout settings'),
-    '#summary callback' => 'uc_summarize_form',
-  );
-  $form['general']['uc_checkout_enabled'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Enable checkout (disable to only use third party checkout service like PayPal Express Checkout).'),
-    '#summary callback' => 'uc_summarize_checkbox',
-    '#summary arguments' => array(
-      t('Ubercart checkout is enabled.'),
-      t('Ubercart checkout is disabled.'),
+  $form['checkout-settings'] = array(
+    '#type' => 'vertical_tabs',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_cart') . '/uc_cart.admin.js',
+      ),
     ),
-    '#default_value' => variable_get('uc_checkout_enabled', TRUE),
-  );
-  $form['general']['uc_checkout_anonymous'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Enable anonymous checkout (users can checkout without logging in).'),
-    '#summary callback' => 'uc_summarize_checkbox',
-    '#summary arguments' => array(
-      t('Anonymous checkout is enabled.'),
-      t('Anonymous checkout is disabled.'),
-    ),
-    '#default_value' => variable_get('uc_checkout_anonymous', TRUE),
-  );
-  $form['general']['uc_cart_delivery_not_shippable'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Hide shipping information when possible for carts with no shippable items.'),
-    '#summary callback' => 'uc_summarize_checkbox',
-    '#summary arguments' => array(
-      t('Shipping fields are hidden when applicable.'),
-      t('Shipping fields are always shown.'),
-    ),
-    '#default_value' => variable_get('uc_cart_delivery_not_shippable', TRUE),
   );
 
-  $form['pane_settings'] = array(
+  $form['checkout'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Checkout pane display options'),
-    '#summary callback' => 'uc_summarize_form',
+    '#title' => t('Basic settings'),
+    '#group' => 'checkout-settings',
   );
-  $form['pane_settings']['uc_use_next_buttons'] = array(
+  $form['checkout']['uc_checkout_enabled'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Use collapsing checkout panes with next buttons during checkout.'),
-    '#summary callback' => 'uc_summarize_checkbox',
-    '#summary arguments' => array(
-      t('Checkout panes are collapsed with next buttons.'),
-      t('Checkout panes are expanded by default.'),
+    '#title' => t('Enable checkout.'),
+    '#description' => t('Disable this to use only third party checkout services, such as PayPal Express Checkout or Google Checkout.'),
+    '#default_value' => variable_get('uc_checkout_enabled', TRUE),
+  );
+  $form['checkout']['uc_checkout_anonymous'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable anonymous checkout.'),
+    '#description' => t('Disable this to force users to log in before the checkout page.'),
+    '#default_value' => variable_get('uc_checkout_anonymous', TRUE),
+    '#states' => array(
+      'visible' => array(
+        'input[name="uc_checkout_enabled"]' => array('checked' => TRUE),
+      ),
     ),
+  );
+  $form['checkout']['uc_cart_delivery_not_shippable'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Hide delivery information when carts have no shippable items.'),
+    '#default_value' => variable_get('uc_cart_delivery_not_shippable', TRUE),
+    '#states' => array(
+      'visible' => array(
+        'input[name="uc_checkout_enabled"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+  $form['checkout']['uc_use_next_buttons'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use collapsing checkout panes with <em>Next</em> buttons.'),
     '#default_value' => variable_get('uc_use_next_buttons', FALSE),
-  );
-  $form['pane_settings']['uc_collapse_current_pane'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Collapse a pane when its next button is clicked.'),
-    '#summary callback' => 'uc_summarize_checkbox',
-    '#summary arguments' => array(
-      t('Collapsible panes will collapse when their next buttons are clicked.'),
-      t('Collapsible panes will not collapse when their next buttons are clicked.'),
+    '#states' => array(
+      'visible' => array(
+        'input[name="uc_checkout_enabled"]' => array('checked' => TRUE),
+      ),
     ),
+  );
+  $form['checkout']['uc_collapse_current_pane'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Collapse pane after its <em>Next</em> button is clicked.'),
     '#default_value' => variable_get('uc_collapse_current_pane', TRUE),
+    '#states' => array(
+      'visible' => array(
+        'input[name="uc_checkout_enabled"]' => array('checked' => TRUE),
+        'input[name="uc_use_next_buttons"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+
+  $form['instructions'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Instruction messages'),
+    '#group' => 'checkout-settings',
+  );
+  $form['instructions']['uc_checkout_instructions'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Checkout instructions'),
+    '#description' => t('Provide instructions for customers at the top of the checkout screen.'),
+    '#default_value' => variable_get('uc_checkout_instructions', ''),
+    '#rows' => 3,
+  );
+  $form['instructions']['uc_checkout_review_instructions'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Checkout review instructions'),
+    '#description' => t('Provide instructions for customers at the top of the checkout review screen.'),
+    '#default_value' => variable_get('uc_checkout_review_instructions', uc_get_message('review_instructions')),
+    '#rows' => 3,
   );
 
   $form['completion'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Checkout completion settings'),
-    '#summary callback' => 'uc_summarize_form',
+    '#title' => t('Completion settings'),
+    '#group' => 'checkout-settings',
   );
   $form['completion']['uc_new_customer_email'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send new customers a separate e-mail with their account details.'),
-    '#summary callback' => 'uc_summarize_checkbox',
-    '#summary arguments' => array(
-      t('New customers receive an e-mail with their account details.'),
-      t('New customers will only see their details in their initial order e-mail.')
-    ),
     '#default_value' => variable_get('uc_new_customer_email', TRUE),
   );
   $form['completion']['uc_new_customer_login'] = array(
     '#type' => 'checkbox',
     '#title' => t('Login users when new customer accounts are created at checkout.'),
-    '#summary callback' => 'uc_summarize_null',
     '#default_value' => variable_get('uc_new_customer_login', FALSE),
   );
   $form['completion']['uc_new_customer_status_active'] = array(
     '#type' => 'checkbox',
     '#title' => t('New customer accounts will be set to active.'),
     '#description' => t('Uncheck to create new accounts but make them blocked.'),
-    '#summary callback' => 'uc_summarize_checkbox',
-    '#summary arguments' => array(
-      t('New customer account status will be active.'),
-      t('New customer account status will be blocked.'),
-    ),
     '#default_value' => variable_get('uc_new_customer_status_active', TRUE),
   );
   $form['completion']['uc_cart_checkout_complete_page'] = array(
     '#type' => 'textfield',
     '#title' => t('Alternate checkout completion page'),
     '#description' => t('Leave blank to use the default completion page (recommended).'),
-    '#summary' => variable_get('uc_cart_checkout_complete_page', '') ? t('Checkout completion page has been set to <a href="!url">!url</a>.', array('!url' => variable_get('uc_cart_checkout_complete_page', ''))) : t('Checkout completion page will be the default page.'),
     '#default_value' => variable_get('uc_cart_checkout_complete_page', ''),
     '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q='),
     '#size' => 16,
   );
 
+  $form['completion_messages'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Completion messages'),
+    '#description' => t('You may use <a href="!url">order, store, and site tokens</a> in these messages.', array('!url' => url('admin/store/help/tokens'))),
+    '#group' => 'checkout-settings',
+  );
+  $form['completion_messages']['uc_msg_order_submit'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Message header'),
+    '#description' => t('Header for message displayed after a user checks out.'),
+    '#default_value' => variable_get('uc_msg_order_submit', uc_get_message('completion_message')),
+    '#rows' => 3,
+  );
+  $form['completion_messages']['uc_msg_order_logged_in'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Logged in users'),
+    '#description' => t('Message displayed upon checkout for a user who is logged in.'),
+    '#default_value' => variable_get('uc_msg_order_logged_in', uc_get_message('completion_logged_in')),
+    '#rows' => 3,
+  );
+  $form['completion_messages']['uc_msg_order_existing_user'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Existing users'),
+    '#description' => t("Message displayed upon checkout for a user who has an account but wasn't logged in."),
+    '#default_value' => variable_get('uc_msg_order_existing_user', uc_get_message('completion_existing_user')),
+    '#rows' => 3,
+  );
+  $form['completion_messages']['uc_msg_order_new_user'] = array(
+    '#type' => 'textarea',
+    '#title' => t('New users'),
+    '#description' => t("Message displayed upon checkout for a new user whose account was just created. You may use the special tokens !new_username for the username of a newly created account and !new_password for that account's password."),
+    '#default_value' => variable_get('uc_msg_order_new_user', uc_get_message('completion_new_user')),
+    '#rows' => 3,
+  );
+  $form['completion_messages']['uc_msg_continue_shopping'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Continue shopping message'),
+    '#description' => t('Message displayed upon checkout to direct customers to another part of your site.'),
+    '#default_value' => variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping')),
+    '#rows' => 3,
+  );
+
   return system_settings_form($form);
-}
-
-/**
- * Summarizes cart and checkout panes.
- *
- * Although this function is called 'cart_panes', it also operates on
- * checkout panes, which are structured the same way.
- *
- * @param $form
- *   The form passed from the summarizer.
- * @param $panes
- *   Any array of cart/checkout panes.
- *
- * @return
- *   An array of summary information.
- */
-function _uc_cart_panes_summarize($form, $panes) {
-  $items = array();
-
-  foreach ($panes as $pane) {
-    $items[] = t('@title is @enabled.', array('@title' => $pane['title'], '@enabled' => $pane['enabled'] ? t('enabled') : t('disabled')));
-  }
-
-  return $items;
 }
 
 /**
@@ -387,9 +414,8 @@ function uc_cart_checkout_panes_form($form, &$form_state) {
   $form['panes'] = array(
     '#theme' => 'uc_pane_sort_table',
     '#pane_prefix' => 'uc_pane',
-    '#summary callback' => '_uc_cart_panes_summarize',
-    '#summary arguments' => array($panes),
   );
+  $form['pane-settings'] = array('#type' => 'vertical_tabs');
   foreach ($panes as $pane) {
     $form['panes'][$pane['id']]['uc_pane_' . $pane['id'] . '_enabled'] = array(
       '#type' => 'checkbox',
@@ -408,113 +434,12 @@ function uc_cart_checkout_panes_form($form, &$form_state) {
     if (is_array($pane_settings)) {
       $form['pane_' . $pane['id']] = array(
         '#type' => 'fieldset',
-        '#summary callback' => 'uc_summarize_null',
         '#title' => t('!pane settings', array('!pane' => $pane['title'])),
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
+        '#group' => 'pane-settings',
       );
       $form['pane_' . $pane['id']] = array_merge($form['pane_' . $pane['id']], $pane_settings);
     }
   }
-
-  return system_settings_form($form);
-}
-
-/**
- * Settings for help messages displayed on the checkout page.
- *
- * @ingroup forms
- */
-function uc_cart_checkout_messages_form($form, &$form_state) {
-  $form['uc_checkout_instructions'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Checkout instructions'),
-    '#description' => t('Provide instructions for customers at the top of the checkout screen.'),
-    '#summary' => variable_get('uc_checkout_instructions', '') ? t('Checkout instructions are set.') : t('Checkout instructions are not set.'),
-    '#default_value' => variable_get('uc_checkout_instructions', ''),
-    '#text_format' => variable_get('uc_checkout_instructions_format', filter_default_format()),
-    '#rows' => 3,
-  );
-
-  $form['uc_checkout_review_instructions'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Checkout review instructions'),
-    '#description' => t('Provide instructions for customers at the top of the checkout review screen.'),
-    '#summary' => variable_get('uc_checkout_review_instructions', uc_get_message('review_instructions'))
-               ? t('Review instructions are set.')
-               : t('Review instructions are not set.'),
-    '#default_value' => variable_get('uc_checkout_review_instructions', uc_get_message('review_instructions')),
-    '#text_format' => variable_get('uc_checkout_review_instructions_format', filter_default_format()),
-    '#rows' => 3,
-  );
-
-  $form['uc_msg_order_submit'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Checkout completion message header'),
-    '#description' => t('Header for message displayed after a user checks out. <a href="!url">Uses order, store, and site tokens</a>.', array('!url' => url('admin/store/help/tokens'))),
-    '#summary' => variable_get('uc_msg_order_submit', uc_get_message('completion_message'))
-               ? t('Completion message is set.')
-               : t('Completion message is not set.'),
-    '#default_value' => variable_get('uc_msg_order_submit', uc_get_message('completion_message')),
-    '#text_format' => variable_get('uc_msg_order_submit_format', filter_default_format()),
-    '#rows' => 3,
-  );
-
-  $form['checkout_messages'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Checkout completion message body'),
-    '#description' => t("In the following three boxes, you may use the special tokens !new_username for the username of a newly created account and !new_password for that account's password."),
-    '#summary callback' => 'uc_summarize_form',
-    '#collapsible' => FALSE,
-  );
-  $form['checkout_messages']['uc_msg_order_logged_in'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Checkout completion for logged-in users'),
-    '#description' => t('Message displayed upon checkout for a user who has logged in. <a href="!url">Uses order, store, and site tokens</a>.', array('!url' => url('admin/store/help/tokens'))),
-    '#summary' => variable_get('uc_msg_order_logged_in', uc_get_message('completion_logged_in'))
-               ? t('Completion text for logged in users is set.')
-               : t('Completion text for logged in users is not set.'),
-    '#default_value' => variable_get('uc_msg_order_logged_in', uc_get_message('completion_logged_in')),
-    '#text_format' => variable_get('uc_msg_order_logged_in_format', filter_default_format()),
-    '#rows' => 3,
-  );
-
-  $form['checkout_messages']['uc_msg_order_existing_user'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Checkout completion for existing users'),
-    '#description' => t("Message displayed upon checkout for a user who has an account but wasn't logged in. <a href=\"!url\">Uses order, store, and site tokens</a>.", array('!url' => url('admin/store/help/tokens'))),
-    '#summary' => variable_get('uc_msg_order_existing_user', uc_get_message('completion_existing_user'))
-               ? t('Completion text for users who aren\'t logged in is set.')
-               : t('Completion text for users who aren\'t logged in is not set.'),
-
-    '#default_value' => variable_get('uc_msg_order_existing_user', uc_get_message('completion_existing_user')),
-    '#text_format' => variable_get('uc_msg_order_existing_user_format', filter_default_format()),
-    '#rows' => 3,
-  );
-
-  $form['checkout_messages']['uc_msg_order_new_user'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Checkout completion for new users'),
-    '#description' => t('Message displayed upon checkout for a new user whose account was just created. <a href="!url">Uses order, store, and site tokens</a>.', array('!url' => url('admin/store/help/tokens'))),
-    '#summary' => variable_get('uc_msg_order_new_user', uc_get_message('completion_new_user'))
-               ? t('Completion text for new users is set.')
-               : t('Completion text for new users is not set.'),
-    '#default_value' => variable_get('uc_msg_order_new_user', uc_get_message('completion_new_user')),
-    '#text_format' => variable_get('uc_msg_order_new_user_format', filter_default_format()),
-    '#rows' => 3,
-  );
-
-  $form['uc_msg_continue_shopping'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Continue shopping message'),
-    '#description' => t('Message displayed upon checkout to direct customers to another part of your site. <a href="!url">Uses order, store, and site tokens</a>.', array('!url' => url('admin/store/help/tokens'))),
-    '#summary' => variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping'))
-               ? t('Continue shopping text is set.')
-               : t('Continue shopping text is not set.'),
-    '#default_value' => variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping')),
-    '#text_format' => variable_get('uc_msg_continue_shopping_format', filter_default_format()),
-    '#rows' => 3,
-  );
 
   return system_settings_form($form);
 }

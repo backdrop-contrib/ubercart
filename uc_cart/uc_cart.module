@@ -51,63 +51,35 @@ function uc_cart_menu() {
   $items['admin/store/settings/checkout'] = array(
     'title' => 'Checkout settings',
     'description' => 'Configure the checkout settings.',
-    'page callback' => 'uc_cart_checkout_settings_overview',
-    'access arguments' => array('administer store'),
-    'file' => 'uc_cart.admin.inc',
-  );
-  $items['admin/store/settings/checkout/overview'] = array(
-    'title' => 'Overview',
-    'description' => 'View the checkout settings.',
-    'access arguments' => array('administer store'),
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -10,
-    'file' => 'uc_cart.admin.inc',
-  );
-  $items['admin/store/settings/checkout/edit'] = array(
-    'title' => 'Edit',
-    'description' => 'Edit the cart settings.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_cart_checkout_settings_form'),
     'access arguments' => array('administer store'),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => -5,
     'file' => 'uc_cart.admin.inc',
   );
-  $items['admin/store/settings/checkout/edit/basic'] = array(
-    'title' => 'Checkout settings',
+  $items['admin/store/settings/checkout/settings'] = array(
+    'title' => 'Settings',
     'description' => 'Edit the basic checkout settings.',
     'access arguments' => array('administer store'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -10,
   );
-  $items['admin/store/settings/checkout/edit/panes'] = array(
-    'title' => 'Checkout panes',
+  $items['admin/store/settings/checkout/panes'] = array(
+    'title' => 'Panes',
     'description' => 'Edit the pane settings for the checkout page.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_cart_checkout_panes_form'),
     'access arguments' => array('administer store'),
     'type' => MENU_LOCAL_TASK,
-    'weight' => -5,
+    'weight' => 1,
     'file' => 'uc_cart.admin.inc',
   );
-  $items['admin/store/settings/checkout/edit/messages'] = array(
-    'title' => 'Checkout messages',
-    'description' => 'Edit the messages for the checkout completion page.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_cart_checkout_messages_form'),
-    'access arguments' => array('administer store'),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 0,
-    'file' => 'uc_cart.admin.inc',
-  );
-  $items['admin/store/settings/checkout/edit/fields'] = array(
+  $items['admin/store/settings/checkout/fields'] = array(
     'title' => 'Address fields',
     'description' => 'Edit the address field settings.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_store_address_fields_form'), // missing?
     'access arguments' => array('administer store'),
     'type' => MENU_LOCAL_TASK,
-    'weight' => 5,
+    'weight' => 2,
     'file' => 'uc_cart.admin.inc',
   );
 
@@ -1259,24 +1231,23 @@ function uc_cart_complete_sale($order, $login = FALSE) {
     }
   }
 
-  $messages['uc_msg_order_submit_format'] = variable_get('uc_msg_order_submit', uc_get_message('completion_message'));
-  $message = variable_get('uc_msg_order_' . $message_type, uc_get_message('completion_' . $message_type));
-  if ($message != '') {
+  $messages = array();
+  $messages[] = variable_get('uc_msg_order_submit', uc_get_message('completion_message'));
+  if ($message = variable_get('uc_msg_order_' . $message_type, uc_get_message('completion_' . $message_type))) {
     if (isset($_SESSION['new_user'])) {
       $variables['!new_username'] = check_plain($_SESSION['new_user']['name']);
       $variables['!new_password'] = check_plain($_SESSION['new_user']['pass']);
-      $messages['uc_msg_order_' . $message_type . '_format'] = strtr($message, $variables);
+      $messages[] = strtr($message, $variables);
     }
     else {
-      $messages['uc_msg_order_' . $message_type . '_format'] = $message;
+      $messages[] = $message;
     }
   }
-  $messages['uc_msg_continue_shopping_format'] = variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping'));
+  $messages[] = variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping'));
 
   $output_message = '';
-  foreach ($messages as $format => $message) {
-    $message = token_replace($message, array('uc_order' => $order));
-    $message = check_markup($message, variable_get($format, filter_default_format()));
+  foreach ($messages as $message) {
+    $message = filter_xss_admin(token_replace($message, array('uc_order' => $order)));
     $output_message .= $message;
   }
 
