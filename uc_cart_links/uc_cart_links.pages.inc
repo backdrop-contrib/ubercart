@@ -91,10 +91,25 @@ function uc_cart_links_process($cart_action) {
             case 'A':
               $attribute = intval(drupal_substr($part, 1, stripos($part, 'o') - 1));
               $option = (string) drupal_substr($part, stripos($part, 'o') + 1);
-              // Multiple options for this attribute implies checkbox
-              // attribute, which we must store as an array. However, all other
-              // types can be stored as arrays as well.
-              $p['attributes'][$attribute][$option] = $option;
+              if (!isset($p['attributes'][$attribute])) {
+                $p['attributes'][$attribute] = $option;
+              }
+              else {
+                // Multiple options for this attribute implies checkbox
+                // attribute, which we must store as an array
+                if (is_array($p['attributes'][$attribute])) {
+                  // Already an array, just append this new option
+                  $p['attributes'][$attribute][$option] = $option;
+                }
+                else {
+                  // Set but not an array, means we already have at least one
+                  // option, so put that into an array with this new option
+                  $p['attributes'][$attribute] = array(
+                    $p['attributes'][$attribute] => $p['attributes'][$attribute],
+                    $option => $option
+                  );
+                }
+              }
               break;
             // Suppress the add to cart message: m0
             case 'm':
