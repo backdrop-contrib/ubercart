@@ -413,7 +413,7 @@ function uc_roles_user_presave(&$edit, $account, $category) {
 
   // If a new temporary role is added.
   // Grant a new role.
-  if ($edit['new_role'] && $category == 'account') {
+  if (isset($edit['new_role']) && $category == 'account') {
     // Save our role info, but don't save the user; user.module will do it.
     uc_roles_grant($account, $edit['new_role_add'], _uc_roles_get_expiration($edit['new_role_add_qty'], $edit['new_role_add_granularity']), FALSE);
 
@@ -425,19 +425,21 @@ function uc_roles_user_presave(&$edit, $account, $category) {
   }
 
   // Check if any temporary role actions were taken.
-  foreach ((array)$edit['table'] as $rid => $value) {
-    // Remove this expiration.
-    if ($value['remove']) {
-      uc_roles_delete($account, $rid);
-    }
+  if (isset($edit['table'])) {
+    foreach ((array)$edit['table'] as $rid => $value) {
+      // Remove this expiration.
+      if ($value['remove']) {
+        uc_roles_delete($account, $rid);
+      }
 
-    // Adjust it.
-    else {
-      if ($value['qty'] && $edit['roles'][$rid]) {
-        $qty = $value['qty'];
-        $qty *= $value['polarity'] == 'add' ? 1 : -1;
+      // Adjust it.
+      else {
+        if ($value['qty'] && $edit['roles'][$rid]) {
+          $qty = $value['qty'];
+          $qty *= $value['polarity'] == 'add' ? 1 : -1;
 
-        uc_roles_renew($account, $rid, _uc_roles_get_expiration($qty, $value['granularity'], $value['expiration']));
+          uc_roles_renew($account, $rid, _uc_roles_get_expiration($qty, $value['granularity'], $value['expiration']));
+        }
       }
     }
   }

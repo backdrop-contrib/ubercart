@@ -338,43 +338,47 @@ function uc_file_user_validate($form, &$form_state) {
  */
 function uc_file_user_presave(&$edit, $account, $category) {
   // Check out if any downloads were modified.
-  foreach ((array)$edit['file_download'] as $fid => $download_modification) {
-    // Remove this user download?
-    if ($download_modification['remove']) {
-      uc_file_remove_user_file_by_id($account, $fid);
-    }
-
-    // Update the modified downloads.
-    else {
-      // Calculate the new expiration.
-      $download_modification['expiration'] = _uc_file_expiration_date($download_modification, $download_modification['expiration']);
-
-      // Don't touch anything if everything's the same.
-      if ($download_modification['download_limit'] == $download_modification['download_limit_old'] &&
-          $download_modification['address_limit'] == $download_modification['address_limit_old'] &&
-          $download_modification['expiration'] == $download_modification['expiration_old']) {
-        continue;
+  if (isset($edit['file_download'])) {
+    foreach ((array)$edit['file_download'] as $fid => $download_modification) {
+      // Remove this user download?
+      if ($download_modification['remove']) {
+        uc_file_remove_user_file_by_id($account, $fid);
       }
 
-      // Renew. (Explicit overwrite)
-      uc_file_user_renew($fid, $account, NULL, $download_modification, TRUE);
+      // Update the modified downloads.
+      else {
+        // Calculate the new expiration.
+        $download_modification['expiration'] = _uc_file_expiration_date($download_modification, $download_modification['expiration']);
+
+        // Don't touch anything if everything's the same.
+        if ($download_modification['download_limit'] == $download_modification['download_limit_old'] &&
+            $download_modification['address_limit'] == $download_modification['address_limit_old'] &&
+            $download_modification['expiration'] == $download_modification['expiration_old']) {
+          continue;
+        }
+
+        // Renew. (Explicit overwrite)
+        uc_file_user_renew($fid, $account, NULL, $download_modification, TRUE);
+      }
     }
   }
 
   // Check out if any downloads were added. We pass NULL to file_user_renew,
   // because this shouldn't be associated with a random product.
-  foreach ((array)$edit['file_add'] as $fid => $data) {
-    $download_modification['download_limit'] = variable_get('uc_file_download_limit_number', NULL);
-    $download_modification['address_limit'] = variable_get('uc_file_download_limit_addresses', NULL);
+  if (isset($edit['file_add'])) {
+    foreach ((array)$edit['file_add'] as $fid => $data) {
+      $download_modification['download_limit'] = variable_get('uc_file_download_limit_number', NULL);
+      $download_modification['address_limit'] = variable_get('uc_file_download_limit_addresses', NULL);
 
-    $download_modification['expiration'] = _uc_file_expiration_date(array(
-      'time_polarity' => '+',
-      'time_quantity' => variable_get('uc_file_download_limit_duration_qty', NULL),
-      'time_granularity' => variable_get('uc_file_download_limit_duration_granularity', 'never'),
-    ), REQUEST_TIME);
+      $download_modification['expiration'] = _uc_file_expiration_date(array(
+        'time_polarity' => '+',
+        'time_quantity' => variable_get('uc_file_download_limit_duration_qty', NULL),
+        'time_granularity' => variable_get('uc_file_download_limit_duration_granularity', 'never'),
+      ), REQUEST_TIME);
 
-    // Renew. (Explicit overwrite)
-    uc_file_user_renew($fid, $account, NULL, $download_modification, TRUE);
+      // Renew. (Explicit overwrite)
+      uc_file_user_renew($fid, $account, NULL, $download_modification, TRUE);
+    }
   }
 }
 
