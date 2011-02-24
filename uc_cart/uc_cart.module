@@ -324,7 +324,6 @@ function uc_cart_block_view($delta = '') {
 
   if ($delta == 'cart') {
     $cachable = !$user->uid && variable_get('cache', 0);
-    $uc_cart_path = drupal_get_path('module', 'uc_cart');
     $product_count = count(uc_cart_get_contents());
 
     // Display nothing if the block is set to hide on empty and there are no
@@ -337,36 +336,12 @@ function uc_cart_block_view($delta = '') {
     drupal_add_css(drupal_get_path('module', 'uc_cart') . '/uc_cart_block.css');
 
     // If the block is collapsible, add the appropriate JS.
-    $collapsible = !$cachable && variable_get('uc_cart_block_collapsible', TRUE);
-    $collapsed = variable_get('uc_cart_block_collapsed', TRUE);
-    if ($collapsible) {
+    if ($collapsible = !$cachable && variable_get('uc_cart_block_collapsible', TRUE)) {
       drupal_add_js(drupal_get_path('module', 'uc_cart') . '/uc_cart_block.js');
     }
 
-    // Build the cart image if enabled.
-    if (variable_get('uc_cart_block_image', TRUE)) {
-      // If the cart is empty or we need a cachable cart block...
-      if ($cachable || !$product_count) {
-        // Use the "empty" cart icon.
-        $icon_class = 'cart-block-icon-empty';
-      }
-      else {
-        // Otherwise use the "full" cart icon.
-        $icon_class = 'cart-block-icon-full';
-      }
-    }
-    else {
-      $icon_class = FALSE;
-    }
-
-    // Set the text of the block title.
-    $title = check_plain(trim(variable_get('uc_cart_block_title', '')));
-    if (empty($title)) {
-      $title = t('Shopping cart');
-    }
-    $block['subject'] = theme('uc_cart_block_title', array('title' => $title, 'icon_class' => $icon_class, 'collapsible' => $collapsible, 'collapsed' => $collapsed));
-
     // Build the block array for display based on cache settings.
+    $block['subject'] = t('Shopping cart');
     if ($cachable) {
       // Caching is turned on and the user is not logged in, so we should
       // deliver a block that is safe for caching.
@@ -425,7 +400,15 @@ function uc_cart_block_view($delta = '') {
         );
       }
 
-      $block['content'] = theme('uc_cart_block_content', array('help_text' => $help_text, 'items' => $items, 'item_count' => $item_count, 'item_text' => $item_text, 'total' => $total, 'summary_links' => $summary_links, 'collapsed' => $collapsed));
+      $block['content'] = theme('uc_cart_block_content', array(
+        'help_text' => $help_text,
+        'items' => $items,
+        'item_count' => $item_count,
+        'item_text' => $item_text,
+        'total' => $total,
+        'summary_links' => $summary_links,
+        'collapsed' => variable_get('uc_cart_block_collapsed', TRUE)
+      ));
     }
 
     return $block;
@@ -448,12 +431,6 @@ function uc_cart_block_configure($delta = '') {
       '#type' => 'checkbox',
       '#title' => t('Display the shopping cart icon in the block title.'),
       '#default_value' => variable_get('uc_cart_block_image', TRUE),
-    );
-    $form['uc_cart_block_title'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Cart name'),
-      '#description' => t('This name will be displayed when using the default block title.<br />Leaving this blank defaults to the translatable name "Shopping Cart."'),
-      '#default_value' => variable_get('uc_cart_block_title', ''),
     );
     $form['uc_cart_block_collapsible'] = array(
       '#type' => 'checkbox',
@@ -491,11 +468,46 @@ function uc_cart_block_save($delta = '', $edit = array()) {
   if ($delta == 'cart') {
     variable_set('uc_cart_block_empty_hide', $edit['uc_cart_block_empty_hide']);
     variable_set('uc_cart_block_image', $edit['uc_cart_block_image']);
-    variable_set('uc_cart_block_title', $edit['uc_cart_block_title']);
     variable_set('uc_cart_block_collapsible', $edit['uc_cart_block_collapsible']);
     variable_set('uc_cart_block_collapsed', $edit['uc_cart_block_collapsed']);
     variable_set('uc_cart_show_help_text', $edit['uc_cart_show_help_text']);
     variable_set('uc_cart_help_text', $edit['uc_cart_help_text']);
+  }
+}
+
+ /**
+ * Preprocesses the cart block output to include the icon.
+ */
+function uc_cart_preprocess_block(&$variables) {
+  global $user;
+
+  if ($variables['block']->module == 'uc_cart' && $variables['block']->delta == 0 && $variables['block']->subject) {
+    $cachable = !$user->uid && variable_get('cache', 0);
+    $collapsible = !$cachable && variable_get('uc_cart_block_collapsible', TRUE);
+
+    // Build the cart image if enabled.
+    if (variable_get('uc_cart_block_image', TRUE)) {
+      // If the cart is empty or we need a cachable cart block...
+      $product_count = count(uc_cart_get_contents());
+      if ($cachable || !$product_count) {
+        // Use the "empty" cart icon.
+        $icon_class = 'cart-block-icon-empty';
+      }
+      else {
+        // Otherwise use the "full" cart icon.
+        $icon_class = 'cart-block-icon-full';
+      }
+    }
+    else {
+      $icon_class = FALSE;
+    }
+
+    $variables['block']->subject = theme('uc_cart_block_title', array(
+      'title' => $variables['block']->subject,
+      'icon_class' => $icon_class,
+      'collapsible' => $collapsible,
+      'collapsed' => variable_get('uc_cart_block_collapsed', TRUE),
+    ));
   }
 }
 
