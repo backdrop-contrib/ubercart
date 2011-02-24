@@ -7,49 +7,23 @@
  */
 
 /**
- * Displays an overview of the cart settings.
- */
-function uc_cart_cart_settings_overview() {
-  // Load the form summaries for pages beneath this path.
-  $summaries = uc_summarize_child_form_pages('admin/store/settings/cart/edit');
-
-  // Build the block summary since it comes from another form.
-  if (variable_get('uc_cart_show_help_text', FALSE)) {
-    $help_text = t('Help text is shown in block:') . '<br /><i>'
-               . variable_get('uc_cart_help_text', t('Click title to display cart contents.')) . '</i>';
-  }
-  else {
-    $help_text = t('Help text is not shown in block.');
-  }
-  $summaries[] = array(
-    'path' => url('admin/store/settings/cart/edit/block'),
-    'href' => 'admin/store/settings/cart/edit/block',
-    'title' => t('Cart block'),
-    'items' => array(
-      t('Cart block is !option when empty.', array('!option' => variable_get('uc_cart_block_empty_hide', FALSE) ? t('hidden') : t('shown'))),
-      t('Cart block is !option by default.', array('!option' => variable_get('uc_cart_expanded', FALSE) ? t('expanded') : t('collapsed'))),
-      $help_text,
-    ),
-  );
-
-  // Theme it all up in a summaries overview.
-  return array(
-    '#theme' => 'uc_summary_overview',
-    '#summaries' => $summaries,
-  );
-}
-
-/**
  * General settings for the shopping cart.
  *
  * @see uc_cart_cart_settings_form_validate()
  * @ingroup forms
  */
 function uc_cart_cart_settings_form($form, &$form_state) {
+  $form['cart-settings'] = array('#type' => 'vertical_tabs');
+  
   $form['general'] = array(
     '#type' => 'fieldset',
-    '#title' => t('General cart settings'),
-    '#summary callback' => 'uc_summarize_form',
+    '#title' => t('Basic settings'),
+    '#group' => 'cart-settings',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_cart') . '/uc_cart.admin.js',
+      ),
+    ),
   );
   $form['general']['uc_cart_add_item_msg'] = array(
     '#type' => 'checkbox',
@@ -60,7 +34,6 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Add to cart redirect'),
     '#description' => t('Enter the Drupal page to redirect to when a customer adds an item to their cart.<br />Enter &lt;none&gt; for no redirect.'),
-    '#summary' => t('Add to cart is redirecting to <br /><a href="!url">!url</a>', array('!url' => url(variable_get('uc_add_item_redirect', 'cart'), array('absolute' => TRUE)))),
     '#default_value' => variable_get('uc_add_item_redirect', 'cart'),
     '#size' => 32,
     '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q='),
@@ -70,11 +43,17 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Minimum order subtotal'),
     '#description' => t('Optionally specify a minimum allowed subtotal for a cart to proceed to checkout.'),
-    '#summary' => t('The minimum subtotal is @subtotal', array('@subtotal' => uc_currency_format(variable_get('uc_minimum_subtotal', 0)))),
     '#default_value' => variable_get('uc_minimum_subtotal', 0),
     '#size' => 16,
     '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
     '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
+  );
+
+  $form['lifetime'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Cart lifetime'),
+    '#description' => t('Set the length of time that products remain in the cart. Cron must be running for this feature to work.'),
+    '#group' => 'cart-settings',
   );
 
   $durations = array(
@@ -94,23 +73,21 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     ),
   );
 
-  $form['anonymous'] = array(
+  $form['lifetime']['anonymous'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Anonymous cart duration'),
-    '#description' => t('Set the length of time products remain in the cart for customers who <strong>have not</strong> logged in. Cron must be running for this feature to work.'),
-    '#summary' => format_plural(variable_get('uc_cart_anon_duration', '4'), 'Anonymous cart duration is 1 @unit.', 'Anonymous cart duration is @count @units.', array('@unit' => $durations['singular'][variable_get('uc_cart_anon_unit', 'hours')], '@units' => $durations['plural'][variable_get('uc_cart_anon_unit', 'hours')])),
+    '#title' => t('Anonymous users'),
   );
-  $form['anonymous']['uc_cart_anon_duration'] = array(
+  $form['lifetime']['anonymous']['uc_cart_anon_duration'] = array(
     '#type' => 'select',
     '#title' => t('Duration'),
     '#options' => drupal_map_assoc(range(1, 60)),
     '#default_value' => variable_get('uc_cart_anon_duration', '4'),
-    '#prefix' => '<div style="float: left; margin-right: 1em;">',
+    '#prefix' => '<div style="float: left; margin-right: 1em; padding-top: 0;">',
     '#suffix' => '</div>',
   );
-  $form['anonymous']['uc_cart_anon_unit'] = array(
+  $form['lifetime']['anonymous']['uc_cart_anon_unit'] = array(
     '#type' => 'select',
-    '#title' => t('Unit of time'),
+    '#title' => t('Units'),
     '#options' => array(
       'minutes' => t('Minute(s)'),
       'hours' => t('Hour(s)'),
@@ -123,23 +100,21 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#suffix' => '</div>',
   );
 
-  $form['authenticated'] = array(
+  $form['lifetime']['authenticated'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Authenticated cart duration'),
-    '#description' => t('Set the length of time products remain in the cart for customers who <strong>have</strong> logged in. Cron must be running for this feature to work.'),
-    '#summary' => format_plural(variable_get('uc_cart_auth_duration', '1'), 'Authenticated cart duration is 1 @unit.', 'Authenticated cart duration is @count @units.', array('@unit' => $durations['singular'][variable_get('uc_cart_auth_unit', 'years')], '@units' => $durations['plural'][variable_get('uc_cart_auth_unit', 'years')])),
+    '#title' => t('Authenticated users'),
   );
-  $form['authenticated']['uc_cart_auth_duration'] = array(
+  $form['lifetime']['authenticated']['uc_cart_auth_duration'] = array(
     '#type' => 'select',
     '#title' => t('Duration'),
     '#options' => drupal_map_assoc(range(1, 60)),
     '#default_value' => variable_get('uc_cart_auth_duration', '1'),
-    '#prefix' => '<div style="float: left; margin-right: 1em;">',
+    '#prefix' => '<div style="float: left; margin-right: 1em; padding-top: 0;">',
     '#suffix' => '</div>',
   );
-  $form['authenticated']['uc_cart_auth_unit'] = array(
+  $form['lifetime']['authenticated']['uc_cart_auth_unit'] = array(
     '#type' => 'select',
-    '#title' => t('Unit of time'),
+    '#title' => t('Units'),
     '#options' => array(
       'hours' => t('Hour(s)'),
       'days' => t('Day(s)'),
@@ -155,7 +130,7 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Continue shopping element'),
     '#description' => t('Ubercart will add a continue shopping to the cart page based on the settings below.'),
-    '#summary' => t('Continue shopping !type is: <br />!link', array('!type' => variable_get('uc_continue_shopping_type', 'link') == 'link' ? t('link') : t('button'), '!link' => l(variable_get('uc_continue_shopping_text', t('Continue shopping')), variable_get('uc_cart_continue_shopping', '')))),
+    '#group' => 'cart-settings',
   );
   $form['continue_shopping']['uc_continue_shopping_type'] = array(
     '#type' => 'radios',
@@ -192,7 +167,7 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Cart breadcrumb'),
     '#description' => t('Drupal automatically adds a Home breadcrumb to the cart page.  You can use these settings to specify a custom breadcrumb to use on the cart page instead.  If a custom text is not supplied, the default Home breadcrumb will be displayed.'),
-    '#summary' => variable_get('uc_cart_breadcrumb_text', '') ? t('Custom cart breadcrumb is: <br />!breadcrumb', array('!breadcrumb' => l(variable_get('uc_cart_breadcrumb_text', ''), variable_get('uc_cart_breadcrumb_url', '')))) : t('Not using a custom cart breadcrumb.'),
+    '#group' => 'cart-settings',
   );
   $form['breadcrumb']['uc_cart_breadcrumb_text'] = array(
     '#type' => 'textfield',
@@ -234,8 +209,6 @@ function uc_cart_cart_panes_form($form, &$form_state) {
   $form['panes'] = array(
     '#theme' => 'uc_pane_sort_table',
     '#pane_prefix' => 'uc_cap',
-    '#summary callback' => '_uc_cart_panes_summarize',
-    '#summary arguments' => array($panes),
   );
   foreach ($panes as $pane) {
     $form['panes'][$pane['id']]['uc_cap_' . $pane['id'] . '_enabled'] = array(
@@ -253,17 +226,6 @@ function uc_cart_cart_panes_form($form, &$form_state) {
   }
 
   return system_settings_form($form);
-}
-
-/**
- * Helpful message redirecting users to the block settings.
- */
-function uc_cart_block_edit_info() {
-  $output = t('Drupal handles all the block settings forms automatically.') . '<p>'
-          . t('<a href="!url">Click here</a> to go to the shopping cart block configuration page.',
-              array('!url' => url('admin/structure/block/manage/uc_cart/cart/configure')));
-
-  return array('#markup' => $output);
 }
 
 /**
