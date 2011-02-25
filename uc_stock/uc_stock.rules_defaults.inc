@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Rules default configurations for uc_stock.module.

@@ -1,4 +1,3 @@
-// $Id$
 
 // Timestamps for last time line items or payment details were updated.
 var payment_update = 0;

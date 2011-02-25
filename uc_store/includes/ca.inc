@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Base helper function to convert CA predicates to Rules configurations.
