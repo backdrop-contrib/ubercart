@@ -354,7 +354,7 @@ function uc_order_status_create_form_submit($form, &$form_state) {
 /**
  * Displays the main order admin screen, an overview of all received orders.
  */
-function uc_order_admin($query = NULL, $args = NULL, $search = FALSE) {
+function uc_order_admin($query = NULL, $search = FALSE) {
   $header = array(
     array('data' => t('Actions')),
     array('data' => t('Order ID'), 'field' => 'o.order_id', 'sort' => 'desc'),
@@ -714,7 +714,7 @@ function uc_order_usearch() {
       $query->condition('created', $end_date, '<=');
     }
 
-    $build += uc_order_admin($query, $args, TRUE);
+    $build += uc_order_admin($query, TRUE);
   }
 
   return $build;
