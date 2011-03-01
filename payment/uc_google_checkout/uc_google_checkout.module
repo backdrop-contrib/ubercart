@@ -800,27 +800,27 @@ function uc_google_checkout_new_order($new_order) {
   $order = uc_order_load($order_id);
   if ($order) {
     $shipping_address = $new_order->{'buyer-shipping-address'};
-    $order->delivery_company = $shipping_address->{'company-name'};
-    $order->delivery_first_name = $shipping_address->{'structured-name'}->{'first-name'};
-    $order->delivery_last_name = $shipping_address->{'structured-name'}->{'last-name'};
-    $order->delivery_phone = $shipping_address->phone;
-    $order->delivery_street1 = $shipping_address->address1;
-    $order->delivery_street2 = $shipping_address->address2;
-    $order->delivery_city = $shipping_address->city;
+    $order->delivery_company = (string) $shipping_address->{'company-name'};
+    $order->delivery_first_name = (string) $shipping_address->{'structured-name'}->{'first-name'};
+    $order->delivery_last_name = (string) $shipping_address->{'structured-name'}->{'last-name'};
+    $order->delivery_phone = (string) $shipping_address->phone;
+    $order->delivery_street1 = (string) $shipping_address->address1;
+    $order->delivery_street2 = (string) $shipping_address->address2;
+    $order->delivery_city = (string) $shipping_address->city;
     $zone_id = db_query("SELECT zone_id FROM {uc_zones} WHERE zone_code = :code", array(':code' => $shipping_address->region))->fetchField();
     $order->delivery_zone = $zone_id;
     $countries = uc_get_country_data(array('country_iso_code_2' => $shipping_address->{'country-code'}));
     $order->delivery_country = $countries[0]['country_id'];
-    $order->delivery_postal_code = $shipping_address->{'postal-code'};
+    $order->delivery_postal_code = (string) $shipping_address->{'postal-code'};
 
     $billing_address = $new_order->{'buyer-billing-address'};
-    $order->billing_company = $billing_address->{'company-name'};
-    $order->billing_first_name = $billing_address->{'structured-name'}->{'first-name'};
-    $order->billing_last_name = $billing_address->{'structured-name'}->{'last-name'};
-    $order->billing_phone = $billing_address->phone;
-    $order->billing_street1 = $billing_address->address1;
-    $order->billing_street2 = $billing_address->address2;
-    $order->billing_city = $billing_address->city;
+    $order->billing_company = (string) $billing_address->{'company-name'};
+    $order->billing_first_name = (string) $billing_address->{'structured-name'}->{'first-name'};
+    $order->billing_last_name = (string) $billing_address->{'structured-name'}->{'last-name'};
+    $order->billing_phone = (string) $billing_address->phone;
+    $order->billing_street1 = (string) $billing_address->address1;
+    $order->billing_street2 = (string) $billing_address->address2;
+    $order->billing_city = (string) $billing_address->city;
     if ($billing_address['region'] != $shipping_address->region) {
       $zone_id = db_query("SELECT zone_id FROM {uc_zones} WHERE zone_code = :code", array(':code' => $billing_address->region))->fetchField();
     }
@@ -829,10 +829,10 @@ function uc_google_checkout_new_order($new_order) {
       $countries = uc_get_country_data(array('country_iso_code_2' => $billing_address->{'country-code'}));
     }
     $order->billing_country = $countries[0]['country_id'];
-    $order->billing_postal_code = $billing_address->{'postal-code'};
+    $order->billing_postal_code = (string) $billing_address->{'postal-code'};
 
     if (!$order->primary_email) {
-      $order->primary_email = $billing_address->email;
+      $order->primary_email = (string) $billing_address->email;
     }
 
     if ($new_order->{'buyer-marketing-preferences'}->{'email-allowed'} == 'true') {
@@ -852,21 +852,21 @@ function uc_google_checkout_new_order($new_order) {
 
     $comments = array();
 
-    uc_order_line_item_add($order_id, 'tax', t('Total tax'), $new_order->{'order-adjustment'}->{'total-tax'});
+    uc_order_line_item_add($order_id, 'tax', t('Total tax'), (string) $new_order->{'order-adjustment'}->{'total-tax'});
     if (isset($new_order->{'order-adjustment'}->shipping)) {
       $shipping_line = $new_order->{'order-adjustment'}->shipping[0];
-      uc_order_line_item_add($order_id, 'shipping', check_plain($shipping_line->{'shipping-name'}), $shipping_line->{'shipping-cost'});
+      uc_order_line_item_add($order_id, 'shipping', check_plain((string) $shipping_line->{'shipping-name'}), (string) $shipping_line->{'shipping-cost'});
     }
     if (isset($new_order->{'order-adjustment'}->{'merchant-codes'})) {
       foreach ($new_order->{'order-adjustment'}->{'merchant-codes'}->children() as $adjustment) {
         $type = $adjustment->getName();
         if ($type == 'coupon-adjustment') {
-          uc_order_line_item_add($order_id, 'gc_coupon', check_plain($adjustment->code), -$adjustment->{'applied-amount'});
-          $comments[] = check_plain($adjustment->message);
+          uc_order_line_item_add($order_id, 'gc_coupon', check_plain((string) $adjustment->code), -((string) $adjustment->{'applied-amount'}));
+          $comments[] = check_plain((string) $adjustment->message);
         }
         elseif ($type == 'gift-certificate-adjustment') {
-          uc_order_line_item_add($order_id, 'gc_gift_certificate', check_plain($adjustment->code), -($adjustment->{'applied-amount'}));
-          $comments[] = check_plain($adjustment->message);
+          uc_order_line_item_add($order_id, 'gc_gift_certificate', check_plain((string) $adjustment->code), -((string) $adjustment->{'applied-amount'}));
+          $comments[] = check_plain((string) $adjustment->message);
         }
       }
     }
@@ -878,7 +878,7 @@ function uc_google_checkout_new_order($new_order) {
     // API's cart) so we must empty the customer's manually.
     uc_cart_empty($cart_id);
     // Add a comment to let sales team know this came in through the site.
-    uc_order_comment_save($order->order_id, 0, t('Order created through Google Checkout (#@gco_order).', array('@gco_order' => $new_order->{'google-order-number'})), 'admin');
+    uc_order_comment_save($order->order_id, 0, t('Order created through Google Checkout (#@gco_order).', array('@gco_order' => (string) $new_order->{'google-order-number'})), 'admin');
 
     // uc_cart_complete_sale() also unsets some $_SESSION variables. These
     // are tied to the user-id, so we record that for when they log in later.
