@@ -110,7 +110,7 @@ function uc_google_checkout_shipping_settings($form, &$form_state) {
   $services = uc_google_checkout_shipping_services();
 
   foreach ($services as $key => $title) {
-    $shipping_settings = variable_get('uc_google_checkout_shipping_' . $key, array());
+    $shipping_settings = variable_get('uc_google_checkout_shipping_' . $key, array('enable' => NULL, 'default' => NULL, 'pickup' => NULL, 'fixed_charge' => NULL, 'percent_adjustment' => NULL));
     $form['services'][$key]['enable'] = array(
       '#type' => 'checkbox',
       '#default_value' => $shipping_settings['enable'],
