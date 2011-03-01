@@ -1041,7 +1041,7 @@ function uc_order_history($user) {
       array('data' => $link, 'nowrap' => 'nowrap'),
       array('data' => check_plain($order->title)),
       array('data' => (!is_null($order->products) ? $order->products : 0), 'align' => 'center'),
-      array('data' => array('#theme' => 'uc_price', '#price' => $order->total), 'align' => 'right'),
+      array('data' => array('#theme' => 'uc_price', '#price' => $order->order_total), 'align' => 'right'),
     );
   }
 
