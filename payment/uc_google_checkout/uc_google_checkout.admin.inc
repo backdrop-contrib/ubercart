@@ -96,131 +96,23 @@ function uc_google_checkout_settings($form, &$form_state) {
   return system_settings_form($form);
 }
 
-/**
- * Form builder for shipping settings form.
- *
- * @see uc_google_checkout_shipping_settings_validate()
- * @see uc_google_checkout_shipping_settings_submit()
- * @see theme_uc_google_checkout_shipping_settings()
- * @ingroup forms
- */
-function uc_google_checkout_shipping_settings($form, &$form_state) {
-  $form['#tree'] = TRUE;
-
-  $services = uc_google_checkout_shipping_services();
-
-  foreach ($services as $key => $title) {
-    $shipping_settings = variable_get('uc_google_checkout_shipping_' . $key, array('enable' => NULL, 'default' => NULL, 'pickup' => NULL, 'fixed_charge' => NULL, 'percent_adjustment' => NULL));
-    $form['services'][$key]['enable'] = array(
-      '#type' => 'checkbox',
-      '#default_value' => $shipping_settings['enable'],
-    );
-    $form['services'][$key]['title'] = array(
-      '#markup' => $title,
-    );
-    $form['services'][$key]['default'] = array(
-      '#type' => 'textfield',
-      '#default_value' => $shipping_settings['default'],
-      '#size' => 10,
-      '#field_prefix' => '$',
-    );
-    $form['services'][$key]['pickup'] = array(
-      '#type' => 'select',
-      '#default_value' => $shipping_settings['pickup'],
-      '#options' => array(
-        'REGULAR_PICKUP' => t('Regular pickup'),
-        'SPECIAL_PICKUP' => t('Special pickup'),
-        'DROP_OFF' => t('Drop off'),
-      ),
-    );
-    $form['services'][$key]['fixed_charge'] = array(
-      '#type' => 'textfield',
-      '#default_value' => $shipping_settings['fixed_charge'],
-      '#size' => 10,
-      '#field_prefix' => '$',
-    );
-    $form['services'][$key]['percent_adjustment'] = array(
-      '#type' => 'textfield',
-      '#default_value' => $shipping_settings['percent_adjustment'],
-      '#size' => 5,
-      '#field_suffix' => t('%'),
-    );
-  }
-
-  $form['actions'] = array('#type' => 'actions');
-  $form['actions']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save configuration'),
+function uc_google_checkout_shipping_settings($form) {
+  $form['help'] = array(
+    '#value' => t("For merchant-calculated shipping, Google Checkout requires a fallback price in case it can't get a calculated shipping rate in time. When the cart request is sent to Google Checkout, Ubercart pre-calculates the shipping rates using this default address. Choose a location that will cause an average shipping cost to be returned."),
   );
 
-  return $form;
-}
-
-/**
- * Themes shipping settings form.
- *
- * @see uc_google_checkout_shipping_settings()
- * @ingroup themeable
- */
-function theme_uc_google_checkout_shipping_settings($variables) {
-  $form = $variables['form'];
-
-  $header = array(t('Enable'), t('Service'), t('Default price'), t('Pickup type'), t('Handling charge'), t('Percentage markup/discount'));
-
-  $companies = uc_google_checkout_shipping_companies();
-  $company = '';
-  $rows = array();
-  foreach (element_children($form['services']) as $key) {
-    $row = array();
-    $temp = explode('_', $key, 2);
-    if ($company != $temp[0]) {
-      $company = $temp[0];
-      $rows[] = array(array('data' => '<strong>' . $companies[$company] . '</strong>', 'colspan' => 6));
-    }
-    foreach (array('enable', 'title', 'default', 'pickup', 'fixed_charge', 'percent_adjustment') as $field) {
-      $row[] = drupal_render($form['services'][$key][$field]);
-    }
-    $rows[] = $row;
+  $form['uc_google_checkout_delivery_city'] = uc_textfield(uc_get_field_name('city'), variable_get('uc_google_checkout_delivery_city', ''), TRUE);
+  if (isset($_POST['country'])) {
+    $country = $_POST['country'];
   }
-  $output = theme('table', array('header' => $header, 'rows' => $rows)) . drupal_render_children($form);
-
-  return $output;
-}
-
-/**
- * Form validation for shipping settings form.
- *
- * @see uc_google_checkout_shipping_settings()
- * @see uc_google_checkout_shipping_settings_submit()
- */
-function uc_google_checkout_shipping_settings_validate($form, &$form_state) {
-  foreach ($form_state['values']['services'] as $key => $service) {
-    if ($service['enable'] && empty($service['default'])) {
-      form_set_error('services][' . $key . '][default', t('A default shipping cost is required.'));
-    }
-    if (!empty($service['default']) && (!is_numeric($service['default']) || $service['default'] < 0)) {
-      form_set_error('services][' . $key . '][default', t('The default shipping cost should be a positive number.'));
-    }
-    if (!empty($service['fixed_charge']) && !is_numeric($service['fixed_charge'])) {
-      form_set_error('services][' . $key . '][fixed_charge', t('The fixed charge should be a number.'));
-    }
-    if (!empty($service['percent_adjustment']) && !is_numeric($service['percent_adjustment'])) {
-      form_set_error('services][' . $key . '][percent_adjustment', t('The percent adjustment should be a number.'));
-    }
+  else {
+    $country = variable_get('uc_google_checkout_delivery_country', 0);
   }
-}
+  $form['uc_google_checkout_delivery_country'] = uc_country_select(uc_get_field_name('country'), variable_get('uc_google_checkout_delivery_country', 0));
+  $form['uc_google_checkout_delivery_zone'] = uc_zone_select(uc_get_field_name('zone'), variable_get('uc_google_checkout_delivery_zone', 0), NULL, $country);
+  $form['uc_google_checkout_delivery_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), variable_get('uc_google_checkout_delivery_postal_code', ''), TRUE, NULL, 10, 10);
 
-/**
- * Form submission handler for shipping settings form.
- *
- * @see uc_google_checkout_shipping_settings()
- * @see uc_google_checkout_shipping_settings_validate()
- */
-function uc_google_checkout_shipping_settings_submit($form, &$form_state) {
-  foreach ($form_state['values']['services'] as $key => $service) {
-    variable_set('uc_google_checkout_shipping_' . $key, $service);
-  }
-  drupal_set_message(t('The configuration options have been saved.'));
+  return system_settings_form($form);
 }
 
 /**

@@ -72,6 +72,12 @@ function uc_google_checkout_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'uc_google_checkout.pages.inc',
   );
+  $items['google_checkout/calculations'] = array(
+    'page callback' => 'uc_google_checkout_merchant_calculation',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+    'file' => 'uc_google_checkout.pages.inc',
+  );
   $items['admin/store/orders/%uc_order/google_checkout'] = array(
     'title callback' => 'uc_google_checkout_terminal_title',
     'title arguments' => array(3),
@@ -584,58 +590,30 @@ function uc_google_checkout_cart_request($order) {
     $output .= '<merchant-checkout-flow-support>';
 
     if (uc_order_is_shippable($order)) {
-      $companies = uc_google_checkout_shipping_companies();
-      $services = uc_google_checkout_shipping_services();
-      $shipping_options = '';
-      foreach ($services as $key => $title) {
-        $settings = variable_get('uc_google_checkout_shipping_' . $key, array());
-        if ($settings['enable']) {
-          $shipping_options .= '<carrier-calculated-shipping-option>';
-          $shipping_options .= '<price currency="' . variable_get('uc_currency_code', 'USD') . '">' . $settings['default'] . '</price>';
-          $temp = explode('_', $key, 2);
-          $shipping_options .= '<shipping-company>' . $companies[$temp[0]] . '</shipping-company>';
-          $shipping_options .= '<carrier-pickup>' . $settings['pickup'] . '</carrier-pickup>';
-          $shipping_options .= '<shipping-type>' . $services[$key] . '</shipping-type>';
-          if ($settings['fixed_charge']) {
-            $shipping_options .= '<additional-fixed-charge currency="' . variable_get('uc_currency_code', 'USD') . '">' . uc_currency_format($settings['fixed_charge'], FALSE, FALSE, '.') . '</additional-fixed-charge>';
+      $output .= '<shipping-methods>';
+
+      $order->delivery_city = variable_get('uc_google_checkout_delivery_city', '');
+      $order->delivery_zone = variable_get('uc_google_checkout_delivery_zone', 0);
+      $order->delivery_country = variable_get('uc_google_checkout_delivery_country', 0);
+      $order->delivery_postal_code = variable_get('uc_google_checkout_delivery_postal_code', '');
+
+      $methods = module_invoke_all('shipping_method');
+      module_load_include('inc', 'uc_quote', 'uc_quote.pages');
+      $quote_data = _uc_quote_assemble_quotes($order);
+      foreach ($quote_data as $method_id => $options) {
+        foreach ($options as $accsrl => $data) {
+          if (isset($data['rate'])) {
+            $output .= '<merchant-calculated-shipping name="' . check_plain($methods[$method_id]['quote']['accessorials'][$accsrl]) . '">';
+            $output .= '<price currency="' . variable_get('uc_currency_code', 'USD') . '">' . $data['rate'] . '</price>';
+            $output .= '</merchant-calculated-shipping>';
           }
-          if ($settings['percent_adjustment']) {
-            $shipping_options .= '<additional-variable-charge-percent>' . (float)$settings['percent_adjustment'] . '</additional-variable-charge-percent>';
-          }
-          $shipping_options .= '</carrier-calculated-shipping-option>';
         }
       }
-      if ($shipping_options) {
-        $output .= '<shipping-methods>';
-        $output .= '<carrier-calculated-shipping>';
-        $output .= '<carrier-calculated-shipping-options>';
-        $output .= $shipping_options;
-        $output .= '</carrier-calculated-shipping-options>';
 
-        $address = variable_get('uc_quote_store_default_address');
-        if (empty($address)) {
-          $address = new UcAddress();
-          $address->city = variable_get('uc_store_city', NULL);
-          $address->zone = uc_get_zone_code(variable_get('uc_store_zone', NULL));
-          $address->postal_code = variable_get('uc_store_postal_code', NULL);
-          $address->country = uc_store_default_country();
-        }
-        $country = uc_get_country_data(array('country_id' => $address->country));
-        $address->country_code = $country[0]['country_iso_code_2'];
-        $output .= '<shipping-packages>';
-        $output .= '<shipping-package>';
-        $output .= '<ship-from id="here">';
-        $output .= '<city>' . $address->city . '</city>';
-        $output .= '<region>' . $address->zone . '</region>';
-        $output .= '<country-code>' . $address->country_code . '</country-code>';
-        $output .= '<postal-code>' . $address->postal_code . '</postal-code>';
-        $output .= '</ship-from>';
-        $output .= '</shipping-package>';
-        $output .= '</shipping-packages>';
-
-        $output .= '</carrier-calculated-shipping>';
-        $output .= '</shipping-methods>';
-      }
+      $output .= '</shipping-methods>';
+      $output .= '<merchant-calculations>';
+      $output .= '<merchant-calculations-url>' . url('google_checkout/calculations', array('absolute' => TRUE)) . '</merchant-calculations-url>';
+      $output .= '</merchant-calculations>';
     }
 
     $tax_table = '';
