@@ -129,6 +129,21 @@ function uc_store_schema() {
  * Implements hook_install().
  */
 function uc_store_install() {
+  // Set mail handler for all Ubercart modules
+  variable_set('mail_system',
+    array_merge(
+      variable_get('mail_system', array('default-system' => 'DefaultMailSystem')),
+      array(
+        'uc_cart'  => 'UbercartMailSystem',
+        'uc_order' => 'UbercartMailSystem',
+        'uc_file'  => 'UbercartMailSystem',
+        'uc_roles' => 'UbercartMailSystem',
+        'uc_stock' => 'UbercartMailSystem',
+        'uc_store' => 'UbercartMailSystem',
+      )
+    )
+  );
+
   // Install United States and Canada by default.
   $path = drupal_get_path('module', 'uc_store');
   require_once($path . '/countries/united_states_840_1.cif');
@@ -159,6 +174,16 @@ function uc_store_uninstall() {
   variable_del('uc_address_fields');
   variable_del('uc_address_fields_required');
   variable_del('uc_footer_message');
+
+  // Unset mail Ubercart hander in variable mail_system
+  $mail_system = variable_get('mail_system', array('default-system' => 'DefaultMailSystem'));
+  unset($mail_system['uc_cart']);
+  unset($mail_system['uc_order']);
+  unset($mail_system['uc_file']);
+  unset($mail_system['uc_roles']);
+  unset($mail_system['uc_stock']);
+  unset($mail_system['uc_store']);
+  variable_set('mail_system', $mail_system);
 }
 
 /*
@@ -166,22 +191,42 @@ function uc_store_uninstall() {
  */
 
 /**
- * Remove uc_price cache table.
+ * Removes uc_price cache table.
  */
 function uc_store_update_7001() {
   db_drop_table('cache_uc_price');
 }
 
 /**
- * Remove unused variable.
+ * Removes unused variable.
  */
 function uc_store_update_7002() {
   variable_del('uc_store_admin_page_display');
 }
 
 /**
- * Remove store footer message hash table.
+ * Removes store footer message hash table.
  */
 function uc_store_update_7003() {
   db_drop_table('uc_store_footers');
+}
+
+/**
+ * Installs HTML Mail System for Ubercart.
+ */
+function uc_store_update_7004() {
+  // Set mail handler for all Ubercart modules
+  variable_set('mail_system',
+    array_merge(
+      variable_get('mail_system', array('default-system' => 'DefaultMailSystem')),
+      array(
+        'uc_cart'  => 'UbercartMailSystem',
+        'uc_order' => 'UbercartMailSystem',
+        'uc_file'  => 'UbercartMailSystem',
+        'uc_roles' => 'UbercartMailSystem',
+        'uc_stock' => 'UbercartMailSystem',
+        'uc_store' => 'UbercartMailSystem',
+      )
+    )
+  );
 }
