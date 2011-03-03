@@ -272,7 +272,7 @@ function uc_usps_uc_shipping_method() {
  *   JSON object containing rate, error, and debugging information.
  */
 function uc_usps_quote($products, $details, $method) {
-  $services = array();
+  $services = array('data' => array('debug' => NULL, 'error' => NULL));
   $addresses = array(variable_get('uc_quote_store_default_address', new UcAddress()));
   $packages = _uc_usps_package_products($products, $addresses);
   if (!count($packages)) {
@@ -554,7 +554,7 @@ function _uc_usps_package_products($products, &$addresses) {
           $key = $last_key;
         }
       }
-      if (!$product->pkg_qty) {
+      if (!isset($product->pkg_qty) || !$product->pkg_qty) {
         $product->pkg_qty = 1;
       }
       $num_of_pkgs = (int)($product->qty / $product->pkg_qty);
