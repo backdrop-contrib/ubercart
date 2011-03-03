@@ -73,7 +73,7 @@ function uc_quote_admin_settings($form, &$form_state) {
     '#summary callback ' => 'uc_summarize_form',
     '#tree' => TRUE,
     '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
+    '#collapsed' => TRUE,
   );
   $form['uc_quote_pane_description']['text'] = array(
     '#type' => 'textarea',
@@ -87,7 +87,7 @@ function uc_quote_admin_settings($form, &$form_state) {
     '#summary callback' => 'uc_summarize_form',
     '#tree' => TRUE,
     '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
+    '#collapsed' => TRUE,
   );
   $form['uc_quote_err_msg']['text'] = array(
     '#type' => 'textarea',
@@ -111,7 +111,7 @@ function uc_quote_admin_settings($form, &$form_state) {
       $address->country
     ))),
     '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
+    '#collapsed' => TRUE,
   );
   $form['default_address']['first_name'] = uc_textfield(uc_get_field_name('first_name'), $address->first_name, FALSE);
   $form['default_address']['last_name'] = uc_textfield(uc_get_field_name('last_name'), $address->last_name, FALSE);

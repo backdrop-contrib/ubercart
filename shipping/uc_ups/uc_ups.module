@@ -859,7 +859,7 @@ function uc_ups_quote($products, $details) {
           $charge = $response->RatedShipment->NegotiatedRates->NetSummaryCharges->GrandTotal;
         }
         if (!isset($charge->CurrencyCode) || (string)$charge->CurrencyCode == variable_get('uc_currency_code', "USD")) {
-          $rate = uc_ups_markup((string)$charge->MonetaryValue);
+          $rate = uc_ups_rate_markup((string)$charge->MonetaryValue);
           $quotes[$ups_service]['rate'] += $rate;
         }
       }
@@ -1219,22 +1219,59 @@ function uc_ups_void_shipment($shipment_number, $tracking_numbers = array()) {
 
 /**
  * Modifies the rate received from UPS before displaying to the customer.
+ *
+ * @param rate
+ *   Shipping rate without any rate markup.
+ *
+ * @return
+ *   Shipping rate after markup.
  */
-function uc_ups_markup($rate) {
-  $markup = variable_get('uc_ups_markup', '0');
-  $type = variable_get('uc_ups_markup_type', 'percentage');
-  if (is_numeric(trim($markup))) {
+function uc_ups_rate_markup($rate) {
+  $markup = trim(variable_get('uc_ups_rate_markup', '0'));
+  $type   = variable_get('uc_ups_rate_markup_type', 'percentage');
+
+  if (is_numeric($markup)) {
     switch ($type) {
       case 'percentage':
-        return $rate + $rate * floatval(trim($markup)) / 100;
+        return $rate + $rate * floatval($markup) / 100;
       case 'multiplier':
-        return $rate * floatval(trim($markup));
+        return $rate * floatval($markup);
       case 'currency':
-        return $rate + floatval(trim($markup));
+        return $rate + floatval($markup);
     }
   }
   else {
     return $rate;
+  }
+}
+
+/**
+ * Modifies the weight of shipment before sending to UPS for a quote.
+ *
+ * @param weight
+ *   Shipping weight without any weight markup.
+ *
+ * @return
+ *   Shipping weight after markup.
+ */
+function uc_ups_weight_markup($weight) {
+  $markup = trim(variable_get('uc_ups_weight_markup', '0'));
+  $type   = variable_get('uc_ups_weight_markup_type', 'percentage');
+
+  if (is_numeric($markup)) {
+    switch ($type) {
+      case 'percentage':
+        return $weight + $weight * floatval($markup) / 100;
+
+      case 'multiplier':
+        return $weight * floatval($markup);
+
+      case 'mass':
+        return $weight + floatval($markup);
+    }
+  }
+  else {
+    return $weight;
   }
 }
 

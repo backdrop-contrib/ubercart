@@ -272,14 +272,23 @@ function uc_usps_uc_shipping_method() {
  *   JSON object containing rate, error, and debugging information.
  */
 function uc_usps_quote($products, $details, $method) {
+  // The uc_quote AJAX query can fire before the customer has completely
+  // filled out the destination address, so check to see whether the address
+  // has all needed fields. If not, abort.
+  $destination = (object) $details;
+  if (empty($destination->zone)        ||
+      empty($destination->postal_code) ||
+      empty($destination->country)       ) {
+    // Skip this shipping method.
+    return array();
+  }
+
   $services = array('data' => array('debug' => NULL, 'error' => NULL));
   $addresses = array(variable_get('uc_quote_store_default_address', new UcAddress()));
   $packages = _uc_usps_package_products($products, $addresses);
   if (!count($packages)) {
     return array();
   }
-
-  $dest = (object)$details;
 
   $usps_server = 'production.shippingapis.com';
   $api_dll = 'ShippingAPI.dll';
@@ -289,11 +298,11 @@ function uc_usps_quote($products, $details, $method) {
     $orig = $addresses[$key];
     $orig->email = variable_get('uc_store_email', '');
 
-    if (strpos($method['id'], 'intl')) {
-      $request = uc_usps_intl_rate_request($ship_packages, $orig, $dest);
+    if (strpos($method['id'], 'intl') && ($destination->country != 840)) {
+      $request = uc_usps_intl_rate_request($ship_packages, $orig, $destination);
     }
-    else {
-      $request = uc_usps_rate_request($ship_packages, $orig, $dest);
+    elseif ($destination->country == 840) {
+      $request = uc_usps_rate_request($ship_packages, $orig, $destination);
     }
 
     if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
@@ -322,7 +331,7 @@ function uc_usps_quote($products, $details, $method) {
             foreach ($package->Service as $service) {
               $id = (string)$service['ID'];
               $services[$id]['label'] = t('U.S.P.S. @service', array('@service' => (string)$service->SvcDescription));
-              $services[$id]['rate'] += uc_usps_markup((string)$service->Postage);
+              $services[$id]['rate'] += uc_usps_rate_markup((string)$service->Postage);
             }
           }
           else {
@@ -345,10 +354,10 @@ function uc_usps_quote($products, $details, $method) {
               // First Class doesn't have online rates, so if CommercialRate
               // is missing use Rate instead
               if ($rate_type && !empty($postage->CommercialRate)) {
-                $services[$classid]['rate'] += uc_usps_markup((string)$postage->CommercialRate);
+                $services[$classid]['rate'] += uc_usps_rate_markup((string)$postage->CommercialRate);
               }
               else {
-                $services[$classid]['rate'] += uc_usps_markup((string)$postage->Rate);
+                $services[$classid]['rate'] += uc_usps_rate_markup((string)$postage->Rate);
               }
             }
           }
@@ -480,22 +489,59 @@ function uc_usps_intl_rate_request($packages, $origin, $destination) {
 
 /**
  * Modifies the rate received from USPS before displaying to the customer.
+ *
+ * @param rate
+ *   Shipping rate without any rate markup.
+ *
+ * @return
+ *   Shipping rate after markup.
  */
-function uc_usps_markup($rate) {
-  $markup = variable_get('uc_usps_markup', '0');
-  $type = variable_get('uc_usps_markup_type', 'percentage');
-  if (is_numeric(trim($markup))) {
+function uc_usps_rate_markup($rate) {
+  $markup = trim(variable_get('uc_usps_rate_markup', '0'));
+  $type   = variable_get('uc_usps_rate_markup_type', 'percentage');
+
+  if (is_numeric($markup)) {
     switch ($type) {
       case 'percentage':
-        return $rate + $rate * floatval(trim($markup)) / 100;
+        return $rate + $rate * floatval($markup) / 100;
       case 'multiplier':
-        return $rate * floatval(trim($markup));
+        return $rate * floatval($markup);
       case 'currency':
-        return $rate + floatval(trim($markup));
+        return $rate + floatval($markup);
     }
   }
   else {
     return $rate;
+  }
+}
+
+/**
+ * Modifies the weight of shipment before sending to USPS for a quote.
+ *
+ * @param weight
+ *   Shipping weight without any weight markup.
+ *
+ * @return
+ *   Shipping weight after markup.
+ */
+function uc_usps_weight_markup($weight) {
+  $markup = trim(variable_get('uc_usps_weight_markup', '0'));
+  $type   = variable_get('uc_usps_weight_markup_type', 'percentage');
+
+  if (is_numeric($markup)) {
+    switch ($type) {
+      case 'percentage':
+        return $weight + $weight * floatval($markup) / 100;
+
+      case 'multiplier':
+        return $weight * floatval($markup);
+
+      case 'mass':
+        return $weight + floatval($markup);
+    }
+  }
+  else {
+    return $weight;
   }
 }
 
