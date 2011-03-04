@@ -114,7 +114,10 @@ function uc_shipping_new_package($form, &$form_state, $order) {
     );
 
     foreach ($products as $product) {
-      $unboxed_qty = $product->qty - $packaged_products[$product->order_product_id];
+      $unboxed_qty = $product->qty;
+      if (isset($packaged_products[$product->order_product_id])) {
+        $unboxed_qty -= $packaged_products[$product->order_product_id];
+      }
 
       if ($unboxed_qty > 0) {
         $product_row = array();
@@ -282,7 +285,10 @@ function uc_shipping_package_edit($form, &$form_state, $order, $package) {
   $result = db_query("SELECT order_product_id, SUM(qty) AS quantity FROM {uc_packaged_products} AS pp LEFT JOIN {uc_packages} AS p ON pp.package_id = p.package_id WHERE p.order_id = :id GROUP BY order_product_id", array(':id' => $order->order_id));
   foreach ($result as $packaged_product) {
     // Make already packaged products unavailable, except those in this package.
-    $products[$packaged_product->order_product_id]->qty = $products[$packaged_product->order_product_id]->qty - $packaged_product->quantity + $package->products[$packaged_product->order_product_id]->qty;
+    $products[$packaged_product->order_product_id]->qty -= $packaged_product->quantity;
+    if (isset($package->products[$packaged_product->order_product_id])) {
+      $products[$packaged_product->order_product_id]->qty += $package->products[$packaged_product->order_product_id]->qty;
+    }
   }
 
   $form['#tree'] = TRUE;
@@ -296,7 +302,7 @@ function uc_shipping_package_edit($form, &$form_state, $order, $package) {
       $product_row['name'] = array('#markup' => filter_xss_admin($product->title));
       $product_row['qty'] = array('#type' => 'select',
         '#options' => drupal_map_assoc(range(1, $product->qty)),
-        '#default_value' => $package->products[$product->order_product_id]->qty,
+        '#default_value' => isset($package->products[$product->order_product_id]) ? $package->products[$product->order_product_id]->qty : 1,
       );
 
       $form['products'][$product->order_product_id] = $product_row;
@@ -505,7 +511,7 @@ function uc_shipping_order_shipments($order) {
  * @ingroup forms
  */
 function uc_shipping_new_shipment($form, &$form_state, $order) {
-  $checked_pkgs = (array) $_REQUEST['pkgs'];
+  $checked_pkgs = isset($_GET['pkgs']) ? $_GET['pkgs'] : array();
 
   $form['#tree'] = TRUE;
   $form['order_id'] = array('#type' => 'hidden', '#value' => $order->order_id);
@@ -553,7 +559,7 @@ function uc_shipping_new_shipment($form, &$form_state, $order) {
       $form['shipping_types'][$shipping_type]['packages'][$package->package_id] = $package_row;
     }
 
-    if (is_array($shipping_methods_by_type[$shipping_type])) {
+    if (isset($shipping_methods_by_type[$shipping_type])) {
       foreach ($shipping_methods_by_type[$shipping_type] as $method) {
         $option_methods += array($method['id'] => $method['title']);
       }
@@ -668,16 +674,15 @@ function uc_shipping_shipment_view($order, $shipment) {
   }
 
   $methods = module_invoke_all('uc_shipping_method');
-  $method = $methods[$shipment->shipping_method];
 
-  if (isset($method['quote']['accessorials'][$shipment->accessorials])) {
-    $rows[] = array(t('Services:'), $method['quote']['accessorials'][$shipment->accessorials]);
+  if (isset($methods[$shipment->shipping_method]['quote']['accessorials'][$shipment->accessorials])) {
+    $rows[] = array(t('Services:'), $methods[$shipment->shipping_method]['quote']['accessorials'][$shipment->accessorials]);
   }
   else {
     $rows[] = array(t('Services:'), $shipment->accessorials);
   }
 
-  $rows[] = array(t('Cost:'), array('#theme' => 'uc_price', '#price' => $shipment->cost));
+  $rows[] = array(t('Cost:'), array('data' => array('#theme' => 'uc_price', '#price' => $shipment->cost)));
 
   $build['details'] = array(
     '#theme' => 'table',
@@ -710,14 +715,16 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
   if (isset($shipment->sid)) {
     $form['sid'] = array('#type' => 'value', '#value' => $shipment->sid);
     $methods = module_invoke_all('uc_shipping_method');
-    $method = $methods[$shipment->shipping_method];
+    if (isset($methods[$shipment->shipping_method])) {
+      $method = $methods[$shipment->shipping_method];
+    }
   }
   $addresses = array();
   $form['packages'] = array(
     '#tree' => TRUE,
     '#weight' => 1,
   );
-  if ($shipment->o_street1) {
+  if (isset($shipment->o_street1)) {
     $o_address = new stdClass();
     foreach ($shipment as $field => $value) {
       if (substr($field, 0, 2) == 'o_') {
@@ -820,23 +827,23 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
   $form['shipment']['carrier'] = array(
     '#type' => 'textfield',
     '#title' => t('Carrier'),
-    '#default_value' => $shipment->carrier,
+    '#default_value' => isset($shipment->carrier) ? $shipment->carrier : '',
   );
   $form['shipment']['accessorials'] = array(
     '#type' => 'textfield',
     '#title' => t('Shipment options'),
-    '#default_value' => $shipment->accessorials,
+    '#default_value' => isset($shipment->accessorials) ? $shipment->accessorials : '',
     '#description' => t('Short notes about the shipment, e.g. residential, overnight, etc.'),
   );
   $form['shipment']['transaction_id'] = array(
     '#type' => 'textfield',
     '#title' => t('Transaction ID'),
-    '#default_value' => $shipment->transaction_id,
+    '#default_value' => isset($shipment->transaction_id) ? $shipment->transaction_id : '',
   );
   $form['shipment']['tracking_number'] = array(
     '#type' => 'textfield',
     '#title' => t('Tracking number'),
-    '#default_value' => $shipment->tracking_number,
+    '#default_value' => isset($shipment->tracking_number) ? $shipment->tracking_number : '',
   );
 
   if (isset($shipment->ship_date)) {
@@ -861,7 +868,7 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
   );
   $form['shipment']['cost'] = array('#type' => 'textfield',
     '#title' => t('Shipping cost'),
-    '#default_value' => $shipment->cost,
+    '#default_value' => isset($shipment->cost) ? $shipment->cost : 0,
     '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
     '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
   );
@@ -1044,7 +1051,7 @@ function uc_shipping_shipment_delete_confirm_submit($form, &$form_state) {
 /**
  * Default method to send packages on a shipment.
  */
-function uc_shipping_make_shipment() {
+function uc_shipping_make_shipment($order) {
   $args = func_get_args();
   if (count($args) > 2) {
     $breadcrumb = drupal_get_breadcrumb();
@@ -1055,8 +1062,8 @@ function uc_shipping_make_shipment() {
     $method_id = array_shift($args);
     $package_ids = $args;
     $methods = module_invoke_all('uc_shipping_method');
-    $method = $methods[$method_id];
-    if (isset($method)) {
+    if (isset($methods[$method_id])) {
+      $method = $methods[$method_id];
       $inc_file = drupal_get_path('module', $method['module']) . '/' . $method['ship']['file'];
       if (is_file($inc_file)) {
         require_once($inc_file);

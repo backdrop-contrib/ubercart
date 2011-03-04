@@ -310,23 +310,24 @@ function uc_shipping_package_view($package) {
 
   if ($shipment) {
     $methods = module_invoke_all('uc_shipping_method');
-    $method = $methods[$shipment->shipping_method];
-    $pkg_type = $method['ship']['pkg_types'][$package->pkg_type];
+    if (isset($methods[$shipment->shipping_method])) {
+      $pkg_type = $methods[$shipment->shipping_method]['ship']['pkg_types'][$package->pkg_type];
+    }
   }
 
-  $rows[] = array(t('Package type:'), strlen($pkg_type) ? $pkg_type : check_plain($package->pkg_type));
+  $rows[] = array(t('Package type:'), isset($pkg_type) ? $pkg_type : check_plain($package->pkg_type));
 
   if ($package->length && $package->width && $package->height) {
     $rows[] = array(t('Dimensions:'), t('!l x !w x !h', array('!l' => uc_length_format($package->length), '!w' => uc_length_format($package->width), '!h' => uc_length_format($package->height))));
   }
 
-  $rows[] = array(t('Insured value:'), array('#theme' => 'uc_price', '#price' => $package->value));
+  $rows[] = array(t('Insured value:'), array('data' => array('#theme' => 'uc_price', '#price' => $package->value)));
 
   if ($package->tracking_number) {
     $rows[] = array(t('Tracking number:'), check_plain($package->tracking_number));
   }
 
-  if ($shipment && is_object($package->label_image) && file_exists($package->label_image->uri)) {
+  if ($shipment && isset($package->label_image) && file_exists($package->label_image->uri)) {
     $rows[] = array(t('Label:'), l(t('Click to view.'), 'admin/store/orders/' . $package->order_id . '/shipments/labels/' . $shipment->shipping_method . '/' . $package->label_image->uri));
   }
   else {
@@ -466,7 +467,7 @@ function uc_shipping_package_save($package) {
       ->execute();
   }
 
-  if (count($package->products)) {
+  if (isset($package->products) && $package->products) {
     $insert = db_insert('uc_packaged_products')
       ->fields(array('package_id', 'order_product_id', 'qty'));
 
@@ -594,7 +595,7 @@ function uc_shipping_shipment_save($shipment) {
     }
   }
 
-  if (!$shipment->sid) {
+  if (!isset($shipment->sid)) {
     drupal_write_record('uc_shipments', $shipment);
     $shipment->is_new = TRUE;
   }
