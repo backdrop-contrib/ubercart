@@ -312,7 +312,7 @@ function _uc_file_download_transfer($file_user, $ip) {
   }
 
   // Figure out download piece from range (if set)
-  if (isset($range) {
+  if (isset($range)) {
     list($seek_start, $seek_end) = explode('-', $range, 2);
   }
 
