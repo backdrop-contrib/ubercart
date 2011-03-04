@@ -300,6 +300,7 @@ function _uc_file_download_transfer($file_user, $ip) {
   }
 
   // Check if HTTP_RANGE is sent by browser (or download manager)
+  $range = NULL;
   if (isset($_SERVER['HTTP_RANGE'])) {
     list($size_unit, $range_orig) = explode('=', $_SERVER['HTTP_RANGE'], 2);
 
@@ -308,16 +309,12 @@ function _uc_file_download_transfer($file_user, $ip) {
       // See http://tools.ietf.org/id/draft-ietf-http-range-retrieval-00.txt
       list($range, $extra_ranges) = explode(',', $range_orig, 2);
     }
-    else {
-      $range = '';
-    }
-  }
-  else {
-    $range = '';
   }
 
   // Figure out download piece from range (if set)
-  list($seek_start, $seek_end) = explode('-', $range, 2);
+  if (isset($range) {
+    list($seek_start, $seek_end) = explode('-', $range, 2);
+  }
 
   // Set start and end based on range (if set), else set defaults and check for invalid ranges.
   $seek_end = intval((empty($seek_end)) ? ($size - 1) : min(abs(intval($seek_end)), ($size - 1)));
