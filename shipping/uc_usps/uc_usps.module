@@ -283,6 +283,8 @@ function uc_usps_quote($products, $details, $method) {
     return array();
   }
 
+  $connection_url = 'http://production.shippingapis.com/ShippingAPI.dll';
+
   $services = array('data' => array('debug' => NULL, 'error' => NULL));
   $addresses = array(variable_get('uc_quote_store_default_address', new UcAddress()));
   $packages = _uc_usps_package_products($products, $addresses);
@@ -290,18 +292,16 @@ function uc_usps_quote($products, $details, $method) {
     return array();
   }
 
-  $usps_server = 'production.shippingapis.com';
-  $api_dll = 'ShippingAPI.dll';
-  $connection_url = 'http://' . $usps_server . '/' . $api_dll;
-
   foreach ($packages as $key => $ship_packages) {
     $orig = $addresses[$key];
     $orig->email = variable_get('uc_store_email', '');
 
     if (strpos($method['id'], 'intl') && ($destination->country != 840)) {
+      // Build XML for international rate request
       $request = uc_usps_intl_rate_request($ship_packages, $orig, $destination);
     }
     elseif ($destination->country == 840) {
+      // Build XML for rate request
       $request = uc_usps_rate_request($ship_packages, $orig, $destination);
     }
 
@@ -418,33 +418,59 @@ function theme_uc_usps_option_label($variables) {
  *   Delivery destination address information.
  *
  * @return
- *   RateV3Request XML document to send to USPS.
+ *   RateV4Request XML document to send to USPS.
  */
 function uc_usps_rate_request($packages, $origin, $destination) {
-  $request  = '<RateV3Request USERID="' . variable_get('uc_usps_user_id', '') . '">';
-  $services_count = 0;
+  $request  = '<RateV4Request USERID="' . variable_get('uc_usps_user_id', '') . '">';
+  $request .= '<Revision>2</Revision>';
+
   $rate_type = variable_get('uc_usps_online_rates', FALSE);
 
+  $package_id = 0;
   foreach ($packages as $package) {
     $qty = $package->qty;
     for ($i = 0; $i < $qty; $i++) {
-      $request .= '<Package ID="' . $services_count . '">' .
+      $request .= '<Package ID="' . $package_id . '">' .
         '<Service>' . ($rate_type ? 'ONLINE' : 'ALL') . '</Service>' .
-        '<ZipOrigination>' . substr($origin->postal_code, 0, 5) . '</ZipOrigination>' .
+        '<ZipOrigination>' . substr($origin['postal_code'], 0, 5) . '</ZipOrigination>' .
         '<ZipDestination>' . substr($destination->postal_code, 0, 5) . '</ZipDestination>' .
         '<Pounds>' . intval($package->pounds) . '</Pounds>' .
         '<Ounces>' . number_format($package->ounces, 1, '.', '') . '</Ounces>' .
         '<Container>' . $package->container . '</Container>' .
         '<Size>' . $package->size . '</Size>' .
-        '<Machinable>' . ($package->machinable ? 'True' : 'False') . '</Machinable>' .
-        '</Package>';
+        '<Value>' . $package->price . '</Value>' .
+        '<Machinable>' . ($package->machinable ? 'TRUE' : 'FALSE') . '</Machinable>' .
+        '<ReturnLocations>TRUE</ReturnLocations>' .
+        '<ShipDate Option="EMSH">' . date('d-M-Y') . '</ShipDate>';
 
-      $services_count++;
+        // Check if we need to add any special services to this package
+        if (variable_get('uc_usps_insurance', FALSE)            ||
+           variable_get('uc_usps_delivery_confirmation', FALSE) ||
+           variable_get('uc_usps_signature_confirmation', FALSE)  ) {
+          $request .= '<SpecialServices>';
+          
+          if (variable_get('uc_usps_insurance', FALSE)) {
+            $request .= '<SpecialService>1</SpecialService>';
+          }
+          if (variable_get('uc_usps_delivery_confirmation', FALSE)) {
+            $request .= '<SpecialService>13</SpecialService>';
+          }
+          if (variable_get('uc_usps_signature_confirmation', FALSE)) {
+            $request .= '<SpecialService>15</SpecialService>';
+          }
+
+          $request .= '</SpecialServices>';
+        }
+
+        // Close off Package tag
+        $request .= '</Package>';
+
+      $package_id++;
     }
   }
-  $request .= '</RateV3Request>';
+  $request .= '</RateV4Request>';
 
-  return 'API=RateV3&XML=' . drupal_encode_path($request);
+  return 'API=RateV4&XML=' . drupal_encode_path($request);
 }
 
 /**
@@ -462,28 +488,37 @@ function uc_usps_rate_request($packages, $origin, $destination) {
  */
 function uc_usps_intl_rate_request($packages, $origin, $destination) {
   module_load_include('inc', 'uc_usps', 'uc_usps.countries');
-  $request  = '<IntlRateRequest USERID="' . variable_get('uc_usps_user_id', '') . '">';
-  $services_count = 0;
+  $request  = '<IntlRateV2Request USERID="' . variable_get('uc_usps_user_id', '') . '">';
+  $request .= '<Revision>2</Revision>';
 
-  // This needs to be international name per USPS website. See http://pe.usps.com/text/Imm/immctry.htm
+  // USPS does not use ISO 3166 country name in some cases so we
+  // need to transform ISO country name into one USPS understands.
   $shipto_country = uc_usps_country_map($destination->country);
 
+  $package_id = 0;
   foreach ($packages as $package) {
     $qty = $package->qty;
     for ($i = 0; $i < $qty; $i++) {
-      $request .= '<Package ID="' . $services_count . '">' .
+      $request .= '<Package ID="' . $package_id . '">' .
         '<Pounds>' . intval($package->pounds) . '</Pounds>' .
         '<Ounces>' . ceil($package->ounces) . '</Ounces>' .
         '<MailType>Package</MailType>' .
-        '<Country>' . $shipto_country . '</Country>' .
-        '</Package>';
+        '<Country>' . $shipto_country . '</Country>';
 
-      $services_count++;
+        // Check if we need to add any special services to this package
+        if (variable_get('uc_usps_insurance', FALSE)) {
+          $request .= '<ExtraServices><ExtraService>1</ExtraService></ExtraServices>';
+        }
+
+        // Close off Package tag
+        $request .= '</Package>';
+
+      $package_id++;
     }
   }
-  $request .= '</IntlRateRequest>';
+  $request .= '</IntlRateV2Request>';
 
-  $request = 'API=IntlRate&XML=' . drupal_encode_path($request);
+  $request = 'API=IntlRateV2&XML=' . drupal_encode_path($request);
   return $request;
 }
 

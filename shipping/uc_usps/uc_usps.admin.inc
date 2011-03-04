@@ -148,6 +148,33 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Indicate whether each product is quoted as shipping separately or all in one package. Orders with one kind of product will still use the package quantity to determine the number of packages needed, however.'),
   );
 
+  // Insurance
+  $form['uc_usps_quote_options']['uc_usps_insurance'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Package insurance'),
+    '#default_value' => variable_get('uc_usps_insurance', FALSE),
+    '#description' => t('When enabled, the quotes presented to the customer will include the cost of insurance for the full sales price of all products in the order.'),
+    '#disabled' => TRUE,
+  );
+
+  // Delivery Confirmation
+  $form['uc_usps_quote_options']['uc_usps_delivery_confirmation'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Delivery confirmation'),
+    '#default_value' => variable_get('uc_usps_delivery_confirmation', FALSE),
+    '#description' => t('When enabled, the quotes presented to the customer will include the cost of delivery confirmation for all packages in the order.'),
+    '#disabled' => TRUE,
+  );
+
+  // Signature Confirmation
+  $form['uc_usps_quote_options']['uc_usps_signature_confirmation'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Signature confirmation'),
+    '#default_value' => variable_get('uc_usps_signature_confirmation', FALSE),
+    '#description' => t('When enabled, the quotes presented to the customer will include the cost of signature confirmation for all packages in the order.'),
+    '#disabled' => TRUE,
+  );
+
   // Container for markup forms
   $form['uc_usps_markups'] = array(
     '#type'          => 'fieldset',
@@ -247,6 +274,9 @@ function uc_usps_admin_settings_submit($form, &$form_state) {
     'uc_usps_weight_markup_type',
     'uc_usps_weight_markup',
     'uc_usps_all_in_one',
+    'uc_usps_insurance',
+    'uc_usps_delivery_confirmation',
+    'uc_usps_signature_confirmation',
   );
 
   foreach ($fields as $key) {
