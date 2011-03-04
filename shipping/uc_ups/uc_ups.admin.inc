@@ -290,6 +290,7 @@ function uc_ups_admin_settings_submit($form, &$form_state) {
     'uc_ups_connection_address',
     'uc_ups_services',
     'uc_ups_pickup_type',
+    'uc_ups_pkg_type',
     'uc_ups_classification',
     'uc_ups_negotiated_rates',
     'uc_ups_residential_quotes',
