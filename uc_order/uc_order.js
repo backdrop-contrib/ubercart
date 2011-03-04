@@ -6,7 +6,6 @@
 
 var customer_select = '';
 var add_product_browser = '';
-var order_save_holds = 0;
 
 /**
  * Add the double click behavior to the order table at admin/store/orders.
@@ -44,10 +43,6 @@ Drupal.behaviors.ucOrderSubmit = {
 
 jQuery(document).ready(
   function() {
-    if (order_save_holds == 0) {
-      release_held_buttons();
-    }
-
     jQuery('.uc-orders-table tr.odd, .uc-orders-table tr.even').each(
       function() {
         jQuery(this).dblclick(
@@ -268,30 +263,3 @@ function confirm_line_item_delete(message, img_id) {
     jQuery('#uc-order-edit-form #edit-submit-changes').get(0).click();
   }
 }
-
-/**
- * Disable order submit button while parts of the page are still loading.
- */
-function add_order_save_hold() {
-  order_save_holds++;
-  jQuery('#uc-order-edit-form input.save-button').attr('disabled', 'disabled');
-}
-
-/**
- * Remove a hold and enable the save buttons when all holds are gone!
- */
-function remove_order_save_hold() {
-  order_save_holds--;
-
-  if (order_save_holds == 0) {
-    release_held_buttons();
-  }
-}
-
-/**
- * Remove the disable attribute on any input item with the save-button class.
- */
-function release_held_buttons() {
-  jQuery('#uc-order-edit-form input.save-button').removeAttr('disabled');
-}
-

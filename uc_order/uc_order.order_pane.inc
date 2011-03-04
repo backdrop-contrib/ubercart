@@ -425,7 +425,11 @@ function uc_order_add_product_form($form, &$form_state, $order, $node) {
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Add to order'),
-    '#submit' => array('uc_order_edit_products_add', 'uc_order_edit_form_submit'),
+    '#submit' => array('uc_order_edit_products_add'),
+    '#ajax' =>  array(
+      'callback' => 'uc_order_pane_products_ajax_callback',
+      'wrapper' => 'product-controls',
+    ),
   );
   $form['actions']['cancel'] = array(
     '#type' => 'submit',
@@ -580,6 +584,7 @@ function uc_order_pane_products_select($form, &$form_state) {
   $form_state['products_action'] = 'select';
   $form_state['product_select_options'] = $options;
   unset($form_state['refresh_products']);
+  $form_state['rebuild'] = TRUE;
 }
 
 /**
@@ -589,6 +594,7 @@ function uc_order_pane_products_add($form, &$form_state) {
   $form_state['products_action'] = 'add_product';
   $form_state['node'] = node_load($form_state['values']['product_controls']['nid']);
   unset($form_state['refresh_products']);
+  $form_state['rebuild'] = TRUE;
 }
 
 /**
@@ -597,7 +603,8 @@ function uc_order_pane_products_add($form, &$form_state) {
 function uc_order_pane_products_close($form, &$form_state) {
   unset($form_state['products_action']);
   unset($form_state['refresh_products']);
-  unset($form_state['product_seelct_options']);
+  unset($form_state['product_select_options']);
+  $form_state['rebuild'] = TRUE;
 }
 
 /**
@@ -605,6 +612,7 @@ function uc_order_pane_products_close($form, &$form_state) {
  */
 function uc_order_edit_products_add_blank($form, &$form_state) {
   $form_state['refresh_products'] = TRUE;
+  $form_state['rebuild'] = TRUE;
 
   $order = $form_state['build_info']['args'][0];
 
@@ -626,6 +634,7 @@ function uc_order_edit_products_add_blank($form, &$form_state) {
 function uc_order_edit_products_add($form, &$form_state) {
   $form_state['products_action'] = 'products_select';
   $form_state['refresh_products'] = TRUE;
+  $form_state['rebuild'] = TRUE;
   $order = $form_state['build_info']['args'][0];
 
   $product = node_load(intval($form_state['values']['product_controls']['nid']));
