@@ -321,6 +321,27 @@ function uc_usps_quote($products, $details, $method) {
     $rate_type = variable_get('uc_usps_online_rates', FALSE);
     $response = new SimpleXMLElement($result->data);
 
+    // Map double-encoded HTML markup in service names to Unicode characters
+    $service_markup = array(
+      '&lt;sup&gt;&amp;reg;&lt;/sup&gt;'   => '®',
+      '&lt;sup&gt;&amp;trade;&lt;/sup&gt;' => '™',
+      '**'                                 => '',
+    );
+    // Use this map to fix USPS service names
+    if (strpos($method['id'], 'intl')) {
+      // Find and replace markup in International service names
+      foreach ($response->xpath('//Service') as $service) {
+        $service->SvcDescription = str_replace(array_keys($service_markup), $service_markup, $service->SvcDescription);
+      }
+    }
+    else {
+      // Find and replace markup in Domestic service names
+      foreach ($response->xpath('//Postage') as $postage) {
+        $postage->MailService = str_replace(array_keys($service_markup), $service_markup, $postage->MailService);
+      }
+    }
+
+
     if (isset($response->Package)) {
       foreach ($response->Package as $package) {
         if (isset($package->Error)) {
@@ -342,10 +363,10 @@ function uc_usps_quote($products, $details, $method) {
             foreach ($package->Postage as $postage) {
               $classid = (string)$postage['CLASSID'];
               if ($classid === '0') {
-                if ((string)$postage->MailService == "First-Class Mail Parcel") {
+                if ((string)$postage->MailService == "First-Class Mail® Package") {
                   $classid = 'zeroParcel';
                 }
-                elseif ((string)$postage->MailService == "First-Class Mail Flat") {
+                elseif ((string)$postage->MailService == "First-Class Mail® Flat") {
                   $classid = 'zeroFlat';
                 }
                 else {
@@ -448,7 +469,7 @@ function uc_usps_rate_request($packages, $origin, $destination) {
         '<Value>' . $package->price . '</Value>' .
         '<Machinable>' . ($package->machinable ? 'TRUE' : 'FALSE') . '</Machinable>' .
         '<ReturnLocations>TRUE</ReturnLocations>' .
-        '<ShipDate Option="EMSH">' . date('d-M-Y') . '</ShipDate>';
+        '<ShipDate Option="EMSH">' . format_date(time(), 'custom', 'd-M-Y', 'America/New_York') . '</ShipDate>';
 
         // Check if we need to add any special services to this package
         if (variable_get('uc_usps_insurance', FALSE)            ||
