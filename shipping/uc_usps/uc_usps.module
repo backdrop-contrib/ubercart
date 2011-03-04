@@ -294,7 +294,7 @@ function uc_usps_quote($products, $details, $method) {
 
   foreach ($packages as $key => $ship_packages) {
     $orig = $addresses[$key];
-    $orig->email = variable_get('uc_store_email', '');
+    //$orig->email = variable_get('uc_store_email', '');
 
     if (strpos($method['id'], 'intl') && ($destination->country != 840)) {
       // Build XML for international rate request
@@ -331,6 +331,10 @@ function uc_usps_quote($products, $details, $method) {
             foreach ($package->Service as $service) {
               $id = (string)$service['ID'];
               $services[$id]['label'] = t('U.S.P.S. @service', array('@service' => (string)$service->SvcDescription));
+              // Markup rate before customer sees it
+              if (!isset($services[$id]['rate'])) {
+                $services[$id]['rate'] = 0;
+              }
               $services[$id]['rate'] += uc_usps_rate_markup((string)$service->Postage);
             }
           }
@@ -347,6 +351,9 @@ function uc_usps_quote($products, $details, $method) {
                 else {
                   $classid = 'zero';
                 }
+              }
+              if (!isset($services[$classid]['rate'])) {
+                $services[$classid]['rate'] = 0;
               }
               $services[$classid]['label'] = t('U.S.P.S. @service', array('@service' => (string)$postage->MailService));
               // Markup rate before customer sees it
