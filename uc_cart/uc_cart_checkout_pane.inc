@@ -292,18 +292,10 @@ function uc_checkout_pane_delivery($op, $order, $form = NULL, &$form_state = NUL
       return array('description' => $description, 'contents' => $contents, 'theme' => 'uc_address_pane');
 
     case 'process':
-      $pane = $form_state['values']['panes']['delivery'];
-
-      $order->delivery_first_name = $pane['delivery_first_name'];
-      $order->delivery_last_name = $pane['delivery_last_name'];
-      $order->delivery_company = $pane['delivery_company'];
-      $order->delivery_street1 = $pane['delivery_street1'];
-      $order->delivery_street2 = $pane['delivery_street2'];
-      $order->delivery_city = $pane['delivery_city'];
-      $order->delivery_zone = $pane['delivery_zone'];
-      $order->delivery_postal_code = $pane['delivery_postal_code'];
-      $order->delivery_country = $pane['delivery_country'];
-      $order->delivery_phone = $pane['delivery_phone'];
+      foreach (uc_address_field_enabled() as $field) {
+        $field = 'delivery_' . $field;
+        $order->$field = $form_state['values']['panes']['delivery'][$field];
+      }
       return TRUE;
 
     case 'review':
@@ -394,18 +386,10 @@ function uc_checkout_pane_billing($op, $order, $form = NULL, &$form_state = NULL
       return array('description' => $description, 'contents' => $contents, 'theme' => 'uc_address_pane');
 
     case 'process':
-      $pane = $form_state['values']['panes']['billing'];
-
-      $order->billing_first_name = $pane['billing_first_name'];
-      $order->billing_last_name = $pane['billing_last_name'];
-      $order->billing_company = $pane['billing_company'];
-      $order->billing_street1 = $pane['billing_street1'];
-      $order->billing_street2 = $pane['billing_street2'];
-      $order->billing_city = $pane['billing_city'];
-      $order->billing_zone = $pane['billing_zone'];
-      $order->billing_postal_code = $pane['billing_postal_code'];
-      $order->billing_country = $pane['billing_country'];
-      $order->billing_phone = $pane['billing_phone'];
+      foreach (uc_address_field_enabled() as $field) {
+        $field = 'billing_' . $field;
+        $order->$field = $form_state['values']['panes']['billing'][$field];
+      }
       return TRUE;
 
     case 'review':
