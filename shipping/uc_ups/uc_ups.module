@@ -477,8 +477,8 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
       <Weight>" . number_format($shipment_weight, 1, '.', '') . "</Weight>
     </ShipmentWeight>
     <Service>
-      <Code>{$service[code]}</Code>
-      <Description>{$service[description]}</Description>
+      <Code>{$service['code']}</Code>
+      <Description>{$service['description']}</Description>
     </Service>
     ";
     $schema .= $package_schema;
@@ -836,6 +836,9 @@ function uc_ups_quote($products, $details) {
         'data' => $request,
       ));
       if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
+        if (!isset($quotes[$usps_service]['debug'])) {
+          $quotes[$usps_service]['debug'] = '';
+        }
         $quotes[$ups_service]['debug'] .= htmlentities($request) . ' <br /><br /> ' . htmlentities($resp->data);
       }
       $response = new SimpleXMLElement($resp->data);
@@ -881,15 +884,17 @@ function uc_ups_quote($products, $details) {
    * Copied from http://drupal.org/node/70915 and then improved by Lyle.
    */
   $messages = drupal_set_message();
-  $errors = $messages['error'];
-  $total = count($errors);
-  for ($i = 0; $i <= $total; $i++) {
-    if (strpos($errors[$i], 'SSL: fatal protocol error in')) {
-      unset($_SESSION['messages']['error'][$i]);
+  if (isset($messages['error'])) {
+    $errors = $messages['error'];
+    $total = count($errors);
+    for ($i = 0; $i <= $total; $i++) {
+      if (strpos($errors[$i], 'SSL: fatal protocol error in')) {
+        unset($_SESSION['messages']['error'][$i]);
+      }
     }
-  }
-  if (empty($_SESSION['messages']['error'])) {
-    unset($_SESSION['messages']['error']);
+    if (empty($_SESSION['messages']['error'])) {
+      unset($_SESSION['messages']['error']);
+    }
   }
 
   db_delete('watchdog')
