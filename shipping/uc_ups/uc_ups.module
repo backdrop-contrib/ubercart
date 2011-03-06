@@ -899,6 +899,10 @@ function uc_ups_quote($products, $details, $method) {
           $charge = $response->RatedShipment->NegotiatedRates->NetSummaryCharges->GrandTotal;
         }
         if (!isset($charge->CurrencyCode) || (string)$charge->CurrencyCode == variable_get('uc_currency_code', "USD")) {
+          // Markup rate before customer sees it
+          if (!isset($quotes[$ups_service]['rate'])) {
+            $quotes[$ups_service]['rate'] = 0;
+          }
           $rate = uc_ups_rate_markup((string)$charge->MonetaryValue);
           $quotes[$ups_service]['rate'] += $rate;
         }
