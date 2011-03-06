@@ -352,7 +352,7 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
   $shipfrom_zone = uc_get_zone_code($origin->zone);
   $shipfrom_country = uc_get_country_data(array('country_id' => $origin->country));
   $shipfrom_country = $shipfrom_country[0]['country_iso_code_2'];
-  $shipfrom_zip = $origin['postal_code'];
+  $shipfrom_zip = $origin->postal_code;
 
   $ups_units = variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in'));
   switch ($ups_units) {
@@ -711,14 +711,25 @@ $schema .= "</ShipmentConfirmRequest>";
  *   Array of cart contents.
  * @param $details
  *   Order details other than product information.
+ * @param $method
+ *   The shipping method to create the quote.
  *
  * @return
  *   JSON object containing rate, error, and debugging information.
  */
-function uc_ups_quote($products, $details) {
-  $quotes = array();
+function uc_ups_quote($products, $details, $method) {
+  // The uc_quote AJAX query can fire before the customer has completely
+  // filled out the destination address, so check to see whether the address
+  // has all needed fields. If not, abort.
+  $destination = (object) $details;
+  if (empty($destination->zone)        ||
+      empty($destination->postal_code) ||
+      empty($destination->country)       ) {
+    // Skip this shipping method.
+    return array();
+  }
 
-  $method = uc_ups_uc_shipping_method();
+  $quotes = array();
 
   $addresses = array(variable_get('uc_quote_store_default_address', new UcAddress()));
   $key = 0;
@@ -732,8 +743,16 @@ function uc_ups_quote($products, $details) {
         // and use their keys for the array of packages.
 
         $address = uc_quote_get_default_shipping_address($product->nid);
-        $key = array_search($address, $addresses);
-        if ($key === FALSE) {
+        if (in_array($address, $addresses)) {
+          // This is an existing address.
+          foreach ($addresses as $index => $value) {
+            if ($address == $value) {
+              $key = $index;
+              break;
+            }
+          }
+        }
+        else {
           // This is a new address. Increment the address counter $last_key
           // instead of using [] so that it can be used in $packages and
           // $addresses.
@@ -784,9 +803,18 @@ function uc_ups_quote($products, $details) {
     foreach ($products as $product) {
       $key = 0;
       if ($product->nid) {
-        $address = (array)uc_quote_get_default_shipping_address($product->nid);
-        $key = array_search($address, $addresses);
-        if ($key === FALSE) {
+        $address = uc_quote_get_default_shipping_address($product->nid);
+        if (in_array($address, $addresses)) {
+          // This is an existing address.
+          foreach ($addresses as $index => $value) {
+            if ($address == $value) {
+              $key = $index;
+              break;
+            }
+          }
+        }
+        else {
+          // This is a new address.
           $addresses[++$last_key] = $address;
           $key = $last_key;
         }
@@ -873,7 +901,7 @@ function uc_ups_quote($products, $details) {
     if (isset($quote['rate'])) {
       $quotes[$key]['rate'] = $quote['rate'];
       $quotes[$key]['label'] = $method['quote']['accessorials'][$key];
-      $quotes[$key]['option_label'] = theme('uc_ups_option_label', array('service' => $method['ups']['quote']['accessorials'][$key]));
+      $quotes[$key]['option_label'] = theme('uc_ups_option_label', array('service' => $method['quote']['accessorials'][$key]));
     }
   }
 

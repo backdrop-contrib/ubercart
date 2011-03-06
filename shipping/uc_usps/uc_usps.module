@@ -64,7 +64,7 @@ function uc_usps_form_alter(&$form, &$form_state, $form_id) {
       '#type' => 'select',
       '#title' => t('Package type'),
       '#options' => _uc_usps_pkg_types(),
-      '#default_value' => isset($node->usps['container']) ? $node->usps['container'] : 'RECTANGULAR',
+      '#default_value' => isset($node->usps['container']) ? $node->usps['container'] : 'VARIABLE',
     );
   }
 }
@@ -294,7 +294,7 @@ function uc_usps_quote($products, $details, $method) {
 
   foreach ($packages as $key => $ship_packages) {
     $orig = $addresses[$key];
-    //$orig->email = variable_get('uc_store_email', '');
+    $orig->email = variable_get('uc_store_email', '');
 
     if (strpos($method['id'], 'intl') && ($destination->country != 840)) {
       // Build XML for international rate request
@@ -460,7 +460,7 @@ function uc_usps_rate_request($packages, $origin, $destination) {
     for ($i = 0; $i < $qty; $i++) {
       $request .= '<Package ID="' . $package_id . '">' .
         '<Service>' . ($rate_type ? 'ONLINE' : 'ALL') . '</Service>' .
-        '<ZipOrigination>' . substr($origin['postal_code'], 0, 5) . '</ZipOrigination>' .
+        '<ZipOrigination>' . substr($origin->postal_code, 0, 5) . '</ZipOrigination>' .
         '<ZipDestination>' . substr($destination->postal_code, 0, 5) . '</ZipDestination>' .
         '<Pounds>' . intval($package->pounds) . '</Pounds>' .
         '<Ounces>' . number_format($package->ounces, 1, '.', '') . '</Ounces>' .
@@ -475,6 +475,7 @@ function uc_usps_rate_request($packages, $origin, $destination) {
         if (variable_get('uc_usps_insurance', FALSE)            ||
            variable_get('uc_usps_delivery_confirmation', FALSE) ||
            variable_get('uc_usps_signature_confirmation', FALSE)  ) {
+
           $request .= '<SpecialServices>';
           
           if (variable_get('uc_usps_insurance', FALSE)) {
@@ -628,9 +629,24 @@ function _uc_usps_package_products($products, &$addresses) {
   if (variable_get('uc_usps_all_in_one', TRUE) && count($products) > 1) {
     foreach ($products as $product) {
       if ($product->nid) {
+        // Packages are grouped by the address from which they will be
+        // shipped. We will keep track of the different addresses in an array
+        // and use their keys for the array of packages.
+
         $address = uc_quote_get_default_shipping_address($product->nid);
-        $key = array_search($address, $addresses);
-        if ($key === FALSE) {
+        if (in_array($address, $addresses)) {
+          // This is an existing address.
+          foreach ($addresses as $index => $value) {
+            if ($address == $value) {
+              $key = $index;
+              break;
+            }
+          }
+        }
+        else {
+          // This is a new address. Increment the address counter $last_key
+          // instead of using [] so that it can be used in $packages and
+          // $addresses.
           $addresses[++$last_key] = $address;
           $key = $last_key;
           $packages[$key][0] = new stdClass();
@@ -642,7 +658,7 @@ function _uc_usps_package_products($products, &$addresses) {
     foreach ($packages as $key => $package) {
       $packages[$key][0]->pounds = floor($package[0]->weight);
       $packages[$key][0]->ounces = 16 * ($package[0]->weight - $packages[$key][0]->pounds);
-      $packages[$key][0]->container = 'RECTANGULAR';
+      $packages[$key][0]->container = 'VARIABLE';
       $packages[$key][0]->size = 'REGULAR';
       // Packages are "machinable" if heavier than 6oz. and less than 35lbs.
       $packages[$key][0]->machinable = (
@@ -656,9 +672,18 @@ function _uc_usps_package_products($products, &$addresses) {
   else {
     foreach ($products as $product) {
       if ($product->nid) {
-        $address = (array)uc_quote_get_default_shipping_address($product->nid);
-        $key = array_search($address, $addresses);
-        if ($key === FALSE) {
+        $address = uc_quote_get_default_shipping_address($product->nid);
+        if (in_array($address, $addresses)) {
+          // This is an existing address.
+          foreach ($addresses as $index => $value) {
+            if ($address == $value) {
+              $key = $index;
+              break;
+            }
+          }
+        }
+        else {
+          // This is a new address.
           $addresses[++$last_key] = $address;
           $key = $last_key;
         }
