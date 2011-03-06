@@ -2,14 +2,12 @@
 
 /**
  * @file
- * Grants roles upon accepted payment of products
+ * Grants roles upon accepted payment of products.
  *
  * The uc_roles module will grant specified roles upon purchase of specified
  * products. Granted roles can be set to have a expiration date. Users can also
  * be notified of the roles they are granted and when the roles will
- * expire/need to be renewed/etc
- *
- * Development sponsored by the Ubercart project.  http://www.ubercart.org
+ * expire/need to be renewed/etc.
  */
 
 /******************************************************************************
@@ -365,10 +363,16 @@ function theme_uc_roles_user_expiration($variables) {
  *
  * @see uc_roles_form_user_profile_form_alter()
  */
-function uc_roles_user_validate($form, &$form_state, &$account, $category) {
+function uc_roles_user_validate($form, &$form_state) {
   $edit = $form_state['values'];
   $account = $form_state['build_info']['args'][0];
-  $category = $form_state['build_info']['args'][1];
+  if (isset($form_state['build_info']['args'][1])) {
+    $category = $form_state['build_info']['args'][1];
+  }
+  else {
+    // user_profile_form() has a default value for $category.
+    $category = 'account';
+  }
 
   // Validate the amount of time for the expiration.
   if ($edit['new_role'] && $category == 'account') {
@@ -378,19 +382,21 @@ function uc_roles_user_validate($form, &$form_state, &$account, $category) {
   }
 
   // Validate adjusted expirations.
-  foreach ((array)$edit['table'] as $rid => $value) {
-    // We don't validate if nothing was actually selected, the role, or the
-    // expiration is removed.
-    if ($value['qty'] == 0 || $value['remove'] == 1 || !$edit['roles'][$rid]) {
-      continue;
-    }
+  if (isset($edit['table'])) {
+    foreach ((array)$edit['table'] as $rid => $value) {
+      // We don't validate if nothing was actually selected, the role, or the
+      // expiration is removed.
+      if ($value['qty'] == 0 || $value['remove'] == 1 || !$edit['roles'][$rid]) {
+        continue;
+      }
 
-    $qty = $value['qty'];
-    $qty *= $value['polarity'] == 'add' ? 1 : -1;
+      $qty = $value['qty'];
+      $qty *= $value['polarity'] == 'add' ? 1 : -1;
 
-    $new_expiration = _uc_roles_get_expiration($qty, $value['granularity'], $value['expiration']);
-    if (REQUEST_TIME > $new_expiration) {
-      form_set_error('qty', t("The new expiration date, %date, has already occurred.", array('%date' => format_date($new_expiration, 'short'))));
+      $new_expiration = _uc_roles_get_expiration($qty, $value['granularity'], $value['expiration']);
+      if (REQUEST_TIME > $new_expiration) {
+        form_set_error('qty', t("The new expiration date, %date, has already occurred.", array('%date' => format_date($new_expiration, 'short'))));
+      }
     }
   }
 }
@@ -410,10 +416,9 @@ function uc_roles_user_presave(&$edit, $account, $category) {
     return;
   }
 
-  // If a new temporary role is added.
-  // Grant a new role.
-  if (isset($edit['new_role']) && $category == 'account') {
-    // Save our role info, but don't save the user; user.module will do it.
+  // Grant a new role if a new temporary role is added.
+  if (isset($edit['new_role']) && $edit['new_role'] && $category == 'account') {
+    // Save our role info, but don't save the user; user.module will do that.
     uc_roles_grant($account, $edit['new_role_add'], _uc_roles_get_expiration($edit['new_role_add_qty'], $edit['new_role_add_granularity']), FALSE);
 
     // Push in values so user.module will save in the roles.
