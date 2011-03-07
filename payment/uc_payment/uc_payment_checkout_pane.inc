@@ -40,7 +40,9 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
       }
 
       if (count($options)) {
-        if (isset($form_state['values']) && in_array($form_state['values']['panes']['payment']['payment_method'], array_keys($options))) {
+        if (isset($form_state['values'])  &&
+          isset($form_state['values']['panes']['payment']['payment_method']) &&
+          in_array($form_state['values']['panes']['payment']['payment_method'], array_keys($options))) {
           $default = $form_state['values']['panes']['payment']['payment_method'];
         }
         else {
