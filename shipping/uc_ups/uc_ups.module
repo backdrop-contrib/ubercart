@@ -404,7 +404,7 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
         $package_schema .=   "<Height>" . number_format($package->height * $length_factor, 2, '.', '') . "</Height>";
         $package_schema .= "</Dimensions>";
       }
-      $size = $package->length * $length_factor + 2 * $length_factor * ($package->width + $package->height);
+
       $weight = max(1, $package->weight * $weight_factor);
       $shipment_weight += $weight;
       $package_schema .=   "<PackageWeight>";
@@ -414,9 +414,12 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
       $package_schema .=     "</UnitOfMeasurement>";
       $package_schema .=     "<Weight>" . number_format($weight, 1, '.', '') . "</Weight>";
       $package_schema .=   "</PackageWeight>";
+
+      $size = $package->length * $length_factor + 2 * $length_factor * ($package->width + $package->height);
       if ($size > 130 && $size <= 165) {
         $package_schema .= "<LargePackageIndicator/>";
       }
+
       if (variable_get('uc_ups_insurance', TRUE)) {
         $package_schema .= "<PackageServiceOptions>";
         $package_schema .=   "<InsuredValue>";
@@ -789,6 +792,7 @@ function uc_ups_quote($products, $details, $method) {
       $product->width = $temp->width;
       $product->height = $temp->height;
       $product->length_units = $temp->length_units;
+      $product->ups['pkg_type'] = isset($temp->ups) ? $temp->ups['pkg_type'] : '02';
 
       $weight = $product->weight * $product->qty * uc_weight_conversion($product->weight_units, 'lb');
 
@@ -839,17 +843,30 @@ function uc_ups_quote($products, $details, $method) {
           $key = $last_key;
         }
       }
-      if (!$product->pkg_qty) {
+      if (!isset($product->pkg_qty) || !$product->pkg_qty) {
         $product->pkg_qty = 1;
       }
       $num_of_pkgs = (int)($product->qty / $product->pkg_qty);
+
+      // Grab some product properties directly from the (cached) product
+      // data.  They are not normally available here because the $product
+      // object is being read out of the $order object rather than from
+      // the database, and the $order object only carries around a limited
+      // number of product properties.
+      $temp = node_load($product->nid);
+      $product->length = $temp->length;
+      $product->width = $temp->width;
+      $product->height = $temp->height;
+      $product->length_units = $temp->length_units;
+      $product->ups['pkg_type'] = isset($temp->ups) ? $temp->ups['pkg_type'] : '02';
+
       if ($num_of_pkgs) {
         $package = clone $product;
         $package->description = $product->model;
         $package->weight = $product->weight * $product->pkg_qty;
         $package->price = $product->price * $product->pkg_qty;
         $package->qty = $num_of_pkgs;
-        $package->pkg_type = $product->ups ? $product->ups['pkg_type'] : '02';
+        $package->pkg_type = $product->ups['pkg_type'];
         if ($package->weight) {
           $packages[$key][] = $package;
         }
@@ -861,7 +878,7 @@ function uc_ups_quote($products, $details, $method) {
         $package->weight = $product->weight * $remaining_qty;
         $package->price = $product->price * $remaining_qty;
         $package->qty = 1;
-        $package->pkg_type = $product->ups ? $product->ups['pkg_type'] : '02';
+        $package->pkg_type = $product->ups['pkg_type'];
         if ($package->weight) {
           $packages[$key][] = $package;
         }
@@ -934,17 +951,19 @@ function uc_ups_quote($products, $details, $method) {
   // Merge debug data into $quotes.  This is necessary because
   // $debug_data is not sortable by a 'rate' key, so it has to be
   // kept separate from the $quotes data until this point.
-  foreach ($debug_data as $key => $data) {
-    if (isset($quotes[$key])) {
-      // This is debug data for successful quotes
-      $quotes[$key]['debug'] = $debug_data[$key]['debug'];
-      if (isset($debug_data[$key]['error'])) {
-        $quotes[$key]['error'] = $debug_data[$key]['error'];
+  if (isset($debug_data)) {
+    foreach ($debug_data as $key => $data) {
+      if (isset($quotes[$key])) {
+        // This is debug data for successful quotes
+        $quotes[$key]['debug'] = $debug_data[$key]['debug'];
+        if (isset($debug_data[$key]['error'])) {
+          $quotes[$key]['error'] = $debug_data[$key]['error'];
+        }
       }
-    }
-    else {
-      // This is debug data for quotes that returned error responses from UPS
-      $quotes[$key] = $debug_data[$key];
+      else {
+        // This is debug data for quotes that returned error responses from UPS
+        $quotes[$key] = $debug_data[$key];
+      }
     }
   }
 

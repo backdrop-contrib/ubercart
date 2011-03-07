@@ -286,7 +286,7 @@ function uc_usps_quote($products, $details, $method) {
   $connection_url = 'http://production.shippingapis.com/ShippingAPI.dll';
 
   // Initialize $debug_data to prevent PHP notices here and in uc_quote.
-  $debug_data = array('debug' => NULL, 'error' => NULL);
+  $debug_data = array('debug' => NULL, 'error' => array());
   $addresses = array(variable_get('uc_quote_store_default_address', new UcAddress()));
   $packages = _uc_usps_package_products($products, $addresses);
   if (!count($packages)) {
@@ -346,7 +346,7 @@ function uc_usps_quote($products, $details, $method) {
     if (isset($response->Package)) {
       foreach ($response->Package as $package) {
         if (isset($package->Error)) {
-          $debug_data['error'] .= (string)$package->Error[0]->Description . '<br />';
+          $debug_data['error'][] = (string)$package->Error[0]->Description . '<br />';
         }
         else {
           if (strpos($method['id'], 'intl')) {
@@ -414,7 +414,8 @@ function uc_usps_quote($products, $details, $method) {
   // Merge debug data into $services.  This is necessary because
   // $debug_data is not sortable by a 'rate' key, so it has to be
   // kept separate from the $services data until this point.
-  if (isset($debug_data['debug']) || isset($debug_data['error'])) {
+  if (isset($debug_data['debug']) || 
+      (isset($debug_data['error']) && count($debug_data['error']))) {
     $services['data'] = $debug_data;
   }
   
@@ -661,6 +662,19 @@ function _uc_usps_package_products($products, &$addresses) {
           $packages[$key] = array(0 => _uc_usps_new_package());
         }
       }
+
+      // Grab some product properties directly from the (cached) product
+      // data.  They are not normally available here because the $product
+      // object is being read out of the $order object rather than from
+      // the database, and the $order object only carries around a limited
+      // number of product properties.
+      $temp = node_load($product->nid);
+      $product->length = $temp->length;
+      $product->width = $temp->width;
+      $product->height = $temp->height;
+      $product->length_units = $temp->length_units;
+      $product->usps['container'] = $temp->usps['container'];
+
       $packages[$key][0]->price += $product->price * $product->qty;
       $packages[$key][0]->weight += $product->weight * $product->qty * uc_weight_conversion($product->weight_units, 'lb');
     }
@@ -719,6 +733,19 @@ function _uc_usps_package_products($products, &$addresses) {
             $package->ounces = $weight - $package->pounds * 16;
           break;
         }
+
+        // Grab some product properties directly from the (cached) product
+        // data.  They are not normally available here because the $product
+        // object is being read out of the $order object rather than from
+        // the database, and the $order object only carries around a limited
+        // number of product properties.
+        $temp = node_load($product->nid);
+        $product->length = $temp->length;
+        $product->width = $temp->width;
+        $product->height = $temp->height;
+        $product->length_units = $temp->length_units;
+        $product->usps['container'] = $temp->usps['container'];
+
         $package->container = $product->usps['container'];
         $length_conversion = uc_length_conversion($product->length_units, 'in');
         $package->length = max($product->length, $product->width) * $length_conversion;
