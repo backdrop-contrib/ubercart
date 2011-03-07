@@ -779,6 +779,17 @@ function uc_ups_quote($products, $details, $method) {
         $package = _uc_ups_new_package();
       }
 
+      // Grab some product properties directly from the (cached) product
+      // data.  They are not normally available here because the $product
+      // object is being read out of the $order object rather than from
+      // the database, and the $order object only carries around a limited
+      // number of product properties.
+      $temp = node_load($product->nid);
+      $product->length = $temp->length;
+      $product->width = $temp->width;
+      $product->height = $temp->height;
+      $product->length_units = $temp->length_units;
+
       $weight = $product->weight * $product->qty * uc_weight_conversion($product->weight_units, 'lb');
 
       $package->weight += $weight;
@@ -873,16 +884,16 @@ function uc_ups_quote($products, $details, $method) {
         'data' => $request,
       ));
       if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
-        if (!isset($quotes[$usps_service]['debug'])) {
-          $quotes[$usps_service]['debug'] = '';
+        if (!isset($debug_data[$ups_service]['debug'])) {
+          $debug_data[$ups_service]['debug'] = '';
         }
-        $quotes[$ups_service]['debug'] .= htmlentities($request) . ' <br /><br /> ' . htmlentities($resp->data);
+        $debug_data[$ups_service]['debug'] .= htmlentities($request) . ' <br /><br /> ' . htmlentities($resp->data);
       }
       $response = new SimpleXMLElement($resp->data);
       if (isset($response->Response->Error)) {
         foreach ($response->Response->Error as $error) {
           if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
-            $quotes[$ups_service]['error'][] = (string)$error->ErrorSeverity . ' ' . (string)$error->ErrorCode . ': ' . (string)$error->ErrorDescription;
+            $debug_data[$ups_service]['error'][] = (string)$error->ErrorSeverity . ' ' . (string)$error->ErrorCode . ': ' . (string)$error->ErrorDescription;
           }
           if (strpos((string)$error->ErrorSeverity, 'Hard') !== FALSE) {
             // All or nothing quote. If some products can't be shipped by
@@ -909,12 +920,31 @@ function uc_ups_quote($products, $details, $method) {
       }
     }
   }
+  // Sort quotes by price, lowest to highest.
   uasort($quotes, 'uc_quote_price_sort');
+
   foreach ($quotes as $key => $quote) {
     if (isset($quote['rate'])) {
       $quotes[$key]['rate'] = $quote['rate'];
       $quotes[$key]['label'] = $method['quote']['accessorials'][$key];
       $quotes[$key]['option_label'] = theme('uc_ups_option_label', array('service' => $method['quote']['accessorials'][$key]));
+    }
+  }
+
+  // Merge debug data into $quotes.  This is necessary because
+  // $debug_data is not sortable by a 'rate' key, so it has to be
+  // kept separate from the $quotes data until this point.
+  foreach ($debug_data as $key => $data) {
+    if (isset($quotes[$key])) {
+      // This is debug data for successful quotes
+      $quotes[$key]['debug'] = $debug_data[$key]['debug'];
+      if (isset($debug_data[$key]['error'])) {
+        $quotes[$key]['error'] = $debug_data[$key]['error'];
+      }
+    }
+    else {
+      // This is debug data for quotes that returned error responses from UPS
+      $quotes[$key] = $debug_data[$key];
     }
   }
 

@@ -285,7 +285,8 @@ function uc_usps_quote($products, $details, $method) {
 
   $connection_url = 'http://production.shippingapis.com/ShippingAPI.dll';
 
-  $services = array('data' => array('debug' => NULL, 'error' => NULL));
+  // Initialize $debug_data to prevent PHP notices here and in uc_quote.
+  $debug_data = array('debug' => NULL, 'error' => NULL);
   $addresses = array(variable_get('uc_quote_store_default_address', new UcAddress()));
   $packages = _uc_usps_package_products($products, $addresses);
   if (!count($packages)) {
@@ -306,7 +307,7 @@ function uc_usps_quote($products, $details, $method) {
     }
 
     if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
-      $services['data']['debug'] .= htmlentities(urldecode($request)) . "<br />\n";
+      $debug_data['debug'] .= htmlentities(urldecode($request)) . "<br />\n";
     }
 
     $result = drupal_http_request($connection_url, array(
@@ -315,7 +316,7 @@ function uc_usps_quote($products, $details, $method) {
     ));
 
     if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
-      $services['data']['debug'] .= htmlentities($result->data) . "<br />\n";
+      $debug_data['debug'] .= htmlentities($result->data) . "<br />\n";
     }
 
     $rate_type = variable_get('uc_usps_online_rates', FALSE);
@@ -345,7 +346,7 @@ function uc_usps_quote($products, $details, $method) {
     if (isset($response->Package)) {
       foreach ($response->Package as $package) {
         if (isset($package->Error)) {
-          $services['data']['error'] .= (string)$package->Error[0]->Description . '<br />';
+          $debug_data['error'] .= (string)$package->Error[0]->Description . '<br />';
         }
         else {
           if (strpos($method['id'], 'intl')) {
@@ -397,7 +398,7 @@ function uc_usps_quote($products, $details, $method) {
   $method_services = 'uc_' . $method['id'] . '_services';
   $usps_services = array_filter(variable_get($method_services, array_keys(call_user_func('_' . $method_services))));
   foreach ($services as $service => $quote) {
-    if ($service != 'data' && !in_array($service, $usps_services)) {
+    if (!in_array($service, $usps_services)) {
       unset($services[$service]);
     }
   }
@@ -410,6 +411,13 @@ function uc_usps_quote($products, $details, $method) {
 
   uasort($services, 'uc_quote_price_sort');
 
+  // Merge debug data into $services.  This is necessary because
+  // $debug_data is not sortable by a 'rate' key, so it has to be
+  // kept separate from the $services data until this point.
+  if (isset($debug_data['debug']) || isset($debug_data['error'])) {
+    $services['data'] = $debug_data;
+  }
+  
   return $services;
 }
 
@@ -627,6 +635,7 @@ function _uc_usps_package_products($products, &$addresses) {
   $last_key = 0;
   $packages = array();
   if (variable_get('uc_usps_all_in_one', TRUE) && count($products) > 1) {
+    $packages[$last_key] = array(0 => _uc_usps_new_package());
     foreach ($products as $product) {
       if ($product->nid) {
         // Packages are grouped by the address from which they will be
@@ -649,7 +658,7 @@ function _uc_usps_package_products($products, &$addresses) {
           // $addresses.
           $addresses[++$last_key] = $address;
           $key = $last_key;
-          $packages[$key][0] = new stdClass();
+          $packages[$key] = array(0 => _uc_usps_new_package());
         }
       }
       $packages[$key][0]->price += $product->price * $product->qty;
@@ -889,4 +898,28 @@ function _uc_usps_intl_services() {
     7 => t('Global Express Guaranteed Non-Document Non-Rectangular'),
     1 => t('Express Mail International (EMS)'),
   );
+}
+
+/**
+ * Pseudo-constructor to set default values of a package.
+ */
+function _uc_usps_new_package() {
+  $package = new stdClass();
+
+  $package->price = 0;
+  $package->qty = 1;
+  $package->pounds = 0;
+  $package->ounces = 0;
+  $package->container = 0;
+  $package->size = 0;
+  $package->machinable = TRUE;
+
+  $package->length = 0;
+  $package->width = 0;
+  $package->height = 0;
+
+//  $package->length_units = 'in';
+//  $package->weight_units = 'lb';
+
+  return $package;
 }
