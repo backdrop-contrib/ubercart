@@ -109,7 +109,7 @@ function uc_reports_customers() {
       array('data' => $total_revenue, 'nowrap' => 'nowrap'),
       array('data' => $average_revenue, 'nowrap' => 'nowrap'),
     );
-    $csv_rows[] = array($customer_number, $customer_order_name, $customer_name, $orders, $products, $total_revenue, $average_revenue);
+    $csv_rows[] = array($customer_number, $customer_order_name, $customer_name, $orders, $products, $customer['total'], $customer['average']);
   }
   if (empty($rows)) {
     $rows[] = array(array('data' => t('No customers found'), 'colspan' => count($header)));
@@ -216,10 +216,10 @@ function uc_reports_products() {
     $product_csv = $product['title'];
     $sold_cell = (empty($product['sold'])) ? 0 : $product['sold'];
     $sold_csv = $sold_cell;
-    $revenue_cell = uc_currency_format((empty($product['revenue'])) ? 0 : $product['revenue']);
-    $revenue_csv = $revenue_cell;
-    $gross_cell = uc_currency_format((empty($product['gross'])) ? 0 : $product['gross']);
-    $gross_csv = $gross_cell;
+    $revenue_csv = (empty($product['revenue'])) ? 0 : $product['revenue'];
+    $revenue_cell = uc_currency_format($revenue_csv);
+    $gross_csv = (empty($product['gross'])) ? 0 : $product['gross'];
+    $gross_cell = uc_currency_format($gross_csv);
 
     $row = array(
       'data' => array(
@@ -252,14 +252,15 @@ function uc_reports_products() {
         $gross = db_query("SELECT (SUM(p.price * p.qty) - SUM(p.cost * p.qty)) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid", array(':statuses' => $order_statuses, ':model' => $model, ':nid' => $product['nid']))->fetchField();
         $breakdown_product = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$model";
         $product_csv = "     $model";
-        $breakdown_sold = ((!empty($sold)) ? $sold : 0);
-        $sold_csv = ((!empty($sold)) ? $sold : 0);
 
-        $breakdown_revenue = theme('uc_price', array('price' => !empty($revenue) ? $revenue : 0));
-        $breakdown_gross = theme('uc_price', array('price' => !empty($gross) ? $gross : 0));
+        $sold_csv = !empty($sold) ? $sold : 0;
+        $breakdown_sold = $sold_csv;
 
-        $revenue_csv = uc_currency_format(!empty($revenue) ? $revenue : 0);
-        $gross_csv = uc_currency_format(!empty($gross) ? $gross : 0);
+        $revenue_csv = !empty($revenue) ? $revenue : 0;
+        $breakdown_revenue = theme('uc_price', array('price' => $revenue_csv));
+
+        $gross_csv = !empty($gross) ? $gross : 0;
+        $breakdown_gross = theme('uc_price', array('price' => $gross_csv));
 
         $row = array(
           'data' => array(
@@ -445,25 +446,28 @@ function uc_reports_products_custom() {
     $sold_cell = (empty($product['sold'])) ? 0 : $product['sold'];
     $sold_csv = $sold_cell;
     $revenue_cell = uc_currency_format((empty($product['revenue'])) ? 0 : $product['revenue']);
-    $revenue_csv = $revenue_cell;
+    $revenue_csv = (empty($product['revenue'])) ? 0 : $product['revenue'];
     $gross_cell = uc_currency_format((empty($product['gross'])) ? 0 : $product['gross']);
-    $gross_csv = $gross_cell;
+    $gross_csv = (empty($product['gross'])) ? 0 : $product['gross'];
 
     if (module_exists('uc_attribute')) {
       $breakdown_product = $breakdown_sold = $breakdown_revenue = $breakdown_gross = '';
 
       foreach (_uc_reports_product_get_skus($product['nid']) as $model) {  // was $models
         $sold = db_query("SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid AND o.created >= :start AND o.created <= :end", array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date'], ':model' => $model, ':nid' => $product['nid']))->fetchField();
+        $sold = empty($sold) ? 0 : $sold;
         $revenue = db_query("SELECT SUM(p.price * p.qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid AND o.created >= :start AND o.created <= :end", array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date'], ':model' => $model, ':nid' => $product['nid']))->fetchField();
+        $revenue = empty($revenue) ? 0 : $revenue;
         $gross = db_query("SELECT (SUM(p.price * p.qty) - SUM(p.cost * p.qty)) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid AND o.created >= :start AND o.created <= :end", array(':statuses' => $order_statuses, ':start' => $args['start_date'], ':end' => $args['end_date'], ':model' => $model, ':nid' => $product['nid']))->fetchField();
+        $gross = empty($gross) ? 0 : $gross;
         $breakdown_product .= "<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$model";
         $product_csv .= "\n     $model";
-        $breakdown_sold .= "<br />" . ((!empty($sold)) ? $sold : 0);
-        $sold_csv .= "\n     " . ((!empty($sold)) ? $sold : 0);
-        $breakdown_revenue .= "<br />" . (uc_currency_format((!empty($revenue)) ? $revenue : 0));
-        $revenue_csv .= "\n     " . (uc_currency_format((!empty($revenue)) ? $revenue : 0));
-        $breakdown_gross .= "<br />" . (uc_currency_format((!empty($gross)) ? $gross : 0));
-        $gross_csv .= "\n     " . (uc_currency_format((!empty($gross)) ? $gross : 0));
+        $breakdown_sold .= "<br />" . $sold;
+        $sold_csv .= "\n     " . $sold;
+        $breakdown_revenue .= "<br />" . uc_currency_format($revenue);
+        $revenue_csv .= "\n     " . $revenue;
+        $breakdown_gross .= "<br />" . uc_currency_format($gross);
+        $gross_csv .= "\n     " . $gross;
       }
       $product_cell = $product_cell . $breakdown_product;
       $sold_cell = '<strong>' . $sold_cell . '</strong>' . $breakdown_sold;
@@ -909,8 +913,8 @@ function uc_reports_sales_year() {
     $csv_rows[] = array(
       gmdate('M Y', $month_start),
       $month_sales['total'],
-      uc_currency_format($month_sales['income']),
-      uc_currency_format($month_average),
+      $month_sales['income'],
+      $month_average,
     );
   }
 
@@ -941,8 +945,8 @@ function uc_reports_sales_year() {
   $csv_rows[] = array(
     t('Total @year', array('@year' => $year)),
     $year_sales['total'],
-    uc_currency_format($year_sales['income']),
-    uc_currency_format($year_average),
+    $year_sales['income'],
+    $year_average,
   );
 
   // Cache the CSV export.
@@ -1108,7 +1112,7 @@ function uc_reports_sales_custom() {
       $date,
       empty($order_csv) ? '0' : $order_csv,
       empty($product_csv) ? '0' : $product_csv,
-      uc_currency_format($revenue_count),
+      $revenue_count,
     );
   }
 
@@ -1130,7 +1134,7 @@ function uc_reports_sales_custom() {
     t('Total'),
     $order_total,
     $product_total,
-    uc_currency_format($revenue_total),
+    $revenue_total,
   );
 
   // Cache the CSV export.
