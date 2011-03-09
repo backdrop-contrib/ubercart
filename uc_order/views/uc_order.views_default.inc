@@ -6,7 +6,7 @@
  */
 
 /**
- *
+ * Implements hook_views_default_views().
  */
 function uc_order_views_default_views() {
   $view = new view;
