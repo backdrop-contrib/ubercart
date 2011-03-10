@@ -111,4 +111,3 @@ function _coder_review_uc3x_function_warning() {
     '#link' => 'http://drupal.org/node/750784',
   );
 }
-

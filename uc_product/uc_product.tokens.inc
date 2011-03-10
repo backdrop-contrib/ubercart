@@ -149,4 +149,3 @@ function uc_product_tokens($type, $tokens, $data = array(), $options = array()) 
     return $values;
   }
 }
-

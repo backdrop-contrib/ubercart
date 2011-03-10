@@ -38,4 +38,3 @@ function uc_file_default_rules_configuration() {
 
   return $configs;
 }
-
