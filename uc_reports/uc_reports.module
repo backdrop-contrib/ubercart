@@ -71,7 +71,7 @@ function uc_reports_help($path, $arg) {
 
     // Include the statuses/offset as needed.
     if ($include_offset) {
-      $output .= "<p>" . t('All sales reports are <b>GMT !offset</b> (Default site timezone)', array('!offset' => sprintf('%+05d', variable_get('date_default_timezone', 0) / 36))) . "</p>";
+      $output .= "<p>" . t('All reports are your local timezone, which is <b>!timezone</b>.', array('!timezone' => date_default_timezone_get())) . "</p>";
     }
     if ($include_statuses) {
       $statuses = array();
@@ -280,7 +280,7 @@ function _uc_reports_get_csv($report_id, $user_id) {
  *
  * @param $time
  *   A UNIX time stamp representing the time in which to get sales data.
- * @param $period
+ * @param $interval
  *   The amount of time over which to count sales (e.g. [1] day, month, year).
  *
  * @return
@@ -290,19 +290,9 @@ function _uc_reports_get_csv($report_id, $user_id) {
  *   - total: The total number of orders completed during the time period.
  *   - average: The average revenue produced for each order.
  */
-function _uc_reports_get_sales($time, $period = 'day') {
-  $timezone = _uc_reports_timezone_offset();
-
-  // Get the current date markers.
-  $date = array(
-    'day' => format_date($time, 'custom', 'j', 0),
-    'month' => format_date($time, 'custom', 'n', 0),
-    'year' => format_date($time, 'custom', 'Y', 0),
-  );
-
+function _uc_reports_get_sales($start, $interval = 'day') {
   // Add one to the granularity chosen, and use it to calc the new time.
-  $date[$period] += 1;
-  $new_time = gmmktime(0, 0, 0, $date['month'], $date['day'], $date['year']);
+  $end = strtotime('+1 ' . $interval, $start) - 1;
 
   // Set up the default SQL for getting orders with the proper status
   // within this period.
@@ -310,13 +300,13 @@ function _uc_reports_get_sales($time, $period = 'day') {
 
   // Get the total value of the orders.
   $output = array('income' => 0);
-  $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN (:statuses) AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $time, ':end' => $new_time));
+  $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN (:statuses) AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $start, ':end' => $end));
   while ($order = $orders->fetchObject()) {
     $output['income'] += $order->order_total;
   }
 
   // Get the total amount of orders.
-  $count = db_query("SELECT COUNT(o.order_total) FROM {uc_orders} as o WHERE o.order_status IN (:statuses) AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $time, ':end' => $new_time))->fetchField();
+  $count = db_query("SELECT COUNT(o.order_total) FROM {uc_orders} as o WHERE o.order_status IN (:statuses) AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $start, ':end' => $end))->fetchField();
   $output['total'] = $count;
 
   // Average for this period.
@@ -335,13 +325,6 @@ function _uc_reports_order_statuses() {
 }
 
 /**
- * Returns the sitewide timezone offset for use in reports.
- */
-function _uc_reports_timezone_offset() {
-  return variable_get('date_default_timezone', 0);
-}
-
-/**
  * Returns a list of timespans for subreports over that report's time span.
  *
  * To be used with a given time span for a report and specified interval for
@@ -351,7 +334,7 @@ function _uc_reports_timezone_offset() {
  *   A UNIX time stamp representing the time to start the report.
  * @param $end
  *   A UNIX time stamp representing the time to end the report.
- * @param $granularity
+ * @param $interval
  *   Text representing the amount of time for the subreport (e.g. 'day', 'week').
  *
  * @return
@@ -359,51 +342,18 @@ function _uc_reports_timezone_offset() {
  *   - start: The starting point of the sub report.
  *   - end: The ending point of the sub report.
  */
-function _uc_reports_subreport_intervals($report_start, $report_end, $interval) {
+function _uc_reports_subreport_intervals($start, $report_end, $interval) {
   $subreports = array();
 
-  for ($start = $report_start, $end = _uc_reports_end_interval($report_start, $interval); $start < $report_end; $start = $end + 1, $end = _uc_reports_end_interval($start, $interval)) {
+  while ($start < $report_end) {
+    $end = strtotime('+1 ' . $interval, $start) - 1;
     $subreports[] = array(
       'start' => $start,
-      'end' => $end > $report_end ? $report_end : $end,
+      'end' => min($end, $report_end),
     );
+
+    $start = $end + 1;
   }
 
   return $subreports;
-}
-
-/**
- * Given a timestamp and a length of time, return the offset timestamp.
- *
- * @param $time
- *   A UNIX timestamp.
- * @param $interval
- *   The text representing the amount of time (e.g. 'day', 'week').
- *
- * @return
- *   The offset UNIX timestamp.
- */
-function _uc_reports_end_interval($time, $interval = 'month') {
-  if (empty($time)) {
-    $time = REQUEST_TIME;
-  }
-
-  $temp = strtotime('+1 ' . $interval, $time) - 1;
-
-  switch ($interval) {
-    case 'day':
-      $temp = gmmktime(0, 0, -1, gmdate('n', $time), gmdate('j', $time) + 1, gmdate('Y', $time));
-      break;
-    case 'week':
-      $temp = gmmktime(0, 0, -1, gmdate('n', $time), gmdate('j', $time) + 7, gmdate('Y', $time));
-      break;
-    case 'month':
-      $temp = gmmktime(23, 59, 59, gmdate('n', $time) + 1, 0, gmdate('Y', $time));
-      break;
-    case 'year':
-      $temp = gmmktime(23, 59, 59, gmdate('n', $time), 0, gmdate('Y', $time) + 1);
-      break;
-  }
-
-  return $temp;
 }
