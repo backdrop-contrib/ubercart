@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Helper functions for upgrade from Ubercart 2.x to Ubercart 3.x.
+ */
+
+/**
  * Base helper function to convert CA predicates to Rules configurations.
  */
 function ca_convert_predicate($predicate) {
@@ -112,7 +117,7 @@ function ca_add_conditions(&$component, $conditions) {
         }
 
         if ($condition['#name'] == 'ca_condition_date' && $key == 'date') {
-          $settings['date'] = $settings['date']['year'] . '/' . $settings['date']['month'] . '/'. $settings['date']['day'];
+          $settings['date'] = $settings['date']['year'] . '/' . $settings['date']['month'] . '/' . $settings['date']['day'];
         }
         else {
           $settings[$key] = $value;

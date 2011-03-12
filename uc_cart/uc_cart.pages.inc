@@ -456,7 +456,7 @@ function theme_uc_cart_checkout_review($variables) {
  * Gives customers the option to finish checkout or go revise their information.
  *
  * @see uc_cart_checkout_review_form_back()
- * @see uc-cart_checkout_review_form_submit()
+ * @see uc_cart_checkout_review_form_submit()
  * @ingroup forms
  */
 function uc_cart_checkout_review_form($form, &$form_state) {

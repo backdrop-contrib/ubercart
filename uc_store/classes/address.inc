@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Utility class definition.
+ */
+
+/**
  * Defines an object to hold Ubercart mailing address information.
  */
 class UcAddress {

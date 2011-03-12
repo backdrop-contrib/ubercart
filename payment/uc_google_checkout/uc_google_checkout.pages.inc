@@ -10,7 +10,7 @@ function uc_google_checkout_callback() {
     $request = '<?xml version="1.0" encoding="UTF-8"?>';
     $request .= "\n";
     $request .= '<notification-history-request xmlns="http://checkout.google.com/schema/2">';
-    $request .= '<serial-number>'. check_plain($_POST['serial-number']) .'</serial-number>';
+    $request .= '<serial-number>' . check_plain($_POST['serial-number']) . '</serial-number>';
     $request .= '</notification-history-request>';
 
     if ($response = uc_google_checkout_send_request('reports', $request)) {
@@ -109,9 +109,9 @@ function uc_google_checkout_merchant_calculation() {
   $results = '';
   foreach ($quote_data as $method_id => $options) {
     foreach ($options as $accsrl => $data) {
-      $results .= '<result shipping-name="'. $methods[$method_id]['quote']['accessorials'][$accsrl] .'" address-id="'. $address['id'] .'">';
+      $results .= '<result shipping-name="' . $methods[$method_id]['quote']['accessorials'][$accsrl] . '" address-id="' . $address['id'] . '">';
 
-      $results .= '<shipping-rate currency="'. variable_get('uc_currency_code', 'USD') .'">'. $data['rate'] .'</shipping-rate>';
+      $results .= '<shipping-rate currency="' . variable_get('uc_currency_code', 'USD') . '">' . $data['rate'] . '</shipping-rate>';
       $results .= '<shippable>true</shippable>';
 
       $results .= '</result>';

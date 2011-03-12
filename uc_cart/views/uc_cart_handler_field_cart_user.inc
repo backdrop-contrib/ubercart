@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Views field handler.
+ */
+
+/**
  * Field handler to provide simple renderer that allows linking to a user
  * from a cart id.
  */

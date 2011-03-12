@@ -171,11 +171,11 @@ function _uc_file_download($fid, $key) {
   // Error messages for various failed download states.
   $admin_message = t('Please contact the site administrator if this message has been received in error.');
   $error_messages = array(
-    UC_FILE_ERROR_NOT_A_FILE              => t('The file you requested does not exist. '),
-    UC_FILE_ERROR_TOO_MANY_BOGUS_REQUESTS => t('You have attempted to download an incorrect file URL too many times. '),
+    UC_FILE_ERROR_NOT_A_FILE              => t('The file you requested does not exist.'),
+    UC_FILE_ERROR_TOO_MANY_BOGUS_REQUESTS => t('You have attempted to download an incorrect file URL too many times.'),
     UC_FILE_ERROR_INVALID_DOWNLOAD        => t("The following URL is not a valid download link. "),
-    UC_FILE_ERROR_TOO_MANY_LOCATIONS      => t('You have downloaded this file from too many different locations. '),
-    UC_FILE_ERROR_TOO_MANY_DOWNLOADS      => t('You have reached the download limit for this file. '),
+    UC_FILE_ERROR_TOO_MANY_LOCATIONS      => t('You have downloaded this file from too many different locations.'),
+    UC_FILE_ERROR_TOO_MANY_DOWNLOADS      => t('You have reached the download limit for this file.'),
     UC_FILE_ERROR_EXPIRED                 => t("This file download has expired. "),
     UC_FILE_ERROR_HOOK_ERROR              => t("A hook denied your access to this file. "),
   );
@@ -217,7 +217,7 @@ function _uc_file_download_validate($file_download, &$user, $ip) {
   $request_cache = cache_get('uc_file_' . $ip);
   $requests = ($request_cache) ? $request_cache->data + 1 : 1;
 
-  $message_user = ($user->uid) ? t('The user %username ', array('%username' => format_username($user))) : t('The IP address %ip ', array('%ip' => $ip));
+  $message_user = ($user->uid) ? t('The user %username', array('%username' => format_username($user))) : t('The IP address %ip', array('%ip' => $ip));
 
   if ($requests > UC_FILE_REQUEST_LIMIT) {
     return UC_FILE_ERROR_TOO_MANY_BOGUS_REQUESTS;

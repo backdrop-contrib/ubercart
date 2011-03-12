@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Views hooks.
+ */
+
+/**
  * Implements hook_views_data().
  */
 function uc_cart_views_data() {

@@ -143,13 +143,13 @@ function hook_uc_file_action($op, $args) {
     case 'upload_validate':
       // Given a file path, function checks if file is valid JPEG.
       if(!_check_image($args['file_object']->uri)) {
-        form_set_error('upload',t('Uploaded file is not a valid JPEG'));
+        form_set_error('upload', t('Uploaded file is not a valid JPEG'));
       }
     break;
     case 'validate':
       if ($args['form_values']['action'] == 'uc_image_watermark_add_mark') {
         if (empty($args['form_values']['watermark_text'])) {
-          form_set_error('watermar_text',t('Must fill in text'));
+          form_set_error('watermar_text', t('Must fill in text'));
         }
       }
     break;
@@ -192,9 +192,9 @@ function hook_uc_file_action($op, $args) {
  */
 function hook_uc_file_transfer_alter($file_user, $ip, $fid, $file) {
   // For large files this might be too memory intensive.
-  $file_data = file_get_contents($file)." [insert personalized data]";
-  $new_file = tempnam(file_directory_temp(),'tmp');
-  file_put_contents($new_file,$file_data);
+  $file_data = file_get_contents($file) . " [insert personalized data]";
+  $new_file = tempnam(file_directory_temp(), 'tmp');
+  file_put_contents($new_file, $file_data);
   return $new_file;
 }
 

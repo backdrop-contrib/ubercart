@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Utility class definition.
+ */
+
+/**
  * Handles credit-card encryption.
  *
  * Trimmed down version of GPL class by Tony Marston.  Details available at

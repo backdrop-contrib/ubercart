@@ -15,7 +15,7 @@ class uc_order_handler_field_order_actions extends views_handler_field {
    */
   function render($values) {
     $order = uc_order_load($values->order_id);
-    return uc_order_actions($order, true);
+    return uc_order_actions($order, TRUE);
   }
 
   /**

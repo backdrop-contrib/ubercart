@@ -408,8 +408,8 @@ function uc_product_features($node, $fid = NULL, $pfid = NULL) {
   else {
     foreach ($features as $feature) {
       $operations = array(
-        l(t('edit'), 'node/'. $node->nid .'/edit/features/'. $feature->fid .'/'. $feature->pfid),
-        l(t('delete'), 'node/'. $node->nid .'/edit/features/'. $feature->fid .'/'. $feature->pfid .'/delete'),
+        l(t('edit'), 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid),
+        l(t('delete'), 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid . '/delete'),
       );
       $rows[] = array(
         'data' => array(

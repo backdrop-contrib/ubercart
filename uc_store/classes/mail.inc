@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Utility class definition.
+ */
+
+/**
  * Modifies the Drupal mail system to send HTML emails.
  */
 class UbercartMailSystem implements MailSystemInterface {
