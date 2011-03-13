@@ -59,7 +59,7 @@ function hook_uc_add_to_cart($nid, $qty, $data) {
  *
  * This is effectively the submit handler of any alterations to the Add to Cart
  * form. It provides a standard way to store the extra information so that it
- * can be used by hook_add_to_cart().
+ * can be used by hook_uc_add_to_cart().
  *
  * @param $form_values
  *   The values submitted to the Add to Cart form.
@@ -147,8 +147,8 @@ function hook_uc_cart_display($item) {
  * Products that are added to a customer's cart are referred as items until the
  * sale is completed. Just think of a grocery store having a bunch of products
  * on the shelves but putting a sign over the express lane saying "15 Items or
- * Less." hook_cart_item() is in charge of acting on items at various times like
- * when they are being added to a cart, saved, loaded, and checked out.
+ * Less." hook_uc_cart_item() is in charge of acting on items at various times
+ * like when they are being added to a cart, saved, loaded, and checked out.
  *
  * Here's the rationale for this hook: Products may change on a live site during
  * a price increase or change to attribute adjustments. If a user has previously
@@ -170,8 +170,9 @@ function hook_uc_cart_display($item) {
  *   - "can_ship" - Passed when a cart is being scanned for items that are not
  *       shippable items. Ubercart will bypass cart and checkout operations
  *       specifically related to tangible products if nothing in the cart is
- *       shippable. hook_cart_item functions that check for this op are expected
- *       to return TRUE or FALSE based on whether a product is shippable or not.
+ *       shippable. hook_uc_cart_item() functions that check for this op are
+ *       expected to return TRUE or FALSE based on whether a product is
+ *       shippable or not.
  *   - "remove" - Passed when an item is removed from the cart.
  *   - "checkout" - Passed for each item when the cart is being emptied for
  *       checkout.
@@ -193,8 +194,8 @@ function hook_uc_cart_item($op, &$item) {
  *
  * The default cart view page displays a table of the cart contents and a few
  * simple form features to manage the cart contents. For a module to add
- * information to this page, it must use hook_cart_pane to define extra panes
- * that may be ordered to appear above or below the default information.
+ * information to this page, it must use hook_uc_cart_pane() to define extra
+ * panes that may be ordered to appear above or below the default information.
  *
  * @param $items
  *   The current contents of the shopping cart.
@@ -300,7 +301,7 @@ function hook_uc_checkout_complete($order, $account) {
  * The checkout screen for Ubercart is a compilation of enabled checkout panes.
  * A checkout pane can be used to display order information, collect data from
  * the customer, or interact with other panes. Panes are defined in enabled
- * modules with hook_checkout_pane() and displayed and processed through
+ * modules with hook_uc_checkout_pane() and displayed and processed through
  * specified callback functions. Some of the settings for each pane are
  * configurable from the checkout settings page with defaults being specified
  * in the hooks.
