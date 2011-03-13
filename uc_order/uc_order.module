@@ -1411,16 +1411,12 @@ function uc_order_delete($order_id) {
  * Returns an array of comments or admin comments for an order.
  */
 function uc_order_comments_load($order_id, $admin = FALSE) {
-  $query = db_select(($admin) ? 'uc_order_admin_comments' : 'uc_order_comments', 'oc')
-    ->condition('order_id', $order_id);
-
-  $oc_order_id = $query->addField('oc', 'order_id');
-  $oc_comment_id = $query->addField('oc', 'comment_id');
-  $oc_created = $query->addField('oc', 'created');
-
-  $query->fields('oc');
-  $query->orderBy($oc_created)
-    ->orderBy($oc_comment_id);
+  $table = $admin ? 'uc_order_admin_comments' : 'uc_order_comments';
+  $query = db_select($table, 'oc')
+             ->fields('oc')
+             ->condition('order_id', $order_id)
+             ->orderBy('oc.created')
+             ->orderBy('oc.comment_id');
 
   if (!$admin) {
     $query->leftJoin('uc_order_statuses', 'os', 'oc.order_status = os.order_status_id');
