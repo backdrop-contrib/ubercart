@@ -161,9 +161,10 @@ function uc_shipping_new_package($form, &$form_state, $order) {
  */
 function theme_uc_shipping_new_package_fieldset($variables) {
   $fieldset = $variables['fieldset'];
+  drupal_add_js('misc/tableselect.js');
 
   $output = '';
-  $header = array(theme('table_select_header_cell'), t('SKU'), t('Title'), t('Qty'), t('Package'));
+  $header = array(array('class' => array('select-all')), t('SKU'), t('Title'), t('Qty'), t('Package'));
 
   $rows = array();
   foreach (element_children($fieldset) as $op_id) {
@@ -334,9 +335,10 @@ function uc_shipping_package_edit($form, &$form_state, $order, $package) {
  */
 function theme_uc_shipping_edit_package_fieldset($variables) {
   $fieldset = $variables['fieldset'];
+  drupal_add_js('misc/tableselect.js');
 
   $output = '';
-  $header = array(theme('table_select_header_cell'), t('SKU'), t('Title'), t('Qty'));
+  $header = array(array('class' => array('select-all')), t('SKU'), t('Title'), t('Qty'));
   $rows = array();
   foreach (element_children($fieldset) as $op_id) {
     $row = array();
@@ -590,9 +592,10 @@ function uc_shipping_new_shipment($form, &$form_state, $order) {
  */
 function theme_uc_shipping_new_shipment($variables) {
   $form = $variables['form'];
+  drupal_add_js('misc/tableselect.js');
 
   $output = '';
-  $header = array(theme('table_select_header_cell'), t('Package'), t('Products'), t('Weight'));
+  $header = array(array('class' => array('select-all')),t('Package'), t('Products'), t('Weight'));
   foreach (element_children($form['shipping_types']) as $shipping_type) {
     $rows = array();
     foreach (element_children($form['shipping_types'][$shipping_type]['packages']) as $package_id) {
