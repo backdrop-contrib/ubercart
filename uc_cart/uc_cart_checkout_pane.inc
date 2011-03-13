@@ -73,10 +73,7 @@ function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NUL
       }
 
       if (variable_get('uc_cart_email_validation', FALSE) && !$user->uid) {
-        $contents['primary_email_confirm'] = uc_textfield(t('Confirm e-mail address'), $_SESSION['email_match'] === FALSE ? '' : $email, TRUE, NULL, 64);
-        if ($_SESSION['email_match'] === FALSE) {
-          unset($_SESSION['email_match']);
-        }
+        $contents['primary_email_confirm'] = uc_textfield(t('Confirm e-mail address'), $email, TRUE, NULL, 64);
       }
 
       if ($user->uid == 0) {
@@ -142,7 +139,6 @@ function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NUL
       if (variable_get('uc_cart_email_validation', FALSE) && !$user->uid &&
           $pane['primary_email'] !== $pane['primary_email_confirm']) {
         form_set_error('panes][customer][primary_email_confirm', t('The e-mail address did not match.'));
-        $_SESSION['email_match'] = FALSE;
       }
 
       // Invalidate if an account already exists for this e-mail address, and the user is not logged into that account

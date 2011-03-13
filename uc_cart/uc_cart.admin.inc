@@ -13,7 +13,7 @@
  */
 function uc_cart_cart_settings_form($form, &$form_state) {
   $form['cart-settings'] = array('#type' => 'vertical_tabs');
-  
+
   $form['general'] = array(
     '#type' => 'fieldset',
     '#title' => t('Basic settings'),

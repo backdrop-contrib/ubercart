@@ -26,7 +26,7 @@ class uc_order_handler_field_order_cost extends uc_order_handler_field_money_amo
     $this->add_additional_fields();
     //do nothing else with the query, we'll be retrieving the information from the db
   }
- 
+
   /**
    *
    */
