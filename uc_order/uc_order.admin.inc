@@ -1021,10 +1021,12 @@ function uc_order_history($user) {
   $os_title = $query->addField('os', 'title');
   $op_products = $query->addExpression('SUM(op.qty)', 'products');
 
-  $query->groupBy($o_order_id)
-    ->groupBy($o_created)
-    ->groupBy($os_title)
-    ->groupBy($o_total)
+  $query->groupBy('o.order_id')
+    ->groupBy('o.created')
+    ->groupBy('os.title')
+    ->groupBy('o.order_total')
+    ->groupBy('o.order_status')
+    ->groupBy('o.uid')
     ->orderByHeader($header)
     ->limit(20);
   $query->setCountQuery($count_query);
