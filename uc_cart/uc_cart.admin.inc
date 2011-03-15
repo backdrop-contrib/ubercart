@@ -418,15 +418,16 @@ function uc_cart_checkout_panes_form($form, &$form_state) {
   foreach ($panes as $pane) {
     $form['panes'][$pane['id']]['uc_pane_' . $pane['id'] . '_enabled'] = array(
       '#type' => 'checkbox',
-      '#default_value' => $pane['enabled'],
+      '#default_value' => variable_get('uc_pane_' . $pane['id'] . '_enabled', TRUE),
     );
     $form['panes'][$pane['id']]['title'] = array(
       '#markup' => $pane['title'],
     );
     $form['panes'][$pane['id']]['uc_pane_' . $pane['id'] . '_weight'] = array(
       '#type' => 'weight',
-      '#default_value' => $pane['weight'],
+      '#default_value' => variable_get('uc_pane_' . $pane['id'] . '_weight', 0),
     );
+    $form['panes'][$pane['id']]['#weight'] = variable_get('uc_pane_' . $pane['id'] . '_weight', 0);
 
     $null = NULL;
     $pane_settings = $pane['callback']('settings', $null, array());
