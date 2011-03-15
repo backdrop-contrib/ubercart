@@ -544,7 +544,7 @@ function _uc_checkout_pane_list($action = NULL) {
   }
 
   // Allow other modules to alter the panes.
-  drupal_alter('checkout_pane', $panes);
+  drupal_alter('uc_checkout_pane', $panes);
 
   // Make sure that all the required attributes are set
   foreach ($panes as $i => $value) {
