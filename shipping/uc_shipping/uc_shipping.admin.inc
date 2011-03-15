@@ -87,10 +87,6 @@ function uc_shipping_order_packages($order) {
  */
 function uc_shipping_new_package($form, &$form_state, $order) {
   $form['#tree'] = TRUE;
-  $form['instructions'] = array('#markup' => t('Organize products into packages.
- Package numbers in multiple shipping types are of the first shipping type they appear in. All
- packages are given a unique ID when they are saved. Choose the default package "Sep." to
- automatically create a package for each of the selected quantity of products in that row.'));
   $shipping_types_products = array();
   foreach ($order->products as $product) {
     if ($product->data['shippable']) {
