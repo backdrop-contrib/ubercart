@@ -18,7 +18,7 @@
 <?php foreach ($products as $product) { ?>
 - <?php echo $product->qty; ?> x <?php echo $product->title . ' - ' . uc_currency_format($product->price * $product->qty); ?><br />
 &nbsp;&nbsp;<?php echo t('SKU: ') . $product->model; ?><br />
-    <?php if (is_array($product->data['attributes']) && count($product->data['attributes']) > 0) { ?>
+    <?php if (isset($product->data['attributes']) && is_array($product->data['attributes']) && count($product->data['attributes']) > 0) { ?>
     <?php foreach ($product->data['attributes'] as $attribute => $option) {
       echo '&nbsp;&nbsp;' . t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))) . '<br />';
     } ?>

@@ -46,7 +46,7 @@ class UbercartProductTestCase extends UbercartTestHelper {
         'lb' => t('Pounds'),
         'kg' => t('Kilograms'),
         'oz' => t('Ounces'),
-        'g' => t('Grams'),
+        'g'  => t('Grams'),
       )),
       'dim_length' => mt_rand(1, 50),
       'dim_width' => mt_rand(1, 50),
@@ -59,12 +59,31 @@ class UbercartProductTestCase extends UbercartTestHelper {
       )),
     );
 
-    $this->drupalPost('node/add/product', $edit, t('Save'));
-    $this->assertText(t('Product @title has been created.', array('@title' => $edit['title'])));
-    $this->assertText($edit[$body_key], 'Product body found.');
-    $this->assertText(t('SKU: @model', array('@model' => $edit['model'])), 'Product model found.');
-    $this->assertText(t('Price: @price', array('@price' => uc_currency_format($edit['sell_price']))), 'Product sell price found.');
-    $this->assertNoUniqueText(uc_currency_format($edit['sell_price']), 'Price appears more than once.');
+    $this->drupalPost(
+      'node/add/product',
+      $edit,
+      t('Save')
+    );
+    $this->assertText(
+      t('Product @title has been created.', array('@title' => $edit['title'])),
+      t('Product created.')
+    );
+    $this->assertText(
+      $edit[$body_key],
+      t('Product body found.')
+    );
+    $this->assertText(
+      t('SKU: @model', array('@model' => $edit['model'])),
+      t('Product model found.')
+    );
+    $this->assertText(
+      t('Price: @price', array('@price' => uc_currency_format($edit['sell_price']))),
+      t('Product sell price found.')
+    );
+    $this->assertNoUniqueText(
+      uc_currency_format($edit['sell_price']),
+      t('Price appears more than once.')
+    );
   }
 
   /**
@@ -80,11 +99,22 @@ class UbercartProductTestCase extends UbercartTestHelper {
       'description' => $this->randomName(32),
     );
 
-    $this->drupalPost('admin/store/products/classes', $edit, t('Submit'));
-    $this->assertText(t('Product class saved.'), 'Product class form submitted.');
+    $this->drupalPost(
+      'admin/store/products/classes',
+      $edit,
+      t('Submit')
+    );
+    $this->assertText(
+      t('Product class saved.'),
+      t('Product class form submitted.')
+    );
 
     $base = db_query('SELECT base FROM {node_type} WHERE type = :type', array(':type' => $type))->fetchField();
-    $this->assertEqual($base, 'uc_product', 'The new content type has been created in the database.');
+    $this->assertEqual(
+      $base,
+      'uc_product',
+      t('The new content type has been created in the database.')
+    );
 
     // Make an existing node type a product class.
     $type = $this->drupalCreateContentType();
@@ -94,10 +124,20 @@ class UbercartProductTestCase extends UbercartTestHelper {
       'description' => $type->description,
     );
 
-    $this->drupalPost('admin/store/products/classes', $edit, t('Submit'));
-    $this->assertText(t('Product class saved.'), 'Product class form submitted.');
+    $this->drupalPost(
+      'admin/store/products/classes',
+      $edit,
+      t('Submit')
+    );
+    $this->assertText(
+      t('Product class saved.'),
+      t('Product class form submitted.')
+    );
 
     $base = db_query('SELECT base FROM {node_type} WHERE type = :type', array(':type' => $type->type))->fetchField();
-    $this->assertEqual($base, 'uc_product', 'The new content type has been taken over by uc_product.');
+    $this->assertEqual(
+      $base,
+      'uc_product',
+      t('The new content type has been taken over by uc_product.'));
   }
 }
