@@ -5,16 +5,8 @@
  * Tests for Ubercart orders.
  */
 
-/**
- *
- */
-class UcOrderTestCase extends DrupalWebTestCase {
-  protected $privileged_user;
-  protected $customer;
+class UcOrderTestCase extends UbercartTestHelper {
 
-  /**
-   *
-   */
   public static function getInfo() {
     return array(
       'name' => 'Orders',
@@ -23,21 +15,8 @@ class UcOrderTestCase extends DrupalWebTestCase {
     );
   }
 
-  /**
-   *
-   */
-  public function setUp() {
-    parent::setUp(array('uc_store', 'uc_product', 'uc_order'));
-
-    $this->privileged_user = $this->drupalCreateUser(array('administer store', 'administer order workflow', 'view all orders', 'create orders', 'edit orders', 'delete orders', 'unconditionally delete orders'));
-    $this->customer = $this->drupalCreateUser(array('view own orders'));
-  }
-
-  /**
-   *
-   */
   public function testOrderCreation() {
-    $this->drupalLogin($this->privileged_user);
+    $this->drupalLogin($this->adminUser);
 
     $edit = array('uid' => $this->customer->uid);
     $this->drupalPost('admin/store/orders/create', $edit, t('Create order'));
@@ -52,9 +31,6 @@ class UcOrderTestCase extends DrupalWebTestCase {
     $this->assertText('Pending', 'New order is "Pending".');
   }
 
-  /**
-   *
-   */
   public function testOrderEditing() {
     $order = $this->ucCreateOrder($this->customer);
 
@@ -68,7 +44,7 @@ class UcOrderTestCase extends DrupalWebTestCase {
     $this->drupalGet('admin/store/orders/' . $order->order_id);
     $this->assertResponse(403, 'Customer may not edit orders.');
 
-    $this->drupalLogin($this->privileged_user);
+    $this->drupalLogin($this->adminUser);
     $this->drupalGet('user/' . $this->customer->uid . '/orders/' . $order->order_id);
     $this->assertText(drupal_strtoupper($order->billing_first_name . ' ' . $order->billing_last_name), 'Found customer name.');
 
@@ -82,9 +58,6 @@ class UcOrderTestCase extends DrupalWebTestCase {
     $this->assertFieldByName('billing_last_name', $edit['billing_last_name'], 'Billing last name changed.');
   }
 
-  /**
-   *
-   */
   protected function ucCreateOrder($customer) {
     $order = uc_order_new($customer->uid);
     uc_order_comment_save($order->order_id, 0, t('Order created programmatically.'), 'admin');
@@ -102,7 +75,7 @@ class UcOrderTestCase extends DrupalWebTestCase {
     $order->delivery_street2 = $this->randomName(12);
     $order->delivery_city = $this->randomName(12);
     $order->delivery_zone = array_rand($zones[$countries[$country]]);
-    $order->delivery_postal_code = $this->randomName(5);
+    $order->delivery_postal_code = rand(10000, 99999);
     $order->delivery_country = $country;
 
     $order->billing_first_name = $this->randomName(12);
@@ -111,7 +84,7 @@ class UcOrderTestCase extends DrupalWebTestCase {
     $order->billing_street2 = $this->randomName(12);
     $order->billing_city = $this->randomName(12);
     $order->billing_zone = array_rand($zones[$countries[$country]]);
-    $order->billing_postal_code = $this->randomName(5);
+    $order->billing_postal_code = rand(10000, 99999);
     $order->billing_country = $country;
 
     uc_order_save($order);
