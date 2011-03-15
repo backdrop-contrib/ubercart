@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Views handler.
+ */
+
+/**
  * Filter by order status
  */
 class uc_order_handler_filter_order_status extends views_handler_filter_in_operator {

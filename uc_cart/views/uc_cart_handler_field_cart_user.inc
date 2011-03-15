@@ -82,11 +82,13 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
     $result = db_result(db_query('SELECT name FROM {users} u WHERE u.uid = %d', $values->{$this->field_alias}));
     if ($result) {
       return $this->render_link($result, $values);
-    } else {
+    }
+    else {
       // If the cart belongs to an unauthenticated user
       if (!empty($this->options['overwrite_anonymous'])) {
         return check_plain($this->options['anonymous_text']);
-      } else {
+      }
+      else {
         return $values->{$this->field_alias};
       }
     }

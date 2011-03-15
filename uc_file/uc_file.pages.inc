@@ -173,11 +173,11 @@ function _uc_file_download($fid, $key) {
   $error_messages = array(
     UC_FILE_ERROR_NOT_A_FILE              => t('The file you requested does not exist.'),
     UC_FILE_ERROR_TOO_MANY_BOGUS_REQUESTS => t('You have attempted to download an incorrect file URL too many times.'),
-    UC_FILE_ERROR_INVALID_DOWNLOAD        => t("The following URL is not a valid download link. "),
+    UC_FILE_ERROR_INVALID_DOWNLOAD        => t('The following URL is not a valid download link.') . ' ',
     UC_FILE_ERROR_TOO_MANY_LOCATIONS      => t('You have downloaded this file from too many different locations.'),
     UC_FILE_ERROR_TOO_MANY_DOWNLOADS      => t('You have reached the download limit for this file.'),
-    UC_FILE_ERROR_EXPIRED                 => t("This file download has expired. "),
-    UC_FILE_ERROR_HOOK_ERROR              => t("A hook denied your access to this file. "),
+    UC_FILE_ERROR_EXPIRED                 => t('This file download has expired.') . ' ',
+    UC_FILE_ERROR_HOOK_ERROR              => t('A hook denied your access to this file.' . ' '),
   );
 
   $ip = ip_address();

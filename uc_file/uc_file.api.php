@@ -32,7 +32,7 @@
  */
 function hook_uc_download_authorize($user, $file_download) {
   if (!$user->status) {
-    drupal_set_message(t("This account has been banned and can't download files anymore. "),'error');
+    drupal_set_message(t("This account has been banned and can't download files anymore."), 'error');
     return FALSE;
   }
   else {
@@ -142,7 +142,7 @@ function hook_uc_file_action($op, $args) {
       break;
     case 'upload_validate':
       // Given a file path, function checks if file is valid JPEG.
-      if(!_check_image($args['file_object']->uri)) {
+      if (!_check_image($args['file_object']->uri)) {
         form_set_error('upload', t('Uploaded file is not a valid JPEG'));
       }
     break;

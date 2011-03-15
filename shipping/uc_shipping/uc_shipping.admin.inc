@@ -591,7 +591,7 @@ function theme_uc_shipping_new_shipment($variables) {
   drupal_add_js('misc/tableselect.js');
 
   $output = '';
-  $header = array(array('class' => array('select-all')),t('Package'), t('Products'), t('Weight'));
+  $header = array(array('class' => array('select-all')), t('Package'), t('Products'), t('Weight'));
   foreach (element_children($form['shipping_types']) as $shipping_type) {
     $rows = array();
     foreach (element_children($form['shipping_types'][$shipping_type]['packages']) as $package_id) {
