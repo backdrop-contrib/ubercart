@@ -73,10 +73,7 @@ function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NUL
       }
 
       if (variable_get('uc_cart_email_validation', FALSE) && !$user->uid) {
-        $contents['primary_email_confirm'] = uc_textfield(t('Confirm e-mail address'), $_SESSION['email_match'] === FALSE ? '' : $email, TRUE, NULL, 64);
-        if ($_SESSION['email_match'] === FALSE) {
-          unset($_SESSION['email_match']);
-        }
+        $contents['primary_email_confirm'] = uc_textfield(t('Confirm e-mail address'), $email, TRUE, NULL, 64);
       }
 
       if ($user->uid == 0) {
@@ -142,7 +139,6 @@ function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NUL
       if (variable_get('uc_cart_email_validation', FALSE) && !$user->uid &&
           $pane['primary_email'] !== $pane['primary_email_confirm']) {
         form_set_error('panes][customer][primary_email_confirm', t('The e-mail address did not match.'));
-        $_SESSION['email_match'] = FALSE;
       }
 
       // Invalidate if an account already exists for this e-mail address, and the user is not logged into that account
@@ -498,7 +494,7 @@ function _uc_cart_checkout_prev_pane($panes, $pane_id = NULL) {
     if ($target['id'] == $pane_id) {
       return $prev;
     }
-    if ($target['collapsible'] && variable_get('uc_pane_' . $target['id'] . '_enabled', TRUE)) {
+    if ($target['collapsible'] && $target['enabled']) {
       $prev = $target['id'];
     }
   }
@@ -517,7 +513,7 @@ function _uc_cart_checkout_next_pane($panes, $pane_id = NULL) {
   $next = FALSE;
   foreach ($panes as $target) {
     if ($next) {
-      if ($target['collapsible'] && variable_get('uc_pane_' . $target['id'] . '_enabled', TRUE)) {
+      if ($target['collapsible'] && $target['enabled']) {
         return $target['id'];
       }
     }
@@ -540,12 +536,20 @@ function _uc_checkout_pane_list($action = NULL) {
   }
 
   $panes = module_invoke_all('uc_checkout_pane', NULL);
-  // Allow other modules to alter the panes.
-  drupal_alter('uc_checkout_pane', $panes);
 
+  // Set the global default values first
   foreach ($panes as $i => $value) {
     $panes[$i]['enabled'] = variable_get('uc_pane_' . $panes[$i]['id'] . '_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
     $panes[$i]['weight'] = variable_get('uc_pane_' . $panes[$i]['id'] . '_weight', (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));
+  }
+
+  // Allow other modules to alter the panes.
+  drupal_alter('uc_checkout_pane', $panes);
+
+  // Make sure that all the required attributes are set
+  foreach ($panes as $i => $value) {
+    $panes[$i]['enabled'] = !isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled'];
+    $panes[$i]['weight'] = !isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight'];
     $panes[$i]['review'] = !isset($panes[$i]['review']) ? TRUE : $panes[$i]['review'];
     $panes[$i]['process'] = !isset($panes[$i]['process']) ? TRUE : $panes[$i]['process'];
     $panes[$i]['collapsible'] = !isset($panes[$i]['collapsible']) ? TRUE : $panes[$i]['collapsible'];

@@ -796,15 +796,12 @@ function uc_object_attributes_form_submit($form, &$form_state) {
     if (isset($remove_aids)) {
       $id_value = $form_state['values']['id'];
 
-      // Can't use "{$opt_table}" because PHP will remove the braces, which
-      // prevents the db_prefix from being appended.
       $select = db_select('uc_attribute_options', 'ao')
-        ->where('{' . $opt_table . '}.oid = ao.oid')
+        ->fields('ao', array('oid'))
         ->condition('ao.aid', $remove_aids, 'IN');
-      $select->addExpression('1');
       db_delete($opt_table)
-        ->condition('', $select, 'EXISTS')
-        ->condition('{' . $opt_table . "}.$id", $id_value)
+        ->condition('oid', $select, 'IN')
+        ->condition($id, $id_value)
         ->execute();
 
       db_delete($attr_table)
@@ -1026,7 +1023,7 @@ function theme_uc_object_options_form($variables) {
   $header = array(array('data' => '&nbsp;&nbsp;' . t('Options'), 'class' => array('select-all')), t('Default'), t('Cost'), t('Price'), t('Weight'), t('List position'));
   $tables = 0;
 
-  if (is_array($form['attributes'])) {
+  if (isset($form['attributes'])) {
     foreach (element_children($form['attributes']) as $key) {
       $rows = array();
       if (element_children($form['attributes'][$key]['options'])) {

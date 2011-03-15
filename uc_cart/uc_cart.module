@@ -78,20 +78,22 @@ function uc_cart_menu() {
     'page arguments' => array('uc_store_address_fields_form'), // missing?
     'access arguments' => array('administer store'),
     'type' => MENU_LOCAL_TASK,
-    'weight' => 2,
+    'weight' => 3,
     'file' => 'uc_cart.admin.inc',
   );
 
-  $items['admin/store/settings/checkout/rules'] = array(
-    'title' => 'Rules',
-    'description' => 'Edit the checkout rules.',
-    'page callback' => 'uc_cart_checkout_rules',
-    'access arguments' => array('administer store'),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => -3,
-    'file' => 'uc_cart.admin.inc',
-  );
-  $items += rules_ui()->config_menu('admin/store/settings/checkout/rules');
+  if (module_exists('rules')) {
+    $items['admin/store/settings/checkout/rules'] = array(
+      'title' => 'Rules',
+      'description' => 'Edit the checkout rules.',
+      'page callback' => 'uc_cart_checkout_rules',
+      'access arguments' => array('administer store'),
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 2,
+      'file' => 'uc_cart.admin.inc',
+    );
+    $items += rules_ui()->config_menu('admin/store/settings/checkout/rules');
+  }
 
   $items['cart'] = array(
     'title' => 'Shopping cart',
@@ -246,16 +248,20 @@ function uc_cart_init() {
 function uc_cart_cron() {
   // Empty anonymous carts.
   $time = strtotime(variable_get('uc_cart_anon_duration', '4') . ' ' . variable_get('uc_cart_anon_unit', 'hours') . ' ago');
-  $result = db_query("SELECT DISTINCT cart_id FROM {uc_cart_products} WHERE changed <= :changed AND CHAR_LENGTH(cart_id) > :strlen", array(':changed' => $time, ':strlen' => 8));
+  $result = db_query("SELECT DISTINCT cart_id FROM {uc_cart_products} WHERE changed <= :changed", array(':changed' => $time));
   foreach ($result as $row) {
-    uc_cart_empty($row->cart_id);
+    if (strlen($row->cart_id) > 8) {
+      uc_cart_empty($row->cart_id);
+    }
   }
 
   // Empty authenticated carts.
   $time = strtotime(variable_get('uc_cart_auth_duration', '1') . ' ' . variable_get('uc_cart_auth_unit', 'years') . ' ago');
-  $result = db_query("SELECT DISTINCT cart_id FROM {uc_cart_products} WHERE changed <= :changed AND CHAR_LENGTH(cart_id) <= :strlen", array(':changed' => $time, ':strlen' => 8));
+  $result = db_query("SELECT DISTINCT cart_id FROM {uc_cart_products} WHERE changed <= :changed", array(':changed' => $time));
   foreach ($result as $row) {
-    uc_cart_empty($row->cart_id);
+    if (strlen($row->cart_id) <= 8) {
+      uc_cart_empty($row->cart_id);
+    }
   }
 }
 

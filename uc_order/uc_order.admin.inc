@@ -53,7 +53,7 @@ function uc_order_settings_form($form, &$form_state) {
     '#options' => uc_order_template_options(),
     '#default_value' => variable_get('uc_cust_order_invoice_template', 'customer'),
   );
-  if (module_exists('uc_cart')) {
+  if (module_exists('uc_cart') && module_exists('rules')) {
     $form['customer']['uc_cust_order_invoice_template']['#description'] .= '<br />' . t('This is separate from the template used to e-mail invoices to customers which is configured through <a href="!url">Rules</a>.', array('!url' => url('admin/store/settings/checkout/rules')));
   }
 
@@ -1021,10 +1021,12 @@ function uc_order_history($user) {
   $os_title = $query->addField('os', 'title');
   $op_products = $query->addExpression('SUM(op.qty)', 'products');
 
-  $query->groupBy($o_order_id)
-    ->groupBy($o_created)
-    ->groupBy($os_title)
-    ->groupBy($o_total)
+  $query->groupBy('o.order_id')
+    ->groupBy('o.created')
+    ->groupBy('os.title')
+    ->groupBy('o.order_total')
+    ->groupBy('o.order_status')
+    ->groupBy('o.uid')
     ->orderByHeader($header)
     ->limit(20);
   $query->setCountQuery($count_query);
