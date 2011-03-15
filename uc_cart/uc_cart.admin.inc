@@ -26,13 +26,13 @@ function uc_cart_cart_settings_form($form, &$form_state) {
   );
   $form['general']['uc_cart_add_item_msg'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Display an update message when an item is added to the cart through an add to cart form.'),
+    '#title' => t('Display a message when a customer adds an item to their cart.'),
     '#default_value' => variable_get('uc_cart_add_item_msg', TRUE),
   );
   $form['general']['uc_add_item_redirect'] = array(
     '#type' => 'textfield',
     '#title' => t('Add to cart redirect'),
-    '#description' => t('Enter the Drupal page to redirect to when a customer adds an item to their cart.<br />Enter &lt;none&gt; for no redirect.'),
+    '#description' => t('Enter the page to redirect to when a customer adds an item to their cart, or &lt;none&gt; for no redirect.'),
     '#default_value' => variable_get('uc_add_item_redirect', 'cart'),
     '#size' => 32,
     '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q='),
@@ -41,7 +41,7 @@ function uc_cart_cart_settings_form($form, &$form_state) {
   $form['general']['uc_minimum_subtotal'] = array(
     '#type' => 'textfield',
     '#title' => t('Minimum order subtotal'),
-    '#description' => t('Optionally specify a minimum allowed subtotal for a cart to proceed to checkout.'),
+    '#description' => t('Customers will not be allowed to check out if the subtotal of items in their cart is less than this amount.'),
     '#default_value' => variable_get('uc_minimum_subtotal', 0),
     '#size' => 16,
     '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
@@ -128,56 +128,54 @@ function uc_cart_cart_settings_form($form, &$form_state) {
   $form['continue_shopping'] = array(
     '#type' => 'fieldset',
     '#title' => t('Continue shopping element'),
-    '#description' => t('Ubercart will add a continue shopping to the cart page based on the settings below.'),
+    '#description' => t('These settings control the <em>continue shopping</em> option on the cart page.'),
     '#group' => 'cart-settings',
   );
   $form['continue_shopping']['uc_continue_shopping_type'] = array(
     '#type' => 'radios',
-    '#title' => t('Continue shopping element display'),
+    '#title' => t('<em>Continue shopping</em> element'),
     '#options' => array(
       'link' => t('Text link'),
       'button' => t('Button'),
-      'none' => t('None'),
+      'none' => t('Do not display'),
     ),
     '#default_value' => variable_get('uc_continue_shopping_type', 'link'),
   );
   $form['continue_shopping']['uc_continue_shopping_use_last_url'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Make the continue shopping link send customers back to product pages after adding items to the cart.'),
-    '#description' => t('If this is disabled, the URL specified below will always be used.'),
+    '#title' => t('Make <em>continue shopping</em> go back to the last item that was added to the cart.'),
+    '#description' => t('If this is disabled or the item is unavailable, the URL specified below will be used.'),
     '#default_value' => variable_get('uc_continue_shopping_use_last_url', TRUE),
   );
   $form['continue_shopping']['uc_continue_shopping_url'] = array(
     '#type' => 'textfield',
-    '#title' => t('Default continue shopping link URL'),
-    '#description' => t('Enter the Drupal page for the link to continue shopping from the cart view page.'),
+    '#title' => t('Default <em>continue shopping</em> destination'),
     '#default_value' => variable_get('uc_continue_shopping_url', ''),
     '#size' => 32,
     '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q='),
   );
   $form['continue_shopping']['uc_continue_shopping_text'] = array(
     '#type' => 'textfield',
-    '#title' => t('Custom continue shopping link text'),
-    '#description' => t('Enter custom text for the continue shopping link.'),
+    '#title' => t('Custom <em>continue shopping</em> text'),
+    '#description' => t('Enter replacement text for the <em>continue shopping</em> element.'),
     '#default_value' => variable_get('uc_continue_shopping_text', ''),
   );
 
   $form['breadcrumb'] = array(
     '#type' => 'fieldset',
     '#title' => t('Cart breadcrumb'),
-    '#description' => t('Drupal automatically adds a Home breadcrumb to the cart page.  You can use these settings to specify a custom breadcrumb to use on the cart page instead.  If a custom text is not supplied, the default Home breadcrumb will be displayed.'),
+    '#description' => t('Drupal automatically adds a <em>Home</em> breadcrumb to the cart page, or you can use these settings to specify a custom breadcrumb.'),
     '#group' => 'cart-settings',
   );
   $form['breadcrumb']['uc_cart_breadcrumb_text'] = array(
     '#type' => 'textfield',
-    '#title' => t('Custom cart breadcrumb text'),
-    '#description' => t('Enter the text for the custom breadcrumb on the cart page.'),
+    '#title' => t('Cart page breadcrumb text'),
+    '#description' => t('Leave blank to use the default <em>Home</em> breadcrumb.'),
     '#default_value' => variable_get('uc_cart_breadcrumb_text', ''),
   );
   $form['breadcrumb']['uc_cart_breadcrumb_url'] = array(
     '#type' => 'textfield',
-    '#title' => t('Custom cart breadcrumb URL'),
-    '#description' => t('Enter the Drupal page linked to in the custom breadcrumb on the cart view page.'),
+    '#title' => t('Cart page breadcrumb destination'),
     '#default_value' => variable_get('uc_cart_breadcrumb_url', ''),
     '#size' => 32,
     '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q='),
