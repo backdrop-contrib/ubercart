@@ -140,7 +140,7 @@ function uc_order_rules_condition_info() {
       'weight_units' => array(
         'type' => 'text',
         'label' => t('Unit of measurement'),
-        'options list' => 'uc_order_weight_units_options',
+        'options list' => 'uc_order_condition_weight_units_options',
       ),
       'product_weight_value' => array(
         'type' => 'decimal',
