@@ -379,9 +379,9 @@ function theme_uc_ups_confirm_shipment($variables) {
   $output .= '<b>' . $method['ups']['quote']['accessorials'][$_SESSION['ups']['service']] . '</b><br />';
   $output .= '<i>' . check_plain($_SESSION['ups']['rate']['type']) . '</i>: ' . theme('uc_price', array('price' => $_SESSION['ups']['rate']['amount'])) . ' (' . check_plain($_SESSION['ups']['rate']['currency']) . ')<br />';
   $ship_date = $_SESSION['ups']['ship_date'];
-  $output .= 'Ship date: ' . format_date(gmmktime(12, 0, 0, $ship_date['month'], $ship_date['day'], $ship_date['year']), 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
+  $output .= 'Ship date: ' . format_date(gmmktime(12, 0, 0, $ship_date['month'], $ship_date['day'], $ship_date['year']), 'uc_store');
   $exp_delivery = $_SESSION['ups']['expected_delivery'];
-  $output .= '<br />Expected delivery: ' . format_date(gmmktime(12, 0, 0, $exp_delivery['month'], $exp_delivery['day'], $exp_delivery['year']), 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
+  $output .= '<br />Expected delivery: ' . format_date(gmmktime(12, 0, 0, $exp_delivery['month'], $exp_delivery['day'], $exp_delivery['year']), 'uc_store');
   $output .= "</div>\n<br style=\"clear: both;\" />";
   $output .= drupal_render_children($form);
 

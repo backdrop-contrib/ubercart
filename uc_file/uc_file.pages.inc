@@ -41,7 +41,7 @@ function theme_uc_file_user_downloads($variables) {
   $row = 0;
   foreach ($files as $file) {
     $rows[] = array(
-      array('data' => format_date($file['granted'], 'custom', variable_get('uc_date_format_default', 'm/d/Y')), 'class' => array('date-row'), 'id' => 'date-' . $row),
+      array('data' => format_date($file['granted'], 'uc_store'), 'class' => array('date-row'), 'id' => 'date-' . $row),
       array('data' => $file['link'], 'class' => array('filename-row'), 'id' => 'filename-' . $row),
       array('data' => $file['description'], 'class' => array('description-row'), 'id' => 'description-' . $row),
       array('data' => $file['accessed'] . '/' . ($file['download_limit'] ? $file['download_limit'] : t('Unlimited')), 'class' => array('download-row'), 'id' => 'download-' . $row),
@@ -133,7 +133,7 @@ function uc_file_user_downloads($account) {
 
     // Able to be downloaded.
     else {
-      $file_link = l(basename($file->filename), 'download/' . $file->fid . '/' . $file->file_key, $onclick) . ' (' . t('expires on @date', array('@date' => format_date($file->expiration, 'custom', variable_get('uc_date_format_default', 'm/d/Y')))) . ')';
+      $file_link = l(basename($file->filename), 'download/' . $file->fid . '/' . $file->file_key, $onclick) . ' (' . t('expires on @date', array('@date' => format_date($file->expiration, 'uc_store'))) . ')';
     }
 
     $files[] = array(

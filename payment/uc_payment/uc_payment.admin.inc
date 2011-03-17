@@ -329,7 +329,7 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
     foreach ($payments as $payment) {
       $form['payments'][$payment->receipt_id]['#attributes'] = array('valign' => 'top');
       $form['payments'][$payment->receipt_id]['received'] = array(
-        '#markup' => format_date($payment->received, 'custom', variable_get('uc_date_format_default', 'm/d/Y') . '<b\r />H:i:s'),
+        '#markup' => format_date($payment->received, 'custom', variable_get('date_format_uc_store', 'm/d/Y') . '<b\r />H:i:s'),
       );
       $form['payments'][$payment->receipt_id]['user'] = array(
         '#markup' => uc_get_initials($payment->uid),

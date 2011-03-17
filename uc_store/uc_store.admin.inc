@@ -740,19 +740,6 @@ function uc_store_settings_form($form, &$form_state) {
     );
   }
 
-  $form['date'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Date format'),
-    '#description' => t('Supply a format string using !link syntax.', array('!link' => l(t('PHP date'), 'http://www.php.net/date'))),
-    '#group' => 'store',
-  );
-  $form['date']['uc_date_format_default'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Default format string'),
-    '#default_value' => variable_get('uc_date_format_default', 'm/d/Y'),
-    '#summary' => t('Date format: @date', array('@date' => uc_date_format(8, 18, 2007))),
-  );
-
   $form['display'] = array(
     '#type' => 'fieldset',
     '#title' => t('Display settings'),
@@ -895,7 +882,7 @@ function uc_store_customer_orders($uid) {
       'data' => array(
         array('data' => $icons),
         array('data' => $order->order_id),
-        array('data' => format_date($order->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y'))),
+        array('data' => format_date($order->created, 'uc_store')),
         array('data' => check_plain($bname)),
         array('data' => check_plain($sname)),
         array('data' => $item_count['COUNT(*)']),

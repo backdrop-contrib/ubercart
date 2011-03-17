@@ -692,7 +692,6 @@ function theme_uc_reports_product_table($variables) {
  */
 function uc_reports_sales_summary() {
   $order_statuses = _uc_reports_order_statuses();
-  $format = variable_get('uc_date_format_default', 'm/d/Y');
 
   $date_day_of_month = date('n');
   $month_start = mktime(0, 0, 0, $date_day_of_month, 1);
@@ -707,7 +706,7 @@ function uc_reports_sales_summary() {
   $today = _uc_reports_get_sales($today_start);
 
   $rows[] = array(
-    l(t('Today, !date', array('!date' => format_date($today_start, 'custom', $format))), 'admin/store/orders/search/results/0/0/0/0/0/0/' . $today_start . '/' . $today_end),
+    l(t('Today, !date', array('!date' => format_date($today_start, 'uc_store'))), 'admin/store/orders/search/results/0/0/0/0/0/0/' . $today_start . '/' . $today_end),
     $today['total'],
     array('data' => array('#theme' => 'uc_price', '#price' => $today['income'])),
     array('data' => array('#theme' => 'uc_price', '#price' => $today['average'])),
@@ -717,7 +716,7 @@ function uc_reports_sales_summary() {
   $yesterday = _uc_reports_get_sales($today_start - 86400);
 
   $rows[] = array(
-    l(t('Yesterday, !date', array('!date' => format_date($today_start - 86400, 'custom', $format))), 'admin/store/orders/search/results/0/0/0/0/0/0/' . ($today_start - 86400) . '/' . ($today_end - 86400)),
+    l(t('Yesterday, !date', array('!date' => format_date($today_start - 86400, 'uc_store'))), 'admin/store/orders/search/results/0/0/0/0/0/0/' . ($today_start - 86400) . '/' . ($today_end - 86400)),
     $yesterday['total'],
     array('data' => array('#theme' => 'uc_price', '#price' => $yesterday['income'])),
     array('data' => array('#theme' => 'uc_price', '#price' => $yesterday['average'])),
@@ -980,8 +979,6 @@ function uc_reports_sales_year_form_submit($form, &$form_state) {
  * Displays the custom sales report form and table.
  */
 function uc_reports_sales_custom() {
-  $format = variable_get('uc_date_format_default', 'm/d/Y');
-
   // Use default report parameters if we don't detect values in the URL.
   if (arg(5) == '') {
     $args = array(
@@ -1020,10 +1017,10 @@ function uc_reports_sales_custom() {
 
     // Create the date title for the subreport.
     if ($args['length'] == 'day') {
-      $date = format_date($subreport['start'], 'custom', $format . ' - D');
+      $date = format_date($subreport['start'], 'custom', variable_get('date_format_uc_store', 'm/d/Y') . ' - D');
     }
     else {
-      $date = format_date($subreport['start'], 'custom', $format) . ' - ' . format_date($subreport['end'], 'custom', $format);
+      $date = format_date($subreport['start'], 'uc_store') . ' - ' . format_date($subreport['end'], 'uc_store');
     }
 
     // Build the order data for the subreport.

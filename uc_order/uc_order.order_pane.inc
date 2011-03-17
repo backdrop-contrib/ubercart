@@ -940,7 +940,7 @@ function uc_order_pane_order_comments($op, $order, &$form = NULL, &$form_state =
       $comments = uc_order_comments_load($order->order_id);
       $header = array(t('Date'), t('Status'), array('data' => t('Message'), 'width' => '100%'));
       $rows[] = array(
-        format_date($order->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y')),
+        format_date($order->created, 'uc_store'),
         array('data' => '-', 'align' => 'center'),
         t('Order created.')
       );
@@ -948,7 +948,7 @@ function uc_order_pane_order_comments($op, $order, &$form = NULL, &$form_state =
         foreach ($comments as $comment) {
           $rows[] = array(
             'data' => array(
-              array('data' => format_date($comment->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y')), 'align' => 'center'),
+              array('data' => format_date($comment->created, 'uc_store'), 'align' => 'center'),
               array('data' => $comment->title, 'align' => 'center', 'nowrap' => 'nowrap'),
               check_plain($comment->message),
             ),
@@ -1421,7 +1421,7 @@ function uc_op_order_comments_view_table($comments) {
     foreach ($comments as $comment) {
       $data = array();
       $data['date'] = array(
-        '#markup' => format_date($comment->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y') . '<\b\r />g:i:s A'),
+        '#markup' => format_date($comment->created, 'custom', variable_get('date_format_uc_store', 'm/d/Y') . '<\b\r />g:i:s A'),
         '#cell_attributes' => array('align' => 'center', 'nowrap' => 'true'),
       );
       $data['user'] = array(
@@ -1481,7 +1481,7 @@ function uc_op_admin_comments_view_table($comments) {
     foreach ($comments as $comment) {
       $data = array();
       $data['date'] = array(
-        '#markup' => format_date($comment->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y') . '<\b\r />g:i:s A'),
+        '#markup' => format_date($comment->created, 'custom', variable_get('date_format_uc_store', 'm/d/Y') . '<\b\r />g:i:s A'),
         '#cell_attributes' => array('align' => 'center', 'nowrap' => 'true', 'valign' => 'top'),
       );
       $data['user'] = array(

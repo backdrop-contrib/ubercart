@@ -462,8 +462,8 @@ function uc_shipping_order_shipments($order) {
     $row[] = check_plain($shipment->d_first_name) . ' ' . check_plain($shipment->d_last_name);
     $row[] = check_plain($shipment->d_company);
     $row[] = check_plain($shipment->d_city) . ', ' . uc_get_zone_code($shipment->d_zone) . ' ' . check_plain($shipment->d_postal_code);
-    $row[] = format_date($shipment->ship_date, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
-    $row[] = format_date($shipment->expected_delivery, 'custom', variable_get('uc_date_format_default', 'm/d/Y'));
+    $row[] = format_date($shipment->ship_date, 'uc_store');
+    $row[] = format_date($shipment->expected_delivery, 'uc_store');
     $row[] = is_null($shipment->tracking_number) ? t('n/a') : check_plain($shipment->tracking_number);
     $row[] = l(t('view'), 'admin/store/orders/' . $order->order_id . '/shipments/' . $shipment->sid . '/view');
     $row[] = l(t('edit'), 'admin/store/orders/' . $order->order_id . '/shipments/' . $shipment->sid . '/edit');
@@ -650,8 +650,8 @@ function uc_shipping_shipment_view($order, $shipment) {
   $build['delivery_address'] = array('#markup' => '<div class="order-pane pos-left"><div class="order-pane-title">' . t('Delivery Address:') . '</div>' . $destination . '</div>');
 
   $rows = array();
-  $rows[] = array(t('Ship date:'), format_date($shipment->ship_date, 'custom', 'D, ' . variable_get('uc_date_format_default', 'm/d/Y')));
-  $rows[] = array(t('Expected delivery:'), format_date($shipment->expected_delivery, 'custom', 'D, ' . variable_get('uc_date_format_default', 'm/d/Y')));
+  $rows[] = array(t('Ship date:'), format_date($shipment->ship_date, 'uc_store'));
+  $rows[] = array(t('Expected delivery:'), format_date($shipment->expected_delivery, 'uc_store'));
 
   $build['schedule'] = array(
     '#theme' => 'table',

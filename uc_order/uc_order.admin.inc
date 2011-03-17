@@ -420,7 +420,7 @@ function uc_order_admin($condition = NULL, $search = FALSE) {
         array('data' => $order->order_id),
         array('data' => check_plain($order_name), 'nowrap' => 'nowrap'),
         array('data' => array('#theme' => 'uc_price', '#price' => $order->order_total), 'align' => 'right'),
-        array('data' => format_date($order->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y')), 'align' => 'center'),
+        array('data' => format_date($order->created, 'uc_store'), 'align' => 'center'),
         array('data' => $order->title),
       ),
       'id' => 'order-' . $order->order_id,
@@ -998,7 +998,7 @@ function uc_order_history($user) {
     }
 
     $rows[] = array(
-      array('data' => format_date($order->created, 'custom', variable_get('uc_date_format_default', 'm/d/Y'))),
+      array('data' => format_date($order->created, 'uc_store')),
       array('data' => $link, 'nowrap' => 'nowrap'),
       array('data' => check_plain($order->title)),
       array('data' => (!is_null($order->products) ? $order->products : 0), 'align' => 'center'),
