@@ -394,6 +394,11 @@ function uc_store_page_alter(&$page) {
  * Implements hook_exit().
  */
 function uc_store_exit() {
+  // Don't save anything to the session if this is the first request of a session
+  if (empty($_COOKIE[session_name()])) {
+    return;
+  }
+
   // Save the current request for tracking paths on subsequent page requests.
   // When HTTP_REFERER is set, the session version is not; and vice versa.
   if ($_SERVER['HTTP_REFERER'] == '') {
