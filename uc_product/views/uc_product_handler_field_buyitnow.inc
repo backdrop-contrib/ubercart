@@ -14,13 +14,6 @@ class uc_product_handler_field_buyitnow extends views_handler_field {
     $this->add_additional_fields();
   }
 
-  function element_type() {
-    if (isset($this->definition['element type'])) {
-      return $this->definition['element type'];
-    }
-    return 'div';
-  }
-
   function render($values) {
     $product = node_load($values->{$this->aliases['nid']});
     if (uc_product_is_product($product)) {

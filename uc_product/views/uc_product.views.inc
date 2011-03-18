@@ -163,6 +163,7 @@ function uc_product_views_data() {
         ),
       ),
       'handler' => 'uc_product_handler_field_addtocart',
+      'element type' => 'div',
     ),
   );
 
@@ -179,6 +180,7 @@ function uc_product_views_data() {
         ),
       ),
       'handler' => 'uc_product_handler_field_buyitnow',
+      'element type' => 'div',
     ),
   );
 

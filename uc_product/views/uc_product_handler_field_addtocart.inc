@@ -14,13 +14,6 @@ class uc_product_handler_field_addtocart extends views_handler_field {
     $this->add_additional_fields();
   }
 
-  function element_type() {
-    if (isset($this->definition['element type'])) {
-      return $this->definition['element type'];
-    }
-    return 'div';
-  }
-
   function render($values) {
     if (uc_product_is_product($values->{$this->aliases['type']})) {
       $type = node_type_get_type($values->{$this->aliases['type']});
