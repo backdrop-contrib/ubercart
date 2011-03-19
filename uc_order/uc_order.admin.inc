@@ -546,7 +546,7 @@ function uc_order_admin_sort_form_submit($form, &$form_state) {
 function uc_order_select_form($form, &$form_state) {
   $form['order_id'] = array(
     '#type' => 'textfield',
-    '#title' => t('View order'),
+    '#title' => t('View order number'),
     '#size' => 10,
     '#maxlength' => 10
   );
