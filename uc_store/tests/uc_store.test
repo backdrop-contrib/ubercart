@@ -10,6 +10,16 @@
  */
 class UbercartTestHelper extends DrupalWebTestCase {
 
+  /** User with privileges to do everthing. */
+  protected $adminUser;
+
+  /** Authenticated but unprivileged user. */
+  protected $customer;
+
+  /** Test product. */
+  protected $product;
+
+
   /**
    * Configure basic Ubercart store components.
    *
@@ -44,9 +54,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
     $this->customer = $this->drupalCreateUser(array('view own orders'));
 
     // Create a test product.
-    $this->drupalLogin($this->adminUser);
-    $this->product = $this->createProduct();
-    $this->drupalLogout();
+    $this->product = $this->createProduct(array('uid' => $this->adminUser->uid));
   }
 
   /**
@@ -101,7 +109,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
   function checkout($edit = array()) {
     $this->drupalPost('cart', array(), 'Checkout');
     $this->assertText(
-      'Enter your billing address and information here.',
+      t('Enter your billing address and information here.'),
       t('Viewed cart page: Billing pane has been displayed.')
     );
 
@@ -131,7 +139,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
 
     // Submit the checkout page.
     $this->drupalPost('cart/checkout', $edit, t('Review order'));
-    $this->assertRaw('Your order is almost complete.');
+    $this->assertRaw(t('Your order is almost complete.'));
 
     // Complete the review page.
     $this->drupalPost(NULL, array(), t('Submit order'));
@@ -231,7 +239,8 @@ class UbercartStoreCountriesTest extends UbercartTestHelper {
       t('Ensure country file is not imported yet.')
     );
     $this->assertNoText(
-      $country_code, t('Country does not appear in imported countries table.')
+      $country_code,
+      t('Country does not appear in imported countries table.')
     );
   }
 }
