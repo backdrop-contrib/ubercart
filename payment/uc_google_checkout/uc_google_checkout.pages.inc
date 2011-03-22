@@ -126,12 +126,12 @@ function uc_google_checkout_merchant_calculation() {
     $response .= '</results>';
     $response .= '</merchant-calculation-results>';
 
-    drupal_set_header('HTTP/1.1 200 OK');
+    drupal_add_http_header('HTTP/1.1 200 OK');
     print $response;
     exit();
   }
 
-  drupal_set_header('HTTP/1.1 204 No Content');
+  drupal_add_http_header('HTTP/1.1 204 No Content');
   exit();
   // So there!
 }
