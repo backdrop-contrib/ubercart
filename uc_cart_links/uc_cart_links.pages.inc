@@ -16,7 +16,7 @@ function uc_cart_links_form($form, &$form_state, $arg1) {
     $restrictions = explode("\n", variable_get('uc_cart_links_restrictions', ''));
     $restrictions = array_map('trim', $restrictions);
 
-    if (!empty($restrictions) && !in_array($cart_action, $restrictions)) {
+    if (!empty($restrictions) && !in_array($arg1, $restrictions)) {
       $url = variable_get('uc_cart_links_invalid_page', '');
       if (empty($url)) {
         $url = '<front>';

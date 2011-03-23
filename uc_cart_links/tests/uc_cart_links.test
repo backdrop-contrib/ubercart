@@ -25,7 +25,6 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     parent::setUp(array('uc_cart_links', 'uc_attribute'), array('administer cart links', 'view cart links report'));
   }
 
-
   /**
    * Tests access to admin settings page and test default values.
    */
@@ -79,59 +78,17 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
   /**
    * Tests cart links on a page under a variety of conditions.
    */
-  function testCartLinks() {
+  function testCartLinksBasicFunctionality() {
     // Create product
     $products[] = $this->createCartLinksProduct(FALSE);
 
     // Create a product class
     $products[] = $this->createCartLinksProduct(FALSE);  // later ...
 
-
-    // Create cart links pointing to above product(s)
-    foreach ($products as $key => $product) {
-      $nid   = $product->nid;
-      $title = $product->title;
-      $qty   = mt_rand(1, 19);
-      // $link_details will hold meta information about the cart links
-      // so we won't have to try to re-construct this information by
-      // parsing the link at a later time.
-      $link_details[$key] = array(
-        'nid'   => $nid,
-        'title' => $title,
-        'qty'   => $qty,
-        'attributes' => array(),
-      );
-
-      // $cart_links will hold the actual links we're building.
-      // $cart_links and $link_details share the same keys.
-      $cart_links[$key] = '/cart/add/p' . $nid . '_q' . $qty;
-
-      // Loop over attributes, append all attribute/option combos to links
-      $attributes = uc_product_get_attributes($nid);
-      foreach ($attributes as $attribute) {
-        // If this is textfield, radio, or select option, then
-        // only 1 option allowed.  If checkbox, multiple are allowed.
-        switch ($attribute->display) {
-          case 0:  // textfield
-            $value = $this->randomName(12);  // Textfield
-            $link_details[$key]['attributes'][$attribute->label][] = $value;
-            $cart_links[$key] .= '_a' . $attribute->aid . 'o' . $value;
-            break;
-          case 1:  // select
-          case 2:  // radios
-            $option = $attribute->options[array_rand($attribute->options)];
-            $link_details[$key]['attributes'][$attribute->label][] = $option->name;
-            $cart_links[$key] .= '_a' . $attribute->aid . 'o' . $option->oid;
-            break;
-          case 3:  // checkboxes
-            foreach ($attribute->options as $option) {
-              $link_details[$key]['attributes'][$attribute->label][] = $option->name;
-              $cart_links[$key] .= '_a' . $attribute->aid . 'o' . $option->oid;
-            }
-            break;
-        }
-      }
-    }
+    // Create some valid cart links for these products
+    $link_array = $this->createValidCartLinks($products);
+    $cart_links = $link_array['links'];
+    $link_data  = $link_array['data'];
 
     // Need to test incorrect links as well:
     //   links which add invalid attributes
@@ -140,7 +97,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // links with click tracking
     // links with messages
 
-    // Create page containing these links
+    // Create a page containing these links
     $page = $this->createCartLinksPage($cart_links);
 
     //
@@ -166,24 +123,24 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
       // Check for notice that item was added (this notice is set ON
       // by default, see admin/store/settings/cart/edit)
       $this->assertText(
-        t('@title added to your shopping cart.', array('@title' => $link_details[$key]['title'])),
-        t('Product @title added to cart.', array('@title' => $link_details[$key]['title']))
+        t('@title added to your shopping cart.', array('@title' => $link_data[$key]['title'])),
+        t('Product @title added to cart.', array('@title' => $link_data[$key]['title']))
       );
 
       // Check contents of cart
       $this->drupalGet('cart');
       $this->assertText(
-        $link_details[$key]['title'],
+        $link_data[$key]['title'],
         t('Product title correct in cart.')
       );
       $this->assertFieldByName(
         'items[0][qty]',
-        $link_details[$key]['qty'],
+        $link_data[$key]['qty'],
         t('Product quantity correct in cart.')
       );
 
       // Check for correct attribute name(s) in cart
-      foreach ($link_details[$key]['attributes'] as $label => $attribute) {
+      foreach ($link_data[$key]['attributes'] as $label => $attribute) {
         $this->assertText(
           $label . ':',
           t('Attribute @label correct in cart.', array('@label' => $label))
@@ -201,17 +158,26 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
       $this->drupalPost('cart', array(), t('Remove'));
       $this->assertText('There are no products in your shopping cart.');
     }
-    
-    // assert restrictions work - set restriction, try to use it
-    // test redirection
-    //   set restriction
-    //   assert redirection for invalid link
-    //   assert non-redirect for valid link
-    // assert messages
-    //   set messages
-    //   use messages
-    // assert tracking information
 
+  }
+
+  /**
+   * Tests cart links on a page under a variety of conditions.
+   */
+  function testCartLinksProductActionMessage() {
+    // Create product
+    $products[] = $this->createCartLinksProduct(FALSE);
+
+    // Create a product class
+    $products[] = $this->createCartLinksProduct(FALSE);  // later ...
+
+    // Create some valid cart links for these products
+    $link_array = $this->createValidCartLinks($products);
+    $cart_links = $link_array['links'];
+    $link_data  = $link_array['data'];
+
+    // Create a page containing these links
+    $page = $this->createCartLinksPage($cart_links);
 
     $this->drupalLogin($this->adminUser);
 
@@ -247,6 +213,34 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
       t('Cart link product action message not present.')
     );
 
+      //
+      // test -m0, which should supress the message even
+      // when message are enabled
+      //
+
+    $this->drupalLogout();
+  }
+
+  /**
+   * Tests cart links on a page under a variety of conditions.
+   */
+  function testCartLinksAllowEmptying() {
+    // Create product
+    $products[] = $this->createCartLinksProduct(FALSE);
+
+    // Create a product class
+    $products[] = $this->createCartLinksProduct(FALSE);  // later ...
+
+    // Create some valid cart links for these products
+    $link_array = $this->createValidCartLinks($products);
+    $cart_links = $link_array['links'];
+    $link_data  = $link_array['data'];
+
+    // Create a page containing these links
+    $page = $this->createCartLinksPage($cart_links);
+
+    $this->drupalLogin($this->adminUser);
+
     //
     // Test empty cart action
     //
@@ -275,11 +269,11 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // Verify the cart doesn't have the first item and does have the second item
     $this->drupalGet('cart');
     $this->assertText(
-      $link_details[$test_link]['title'],
+      $link_data[$test_link]['title'],
       t('Product title correct in cart.')
     );
     $this->assertNoText(
-      $link_details[$test_link_0]['title'],
+      $link_data[$test_link_0]['title'],
       t('Cart was emptied by cart link.')
     );
 
@@ -292,13 +286,36 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // Verify the cart has both items - cart wasn't emptied
     $this->drupalGet('cart');
     $this->assertText(
-      $link_details[$test_link_0]['title'],
+      $link_data[$test_link_0]['title'],
       t('Cart was not emptied by cart link.')
     );
     $this->assertText(
-      $link_details[$test_link]['title'],
+      $link_data[$test_link]['title'],
       t('Cart was not emptied by cart link.')
     );
+
+    $this->drupalLogout();
+  }
+
+  /**
+   * Tests cart links on a page under a variety of conditions.
+   */
+  function testCartLinksRestrictions() {
+    // Create product
+    $products[] = $this->createCartLinksProduct(FALSE);
+
+    // Create a product class
+    $products[] = $this->createCartLinksProduct(FALSE);  // later ...
+
+    // Create some valid cart links for these products
+    $link_array = $this->createValidCartLinks($products);
+    $cart_links = $link_array['links'];
+    $link_data  = $link_array['data'];
+
+    // Create a page containing these links
+    $page = $this->createCartLinksPage($cart_links);
+
+    $this->drupalLogin($this->adminUser);
 
     //
     // Test cart links restrictions
@@ -307,17 +324,81 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // Go to page with cart links
     $this->drupalGet('node/' . $page->nid);
     // Pick one of the links at random and restrict it
-    $test_link = array_rand($cart_links);
-    // Only this link is allowed
-    $this->setCartLinksUIRestrictions($cart_links[$test_link]);
+    $test_link_0 = array_rand($cart_links);
+    // Only this link is allowed - strip '/cart/add/' from beginning
+    $this->setCartLinksUIRestrictions(substr($cart_links[$test_link_0], 10));
+
+    // Attempt to click link - should pass
+    $this->drupalGet('node/' . $page->nid);
+    $this->clickLink(t('Cart Link #@link', array('@link' => $test_link_0)));
+
+    // Check for notice that item was added (this notice is set ON
+    // by default, see admin/store/settings/cart/edit)
+    $this->assertText(
+      t('@title added to your shopping cart.', array('@title' => $link_data[$test_link_0]['title'])),
+      t('Product @title added to cart.', array('@title' => $link_data[$test_link_0]['title']))
+    );
 
     // Pick another link at random, as long as it is different from first
-    // Attempt to add it - should fail
-    // Attempt to add first - should pass
+    $in_cart = $cart_links[$test_link_0];
+    unset($cart_links[$test_link_0]);
+    $test_link = array_rand($cart_links);
+
+    // Attempt to click it - it should fail
+    $this->drupalGet('node/' . $page->nid);
+    $this->clickLink(t('Cart Link #@link', array('@link' => $test_link)));
+    $this->assertText(
+      t('Welcome to Drupal')
+    );
+    $this->assertText(
+      t('No front page content has been created yet.'),
+      t('Redirected to front page for link not in restrictions.')
+    );
+
+    // Remove restrictions, try to add again - it should pass
+    $this->setCartLinksUIRestrictions('');
+    $this->drupalGet('node/' . $page->nid);
+    $this->clickLink(t('Cart Link #@link', array('@link' => $test_link)));
+    $this->assertText(
+      t('@title added to your shopping cart.', array('@title' => $link_data[$test_link]['title'])),
+      t('Product @title added to cart.', array('@title' => $link_data[$test_link]['title']))
+    );
 
     $this->drupalLogout();
   }
 
+  /**
+   * Tests page redirectsion for invalid cart links.
+   */
+  function testCartLinksRedirect() {
+    //   set redirect link
+    //   assert redirection for invalid link
+    //   assert redirection for restricted link
+    //   assert non-redirect for valid link
+
+    // Create product
+    $products[] = $this->createCartLinksProduct(FALSE);
+
+    // Create a product class
+    $products[] = $this->createCartLinksProduct(FALSE);  // later ...
+
+    // Create some valid cart links for these products
+    $link_array = $this->createValidCartLinks($products);
+    $cart_links = $link_array['links'];
+    $link_data  = $link_array['data'];
+
+    // Create a page containing these links
+    $page = $this->createCartLinksPage($cart_links);
+
+    $this->drupalLogin($this->adminUser);
+
+    $this->drupalLogout();
+  }
+
+    // assert messages
+    //   set messages
+    //   use messages
+    // assert tracking information
 
   /****************************************************************************
    * Utility Functions                                                        *
@@ -541,6 +622,73 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     }
 
     return $product;
+  }
+
+
+  /**
+   * Creates cart links pointing to the given product(s).
+   *
+   * Links containing many combinations of attributes and options wil be
+   * returned. Return value is an associative array containing two keys:
+   *   -links: An array of the actual links we're building.
+   *   -data: An array of metadata about the cart links so we won't have to try
+   *   to re-construct this information by parsing the link at a later time.
+   *
+   * 'links' and 'data' share the same keys.
+   *
+   * @param $products
+   *   An array of products.
+   *
+   * @return
+   *   Array containing cart links and link metadata.
+   */
+  function createValidCartLinks($products = array()) {
+    foreach ($products as $key => $product) {
+      $nid   = $product->nid;
+      $title = $product->title;
+      $qty   = mt_rand(1, 19);
+      // $link_data will hold meta information about the cart links
+      // so we won't have to try to re-construct this information by
+      // parsing the link at a later time.
+      $link_data[$key] = array(
+        'nid'   => $nid,
+        'title' => $title,
+        'qty'   => $qty,
+        'attributes' => array(),
+      );
+
+      // $cart_links will hold the actual links we're building.
+      // $cart_links and $link_data share the same keys.
+      $cart_links[$key] = '/cart/add/p' . $nid . '_q' . $qty;
+
+      // Loop over attributes, append all attribute/option combos to links
+      $attributes = uc_product_get_attributes($nid);
+      foreach ($attributes as $attribute) {
+        // If this is textfield, radio, or select option, then
+        // only 1 option allowed.  If checkbox, multiple are allowed.
+        switch ($attribute->display) {
+          case 0:  // textfield
+            $value = $this->randomName(12);  // Textfield
+            $link_data[$key]['attributes'][$attribute->label][] = $value;
+            $cart_links[$key] .= '_a' . $attribute->aid . 'o' . $value;
+            break;
+          case 1:  // select
+          case 2:  // radios
+            $option = $attribute->options[array_rand($attribute->options)];
+            $link_data[$key]['attributes'][$attribute->label][] = $option->name;
+            $cart_links[$key] .= '_a' . $attribute->aid . 'o' . $option->oid;
+            break;
+          case 3:  // checkboxes
+            foreach ($attribute->options as $option) {
+              $link_data[$key]['attributes'][$attribute->label][] = $option->name;
+              $cart_links[$key] .= '_a' . $attribute->aid . 'o' . $option->oid;
+            }
+            break;
+        }
+      }
+    }
+
+    return array('links' => $cart_links, 'data' => $link_data);
   }
 
 }
