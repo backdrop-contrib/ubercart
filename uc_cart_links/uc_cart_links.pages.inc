@@ -14,6 +14,8 @@ function uc_cart_links_form($form, &$form_state, $arg1) {
   $data = variable_get('uc_cart_links_restrictions', '');
   if (!empty($data)) {
     $restrictions = explode("\n", variable_get('uc_cart_links_restrictions', ''));
+    $restrictions = array_map('trim', $restrictions);
+
     if (!empty($restrictions) && !in_array($cart_action, $restrictions)) {
       $url = variable_get('uc_cart_links_invalid_page', '');
       if (empty($url)) {
@@ -157,7 +159,7 @@ function uc_cart_links_process($cart_action) {
           $data = explode("\n", variable_get('uc_cart_links_messages', ''));
           foreach ($data as $message) {
             list($mkey, $mdata) = explode('|', $message, 2);
-            $messages[$mkey] = $mdata;
+            $messages[trim($mkey)] = trim($mdata);
           }
         }
 
