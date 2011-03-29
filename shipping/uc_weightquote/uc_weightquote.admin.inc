@@ -10,8 +10,8 @@
  */
 function uc_weightquote_admin_methods() {
   $build = array();
-
   $rows = array();
+
   $result = db_query("SELECT mid, title, label, base_rate, product_rate FROM {uc_weightquote_methods}");
   foreach ($result as $method) {
     $row = array();
@@ -22,6 +22,7 @@ function uc_weightquote_admin_methods() {
     $row[] = l(t('edit'), 'admin/store/settings/quotes/methods/weightquote/' . $method->mid);
     $rows[] = $row;
   }
+
   if (count($rows)) {
     $header = array(t('Title'), t('Label'), t('Base rate'), t('Default product rate'), array('data' => t('Operations'), 'colspan' => 1));
     $build['methods'] = array(
@@ -63,18 +64,21 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
     '#title' => t('Shipping method title'),
     '#description' => t('The name shown to distinguish it from other weightquote methods.'),
     '#default_value' => $method->title,
+    '#required' => TRUE,
   );
   $form['label'] = array(
     '#type' => 'textfield',
     '#title' => t('Line item label'),
     '#description' => t('The name shown to the customer when they choose a shipping method at checkout.'),
     '#default_value' => $method->label,
+    '#required' => TRUE,
   );
   $form['base_rate'] = array(
     '#type' => 'textfield',
     '#title' => t('Base price'),
     '#description' => t('The starting price for weight-based shipping costs.'),
     '#default_value' => $method->base_rate,
+    '#required' => TRUE,
     '#size' => 16,
     '#field_prefix' => $sign_flag ? '' : $currency_sign,
     '#field_suffix' => $sign_flag ? $currency_sign : '',
@@ -84,6 +88,7 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
     '#title' => t('Default cost adjustment per !unit', array('!unit' => variable_get('uc_weight_unit', 'lb'))),
     '#description' => t('The amount per weight unit to add to the shipping cost for an item.<br />Example: to add $5 per pound, put 5 in here.'),
     '#default_value' => $method->product_rate,
+    '#required' => TRUE,
     '#size' => 16,
     '#field_prefix' => $sign_flag ? '' : $currency_sign,
     '#field_suffix' => t('!sign per !unit', array('!sign' => $sign_flag ? $currency_sign : '', '!unit' => variable_get('uc_weight_unit', 'lb'))),
@@ -128,6 +133,8 @@ function uc_weightquote_admin_method_edit_form_validate($form, &$form_state) {
 }
 
 /**
+ * Helper function to delete a weightquote method.
+ *
  * @see uc_weightquote_admin_method_edit_form()
  */
 function uc_weightquote_admin_method_edit_form_delete($form, &$form_state) {
@@ -143,7 +150,7 @@ function uc_weightquote_admin_method_edit_form_delete($form, &$form_state) {
 function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
   if (isset($form_state['values']['mid'])) {
     drupal_write_record('uc_weightquote_methods', $form_state['values'], 'mid');
-    drupal_set_message(t("Weight quote shipping method was updated."));
+    drupal_set_message(t('Weight quote shipping method was updated.'));
   }
   else {
     drupal_write_record('uc_weightquote_methods', $form_state['values']);
@@ -160,7 +167,7 @@ function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
     // Ensure Rules picks up the new condition.
     entity_flush_caches();
 
-    drupal_set_message(t("Created and enabled new weight quote shipping method."));
+    drupal_set_message(t('Created and enabled new weight quote shipping method.'));
   }
 
   $form_state['redirect'] = 'admin/store/settings/quotes/methods/weightquote';
@@ -200,7 +207,7 @@ function uc_weightquote_admin_method_confirm_delete_submit($form, &$form_state) 
     ->condition('mid', $mid)
     ->execute();
 
-  rules_config_delete(array('get_quote_from_weightquote_' . $form_state['values']['mid']));
+  rules_config_delete(array('get_quote_from_weightquote_' . $mid));
 
   $enabled = variable_get('uc_quote_enabled', array());
   unset($enabled['weightquote_' . $mid]);
