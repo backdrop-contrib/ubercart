@@ -1,4 +1,11 @@
+/**
+ * @file
+ * Utility functions for displaying credit card info on the order view screen.
+ */
 
+/**
+ * Initializes state.
+ */
 jQuery(document).ready(
   function () {
     jQuery('#cc_details_title').show(0);
@@ -7,10 +14,9 @@ jQuery(document).ready(
 );
 
 /**
- * Toggles credit card details on the order view screen.
+ * Toggles credit card details.
  */
 function toggle_card_details() {
   jQuery('#cc_details').toggle();
   jQuery('#cc_details_title').toggle();
 }
-

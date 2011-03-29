@@ -1,11 +1,10 @@
-
 /**
  * @file
- *   Adds some helper JS to summaries.
+ * Adds some helper JS to summaries.
  */
 
 /**
- * Modify the summary overviews to have onclick functionality.
+ * Modifies the summary overviews to have onclick functionality.
  */
 Drupal.behaviors.summaryOnclick = {
   attach: function(context, settings) {

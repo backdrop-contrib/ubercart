@@ -1,4 +1,3 @@
-
 /**
  * @file
  * Handles asynchronous requests for order editing forms.
@@ -8,7 +7,7 @@ var customer_select = '';
 var add_product_browser = '';
 
 /**
- * Add the double click behavior to the order table at admin/store/orders.
+ * Adds the double click behavior to the order table at admin/store/orders.
  */
 Drupal.behaviors.ucOrderClick = {
   attach: function(context, settings) {

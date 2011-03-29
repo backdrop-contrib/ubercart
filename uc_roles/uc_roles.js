@@ -1,7 +1,6 @@
-
 /**
  * @file
- * Enable and disable expiration fields to prevent invalid configurations.
+ * Enables and disables expiration fields to prevent invalid configurations.
  */
 
 /**

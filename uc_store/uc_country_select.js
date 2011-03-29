@@ -1,4 +1,3 @@
-
 /**
  * @file
  * Switches the zones list when a country is chosen for an address.

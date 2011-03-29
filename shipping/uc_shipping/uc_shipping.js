@@ -1,7 +1,6 @@
-
 /**
  * @file
- * Add autofill address functionality to shipment forms.
+ * Adds autofill address functionality to shipment forms.
  */
 
 /**

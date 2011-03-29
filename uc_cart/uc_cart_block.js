@@ -1,4 +1,3 @@
-
 /**
  * @file
  * Adds effects and behaviors to the cart block.

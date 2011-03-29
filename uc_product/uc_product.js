@@ -1,3 +1,7 @@
+/**
+ * @file
+ * Utility functions to display settings summaries on vertical tabs.
+ */
 
 (function ($) {
 

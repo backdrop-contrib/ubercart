@@ -1,11 +1,10 @@
-
 /**
  * @file
  * Adds click events to the order and customer tables.
  */
 
 /**
- * Adds the double click behavior to the order table rows
+ * Adds the double click behavior to the order table rows.
  */
 Drupal.behaviors.ucCustomerOrder = {
   attach: function(context, settings) {

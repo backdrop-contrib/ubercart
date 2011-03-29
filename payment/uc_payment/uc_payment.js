@@ -1,5 +1,8 @@
+/**
+ * @file
+ * Timestamps for last time line items or payment details were updated.
+ */
 
-// Timestamps for last time line items or payment details were updated.
 var payment_update = 0;
 
 var do_payment_details = true;
