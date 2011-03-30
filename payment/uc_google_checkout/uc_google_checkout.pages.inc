@@ -105,7 +105,7 @@ function uc_google_checkout_merchant_calculation() {
 
   $methods = module_invoke_all('shipping_method');
   module_load_include('inc', 'uc_quote', 'uc_quote.pages');
-  $quote_data = _uc_quote_assemble_quotes($order);
+  $quote_data = uc_quote_assemble_quotes($order);
   $results = '';
   foreach ($quote_data as $method_id => $options) {
     foreach ($options as $accsrl => $data) {
