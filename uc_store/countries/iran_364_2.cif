@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 /**
  * Implements hook_install().
@@ -9,10 +10,10 @@ function iran_install() {
   db_insert('uc_countries')
     ->fields(array(
       'country_id' => 364,
-      'country_name' => 'Iran',
+      'country_name' => 'Iran, Islamic Republic of',
       'country_iso_code_2' => 'IR',
-      'country_iso_code_3' => 'IRI',
-      'version' => 1,
+      'country_iso_code_3' => 'IRN',
+      'version' => 2,
     ))
     ->execute();
 
@@ -65,4 +66,20 @@ function iran_install() {
     "!street2\r\n".
     "!postal_code"
   );
+}
+
+function iran_update($version) {
+  switch ($version) {
+    case 2:
+      // Correct ISO-3166-1 country name
+      db_update('uc_countries')
+        ->fields(array(
+            'country_name' => 'Iran, Islamic Republic of',
+            'country_iso_code_3' => 'IRN',
+          ))
+        ->condition('country_id', 364)
+        ->execute();
+
+      break;
+  }
 }
