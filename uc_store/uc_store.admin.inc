@@ -638,19 +638,19 @@ function uc_store_settings_form($form, &$form_state) {
     '#title' => t('Store address'),
     '#group' => 'store',
   );
-  $form['address']['uc_store_street1'] = uc_textfield(uc_get_field_name('street1'), variable_get('uc_store_street1', NULL), FALSE, NULL, 128);
-  $form['address']['uc_store_street2'] = uc_textfield(uc_get_field_name('street2'), variable_get('uc_store_street2', NULL), FALSE, NULL, 128);
-  $form['address']['uc_store_city'] = uc_textfield(uc_get_field_name('city'), variable_get('uc_store_city', NULL), FALSE);
-  $form['address']['uc_store_country'] = uc_country_select(uc_get_field_name('country'), uc_store_default_country());
-
-  if (isset($_POST['uc_store_country'])) {
-    $country_id = intval($_POST['uc_store_country']);
-  }
-  else {
-    $country_id = uc_store_default_country();
-  }
-  $form['address']['uc_store_zone'] = uc_zone_select(uc_get_field_name('zone'), variable_get('uc_store_zone', NULL), NULL, $country_id);
-  $form['address']['uc_store_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), variable_get('uc_store_postal_code', NULL), FALSE, NULL, 10);
+  $form['address']['address'] = array(
+    '#type' => 'uc_address',
+    '#default_value' => array(
+      'uc_store_street1' => variable_get('uc_store_street1', ''),
+      'uc_store_street2' => variable_get('uc_store_street2', ''),
+      'uc_store_city' => variable_get('uc_store_city', ''),
+      'uc_store_zone' => variable_get('uc_store_zone', 0),
+      'uc_store_country' => isset($form_state['values']) ? $form_state['values']['uc_store_country'] : uc_store_default_country(),
+      'uc_store_postal_code' => variable_get('uc_store_postal_code', ''),
+    ),
+    '#required' => FALSE,
+    '#key_prefix' => 'uc_store',
+  );
 
   $form['currency'] = array(
     '#type' => 'fieldset',

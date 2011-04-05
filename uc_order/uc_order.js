@@ -133,10 +133,6 @@ function apply_address(type, address_str) {
 
   if (jQuery('#edit-' + type + '-country').val() != address['country']) {
     jQuery('#edit-' + type + '-country').val(address['country']);
-    try {
-      uc_update_zone_select('edit-' + type + '-country', address['zone']);
-    }
-    catch (err) {}
   }
 
   jQuery('#edit-' + type + '-zone').val(address['zone']);
