@@ -218,7 +218,7 @@ function uc_store_customer_search() {
       $query->condition('o.' . $address . '_first_name', $first_name, 'LIKE');
     }
     if ($last_name !== '0' && $last_name !== '%') {
-      $query->condition('o.' . $address . '_last_name', $first_name, 'LIKE');
+      $query->condition('o.' . $address . '_last_name', $last_name, 'LIKE');
     }
     if ($email !== '0' && $email !== '%') {
       $query->addField('o', 'primary_email');
