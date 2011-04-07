@@ -1784,14 +1784,18 @@ function uc_product_get_cost($node_id) {
 function uc_product_get_picture($nid, $style = 'uc_product') {
   $product = node_load($nid);
 
-  return field_view_value('node', $product, 'uc_product_image', $product->uc_product_image[$product->language][0], array(
-    'label' => 'hidden',
-    'type' => 'image',
-    'settings' => array(
-      'image_link' => 'content',
-      'image_style' => $style,
-    ),
-  ), $product->language);
+  $field_name = variable_get('uc_image_' . $product->type, 'uc_product_image');
+
+  if (isset($product->{$field_name}[$product->language][0])) {
+    return field_view_value('node', $product, $field_name, $product->{$field_name}[$product->language][0], array(
+      'label' => 'hidden',
+      'type' => 'image',
+      'settings' => array(
+        'image_link' => 'content',
+        'image_style' => $style,
+      ),
+    ), $product->language);
+  }
 }
 
 /**
