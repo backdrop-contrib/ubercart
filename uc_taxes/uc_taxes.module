@@ -384,7 +384,9 @@ function uc_taxes_rate_save($rate) {
   $p_insert->execute();
   $l_insert->execute();
 
-  rules_clear_cache();
+  if (module_exists('rules')) {
+    rules_clear_cache();
+  }
 
   return $rate;
 }
@@ -454,7 +456,9 @@ function uc_taxes_rate_delete($rate_id) {
     ->execute();
 
   // Delete the associated conditions if they have been saved to the database.
-  rules_config_delete(array('uc_taxes_' . $rate_id));
+  if (module_exists('rules')) {
+    rules_config_delete(array('uc_taxes_' . $rate_id));
+  }
 }
 
 /**
@@ -511,8 +515,13 @@ function uc_taxes_uc_calculate_tax($order) {
       }
     }
 
-    $set = rules_config_load('uc_taxes_' . $tax->id);
-    $apply = $set->execute($order);
+    if (module_exists('rules')) {
+      $set = rules_config_load('uc_taxes_' . $tax->id);
+      $apply = $set->execute($order);
+    }
+    else {
+      $apply = TRUE;
+    }
 
     if ($apply) {
       $line_item = uc_taxes_apply_tax($order, $tax);

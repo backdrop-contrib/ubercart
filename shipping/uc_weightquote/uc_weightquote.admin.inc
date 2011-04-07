@@ -94,9 +94,11 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
     '#field_suffix' => t('!sign per !unit', array('!sign' => $sign_flag ? $currency_sign : '', '!unit' => variable_get('uc_weight_unit', 'lb'))),
   );
 
-  $conditions = rules_config_load('get_quote_from_weightquote_' . $mid);
-  if ($conditions) {
-    $conditions->form($form, $form_state);
+  if (module_exists('rules')) {
+    $conditions = rules_config_load('get_quote_from_weightquote_' . $mid);
+    if ($conditions) {
+      $conditions->form($form, $form_state);
+    }
   }
 
   $form['actions'] = array('#type' => 'actions');
@@ -165,7 +167,9 @@ function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
     variable_set('uc_quote_method_weight', $weight);
 
     // Ensure Rules picks up the new condition.
-    entity_flush_caches();
+    if (module_exists('rules')) {
+      entity_flush_caches();
+    }
 
     drupal_set_message(t('Created and enabled new weight quote shipping method.'));
   }

@@ -94,9 +94,11 @@ function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
     '#field_suffix' => $sign_flag ? $currency_sign : '',
   );
 
-  $conditions = rules_config_load('get_quote_from_flatrate_' . $mid);
-  if ($conditions) {
-    $conditions->form($form, $form_state);
+  if (module_exists('rules')) {
+    $conditions = rules_config_load('get_quote_from_flatrate_' . $mid);
+    if ($conditions) {
+      $conditions->form($form, $form_state);
+    }
   }
 
   $form['actions'] = array('#type' => 'actions');
@@ -165,7 +167,9 @@ function uc_flatrate_admin_method_edit_form_submit($form, &$form_state) {
     variable_set('uc_quote_method_weight', $weight);
 
     // Ensure Rules picks up the new condition.
-    entity_flush_caches();
+    if (module_exists('rules')) {
+      entity_flush_caches();
+    }
 
     drupal_set_message(t('Created and enabled new flat rate shipping method.'));
   }
@@ -207,7 +211,9 @@ function uc_flatrate_admin_method_confirm_delete_submit($form, &$form_state) {
     ->condition('mid', $mid)
     ->execute();
 
-  rules_config_delete(array('get_quote_from_flatrate_' . $mid));
+  if (module_exists('rules')) {
+    rules_config_delete(array('get_quote_from_flatrate_' . $mid));
+  }
 
   $enabled = variable_get('uc_quote_enabled', array());
   unset($enabled['flatrate_' . $mid]);

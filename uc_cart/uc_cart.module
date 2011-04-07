@@ -1305,6 +1305,27 @@ function uc_cart_complete_sale($order, $login = FALSE) {
 }
 
 /**
+ * Implements hook_uc_checkout_complete().
+ *
+ * Sends basic e-mail notifications if Rules is not installed.
+ */
+function uc_cart_uc_checkout_complete($order) {
+  if (!module_exists('rules')) {
+    module_load_include('inc', 'uc_order', 'uc_order.rules');
+
+    $subject = t('Your Order at !store', array('!store' => variable_get('uc_store_name', t('Our store'))));
+
+    if (variable_get('uc_checkout_email_customer', TRUE)) {
+      uc_order_action_email_invoice($order, uc_store_email_from(), $order->primary_email, $subject, 'customer', 'checkout-mail');
+    }
+
+    if (variable_get('uc_checkout_email_admin', TRUE)) {
+      uc_order_action_email_invoice($order, uc_store_email_from(), variable_get('uc_store_email', ini_get('sendmail_from')), $subject, 'admin', 'admin-mail');
+    }
+  }
+}
+
+/**
  * Themes the sale completion page.
  *
  * @param $message

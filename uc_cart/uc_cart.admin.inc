@@ -305,6 +305,30 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     ),
   );
 
+  if (!module_exists('rules')) {
+    $form['checkout']['uc_checkout_email_customer'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Send e-mail invoice to customer after checkout.'),
+      '#default_value' => variable_get('uc_checkout_email_customer', TRUE),
+      '#states' => array(
+        'visible' => array(
+          'input[name="uc_checkout_enabled"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    $form['checkout']['uc_checkout_email_admin'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Send e-mail order notification to admin after checkout.'),
+      '#description' => t('Install <a href="!url">Rules</a> for more control over notifications.', array('!url' => 'http://drupal.org/project/rules')),
+      '#default_value' => variable_get('uc_checkout_email_admin', TRUE),
+      '#states' => array(
+        'visible' => array(
+          'input[name="uc_checkout_enabled"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+  }
+
   $form['instructions'] = array(
     '#type' => 'fieldset',
     '#title' => t('Instruction messages'),

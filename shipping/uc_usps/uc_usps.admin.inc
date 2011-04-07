@@ -52,15 +52,17 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
   );
 
-  $form['domestic']['env_conditions'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Envelope service conditions'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-  $conditions = rules_config_load('get_quote_from_usps_env');
-  if ($conditions) {
-    $conditions->form($form['domestic']['env_conditions'], $form_state);
+  if (module_exists('rules')) {
+    $form['domestic']['env_conditions'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Envelope service conditions'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $conditions = rules_config_load('get_quote_from_usps_env');
+    if ($conditions) {
+      $conditions->form($form['domestic']['env_conditions'], $form_state);
+    }
   }
 
   $form['domestic']['uc_usps_services'] = array(
@@ -71,15 +73,17 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
   );
 
-  $form['domestic']['parcel_conditions'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Parcel service conditions'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-  $conditions = rules_config_load('get_quote_from_usps');
-  if ($conditions) {
-    $conditions->form($form['domestic']['parcel_conditions'], $form_state);
+  if (module_exists('rules')) {
+    $form['domestic']['parcel_conditions'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Parcel service conditions'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $conditions = rules_config_load('get_quote_from_usps');
+    if ($conditions) {
+      $conditions->form($form['domestic']['parcel_conditions'], $form_state);
+    }
   }
 
   $form['international'] = array(
@@ -98,15 +102,17 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
   );
 
-  $form['international']['env_conditions'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Envelope service conditions'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-  $conditions = rules_config_load('get_quote_from_usps_intl_env');
-  if ($conditions) {
-    $conditions->form($form['international']['env_conditions'], $form_state);
+  if (module_exists('rules')) {
+    $form['international']['env_conditions'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Envelope service conditions'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $conditions = rules_config_load('get_quote_from_usps_intl_env');
+    if ($conditions) {
+      $conditions->form($form['international']['env_conditions'], $form_state);
+    }
   }
 
   $form['international']['uc_usps_intl_services'] = array(
@@ -117,15 +123,17 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
   );
 
-  $form['international']['parcel_conditions'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Parcel service conditions'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-  $conditions = rules_config_load('get_quote_from_usps_intl');
-  if ($conditions) {
-    $conditions->form($form['international']['parcel_conditions'], $form_state);
+  if (module_exists('rules')) {
+    $form['international']['parcel_conditions'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Parcel service conditions'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $conditions = rules_config_load('get_quote_from_usps_intl');
+    if ($conditions) {
+      $conditions->form($form['international']['parcel_conditions'], $form_state);
+    }
   }
 
   // Container for quote options
