@@ -1074,9 +1074,9 @@ function uc_reports_sales_custom() {
   }
 
   // Calculate the totals for the report.
-  $order_total = db_query("SELECT COUNT(*) FROM {uc_orders} WHERE :start <= created AND created <= :end AND order_status IN (:statuses)", array(':statuses' => $args['status'], ':start' => $subreport['start'], ':end' => $subreport['end']))->fetchField();
-  $product_total = db_query("SELECT SUM(qty) FROM {uc_orders} AS o LEFT JOIN {uc_order_products} AS op ON o.order_id = op.order_id WHERE :start <= created AND created <= :end AND order_status IN (:statuses)", array(':statuses' => $args['status'], ':start' => $subreport['start'], ':end' => $subreport['end']))->fetchField();
-  $revenue_total = db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE :start <= created AND created <= :end AND order_status IN (:statuses)", array(':statuses' => $args['status'], ':start' => $subreport['start'], ':end' => $subreport['end']))->fetchField();
+  $order_total = db_query("SELECT COUNT(*) FROM {uc_orders} WHERE :start <= created AND created <= :end AND order_status IN (:statuses)", array(':statuses' => $args['status'], ':start' => $args['start_date'], ':end' => $args['end_date']))->fetchField();
+  $product_total = db_query("SELECT SUM(qty) FROM {uc_orders} AS o LEFT JOIN {uc_order_products} AS op ON o.order_id = op.order_id WHERE :start <= created AND created <= :end AND order_status IN (:statuses)", array(':statuses' => $args['status'], ':start' => $args['start_date'], ':end' => $args['end_date']))->fetchField();
+  $revenue_total = db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE :start <= created AND created <= :end AND order_status IN (:statuses)", array(':statuses' => $args['status'], ':start' => $args['start_date'], ':end' => $args['end_date']))->fetchField();
 
   // Add the total row to the report table.
   $rows[] = array(
