@@ -72,6 +72,20 @@ function hook_uc_payment_gateway() {
 }
 
 /**
+ * Alter payment gateways.
+ *
+ * @param $gateways
+ *   Payment gateways passed by reference.
+ */
+function hook_uc_payment_gateway_alter(&$gateways) {
+  // Change the title of all gateways.
+  foreach ($gateways as &$gateway) {
+    // $gateway was passed by reference.
+    $gateway['title'] = t('Altered gateway @original', array('@original' => $gateway['title']));
+  }
+}
+
+/**
  * Registers callbacks for payment methods.
  *
  * Payment methods are different ways to collect payment. By default, Ubercart
