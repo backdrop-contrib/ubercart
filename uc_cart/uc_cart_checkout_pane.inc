@@ -83,7 +83,7 @@ function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NUL
           $contents['new_account']['name'] = array(
             '#type' => 'textfield',
             '#title' => t('Username'),
-            '#default_value' => $order->data['new_user']['name'],
+            '#default_value' => isset($order->data['new_user']['name']) ? $order->data['new_user']['name'] : '',
             '#maxlength' => 60,
             '#size' => 32,
           );
