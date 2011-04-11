@@ -289,7 +289,7 @@ function uc_store_element_info() {
 /**
  * Element process hook for address fields.
  */
-function uc_store_process_address_field($element) {
+function uc_store_process_address_field($element, $form_state) {
   $prefix = $element['#key_prefix'] ? ($element['#key_prefix'] . '_') : '';
 
   // Ensure the value is an array.
@@ -349,6 +349,11 @@ function uc_store_process_address_field($element) {
             '#disabled' => TRUE,
             '#required' => FALSE,
           );
+        }
+
+        // Avoid "illegal choice detected" errors when country field is changed.
+        if ($form_state['process_input'] && !$form_state['submitted'] && isset($value[$prefix . 'zone']) && !isset($subelement['#options'][$value[$prefix . 'zone']])) {
+          $subelement['#value'] = 0;
         }
         break;
 
