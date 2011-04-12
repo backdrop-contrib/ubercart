@@ -257,9 +257,10 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
         $contents['select_address'] = array(
           '#type' => 'select',
           '#title' => t('Saved addresses'),
-          '#options' => $addresses,
+          '#options' => $addresses['#options'],
           '#ajax' => array(
             'callback' => 'uc_cart_select_address',
+            'wrapper' => $pane . '-address-pane',
             'progress' => array(
               'type' => 'throbber',
             ),
@@ -282,7 +283,17 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
           ),
         ),
         '#required' => empty($form_state['values']['panes'][$pane]['copy_address']),
+        '#prefix' => '<div id="'. $pane .'-address-pane">',
+        '#suffix' => '</div>',
       );
+
+      if (isset($form_state['values']['panes'][$pane]['select_address']) && isset($addresses[$form_state['values']['panes'][$pane]['select_address']])) {
+        $address = $addresses[$form_state['values']['panes'][$pane]['select_address']];
+        foreach ($address as $field => $value) {
+          //$contents['address']['#value'][$pane . '_' . $field] = $value;
+          $form_state['input']['panes'][$pane]['address'][$pane . '_' . $field] = $value;
+        }
+      }
 
       return array('description' => $description, 'contents' => $contents);
 
@@ -310,7 +321,11 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
  * Ajax callback; select previous address.
  */
 function uc_cart_select_address($form, &$form_state) {
-  // unfinished
+  $element = &$form;
+  foreach (array_slice($form_state['triggering_element']['#array_parents'], 0, -1) as $field) {
+    $element = &$element[$field];
+  }
+  return $element['address'];
 }
 
 /**
