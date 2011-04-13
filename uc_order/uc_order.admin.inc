@@ -357,7 +357,7 @@ function uc_order_status_create_form_submit($form, &$form_state) {
 /**
  * Displays the main order admin screen, an overview of all received orders.
  */
-function uc_order_admin($query = NULL, $search = FALSE) {
+function uc_order_admin($condition = NULL, $search = FALSE) {
   $header = array(
     array('data' => t('Actions')),
     array('data' => t('Order ID'), 'field' => 'o.order_id', 'sort' => 'desc'),
@@ -367,42 +367,32 @@ function uc_order_admin($query = NULL, $search = FALSE) {
     array('data' => t('Status'), 'field' => 'os.title'),
   );
 
-  $address = variable_get('uc_customer_list_address', 'billing');
-  if ($address == 'shipping') {
-    $address = 'delivery';
+  $address = variable_get('uc_customer_list_address', 'billing') == 'shipping' ? 'delivery' : 'billing';
+
+  $query = db_select('uc_orders', 'o')
+    ->fields('o', array(
+      'order_id',
+      'uid',
+      'order_total',
+      'created',
+      $address . '_first_name',
+      $address . '_last_name',
+      'order_status',
+    ));
+
+  $query->leftJoin('uc_order_statuses', 'os', 'o.order_status = os.order_status_id');
+  $query->fields('os', array('title'));
+
+  if (!is_null($condition) && $condition->count()) {
+    $query->condition($condition);
   }
-  else {
-    $address = 'billing';
-  }
 
-  if (is_null($query)) {
-    $query = db_select('uc_orders', 'o')
-      ->fields('o', array(
-        'order_id',
-        'uid',
-        'order_total',
-        'created',
-      ));
-    $o_first_name = $query->addField('o', $address . '_first_name');
-    $o_last_name = $query->addField('o', $address . '_last_name');
-    $o_order_status = $query->addField('o', 'order_status');
-
-    $os = $query->leftJoin('uc_order_statuses', 'os', 'o.order_status = os.order_status_id');
-
-    $query->fields($os, array('title'));
-    $show_status = 1;
-
-    if (arg(3) == 'sort' && !is_null(arg(4))) {
-      $_SESSION['sort_status'] = arg(4);
+  if (!isset($_GET['status']) || $_GET['status'] != 'all') {
+    if (!empty($_GET['status']) && is_string($_GET['status'])) {
+      $query->condition('o.order_status', $_GET['status']);
     }
-
-    if (!isset($_SESSION['sort_status']) || $_SESSION['sort_status'] != 'all') {
-      if (!empty($_SESSION['sort_status']) && is_string($_SESSION['sort_status'])) {
-        $query->condition($o_order_status, $_SESSION['sort_status']);
-      }
-      else {
-        $query->condition($o_order_status, uc_order_status_list('general', TRUE), 'IN');
-      }
+    else {
+      $query->condition('o.order_status', uc_order_status_list('general', TRUE), 'IN');
     }
   }
 
@@ -414,21 +404,13 @@ function uc_order_admin($query = NULL, $search = FALSE) {
 
   $result = $query->execute();
   foreach ($result as $order) {
-    if ($address == 'shipping') {
-      $order_name = $order->delivery_first_name . ' ' . $order->delivery_last_name;
-    }
-    else {
-      $order_name = $order->billing_first_name . ' ' . $order->billing_last_name;
-    }
-    if (trim($order_name) == '') {
-      if ($order->uid !== 0) {
-        $account = db_query("SELECT name FROM {users} WHERE uid = :uid", array(':uid' => $order->uid))->fetchField();
-      }
-      if (empty($account)) {
-        $order_name = t('User: none');
+    $order_name = trim($order->{$address . '_first_name'} . ' ' . $order->{$address . '_last_name'});
+    if (!$order_name) {
+      if ($order->uid && $account = db_query("SELECT name FROM {users} WHERE uid = :uid", array(':uid' => $order->uid))->fetchField()) {
+        $order_name = t('User: !name', array('!name' => $account));
       }
       else {
-        $order_name = t('User: !name', array('!name' => $account));
+        $order_name = t('User: none');
       }
     }
 
@@ -470,6 +452,7 @@ function uc_order_admin($query = NULL, $search = FALSE) {
     '#header' => $header,
     '#rows' => $rows,
     '#attributes' => array('class' => array('uc-orders-table')),
+    '#weight' => 1,
   );
   $build['pager'] = array(
     '#theme' => 'pager',
@@ -487,7 +470,7 @@ function uc_order_admin($query = NULL, $search = FALSE) {
  * @ingroup forms
  */
 function uc_order_admin_sort_form($form, &$form_state) {
-  $options = array('-1' => t('Active orders'));
+  $options = array('' => t('Active orders'));
 
   foreach (uc_order_status_list() as $status) {
     $options[$status['id']] = $status['title'];
@@ -495,18 +478,11 @@ function uc_order_admin_sort_form($form, &$form_state) {
 
   $options['all'] = t('All orders');
 
-  if (!isset($_SESSION['sort_status']) || is_null($_SESSION['sort_status'])) {
-    $default_status = -1;
-  }
-  else {
-    $default_status = $_SESSION['sort_status'];
-  }
-
   $form['status'] = array(
     '#type' => 'select',
     '#title' => t('View by status'),
     '#options' => $options,
-    '#default_value' => $default_status,
+    '#default_value' => isset($_GET['status']) ? $_GET['status'] : NULL,
     '#attributes' => array('onchange' => 'this.form.submit();')
   );
 
@@ -526,14 +502,11 @@ function uc_order_admin_sort_form($form, &$form_state) {
  * @see uc_order_admin_sort_form()
  */
 function uc_order_admin_sort_form_submit($form, &$form_state) {
-  if ($form_state['values']['status'] == '-1') {
-    unset($_SESSION['sort_status']);
-    drupal_goto('admin/store/orders');
+  $options = array();
+  if ($form_state['values']['status']) {
+    $options['query']['status'] = $form_state['values']['status'];
   }
-  else {
-    $_SESSION['sort_status'] = $form_state['values']['status'];
-    drupal_goto('admin/store/orders/sort/' . $form_state['values']['status']);
-  }
+  drupal_goto('admin/store/orders', $options);
 }
 
 /**
@@ -672,52 +645,35 @@ function uc_order_usearch() {
     $start_date = db_like(arg(11));
     $end_date = db_like(arg(12));
 
-    $query = db_select('uc_orders', 'o');
-    $os = $query->leftJoin('uc_order_statuses', 'os', 'o.order_status = os.order_status_id');
-    $query->fields('o', array(
-        'order_id',
-        'order_total',
-        'created',
-      ))
-      ->fields($os, array('title'));
-    $ob_first_name = $query->addField('o', 'billing_first_name', 'ob_first_name');
-    $ob_last_name = $query->addField('o', 'billing_last_name', 'ob_last_name');
-    $ob_company = $query->addField('o', 'billing_company', 'ob_company');
-    $os_first_name = $query->addField('o', 'delivery_first_name', 'os_first_name');
-    $os_last_name = $query->addField('o', 'delivery_last_name', 'os_last_name');
-    $os_company = $query->addField('o', 'delivery_company', 'os_company');
-    $o_order_status = $query->addField('o', 'order_status', 'o_order_status');
+    $condition = db_and();
 
-    $query->condition($o_order_status, uc_order_status_list('specific', TRUE), 'NOT IN')
-      ->orderBy('created', 'DESC');
-
-    if ($billing_first_name !== '0' && $billing_first_name !== '%') {
-      $query->condition($ob_first_name, $billing_first_name, 'LIKE');
+    if ($billing_first_name && $billing_first_name !== '%') {
+      $condition->condition('o.billing_first_name', $billing_first_name, 'LIKE');
     }
-    if ($billing_last_name !== '0' && $billing_last_name !== '%') {
-      $query->condition($ob_last_name, $billing_last_name, 'LIKE');
+    if ($billing_last_name && $billing_last_name !== '%') {
+      $condition->condition('o.billing_last_name', $billing_last_name, 'LIKE');
     }
-    if ($billing_company !== '0' && $billing_company !== '%') {
-      $query->condition($ob_company, $billing_company, 'LIKE');
+    if ($billing_company && $billing_company !== '%') {
+      $condition->condition('o.billing_company', $billing_company, 'LIKE');
     }
-    if ($shipping_first_name !== '0' && $shipping_first_name !== '%') {
-      $query->condition($os_first_name, $shipping_first_name, 'LIKE');
+    if ($shipping_first_name && $shipping_first_name !== '%') {
+      $condition->condition('o.delivery_first_name', $shipping_first_name, 'LIKE');
     }
-    if ($shipping_last_name !== '0' && $shipping_last_name !== '%') {
-      $query->condition($os_last_name, $shipping_last_name, 'LIKE');
+    if ($shipping_last_name && $shipping_last_name !== '%') {
+      $condition->condition('o.delivery_last_name', $shipping_last_name, 'LIKE');
     }
-    if ($shipping_company !== '0' && $shipping_company !== '%') {
-      $query->condition($os_company, $shipping_company, 'LIKE');
+    if ($shipping_company && $shipping_company !== '%') {
+      $condition->condition('o.delivery_company', $shipping_company, 'LIKE');
     }
 
-    if ($start_date !== '0') {
-      $query->condition('created', $start_date, '>=');
+    if ($start_date) {
+      $condition->condition('created', $start_date, '>=');
     }
-    if ($end_date !== '0') {
-      $query->condition('created', $end_date, '<=');
+    if ($end_date) {
+      $condition->condition('created', $end_date, '<=');
     }
 
-    $build += uc_order_admin($query, TRUE);
+    $build += uc_order_admin($condition, TRUE);
   }
 
   return $build;

@@ -802,7 +802,7 @@ function uc_reports_sales_summary() {
     if (!empty($status['title'])) {
       // Add the total number of orders with this status to the table.
       $rows[] = array(
-        l($status['title'], 'admin/store/orders/sort/' . $status['order_status_id']),
+        l($status['title'], 'admin/store/orders', array('query' => array('status' => $status['order_status_id']))),
         $status['order_count'],
       );
     }
