@@ -235,7 +235,7 @@ function uc_taxes_clone($rate_id) {
   $rate = uc_taxes_rate_save($rate);
 
   // Clone the associated conditions as well.
-  if (module_exists('rules') && conditions = rules_config_load('uc_taxes_' . $rate_id)) {
+  if (module_exists('rules') && $conditions = rules_config_load('uc_taxes_' . $rate_id)) {
     unset($conditions->id);
     $conditions->save('uc_taxes_' . $rate->id);
   }
