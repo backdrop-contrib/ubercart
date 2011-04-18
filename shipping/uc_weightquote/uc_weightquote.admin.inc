@@ -97,6 +97,7 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
   if (module_exists('rules')) {
     $conditions = rules_config_load('get_quote_from_weightquote_' . $mid);
     if ($conditions) {
+      RulesPluginUI::$basePath = 'admin/config/workflow/rules/components';
       $conditions->form($form, $form_state);
     }
   }

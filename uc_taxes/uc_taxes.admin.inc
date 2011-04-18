@@ -149,6 +149,7 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
   if (module_exists('rules')) {
     $conditions = rules_config_load('uc_taxes_' . $rate_id);
     if ($conditions) {
+      RulesPluginUI::$basePath = 'admin/config/workflow/rules/components';
       $conditions->form($form, $form_state);
     }
   }

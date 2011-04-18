@@ -83,6 +83,7 @@ function uc_ups_admin_settings($form, &$form_state) {
     );
     $conditions = rules_config_load('get_quote_from_ups');
     if ($conditions) {
+      RulesPluginUI::$basePath = 'admin/config/workflow/rules/components';
       $conditions->form($form['services']['service_conditions'], $form_state);
     }
   }
