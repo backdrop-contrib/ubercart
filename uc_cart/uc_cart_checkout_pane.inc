@@ -311,7 +311,7 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
     case 'review':
       $review[] = array('title' => t('Address'), 'data' => uc_order_address($order, $pane, FALSE));
       if (uc_address_field_enabled('phone') && !empty($order->{$pane . '_phone'})) {
-        $review[] = array('title' => t('Phone'), 'data' => check_plain($pane . '_phone'));
+        $review[] = array('title' => t('Phone'), 'data' => check_plain($order->{$pane . '_phone'}));
       }
       return $review;
   }
