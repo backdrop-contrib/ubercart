@@ -202,7 +202,7 @@ function uc_paypal_ec_review() {
     drupal_goto('cart');
   }
 
-  if ($_SESSION['have_details'][$order->order_id] !== TRUE) {
+  if (!isset($_SESSION['have_details'][$order->order_id])) {
     $nvp_request = array(
       'METHOD' => 'GetExpressCheckoutDetails',
       'TOKEN' => $_SESSION['TOKEN'],
@@ -231,7 +231,7 @@ function uc_paypal_ec_review() {
     }
 
     $order->delivery_street1 = check_plain($nvp_response['SHIPTOSTREET']);
-    $order->delivery_street2 = check_plain($nvp_response['SHIPTOSTREET2']);
+    $order->delivery_street2 = isset($nvp_response['SHIPTOSTREET2']) ? check_plain($nvp_response['SHIPTOSTREET2']) : '';
     $order->delivery_city = check_plain($nvp_response['SHIPTOCITY']);
     $order->delivery_zone = !empty($zone_id) ? $zone_id : 0;
     $order->delivery_postal_code = check_plain($nvp_response['SHIPTOZIP']);
@@ -341,7 +341,7 @@ function uc_paypal_ec_review_form($form, &$form_state, $order) {
 }
 
 function uc_paypal_ec_review_form_validate($form, &$form_state) {
-  if ($form_state['values']['shippable'] == 'true') {
+  if (isset($form_state['values']['shippable']) && $form_state['values']['shippable'] == 'true') {
     if (!isset($_POST['quote-option'])) {
       form_set_error('shipping', t('You must calculate and select a shipping option.'));
     }
@@ -351,7 +351,7 @@ function uc_paypal_ec_review_form_validate($form, &$form_state) {
 function uc_paypal_ec_review_form_submit($form, &$form_state) {
   $order = uc_order_load($_SESSION['cart_order']);
 
-  if ($form_state['values']['shippable'] == 'true') {
+  if (isset($form_state['values']['shippable']) && $form_state['values']['shippable'] == 'true') {
     $method_accessorials= split("---", isset($_POST['quote-option']) ? strval($_POST['quote-option']) : 0);
     $order->quote['method'] = $method_accessorials[0];
     $order->quote['accessorials'] = $method_accessorials[1];
