@@ -144,8 +144,8 @@ function hook_uc_line_item_data_alter(&$items) {
  *
  * @param $op
  *   The action being performed.
- * @param &$order
- *   This is the order object or a reference to it as noted below.
+ * @param $order
+ *   This is the order object.
  * @param $arg2
  *   This is variable and is based on the value of $op:
  *   - new: Called when an order is created. $order is a reference to the new
@@ -191,7 +191,7 @@ function hook_uc_line_item_data_alter(&$items) {
  *       Expects in return a value (positive or negative) by which to modify the
  *       order total.
  */
-function hook_uc_order($op, &$order, $arg2) {
+function hook_uc_order($op, $order, $arg2) {
   switch ($op) {
     case 'save':
       // Do something to save payment info!
