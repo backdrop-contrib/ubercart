@@ -63,7 +63,7 @@ function theme_uc_roles_expiration($variables) {
 
   $header = _uc_roles_expiration_header();
 
-  if (is_array($form['name'])) {
+  if (isset($form['name'])) {
     foreach (element_children($form['name']) as $key) {
       $rows[] = array(
         drupal_render($form['name'][$key]),
@@ -79,7 +79,7 @@ function theme_uc_roles_expiration($variables) {
   }
 
   // Render everything.
-  $output .= theme('table', array('header' => $header, 'rows' => $rows));
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
   $output .= theme('pager');
   $output .= drupal_render_children($form);
 
