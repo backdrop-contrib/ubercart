@@ -32,6 +32,7 @@ function uc_usps_country_map($code = NULL) {
     104 => 'Myanmar (Burma)',
     604 => 'Peru',
     638 => 'Reunion',
+    643 => 'Russia',
     688 => 'Serbia-Montenegro',
     703 => 'Slovak Republic',
     792 => 'Turkey',
