@@ -245,7 +245,8 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
           '#type' => 'checkbox',
           '#title' => $copy,
           '#ajax' => array(
-            'callback' => '', // Dummy callback, as no action is needed.
+            'callback' => 'uc_checkout_pane_address_render',
+            'wrapper' => $pane . '-address-pane',
             'progress' => array(
               'type' => 'throbber',
             ),
@@ -259,7 +260,7 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
           '#title' => t('Saved addresses'),
           '#options' => $addresses['#options'],
           '#ajax' => array(
-            'callback' => 'uc_cart_select_address',
+            'callback' => 'uc_checkout_pane_address_render',
             'wrapper' => $pane . '-address-pane',
             'progress' => array(
               'type' => 'throbber',
@@ -277,21 +278,27 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
         '#type' => 'uc_address',
         '#default_value' => $order,
         '#key_prefix' => $pane,
-        '#states' => array(
-          'invisible' => array(
-            'input[name="panes[' . $pane . '][copy_address]"]' => array('checked' => TRUE),
-          ),
-        ),
-        '#required' => empty($form_state['values']['panes'][$pane]['copy_address']),
+        '#hidden' => !empty($form_state['values']['panes'][$pane]['copy_address']),
         '#prefix' => '<div id="'. $pane .'-address-pane">',
         '#suffix' => '</div>',
       );
 
-      if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#name'] == "panes[$pane][select_address]") {
-        $address = $addresses[$form_state['values']['panes'][$pane]['select_address']];
-        foreach ($address as $field => $value) {
-          //$contents['address']['#value'][$pane . '_' . $field] = $value;
-          $form_state['input']['panes'][$pane]['address'][$pane . '_' . $field] = $value;
+      if (isset($form_state['triggering_element'])) {
+        $element = &$form_state['triggering_element'];
+
+        if ($element['#name'] == "panes[$pane][copy_address]" && $element['#value']) {
+          $address = &$form_state['values']['panes'][$source]['address'];
+          foreach ($address as $field => $value) {
+            $field = str_replace($source, $pane, $field);
+            $form_state['input']['panes'][$pane]['address'][$field] = $value;
+          }
+        }
+
+        if ($element['#name'] == "panes[$pane][select_address]") {
+          $address = $addresses[$element['#value']];
+          foreach ($address as $field => $value) {
+            $form_state['input']['panes'][$pane]['address'][$pane . '_' . $field] = $value;
+          }
         }
       }
 
@@ -318,9 +325,9 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
 }
 
 /**
- * Ajax callback; select previous address.
+ * Ajax callback to re-render the full address element.
  */
-function uc_cart_select_address($form, &$form_state) {
+function uc_checkout_pane_address_render($form, &$form_state) {
   $element = &$form;
   foreach (array_slice($form_state['triggering_element']['#array_parents'], 0, -1) as $field) {
     $element = &$element[$field];
