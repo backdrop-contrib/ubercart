@@ -331,18 +331,19 @@ function uc_store_process_address_field($element, $form_state) {
           '#type' => 'select',
           '#prefix' => '<div id="uc-store-address-' . str_replace('_', '-', $prefix) . 'zone-wrapper">',
           '#suffix' => '</div>',
+          '#empty_value' => 0,
         );
 
         $zones = db_query("SELECT zone_id, zone_name FROM {uc_zones} WHERE zone_country_id = :country", array(':country' => $value[$prefix . 'country']))->fetchAllKeyed();
         if (!empty($zones)) {
           natcasesort($zones);
           $subelement += array(
-            '#options' => array('0' => t('Please select')) + $zones,
+            '#options' => $zones,
           );
         }
         else {
           $subelement += array(
-            '#options' => array('0' => t('Not applicable')),
+            '#options' => array(),
             '#disabled' => TRUE,
             '#required' => FALSE,
           );
@@ -389,7 +390,12 @@ function uc_store_process_address_field($element, $form_state) {
       '#pre_render' => array('uc_store_pre_render_address_field'),
       '#access' => $element['#hidden'] ? FALSE : uc_address_field_enabled($field),
       '#required' => $element['#required'] ? uc_address_field_required($field) : FALSE,
+      '#needs_validation' => TRUE,
     );
+
+    if ($element[$prefix . $field]['#required'] && !$default) {
+      unset($element[$prefix . $field]['#default_value']);
+    }
   }
   return $element;
 }
