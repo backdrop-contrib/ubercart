@@ -217,7 +217,7 @@ function uc_product_kit_update(&$node) {
     }
   }
 
-  if (!$node->revision) {
+  if (empty($node->revision)) {
     db_delete('uc_product_kits')
       ->condition('vid', $node->vid)
       ->execute();
@@ -778,7 +778,7 @@ function uc_product_kit_add_to_cart_form($form, &$form_state, $node) {
     );
   }
   else {
-    $form['qty'] = array('#type' => 'hidden', '#value' => 1);
+    $form['qty'] = array('#type' => 'hidden', '#value' => $node->default_qty ? $node->default_qty : 1);
   }
 
   $form['actions'] = array('#type' => 'actions');
@@ -1020,6 +1020,7 @@ function uc_product_kit_uc_order_product_alter(&$product, $order) {
     // cart.
     $kit_product->data = module_invoke_all('uc_add_to_cart_data', $_POST['sub_products'][$kit_product->nid]);
     $kit_product->data['kit_id'] = $product->nid;
+    $kit_product->data['shippable'] = $product->shippable;
 
     // Run the product through the alter mill.
     foreach (module_implements('uc_cart_item') as $module) {

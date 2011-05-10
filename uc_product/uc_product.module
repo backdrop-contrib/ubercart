@@ -690,7 +690,7 @@ function uc_product_update($node) {
     $node->height = $node->dim_height;
   }
 
-  if ($node->revision) {
+  if (!empty($node->revision)) {
     drupal_write_record('uc_products', $node);
   }
   else {
@@ -1477,7 +1477,7 @@ function uc_product_add_to_cart_form($form, &$form_state, $node) {
     );
   }
   else {
-    $form['qty'] = array('#type' => 'hidden', '#value' => 1);
+    $form['qty'] = array('#type' => 'hidden', '#value' => $node->default_qty ? $node->default_qty : 1);
   }
 
   $form['actions'] = array('#type' => 'actions');
@@ -1768,34 +1768,40 @@ function uc_product_get_cost($node_id) {
 }
 
 /**
- * Returns an HTML img tag based on a node's attached image.
+ * Returns a product node's first attached image.
  *
  * @param $node_id
  *   The node's id.
- * @param $format
- *   The imagecache preset used to format the image. 'product' by default.
+ * @param $style
+ *   The image style used to format the image. 'uc_product' by default.
  *
  * @return
- *   An HTML img. When $format is not 'product', the image is a link to the
- *   'product_full' preset if a JavaScript display widget is available
- *   (Colorbox, Thickbox, and Lightbox2 are possible). For other values
- *   of $format, the image links to the node page.
+ *   A renderable array of the first product image, linked to the
+ *   product node, or an empty array if no image is available.
  */
 function uc_product_get_picture($nid, $style = 'uc_product') {
   $product = node_load($nid);
-
   $field_name = variable_get('uc_image_' . $product->type, 'uc_product_image');
+  $output = array();
 
-  if ($field_name && isset($product->{$field_name}[$product->language][0])) {
-    return field_view_value('node', $product, $field_name, $product->{$field_name}[$product->language][0], array(
+  if ($field_name && isset($product->$field_name)) {
+    $elements = field_view_field('node', $product, $field_name, array(
       'label' => 'hidden',
       'type' => 'image',
       'settings' => array(
         'image_link' => 'content',
         'image_style' => $style,
       ),
-    ), $product->language);
+    ));
+
+    // Extract the part of the render array we need.
+    $output = isset($elements[0]) ? $elements[0] : array();
+    if (isset($elements['#access'])) {
+      $output['#access'] = $elements['#access'];
+    }
   }
+
+  return $output;
 }
 
 /**
