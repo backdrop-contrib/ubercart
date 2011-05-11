@@ -45,13 +45,17 @@ function uc_paypal_ipn() {
   $payment_currency = check_plain($_POST['mc_currency']);
   $payment_fee = check_plain($_POST['mc_fee']);
   $receiver_email = check_plain($_POST['business']);
+  if ($receiver_email == '') {
+    $receiver_email = check_plain($_POST['receiver_email']);
+  }
   $txn_id = check_plain($_POST['txn_id']);
   $txn_type = check_plain($_POST['txn_type']);
   $payer_email = check_plain($_POST['payer_email']);
 
-  // Express Checkout IPNs may not have the WPS email stored. But if it is, make
-  // sure that the right account is being paid.
-  if (variable_get('uc_paypal_wps_email', '') && $receiver_email != variable_get('uc_paypal_wps_email', '')) {
+  // Express Checkout IPNs may not have the WPS email stored. But if it is,
+  // make sure that the right account is being paid.
+  $uc_paypal_wps_email = variable_get('uc_paypal_wps_email', '');
+  if (!empty($uc_paypal_wps_email) && drupal_strtolower($receiver_email) != drupal_strtolower($uc_paypal_wps_email)) {
     watchdog('uc_paypal', 'IPN for a different PayPal account attempted.', array(), WATCHDOG_ERROR);
     return;
   }
