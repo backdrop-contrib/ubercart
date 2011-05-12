@@ -291,6 +291,7 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
           foreach ($address as $field => $value) {
             $field = str_replace($source, $pane, $field);
             $form_state['input']['panes'][$pane]['address'][$field] = $value;
+            $order->$field = $value;
           }
         }
 
@@ -298,6 +299,7 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
           $address = $addresses[$element['#value']];
           foreach ($address as $field => $value) {
             $form_state['input']['panes'][$pane]['address'][$pane . '_' . $field] = $value;
+            $order->{$pane . '_' . $field} = $value;
           }
         }
       }

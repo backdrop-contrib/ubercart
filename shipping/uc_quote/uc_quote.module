@@ -258,20 +258,11 @@ function uc_quote_form_alter(&$form, &$form_state, $form_id) {
  * Adds Ajax shipping quote functionality to the checkout form.
  */
 function uc_quote_form_uc_cart_checkout_form_alter(&$form, &$form_state) {
-  $ajax = array(
-    'callback' => 'uc_quote_checkout_returned_rates',
-    'effect' => 'slide',
-    'progress' => array(
-      'type' => 'throbber',
-      'message' => t('Receiving shipping quotes...'),
-    ),
-  );
-
-  if (isset($form['panes']['delivery']['delivery_postal_code'])) {
-    $form['panes']['delivery']['delivery_postal_code']['#ajax'] = $ajax;
+  if (isset($form['panes']['delivery']['address'])) {
+    $form['panes']['delivery']['address']['#process'] = array('uc_store_process_address_field', 'uc_quote_process_checkout_address');
   }
-  if (isset($form['panes']['delivery']['delivery_address_select'])) {
-    $form['panes']['delivery']['delivery_address_select']['#ajax'] = $ajax;
+  if (isset($form['panes']['delivery']['select_address'])) {
+    $form['panes']['delivery']['select_address']['#ajax']['callback'] = 'uc_quote_select_address';
   }
   // @todo: Figure out what needs to be done when the copy-address box is checked.
 
@@ -281,6 +272,32 @@ function uc_quote_form_uc_cart_checkout_form_alter(&$form, &$form_state) {
       'wrapper' => 'line-items-div',
     );
   }
+}
+
+function uc_quote_select_address($form, $form_state) {
+  $return = uc_quote_checkout_returned_rates($form, $form_state);
+  $address = uc_checkout_pane_address_render($form, $form_state);
+
+  $return['#commands'][] = ajax_command_replace('#' . $form_state['triggering_element']['#ajax']['wrapper'], drupal_render($address));
+
+  return $return;
+}
+
+function uc_quote_process_checkout_address($element, $form_state) {
+  $ajax = array(
+    'callback' => 'uc_quote_checkout_returned_rates',
+    'effect' => 'slide',
+    'progress' => array(
+      'type' => 'throbber',
+      'message' => t('Receiving shipping quotes...'),
+    ),
+  );
+
+  if (isset($element['delivery_postal_code'])) {
+    $element['delivery_postal_code']['#ajax'] = $ajax;
+  }
+
+  return $element;
 }
 
 /******************************************************************************
