@@ -12,6 +12,7 @@
  *
  * @param $form
  *   The form array to summarize.
+ *
  * @return
  *   An array of summary information, structured for theme_item_list().
  */
@@ -57,13 +58,14 @@ function uc_summarize_form($form) {
 }
 
 /**
- * Summarize an individual element using its specified #summary if possible.
+ * Summarizes an individual element using its specified #summary if possible.
  *
  * @param $form
  *   The element's array in the form array.
  * @param $title
  *   TRUE or FALSE indicating whether or not to include the element's #title in
- *     the summary text.
+ *   the summary text.
+ *
  * @return
  *   A summary string for the element or a summary array for a fieldset.
  */
@@ -130,20 +132,21 @@ function uc_summarize_element($form, $title = FALSE) {
 }
 
 /**
- * Return an empty summary string.
+ * Returns an empty summary string.
  */
 function uc_summarize_null($form) {
   return array();
 }
 
 /**
- * Return the correct summary string for a checkbox element based on its
- *   current value.
+ * Returns the correct summary string for a checkbox element based on its
+ * current value.
  *
  * @param $true
  *   The summary string to use if the checkbox has been checked.
  * @param $false
  *   The summary string to use if the checkbox has not been checked.
+ *
  * @return
  *   The correct supplied string based on the current value of the checkbox.
  */
@@ -157,7 +160,7 @@ function uc_summarize_checkbox($form, $true, $false) {
 }
 
 /**
- * Summarize the form pages that are children of the specified path.
+ * Summarizes the form pages that are children of the specified path.
  *
  * @param $path
  *   The menu path to start from when checking for children forms.
@@ -167,6 +170,7 @@ function uc_summarize_checkbox($form, $true, $false) {
  * @param $only_parent
  *   When set to TRUE, forms will only be included from the given $path,
  *   no recursion will be done
+ *
  * @return
  *   An array of data representing a form page summary including keys for the
  *   page's 'path', and edit 'href', a summary 'title' and 'items'.
@@ -233,17 +237,17 @@ function uc_summarize_child_form_pages($path, $trim = FALSE, $only_parent = FALS
 }
 
 /**
- * Theme a summaries array into a handy div for use with some JS enhancement.
+ * Themes a summaries array into a handy div for use with some JS enhancement.
  *
  * @param $summaries
  *   An array of summary arrays each containing the following keys:
- *   - path - the path of the settings form the array is summarizing.
- *   - title - the title of the settings form.
- *   - href - the actual URL of the summary's form page.
- *   - items - an array of items formatted for theme_item_list().
+ *   - path: The path of the settings form the array is summarizing.
+ *   - title: The title of the settings form.
+ *   - href: The actual URL of the summary's form page.
+ *   - items: An array of items formatted for theme_item_list().
  * @param $link
  *   TRUE or FALSE indicating whether or not to display an edit icon linking to
- *     the settings form the summary represents.
+ *   the settings form the summary represents.
  *
  * @return
  *   The HTML output of the summary.
