@@ -6,13 +6,14 @@
  */
 
 /**
- * Load a table element for use in the Forms API or simply drupal_render().
+ * Loads a table element for use in the Forms API or simply drupal_render().
  *
  * @param $table_id
  *   The string identifying the table you want to display, like a form ID.
  * @param ...
  *   Any additional arguments will be passed on to the table builder function
- *     specified as the $table_id.
+ *   specified as the $table_id.
+ *
  * @return
  *   The table form element.
  */
@@ -139,11 +140,12 @@ function theme_tapir_table($variables) {
 }
 
 /**
- * Build an ORDER BY clause for a table's SELECT query based on the table's
- *   columns.
+ * Builds an ORDER BY clause for a table's SELECT query based on the table's
+ * columns.
  *
  * @param $columns
  *   The column array from a TAPIr table array.
+ *
  * @return
  *   The result of a tablesort_sql() call on the header info for this table.
  */

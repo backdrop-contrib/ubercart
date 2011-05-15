@@ -6,7 +6,7 @@
  */
 
 /**
- * Warn about namespace and function name changes.
+ * Warns about namespace and function name changes.
  */
 function coder_review_uc3x_reviews() {
   $rules = array(
