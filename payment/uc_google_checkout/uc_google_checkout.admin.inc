@@ -96,6 +96,11 @@ function uc_google_checkout_settings($form, &$form_state) {
   return system_settings_form($form);
 }
 
+/**
+ * Form builder for shipping settings form.
+ *
+ * @ingroup forms
+ */
 function uc_google_checkout_shipping_settings($form) {
   $form['help'] = array(
     '#value' => t("For merchant-calculated shipping, Google Checkout requires a fallback price in case it can't get a calculated shipping rate in time. When the cart request is sent to Google Checkout, Ubercart pre-calculates the shipping rates using this default address. Choose a location that will cause an average shipping cost to be returned."),
@@ -171,7 +176,7 @@ function uc_google_checkout_taxes_settings($form, &$form_state) {
 }
 
 /**
- * Themse tax settings form.
+ * Themes tax settings form.
  *
  * @see uc_google_checkout_taxes_settings()
  * @ingroup themeable
@@ -236,7 +241,7 @@ function uc_google_checkout_taxes_settings_submit($form, &$form_state) {
 }
 
 /**
- * Terminal form.
+ * Menu callback function that presents payment terminal form to adminstrator.
  */
 function uc_google_checkout_terminal($order) {
   $order_id = $order->order_id;

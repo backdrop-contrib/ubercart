@@ -2,9 +2,12 @@
 
 /**
  * @file
- * Google Checkout administration menu items.
+ * Callback functions to handle responses from Google Checkout.
  */
 
+/**
+ * Handles Google Checkout payment notification callback.
+ */
 function uc_google_checkout_callback() {
   if (isset($_POST['serial-number'])) {
     $request = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -50,6 +53,9 @@ function uc_google_checkout_callback() {
   return MENU_NOT_FOUND;
 }
 
+/**
+ * Verifies Google Checkout shipping calculation.
+ */
 function uc_google_checkout_merchant_calculation() {
   // Error checking.
   if (variable_get('uc_google_checkout_mode', 'checkout') == 'checkout') {
