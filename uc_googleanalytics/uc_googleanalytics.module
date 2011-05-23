@@ -157,11 +157,11 @@ function uc_googleanalytics_ecommerce_js($order) {
     $product->category = '';
 
     // Try to find a category (term) for the product. Since products most often
-    // only have one category, the first one returned (based on tid) is chosen.
+    // only have one category, the first one returned (in the $node->taxonomy_catalog) is chosen.
     if (module_exists('taxonomy')) {
-      $terms = taxonomy_node_get_terms(node_load($product->nid));
-      if (count($terms)) {
-        $term = array_shift($terms);
+      $node = node_load($product->nid);
+      if (isset($node->taxonomy_catalog[$node->language][0]['tid'])) {
+        $term = taxonomy_term_load($node->taxonomy_catalog[$node->language][0]['tid']);
         $product->category = $term->name;
       }
     }
