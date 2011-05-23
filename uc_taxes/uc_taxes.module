@@ -104,11 +104,13 @@ function uc_taxes_form_uc_cart_view_form_alter(&$form, &$form_state) {
     $data = unserialize($form['items'][$i]['data']['#value']);
 
     $suffix = '';
-    foreach ($taxes as $tax) {
-      if ($tax->display_include && in_array($node->type, $tax->taxed_product_types) && ($tax->shippable == 0 || $data['shippable'] == 1)) {
-        // Amount has already been calculated through hook_uc_cart_item('view')
-        // because this cannot handle product kits.
-        $suffix .= $tax->inclusion_text;
+    if ($node) {
+      foreach ($taxes as $tax) {
+        if ($tax->display_include && in_array($node->type, $tax->taxed_product_types) && ($tax->shippable == 0 || $data['shippable'] == 1)) {
+          // Amount has already been calculated through hook_uc_cart_item('view')
+          // because this cannot handle product kits.
+          $suffix .= $tax->inclusion_text;
+        }
       }
     }
 
@@ -215,14 +217,16 @@ function uc_taxes_uc_cart_item($op, $item) {
   switch ($op) {
     case 'view':
       $node = node_load($item->nid);
-      $amount = 0;
-      foreach (uc_taxes_rate_load() as $tax) {
-        if ($tax->display_include && in_array($node->type, $tax->taxed_product_types) && ($tax->shippable == 0 || $item->data['shippable'] == 1)) {
-          $amount += $item->price * $tax->rate;
+      if ($node) {
+        $amount = 0;
+        foreach (uc_taxes_rate_load() as $tax) {
+          if ($tax->display_include && in_array($node->type, $tax->taxed_product_types) && ($tax->shippable == 0 || $item->data['shippable'] == 1)) {
+            $amount += $item->price * $tax->rate;
+          }
         }
+  
+        $item->price += $amount;
       }
-
-      $item->price += $amount;
       break;
   }
 }
