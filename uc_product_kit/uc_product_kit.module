@@ -204,7 +204,7 @@ function uc_product_kit_update(&$node) {
       // $node->items doesn't exist then.
       if (is_numeric($nid)) {
         $product = node_load($nid, NULL, TRUE);
-        if (is_null($node->items[$nid]['qty']) || $node->items[$nid]['qty'] === '') {
+        if (!isset($node->items[$nid]['qty']) || $node->items[$nid]['qty'] === '') {
           $node->items[$nid]['qty'] = 1;
         }
       }
@@ -240,11 +240,14 @@ function uc_product_kit_update(&$node) {
       // surprising how simple it is.
       $discount = ($node->kit_total - $base_price) * $product->sell_price / $base_price;
     }
+    elseif (isset($node->items[$nid]['discount'])) {
+      $discount = (float) $node->items[$nid]['discount'];
+    }
     else {
-      $discount = $node->items[$nid]['discount'];
+      $discount = 0;
     }
 
-    if (is_null($node->items[$nid]['qty']) || $node->items[$nid]['qty'] === '') {
+    if (!isset($node->items[$nid]['qty']) || $node->items[$nid]['qty'] === '') {
       $node->items[$nid]['qty'] = 1;
     }
 
@@ -272,7 +275,7 @@ function uc_product_kit_update(&$node) {
         'mutable' => $node->mutable,
         'qty' => $product->qty,
         'discount' => $discount,
-        'ordering' => $node->items[$nid]['ordering'],
+        'ordering' => isset($node->items[$nid]['ordering']) ? $node->items[$nid]['ordering'] : 0,
         'synchronized' => $override_discounts ? 0 : 1,
       ))
       ->execute();
@@ -280,7 +283,7 @@ function uc_product_kit_update(&$node) {
 
   $obj->model = rtrim($obj->model, ' / ');
 
-  if ($node->mutable == UC_PRODUCT_KIT_MUTABLE && $discount) {
+  if ($node->mutable == UC_PRODUCT_KIT_MUTABLE && !empty($discount)) {
     drupal_set_message(t('Product kit discounts are not applied because the customer can remove components from their cart.'));
   }
 
@@ -335,10 +338,8 @@ function uc_product_kit_load($nodes) {
   foreach ($nodes as $nid => $node) {
     $vids[$nid] = $node->vid;
   }
-  $obj = new stdClass();
 
-  $kit_products = array();
-
+  $all_products = array();
   $result = db_query("SELECT nid, product_id, mutable, qty, discount, ordering, synchronized FROM {uc_product_kits} WHERE vid IN (:vids) ORDER BY nid, ordering", array(':vids' => $vids));
   while ($prod = $result->fetchObject()) {
     $nodes[$prod->nid]->mutable = $prod->mutable;
