@@ -15,14 +15,14 @@ function uc_file_token_info() {
     'needs-data' => 'uc_file',
   );
 
-  $files['downloads'] = array(
+  $tokens['downloads'] = array(
     'name' => t('Downloads'),
     'description' => t('The list of file download links (if any) associated with an order'),
   );
 
   return array(
     'types' => array('uc_file' => $type),
-    'tokens' => array('uc_file' => $files),
+    'tokens' => array('uc_file' => $tokens),
   );
 }
 
@@ -30,21 +30,27 @@ function uc_file_token_info() {
  * Implements hook_tokens().
  */
 function uc_file_tokens($type, $tokens, $data = array(), $options = array()) {
-  $values = array();
+  $language_code = NULL;
+  if (isset($options['language'])) {
+    $language_code = $options['language']->language;
+  }
+  $sanitize = !empty($options['sanitize']);
+
+  $replacements = array();
 
   if ($type == 'uc_file' && !empty($data['uc_file'])) {
     $files = $data['uc_file'];
 
     if (isset($tokens['downloads'])) {
-      $values[$tokens['downloads']] = theme('uc_file_downloads_token', array('file_downloads' => $files));
+      $replacements[$tokens['downloads']] = theme('uc_file_downloads_token', array('file_downloads' => $files));
     }
   }
 
-  return $values;
+  return $replacements;
 }
 
 /**
- * Theme file download links token.
+ * Themes the file download links token.
  *
  * @ingroup themeable
  */

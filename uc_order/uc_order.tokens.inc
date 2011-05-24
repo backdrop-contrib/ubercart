@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Token hooks
+ * Token hooks.
  */
 
 /**
@@ -133,10 +133,13 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
   $sanitize = !empty($options['sanitize']);
 
   $replacements = array();
+
   if ($type == 'uc_order' && !empty($data['uc_order'])) {
 
     $order = $data['uc_order'];
-dpm($tokens);
+    $path = 'user/' . $order->uid . '/orders/' . $order->order_id;
+    $admin_path = 'admin/store/orders/' . $order->order_id;
+
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'new-username':
@@ -156,37 +159,19 @@ dpm($tokens);
           break;
 
         case 'url':
-        case 'link':
-          if (!isset($url)) {
-            $url = url('user/' . $order->uid . '/orders/' . $order->order_id, array('absolute' => TRUE));
-          }
-          else {
-            break;
-          }
+          $replacements[$original] = url($path, array('absolute' => TRUE));
+          break;
 
-          if (isset($tokens['url'])) {
-            $replacements[$tokens['url']] = $url;
-          }
-          if (isset($tokens['link'])) {
-            $replacements[$tokens['link']] = l($order->order_id, $url);
-          }
+        case 'link':
+          $replacements[$original] = l($order->order_id, url($path, array('absolute' => TRUE)));
           break;
 
         case 'admin-url':
-        case 'admin-link':
-          if (!isset($admin_url)) {
-            $admin_url = url('admin/store/orders/' . $order->order_id, array('absolute' => TRUE));
-          }
-          else {
-            break;
-          }
+          $replacements[$original] = url($admin_path, array('absolute' => TRUE));
+          break;
 
-          if (isset($tokens['admin-url'])) {
-            $replacements[$tokens['admin-url']] = $admin_url;
-          }
-          if (isset($tokens['admin-link'])) {
-            $replacements[$tokens['admin-link']] = l($order->order_id, $admin_url);
-          }
+        case 'admin-link':
+          $replacements[$original] = l($order->order_id, url($admin_path, array('absolute' => TRUE)));
           break;
 
         case 'subtotal':
@@ -285,20 +270,13 @@ dpm($tokens);
       }
     }
 
-    // Handle chaining for tokens that have 'type' defined in hook_token_info()
+    // Handles chaining for tokens that have 'type' defined in hook_token_info()
     if ($link_tokens = token_find_with_prefix($tokens, 'url')) {
-      if (!isset($url)) {
-        $url = 'user/' . $order->uid . '/orders/' . $order->order_id;
-      }
-dpm($link_tokens);
-      $replacements += token_generate('url', $link_tokens, array('path' => $url), $options);
+      $replacements += token_generate('url', $link_tokens, array('path' => $path), $options);
     }
 
     if ($link_tokens = token_find_with_prefix($tokens, 'admin-url')) {
-      if (!isset($admin_url)) {
-        $admin_url = 'admin/store/orders/' . $order->order_id;
-      }
-      $replacements += token_generate('url', $link_tokens, array('path' => $admin_url), $options);
+      $replacements += token_generate('url', $link_tokens, array('path' => $admin_path), $options);
     }
 
     if ($customer_tokens = token_find_with_prefix($tokens, 'customer')) {

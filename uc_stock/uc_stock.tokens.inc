@@ -15,22 +15,22 @@ function uc_stock_token_info() {
     'needs-data' => 'uc_stock',
   );
 
-  $stock['level'] = array(
+  $tokens['level'] = array(
     'name' => t('Level'),
-    'description' => t('The current stock level'),
+    'description' => t('The current stock level.'),
   );
-  $stock['model'] = array(
+  $tokens['model'] = array(
     'name' => t('Model'),
-    'description' => t('The model or SKU of the stock level'),
+    'description' => t('The model or SKU of the stock level.'),
   );
-  $stock['threshold'] = array(
+  $tokens['threshold'] = array(
     'name' => t('Threshold'),
-    'description' => t('The threshold or warning limit of the stock level'),
+    'description' => t('The threshold or warning limit of the stock level.'),
   );
 
   return array(
     'types' => array('uc_stock' => $type),
-    'tokens' => array('uc_stock' => $stock),
+    'tokens' => array('uc_stock' => $tokens),
   );
 }
 
@@ -38,7 +38,7 @@ function uc_stock_token_info() {
  * Implements hook_tokens().
  */
 function uc_stock_tokens($type, $tokens, $data = array(), $options = array()) {
-  $values = array();
+  $replacements = array();
 
   if ($type == 'uc_stock' && !empty($data['uc_stock'])) {
     $object = $data['uc_stock'];
@@ -46,19 +46,19 @@ function uc_stock_tokens($type, $tokens, $data = array(), $options = array()) {
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'level':
-          $values[$original] = $object->stock;
+          $replacements[$original] = $object->stock;
           break;
 
         case 'model':
-          $values[$original] = $object->sku;
+          $replacements[$original] = $object->sku;
           break;
 
         case 'threshold':
-          $values[$original] = $object->threshold;
+          $replacements[$original] = $object->threshold;
           break;
       }
     }
   }
 
-  return $values;
+  return $replacements;
 }

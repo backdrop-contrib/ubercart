@@ -30,6 +30,7 @@ function uc_store_token_info() {
   $store['url'] = array(
     'name' => t('URL'),
     'description' => t('The Ubercart store URL.'),
+    'type' => 'url',
   );
   $store['link'] = array(
     'name' => t('Store link'),
@@ -58,6 +59,7 @@ function uc_store_token_info() {
   $store['help-url'] = array(
     'name' => t('Help page URL'),
     'description' => t('The URL to the store help page.'),
+    'type' => 'url',
   );
 
   return array(
@@ -75,20 +77,20 @@ function uc_store_token_info() {
 function uc_store_tokens($type, $tokens, $data = array(), $options = array()) {
   global $base_url;
 
-  $values = array();
+  $replacements = array();
 
   if ($type == 'site') {
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'login-link':
           $login_link = url('user', array('absolute' => TRUE));
-          $values[$original] = l($login_link, $login_link);
+          $replacements[$original] = l($login_link, $login_link);
           break;
 
         case 'logo':
           // Use a logo; but only if we have one to use.
           if ($uri = theme_get_setting('logo')) {
-            $values[$original] = '<img src="' . $uri . '" />';
+            $replacements[$original] = '<img src="' . $uri . '" />';
           }
           break;
       }
@@ -99,43 +101,51 @@ function uc_store_tokens($type, $tokens, $data = array(), $options = array()) {
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'name':
-          $values[$original] = variable_get('uc_store_name', t('Our store'));
+          $replacements[$original] = variable_get('uc_store_name', t('Our store'));
           break;
 
         case 'url':
-          $values[$original] = $base_url;
+          $replacements[$original] = $base_url;
           break;
 
         case 'link':
-          $values[$original] = l(variable_get('uc_store_name', t('Our store')), $base_url);
+          $replacements[$original] = l(variable_get('uc_store_name', t('Our store')), $base_url);
           break;
 
         case 'owner':
-          $values[$original] = variable_get('uc_store_owner', '');
+          $replacements[$original] = variable_get('uc_store_owner', '');
           break;
 
         case 'email':
-          $values[$original] = variable_get('uc_store_email', '');
+          $replacements[$original] = variable_get('uc_store_email', '');
           break;
 
         case 'phone':
-          $values[$original] = variable_get('uc_store_phone', '');
+          $replacements[$original] = variable_get('uc_store_phone', '');
           break;
 
         case 'fax':
-          $values[$original] = variable_get('uc_store_fax', '');
+          $replacements[$original] = variable_get('uc_store_fax', '');
           break;
 
         case 'address':
-          $values[$original] = uc_store_address();
+          $replacements[$original] = uc_store_address();
           break;
 
         case 'help-url':
-          $values[$original] = url(variable_get('uc_store_help_page', ''), array('absolute' => TRUE));
+          $replacements[$original] = url(variable_get('uc_store_help_page', ''), array('absolute' => TRUE));
           break;
       }
     }
+
+    // Handle chaining for tokens that have 'type' defined in hook_token_info()
+    if ($link_tokens = token_find_with_prefix($tokens, 'url')) {
+      $replacements += token_generate('url', $link_tokens, array('path' => $base_url), $options);
+    }
+    if ($link_tokens = token_find_with_prefix($tokens, 'help-url')) {
+      $replacements += token_generate('url', $link_tokens, array('path' => $variable_get('uc_store_help_page', '')), $options);
+    }
   }
 
-  return $values;
+  return $replacements;
 }

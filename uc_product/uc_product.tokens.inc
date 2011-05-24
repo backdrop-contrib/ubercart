@@ -105,7 +105,11 @@ function uc_product_tokens($type, $tokens, $data = array(), $options = array()) 
       uc_product_is_product($data['product'])    ) {
 
     $product = $data['product'];
-dpm($tokens);
+    // We want to inherit all 'node' tokens since products are nodes,
+    // so treat all tokens as node tokens first, then process them
+    // as product tokens so we can add or override what node does.
+    $replacements += token_generate('node', $tokens, array('node' => $product), $options);
+
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'model':
@@ -162,13 +166,6 @@ dpm($tokens);
 
         case 'length_units':
           $replacements[$original] = $product->length_units;
-          break;
-
-        default:
-          // Not a 'product' token, but we want to inherit
-          // all 'node' tokens since products are nodes.
-          $nodedata = array('node' => $data['product']);
-          $replacements += node_tokens('node', array($name => $original), $nodedata, $options);
           break;
       }
     }

@@ -15,19 +15,19 @@ function uc_roles_token_info() {
     'needs-data' => 'uc_role',
   );
 
-  $role['expiration'] = array(
+  $tokens['expiration'] = array(
     'name' => t('Expiration'),
     'description' => t('The date the role will expire.'),
     'type' => 'date',
   );
-  $role['name'] = array(
+  $tokens['name'] = array(
     'name' => t('Role'),
     'description' => t('The associated role name'),
   );
 
   return array(
     'types' => array('uc_role' => $type),
-    'tokens' => array('uc_role' => $role),
+    'tokens' => array('uc_role' => $tokens),
   );
 }
 
@@ -35,9 +35,13 @@ function uc_roles_token_info() {
  * Implements hook_tokens().
  */
 function uc_roles_tokens($type, $tokens, $data = array(), $options = array()) {
-  $values = array();
-
+  $language_code = NULL;
+  if (isset($options['language'])) {
+    $language_code = $options['language']->language;
+  }
   $sanitize = !empty($options['sanitize']);
+
+  $replacements = array();
 
   if ($type == 'uc_role' && !empty($data['uc_role'])) {
     $object = $data['uc_role'];
@@ -45,18 +49,18 @@ function uc_roles_tokens($type, $tokens, $data = array(), $options = array()) {
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'expiration':
-          $values[$original] = format_date($object->expiration, 'medium');
+          $replacements[$original] = format_date($object->expiration, 'medium');
           break;
         case 'name':
-          $values[$original] = $sanitize ? check_plain(_uc_roles_get_name($object->rid)) : _uc_roles_get_name($object->rid);
+          $replacements[$original] = $sanitize ? check_plain(_uc_roles_get_name($object->rid)) : _uc_roles_get_name($object->rid);
           break;
       }
     }
 
     if ($expiration_tokens = token_find_with_prefix($tokens, 'expiration')) {
-      $values += token_generate('date', $expiration_tokens, array('date' => $object->expiration), $options);
+      $replacements += token_generate('date', $expiration_tokens, array('date' => $object->expiration), $options);
     }
   }
 
-  return $values;
+  return $replacements;
 }

@@ -11,7 +11,7 @@
 class UbercartMailSystem implements MailSystemInterface {
 
   /**
-   * Concatenates and wrap the e-mail body for plain-text mails.
+   * Concatenates and wraps the e-mail body for plain-text mails.
    *
    * @param $message
    *   A message array, as described in hook_mail_alter().
@@ -25,7 +25,7 @@ class UbercartMailSystem implements MailSystemInterface {
   }
 
   /**
-   * Sends an e-mail message, using Drupal variables and default settings.
+   * Sends an e-mail message using Drupal variables and default settings.
    *
    * @param $message
    *   A message array, as described in hook_mail_alter().
