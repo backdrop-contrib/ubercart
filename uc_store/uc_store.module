@@ -306,7 +306,11 @@ function uc_store_process_address_field($element, $form_state) {
   $fields = array_keys($address);
 
   foreach (array_keys($address) as $field) {
-    $default = isset($value[$prefix . $field]) ? $value[$prefix . $field] : NULL;
+    if (!isset($value[$prefix . $field])) {
+      continue;
+    }
+
+    $default = $value[$prefix . $field];
 
     switch ($field) {
       case 'country':
@@ -328,7 +332,6 @@ function uc_store_process_address_field($element, $form_state) {
 
       case 'zone':
         $subelement = array(
-          '#type' => 'select',
           '#prefix' => '<div id="uc-store-address-' . str_replace('_', '-', $prefix) . 'zone-wrapper">',
           '#suffix' => '</div>',
           '#empty_value' => 0,
@@ -338,13 +341,13 @@ function uc_store_process_address_field($element, $form_state) {
         if (!empty($zones)) {
           natcasesort($zones);
           $subelement += array(
+            '#type' => 'select',
             '#options' => $zones,
           );
         }
         else {
           $subelement += array(
-            '#options' => array(),
-            '#disabled' => TRUE,
+            '#type' => 'hidden',
             '#required' => FALSE,
           );
         }
