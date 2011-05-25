@@ -103,7 +103,7 @@ function uc_google_checkout_merchant_calculation() {
   $country = uc_get_country_data(array('country_iso_code_2' => $address->{'country-code'}));
   $order->delivery_country = $country[0]['country_id'];
   $order->delivery_city = $address->city;
-  $zone_id = db_result(db_query("SELECT zone_id FROM {uc_zones} WHERE zone_code = '%s' AND zone_country_id = %d", $address->region, $order->delivery_country));
+  $zone_id = db_query("SELECT zone_id FROM {uc_zones} WHERE zone_code = :code AND zone_country_id = :cid", array(':code'=>$address->region, ':cid'=>$order->delivery_country))->fetchField();
   $order->delivery_zone = $zone_id;
   $order->delivery_postal_code = $address->{'postal-code'};
 
