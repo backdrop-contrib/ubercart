@@ -1084,7 +1084,12 @@ function uc_order_view_update_form($form, &$form_state, $order) {
     $form['controls']['notify'] = array(
       '#type' => 'checkbox',
       '#title' => t('Send e-mail notification on update.'),
-      '#weight' => 0,
+    );
+  }
+  else {
+    $form['controls']['notify'] = array(
+      '#type' => 'value',
+      '#value' => FALSE,
     );
   }
 
