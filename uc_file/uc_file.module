@@ -556,6 +556,8 @@ function uc_file_uc_add_to_cart($nid, $qty, $data) {
     if ($file_user = _uc_file_user_get($user, $product_feature->fid)) {
       $file_user = (array)$file_user;
 
+      $old_limits = $file_user;
+
       // Get the limits from the product feature. (Or global if it says pass through)
       $file_modification = array(
         'download_limit' => uc_file_get_download_limit($product_feature),
@@ -566,14 +568,28 @@ function uc_file_uc_add_to_cart($nid, $qty, $data) {
       // Calculate the new limits
       _uc_file_accumulate_limits($file_user, $file_modification, FALSE);
 
-      drupal_set_message(t('You already have privileges to download %file. If you complete the purchase of this item, your new download limit will be %download_limit, your access location limit will be %address_limit, and your new expiration time will be %expiration.',
-        array(
-          '%file' => $product_feature->filename,
-          '%download_limit' => $file_user['download_limit'] ? $file_user['download_limit'] : t('unlimited'),
-          '%address_limit'  => $file_user['address_limit' ] ? $file_user['address_limit' ] : t('unlimited'),
-          '%expiration'     => $file_user['expiration'    ] ? format_date($file_user['expiration'], 'short') : t('never'),
-        )
-      ));
+      // Don't allow the product to be purchased if it won't increase the
+      // download limit or expiration time.
+      if ($old_limits['download_limit'] || $old_limits['expiration']) {
+        // But still show the message if it does.
+        drupal_set_message(t('You already have privileges to <a href="!url">download %file</a>. If you complete the purchase of this item, your new download limit will be %download_limit, your access location limit will be %address_limit, and your new expiration time will be %expiration.',
+          array(
+            '!url' => $user->uid ? url('user/' . $user->uid . '/purchased-files') : url('user/login'),
+            '%file' => $product_feature->filename,
+            '%download_limit' => $file_user['download_limit'] ? $file_user['download_limit'] : t('unlimited'),
+            '%address_limit'  => $file_user['address_limit' ] ? $file_user['address_limit' ] : t('unlimited'),
+            '%expiration'     => $file_user['expiration'    ] ? format_date($file_user['expiration'], 'small') : t('never'),
+          )));
+      }
+      else {
+        return array(array(
+          'success' => FALSE,
+          'message' => t('You already have privileges to <a href="!url">download %file</a>.', array(
+            '!url' => $user->uid ? url('user/' . $user->uid . '/purchased-files') : url('user/login'),
+            '%file' => $product_feature->filename,
+          )),
+        ));
+      }
     }
   }
 }
