@@ -68,6 +68,20 @@ function uc_taxes_menu() {
 }
 
 /**
+ * Implements hook_module_implements_alter().
+ *
+ * Ensure that all other line items are added to the order before tax
+ * calculations are made.
+ */
+function uc_taxes_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'uc_order') {
+    $group = $implementations['uc_taxes'];
+    unset($implementations['uc_taxes']);
+    $implementations['uc_taxes'] = $group;
+  }
+}
+
+/**
  * Implements hook_node_view().
  */
 function uc_taxes_node_view($node, $view_mode) {
@@ -224,7 +238,7 @@ function uc_taxes_uc_cart_item($op, $item) {
             $amount += $item->price * $tax->rate;
           }
         }
-  
+
         $item->price += $amount;
       }
       break;
