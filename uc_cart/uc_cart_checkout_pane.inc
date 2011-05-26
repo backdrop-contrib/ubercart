@@ -279,7 +279,7 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
         '#default_value' => $order,
         '#key_prefix' => $pane,
         '#hidden' => !empty($form_state['values']['panes'][$pane]['copy_address']),
-        '#prefix' => '<div id="'. $pane .'-address-pane">',
+        '#prefix' => '<div id="' . $pane . '-address-pane">',
         '#suffix' => '</div>',
       );
 

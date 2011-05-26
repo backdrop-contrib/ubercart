@@ -179,7 +179,7 @@ function _uc_file_download($fid, $key) {
     UC_FILE_ERROR_TOO_MANY_LOCATIONS      => t('You have downloaded this file from too many different locations.'),
     UC_FILE_ERROR_TOO_MANY_DOWNLOADS      => t('You have reached the download limit for this file.'),
     UC_FILE_ERROR_EXPIRED                 => t('This file download has expired.') . ' ',
-    UC_FILE_ERROR_HOOK_ERROR              => t('A hook denied your access to this file.' . ' '),
+    UC_FILE_ERROR_HOOK_ERROR              => t('A hook denied your access to this file.') . ' ',
   );
 
   $ip = ip_address();

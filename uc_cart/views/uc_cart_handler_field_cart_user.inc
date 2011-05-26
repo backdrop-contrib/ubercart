@@ -79,7 +79,7 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
    *
    */
   function render($values) {
-    $result = db_query('SELECT name FROM {users} u WHERE u.uid = :uid', array(':uid'=>$values->{$this->field_alias}))->fetchField();
+    $result = db_query('SELECT name FROM {users} u WHERE u.uid = :uid', array(':uid' => $values->{$this->field_alias}))->fetchField();
     if ($result) {
       return $this->render_link($result, $values);
     }
