@@ -212,7 +212,9 @@ function uc_weightquote_admin_method_confirm_delete_submit($form, &$form_state) 
     ->condition('mid', $mid)
     ->execute();
 
-  rules_config_delete(array('get_quote_from_weightquote_' . $mid));
+  if (module_exists('rules')) {
+    rules_config_delete(array('get_quote_from_weightquote_' . $mid));
+  }
 
   $enabled = variable_get('uc_quote_enabled', array());
   unset($enabled['weightquote_' . $mid]);
