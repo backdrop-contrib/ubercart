@@ -28,6 +28,8 @@ define('UC_FILE_ERROR_EXPIRED'                , 6);
 define('UC_FILE_ERROR_HOOK_ERROR'             , 7);
 
 /**
+ * Themes user file downloads page.
+ *
  * @param $files
  *   Array of the files.
  *
@@ -156,7 +158,7 @@ function uc_file_user_downloads($account) {
 }
 
 /**
- * Handle file downloading and error states.
+ * Handles file downloading and error states.
  *
  * @param $fid
  *   The fid of the file specified to download.
@@ -298,8 +300,9 @@ function _uc_file_download_transfer($file_user, $ip) {
   $size = filesize($file_user->full_path);
   $mimetype = file_get_mimetype($filename);
 
-  // Workaround for IE filename bug with multiple periods / multiple dots in filename
-  // that adds square brackets to filename - eg. setup.abc.exe becomes setup[1].abc.exe
+  // Workaround for IE filename bug with multiple periods / multiple dots
+  // in filename that adds square brackets to filename -
+  // eg. setup.abc.exe becomes setup[1].abc.exe
   if (strstr($_SERVER['HTTP_USER_AGENT'], 'MSIE')) {
     $filename = preg_replace('/\./', '%2e', $filename, substr_count($filename, '.') - 1);
   }
@@ -310,7 +313,8 @@ function _uc_file_download_transfer($file_user, $ip) {
     list($size_unit, $range_orig) = explode('=', $_SERVER['HTTP_RANGE'], 2);
 
     if ($size_unit == 'bytes') {
-      // Multiple ranges could be specified at the same time, but for simplicity only serve the first range
+      // Multiple ranges could be specified at the same time,
+      // but for simplicity only serve the first range
       // See http://tools.ietf.org/id/draft-ietf-http-range-retrieval-00.txt
       list($range, $extra_ranges) = explode(',', $range_orig, 2);
     }
@@ -321,7 +325,8 @@ function _uc_file_download_transfer($file_user, $ip) {
     list($seek_start, $seek_end) = explode('-', $range, 2);
   }
 
-  // Set start and end based on range (if set), else set defaults and check for invalid ranges.
+  // Set start and end based on range (if set),
+  // else set defaults and check for invalid ranges.
   $seek_end = intval((empty($seek_end)) ? ($size - 1) : min(abs(intval($seek_end)), ($size - 1)));
   $seek_start = intval((empty($seek_start) || $seek_end < abs(intval($seek_start))) ? 0 : max(abs(intval($seek_start)), 0));
 
@@ -364,7 +369,8 @@ function _uc_file_download_transfer($file_user, $ip) {
     ob_flush();
   }
 
-  // Finished serving the file, close the stream and log the download to the user table
+  // Finished serving the file, close the stream and log the download
+  // to the user table
   fclose($fp);
 
   _uc_file_log_download($file_user, $ip);

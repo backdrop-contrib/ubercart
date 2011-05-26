@@ -297,9 +297,9 @@ function uc_file_admin_files_form_action($form, &$form_state) {
           '#title' => t('Delete selected directories and their sub directories'),
         );
 
-        // Default to FALSE... although we have the JS behavior to update with the state
-        // of the checkbox on load, this should improve the experience of users who
-        // don't have JS enabled over not defaulting to any info.
+        // Default to FALSE. Although we have the JS behavior to update with the
+        // state of the checkbox on load, this should improve the experience of
+        // users who don't have JS enabled over not defaulting to any info.
         $form['affected_files'] = array(
           '#theme' => 'item_list',
           '#items' => $affected_list[FALSE],
@@ -363,7 +363,8 @@ function uc_file_admin_files_form_action($form, &$form_state) {
 
     default:
 
-      // This action isn't handled by us, so check if any hook_uc_file_action('form', $args) are implemented.
+      // This action isn't handled by us, so check if any
+      // hook_uc_file_action('form', $args) are implemented.
       foreach (module_implements('uc_file_action') as $module) {
         $name = $module . '_uc_file_action';
         $result = $name('form', array('action' => $form_state['values']['uc_file_action']['action'], 'file_ids' => $file_ids));
@@ -377,6 +378,8 @@ function uc_file_admin_files_form_action($form, &$form_state) {
 }
 
 /**
+ * Validation handler for uc_file_admin_files_form().
+ *
  * @see uc_file_admin_files_form_action()
  */
 function uc_file_admin_files_form_action_validate($form, &$form_state) {
@@ -388,7 +391,8 @@ function uc_file_admin_files_form_action_validate($form, &$form_state) {
       // Upload the file and get its object.
       if ($temp_file = file_save_upload('upload', array())) {
 
-        // Check if any hook_uc_file_action('upload_validate', $args) are implemented.
+        // Check if any hook_uc_file_action('upload_validate', $args)
+        // are implemented.
         foreach (module_implements('uc_file_action') as $module) {
           $name = $module . '_uc_file_action';
           $result = $name('upload_validate', array('file_object' => $temp_file, 'form_id' => $form_id, 'form_state' => $form_state));
@@ -405,7 +409,8 @@ function uc_file_admin_files_form_action_validate($form, &$form_state) {
 
     default:
 
-      // This action isn't handled by us, so check if any hook_uc_file_action('validate', $args) are implemented
+      // This action isn't handled by us, so check if any
+      // hook_uc_file_action('validate', $args) are implemented
       foreach (module_implements('uc_file_action') as $module) {
         $name = $module . '_uc_file_action';
         $result = $name('validate', array('form_id' => $form_id, 'form_state' => $form_state));
@@ -416,6 +421,8 @@ function uc_file_admin_files_form_action_validate($form, &$form_state) {
 }
 
 /**
+ * Submit handler for uc_file_admin_files_form().
+ *
  * @see uc_file_admin_files_action()
  */
 function uc_file_admin_files_form_action_submit($form, &$form_state) {
@@ -441,8 +448,8 @@ function uc_file_admin_files_form_action_submit($form, &$form_state) {
 
     case 'uc_file_upload':
 
-      // Build the destination location. We start with the base directory, then add any
-      // directory which was explicitly selected.
+      // Build the destination location. We start with the base directory,
+      // then add any directory which was explicitly selected.
       $dir = variable_get('uc_file_base_dir', NULL) . '/';
       $dir = (is_null($form_state['values']['upload_dir'])) ? $dir : $dir . $form_state['values']['upload_dir'];
       if (is_dir($dir)) {
@@ -476,7 +483,8 @@ function uc_file_admin_files_form_action_submit($form, &$form_state) {
 
     default:
 
-      // This action isn't handled by us, so check if any hook_uc_file_action('submit', $args) are implemented
+      // This action isn't handled by us, so check if any
+      // hook_uc_file_action('submit', $args) are implemented
       foreach (module_implements('uc_file_action') as $module) {
         $name = $module . '_uc_file_action';
         $result = $name('submit', array('form_id' => $form_id, 'form_state' => $form_state));
@@ -514,16 +522,16 @@ function _uc_file_display_arrays_equivalent($recur, $no_recur) {
  */
 function _uc_file_build_js_file_display($file_ids) {
 
-  // Gather the files if recursion is selected. Get 'em all ready to be punched into
-  // the file list.
+  // Gather the files if recursion IS selected.
+  // Get 'em all ready to be punched into the file list.
   $recursion_file_ids = _uc_file_sort_names(_uc_file_get_dir_file_ids($file_ids, TRUE));
   foreach ($recursion_file_ids as $file_id) {
     $file = uc_file_get_by_id($file_id);
     $recursion[] = '<li>' . $file->filename . '</li>';
   }
 
-  // Gather the files if recursion isn't selected. Get 'em all ready to be punched into
-  // the file list.
+  // Gather the files if recursion ISN'T selected.
+  // Get 'em all ready to be punched into the file list.
   $no_recursion_file_ids = $file_ids;
   foreach ($no_recursion_file_ids as $file_id) {
     $file = uc_file_get_by_id($file_id);

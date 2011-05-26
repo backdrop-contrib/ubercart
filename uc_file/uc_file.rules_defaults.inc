@@ -9,7 +9,8 @@
  * Implements hook_default_rules_configuration().
  */
 function uc_file_default_rules_configuration() {
-  // Renew all the files on an order when the status matches what's set in the files admin settings.
+  // Renew all the files on an order when the status matches what's set
+  // in the files admin settings.
   $rule = rules_reaction_rule();
   $rule->label = t('Renew purchased files');
   $rule->active = TRUE;
