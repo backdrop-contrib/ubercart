@@ -24,44 +24,13 @@ function uc_order_pane_ship_to($op, $order, &$form = NULL, &$form_state = NULL) 
       return $build;
 
     case 'edit-form':
-      $form['ship_to'] = array();
-
-      if (uc_address_field_enabled('first_name')) {
-        $form['ship_to']['delivery_first_name'] = uc_textfield(uc_get_field_name('first_name'), $order->delivery_first_name, FALSE);
-      }
-      if (uc_address_field_enabled('last_name')) {
-        $form['ship_to']['delivery_last_name'] = uc_textfield(uc_get_field_name('last_name'), $order->delivery_last_name, FALSE);
-      }
-      if (uc_address_field_enabled('phone')) {
-        $form['ship_to']['delivery_phone'] = uc_textfield(uc_get_field_name('phone'), $order->delivery_phone, FALSE, NULL, 32, 16);
-      }
-      if (uc_address_field_enabled('company')) {
-        $form['ship_to']['delivery_company'] = uc_textfield(uc_get_field_name('company'), $order->delivery_company, FALSE, NULL, 64);
-      }
-      if (uc_address_field_enabled('street1')) {
-        $form['ship_to']['delivery_street1'] = uc_textfield(uc_get_field_name('street1'), $order->delivery_street1, FALSE, NULL, 64);
-      }
-      if (uc_address_field_enabled('street2')) {
-        $form['ship_to']['delivery_street2'] = uc_textfield(uc_get_field_name('street2'), $order->delivery_street2, FALSE, NULL, 64);
-      }
-      if (uc_address_field_enabled('city')) {
-        $form['ship_to']['delivery_city'] = uc_textfield(uc_get_field_name('city'), $order->delivery_city, FALSE);
-      }
-      if (uc_address_field_enabled('country')) {
-        $form['ship_to']['delivery_country'] = uc_country_select(uc_get_field_name('country'), $order->delivery_country);
-      }
-      if (uc_address_field_enabled('zone')) {
-        if (isset($_POST['delivery_country'])) {
-          $country_id = intval($_POST['delivery_country']);
-        }
-        else {
-          $country_id = $order->delivery_country;
-        }
-        $form['ship_to']['delivery_zone'] = uc_zone_select(uc_get_field_name('zone'), $order->delivery_zone, NULL, $country_id);
-      }
-      if (uc_address_field_enabled('postal_code')) {
-        $form['ship_to']['delivery_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $order->delivery_postal_code, FALSE, NULL, 10, 10);
-      }
+      $form['ship_to'] = array(
+        '#type' => 'uc_address',
+        '#default_value' => isset($form_state['values']) ? $form_state['values'] : $order,
+        '#required' => FALSE,
+        '#attributes' => array('class' => array('uc-store-address-field')),
+        '#key_prefix' => 'delivery',
+      );
       return $form;
 
     case 'edit-title':
@@ -78,15 +47,7 @@ function uc_order_pane_ship_to($op, $order, &$form = NULL, &$form_state = NULL) 
       return $output;
 
     case 'edit-theme':
-      $output = '<div id="delivery_address_select"></div><table class="order-edit-table">';
-      foreach (element_children($form['ship_to']) as $field) {
-        $title = $form['ship_to'][$field]['#title'];
-        $form['ship_to'][$field]['#title'] = NULL;
-        $output .= '<tr><td class="oet-label">' . $title . ':</td><td>'
-                 . drupal_render($form['ship_to'][$field]) . '</td></tr>';
-      }
-      $output .= '</table>';
-      return $output;
+      return drupal_render($form['ship_to']);
 
     case 'edit-process':
       foreach ($form_state['values'] as $key => $value) {
@@ -111,44 +72,13 @@ function uc_order_pane_bill_to($op, $order, &$form = NULL, &$form_state = NULL) 
       return $build;
 
     case 'edit-form':
-      $form['bill_to'] = array();
-
-      if (uc_address_field_enabled('first_name')) {
-        $form['bill_to']['billing_first_name'] = uc_textfield(uc_get_field_name('first_name'), $order->billing_first_name, FALSE);
-      }
-      if (uc_address_field_enabled('last_name')) {
-        $form['bill_to']['billing_last_name'] = uc_textfield(uc_get_field_name('last_name'), $order->billing_last_name, FALSE);
-      }
-      if (uc_address_field_enabled('phone')) {
-        $form['bill_to']['billing_phone'] = uc_textfield(uc_get_field_name('phone'), $order->billing_phone, FALSE, NULL, 32, 16);
-      }
-      if (uc_address_field_enabled('company')) {
-        $form['bill_to']['billing_company'] = uc_textfield(uc_get_field_name('company'), $order->billing_company, FALSE, NULL, 64);
-      }
-      if (uc_address_field_enabled('street1')) {
-        $form['bill_to']['billing_street1'] = uc_textfield(uc_get_field_name('street1'), $order->billing_street1, FALSE, NULL, 64);
-      }
-      if (uc_address_field_enabled('street2')) {
-        $form['bill_to']['billing_street2'] = uc_textfield(uc_get_field_name('street2'), $order->billing_street2, FALSE, NULL, 64);
-      }
-      if (uc_address_field_enabled('city')) {
-        $form['bill_to']['billing_city'] = uc_textfield(uc_get_field_name('city'), $order->billing_city, FALSE);
-      }
-      if (uc_address_field_enabled('country')) {
-        $form['bill_to']['billing_country'] = uc_country_select(uc_get_field_name('country'), $order->billing_country);
-      }
-      if (uc_address_field_enabled('zone')) {
-        if (isset($_POST['billing_country'])) {
-          $country_id = intval($_POST['billing_country']);
-        }
-        else {
-          $country_id = $order->billing_country;
-        }
-        $form['bill_to']['billing_zone'] = uc_zone_select(uc_get_field_name('zone'), $order->billing_zone, NULL, $country_id);
-      }
-      if (uc_address_field_enabled('postal_code')) {
-        $form['bill_to']['billing_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $order->billing_postal_code, FALSE, NULL, 10, 10);
-      }
+      $form['bill_to'] = array(
+        '#type' => 'uc_address',
+        '#default_value' => isset($form_state['values']) ? $form_state['values'] : $order,
+        '#required' => FALSE,
+        '#attributes' => array('class' => array('uc-store-address-field')),
+        '#key_prefix' => 'billing',
+      );
       return $form;
 
     case 'edit-title':
@@ -163,15 +93,7 @@ function uc_order_pane_bill_to($op, $order, &$form = NULL, &$form_state = NULL) 
       return $output;
 
     case 'edit-theme':
-      $output = '<div id="billing_address_select"></div><table class="order-edit-table">';
-      foreach (element_children($form['bill_to']) as $field) {
-        $title = $form['bill_to'][$field]['#title'];
-        $form['bill_to'][$field]['#title'] = NULL;
-        $output .= '<tr><td class="oet-label">' . $title . ':</td><td>'
-                 . drupal_render($form['bill_to'][$field]) . '</td></tr>';
-      }
-      $output .= '</table>';
-      return $output;
+      return drupal_render($form['bill_to']);
 
     case 'edit-process':
       foreach ($form_state['values'] as $key => $value) {

@@ -101,21 +101,22 @@ function uc_google_checkout_settings($form, &$form_state) {
  *
  * @ingroup forms
  */
-function uc_google_checkout_shipping_settings($form) {
+function uc_google_checkout_shipping_settings($form, &$form_state) {
   $form['help'] = array(
     '#value' => t("For merchant-calculated shipping, Google Checkout requires a fallback price in case it can't get a calculated shipping rate in time. When the cart request is sent to Google Checkout, Ubercart pre-calculates the shipping rates using this default address. Choose a location that will cause an average shipping cost to be returned."),
   );
 
-  $form['uc_google_checkout_delivery_city'] = uc_textfield(uc_get_field_name('city'), variable_get('uc_google_checkout_delivery_city', ''), TRUE);
-  if (isset($_POST['country'])) {
-    $country = $_POST['country'];
-  }
-  else {
-    $country = variable_get('uc_google_checkout_delivery_country', 0);
-  }
-  $form['uc_google_checkout_delivery_country'] = uc_country_select(uc_get_field_name('country'), variable_get('uc_google_checkout_delivery_country', 0));
-  $form['uc_google_checkout_delivery_zone'] = uc_zone_select(uc_get_field_name('zone'), variable_get('uc_google_checkout_delivery_zone', 0), NULL, $country);
-  $form['uc_google_checkout_delivery_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), variable_get('uc_google_checkout_delivery_postal_code', ''), TRUE, NULL, 10, 10);
+  $form['address'] = array(
+    '#type' => 'uc_address',
+    '#default_value' => array(
+      'uc_google_checkout_delivery_city' => variable_get('uc_google_checkout_delivery_city', ''),
+      'uc_google_checkout_delivery_zone' => variable_get('uc_google_checkout_delivery_zone', ''),
+      'uc_google_checkout_delivery_country' => isset($form_state['values']['uc_google_checkout_delivery_country']) ? $form_state['values']['uc_google_checkout_delivery_country'] : variable_get('uc_google_checkout_delivery_country', ''),
+      'uc_google_checkout_delivery_postal_code' => variable_get('uc_google_checkout_delivery_postal_code', ''),
+    ),
+    '#required' => FALSE,
+    '#key_prefix' => 'uc_google_checkout_delivery',
+  );
 
   return system_settings_form($form);
 }

@@ -704,12 +704,9 @@ function uc_shipping_shipment_view($order, $shipment) {
  * @see uc_shipping_shipment_edit_validate()
  * @see uc_shipping_shipment_edit_submit()
  * @see theme_uc_shipping_package_dimensions()
- * @see theme_uc_shipping_address()
  * @ingroup forms
  */
 function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
-  drupal_add_css(drupal_get_path('module', 'uc_shipping') . '/uc_shipping.css');
-
   $form['order_id'] = array('#type' => 'value', '#value' => $order->order_id);
   if (isset($shipment->sid)) {
     $form['sid'] = array('#type' => 'value', '#value' => $shipment->sid);
@@ -910,14 +907,9 @@ function uc_shipping_shipment_edit_submit($form, &$form_state) {
   if (isset($form_state['values']['sid'])) {
     $shipment->sid = $form_state['values']['sid'];
   }
-  $shipment->origin = new stdClass();
-  $shipment->destination = new stdClass();
+  $shipment->origin = (object) $form_state['values']['pickup_address'];
   foreach ($form_state['values'] as $key => $value) {
-    if (substr($key, 0, 7) == 'pickup_') {
-      $field = substr($key, 7);
-      $shipment->origin->$field = $value;
-    }
-    elseif (substr($key, 0, 9) == 'delivery_') {
+    if (substr($key, 0, 9) == 'delivery_') {
       $field = substr($key, 9);
       $shipment->destination->$field = $value;
     }

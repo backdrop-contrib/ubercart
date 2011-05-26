@@ -113,22 +113,11 @@ function uc_quote_admin_settings($form, &$form_state) {
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
-  $form['default_address']['first_name'] = uc_textfield(uc_get_field_name('first_name'), $address->first_name, FALSE);
-  $form['default_address']['last_name'] = uc_textfield(uc_get_field_name('last_name'), $address->last_name, FALSE);
-  $form['default_address']['company'] = uc_textfield(uc_get_field_name('company'), $address->company, FALSE);
-  $form['default_address']['phone'] = uc_textfield(uc_get_field_name('phone'), $address->phone, FALSE, NULL, 32, 16);
-  $form['default_address']['street1'] = uc_textfield(uc_get_field_name('street1'), $address->street1, FALSE, NULL, 64);
-  $form['default_address']['street2'] = uc_textfield(uc_get_field_name('street2'), $address->street2, FALSE, NULL, 64);
-  $form['default_address']['city'] = uc_textfield(uc_get_field_name('city'), $address->city, FALSE);
-  if (isset($_POST['country'])) {
-    $country = $_POST['country'];
-  }
-  else {
-    $country = $address->country;
-  }
-  $form['default_address']['country'] = uc_country_select(uc_get_field_name('country'), $address->country);
-  $form['default_address']['zone'] = uc_zone_select(uc_get_field_name('zone'), $address->zone, NULL, $country);
-  $form['default_address']['postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $address->postal_code, FALSE, NULL, 10, 10);
+  $form['default_address']['address'] = array(
+    '#type' => 'uc_address',
+    '#default_value' => isset($form_state['values']) ? $form_state['values'] : $address,
+    '#required' => FALSE,
+  );
 
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );

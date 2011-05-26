@@ -195,9 +195,6 @@ function uc_shipping_theme() {
     'uc_shipping_package_dimensions' => array(
       'render element' => 'form',
     ),
-    'uc_shipping_address' => array(
-      'render element' => 'address',
-    ),
     'uc_shipping_shipment_print' => array(
       'variables' => array('order' => NULL, 'shipment' => NULL, 'labels' => TRUE),
     ),
@@ -368,48 +365,6 @@ function theme_uc_shipping_package_dimensions($variables) {
   }
 
   return theme('table', array('rows' => array($row)));
-}
-
-/**
- * Compacts the address into a table.
- *
- * @ingroup themeable
- */
-function theme_uc_shipping_address($variables) {
-  $address = $variables['address'];
-
-  drupal_add_css(drupal_get_path('module', 'uc_cart') . '/uc_cart.css');
-  if ($address['#collapsed']) {
-    $collapsed = ' collapsed';
-  }
-  $output = '<table class="pane-table" cellpadding="2">';
-  $req = '<span class="form-required">*</span>';
-
-  foreach (element_children($address) as $field) {
-    list($type, $name) = explode('_', $field, 2);
-    if ($address !== NULL) {
-      $title = $address[$field]['#title'] . ':';
-      unset($address[$field]['#title']);
-      if ($name == 'street1') {
-        $title = uc_get_field_name('street') . ':';
-      }
-      elseif ($name == 'street2') {
-        $title = ' ';
-      }
-      $output .= '<tr><td class="field-label">';
-      if ($address[$field]['#required']) {
-        $output .= $req;
-      }
-      $output .= $title . '</td><td>'
-        . drupal_render($address[$field])
-        . '</td></tr>';
-    }
-  }
-  $output .= '</table>';
-
-  $output .= drupal_render_children($address);
-
-  return $output;
 }
 
 /******************************************************************************
@@ -750,44 +705,45 @@ function uc_shipping_select_address($addresses, $onchange = '', $title = NULL, $
 function uc_shipping_address_form($form, &$form_state, $addresses, $order) {
   drupal_add_js(drupal_get_path('module', 'uc_shipping') . '/uc_shipping.js');
 
-  $form['origin'] = array('#type' => 'fieldset',
+  $form['origin'] = array(
+    '#type' => 'fieldset',
     '#title' => t('Origin address'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     '#weight' => -2,
-    '#theme' => 'uc_shipping_address',
   );
   $address = reset($addresses);
+  if (isset($form_state['values']['pickup_address']['country'])) {
+    $address->country = $form_state['values']['pickup_address']['country'];
+  }
   $form['origin']['pickup_address_select'] = uc_shipping_select_address($addresses, 'apply_address(\'pickup\', this.value);', t('Saved Addresses'), TRUE);
   $form['origin']['pickup_address_select']['#weight'] = -2;
   $form['origin']['pickup_email'] = uc_textfield(uc_get_field_name('email'), variable_get('uc_store_email', NULL), FALSE, NULL, 255);
   $form['origin']['pickup_email']['#weight'] = -1;
-  $form['origin']['pickup_first_name'] = uc_textfield(uc_get_field_name('first_name'), $address->first_name, FALSE);
-  $form['origin']['pickup_last_name'] = uc_textfield(uc_get_field_name('last_name'), $address->last_name, FALSE);
-  $form['origin']['pickup_phone'] = uc_textfield(uc_get_field_name('phone'), variable_get('uc_store_phone', NULL), FALSE, NULL, 32, 16);
-  $form['origin']['pickup_company'] = uc_textfield(uc_get_field_name('company'), $address->company, FALSE);
-  $form['origin']['pickup_street1'] = uc_textfield(uc_get_field_name('street1'), $address->street1, FALSE, NULL, 64);
-  $form['origin']['pickup_street2'] = uc_textfield(uc_get_field_name('street2'), $address->street2, FALSE, NULL, 64);
-  $form['origin']['pickup_city'] = uc_textfield(uc_get_field_name('city'), $address->city, FALSE);
-  $form['origin']['pickup_country'] = uc_country_select(uc_get_field_name('country'), $address->country);
-  if (isset($_POST['pickup_country'])) {
-    $country = $_POST['pickup_country'];
-  }
-  else {
-    $country = $address->country;
-  }
-  $form['origin']['pickup_zone'] = uc_zone_select(uc_get_field_name('zone'), $address->zone, NULL, $country);
-  $form['origin']['pickup_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), $address->postal_code, FALSE, NULL, 10, 10);
+  $form['origin']['pickup_address'] = array(
+    '#type' => 'uc_address',
+    '#default_value' => $address,
+    '#required' => FALSE,
+    '#tree' => TRUE,
+  );
 
-  $order_form = uc_order_pane_ship_to('edit-form', $order);
-  $form['destination'] = $order_form['ship_to'];
+  $form['destination'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Destination address'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#weight' => -1,
+  );
+  if (isset($form_state['values']['delivery_country'])) {
+    $order->delivery_country = $form_state['values']['delivery_country'];
+  }
   $form['destination']['delivery_email'] = uc_textfield(uc_get_field_name('email'), $order->primary_email, FALSE, NULL, 255);
   $form['destination']['delivery_email']['#weight'] = -1;
-  $form['destination']['#type'] = 'fieldset';
-  $form['destination']['#title'] = t('Destination address');
-  $form['destination']['#collapsible'] = TRUE;
-  $form['destination']['#weight'] = -1;
-  $form['destination']['#theme'] = 'uc_shipping_address';
-
+  $form['destination']['delivery_address'] = array(
+    '#type' => 'uc_address',
+    '#default_value' => $order,
+    '#required' => FALSE,
+    '#key_prefix' => 'delivery',
+  );
   return $form;
 }
