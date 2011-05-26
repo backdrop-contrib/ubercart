@@ -54,7 +54,7 @@ function uc_roles_expiration($form, &$form_state) {
 }
 
 /**
- * Theme user role expiration page.
+ * Themes user role expiration page.
  *
  * @ingroup themeable
  */

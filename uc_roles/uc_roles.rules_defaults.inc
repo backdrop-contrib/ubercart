@@ -11,7 +11,8 @@
 function uc_roles_default_rules_configuration() {
   $configs = array();
 
-  // Renew all the roles on an order when the status matches what's set in the roles admin settings.
+  // Renew all the roles on an order when the status matches what's set
+  // in the roles admin settings.
   $rule = rules_reaction_rule();
   $rule->label = t('Grant or renew purchased roles');
   $rule->active = TRUE;
