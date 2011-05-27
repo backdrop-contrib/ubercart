@@ -43,9 +43,7 @@ function theme_uc_file_user_downloads($variables) {
   $row = 0;
   foreach ($files as $file) {
     $rows[] = array(
-      array('data' => format_date($file['granted'], 'uc_store'), 'class' => array('date-ro user file downloads page.
- *
-'), 'id' => 'date-' . $row),
+      array('data' => format_date($file['granted'], 'uc_store'), 'class' => array('date-row'), 'id' => 'date-' . $row),
       array('data' => $file['link'], 'class' => array('filename-row'), 'id' => 'filename-' . $row),
       array('data' => $file['description'], 'class' => array('description-row'), 'id' => 'description-' . $row),
       array('data' => $file['accessed'] . '/' . ($file['download_limit'] ? $file['download_limit'] : t('Unlimited')), 'class' => array('download-row'), 'id' => 'download-' . $row),
