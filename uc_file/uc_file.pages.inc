@@ -43,7 +43,9 @@ function theme_uc_file_user_downloads($variables) {
   $row = 0;
   foreach ($files as $file) {
     $rows[] = array(
-      array('data' => format_date($file['granted'], 'uc_store'), 'class' => array('date-row'), 'id' => 'date-' . $row),
+      array('data' => format_date($file['granted'], 'uc_store'), 'class' => array('date-ro user file downloads page.
+ *
+'), 'id' => 'date-' . $row),
       array('data' => $file['link'], 'class' => array('filename-row'), 'id' => 'filename-' . $row),
       array('data' => $file['description'], 'class' => array('description-row'), 'id' => 'description-' . $row),
       array('data' => $file['accessed'] . '/' . ($file['download_limit'] ? $file['download_limit'] : t('Unlimited')), 'class' => array('download-row'), 'id' => 'download-' . $row),
@@ -277,7 +279,7 @@ function _uc_file_download_validate($file_download, &$user, $ip) {
 }
 
 /**
- * Sends the file's binary data to a user via HTTP and update the
+ * Sends the file's binary data to a user via HTTP and updates the
  * uc_file_users table.
  *
  * @param $file_user
@@ -378,7 +380,7 @@ function _uc_file_download_transfer($file_user, $ip) {
 }
 
 /**
- * Process a file download.
+ * Processes a file download.
  */
 function _uc_file_log_download($file_user, $ip) {
 
