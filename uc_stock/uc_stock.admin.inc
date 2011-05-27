@@ -3,7 +3,6 @@
 /**
  * @file
  * Stock administration menu items.
- *
  */
 
 /**
