@@ -6,7 +6,7 @@
  */
 
 /**
- * Return an autocomplete list for product nodes.
+ * Returns an autocomplete list for product nodes.
  *
  * Using this autocomplete on a textfield will autocomplete based on product
  * titles or SKUs and leave the nid in the textfield.
