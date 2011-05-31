@@ -315,8 +315,6 @@ function uc_roles_action_user_email($account, $role_expiration, $from, $addresse
  *
  * @param $order
  *   An Ubercart order object.
- *
- * @see uc_roles_action_order_renew_form()
  */
 function uc_roles_action_order_renew($order) {
   // Load the order's user and exit if not available.
