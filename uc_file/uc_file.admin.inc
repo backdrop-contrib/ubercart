@@ -220,7 +220,7 @@ function theme_uc_file_admin_files_form_show($variables) {
   }
 
   // Render everything.
-  $output .= '<p>' . t('File downloads can be attached to any Ubercart product as a product feature. For security reasons the <a href="!download_url">file downloads directory</a> is separated from the Drupal <a href="!file_url">file system</a>. Here are the list of files (and their associated Ubercart products) that can be used for file downloads.', array('!download_url' => url('admin/store/settings/products/edit/features', array('query' => array('destination' => 'admin/store/products/files'))), '!file_url' => url('admin/config/media/file-system'))) . '</p>';
+  $output .= '<p>' . t('File downloads can be attached to any Ubercart product as a product feature. For security reasons the <a href="!download_url">file downloads directory</a> is separated from the Drupal <a href="!file_url">file system</a>. Below is the list of files (and their associated Ubercart products, if any) that can be used for file downloads.', array('!download_url' => url('admin/store/settings/products/edit/features', array('query' => array('destination' => 'admin/store/products/files'))), '!file_url' => url('admin/config/media/file-system'))) . '</p>';
   $output .= drupal_render($form['uc_file_action']);
   $output .= drupal_render($form['uc_file_select']);
   $output .= theme('table', array('header' => $header, 'rows' => $rows));
@@ -338,13 +338,13 @@ function uc_file_admin_files_form_action($form, &$form_state) {
       $form['upload_dir'] = array(
         '#type' => 'select',
         '#title' => t('Directory'),
-        '#description' => t('The directory to upload the file to. The default directory is the root of the file downloads directory.'),
+        '#description' => t('The directory on the server where the file should be put. The default directory is the root of the file downloads directory.'),
         '#options' => $directories,
       );
       $form['upload'] = array(
         '#type' => 'file',
         '#title' => t('File'),
-        '#description' => t('The maximum file size that can be uploaded is %size bytes. You will need to use a different method to upload the file to the directory (e.g. (S)FTP, SCP) if your file exceeds this size.<br />The module will automatically detect files you upload using an alternate method.', array('%size' => number_format($max_bytes))),
+        '#description' => t('The maximum file size that can be uploaded is %size bytes. You will need to use a different method to upload the file to the directory (e.g. (S)FTP, SCP) if your file exceeds this size. Files you upload using one of these alternate methods will be automatically detected.', array('%size' => number_format($max_bytes))),
       );
 
       $form['#attributes']['class'][] = 'foo';
