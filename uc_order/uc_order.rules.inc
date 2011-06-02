@@ -288,13 +288,13 @@ function uc_order_condition_has_products($order, $products, $required, $forbidde
     $order_products[] = $product->model;
   }
   $required_products = array_intersect($products, $order_products);
-  if ($settings['required']) {
+  if ($required) {
     $required_check = $required_products == $products;
   }
   else {
     $required_check = (bool)count($required_products);
   }
-  if ($settings['forbidden']) {
+  if ($forbidden) {
     $forbidden_products = array_diff($order_products, $products);
     $forbidden_check = (bool)count($forbidden_products);
   }
