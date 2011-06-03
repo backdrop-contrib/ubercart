@@ -7,13 +7,6 @@
  */
 
 /**
- * Title callback for admin/store/orders/%uc_order/credit.
- */
-function uc_credit_terminal_title($order) {
-  return t('Credit card terminal: Order @order_id', array('@order_id' => $order->order_id));
-}
-
-/**
  * Displays the credit card terminal page.
  */
 function uc_credit_terminal($order) {
