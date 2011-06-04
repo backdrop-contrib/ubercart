@@ -18,38 +18,38 @@
  *
  * The weights and enabled flags for shipping methods and types are set at the
  * Shipping Quote Settings page under Store Configuration. They keys of the
- * variables are the ids of the shipping methods. The "quote" and "ship" arrays of
- * the method are both optional.
+ * variables are the ids of the shipping methods. The "quote" and "ship" arrays
+ * of the method are both optional.
  *
  * @return
- *   An array of shipping methods which have the following keys.
- *   - "type": The quote and shipping types are ids of the product shipping type
- *       that these methods apply to. type may also be 'order' which indicates
- *       that the quote applies to the entire order, regardless of the shipping
- *       types of its products. This is used by quote methods that are based on
- *       the location of the customer rather than their purchase.
- *   - "callback": The function that is called by uc_quote when a shipping quote
- *       is requested. Its arguments are the array of products and an array of
- *       order details (the shipping address). The return value is an array
- *       representing the rates quoted and errors returned (if any) for each
- *       option in the accessorials array.
- *   - "accessorials": This array represents the different options the customer
- *       may choose for their shipment. The callback function should generate a
- *       quote for each option in accessorials and return them via an array.
- *       drupal_json_encode() is very useful for this.
- *       @code
- *         return array(
- *           '03' => array('rate' => 15.75,  'option_label' => t('UPS Ground'),
- *                         'error' => 'Additional handling charge automatically applied.'),
- *           '14' => array('error' => 'Invalid package type.'),
- *           '59' => array('rate' => 26.03, 'option_label' => t('UPS 2nd Day Air A.M.'))
- *         );
- *       @endcode
- *   - "pkg_types": The list of package types that the shipping method can handle.
- *       This should be an associative array that can be used as the #options of
- *       a select form element. It is recommended that a function be written to
- *       output this array so the method doesn't need to be found just for the
- *       package types.
+ *   An array of shipping methods which have the following keys:
+ *   - type: The quote and shipping types are ids of the product shipping type
+ *     that these methods apply to. type may also be 'order' which indicates
+ *     that the quote applies to the entire order, regardless of the shipping
+ *     types of its products. This is used by quote methods that are based on
+ *     the location of the customer rather than their purchase.
+ *   - callback: The function that is called by uc_quote when a shipping quote
+ *     is requested. Its arguments are the array of products and an array of
+ *     order details (the shipping address). The return value is an array
+ *     representing the rates quoted and errors returned (if any) for each
+ *     option in the accessorials array.
+ *   - accessorials: This array represents the different options the customer
+ *     may choose for their shipment. The callback function should generate a
+ *     quote for each option in accessorials and return them via an array.
+ *     drupal_json_encode() is very useful for this.
+ *     @code
+ *       return array(
+ *         '03' => array('rate' => 15.75,  'option_label' => t('UPS Ground'),
+ *                       'error' => 'Additional handling charge automatically applied.'),
+ *         '14' => array('error' => 'Invalid package type.'),
+ *         '59' => array('rate' => 26.03, 'option_label' => t('UPS 2nd Day Air A.M.'))
+ *       );
+ *     @endcode
+ *   - pkg_types: The list of package types that the shipping method can handle.
+ *     This should be an associative array that can be used as the #options of
+ *     a select form element. It is recommended that a function be written to
+ *     output this array so the method doesn't need to be found just for the
+ *     package types.
  */
 function hook_uc_shipping_method() {
   $methods = array();

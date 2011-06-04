@@ -11,7 +11,7 @@
  */
 
 /**
- * Give clearance to a user to download a file.
+ * Gives clearance to a user to download a file.
  *
  * By default the uc_file module can implement 3 restrictions on downloads: by
  * number of IP addresses downloaded from, by number of downloads, and by a set
@@ -24,6 +24,7 @@
  * @param $file_download
  *   The file download object as defined as a row from the uc_file_users table
  *   that grants the user the download
+ *
  * @return
  *   TRUE or FALSE depending on whether the user is to be permitted download of
  *   the requested files. When a implementation returns FALSE it should set an
@@ -41,79 +42,81 @@ function hook_uc_download_authorize($user, $file_download) {
 }
 
 /**
- * Perform actions on file products.
+ * Performs actions on file products.
  *
  * The uc_file module comes with a file manager (found at Administer » Store
  * administration » Products » View file downloads) that provides some basic
- * functionality: deletion of multiple files and directories, and upload of single
- * files (those looking to upload multiple files should just directly upload them
- * to their file download directory then visit the file manager which automatically
- * updates new files found in its directory). Developers that need to create more
- * advanced actions with this file manager can do so by using this hook.
+ * functionality: deletion of multiple files and directories, and upload of
+ * single files (those looking to upload multiple files should just directly
+ * upload them to their file download directory then visit the file manager
+ * which automatically updates new files found in its directory). Developers
+ * that need to create more advanced actions with this file manager can do so
+ * by using this hook.
  *
  * @param $op
  *   The operation being taken by the hook, possible ops defined below.
- *   - 'info': Called before the uc_file module builds its list of possible file
- *       actions. This op is used to define new actions that will be placed in
- *       the file action select box.
- *   - 'insert': Called after uc_file discovers a new file in the file download
- *       directory.
- *   - 'form': When any defined file action is selected and submitted to the form
- *       this function is called to render the next form. Because this is called
- *       whenever a module-defined file action is selected, the variable
- *       $args['action'] can be used to define a new form or append to an existing
- *       form.
- *   - 'upload': After a file has been uploaded, via the file manager's built in
- *       file upload function, and moved to the file download directory this op
- *       can perform any remaining operations it needs to perform on the file
- *       before its placed into the uc_files table.
- *   - 'upload_validate': This op is called to validate the uploaded file that
- *       was uploaded via the file manager's built in file upload function. At
- *       this point, the file has been uploaded to PHP's temporary directory.
- *       Files passing this upload validate function will be moved into the file
- *       downloads directory.
- *   - 'validate': This op is called to validate the file action form.
- *   - 'submit': This op is called to submit the file action form.
+ *   - info: Called before the uc_file module builds its list of possible file
+ *     actions. This op is used to define new actions that will be placed in
+ *     the file action select box.
+ *   - insert: Called after uc_file discovers a new file in the file download
+ *     directory.
+ *   - form: When any defined file action is selected and submitted to the form
+ *     this function is called to render the next form. Because this is called
+ *     whenever a module-defined file action is selected, the variable
+ *     $args['action'] can be used to define a new form or append to an existing
+ *     form.
+ *   - upload: After a file has been uploaded, via the file manager's built in
+ *     file upload function, and moved to the file download directory this op
+ *     can perform any remaining operations it needs to perform on the file
+ *     before its placed into the uc_files table.
+ *   - upload_validate: This op is called to validate the uploaded file that
+ *     was uploaded via the file manager's built in file upload function. At
+ *     this point, the file has been uploaded to PHP's temporary directory.
+ *     Files passing this upload validate function will be moved into the file
+ *     downloads directory.
+ *   - validate: This op is called to validate the file action form.
+ *   - submit: This op is called to submit the file action form.
  * @param $args
  *   A keyed array of values that varies depending on the op being performed,
  *   possible values defined below.
- *   - 'info': None
- *   - 'insert':
- *     - 'file_object': The file object of the newly discovered file
- *   - 'form':
- *     - 'action': The file action being performed as defined by the key in the
- *         array sent by hook_uc_file_action($op = 'info')
- *     - 'file_ids' - The file ids (as defined in the uc_files table) of the
- *          selected files to perform the action on
- *   - 'upload':
- *     - 'file_object': The file object of the file moved into file downloads
- *         directory
- *     - 'form_id': The form_id variable of the form_submit function
- *     - 'form_values': The form_values variable of the form_submit function
- *   - 'upload_validate':
- *     - 'file_object': The file object of the file that has been uploaded into
- *         PHP's temporary upload directory
- *     - 'form_id': The form_id variable of the form_validate function
- *     - 'form_values': The form_values variable of the form_validate function
- *   - 'validate':
- *     - 'form_id': The form_id variable of the form_validate function
- *     - 'form_values': The form_values variable of the form_validate function
- *   - 'submit':
- *     - 'form_id': The form_id variable of the form_submit function
- *     - 'form_values': The form_values variable of the form_submit function
+ *   - info: None.
+ *   - insert:
+ *     - file_object: The file object of the newly discovered file.
+ *   - form:
+ *     - action: The file action being performed as defined by the key in the
+ *       array sent by hook_uc_file_action($op = 'info').
+ *     - file_ids: The file ids (as defined in the uc_files table) of the
+ *       selected files to perform the action on.
+ *   - upload:
+ *     - file_object: The file object of the file moved into file downloads
+ *       directory.
+ *     - form_id: The form_id variable of the form_submit function.
+ *     - form_values: The form_values variable of the form_submit function.
+ *   - upload_validate:
+ *     - file_object: The file object of the file that has been uploaded into
+ *       PHP's temporary upload directory.
+ *     - form_id: The form_id variable of the form_validate function.
+ *     - form_values: The form_values variable of the form_validate function.
+ *   - validate:
+ *     - form_id: The form_id variable of the form_validate function.
+ *     - form_values: The form_values variable of the form_validate function.
+ *   - submit:
+ *     - form_id: The form_id variable of the form_submit function.
+ *     - form_values: The form_values variable of the form_submit function.
+ *
  * @return
  *   The return value of hook depends on the op being performed, possible return
- *   values defined below.
- *   - 'info': The associative array of possible actions to perform. The keys are
- *       unique strings that defines the actions to perform. The values are the
- *       text to be displayed in the file action select box.
- *   - 'insert': None
- *   - 'form': This op should return an array of drupal form elements as defined
- *       by the drupal form API.
- *   - 'upload': None
- *   - 'upload_validate': None
- *   - 'validate': None
- *   - 'submit': None
+ *   values defined below:
+ *   - info: The associative array of possible actions to perform. The keys are
+ *     unique strings that defines the actions to perform. The values are the
+ *     text to be displayed in the file action select box.
+ *   - insert: None.
+ *   - form: This op should return an array of drupal form elements as defined
+ *     by the drupal form API.
+ *   - upload: None.
+ *   - upload_validate: None.
+ *   - validate: None.
+ *   - submit: None.
  */
 function hook_uc_file_action($op, $args) {
   switch ($op) {

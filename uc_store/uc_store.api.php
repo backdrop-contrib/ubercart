@@ -85,7 +85,6 @@ function hook_tapir_table_header_alter(&$header, $table_id) {
  * so none of the automatic form data (e.g.: #parameters, #build_id, etc.) has
  * been added yet.
  *
- * For a description of the hook parameters:
  * @see hook_form_alter()
  */
 function hook_uc_form_alter(&$form, &$form_state, $form_id) {
@@ -118,8 +117,8 @@ function hook_uc_form_alter(&$form, &$form_state, $form_id) {
  * orders. Because of the way default values are normally set, you're then stuck
  * having to copy and paste a large chunk of text in at least two different
  * places in the module (when you're wanting to use the variable or to display
- * the settings form with the default value). To cut down code clutter, this hook
- * was introduced. It lets you put your messages in one place and use the
+ * the settings form with the default value). To cut down code clutter, this
+ * hook was introduced. It lets you put your messages in one place and use the
  * function uc_get_message() to retrieve the default value at any time (and from
  * any module).
  *
@@ -129,8 +128,8 @@ function hook_uc_form_alter(&$form, &$form_state, $form_id) {
  * here to refer to the message you want.
  *
  * Note: When using t(), you must not pass it a concatenated string! So our
- * example has no line breaks in the message even though it is much wider than 80
- * characters. Using concatenation breaks translation.
+ * example has no line breaks in the message even though it is much wider than
+ * 80 characters. Using concatenation breaks translation.
  *
  * @return
  *   An array of messages.
@@ -142,25 +141,26 @@ function hook_uc_message() {
 }
 
 /**
- * Add status messages to the "Store administration" page.
+ * Adds status messages to the "Store administration" page.
  *
  * This hook is used to add items to the store status table on the main store
  * administration screen. Each item gets a row in the table that consists of a
  * status icon, title, and description. These items should be used to give
  * special instructions, notifications, or indicators for components of the cart
- * enabled by the modules. At a glance, a store owner should be able to look here
- * and see if a critical component of your module is not functioning properly.
+ * enabled by the modules. At a glance, a store owner should be able to look
+ * here and see if a critical component of your module is not functioning
+ * properly.
  *
- * For example, if the catalog module is installed and it cannot find the catalog
- * taxonomy vocabulary, it will show an error message here to alert the store
- * administrator.
+ * For example, if the catalog module is installed and it cannot find the
+ * catalog taxonomy vocabulary, it will show an error message here to alert the
+ * store administrator.
  *
  * @return
  *   An array of tore status items which are arrays with the following keys:
- *   - "status": "ok", "warning", or "error" depending on the message.
- *   - "title" The title of the status message or module that defines it.
- *   - "desc": The description; can be any message, including links to pages and
- *       forms that deal with the issue being reported.
+ *   - status: "ok", "warning", or "error" depending on the message.
+ *   - title: The title of the status message or module that defines it.
+ *   - desc: The description; can be any message, including links to pages and
+ *     forms that deal with the issue being reported.
  */
 function hook_uc_store_status() {
   if ($key = uc_credit_encryption_key()) {

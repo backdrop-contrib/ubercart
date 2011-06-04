@@ -102,8 +102,8 @@ function hook_uc_add_to_cart_data($form_values) {
  *     - #type: markup
  *     - #value: The displayed title of the $item.
  *   - "#total"
- *     - "type": float
- *     - "value": Numeric price of $item. Notice the '#' signifying that this is
+ *     - type: float
+ *     - value: Numeric price of $item. Notice the '#' signifying that this is
  *       not a form element but just a value stored in the form array.
  *   - "data"
  *     - #type: hidden
@@ -160,27 +160,27 @@ function hook_uc_cart_display($item) {
  *
  * @param $op
  *   The action that is occurring. Possible values:
- *   - "load" - Passed for each item when a cart is being loaded in the function
- *       uc_cart_get_contents(). This gives modules the chance to tweak
- *       information for items when the cart is being loaded prior to being
- *       added to an order. No return value is expected.
- *   - "view" - Passed for each item when it is about to be displayed on the
- *       cart page. Modifications made affect only displayed information and are
- *       not used in any calculations.
- *   - "can_ship" - Passed when a cart is being scanned for items that are not
- *       shippable items. Ubercart will bypass cart and checkout operations
- *       specifically related to tangible products if nothing in the cart is
- *       shippable. hook_uc_cart_item() functions that check for this op are
- *       expected to return TRUE or FALSE based on whether a product is
- *       shippable or not.
- *   - "remove" - Passed when an item is removed from the cart.
- *   - "checkout" - Passed for each item when the cart is being emptied for
- *       checkout.
+ *   - load: Passed for each item when a cart is being loaded in the function
+ *     uc_cart_get_contents(). This gives modules the chance to tweak
+ *     information for items when the cart is being loaded prior to being
+ *     added to an order. No return value is expected.
+ *   - view: Passed for each item when it is about to be displayed on the
+ *     cart page. Modifications made affect only displayed information and are
+ *     not used in any calculations.
+ *   - can_ship: Passed when a cart is being scanned for items that are not
+ *     shippable items. Ubercart will bypass cart and checkout operations
+ *     specifically related to tangible products if nothing in the cart is
+ *     shippable. hook_uc_cart_item() functions that check for this op are
+ *     expected to return TRUE or FALSE based on whether a product is
+ *     shippable or not.
+ *   - remove: Passed when an item is removed from the cart.
+ *   - checkout: Passed for each item when the cart is being emptied for
+ *     checkout.
  *
  * @return
  *   No return value for load or view. TRUE or FALSE for can_ship.
  */
-function hook_uc_cart_item($op, &$item) {
+function hook_uc_cart_item($op, $item) {
   switch ($op) {
     case 'load':
       $term = array_shift(taxonomy_node_get_terms_by_vocabulary($item->nid, variable_get('uc_manufacturer_vid', 0)));
@@ -246,12 +246,11 @@ function hook_uc_cart_pane($items) {
 }
 
 /**
- * Alter cart pane definitions.
+ * Alters cart pane definitions.
  *
  * @param $panes
  *   The array of pane information in the format defined in hook_uc_cart_pane(),
  *   passed by reference.
- *
  * @param $items
  *   The array of item information.
  */
@@ -264,7 +263,7 @@ function hook_uc_cart_pane_alter(&$panes, $items) {
 }
 
 /**
- * Take action when checkout is completed.
+ * Takes action when checkout is completed.
  *
  * @param $order
  *   The resulting order object from the completed checkout.

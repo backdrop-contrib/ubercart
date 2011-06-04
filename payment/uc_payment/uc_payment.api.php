@@ -45,7 +45,8 @@ function hook_uc_payment_entered($order, $method, $amount, $account, $data, $com
  * @see http://www.ubercart.org/docs/api/hook_payment_gateway
  *
  * @return
- *   Returns an array of payment gateways, which are arrays with the following keys:
+ *   Returns an array of payment gateways, which are arrays with the
+ *   following keys:
  *   - "id"
  *     - type: string
  *     - value: The internal ID of the payment gateway, using a-z, 0-9, and - or

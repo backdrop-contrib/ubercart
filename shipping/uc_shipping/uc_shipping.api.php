@@ -15,9 +15,9 @@
  *
  * @param $op
  *   The action being taken on the shipment. One of the following values:
- *   - "load": The shipment and its packages are loaded from the database.
- *   - "save": Changes to the shipment have been written.
- *   - "delete": The shipment has been deleted and the packages are available
+ *   - load: The shipment and its packages are loaded from the database.
+ *   - save: Changes to the shipment have been written.
+ *   - delete: The shipment has been deleted and the packages are available
  *     for reshipment.
  * @param &$shipment
  *   The shipment object.

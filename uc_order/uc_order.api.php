@@ -17,8 +17,7 @@
  * default 'admin' and 'customer').
  *
  * @return
- *   Array of template names that are available choices when mailing an
- *   invoice.
+ *   Array of template names that are available choices when mailing an invoice.
  */
 function hook_uc_invoice_templates() {
   return array('admin', 'customer');
@@ -29,15 +28,16 @@ function hook_uc_invoice_templates() {
  *
  * A line item is a representation of charges, fees, and totals for an order.
  * Default line items include the subtotal and total line items, the tax line
- * item, and the shipping line item. There is also a generic line item that store
- * admins can use to add extra fees and discounts to manually created orders.
- * Module developers will use this hook to define new types of line items for
- * their stores. An example use would be for a module that allows customers to
- * use coupons and wants to represent an entered coupon as a line item.
+ * item, and the shipping line item. There is also a generic line item that
+ * store admins can use to add extra fees and discounts to manually created
+ * orders. Module developers will use this hook to define new types of line
+ * items for their stores. An example use would be for a module that allows
+ * customers to use coupons and wants to represent an entered coupon as a line
+ * item.
  *
- * Once a line item has been defined in hook_line_item, Übercart will begin
- * interacting with it in various parts of the code. One of the primary ways this
- * is done is through the callback function you specify for the line item.
+ * Once a line item has been defined in hook_line_item, Ubercart will begin
+ * interacting with it in various parts of the code. One of the primary ways
+ * this is done is through the callback function you specify for the line item.
  *
  * @return
  *   Your hook should return an array of associative arrays. Each item in the
@@ -149,47 +149,46 @@ function hook_uc_line_item_data_alter(&$items) {
  * @param $arg2
  *   This is variable and is based on the value of $op:
  *   - new: Called when an order is created. $order is a reference to the new
- *       order object, so modules may add to or modify the order at creation.
+ *     order object, so modules may add to or modify the order at creation.
  *   - presave: Before an order object is saved, the hook gets invoked with this
- *       op to let other modules alter order data before it is written to the
- *       database. $order is a reference to the order object.
- *   - save: When an order object is being saved, the hook gets invoked with this
- *       op to let other modules do any necessary saving. $order is a reference to
- *       the order object.
+ *     op to let other modules alter order data before it is written to the
+ *     database. $order is a reference to the order object.
+ *   - save: When an order object is being saved, the hook gets invoked with
+ *     this op to let other modules do any necessary saving. $order is a
+ *     reference to the order object.
  *   - load: Called when an order is loaded after the order and product data has
- *       been loaded from the database. Passes $order as the reference to the
- *       order object, so modules may add to or modify the order object when it's
- *       loaded.
+ *     been loaded from the database. Passes $order as the reference to the
+ *     order object, so modules may add to or modify the order object when it's
+ *     loaded.
  *   - submit: When a sale is being completed and the customer has clicked the
- *       Submit order button from the checkout screen, the hook is invoked with
- *       this op. This gives modules a chance to determine whether or not the
- *       order should be allowed. An example use of this is the credit module
- *       attempting to process payments when an order is submitted and returning
- *       a failure message if the payment failed.
- *
- *       To prevent an order from passing through, you must return an array
- *       resembling the following one with the failure message:
- *       @code
- *         return array(array('pass' => FALSE, 'message' => t('We were unable to process your credit card.')));
- *       @endcode
+ *     Submit order button from the checkout screen, the hook is invoked with
+ *     this op. This gives modules a chance to determine whether or not the
+ *     order should be allowed. An example use of this is the credit module
+ *     attempting to process payments when an order is submitted and returning
+ *     a failure message if the payment failed.
+ *     To prevent an order from passing through, you must return an array
+ *     resembling the following one with the failure message:
+ *     @code
+ *       return array(array('pass' => FALSE, 'message' => t('We were unable to process your credit card.')));
+ *     @endcode
  *   - can_update: Called before an order's status is changed to make sure the
- *       order can be updated. $order is the order object with the old order
- *       status ID ($order->order_status), and $arg2 is simply the new order
- *       status ID. Return FALSE to stop the update for some reason.
+ *     order can be updated. $order is the order object with the old order
+ *     status ID ($order->order_status), and $arg2 is simply the new order
+ *     status ID. Return FALSE to stop the update for some reason.
  *   - update: Called when an order's status is changed. $order is the order
- *       object with the old order status ID ($order->order_status), and $arg2 is
- *       the new order status ID.
- *   - can_delete: Called before an order is deleted to verify that the order may
- *       be deleted. Returning FALSE will prevent a delete from happening. (For
- *       example, the payment module returns FALSE by default when an order has
- *       already received payments.)
+ *     object with the old order status ID ($order->order_status), and $arg2 is
+ *     the new order status ID.
+ *   - can_delete: Called before an order is deleted to verify that the order
+ *     may be deleted. Returning FALSE will prevent a delete from happening.
+ *     (For example, the payment module returns FALSE by default when an order
+ *     has already received payments.)
  *   - delete: Called when an order is deleted and before the rest of the order
- *       information is removed from the database. Passes $order as the order
- *       object to let your module clean up it's tables.
+ *     information is removed from the database. Passes $order as the order
+ *     object to let your module clean up it's tables.
  *   - total: Called when the total for an order is being calculated after the
- *       total of the products has been added. Passes $order as the order object.
- *       Expects in return a value (positive or negative) by which to modify the
- *       order total.
+ *     total of the products has been added. Passes $order as the order object.
+ *     Expects in return a value (positive or negative) by which to modify the
+ *     order total.
  */
 function hook_uc_order($op, $order, $arg2) {
   switch ($op) {
@@ -206,10 +205,10 @@ function hook_uc_order($op, $order, $arg2) {
  *   An order object.
  * @return
  *   An array of specialized link arrays. Each link has the following keys:
- *   - "name": The title of page being linked.
- *   - "url": The link path. Do not use url(), but do use the $order's order_id.
- *   - "icon": HTML of an image.
- *   - "title": Title attribute text (mouseover tool-tip).
+ *   - name: The title of page being linked.
+ *   - url: The link path. Do not use url(), but do use the $order's order_id.
+ *   - icon: HTML of an image.
+ *   - title: Title attribute text (mouseover tool-tip).
  */
 function hook_uc_order_actions($order) {
   $actions = array();
@@ -305,9 +304,10 @@ function hook_uc_order_pane() {
  * Builds and processes an order pane defined by hook_uc_order_pane().
  *
  * @param string $op
- *   The operation the pane is performing. Possible values are "view", "customer",
- *   "show-title", "edit-form", "edit-title", "edit-theme", "edit-process",
- *   "edit-ops", and any of the strings returned when $op is "edit-ops".
+ *   The operation the pane is performing. Possible values are "view",
+ *   "customer", "show-title", "edit-form", "edit-title", "edit-theme",
+ *   "edit-process", "edit-ops", and any of the strings returned when $op
+ *   is "edit-ops".
  * @param UcOrder $order
  *   The order being viewed or edited.
  * @param array $form
@@ -381,7 +381,7 @@ function uc_order_pane_callback($op, $order, &$form = NULL, &$form_state = NULL)
  *   The order object to which the product belongs.
  * @return
  *   Nothing should be returned. Hook implementations should receive the
- *     $product object by reference and alter it directly.
+ *   $product object by reference and alter it directly.
  */
 function hook_uc_order_product_alter(&$product, $order) {
   drupal_set_message('hook_order_product_alter(&$product, $order):');

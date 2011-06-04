@@ -12,7 +12,7 @@
 
 /**
  * Used to determine whether or not UC Google Analytics should add e-commerce
- *   tracking code to the bottom of the page.
+ * tracking code to the bottom of the page.
  *
  * The Google Analytics module takes care of adding the necessary .js file from
  * Google for tracking general statistics.  The UC Google Analytics module works
@@ -74,7 +74,7 @@ function hook_ucga_item_alter(&$item, $product, $trans, $order) {
 
 /**
  * Allows modules to alter transaction info before it's added to the UC Google
- *   Analytics e-commerce tracking code.
+ * Analytics e-commerce tracking code.
  *
  * The UC Google Analytics module constructs function calls that work through
  * the Google Analytics JS API to report order information for e-commerce
@@ -84,13 +84,14 @@ function hook_ucga_item_alter(&$item, $product, $trans, $order) {
  *
  * @param $trans
  *   An array of arguments being passed to Google Analytics representing the
- *     transaction, including order_id, store, total, tax, shipping, city,
- *     state, and country.
+ *   transaction, including order_id, store, total, tax, shipping, city,
+ *   state, and country.
  * @param $order
  *   The order object being reported to Google Analytics.
+ *
  * @return
  *   Nothing should be returned. Hook implementations should receive the $trans
- *     array by reference and alter it directly.
+ *   array by reference and alter it directly.
  */
 function hook_ucga_trans_alter(&$trans, $order) {
   // Example implementation: prefix all orders with "UC-".
@@ -100,4 +101,3 @@ function hook_ucga_trans_alter(&$trans, $order) {
 /**
  * @} End of "addtogroup hooks".
  */
-
