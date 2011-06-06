@@ -207,15 +207,15 @@ function uc_cart_cart_panes_form($form, &$form_state) {
     '#theme' => 'uc_pane_sort_table',
     '#pane_prefix' => 'uc_cap',
   );
-  foreach ($panes as $pane) {
-    $form['panes'][$pane['id']]['uc_cap_' . $pane['id'] . '_enabled'] = array(
+  foreach ($panes as $id => $pane) {
+    $form['panes'][$id]['uc_cap_' . $id . '_enabled'] = array(
       '#type' => 'checkbox',
       '#default_value' => $pane['enabled'],
     );
-    $form['panes'][$pane['id']]['title'] = array(
+    $form['panes'][$id]['title'] = array(
       '#markup' => $pane['title'],
     );
-    $form['panes'][$pane['id']]['uc_cap_' . $pane['id'] . '_weight'] = array(
+    $form['panes'][$id]['uc_cap_' . $id . '_weight'] = array(
       '#type' => 'weight',
       '#delta' => 10,
       '#default_value' => $pane['weight'],

@@ -765,8 +765,7 @@ function uc_cart_uc_cart_pane($items) {
     );
   }
 
-  $panes[] = array(
-    'id' => 'cart_form',
+  $panes['cart_form'] = array(
     'title' => t('Default cart form'),
     'enabled' => TRUE,
     'weight' => 0,
@@ -1709,29 +1708,35 @@ function uc_cart_empty($cart_id, $op = 'remove') {
  *
  * @param $items
  *   The contents of the cart.
- * @param $action
- *   If 'rebuild' is passed, the static pane cache is cleared.
  */
-function uc_cart_cart_pane_list($items, $action = NULL) {
-  static $panes;
+function uc_cart_cart_pane_list($items) {
+  $panes = array();
 
-  if (count($panes) > 0 && $action !== 'rebuild') {
-    return $panes;
+  foreach (module_invoke_all('uc_cart_pane', $items) as $id => $pane) {
+    // Preserve backward compatibility for panes with no key specified.
+    if (is_numeric($id)) {
+      $id = $pane['id'];
+    }
+
+    // Set defaults.
+    $panes[$id] = $pane + array(
+      'id' => $id,
+      'enabled' => TRUE,
+      'weight' => 0,
+      'body' => array(),
+    );
   }
 
-  $panes = module_invoke_all('uc_cart_pane', $items);
-
-  // Allow other modules to alter the panes.
+  // Allow other modules to alter the defaults.
   drupal_alter('uc_cart_pane', $panes, $items);
 
-  if (!is_array($panes) || count($panes) == 0) {
-    return array();
+  // Use admin-specified enabled and weight values.
+  foreach ($panes as $id => &$pane) {
+    $pane['enabled'] = variable_get('uc_cap_' . $id . '_enabled', $pane['enabled']);
+    $pane['weight'] = variable_get('uc_cap_' . $id . '_weight', $pane['weight']);
   }
-  foreach ($panes as $i => $value) {
-    $panes[$i]['enabled'] = variable_get('uc_cap_' . $panes[$i]['id'] . '_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
-    $panes[$i]['weight'] = variable_get('uc_cap_' . $panes[$i]['id'] . '_weight', (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));
-  }
-  usort($panes, 'uc_weight_sort');
+
+  uasort($panes, 'uc_weight_sort');
 
   return $panes;
 }

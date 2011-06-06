@@ -35,11 +35,11 @@ function uc_cart_view() {
 
   $build = array();
   // Load through the cart panes...
-  foreach (uc_cart_cart_pane_list($items) as $pane) {
+  foreach (uc_cart_cart_pane_list($items) as $id => $pane) {
     // If the pane is enabled...
     if ($pane['enabled']) {
       // Add its output to the cart view.
-      $build[$pane['id']] = $pane['body'];
+      $build[$id] = $pane['body'];
     }
   }
 

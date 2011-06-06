@@ -201,11 +201,8 @@ function hook_uc_cart_item($op, $item) {
  *   The current contents of the shopping cart.
  *
  * @return
- *   The function is expected to return an array of pane arrays with the
- *   following keys:
- *   - "id"
- *     - type: string
- *     - value: The internal ID of the pane, using a-z, 0-9, and - or _.
+ *   The function is expected to return an array of pane arrays, keyed by the
+ *   internal ID of the pane, each with the following members:
  *   - "title"
  *     - type: string
  *     - value: The name of the cart pane displayed to the user.  Use t().
@@ -234,8 +231,7 @@ function hook_uc_cart_pane($items) {
     );
   }
 
-  $panes[] = array(
-    'id' => 'cart_form',
+  $panes['cart_form'] = array(
     'title' => t('Default cart form'),
     'enabled' => TRUE,
     'weight' => 0,
@@ -255,11 +251,7 @@ function hook_uc_cart_pane($items) {
  *   The array of item information.
  */
 function hook_uc_cart_pane_alter(&$panes, $items) {
-  foreach ($panes as &$pane) {
-    if ($pane['id'] == 'cart') {
-      $pane['body'] = drupal_get_form('my_custom_pane_form_builder', $items);
-    }
-  }
+  $panes['cart_form']['body'] = drupal_get_form('my_custom_pane_form_builder', $items);
 }
 
 /**
