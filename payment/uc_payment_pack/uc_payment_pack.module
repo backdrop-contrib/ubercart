@@ -170,28 +170,24 @@ function theme_uc_payment_method_other_form($variables) {
 /**
  * Payment method callback for the "Cash on Delivery" payment method.
  */
-function uc_payment_method_cod($op, &$order) {
+function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
   switch ($op) {
     case 'cart-details':
-      $build['policy'] = array('#markup' => variable_get('uc_cod_policy', t('Full payment is expected upon delivery or prior to pick-up.')));
+      $build['policy'] = array('#markup' => '<p>' . variable_get('uc_cod_policy', t('Full payment is expected upon delivery or prior to pick-up.')) . '</p>');
 
       if (($max = variable_get('uc_cod_max_order', 0)) > 0 && is_numeric($max)) {
         $build['eligibility'] = array('#markup' => '<p>' . t('Orders totalling more than !number are <b>not eligible</b> for COD.', array('!number' => uc_currency_format($max))) . '</p>');
       }
 
       if (variable_get('uc_cod_delivery_date', FALSE)) {
-        $build['form'] = uc_strip_form(drupal_get_form('uc_payment_method_cod_form', $order));
+        $build += uc_payment_method_cod_form(array(), $form_state, $order);
       }
 
       return $build;
 
     case 'cart-process':
       if (variable_get('uc_cod_delivery_date', FALSE)) {
-        $order->payment_details = array(
-          'delivery_month' => intval($_POST['cod_delivery_month']),
-          'delivery_day'   => intval($_POST['cod_delivery_day']),
-          'delivery_year'  => intval($_POST['cod_delivery_year']),
-        );
+        $order->payment_details = $form_state['values']['panes']['payment']['details'];
       }
       return TRUE;
 
@@ -200,7 +196,7 @@ function uc_payment_method_cod($op, &$order) {
         $date = uc_date_format($order->payment_details['delivery_month'],
                                $order->payment_details['delivery_day'],
                                $order->payment_details['delivery_year']);
-        $review[] = array('title' => t('Delivery Date'), 'data' => $date);
+        $review[] = array('title' => t('Delivery date'), 'data' => $date);
       }
       return $review;
 
@@ -230,9 +226,9 @@ function uc_payment_method_cod($op, &$order) {
       if (variable_get('uc_cod_delivery_date', FALSE)) {
         return array(
           'payment_details' => array(
-            'delivery_month' => intval($_POST['cod_delivery_month']),
-            'delivery_day' => intval($_POST['cod_delivery_day']),
-            'delivery_year' => intval($_POST['cod_delivery_year']),
+            'delivery_month' => intval($_POST['delivery_month']),
+            'delivery_day' => intval($_POST['delivery_day']),
+            'delivery_year' => intval($_POST['delivery_year']),
           ),
         );
       }
@@ -261,15 +257,20 @@ function uc_payment_method_cod($op, &$order) {
           $_SESSION['expanded_panes'][] = 'payment';
           return $result;
       }
+
     case 'order-save':
-      db_merge('uc_payment_cod')
-        ->key(array('order_id' => $order->order_id))
-        ->fields(array(
-          'delivery_month' => $order->payment_details['delivery_month'],
-          'delivery_day'   => $order->payment_details['delivery_day'],
-          'delivery_year'  => $order->payment_details['delivery_year'],
-        ))
-        ->execute();
+      if (isset($order->payment_details['delivery_month']) &&
+        isset($order->payment_details['delivery_day']) &&
+        isset($order->payment_details['delivery_year'])) {
+          db_merge('uc_payment_cod')
+            ->key(array('order_id' => $order->order_id))
+            ->fields(array(
+              'delivery_month' => $order->payment_details['delivery_month'],
+              'delivery_day'   => $order->payment_details['delivery_day'],
+              'delivery_year'  => $order->payment_details['delivery_year'],
+            ))
+            ->execute();
+      }
       break;
 
     case 'order-delete':
@@ -309,13 +310,13 @@ function uc_payment_method_cod($op, &$order) {
  */
 function uc_payment_method_cod_form($form, &$form_state, $order) {
   $month = (!empty($order->payment_details['delivery_month'])) ? $order->payment_details['delivery_month'] : format_date(REQUEST_TIME, 'custom', 'n');
-  $form['cod_delivery_month'] = uc_select_month(NULL, $month);
+  $form['delivery_month'] = uc_select_month(NULL, $month);
 
   $day = (!empty($order->payment_details['delivery_day'])) ? $order->payment_details['delivery_day'] : format_date(REQUEST_TIME, 'custom', 'j');
-  $form['cod_delivery_day'] = uc_select_day(NULL, $day);
+  $form['delivery_day'] = uc_select_day(NULL, $day);
 
   $year = (!empty($order->payment_details['delivery_year'])) ? $order->payment_details['delivery_year'] : format_date(REQUEST_TIME, 'custom', 'Y');
-  $form['cod_delivery_year'] = uc_select_year(NULL, $year, format_date(REQUEST_TIME, 'custom', 'Y'), format_date(REQUEST_TIME, 'custom', 'Y') + 1);
+  $form['delivery_year'] = uc_select_year(NULL, $year, format_date(REQUEST_TIME, 'custom', 'Y'), format_date(REQUEST_TIME, 'custom', 'Y') + 1);
 
   return $form;
 }
