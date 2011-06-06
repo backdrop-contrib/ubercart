@@ -11,6 +11,8 @@
 function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
+      $contents['#attached']['css'][] = drupal_get_path('module', 'uc_payment') . '/uc_payment.css';
+
       if (empty($order->line_items)) {
         $order->line_items = uc_order_load_line_items($order, FALSE);
       }
@@ -67,12 +69,12 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
         '#theme' => 'uc_payment_method_select',
         '#ajax' => array(
           'callback' => 'uc_payment_checkout_payment_details',
-          'wrapper' => 'payment_details',
+          'wrapper' => 'payment-details',
         ),
       );
 
       $contents['details'] = array(
-        '#prefix' => '<div id="payment_details" class="solid-border">',
+        '#prefix' => '<div id="payment-details" class="clearfix payment-details-'. $default . '">',
         '#suffix' => '</div>',
       );
 
