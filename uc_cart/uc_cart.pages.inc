@@ -349,7 +349,6 @@ function uc_cart_checkout_form_cancel($form, &$form_state) {
  */
 function uc_cart_checkout_review() {
   drupal_add_js(drupal_get_path('module', 'uc_cart') . '/uc_cart.js');
-  $form = drupal_get_form('uc_cart_checkout_review_form');
 
   if ((!isset($_SESSION['do_review']) || $_SESSION['do_review'] !== TRUE) && !uc_referer_check('cart/checkout')) {
     drupal_goto('cart/checkout');
@@ -385,7 +384,7 @@ function uc_cart_checkout_review() {
   $build = array(
     '#theme' => 'uc_cart_checkout_review',
     '#panes' => $data,
-    '#form' => $form,
+    '#form' => drupal_get_form('uc_cart_checkout_review_form', $order),
   );
 
   return $build;
@@ -456,12 +455,14 @@ function theme_uc_cart_checkout_review($variables) {
  * @see uc_cart_checkout_review_form_submit()
  * @ingroup forms
  */
-function uc_cart_checkout_review_form($form, &$form_state) {
+function uc_cart_checkout_review_form($form, &$form_state, $order) {
   // Set the session variable to pass the redirect check on the pageload.
   // @todo This value should be in $form_state somewhere.
   if (isset($_POST['op']) && $_POST['op'] == t('Back')) {
     $_SESSION['do_review'] = TRUE;
   }
+  
+  $form_state['uc_order'] = $order;
 
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['back'] = array(

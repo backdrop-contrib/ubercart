@@ -175,6 +175,20 @@ function uc_payment_init() {
   $conf['i18n_variables'][] = 'uc_default_payment_msg';
 }
 
+/**
+ * Implements hook_form_FORM_ID_alter() for uc_cart_checkout_review_form().
+ *
+ * If a payment method redirects off-site, add the required form to the review page.
+ */
+function uc_payment_form_uc_cart_checkout_review_form_alter(&$form, &$form_state) {
+  $order = $form_state['uc_order'];
+
+  if ($redirect = _uc_payment_method_data($order->payment_method, 'redirect')) {
+    unset($form['actions']['submit']);
+    $form['#suffix'] = drupal_render(drupal_get_form($redirect, $order));
+  }
+}
+
 /*******************************************************************************
  * Hook Functions (Ubercart)
  ******************************************************************************/

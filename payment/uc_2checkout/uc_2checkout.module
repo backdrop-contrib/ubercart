@@ -44,24 +44,6 @@ function uc_2checkout_ucga_display() {
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for uc_cart_checkout_review_form().
- */
-function uc_2checkout_form_uc_cart_checkout_review_form_alter(&$form, &$form_state) {
-  if (($order_id = intval($_SESSION['cart_order'])) > 0) {
-    $order = uc_order_load($order_id);
-
-    if ($order->payment_method == '2checkout') {
-      drupal_add_css(drupal_get_path('module', 'uc_2checkout') . '/uc_2checkout.css');
-      $checkout = drupal_get_form('uc_2checkout_form', $order);
-
-      unset($form['actions']['submit']);
-      $form['#prefix'] = '<table id="two-checkout-review-table"><tr><td>';
-      $form['#suffix'] = '</td><td>' . drupal_render($checkout) . '</td></tr></table>';
-    }
-  }
-}
-
-/**
  * Implements hook_uc_payment_method().
  *
  * @see uc_payment_method_2checkout()
@@ -78,6 +60,7 @@ function uc_2checkout_uc_payment_method() {
     'review' => variable_get('uc_2checkout_check', FALSE) ? t('Credit card/eCheck') : t('Credit card'),
     'desc' => t('Redirect to 2Checkout to pay by credit card or eCheck.'),
     'callback' => 'uc_payment_method_2checkout',
+    'redirect' => 'uc_2checkout_form',
     'weight' => 3,
     'checkout' => TRUE,
     'no_gateway' => TRUE,
