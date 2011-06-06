@@ -259,10 +259,8 @@ function hook_uc_order_actions($order) {
  * function should contain.
  *
  * @return
- *   An array of order pane arrays using the following keys:
- *   - id:
- *     - type: string
- *     - value: The internal ID of the checkout pane, using a-z, 0-9, and - or _.
+ *   An array of order pane arrays, keyed by the internal ID of the pane, with the
+ *   following members:
  *   - callback:
  *     - type: string
  *     - value: The name of the callback function for this pane.  View
@@ -270,7 +268,7 @@ function hook_uc_order_actions($order) {
  *       for more documentation and examples of checkout pane callbacks.
  *   - title:
  *     - type: string
- *     - value:The name of the pane as it appears on the checkout form.
+ *     - value: The name of the pane as it appears on the order admin form.
  *   - desc:
  *     - type: string
  *     - value: A short description of the pane for the admin pages.
@@ -288,8 +286,7 @@ function hook_uc_order_actions($order) {
  *       "invoice", and "customer" are possible values.
  */
 function hook_uc_order_pane() {
-  $panes[] = array(
-    'id' => 'admin_comments',
+  $panes['admin_comments'] = array(
     'callback' => 'uc_order_pane_admin_comments',
     'title' => t('Admin comments'),
     'desc' => t('View the admin comments, used for administrative notes and instructions.'),

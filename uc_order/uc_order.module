@@ -523,7 +523,7 @@ function uc_order_field_extra_fields() {
   $panes = module_invoke_all('uc_order_pane');
   $extra = array();
 
-  foreach ($panes as $pane) {
+  foreach ($panes as $id => $pane) {
     $extra_field = array(
       'label' => $pane['title'],
       'description' => $pane['desc'],
@@ -531,11 +531,11 @@ function uc_order_field_extra_fields() {
     );
 
     if (in_array('edit', $pane['show'])) {
-      $extra['uc_order']['uc_order']['form'][$pane['id']] = $extra_field;
+      $extra['uc_order']['uc_order']['form'][$id] = $extra_field;
     }
 
     if (in_array('view', $pane['show']) || in_array('customer', $pane['show'])) {
-      $extra['uc_order']['uc_order']['display'][$pane['id']] = $extra_field;
+      $extra['uc_order']['uc_order']['display'][$id] = $extra_field;
     }
   }
 
@@ -617,8 +617,7 @@ function uc_order_views_api() {
  * Implements hook_uc_order_pane().
  */
 function uc_order_uc_order_pane() {
-  $panes[] = array(
-    'id' => 'ship_to',
+  $panes['ship_to'] = array(
     'callback' => 'uc_order_pane_ship_to',
     'title' => t('Ship to'),
     'desc' => t("Manage the order's shipping address and contact information."),
@@ -626,8 +625,7 @@ function uc_order_uc_order_pane() {
     'weight' => 1,
     'show' => array('view', 'edit', 'invoice', 'customer'),
   );
-  $panes[] = array(
-    'id' => 'bill_to',
+  $panes['bill_to'] = array(
     'callback' => 'uc_order_pane_bill_to',
     'title' => t('Bill to'),
     'desc' => t("Manage the order's billing address and contact information."),
@@ -635,8 +633,7 @@ function uc_order_uc_order_pane() {
     'weight' => 2,
     'show' => array('view', 'edit', 'invoice', 'customer'),
   );
-  $panes[] = array(
-    'id' => 'customer',
+  $panes['customer'] = array(
     'callback' => 'uc_order_pane_customer',
     'title' => t('Customer info'),
     'desc' => t("Manage the information for the customer's user account."),
@@ -644,8 +641,7 @@ function uc_order_uc_order_pane() {
     'weight' => 3,
     'show' => array('view', 'edit'),
   );
-  $panes[] = array(
-    'id' => 'products',
+  $panes['products'] = array(
     'callback' => 'uc_order_pane_products',
     'title' => t('Products'),
     'desc' => t('Manage the products an order contains.'),
@@ -653,8 +649,7 @@ function uc_order_uc_order_pane() {
     'weight' => 5,
     'show' => array('view', 'edit', 'invoice', 'customer'),
   );
-  $panes[] = array(
-    'id' => 'line_items',
+  $panes['line_items'] = array(
     'callback' => 'uc_order_pane_line_items',
     'title' => t('Line items'),
     'desc' => t("View and modify an order's line items."),
@@ -662,8 +657,7 @@ function uc_order_uc_order_pane() {
     'weight' => 6,
     'show' => array('view', 'edit', 'invoice', 'customer'),
   );
-  $panes[] = array(
-    'id' => 'order_comments',
+  $panes['order_comments'] = array(
     'callback' => 'uc_order_pane_order_comments',
     'title' => t('Order comments'),
     'desc' => t('View the order comments, used for communicating with customers.'),
@@ -671,8 +665,7 @@ function uc_order_uc_order_pane() {
     'weight' => 8,
     'show' => array('view', 'invoice', 'customer'),
   );
-  $panes[] = array(
-    'id' => 'admin_comments',
+  $panes['admin_comments'] = array(
     'callback' => 'uc_order_pane_admin_comments',
     'title' => t('Admin comments'),
     'desc' => t('View the admin comments, used for administrative notes and instructions.'),
@@ -680,8 +673,7 @@ function uc_order_uc_order_pane() {
     'weight' => 9,
     'show' => array('view', 'edit'),
   );
-  $panes[] = array(
-    'id' => 'update',
+  $panes['update'] = array(
     'callback' => 'uc_order_pane_update',
     'title' => t('Update order'),
     'desc' => t("Update an order's status or add comments to an order."),
@@ -820,41 +812,6 @@ function theme_uc_order_status_table($variables) {
   }
 
   return theme('table', array('header' => $header, 'rows' => $rows));
-}
-
-/**
- * Summarizes the order panes settings.
- *
- * This function summarizes the order panes that have been defined for each
- * screen.  Everything is then organized under a series of parent nodes
- * correlating with the different screens, and specifying which panes are
- * enabled on which screen.
- *
- * @param $form
- *   The form passed from the summarizer.
- * @param $panes
- *   An array of order panes.
- * @param $parent_name
- *   The parent's displayed name.
- * @param $parent_id
- *   The parent's machine-readable ID.
- *
- * @return
- *   An array of summary information
- */
-function _uc_order_panes_summarize($form, $panes, $parent_name, $parent_id) {
-  $items = array();
-
-  foreach ($panes as $name => $pane) {
-    $item[] = t('!title is !enabled.', array('!title' => $pane['title']['#markup'], '!enabled' => $pane['uc_order_pane_' . $name . '_show_' . $parent_id]['#default_value'] ? t('enabled') : t('disabled')));
-  }
-
-  $items[] = array(
-    'data' => t('Order panes on %screen screen:', array('%screen' => $parent_name)),
-    'children' => $item,
-  );
-
-  return $items;
 }
 
 /**

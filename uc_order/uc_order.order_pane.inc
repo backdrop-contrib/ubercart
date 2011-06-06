@@ -1437,18 +1437,32 @@ function uc_op_admin_comments_view_table($comments) {
  * Builds a list of order panes defined in the enabled modules.
  */
 function _uc_order_pane_list($view = 'view') {
-  static $panes;
+  static $panes = array();
 
   if (count($panes) > 0) {
     return $panes;
   }
 
-  $panes = module_invoke_all('uc_order_pane', NULL);
-  foreach ($panes as $i => $value) {
-    $panes[$i]['enabled'] = variable_get('uc_order_pane_' . $panes[$i]['id'] . '_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
-    $panes[$i]['weight'] = variable_get('uc_order_pane_' . $panes[$i]['id'] . '_weight_' . $view, (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));
+  foreach (module_invoke_all('uc_order_pane') as $id => $pane) {
+    // Preserve backward compatibility for panes with no key specified.
+    if (is_numeric($id)) {
+      $id = $pane['id'];
+    }
+
+    // Set defaults.
+    $pane += array(
+      'id' => $id,
+      'enabled' => TRUE,
+      'weight' => 0,
+    );
+
+    $pane['enabled'] = variable_get('uc_order_pane_' . $id . '_enabled', $pane['enabled']);
+    $pane['weight'] = variable_get('uc_order_pane_' . $id . '_weight_' . $view, $pane['weight']);
+
+    $panes[$id] = $pane;
   }
-  usort($panes, 'uc_weight_sort');
+
+  uasort($panes, 'uc_weight_sort');
 
   return $panes;
 }
@@ -1458,9 +1472,5 @@ function _uc_order_pane_list($view = 'view') {
  */
 function _uc_order_pane_data($pane_id, $key) {
   $panes = _uc_order_pane_list();
-  foreach ($panes as $pane) {
-    if ($pane['id'] == $pane_id) {
-      return $pane[$key];
-    }
-  }
+  return $panes[$pane_id][$key];
 }
