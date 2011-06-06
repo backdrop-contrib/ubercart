@@ -25,7 +25,7 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
         $contents['line_items'] = array(
           '#theme' => 'uc_payment_totals',
           '#order' => $order,
-          '#prefix' => '<div style="padding: .5em 1em; margin-bottom: 1em; border: dashed 1px #bbb;" id="line-items-div">',
+          '#prefix' => '<div id="line-items-div">',
           '#suffix' => '</div>',
           '#weight' => -20,
         );
