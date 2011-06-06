@@ -70,6 +70,9 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
         '#ajax' => array(
           'callback' => 'uc_payment_checkout_payment_details',
           'wrapper' => 'payment-details',
+          'progress' => array(
+            'type' => 'throbber',
+          ),
         ),
       );
 
