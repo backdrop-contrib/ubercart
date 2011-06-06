@@ -779,8 +779,7 @@ function uc_cart_uc_cart_pane($items) {
  * Implements hook_uc_checkout_pane().
  */
 function uc_cart_uc_checkout_pane() {
-  $panes[] = array(
-    'id' => 'cart',
+  $panes['cart'] = array(
     'callback' => 'uc_checkout_pane_cart',
     'title' => t('Cart contents'),
     'desc' => t("Display the contents of a customer's shopping cart."),
@@ -788,30 +787,26 @@ function uc_cart_uc_checkout_pane() {
     'process' => FALSE,
     'collapsible' => FALSE,
   );
-  $panes[] = array(
-    'id' => 'customer',
+  $panes['customer'] = array(
     'callback' => 'uc_checkout_pane_customer',
     'title' => t('Customer information'),
     'desc' => t('Get the necessary information to create a customer on the site.'),
     'weight' => 2,
   );
-  $panes[] = array(
-    'id' => 'delivery',
+  $panes['delivery'] = array(
     'callback' => 'uc_checkout_pane_delivery',
     'title' => t('Delivery information'),
     'desc' => t('Get the information for where the order needs to ship.'),
     'weight' => 3,
     'shippable' => TRUE,
   );
-  $panes[] = array(
-    'id' => 'billing',
+  $panes['billing'] = array(
     'callback' => 'uc_checkout_pane_billing',
     'title' => t('Billing information'),
     'desc' => t('Get basic information needed to collect payment.'),
     'weight' => 4,
   );
-  $panes[] = array(
-    'id' => 'comments',
+  $panes['comments'] = array(
     'callback' => 'uc_checkout_pane_comments',
     'title' => t('Order comments'),
     'desc' => t('Allow a customer to put comments on an order.'),
@@ -1811,13 +1806,11 @@ function uc_cart_product_is_shippable($product) {
  *   A checkout pane array with panes filtered out that have key values
  *   matching the combinations in the $remove array.
  */
-function uc_cart_filter_checkout_panes($panes, $remove = NULL) {
-  if (is_array($remove)) {
-    for ($i = 0, $j = count($panes); $i < $j; $i++) {
-      foreach ($remove as $key => $value) {
-        if (isset($panes[$i][$key]) and $panes[$i][$key] == $value) {
-          unset($panes[$i]);
-        }
+function uc_cart_filter_checkout_panes($panes, $remove) {
+  foreach ($panes as $id => $pane) {
+    foreach ($remove as $key => $value) {
+      if (isset($panes[$id][$key]) && $panes[$i][$key] == $value) {
+        unset($panes[$id]);
       }
     }
   }

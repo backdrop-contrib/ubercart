@@ -426,32 +426,38 @@ function _uc_cart_checkout_next_pane($panes, $pane_id = NULL) {
  * Builds a list of checkout panes defined in the enabled modules.
  */
 function _uc_checkout_pane_list($action = NULL) {
-  static $panes;
+  static $panes = array();
 
   if (count($panes) > 0 && $action !== 'rebuild') {
     return $panes;
   }
 
-  $panes = module_invoke_all('uc_checkout_pane', NULL);
+  foreach (module_invoke_all('uc_checkout_pane') as $id => $pane) {
+    // Preserve backward compatibility for panes with no key specified.
+    if (is_numeric($id)) {
+      $id = $pane['id'];
+    }
 
-  // Set the global default values first
-  foreach ($panes as $i => $value) {
-    $panes[$i]['enabled'] = variable_get('uc_pane_' . $panes[$i]['id'] . '_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
-    $panes[$i]['weight'] = variable_get('uc_pane_' . $panes[$i]['id'] . '_weight', (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));
+    // Set defaults.
+    $pane += array(
+      'id' => $id,
+      'enabled' => TRUE,
+      'weight' => 0,
+      'review' => TRUE,
+      'process' => TRUE,
+      'collapsible' => TRUE,
+    );
+
+    $pane['enabled'] = variable_get('uc_pane_' . $id . '_enabled', $pane['enabled']);
+    $pane['weight'] = variable_get('uc_pane_' . $id . '_weight', $pane['weight']);
+
+    $panes[$id] = $pane;
   }
 
-  // Allow other modules to alter the panes.
+  // Allow other modules to alter the defaults.
   drupal_alter('uc_checkout_pane', $panes);
 
-  // Make sure that all the required attributes are set
-  foreach ($panes as $i => $value) {
-    $panes[$i]['enabled'] = !isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled'];
-    $panes[$i]['weight'] = !isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight'];
-    $panes[$i]['review'] = !isset($panes[$i]['review']) ? TRUE : $panes[$i]['review'];
-    $panes[$i]['process'] = !isset($panes[$i]['process']) ? TRUE : $panes[$i]['process'];
-    $panes[$i]['collapsible'] = !isset($panes[$i]['collapsible']) ? TRUE : $panes[$i]['collapsible'];
-  }
-  usort($panes, 'uc_weight_sort');
+  uasort($panes, 'uc_weight_sort');
 
   return $panes;
 }
@@ -461,11 +467,7 @@ function _uc_checkout_pane_list($action = NULL) {
  */
 function _uc_checkout_pane_data($pane_id, $key) {
   $panes = _uc_checkout_pane_list();
-  foreach ($panes as $pane) {
-    if ($pane['id'] == $pane_id) {
-      return $pane[$key];
-    }
-  }
+  return $panes[$pane_id][$key];
 }
 
 /**
