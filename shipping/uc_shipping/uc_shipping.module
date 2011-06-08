@@ -631,25 +631,23 @@ function uc_shipping_order_pane_packages($op, $order) {
       foreach ($result as $shipment) {
         $shipment = uc_shipping_shipment_load($shipment->sid);
         if ($shipment->tracking_number) {
+          $tracking[$shipment->carrier]['data'] = $shipment->carrier;
           $tracking[$shipment->carrier]['children'][] = check_plain($shipment->tracking_number);
         }
         else {
           foreach ($shipment->packages as $package) {
             if ($package->tracking_number) {
+              $tracking[$shipment->carrier]['data'] = $shipment->carrier;
               $tracking[$shipment->carrier]['children'][] = check_plain($package->tracking_number);
             }
           }
         }
       }
 
-      $build = array();
-      foreach ($tracking as $carrier => $item) {
-        $build['tracking'][] = array(
-          '#prefix' => '<strong>' . $carrier . ':</strong>',
-          '#theme' => 'item_list',
-          '#items' => $item,
-        );
-      }
+      $build['tracking'] = array(
+        '#theme' => 'item_list',
+        '#items' => $tracking,
+      );
 
       return $build;
   }
