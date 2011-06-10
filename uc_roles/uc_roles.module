@@ -1157,10 +1157,10 @@ function uc_roles_revoke($account, $rid, $silent = FALSE) {
   global $user;
 
   // Remove this role from the user's list.
-  $roles_list = &$account->roles;
+  $roles_list = $account->roles;
   unset($roles_list[$rid]);
 
-  user_save($account, array('roles' => $roles_list));
+  $account = user_save($account, array('roles' => $roles_list));
 
   // Remove our record of the expiration.
   uc_roles_delete($account, $rid);
@@ -1214,9 +1214,10 @@ function uc_roles_grant(&$account, $rid, $timestamp, $save_user = TRUE, $silent 
 
   if ($save_user) {
     // Punch the role into the user object.
-    $account->roles += array($rid => _uc_roles_get_name($rid));
-    user_save($account, array('roles' => $account->roles));
+    $roles_list = $account->roles + array($rid => _uc_roles_get_name($rid));
+    $account = user_save($account, array('roles' => $roles_list));
   }
+  
 
   // If the role expires, keep a record.
   if (!is_null($timestamp)) {
