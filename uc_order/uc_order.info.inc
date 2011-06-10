@@ -159,8 +159,6 @@ function uc_order_entity_property_info() {
           'type' => 'list<uc_order_product>',
           'label' => t('Products'),
           'description' => t('The products that have been ordered.'),
-          'getter callback' => 'uc_order_get_properties',
-          'setter callback' => 'uc_order_set_properties',
           'setter permission' => 'edit orders',
           'clear' => array('order_total'),
         ),
