@@ -123,8 +123,8 @@ function uc_shipping_menu() {
   );
   $items['admin/store/orders/%uc_order/shipments/%uc_shipping_shipment/packing_slip'] = array(
     'title' => 'Packing slip',
-    'page callback' => 'theme',
-    'page arguments' => array('uc_shipping_shipment_print', 3, 5, FALSE),
+    'page callback' => 'uc_shipping_shipment_print',
+    'page arguments' => array(3, 5, FALSE),
     'access callback' => 'uc_shipping_order_access',
     'access arguments' => array(3),
     'type' => MENU_LOCAL_TASK,
@@ -210,11 +210,13 @@ function uc_shipping_theme() {
  * packing slip template.
  */
 function template_preprocess_uc_packing_slip(&$variables) {
-  $tokens = token_generate('store', array()) + token_generate('site', array());
-  $variables['site_logo'] = $tokens['[site:logo]'];
-  $variables['store_name'] = $tokens['[store:name]'];
-  $variables['store_address'] = $tokens['[store:address]'];
-  $variables['store_phone'] = $tokens['[store:phone]'];
+  $tokens = token_generate('site', drupal_map_assoc(array('logo')));
+  $variables['site_logo'] = $tokens['logo'];
+
+  $tokens = token_generate('store', drupal_map_assoc(array('name', 'address', 'phone')));
+  $variables['store_name'] = $tokens['name'];
+  $variables['store_address'] = $tokens['address'];
+  $variables['store_phone'] = $tokens['phone'];
 
   $order = $variables['order'];
   $variables['order_link'] = l($order->order_id, url('user/' . $order->uid . '/orders/' . $order->order_id, array('absolute' => TRUE)));

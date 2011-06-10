@@ -945,11 +945,12 @@ function uc_shipping_shipment_edit_submit($form, &$form_state) {
 /**
  * Shows a printer-friendly version of a shipment.
  */
-function uc_shipping_shipment_print($order, $shipment) {
+function uc_shipping_shipment_print($order, $shipment, $labels = TRUE) {
   return array(
     '#theme' => 'uc_shipping_shipment_print',
     '#order' => $order,
     '#shipment' => $shipment,
+    '#labels' => $labels,
   );
 }
 
