@@ -99,8 +99,7 @@ function hook_uc_payment_gateway_alter(&$gateways) {
  *   An array of payment methods.
  */
 function hook_uc_payment_method() {
-  $methods[] = array(
-    'id' => 'check',
+  $methods['check'] = array(
     'name' => t('Check'),
     'title' => t('Check or Money Order'),
     'desc' => t('Pay by mailing a check or money order.'),

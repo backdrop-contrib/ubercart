@@ -71,8 +71,8 @@ function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) 
 
       $methods = _uc_payment_method_list();
       $options = array();
-      foreach ($methods as $method) {
-        $options[$method['id']] = $method['name'];
+      foreach ($methods as $id => $method) {
+        $options[$id] = $method['name'];
       }
       $form['payment']['payment_method'] = array(
         '#type' => 'select',
@@ -90,8 +90,8 @@ function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) 
       // build a JS array of our payment methods
       $methods = _uc_payment_method_list();
       $method_array_js = array();
-      foreach ($methods as $method) {
-        $method_array_js[$method['name']] = $method['id'];
+      foreach ($methods as $id => $method) {
+        $method_array_js[$method['name']] = $id;
       }
       drupal_add_js(array('methods' => $method_array_js), 'setting');
 

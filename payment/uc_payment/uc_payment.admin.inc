@@ -32,34 +32,34 @@ function uc_payment_methods_form($form, &$form_state) {
   );
 
   if (is_array($methods) && count($methods) > 0) {
-    foreach ($methods as $method) {
+    foreach ($methods as $id => $method) {
 
-      $form['pmtable'][$method['id']]['#summary callback'] = 'uc_summarize_form';
+      $form['pmtable'][$id]['#summary callback'] = 'uc_summarize_form';
 
-      $form['pmtable'][$method['id']]['uc_payment_method_' . $method['id'] . '_checkout'] = array(
+      $form['pmtable'][$id]['uc_payment_method_' . $id . '_checkout'] = array(
         '#type' => 'checkbox',
         '#summary callback' => 'uc_summarize_checkbox',
         '#summary arguments' => array(
           t('@payment is enabled for checkout.', array('@payment' => $method['name'])),
           t('@payment is disabled for checkout.', array('@payment' => $method['name'])),
         ),
-        '#default_value' => variable_get('uc_payment_method_' . $method['id'] . '_checkout', $method['checkout']),
+        '#default_value' => variable_get('uc_payment_method_' . $id . '_checkout', $method['checkout']),
       );
-      $form['pmtable'][$method['id']]['name'] = array(
+      $form['pmtable'][$id]['name'] = array(
         '#markup' => $method['name'],
       );
-      $form['pmtable'][$method['id']]['uc_payment_method_' . $method['id'] . '_weight'] = array(
+      $form['pmtable'][$id]['uc_payment_method_' . $id . '_weight'] = array(
         '#type' => 'weight',
-        '#default_value' => variable_get('uc_payment_method_' . $method['id'] . '_weight', $method['weight']),
+        '#default_value' => variable_get('uc_payment_method_' . $id . '_weight', $method['weight']),
       );
 
       if (isset($method['no_gateway']) && $method['no_gateway'] === TRUE) {
-        $form['pmtable'][$method['id']]['uc_payment_' . $method['id'] . '_gateway'] = array(
+        $form['pmtable'][$id]['uc_payment_' . $id . '_gateway'] = array(
           '#markup' => '-',
         );
       }
       else {
-        $gateways = _uc_payment_gateway_list($method['id'], TRUE);
+        $gateways = _uc_payment_gateway_list($id, TRUE);
         $options = array();
         $default = FALSE;
         if (is_array($gateways)) {
@@ -73,25 +73,25 @@ function uc_payment_methods_form($form, &$form_state) {
         if (!$default) {
           $options = array('none' => t('None available.'));
         }
-        $form['pmtable'][$method['id']]['uc_payment_' . $method['id'] . '_gateway'] = array(
+        $form['pmtable'][$id]['uc_payment_' . $id . '_gateway'] = array(
           '#type' => 'select',
           '#options' => $options,
           '#summary callback' => 'uc_summarize_null',
-          '#default_value' => variable_get('uc_payment_' . $method['id'] . '_gateway', 'none'),
+          '#default_value' => variable_get('uc_payment_' . $id . '_gateway', 'none'),
         );
       }
 
       $null = NULL;
       $method_settings = $method['callback']('settings', $null, array(), $form_state);
       if (is_array($method_settings)) {
-        $form['method_' . $method['id']] = array(
+        $form['method_' . $id] = array(
           '#type' => 'fieldset',
           '#summary callback' => 'uc_summarize_null',
           '#title' => t('!method settings', array('!method' => $method['name'], '!weight' => $method['weight'])),
           '#collapsible' => TRUE,
           '#collapsed' => TRUE,
         );
-        $form['method_' . $method['id']] = array_merge($form['method_' . $method['id']], $method_settings);
+        $form['method_' . $id] = array_merge($form['method_' . $id], $method_settings);
       }
     }
   }
@@ -149,8 +149,8 @@ function uc_payment_gateways_form($form, &$form_state) {
         '#collapsed' => TRUE,
       );
       $supported_methods = array();
-      foreach ($methods as $method) {
-        if (isset($gateway[$method['id']]) && function_exists($gateway[$method['id']])) {
+      foreach ($methods as $method_id => $method) {
+        if (isset($gateway[$method_id]) && function_exists($gateway[$method_id])) {
           $supported_methods[] = $method['name'];
         }
       }
@@ -334,8 +334,8 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
       '#markup' => '-',
     );
     $methods = _uc_payment_method_list();
-    foreach ($methods as $method) {
-      $options[$method['id']] = $method['name'];
+    foreach ($methods as $id => $method) {
+      $options[$id] = $method['name'];
     }
     $form['payments']['new']['method'] = array(
       '#type' => 'select',

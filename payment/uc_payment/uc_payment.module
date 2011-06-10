@@ -619,18 +619,26 @@ function uc_payment_load_payments($order_id, $action = NULL) {
  * Build a list of payment methods defined in the enabled modules.
  */
 function _uc_payment_method_list($action = NULL) {
-  static $methods;
+  static $methods = array();
 
   if (count($methods) > 0 && $action !== 'rebuild') {
     return $methods;
   }
 
-  $methods = module_invoke_all('uc_payment_method');
-  foreach ($methods as $i => $value) {
-    $methods[$i]['checkout'] = variable_get('uc_payment_method_' . $methods[$i]['id'] . '_checkout', $methods[$i]['checkout']);
-    $methods[$i]['weight'] = variable_get('uc_payment_method_' . $methods[$i]['id'] . '_weight', $methods[$i]['weight']);
+  foreach (module_invoke_all('uc_payment_method') as $id => $method) {
+    // Preserve backward compatibility for panes with no key specified.
+    if (is_numeric($id)) {
+      $id = $method['id'];
+    }
+
+    $methods[$id] = array_merge($method, array(
+      'id' => $id,
+      'checkout' => variable_get('uc_payment_method_' . $id . '_checkout', $method['checkout']),
+      'weight' => variable_get('uc_payment_method_' . $id . '_weight', $method['weight']),
+    ));
   }
-  usort($methods, 'uc_weight_sort');
+
+  uasort($methods, 'uc_weight_sort');
 
   return $methods;
 }
@@ -640,11 +648,7 @@ function _uc_payment_method_list($action = NULL) {
  */
 function _uc_payment_method_data($method_id, $key) {
   $methods = _uc_payment_method_list();
-  foreach ($methods as $method) {
-    if ($method['id'] == $method_id) {
-      return isset($method[$key]) ? $method[$key] : NULL;
-    }
-  }
+  return $methods[$method_id][$key];
 }
 
 /**

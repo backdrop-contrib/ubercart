@@ -40,9 +40,9 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
       $options = array();
       $default = NULL;
 
-      foreach ($methods as $method) {
+      foreach ($methods as $id => $method) {
         if ($method['checkout']) {
-          $options[$method['id']] = $method['title'];
+          $options[$id] = $method['title'];
         }
       }
 
