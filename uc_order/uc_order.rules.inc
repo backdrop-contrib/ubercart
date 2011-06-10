@@ -233,7 +233,7 @@ function uc_order_rules_action_info() {
         'label' => t('Message'),
       ),
       'format' => array(
-        'type' => 'integer',
+        'type' => 'text',
         'label' => t('Message format'),
         'options list' => 'uc_order_message_formats',
       ),
