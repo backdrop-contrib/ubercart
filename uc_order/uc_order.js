@@ -254,7 +254,7 @@ function close_customer_select() {
 function confirm_line_item_delete(message, img_id) {
   if (confirm(message)) {
     var li_id = img_id.substring(3);
-    jQuery('#edit-li-delete-id').val(li_id);
+    jQuery('[name=li_delete_id]').val(li_id);
     jQuery('#uc-order-edit-form #edit-submit-changes').get(0).click();
   }
 }
