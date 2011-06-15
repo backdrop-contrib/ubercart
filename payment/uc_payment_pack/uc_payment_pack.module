@@ -137,7 +137,7 @@ function uc_payment_method_other($op, &$order) {
 /**
  * Form to collect additional information needed by payment method "Other".
  *
- * @see theme_uc_payment_method_other_form(). 
+ * @see theme_uc_payment_method_other_form().
  * @ingroup forms
  */
 function uc_payment_method_other_form($form, &$form_state, $order) {
@@ -152,9 +152,9 @@ function uc_payment_method_other_form($form, &$form_state, $order) {
 }
 
 /**
- * Theme function for uc_payment_method_other_form(). 
+ * Theme function for uc_payment_method_other_form().
  *
- * @see uc_payment_method_other_form(). 
+ * @see uc_payment_method_other_form().
  * @ingroup themeable
  */
 function theme_uc_payment_method_other_form($variables) {
@@ -193,9 +193,11 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
 
     case 'cart-review':
       if (variable_get('uc_cod_delivery_date', FALSE)) {
-        $date = uc_date_format($order->payment_details['delivery_month'],
-                               $order->payment_details['delivery_day'],
-                               $order->payment_details['delivery_year']);
+        $date = uc_date_format(
+          $order->payment_details['delivery_month'],
+          $order->payment_details['delivery_day'],
+          $order->payment_details['delivery_year']
+        );
         $review[] = array('title' => t('Delivery date'), 'data' => $date);
       }
       return $review;
@@ -206,9 +208,11 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
 
       if (variable_get('uc_cod_delivery_date', FALSE)) {
         $build['#markup'] = t('Desired delivery date:') . '<br />' .
-          uc_date_format($order->payment_details['delivery_month'],
+          uc_date_format(
+            $order->payment_details['delivery_month'],
             $order->payment_details['delivery_day'],
-            $order->payment_details['delivery_year']);
+            $order->payment_details['delivery_year']
+          );
       }
 
       return $build;
@@ -227,8 +231,8 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
         return array(
           'payment_details' => array(
             'delivery_month' => intval($_POST['delivery_month']),
-            'delivery_day' => intval($_POST['delivery_day']),
-            'delivery_year' => intval($_POST['delivery_year']),
+            'delivery_day'   => intval($_POST['delivery_day']),
+            'delivery_year'  => intval($_POST['delivery_year']),
           ),
         );
       }
@@ -260,8 +264,8 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
 
     case 'order-save':
       if (isset($order->payment_details['delivery_month']) &&
-        isset($order->payment_details['delivery_day']) &&
-        isset($order->payment_details['delivery_year'])) {
+          isset($order->payment_details['delivery_day'])   &&
+          isset($order->payment_details['delivery_year'])    ) {
           db_merge('uc_payment_cod')
             ->key(array('order_id' => $order->order_id))
             ->fields(array(
@@ -305,7 +309,7 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
  * Form to collect additional information needed by the "Cash on Delivery"
  * payment method.
  *
- * @see theme_uc_payment_method_cod_form(). 
+ * @see theme_uc_payment_method_cod_form().
  * @ingroup forms
  */
 function uc_payment_method_cod_form($form, &$form_state, $order) {
@@ -322,9 +326,9 @@ function uc_payment_method_cod_form($form, &$form_state, $order) {
 }
 
 /**
- * Theme function for uc_payment_method_cod_form(). 
+ * Theme function for uc_payment_method_cod_form().
  *
- * @see uc_payment_method_cod_form(). 
+ * @see uc_payment_method_cod_form().
  * @ingroup themeable
  */
 function theme_uc_payment_method_cod_form($variables) {
@@ -358,22 +362,24 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
       if (!variable_get('uc_check_mailing_street1', FALSE)) {
         $build['address'] = array(
           '#markup' => uc_address_format(
-             variable_get('uc_store_name', ''),
-             NULL,
-             variable_get('uc_store_company', ''),
-             variable_get('uc_store_street1', ''),
-             variable_get('uc_store_street2', ''),
-             variable_get('uc_store_city', ''),
-             variable_get('uc_store_zone', ''),
-             variable_get('uc_store_postal_code', ''),
-             variable_get('uc_store_country', 840)),
+            variable_get('uc_store_name', ''),
+            NULL,
+            variable_get('uc_store_company', ''),
+            variable_get('uc_store_street1', ''),
+            variable_get('uc_store_street2', ''),
+            variable_get('uc_store_city', ''),
+            variable_get('uc_store_zone', ''),
+            variable_get('uc_store_postal_code', ''),
+            variable_get('uc_store_country', 840)
+          ),
           '#prefix' => '<p>',
           '#suffix' => '</p>',
         );
       }
       else {
         $build['address'] = array(
-          '#markup' => uc_address_format(variable_get('uc_check_mailing_name', ''),
+          '#markup' => uc_address_format(
+            variable_get('uc_check_mailing_name', ''),
             NULL,
             variable_get('uc_check_mailing_company', ''),
             variable_get('uc_check_mailing_street1', ''),
@@ -381,40 +387,51 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
             variable_get('uc_check_mailing_city', ''),
             variable_get('uc_check_mailing_zone', ''),
             variable_get('uc_check_mailing_postal_code', ''),
-            variable_get('uc_check_mailing_country', 840)),
+            variable_get('uc_check_mailing_country', 840)
+          ),
           '#prefix' => '<p>',
           '#suffix' => '</p>',
         );
       }
 
-      $build['policy'] = array('#markup' => '<p>' . variable_get('uc_check_policy', '') . '</p>');
+      $build['policy'] = array(
+        '#markup' => '<p>' . variable_get('uc_check_policy', '') . '</p>'
+      );
 
       return $build;
 
     case 'cart-review':
       if (!variable_get('uc_check_mailing_street1', FALSE)) {
-        $review[] = array('title' => t('Mail to'), 'data' =>
-                   uc_address_format(variable_get('uc_store_name', ''),
-                                     NULL,
-                                     variable_get('uc_store_company', ''),
-                                     variable_get('uc_store_street1', ''),
-                                     variable_get('uc_store_street2', ''),
-                                     variable_get('uc_store_city', ''),
-                                     variable_get('uc_store_zone', ''),
-                                     variable_get('uc_store_postal_code', ''),
-                                     variable_get('uc_store_country', 840)));
+        $review[] = array(
+          'title' => t('Mail to'),
+          'data' => uc_address_format(
+            variable_get('uc_store_name', ''),
+            NULL,
+            variable_get('uc_store_company', ''),
+            variable_get('uc_store_street1', ''),
+            variable_get('uc_store_street2', ''),
+            variable_get('uc_store_city', ''),
+            variable_get('uc_store_zone', ''),
+            variable_get('uc_store_postal_code', ''),
+            variable_get('uc_store_country', 840)
+          )
+        );
       }
       else {
-        $review[] = array('title' => t('Mail to'), 'data' =>
-                   uc_address_format(variable_get('uc_check_mailing_name', ''),
-                                     NULL,
-                                     variable_get('uc_check_mailing_company', ''),
-                                     variable_get('uc_check_mailing_street1', ''),
-                                     variable_get('uc_check_mailing_street2', ''),
-                                     variable_get('uc_check_mailing_city', ''),
-                                     variable_get('uc_check_mailing_zone', ''),
-                                     variable_get('uc_check_mailing_postal_code', ''),
-                                     variable_get('uc_check_mailing_country', 840)));
+        $review[] = array(
+          'title' => t('Mail to'),
+          'data' => uc_address_format(
+            variable_get('uc_check_mailing_name', ''),
+            NULL,
+            variable_get('uc_check_mailing_company', ''),
+            variable_get('uc_check_mailing_street1', ''),
+            variable_get('uc_check_mailing_street2', ''),
+            variable_get('uc_check_mailing_city', ''),
+            variable_get('uc_check_mailing_zone', ''),
+            variable_get('uc_check_mailing_postal_code', ''),
+            variable_get('uc_check_mailing_country', 840)
+          )
+        );
       }
       return $review;
 
