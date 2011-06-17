@@ -1527,44 +1527,12 @@ function uc_credit_default_gateway() {
     return FALSE;
   }
 
-  // If we only found one gateway for this payment method...
-  if (count($gateways) == 1) {
-    // Get the payment gateway array and store its ID.
-    $gateway = array_shift($gateways);
-    $gateway_id = $gateway['id'];
+  // Find the default gateway, or otherwise choose the first available.
+  $default = variable_get('uc_payment_credit_gateway', 'none');
+  $gateway = isset($gateways[$default]) ? $gateways[$default] : reset($gateways);
 
-    // Store the callback for this gateway.
-    $callback = $gateway['credit'];
-  }
-  else {
-    // Otherwise attempt to find the appropriate gateway function in the array.
-    $callback = FALSE;
-
-    // Loop through each gateway.
-    foreach ($gateways as $gateway) {
-      // Store the callback if this is the specified default.
-      if ($gateway['id'] == variable_get('uc_payment_credit_gateway', '')) {
-        $callback = $gateway['credit'];
-        $gateway_id = $gateway['id'];
-      }
-    }
-
-    // If we didn't find a default callback...
-    if ($callback === FALSE) {
-      // Get the key for the first payment gateway in the array.
-      $gateway_id = array_shift(array_keys($gateways));
-
-      // Store the callback for this gateway.
-      $callback = $gateways[$gateway_id]['credit'];
-    }
-  }
-
-  // Return FALSE if the specified callback does not exist.
-  if (!function_exists($callback)) {
-    return FALSE;
-  }
-
-  return $gateway_id;
+  // Return FALSE if the credit callback does not exist.
+  return function_exists($gateway['credit']) ? $gateway['id'] : FALSE;
 }
 
 /**

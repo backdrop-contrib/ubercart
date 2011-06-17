@@ -61,16 +61,10 @@ function uc_payment_methods_form($form, &$form_state) {
       else {
         $gateways = _uc_payment_gateway_list($id, TRUE);
         $options = array();
-        $default = FALSE;
-        if (is_array($gateways)) {
-          foreach ($gateways as $gateway) {
-            if (!$default) {
-              $default = $gateway['id'];
-            }
-            $options[$gateway['id']] = $gateway['title'];
-          }
+        foreach ($gateways as $gateway_id => $gateway) {
+          $options[$gateway_id] = $gateway['title'];
         }
-        if (!$default) {
+        if (empty($options)) {
           $options = array('none' => t('None available.'));
         }
         $form['pmtable'][$id]['uc_payment_' . $id . '_gateway'] = array(
@@ -141,8 +135,8 @@ function uc_payment_gateways_form($form, &$form_state) {
       '#weight' => -10,
     );
 
-    foreach ($gateways as $gateway) {
-      $form['gateways'][$gateway['id']] = array(
+    foreach ($gateways as $id => $gateway) {
+      $form['gateways'][$id] = array(
         '#type' => 'fieldset',
         '#title' => t('@gateway_name settings', array('@gateway_name' => $gateway['title'])),
         '#collapsible' => TRUE,
@@ -155,22 +149,22 @@ function uc_payment_gateways_form($form, &$form_state) {
         }
       }
 
-      $form['gateways'][$gateway['id']]['supported_methods'] = array(
+      $form['gateways'][$id]['supported_methods'] = array(
         '#markup' => '<div>' . t('This gateway supports the following payment methods:')
                    . '<br />' . implode(',', $supported_methods) . '</div>',
         '#weight' => -10,
       );
-      $form['gateways'][$gateway['id']]['uc_pg_' . $gateway['id'] . '_enabled'] = array(
+      $form['gateways'][$id]['uc_pg_' . $id . '_enabled'] = array(
         '#type' => 'checkbox',
         '#title' => t('Enable this payment gateway for use.'),
-        '#default_value' => variable_get('uc_pg_' . $gateway['id'] . '_enabled', TRUE),
+        '#default_value' => variable_get('uc_pg_' . $id . '_enabled', TRUE),
       );
 
       // Find any additional settings defined in the payment gateway callback.
       if (isset($gateway['settings']) && function_exists($gateway['settings'])) {
         $gateway_settings = $gateway['settings'](array(), $form_state);
         if (is_array($gateway_settings)) {
-          $form['gateways'][$gateway['id']] = array_merge($form['gateways'][$gateway['id']], $gateway_settings);
+          $form['gateways'][$id] = array_merge($form['gateways'][$id], $gateway_settings);
         }
       }
     }
@@ -209,8 +203,8 @@ function _uc_payment_gateways_summarize($form, $gateways) {
  */
 function uc_payment_gateway_select() {
   $gateways = _uc_payment_gateway_list($_SESSION['uc_payment_method'], TRUE);
-  foreach ($gateways as $gateway) {
-    $options[$gateway['id']] = $gateway['title'];
+  foreach ($gateways as $id => $gateway) {
+    $options[$id] = $gateway['title'];
   }
 
   $build['instructions'] = array('#markup' => t('Please choose a payment gateway to use for that payment.'));

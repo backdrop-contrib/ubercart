@@ -413,67 +413,44 @@ function uc_payment_process_payment($method, $order_id, $amount, $data = NULL, $
     return FALSE;
   }
 
+  // Find the default gateway if requested.
+  if ($default) {
+    $default = variable_get('uc_payment_' . $method . '_gateway', '');
+  }
+
   // If we only found one gateway for this payment method...
   if (count($gateways) == 1) {
-    // Get the right key for the payment gateway in the array.
-    $key = array_shift(array_keys($gateways));
-
-    // If we can find a callback in the gateway for the payment method...
-    if (function_exists($gateways[$key][$method])) {
-      // Pass the payment data onto the callback and store the result.
-      $result = $gateways[$key][$method]($order_id, $amount, $data);
-    }
-    else {
-      // Otherwise display a failure message to administrators.
-      if (user_access('administer store')) {
-        drupal_set_message(t("Attempted to process a %type payment but the gateway's function was not found."));
-      }
-
-      $result['success'] = FALSE;
-    }
+    $gateway = reset($gateways);
+  }
+  elseif ($default && isset($gateways[$default])) {
+    // The default gateway was forced.
+    $gateway = $gateways[$default];
+  }
+  elseif ($selected && isset($gateways[$selected])) {
+    // A specific gateway was selected.
+    $gateway = $gateways[$selected];
   }
   else {
-    // Otherwise attempt to find the appropriate gateway function in the array.
-    $callback = FALSE;
+    // Otherwise store the info that was passed to us in the session and
+    // redirect to a form where we can choose a payment gateway.
+    $_SESSION['uc_payment_method'] = $method;
+    $_SESSION['uc_payment_order_id'] = $order_id;
+    $_SESSION['uc_payment_amount'] = $amount;
+    $_SESSION['uc_payment_data'] = serialize($data);
 
-    foreach ($gateways as $gateway) {
-      // If we want the default gateway and this is it, store the callback
-      // and continue.
-      if ($default && $gateway['id'] == variable_get('uc_payment_' . $method . '_gateway', '')) {
-        $callback = $gateway[$method];
-        continue;
-      }
+    drupal_goto('admin/store/orders/' . $order_id . '/payments/select/' . $method);
+  }
 
-      // If we want to use a specific gateway and this is it, store the callback.
-      if (!empty($selected) && $gateway['id'] == $selected) {
-        $callback = $gateway[$method];
-      }
-    }
-
-    // If we found a callback...
-    if ($callback !== FALSE) {
-      // Check to see if the function exists and process the payment.
-      if (function_exists($callback)) {
-        $result = $callback($order_id, $amount, $data);
-      }
-      else {
-        // Otherwise display an error message to administrators.
-        if (user_access('administer store')) {
-          drupal_set_message(t('An error has occurred with your payment gateway.  The charge function could not be found.'));
-        }
-
-        $result['success'] = FALSE;
-      }
-    }
-    else {
-      // Otherwise store the info that was passed to us in the session and
-      // redirect to a form where we can choose a payment gateway.
-      $_SESSION['uc_payment_method'] = $method;
-      $_SESSION['uc_payment_order_id'] = $order_id;
-      $_SESSION['uc_payment_amount'] = $amount;
-      $_SESSION['uc_payment_data'] = serialize($data);
-
-      drupal_goto('admin/store/orders/' . $order_id . '/payments/select/' . $method);
+  // Check to see if the function exists and process the payment.
+  if (function_exists($gateway[$method])) {
+    $result = $gateway[$method]($order_id, $amount, $data);
+  }
+  else {
+    // Otherwise display an error message to administrators.
+    $result['success'] = FALSE;
+    $result['message'] = t('An error has occurred with your payment gateway.  The charge function could not be found.');
+    if (user_access('administer store')) {
+      drupal_set_message($result['message']);
     }
   }
 
@@ -626,7 +603,7 @@ function _uc_payment_method_list($action = NULL) {
   }
 
   foreach (module_invoke_all('uc_payment_method') as $id => $method) {
-    // Preserve backward compatibility for panes with no key specified.
+    // Preserve backward compatibility for methods with no key specified.
     if (is_numeric($id)) {
       $id = $method['id'];
     }
@@ -655,23 +632,30 @@ function _uc_payment_method_data($method_id, $key) {
  * Build a list of payment gateways defined in the enabled modules.
  */
 function _uc_payment_gateway_list($filter = NULL, $enabled_only = FALSE) {
-  $gateways = module_invoke_all('uc_payment_gateway');
+  $gateways = array();
+
+  foreach (module_invoke_all('uc_payment_gateway') as $id => $gateway) {
+    // Preserve backward compatibility for gateways with no key specified.
+    if (is_numeric($id)) {
+      $id = $method['id'];
+    }
+
+    $gateways[$id] = array_merge($gateway, array(
+      'id' => $id,
+      'enabled' => variable_get('uc_pg_' . $id . '_enabled', TRUE),
+    ));
+  }
 
   // Allow other modules to alter the payment gateways.
   drupal_alter('uc_payment_gateway', $gateways);
 
-  foreach ($gateways as $i => $value) {
-    $gateways[$i]['enabled'] = variable_get('uc_pg_' . $gateways[$i]['id'] . '_enabled', TRUE);
-    if ($filter != NULL) {
-      if (!isset($gateways[$i][$filter]) || !function_exists($gateways[$i][$filter])) {
-        unset($gateways[$i]);
-        continue;
-      }
+  foreach ($gateways as $id => $gateway) {
+    if ($filter && (!isset($gateway[$filter]) || !function_exists($gateway[$filter]))) {
+      unset($gateways[$id]);
+      continue;
     }
-    if ($enabled_only) {
-      if (!variable_get('uc_pg_' . $gateways[$i]['id'] . '_enabled', TRUE)) {
-        unset($gateways[$i]);
-      }
+    if ($enabled_only && !$gateway['enabled']) {
+      unset($gateways[$id]);
     }
   }
 
@@ -690,14 +674,6 @@ function _uc_payment_gateway_list($filter = NULL, $enabled_only = FALSE) {
  *   The requested data.
  */
 function _uc_payment_gateway_data($gateway_id, $key) {
-  // Load all the payment gateways.
   $gateways = _uc_payment_gateway_list();
-
-  // Loop through the array to find the matching gateway.
-  foreach ($gateways as $gateway) {
-    // If this is it, return the requested data.
-    if ($gateway['id'] == $gateway_id) {
-      return isset($gateway[$key]) ? $gateway[$key] : NULL;
-    }
-  }
+  return isset($gateways[$gateway_id][$key]) ? $gateways[$gateway_id][$key] : NULL;
 }
