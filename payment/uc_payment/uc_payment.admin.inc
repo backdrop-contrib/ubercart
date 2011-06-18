@@ -19,16 +19,6 @@ function uc_payment_settings_overview() {
 }
 
 function uc_payment_settings_form($form, &$form_state) {
-  $form['uc_payment_deleting'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Allow payments to be deleted by users with permission.'),
-    '#summary callback' => 'uc_summarize_checkbox',
-    '#summary arguments' => array(
-      t('Payments can be deleted by users with permission.'),
-      t('Payments cannot be deleted, even if the user has permission.'),
-    ),
-    '#default_value' => variable_get('uc_payment_deleting', TRUE),
-  );
   $form['uc_payment_logging'] = array(
     '#type' => 'checkbox',
     '#title' => t('Log payments entered and deleted to order log.'),
@@ -339,7 +329,7 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
       $form['payments'][$payment->receipt_id]['comment'] = array(
         '#markup' => ($payment->comment == '') ? '-' : filter_xss_admin($payment->comment),
       );
-      if (variable_get('uc_payment_deleting', TRUE) && user_access('delete payments')) {
+      if (user_access('delete payments')) {
         $action_value = l(t('Delete'), 'admin/store/orders/' . $order->order_id . '/payments/'
                           . $payment->receipt_id . '/delete');
       }
