@@ -86,12 +86,16 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
         '#suffix' => '</div>',
       );
 
+      $details = FALSE;
       $func = _uc_payment_method_data($default, 'callback');
       if (function_exists($func)) {
         $details = $func('cart-details', $order, $form, $form_state);
-        if (is_array($details) && !empty($details)) {
-          $contents['details'] += $details;
-        }
+      }
+      if (is_array($details) && !empty($details)) {
+        $contents['details'] += $details;
+      }
+      else {
+        $contents['details']['#markup'] = t('Continue with checkout to complete payment.');
       }
 
       return array('description' => $description, 'contents' => $contents);

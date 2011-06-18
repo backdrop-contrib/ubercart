@@ -19,15 +19,7 @@ function uc_payment_settings_overview() {
 }
 
 function uc_payment_settings_form($form, &$form_state) {
-  $form['uc_default_payment_msg'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Default payment details message'),
-    '#description' => t('Message displayed when a payment method does not display any further details.'),
-    '#default_value' => variable_get('uc_default_payment_msg', t('Continue with checkout to complete payment.')),
-    '#summary' => t('Default payment details message is: <br /> %message', array('%message' => variable_get('uc_default_payment_msg', t('Continue with checkout to complete payment.')))),
-  );
-
-  return system_settings_form($form);
+  return array();
 }
 
 function uc_payment_methods_form($form, &$form_state) {
