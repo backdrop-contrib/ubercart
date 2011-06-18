@@ -224,6 +224,7 @@ function uc_product_enable() {
   foreach ($types as $type) {
     if ($type->module == 'uc_product') {
       node_add_body_field($type, $body_label);
+      uc_product_set_teaser_display($type->type);
     }
   }
 
@@ -245,8 +246,6 @@ function uc_product_uninstall() {
   variable_del('uc_product_add_to_cart_teaser');
   variable_del('uc_teaser_add_to_cart_text');
   variable_del('uc_product_add_to_cart_text');
-  variable_del('uc_product_field_enabled');
-  variable_del('uc_product_field_weight');
 }
 
 /**
@@ -341,4 +340,18 @@ function uc_product_update_7002() {
 
     return t('Enabled Image module.');
   }
+}
+
+/**
+ * Set default display settings for product teasers.
+ */
+function uc_product_update_7003() {
+  foreach (uc_product_types() as $type) {
+    uc_product_set_teaser_display($type);
+  }
+
+  variable_del('uc_product_field_enabled');
+  variable_del('uc_product_field_weight');
+
+  return t('Set display settings for product teasers.');
 }

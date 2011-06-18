@@ -596,27 +596,6 @@ function uc_product_kit_form(&$node, $form_state) {
  * Implements hook_view().
  */
 function uc_product_kit_view($node, $view_mode) {
-  $enabled = variable_get('uc_product_field_enabled', array(
-    'display_price' => 1,
-    'model' => 1,
-    'list_price' => 0,
-    'cost' => 0,
-    'sell_price' => 1,
-    'weight' => 0,
-    'dimensions' => 0,
-    'add_to_cart' => 1,
-  ));
-  $weight = variable_get('uc_product_field_weight', array(
-    'display_price' => -1,
-    'model' => 0,
-    'list_price' => 2,
-    'cost' => 3,
-    'sell_price' => 4,
-    'weight' => 5,
-    'dimensions' => 6,
-    'add_to_cart' => 10,
-  ));
-
   $node->content['display_price'] = array(
     '#theme' => 'uc_product_price',
     '#value' => $node->sell_price,
@@ -626,50 +605,34 @@ function uc_product_kit_view($node, $view_mode) {
         'display-price',
       ),
     ),
-    '#access' => $enabled['display_price'],
-    '#weight' => $weight['display_price'],
   );
-  if ($view_mode != 'teaser') {
-    $node->content['model'] = array(
-      '#theme' => 'uc_product_model',
-      '#model' => $node->model,
-      '#view_mode' => $view_mode,
-      '#access' => $enabled['model'],
-      '#weight' => $weight['model'],
-    );
-
-    $node->content['list_price'] = array(
-      '#theme' => 'uc_product_price',
-      '#title' => t('List price:'),
-      '#value' => $node->list_price,
-      '#attributes' => array(
-        'class' => array(
-          'product-kit',
-          'list-price',
-        ),
+  $node->content['model'] = array(
+    '#theme' => 'uc_product_model',
+    '#model' => $node->model,
+    '#view_mode' => $view_mode,
+  );
+  $node->content['list_price'] = array(
+    '#theme' => 'uc_product_price',
+    '#title' => t('List price:'),
+    '#value' => $node->list_price,
+    '#attributes' => array(
+      'class' => array(
+        'product-kit',
+        'list-price',
       ),
-      '#access' => $enabled['list_price'],
-      '#weight' => $weight['list_price'],
-    );
-
-    $node->content['cost'] = array(
-      '#theme' => 'uc_product_price',
-      '#title' => t('Cost:'),
-      '#value' => $node->cost,
-      '#attributes' => array(
-        'class' => array(
-          'product-kit',
-          'cost',
-        ),
+    ),
+  );
+  $node->content['cost'] = array(
+    '#theme' => 'uc_product_price',
+    '#title' => t('Cost:'),
+    '#value' => $node->cost,
+    '#attributes' => array(
+      'class' => array(
+        'product-kit',
+        'cost',
       ),
-      '#access' => $enabled['cost'] && user_access('administer products'),
-      '#weight' => $weight['cost'],
-    );
-  }
-  else {
-    $node->content['#attributes'] = array('style' => 'display: inline');
-  }
-
+    ),
+  );
   $node->content['sell_price'] = array(
     '#theme' => 'uc_product_price',
     '#title' => t('Price:'),
@@ -680,50 +643,35 @@ function uc_product_kit_view($node, $view_mode) {
         'sell-price',
       ),
     ),
-    '#access' => $enabled['sell_price'],
-    '#weight' => $weight['sell_price'],
+  );
+  $node->content['weight'] = array(
+    '#theme' => 'uc_product_weight',
+    '#amount' => $node->weight,
+    '#units' => $node->weight_units,
+    '#view_mode' => $view_mode,
   );
 
-  if ($view_mode != 'teaser') {
-    $node->content['weight'] = array(
-      '#theme' => 'uc_product_weight',
-      '#amount' => $node->weight,
-      '#units' => $node->weight_units,
-      '#view_mode' => $view_mode,
-      '#access' => $enabled['weight'],
-      '#weight' => $weight['weight'],
-    );
+  if ($node->mutable != UC_PRODUCT_KIT_UNMUTABLE_NO_LIST) {
+    $node->content['products'] = array('#weight' => 6);
 
-    if ($node->mutable != UC_PRODUCT_KIT_UNMUTABLE_NO_LIST) {
-      $node->content['products'] = array('#weight' => 6);
-
-      foreach ($node->products as $product) {
-        if (node_access('view', $product)) {
-          $title = l($product->title, 'node/' . $product->nid);
-        }
-        else {
-          $title = check_plain($product->title);
-        }
-
-        $node->content['products'][$product->nid]['qty'] = array('#markup' => '<div class="product-qty">' . $product->qty . ' x ' . $title . '</div>');
-        $node->content['products'][$product->nid]['#weight'] = $product->ordering;
+    foreach ($node->products as $product) {
+      if (node_access('view', $product)) {
+        $title = l($product->title, 'node/' . $product->nid);
       }
-    }
-    if (module_exists('uc_cart')) {
-      $node->content['add_to_cart'] = array(
-        '#theme' => 'uc_product_kit_add_to_cart',
-        '#node' => $node,
-        '#view_mode' => $view_mode,
-        '#weight' => 10,
-      );
+      else {
+        $title = check_plain($product->title);
+      }
+
+      $node->content['products'][$product->nid]['qty'] = array('#markup' => '<div class="product-qty">' . $product->qty . ' x ' . $title . '</div>');
+      $node->content['products'][$product->nid]['#weight'] = $product->ordering;
     }
   }
-  elseif (module_exists('uc_cart') && variable_get('uc_product_add_to_cart_teaser', TRUE)) {
+
+  if (module_exists('uc_cart')) {
     $node->content['add_to_cart'] = array(
       '#theme' => 'uc_product_kit_add_to_cart',
       '#node' => $node,
       '#view_mode' => $view_mode,
-      '#weight' => 10,
     );
   }
 
