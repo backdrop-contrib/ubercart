@@ -71,7 +71,7 @@ function uc_catalog_views_default_views() {
   $handler->display->display_options['fields']['entity_id']['id'] = 'entity_id';
   $handler->display->display_options['fields']['entity_id']['table'] = 'field_data_uc_product_image';
   $handler->display->display_options['fields']['entity_id']['field'] = 'entity_id';
-  $handler->display->display_options['fields']['entity_id']['label'] = 'Image';
+  $handler->display->display_options['fields']['entity_id']['label'] = '';
   $handler->display->display_options['fields']['entity_id']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['entity_id']['alter']['make_link'] = 0;
   $handler->display->display_options['fields']['entity_id']['alter']['absolute'] = 0;
@@ -138,6 +138,7 @@ function uc_catalog_views_default_views() {
   $handler->display->display_options['fields']['sell_price']['id'] = 'sell_price';
   $handler->display->display_options['fields']['sell_price']['table'] = 'uc_products';
   $handler->display->display_options['fields']['sell_price']['field'] = 'sell_price';
+  $handler->display->display_options['fields']['sell_price']['label'] = 'Price';
   $handler->display->display_options['fields']['sell_price']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['sell_price']['alter']['make_link'] = 0;
   $handler->display->display_options['fields']['sell_price']['alter']['absolute'] = 0;

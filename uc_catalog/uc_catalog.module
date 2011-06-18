@@ -16,6 +16,19 @@
  ******************************************************************************/
 
 /**
+ * Implements hook_help().
+ */
+function uc_catalog_help($path, $arg) {
+  switch ($path) {
+    case 'admin/store/settings/catalog':
+      if (!module_exists('views_ui')) {
+        return '<p>' . t('<a href="@modules">Enable the Views UI module</a> to edit the catalog display.', array('@modules' => url('admin/modules', array('fragment' => 'edit-modules-views')))) . '</p>';
+      }
+      break;
+  }
+}
+
+/**
  * Implements hook_menu().
  */
 function uc_catalog_menu() {
@@ -32,42 +45,21 @@ function uc_catalog_menu() {
   $items['admin/store/settings/catalog'] = array(
     'title' => 'Catalog settings',
     'description' => 'Configure the catalog settings.',
-    'page callback' => 'uc_catalog_settings_overview',
-    'access arguments' => array('administer catalog'),
-    'file' => 'uc_catalog.admin.inc',
-  );
-  $items['admin/store/settings/catalog/overview'] = array(
-    'title' => 'Overview',
-    'access arguments' => array('administer catalog'),
-    'weight' => -10,
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'file' => 'uc_catalog.admin.inc',
-  );
-  $items['admin/store/settings/catalog/edit'] = array(
-    'title' => 'Edit',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_catalog_settings_form'),
     'access arguments' => array('administer catalog'),
-    'weight' => -5,
-    'type' => MENU_LOCAL_TASK,
     'file' => 'uc_catalog.admin.inc',
   );
-  $items['admin/store/settings/catalog/edit/catalog'] = array(
-    'title' => 'Catalog settings',
-    'weight' => -10,
-    'access arguments' => array('administer catalog'),
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'file' => 'uc_catalog.admin.inc',
-  );
-  $items['admin/store/settings/catalog/edit/grid'] = array(
-    'title' => 'Product grid settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_catalog_grid_settings_form'),
-    'access arguments' => array('administer catalog'),
-    'weight' => -5,
-    'type' => MENU_LOCAL_TASK,
-    'file' => 'uc_catalog.admin.inc',
-  );
+  if (module_exists('views_ui')) {
+    $items['admin/store/settings/catalog/edit'] = array(
+      'title' => 'Edit catalog display',
+      'page callback' => 'drupal_goto',
+      'page arguments' => array('admin/structure/views/edit/uc_catalog'),
+      'access callback' => 'user_access',
+      'access arguments' => array('administer views'),
+      'type' => MENU_LOCAL_ACTION,
+    );
+  }
   $items['admin/store/products/orphans'] = array(
     'title' => 'Find orphaned products',
     'description' => 'Find products that have not been categorized.',
@@ -172,7 +164,7 @@ function uc_catalog_node_view($node, $view_mode) {
 
       $terms = $node->taxonomy_catalog[LANGUAGE_NONE];
       if (count($terms)) {
-        $crumbs[] = l(variable_get('uc_catalog_name', t('Catalog')), variable_get('uc_catalog_url', 'catalog'));
+        $crumbs[] = l(variable_get('uc_catalog_name', t('Catalog')), 'catalog');
         $used_tids = array();
 
         foreach ($terms as $term) {
@@ -450,7 +442,7 @@ function uc_catalog_uc_store_status() {
     $statuses[] = array(
       'status' => 'error',
       'title' => t('Catalog vocabulary'),
-      'desc' => t('No vocabulary has been recognized as the Ubercart catalog. Choose one on <a href="!admin_catalog">this page</a> or add one on the <a href="!admin_vocab">taxonomy admin page</a> first, if needed.', array('!admin_catalog' => url('admin/store/settings/catalog/edit'), '!admin_vocab' => url('admin/structure/taxonomy'))),
+      'desc' => t('No vocabulary has been recognized as the Ubercart catalog. Choose one on <a href="!admin_catalog">this page</a> or add one on the <a href="!admin_vocab">taxonomy admin page</a> first, if needed.', array('!admin_catalog' => url('admin/store/settings/catalog'), '!admin_vocab' => url('admin/structure/taxonomy'))),
     );
   }
 
