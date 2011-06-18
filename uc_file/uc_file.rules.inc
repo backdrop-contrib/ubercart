@@ -169,7 +169,7 @@ function uc_file_rules_action_info() {
         'label' => t('Message'),
       ),
       'format' => array(
-        'type' => 'integer',
+        'type' => 'text',
         'label' => t('Message format'),
         'options list' => 'uc_file_message_formats',
       ),

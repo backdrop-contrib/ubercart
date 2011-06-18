@@ -120,7 +120,7 @@ function uc_roles_rules_action_info() {
       'label' => t('Message'),
     ),
     'format' => array(
-      'type' => 'integer',
+      'type' => 'text',
       'label' => t('Message format'),
       'options list' => 'uc_roles_message_formats',
     ),
