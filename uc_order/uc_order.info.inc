@@ -113,7 +113,7 @@ function uc_order_entity_property_info() {
           'label' => t('Order status'),
           'description' => t('The status of the order.'),
           'required' => TRUE,
-          'options list' => 'uc_order_status_list',
+          'options list' => 'uc_order_status_options_list',
           'setter permission' => 'edit orders',
           'query callback' => 'entity_metadata_table_query',
         ),
@@ -188,4 +188,15 @@ function uc_order_uc_order_set_properties($order, $name, $value) {
   if ($name == 'customer') {
     $order->uid = $value;
   }
+}
+
+/**
+ * Returns an option list of order statuses.
+ */
+function uc_order_status_options_list() {
+  $options = array();
+  foreach (uc_order_status_list() as $status) {
+    $options[$status['id']] = $status['title'];
+  }
+  return $options;
 }
