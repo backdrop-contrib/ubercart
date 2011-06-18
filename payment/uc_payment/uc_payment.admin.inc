@@ -18,10 +18,6 @@ function uc_payment_settings_overview() {
   );
 }
 
-function uc_payment_settings_form($form, &$form_state) {
-  return array();
-}
-
 function uc_payment_methods_form($form, &$form_state) {
   $methods = _uc_payment_method_list();
 
