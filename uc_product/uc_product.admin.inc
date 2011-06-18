@@ -74,35 +74,25 @@ function uc_product_class_default() {
 }
 
 /**
- * Displays overview of product settings.
- *
- * @see uc_product_settings_form()
- */
-function uc_product_settings_overview() {
-  // Load the form summaries for pages beneath this path.
-  $summaries = uc_summarize_child_form_pages('admin/store/settings/products/edit');
-
-  // Theme it all up in a summaries overview.
-  return array(
-    '#theme' => 'uc_summary_overview',
-    '#summaries' => $summaries,
-  );
-}
-
-/**
  * Form to change product settings.
  *
- * @see uc_product_settings_overview()
  * @ingroup forms
  */
 function uc_product_settings_form($form, &$form_state) {
+  $form['product-settings'] = array('#type' => 'vertical_tabs');
+
+  $form['product'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Product settings'),
+    '#group' => 'product-settings',
+    '#weight' => -10,
+  );
+
   // Loop through all the integrated image widgets and build an options array.
   $options = array();
-
   foreach (module_invoke_all('uc_image_widget') as $key => $widget) {
     $options[$key] = check_plain($widget['name']);
   }
-
   if (empty($options)) {
     $options[NULL] = t('No image widgets installed.');
   }
@@ -111,7 +101,7 @@ function uc_product_settings_form($form, &$form_state) {
     $options['none'] = "Don't use any image widgets.";
   }
 
-  $form['uc_product_image_widget'] = array(
+  $form['product']['uc_product_image_widget'] = array(
     '#type' => 'radios',
     '#title' => t('Product image widget'),
     '#description' => t('The selected widget will be used to display a zoomed version of product images when they are clicked.'),
@@ -119,106 +109,49 @@ function uc_product_settings_form($form, &$form_state) {
     '#default_value' => variable_get('uc_product_image_widget', NULL),
   );
 
-  $form['uc_product_add_to_cart_qty'] = array(
+  $form['product']['uc_product_add_to_cart_qty'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display an optional quantity field in the <em>Add to Cart</em> form.'),
     '#default_value' => variable_get('uc_product_add_to_cart_qty', FALSE),
-    '#summary arguments' => array(
-      t('The Quantity field in the <em>Add to Cart</em> form is enabled.'),
-      t('The Quantity field in the <em>Add to Cart</em> form is disabled.'),
-    ),
   );
-  $form['uc_product_add_to_cart_teaser'] = array(
+  $form['product']['uc_product_add_to_cart_teaser'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable <em>Add to cart</em> forms in product node teasers.'),
     '#default_value' => variable_get('uc_product_add_to_cart_teaser', TRUE),
-    '#summary arguments' => array(
-      t('The <em>Add to Cart</em> form is enabled in product teasers.'),
-      t('The <em>Add to Cart</em> form is disabled in product teasers.'),
-    ),
   );
 
-  $form['uc_add_to_cart_text'] = array(
+  $form['product']['uc_add_to_cart_text'] = array(
     '#type' => 'fieldset',
     '#title' => t('<em>Add to cart</em> button text'),
     '#description' => t('Use the textboxes to adjust the text of the submit button for <em>Add to Cart</em> forms in various places on the site.'),
     '#collapsed' => FALSE,
     '#collapsible' => FALSE,
   );
-  $form['uc_add_to_cart_text']['uc_teaser_add_to_cart_text'] = array(
+  $form['product']['uc_add_to_cart_text']['uc_teaser_add_to_cart_text'] = array(
     '#type' => 'textfield',
     '#title' => t('Teaser forms'),
     '#description' => t('For the form displayed on teasers and catalog pages.'),
     '#default_value' => variable_get('uc_teaser_add_to_cart_text', t('Add to cart')),
-    '#summary' => t('Teaser and catalog pages: %text', array('%text' => variable_get('uc_teaser_add_to_cart_text', t('Add to cart')))),
-    '#summary arguments' => array(FALSE),
   );
-  $form['uc_add_to_cart_text']['uc_product_add_to_cart_text'] = array(
+  $form['product']['uc_add_to_cart_text']['uc_product_add_to_cart_text'] = array(
     '#type' => 'textfield',
     '#title' => t('Product view'),
     '#description' => t('For the form displayed on the product view page.'),
     '#default_value' => variable_get('uc_product_add_to_cart_text', t('Add to cart')),
-    '#summary' => t('Product view pages: %text', array('%text' => variable_get('uc_teaser_add_to_cart_text', t('Add to cart')))),
-    '#summary arguments' => array(FALSE),
   );
 
-  return system_settings_form($form);
-}
-
-/**
- * Display the settings form for all product features.
- *
- * @see _uc_product_features_summarize()
- * @ingroup forms
- */
-function uc_product_feature_settings_form($form, &$form_state) {
-  $titles = array();
-  $features = module_invoke_all('uc_product_feature');
-  foreach ($features as $feature) {
-    $titles[] = $feature['title'];
-  }
-  if (empty($titles)) {
-    $titles[] = '<em>' . t('No product features found.') . '</em>';
-  }
-  $form['features_list'] = array(
-    '#markup' => '<div><b>' . t('The following product features are enabled')
-               . ':</b><br />' . implode(', ', $titles) . '</div><br />',
-    '#summary callback' => '_uc_product_features_summarize',
-    '#summary arguments' => array($titles),
-  );
-
-  foreach ($features as $feature) {
+  foreach (module_invoke_all('uc_product_feature') as $feature) {
     if (function_exists($feature['settings'])) {
       $form[$feature['id']] = array(
         '#type' => 'fieldset',
         '#title' => t('!feature settings', array('!feature' => $feature['title'])),
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-        '#summary callback' => 'uc_summarize_null',
+        '#group' => 'product-settings',
       );
-      $form[$feature['id']] = array_merge($form[$feature['id']], $feature['settings'](array(), $form_state));
+      $form[$feature['id']] += $feature['settings'](array(), $form_state);
     }
   }
 
   return system_settings_form($form);
-}
-
-/**
- * Summary callback for uc_product_feature_settings_form().
- */
-function _uc_product_features_summarize($form, $titles) {
-
-  foreach ($titles as $title) {
-    $item[] = $title;
-  }
-
-  $items[] = array(
-    'data' => t('The following features are enabled:'),
-    'children' => $item,
-  );
-
-  return $items;
-
 }
 
 /**

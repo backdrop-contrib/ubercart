@@ -16,26 +16,6 @@ define('UC_PRODUCT_KIT_MUTABLE', 1);
  ******************************************************************************/
 
 /**
- * Implements hook_menu().
- */
-function uc_product_kit_menu() {
-  $items = array();
-
-  $items['admin/store/settings/products/edit/product-kits'] = array(
-    'title' => 'Product kits',
-    'description' => 'Configure the product kit settings.',
-    'access arguments' => array('administer product kits'),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_product_kit_settings_form'),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 1,
-    'file' => 'uc_product_kit.admin.inc',
-  );
-
-  return $items;
-}
-
-/**
  * Implements hook_permission().
  */
 function uc_product_kit_permission() {
@@ -43,6 +23,28 @@ function uc_product_kit_permission() {
     'administer product kits' => array(
       'title' => t('Administer product kits'),
     ),
+  );
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for uc_product_settings_form().
+ */
+function uc_product_kit_form_uc_product_settings_form_alter(&$form, &$form_state) {
+  $form['product_kit'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Product kit settings',
+    '#group' => 'product-settings',
+    '#weight' => -5,
+  );
+  $form['product_kit']['uc_product_kit_mutable'] = array(
+    '#type' => 'radios',
+    '#title' => t('Product kit cart display'),
+    '#options' => array(
+      UC_PRODUCT_KIT_UNMUTABLE_NO_LIST => t('As a unit. Customers may only change how many kits they are buying. Do not list component products.'),
+      UC_PRODUCT_KIT_UNMUTABLE_WITH_LIST => t('As a unit. Customers may only change how many kits they are buying. List component products.'),
+      UC_PRODUCT_KIT_MUTABLE => t('As individual products. Customers may add or remove kit components at will. Discounts entered below are not applied to the kit price'),
+    ),
+    '#default_value' => variable_get('uc_product_kit_mutable', 0),
   );
 }
 
