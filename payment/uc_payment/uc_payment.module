@@ -522,6 +522,8 @@ function uc_payment_process_payment($method, $order_id, $amount, $data = NULL, $
  * Enter a payment for an order.
  */
 function uc_payment_enter($order_id, $method, $amount, $uid, $data, $comment) {
+  global $user;
+
   $method_name = _uc_payment_method_data($method, 'review');
   if (empty($method_name)) {
     $method_name = _uc_payment_method_data($method, 'name');
@@ -533,11 +535,8 @@ function uc_payment_enter($order_id, $method, $amount, $uid, $data, $comment) {
     $data = serialize($data);
   }
 
-  if (variable_get('uc_payment_logging', TRUE)) {
-    global $user;
-    $log_message = t('@method payment for @amount entered by @user.', array('@method' => $method_name, '@amount' => uc_currency_format($amount), '@user' => uc_get_initials($user->uid)));
-    uc_order_log_changes($order_id, array($log_message));
-  }
+  $log_message = t('@method payment for @amount entered by @user.', array('@method' => $method_name, '@amount' => uc_currency_format($amount), '@user' => uc_get_initials($user->uid)));
+  uc_order_log_changes($order_id, array($log_message));
 
   db_insert('uc_payment_receipts')
     ->fields(array(
@@ -564,16 +563,15 @@ function uc_payment_enter($order_id, $method, $amount, $uid, $data, $comment) {
  * Delete a payment from the database.
  */
 function uc_payment_delete($receipt_id) {
+  global $user;
+
   if (!is_numeric($receipt_id)) {
     return FALSE;
   }
 
-  if (variable_get('uc_payment_logging', TRUE)) {
-    global $user;
-    $payment = uc_payment_load($receipt_id);
-    $log_message = t('@method payment for @amount deleted by @user.', array('@method' => $payment->method, '@amount' => uc_currency_format($payment->amount), '@user' => uc_get_initials($user->uid)));
-    uc_order_log_changes($payment->order_id, array($log_message));
-  }
+  $payment = uc_payment_load($receipt_id);
+  $log_message = t('@method payment for @amount deleted by @user.', array('@method' => $payment->method, '@amount' => uc_currency_format($payment->amount), '@user' => uc_get_initials($user->uid)));
+  uc_order_log_changes($payment->order_id, array($log_message));
 
   db_delete('uc_payment_receipts')
     ->condition('receipt_id', $receipt_id)

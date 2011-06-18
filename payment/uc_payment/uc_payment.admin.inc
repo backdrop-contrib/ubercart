@@ -19,17 +19,6 @@ function uc_payment_settings_overview() {
 }
 
 function uc_payment_settings_form($form, &$form_state) {
-  $form['uc_payment_logging'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Log payments entered and deleted to order log.'),
-    '#summary callback' => 'uc_summarize_checkbox',
-    '#summary arguments' => array(
-      t('Log payments are being entered to and deleted from the order log.'),
-      t('Log payments are not being entered to and deleted from the order log.'),
-    ),
-    '#default_value' => variable_get('uc_payment_logging', TRUE),
-  );
-
   $form['uc_default_payment_msg'] = array(
     '#type' => 'textfield',
     '#title' => t('Default payment details message'),
