@@ -19,16 +19,6 @@ function uc_payment_settings_overview() {
 }
 
 function uc_payment_settings_form($form, &$form_state) {
-  $form['uc_payment_tracking'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Enable payment tracking.'),
-    '#summary callback' => 'uc_summarize_checkbox',
-    '#summary arguments' => array(
-      t('Payment tracking is enabled.'),
-      t('Payment tracking is disabled.'),
-    ),
-    '#default_value' => variable_get('uc_payment_tracking', TRUE),
-  );
   $form['uc_payment_deleting'] = array(
     '#type' => 'checkbox',
     '#title' => t('Allow payments to be deleted by users with permission.'),

@@ -17,18 +17,22 @@
 function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
-      if (variable_get('uc_payment_tracking', TRUE)) {
-        $build['balance'] = array('#markup' => t('Balance: @balance', array('@balance' => uc_currency_format(uc_payment_balance($order)))));
+      $build['balance'] = array('#markup' => t('Balance: @balance', array('@balance' => uc_currency_format(uc_payment_balance($order)))));
+
+      if (user_access('view payments')) {
         $build['view_payments'] = array(
           '#markup' => ' (' . l(t('View'), 'admin/store/orders/' . $order->order_id . '/payments') . ')',
-          '#suffix' => '<br />',
         );
       }
+
       $method_name = _uc_payment_method_data($order->payment_method, 'review');
       if (empty($method_name)) {
         $method_name = _uc_payment_method_data($order->payment_method, 'name');
       }
-      $build['method'] = array('#markup' => t('Method: @payment_method', array('@payment_method' => $method_name)));
+      $build['method'] = array(
+        '#markup' => t('Method: @payment_method', array('@payment_method' => $method_name)),
+        '#prefix' => '<br />',
+      );
       $func = _uc_payment_method_data($order->payment_method, 'callback');
       if (function_exists($func)) {
         $method_output = $func('order-view', $order);
