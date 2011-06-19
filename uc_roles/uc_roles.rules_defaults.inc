@@ -71,7 +71,7 @@ function uc_roles_default_rules_configuration() {
   $rule->event('uc_roles_notify_renew');
   $rule->action('uc_roles_order_email', array(
     'order:select' => 'order',
-    'expiration:select' => 'expiriation',
+    'expiration:select' => 'expiration',
     'from' => uc_store_email_from(),
     'addresses' => '[order:email]',
     'subject' => uc_get_message('uc_roles_renew_subject'),
