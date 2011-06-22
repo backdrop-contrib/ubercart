@@ -41,10 +41,8 @@ function hook_uc_invoice_templates() {
  *
  * @return
  *   Your hook should return an array of associative arrays. Each item in the
- *   array represents a single line item and should use the following keys:
- *   - "id"
- *     - type: string
- *     - value: The internal ID of the line item.
+ *   array represents a single line item, keyed by the internal ID of the line
+ *   item, and with the following members:
  *   - "title"
  *     - type: string
  *     - value: The title of the line item shown to the user in various interfaces.
@@ -116,18 +114,13 @@ function hook_uc_line_item_alter(&$item, $order) {
  *   The combined return value of hook_line_item().
  */
 function hook_uc_line_item_data_alter(&$items) {
-  foreach ($items as &$item) {
-    // Tax amounts are added in to other line items, so the actual tax line
-    // items should not be added to the order total.
-    if ($item['id'] == 'tax') {
-      $item['calculated'] = FALSE;
-    }
-    // Taxes are included already, so the subtotal without taxes doesn't
-    // make sense.
-    elseif ($item['id'] == 'tax_subtotal') {
-      $item['callback'] = NULL;
-    }
-  }
+  // Tax amounts are added in to other line items, so the actual tax line
+  // items should not be added to the order total.
+  $items['tax']['calculated'] = FALSE;
+
+  // Taxes are included already, so the subtotal without taxes doesn't
+  // make sense.
+  $items['tax_subtotal']['callback'] = NULL;
 }
 
 
