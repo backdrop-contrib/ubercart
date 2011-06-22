@@ -79,28 +79,28 @@ function uc_order_workflow_form($form, &$form_state) {
     '#tree' => TRUE,
   );
 
-  foreach ($states as $state) {
-    $form['order_states'][$state['id']]['title'] = array(
+  foreach ($states as $state_id => $state) {
+    $form['order_states'][$state_id]['title'] = array(
       '#markup' => $state['title'],
     );
 
     // Create the select box for specifying a default status per order state.
     $options = array();
     foreach ($statuses as $status) {
-      if ($status['state'] == $state['id']) {
+      if ($status['state'] == $state_id) {
         $options[$status['id']] = $status['title'];
       }
     }
     if (empty($options)) {
-      $form['order_states'][$state['id']]['default'] = array(
+      $form['order_states'][$state_id]['default'] = array(
         '#markup' => t('- N/A -'),
       );
     }
     else {
-      $form['order_states'][$state['id']]['default'] = array(
+      $form['order_states'][$state_id]['default'] = array(
         '#type' => 'select',
         '#options' => $options,
-        '#default_value' => uc_order_state_default($state['id']),
+        '#default_value' => uc_order_state_default($state_id),
       );
     }
   }
@@ -115,8 +115,8 @@ function uc_order_workflow_form($form, &$form_state) {
 
   // Build the state option array for the order status table.
   $options = array();
-  foreach ($states as $state) {
-    $options[$state['id']] = $state['title'];
+  foreach ($states as $state_id => $state) {
+    $options[$state_id] = $state['title'];
   }
 
   foreach ($statuses as $status) {

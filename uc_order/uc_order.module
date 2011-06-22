@@ -689,26 +689,22 @@ function uc_order_uc_order_pane() {
  * Implements hook_uc_order_state().
  */
 function uc_order_uc_order_state() {
-  $states[] = array(
-    'id' => 'canceled',
+  $states['canceled'] = array(
     'title' => t('Canceled'),
     'weight' => -20,
     'scope' => 'specific',
   );
-  $states[] = array(
-    'id' => 'in_checkout',
+  $states['in_checkout'] = array(
     'title' => t('In checkout'),
     'weight' => -10,
     'scope' => 'specific',
   );
-  $states[] = array(
-    'id' => 'post_checkout',
+  $states['post_checkout'] = array(
     'title' => t('Post checkout'),
     'weight' => 0,
     'scope' => 'general',
   );
-  $states[] = array(
-    'id' => 'completed',
+  $states['completed'] = array(
     'title' => t('Completed'),
     'weight' => 20,
     'scope' => 'general',
@@ -1847,22 +1843,21 @@ function uc_order_template_options($custom = FALSE) {
  *   ids for use in a SQL query.
  */
 function uc_order_state_list($scope = 'all', $sql = FALSE) {
-  $states = module_invoke_all('uc_order_state');
-  foreach ($states as $i => $value) {
-    if ($scope != 'all' && $states[$i]['scope'] != $scope) {
-      unset($states[$i]);
+  $states = array();
+
+  foreach (module_invoke_all('uc_order_state') as $id => $state) {
+    // Preserve backward compatibility for states with no key specified.
+    if (is_numeric($id)) {
+      $id = $state['id'];
+    }
+
+    if ($scope == 'all' || $state['scope'] == $scope) {
+      $states[$id] = $state;
     }
   }
-  usort($states, 'uc_weight_sort');
+  uasort($states, 'uc_weight_sort');
 
-  if ($sql) {
-    foreach ($states as $state) {
-      $ids[] = $state['id'];
-    }
-    return $ids;
-  }
-
-  return $states;
+  return $sql ? array_keys($states) : $states;
 }
 
 /**
@@ -1880,10 +1875,7 @@ function uc_order_state_data($state_id, $key) {
   static $states;
 
   if (empty($states)) {
-    $data = uc_order_state_list();
-    foreach ($data as $state) {
-      $states[$state['id']] = $state;
-    }
+    $states = uc_order_state_list();
   }
 
   return $states[$state_id][$key];

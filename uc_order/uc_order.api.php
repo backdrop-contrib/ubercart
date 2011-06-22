@@ -403,34 +403,29 @@ function hook_uc_order_product_delete($order_product_id) {
  * new state, but don't know which status to use.
  *
  * @return
- *   An array of order state definitions. Each definition is an array with the
- *   following keys:
- *   - id: The machine-readable name of the order state.
+ *   An array of order state definitions. Each definition is an array keyed by
+ *   the machine name of the state, with the following members:
  *   - title: The human-readable, translated name.
  *   - weight: The list position of the state.
  *   - scope: Either "specific" or "general".
  */
 function hook_uc_order_state() {
-  $states[] = array(
-    'id' => 'canceled',
+  $states['canceled'] = array(
     'title' => t('Canceled'),
     'weight' => -20,
     'scope' => 'specific',
   );
-  $states[] = array(
-    'id' => 'in_checkout',
+  $states['in_checkout'] = array(
     'title' => t('In checkout'),
     'weight' => -10,
     'scope' => 'specific',
   );
-  $states[] = array(
-    'id' => 'post_checkout',
+  $states['post_checkout'] = array(
     'title' => t('Post checkout'),
     'weight' => 0,
     'scope' => 'general',
   );
-  $states[] = array(
-    'id' => 'completed',
+  $states['completed'] = array(
     'title' => t('Completed'),
     'weight' => 20,
     'scope' => 'general',
