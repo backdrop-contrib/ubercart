@@ -189,14 +189,3 @@ function uc_order_uc_order_set_properties($order, $name, $value) {
     $order->uid = $value;
   }
 }
-
-/**
- * Returns an option list of order statuses.
- */
-function uc_order_status_options_list() {
-  $options = array();
-  foreach (uc_order_status_list() as $status) {
-    $options[$status['id']] = $status['title'];
-  }
-  return $options;
-}
