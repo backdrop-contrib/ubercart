@@ -14,7 +14,7 @@ function uc_catalog_views_default_views() {
   $view->description = t('Catalog');
   $view->tag = '';
   $view->base_table = 'node';
-  $view->api_version = '3.0-alpha1';
+  $view->api_version = 3;
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
 
   /* Display: Defaults */
@@ -204,7 +204,7 @@ function uc_catalog_views_default_views() {
   $view->tag = '';
   $view->base_table = 'taxonomy_term_data';
   $view->human_name = '';
-  $view->api_version = '3.0-alpha1';
+  $view->api_version = 3;
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
 
   /* Display: Defaults */
