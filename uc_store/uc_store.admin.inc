@@ -669,7 +669,6 @@ function uc_store_settings_form($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Current format'),
     '#value' => uc_currency_format(1000.1234),
-    '#summary' => t('Currency format: @format', array('@format' => uc_currency_format(1000.1234))),
     '#disabled' => TRUE,
     '#size' => 10,
   );

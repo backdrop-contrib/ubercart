@@ -226,17 +226,6 @@ function uc_cart_cart_panes_form($form, &$form_state) {
 }
 
 /**
- * Displays an overview of the checkout settings.
- */
-function uc_cart_checkout_settings_overview() {
-  // Theme all the pages beneath this path into summary overviews.
-  return array(
-    '#theme' => 'uc_summary_overview',
-    '#summaries' => uc_summarize_child_form_pages('admin/store/settings/checkout/edit'),
-  );
-}
-
-/**
  * General checkout settings.
  *
  * @ingroup forms
