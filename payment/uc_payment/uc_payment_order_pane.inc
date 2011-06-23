@@ -79,7 +79,7 @@ function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) 
         '#title' => t('Payment method'),
         '#default_value' => $order->payment_method,
         '#options' => !empty($options) ? $options : array(t('None available')),
-        '#attributes' => array('onchange' => "add_order_save_hold(); get_payment_details(Drupal.settings.ucURL.adminOrders + '" . $order->order_id . "/payment_details/' + this.value);"),
+        '#attributes' => array('onchange' => "get_payment_details(Drupal.settings.ucURL.adminOrders + '" . $order->order_id . "/payment_details/' + this.value);"),
         '#disabled' => empty($options),
       );
       return $form;

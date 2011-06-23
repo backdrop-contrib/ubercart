@@ -22,8 +22,7 @@ jQuery(document).ready(
 
     // disable the submission buttons and get payment details
     if (Drupal.settings.ucOrderInitiate) {
-      add_order_save_hold();
-      get_payment_details(Drupal.settings.ucURL.adminOrders + jQuery('#edit-order-id').val() + '/payment_details/' + jQuery('#edit-payment-method').val());
+      get_payment_details(Drupal.settings.ucURL.adminOrders + jQuery('[name=order_id]').val() + '/payment_details/' + jQuery('#edit-payment-method').val());
     }
   }
 )
@@ -76,11 +75,6 @@ function get_payment_details(path) {
         else {
           jQuery('#payment_details').empty().append(details);
         }
-      }
-
-      // If on the order edit screen, clear out the order save hold.
-      if (window.remove_order_save_hold) {
-        remove_order_save_hold();
       }
     }
   );
