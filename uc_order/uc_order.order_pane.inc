@@ -716,7 +716,6 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
         '#type' => 'submit',
         '#value' => t('Add line'),
         '#attributes' => array('class' => array('save-button')),
-        '#disabled' => TRUE,
       );
       $form['li_delete_id'] = array(
         '#type' => 'hidden',
@@ -789,8 +788,8 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
       return array(t('Add line'));
 
     case t('Add line'):
-      drupal_goto('admin/store/orders/' . $form_state['values']['order_id']
-                 . '/add_line_item/' . $form_state['values']['li_type_select']);
+      drupal_goto('admin/store/orders/' . $form_state['order_id']
+                 . '/add_line_item/' . $form_state['li_type_select']);
   }
 }
 
