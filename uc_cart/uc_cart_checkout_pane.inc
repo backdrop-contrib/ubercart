@@ -287,18 +287,20 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
         $element = &$form_state['triggering_element'];
 
         if ($element['#name'] == "panes[$pane][copy_address]") {
-          $address = &$form_state['values']['panes'][$source]['address'];
+          $address = &$form_state['values']['panes'][$source];
           foreach ($address as $field => $value) {
-            $field = str_replace($source, $pane, $field);
-            $form_state['input']['panes'][$pane]['address'][$field] = $value;
-            $order->$field = $value;
+            if (substr($field, 0, strlen($source)) == $source) {
+              $field = str_replace($source, $pane, $field);
+              $form_state['input']['panes'][$pane][$field] = $value;
+              $order->$field = $value;
+            }
           }
         }
 
         if ($element['#name'] == "panes[$pane][select_address]") {
           $address = $addresses[$element['#value']];
           foreach ($address as $field => $value) {
-            $form_state['input']['panes'][$pane]['address'][$pane . '_' . $field] = $value;
+            $form_state['input']['panes'][$pane][$pane . '_' . $field] = $value;
             $order->{$pane . '_' . $field} = $value;
           }
         }
@@ -308,12 +310,14 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
 
     case 'process':
       $panes = &$form_state['values']['panes'];
-      foreach ($panes[$pane]['address'] as $key => $value) {
-        if (!empty($panes[$pane]['copy_address'])) {
-          $value = $panes[$source]['address'][str_replace($pane, $source, $key)];
-        }
+      foreach ($panes[$pane] as $field => $value) {
+        if (substr($field, 0, strlen($pane)) == $pane) {
+          if (!empty($panes[$pane]['copy_address'])) {
+            $value = $panes[$source][str_replace($pane, $source, $field)];
+          }
 
-        $order->$key = $value;
+          $order->$field = $value;
+        }
       }
       return TRUE;
 

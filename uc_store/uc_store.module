@@ -291,10 +291,15 @@ function uc_store_element_info() {
  * Element process hook for address fields.
  */
 function uc_store_process_address_field($element, $form_state) {
+  $element['#tree'] = TRUE;
   $prefix = $element['#key_prefix'] ? ($element['#key_prefix'] . '_') : '';
 
-  // Ensure the value is an array.
-  if (is_array($element['#value']) || is_object($element['#value'])) {
+  if (isset($form_state['uc_address'])) {
+    // Use submitted Ajax values.
+    $value = $form_state['uc_address'];
+  }
+  elseif (is_array($element['#value']) || is_object($element['#value'])) {
+    // Use provided default value.
     $value = (array) $element['#value'];
   }
   else {
@@ -305,14 +310,13 @@ function uc_store_process_address_field($element, $form_state) {
   $address = (array) new UcAddress();
   $fields = array_keys($address);
 
-  foreach (array_keys($address) as $field) {
-    if (!isset($value[$prefix . $field])) {
+  foreach (array_keys($address) as $base_field) {
+    $field = $prefix . $base_field;
+    if (!isset($value[$field])) {
       continue;
     }
 
-    $default = $value[$prefix . $field];
-
-    switch ($field) {
+    switch ($base_field) {
       case 'country':
         $countries = db_query("SELECT country_id, country_name FROM {uc_countries} WHERE version > :version", array(':version' => 0))->fetchAllKeyed();
         natcasesort($countries);
@@ -327,6 +331,8 @@ function uc_store_process_address_field($element, $form_state) {
               'type' => 'throbber',
             ),
           ),
+          '#element_validate' => array('uc_store_validate_address_field_country'),
+          '#key_prefix' => $element['#key_prefix'],
         );
         break;
 
@@ -350,11 +356,6 @@ function uc_store_process_address_field($element, $form_state) {
             '#type' => 'hidden',
             '#required' => FALSE,
           );
-        }
-
-        // Avoid "illegal choice detected" errors when country field is changed.
-        if ($form_state['process_input'] && !$form_state['submitted'] && isset($value[$prefix . 'zone']) && !isset($subelement['#options'][$value[$prefix . 'zone']])) {
-          $subelement['#value'] = 0;
         }
         break;
 
@@ -387,20 +388,26 @@ function uc_store_process_address_field($element, $form_state) {
     }
 
     // Set common values for all address fields.
-    $element[$prefix . $field] = $subelement + array(
-      '#title' => uc_get_field_name($field),
-      '#default_value' => $default,
+    $element[$field] = $subelement + array(
+      '#title' => uc_get_field_name($base_field),
+      '#default_value' => $value[$field],
+      '#parents' => array_merge(array_slice($element['#parents'], 0, -1), array($field)),
       '#pre_render' => array('uc_store_pre_render_address_field'),
-      '#access' => $element['#hidden'] ? FALSE : uc_address_field_enabled($field),
-      '#required' => $element['#required'] ? uc_address_field_required($field) : FALSE,
-      '#needs_validation' => TRUE,
+      '#access' => $element['#hidden'] ? FALSE : uc_address_field_enabled($base_field),
+      '#required' => $element['#required'] ? uc_address_field_required($base_field) : FALSE,
     );
-
-    if ($element[$prefix . $field]['#required'] && !$default) {
-      unset($element[$prefix . $field]['#default_value']);
-    }
   }
   return $element;
+}
+
+/**
+ * Element validation callback for country field.
+ *
+ * Store the current address for use when rebuilding the form.
+ */
+function uc_store_validate_address_field_country($element, &$form_state) {
+  $address = drupal_array_get_nested_value($form_state['values'], array_slice($element['#parents'], 0, -1));
+  $form_state['uc_address'] = isset($form_state['uc_address']) ? array_merge($form_state['uc_address'], $address) : $address;
 }
 
 /**
