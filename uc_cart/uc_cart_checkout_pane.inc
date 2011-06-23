@@ -304,6 +304,9 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
             $order->{$pane . '_' . $field} = $value;
           }
         }
+
+        // Forget any previous Ajax submissions, as we send new default values.
+        unset($form_state['uc_address']);
       }
 
       return array('description' => $description, 'contents' => $contents);
