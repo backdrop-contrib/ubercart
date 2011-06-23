@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Token hooks.
+ * Token hooks for the uc_payment module.
  */
 
 /**

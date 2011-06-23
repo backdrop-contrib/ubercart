@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Token hooks.
+ * Token hooks for the uc_order module.
  */
 
 /**
@@ -25,7 +25,7 @@ function uc_order_token_info() {
     'name' => t('New password'),
     'description' => t('New password associated with an order if applicable.'),
   );
-  $tokens['number'] = array(
+  $tokens['order-number'] = array(
     'name' => t('Order number'),
     'description' => t('The unique identifier of the order.'),
   );
@@ -154,7 +154,7 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
           }
           break;
 
-        case 'number':
+        case 'order-number':
           $replacements[$original] = $order->order_id;
           break;
 
