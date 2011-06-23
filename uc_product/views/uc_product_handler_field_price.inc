@@ -38,7 +38,8 @@ class uc_product_handler_field_price extends views_handler_field_numeric {
     foreach (array('set_precision', 'precision', 'decimal', 'separator', 'prefix', 'suffix') as $field) {
       $form[$field]['#process'] = array('ctools_dependent_process');
 
-      if (is_array($form[$field]['#dependency'])) {
+      if (isset($form[$field]['#dependency']) &&
+          is_array($form[$field]['#dependency'])) {
         $form[$field]['#dependency'] += array('radio:options[format]' => array('numeric'));
         $form[$field]['#dependency_count'] = count($form[$field]['#dependency']);
       }
