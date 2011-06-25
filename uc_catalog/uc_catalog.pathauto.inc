@@ -38,8 +38,7 @@ function uc_catalog_pathauto_bulkupdate(&$context) {
 
   $catalog_vid = variable_get('uc_catalog_vid', 0);
   $query = db_select('taxonomy_term_data', 'td');
-  $concat = _pathauto_sql_concat("'catalog/'", 'td.tid');
-  $query->leftJoin('url_alias', 'ua', "$concat = ua.source");
+  $query->leftJoin('url_alias', 'ua', "CONCAT('catalog/', td.tid) = ua.source");
   $query->addField('td', 'tid');
   $query->isNull('ua.source');
   $query->condition('vid', $catalog_vid);
@@ -60,6 +59,7 @@ function uc_catalog_pathauto_bulkupdate(&$context) {
 
   $query->range(0, 25);
   $tids = $query->execute()->fetchCol();
+
   $terms = taxonomy_term_load_multiple($tids);
 
   $count = 0;
@@ -68,6 +68,7 @@ function uc_catalog_pathauto_bulkupdate(&$context) {
     $count = _uc_catalog_pathauto_alias($category, 'bulkupdate') + $count;
   }
 
+  //pathauto_taxonomy_term_update_alias_multiple($tids, 'bulkupdate');
   $context['sandbox']['count'] += count($tids);
   $context['sandbox']['current'] = max($tids);
   $context['message'] = t('Updated alias for term @tid.', array('@tid' => end($tids)));
