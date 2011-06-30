@@ -333,6 +333,7 @@ function uc_credit_uc_order($op, $order, $arg2) {
           );
 
           // Attempt to process the CC payment.
+          $order->payment_details = uc_credit_cache('load');
           $pass = uc_payment_process_payment('credit', $order->order_id, $order->order_total, $data, TRUE, NULL, FALSE);
 
           // If the payment failed, store the data back in the session and
@@ -357,21 +358,12 @@ function uc_credit_uc_order($op, $order, $arg2) {
       if (isset($order->payment_method) && $order->payment_method == 'credit') {
         // Build an array of CC data to store with the order.
         if (!empty($order->payment_details)) {
-          // Check for debug mode.
-          if (variable_get('uc_credit_debug', FALSE) && arg(1) != 'checkout') {
-            // If enabled, store the full payment details.
-            $cc_data = $order->payment_details;
-          }
-          else {
-            // Otherwise, save only some limited, PCI compliant data.
-            $cc_data = array(
-              'cc_number' => substr($order->payment_details['cc_number'], -4),
-              'cc_exp_month' => $order->payment_details['cc_exp_month'],
-              'cc_exp_year' => $order->payment_details['cc_exp_year'],
-            );
-            if (isset($order->payment_details['cc_type'])) {
-              $cc_data['cc_type'] = $order->payment_details['cc_type'];
-            }
+          $cc_data = $order->payment_details;
+
+          // If not in debug mode, save only some limited, PCI compliant data.
+          if (!variable_get('uc_credit_debug', FALSE)) {
+            $cc_data['cc_number'] = substr($cc_data['cc_number'], -4);
+            unset($cc_data['cc_cvv']);
           }
 
           _uc_credit_save_cc_data_to_order($cc_data, $order->order_id);
@@ -558,9 +550,6 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
       $review[] = array('title' => t('Expiration'), 'data' => $order->payment_details['cc_exp_month'] . '/' . $order->payment_details['cc_exp_year']);
       if (variable_get('uc_credit_issue_enabled', FALSE)) {
         $review[] = array('title' => t('Issue Number'), 'data' => user_access('view cc numbers') ? $order->payment_details['cc_issue'] : str_repeat('-', strlen($order->payment_details['cc_issue'])));
-      }
-      if (variable_get('uc_credit_cvv_enabled', TRUE)) {
-        $review[] = array('title' => t('CVV'), 'data' => user_access('view cc numbers') ? $order->payment_details['cc_cvv'] : str_repeat('-', strlen($order->payment_details['cc_cvv'])));
       }
       if (variable_get('uc_credit_bank_enabled', FALSE)) {
         $review[] = array('title' => t('Issuing Bank'), 'data' => check_plain($order->payment_details['cc_bank']));
