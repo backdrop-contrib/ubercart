@@ -1255,10 +1255,6 @@ function _uc_attribute_alter_form($product) {
   }
 
   $nid = $product->nid;
-  $qty = $product->default_qty;
-  if (!$qty) {
-    $qty = 1;
-  }
 
   // Load all product attributes for the given nid.
   $priced_attributes = uc_attribute_priced_attributes($nid);
@@ -1273,12 +1269,12 @@ function _uc_attribute_alter_form($product) {
     foreach ($attribute->options as $option) {
       switch (variable_get('uc_attribute_option_price_format', 'adjustment')) {
         case 'total':
-          $display_price = in_array($attribute->aid, $priced_attributes) ? ', ' . uc_currency_format(($product->sell_price + $option->price) * $qty) : '';
+          $display_price = in_array($attribute->aid, $priced_attributes) ? ', ' . uc_currency_format($product->sell_price + $option->price) : '';
           if (count($priced_attributes) == 1 && $attribute->display != 3) {
             break;
           }
         case 'adjustment':
-          $display_price = ($option->price != 0 ? ', ' . ($option->price > 0 ? '+' : '') . uc_currency_format($option->price * $qty) : '');
+          $display_price = ($option->price != 0 ? ', ' . ($option->price > 0 ? '+' : '') . uc_currency_format($option->price) : '');
           break;
         case 'none':
         default:
