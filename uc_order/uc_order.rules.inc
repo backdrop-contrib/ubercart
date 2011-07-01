@@ -204,7 +204,7 @@ function uc_order_rules_action_info() {
         'type' => 'text',
         'label' => t('Comment type'),
         'restriction' => 'input',
-        'options list' => 'uc_order_action_comment_types',
+        'options list' => 'uc_order_action_order_comment_types',
       ),
     ),
   );
