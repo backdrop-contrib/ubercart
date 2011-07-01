@@ -114,31 +114,6 @@ function uc_product_settings_form($form, &$form_state) {
     '#title' => t('Display an optional quantity field in the <em>Add to Cart</em> form.'),
     '#default_value' => variable_get('uc_product_add_to_cart_qty', FALSE),
   );
-  $form['product']['uc_product_add_to_cart_teaser'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Enable <em>Add to cart</em> forms in product node teasers.'),
-    '#default_value' => variable_get('uc_product_add_to_cart_teaser', TRUE),
-  );
-
-  $form['product']['uc_add_to_cart_text'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('<em>Add to cart</em> button text'),
-    '#description' => t('Use the textboxes to adjust the text of the submit button for <em>Add to Cart</em> forms in various places on the site.'),
-    '#collapsed' => FALSE,
-    '#collapsible' => FALSE,
-  );
-  $form['product']['uc_add_to_cart_text']['uc_teaser_add_to_cart_text'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Teaser forms'),
-    '#description' => t('For the form displayed on teasers and catalog pages.'),
-    '#default_value' => variable_get('uc_teaser_add_to_cart_text', t('Add to cart')),
-  );
-  $form['product']['uc_add_to_cart_text']['uc_product_add_to_cart_text'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Product view'),
-    '#description' => t('For the form displayed on the product view page.'),
-    '#default_value' => variable_get('uc_product_add_to_cart_text', t('Add to cart')),
-  );
 
   foreach (module_invoke_all('uc_product_feature') as $feature) {
     if (function_exists($feature['settings'])) {
