@@ -371,7 +371,7 @@ function uc_order_schema() {
       'title' => array(
         'description' => 'The label of the line item.',
         'type' => 'varchar',
-        'length' => 128,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
@@ -475,7 +475,7 @@ function uc_order_schema() {
       'title' => array(
         'description' => 'The product title, from {node}.title.',
         'type' => 'varchar',
-        'length' => 128,
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
@@ -666,5 +666,28 @@ function uc_order_uninstall() {
  * Implements hook_update_last_removed().
  */
 function uc_order_update_last_removed() {
-  return 6016;
+  // 7.x-3.0-beta2 and earlier were installed with schema version 0,
+  // which causes update.php to fail.
+  return drupal_get_installed_schema_version('uc_order') == 0 ? 0 : 6016;
+}
+
+/**
+ * Increase the maximum length of product and line item titles.
+ */
+function uc_order_update_7000() {
+  db_change_field('uc_order_products', 'title', 'title', array(
+    'description' => 'The product title, from {node}.title.',
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => TRUE,
+    'default' => '',
+  ));
+
+  db_change_field('uc_order_line_items', 'title', 'title', array(
+    'description' => 'The label of the line item.',
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => TRUE,
+    'default' => '',
+  ));
 }
