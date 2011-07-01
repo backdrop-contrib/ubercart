@@ -1347,8 +1347,8 @@ function uc_op_order_comments_view_table($comments) {
     foreach ($comments as $comment) {
       $data = array();
       $data['date'] = array(
-        '#markup' => format_date($comment->created, 'custom', variable_get('date_format_uc_store', 'm/d/Y') . '<\b\r />g:i:s A'),
-        '#cell_attributes' => array('align' => 'center', 'nowrap' => 'true'),
+        '#markup' => format_date($comment->created, 'short'),
+        '#cell_attributes' => array('align' => 'center'),
       );
       $data['user'] = array(
         '#markup' => uc_get_initials($comment->uid),
@@ -1407,8 +1407,8 @@ function uc_op_admin_comments_view_table($comments) {
     foreach ($comments as $comment) {
       $data = array();
       $data['date'] = array(
-        '#markup' => format_date($comment->created, 'custom', variable_get('date_format_uc_store', 'm/d/Y') . '<\b\r />g:i:s A'),
-        '#cell_attributes' => array('align' => 'center', 'nowrap' => 'true', 'valign' => 'top'),
+        '#markup' => format_date($comment->created, 'short'),
+        '#cell_attributes' => array('align' => 'center', 'valign' => 'top'),
       );
       $data['user'] = array(
         '#markup' => uc_get_initials($comment->uid),
