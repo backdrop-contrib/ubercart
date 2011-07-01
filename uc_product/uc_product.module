@@ -170,6 +170,9 @@ function uc_product_permission() {
     'administer product features' => array(
       'title' => t('Administer product features'),
     ),
+    'administer own product features' => array(
+      'title' => t('Administer own product features'),
+    ),
   );
 
   return $perms;
@@ -207,7 +210,9 @@ function uc_product_node_access($op, $node, $account) {
  * Menu access callback for 'node/%node/edit/features'.
  */
 function uc_product_feature_access($node) {
-  return uc_product_is_product($node) && user_access('administer product features');
+  global $user;
+  return uc_product_is_product($node) &&
+    ((user_access('administer product features') || (user_access('administer own product features') && ($user->uid == $node->uid))));
 }
 
 /**
