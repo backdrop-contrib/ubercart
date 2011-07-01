@@ -171,6 +171,14 @@ function uc_reports_products() {
     }
   }
 
+  $query = db_select('node', 'n', array('fetch' => PDO::FETCH_ASSOC));
+
+  $query->addField('n', 'nid');
+  $query->addField('n', 'title');
+  $query->addExpression("(SELECT SUM(uop.qty) FROM {uc_order_products} AS uop LEFT JOIN {uc_orders} AS uo ON uop.order_id = uo.order_id WHERE uo.order_status IN (:statuses) AND uop.nid = n.nid)", 'sold', array(':statuses' => $order_statuses));
+  $query->addExpression("(SELECT (SUM(uop.price * uop.qty) - SUM(uop.cost * uop.qty)) FROM {uc_order_products} AS uop LEFT JOIN {uc_orders} AS uo ON uop.order_id = uo.order_id WHERE uo.order_status IN (:statuses) AND uop.nid = n.nid)", 'gross', array(':statuses' => $order_statuses));
+  $query->addExpression("(SELECT (SUM(uop.price * uop.qty)) FROM {uc_order_products} AS uop LEFT JOIN {uc_orders} AS uo ON uop.order_id = uo.order_id WHERE uo.order_status IN (:statuses) AND uop.nid = n.nid)", 'revenue', array(':statuses' => $order_statuses));
+
   $header = array(
     array('data' => t('#')),
     array('data' => t('Product'), 'field' => 'n.title'),
@@ -185,15 +193,11 @@ function uc_reports_products() {
     $csv_rows[0][] = t('Views');
   }
 
-  $query = db_select('node', 'n', array('fetch' => PDO::FETCH_ASSOC))->extend('PagerDefault')->extend('TableSort')
+  $query->extend('PagerDefault')
+    ->extend('TableSort')
     ->orderByHeader($header)
     ->limit($page_size);
 
-  $query->addField('n', 'nid');
-  $query->addField('n', 'title');
-  $query->addExpression("(SELECT SUM(uop.qty) FROM {uc_order_products} AS uop LEFT JOIN {uc_orders} AS uo ON uop.order_id = uo.order_id WHERE uo.order_status IN (:statuses) AND uop.nid = n.nid)", 'sold', array(':statuses' => $order_statuses));
-  $query->addExpression("(SELECT (SUM(uop.price * uop.qty) - SUM(uop.cost * uop.qty)) FROM {uc_order_products} AS uop LEFT JOIN {uc_orders} AS uo ON uop.order_id = uo.order_id WHERE uo.order_status IN (:statuses) AND uop.nid = n.nid)", 'gross', array(':statuses' => $order_statuses));
-  $query->addExpression("(SELECT (SUM(uop.price * uop.qty)) FROM {uc_order_products} AS uop LEFT JOIN {uc_orders} AS uo ON uop.order_id = uo.order_id WHERE uo.order_status IN (:statuses) AND uop.nid = n.nid)", 'revenue', array(':statuses' => $order_statuses));
   if ($views_column) {
     $query->leftJoin('node_counter', 'nc', 'n.nid = nc.nid');
     $query->addField('nc', 'totalcount');
