@@ -367,10 +367,10 @@ function uc_checkout_pane_comments($op, $order, $form = NULL, &$form_state = NUL
       return array('description' => $description, 'contents' => $contents);
 
     case 'process':
+      db_delete('uc_order_comments')
+        ->condition('order_id', $order->order_id)
+        ->execute();
       if (strlen($form_state['values']['panes']['comments']['comments']) > 0) {
-        db_delete('uc_order_comments')
-          ->condition('order_id', $order->order_id)
-          ->execute();
         uc_order_comment_save($order->order_id, 0, $form_state['values']['panes']['comments']['comments'], 'order', uc_order_state_default('post_checkout'), TRUE);
       }
       return TRUE;
