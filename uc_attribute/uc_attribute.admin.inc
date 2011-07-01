@@ -139,6 +139,7 @@ function uc_attribute_form($form, &$form_state, $attribute = NULL) {
   );
   $form['ordering'] = array(
     '#type' => 'weight',
+    '#delta' => 25,
     '#title' => t('List position'),
     '#description' => t('Multiple attributes on an add to cart form are sorted by this value and then by their name.<br />May be overridden at the product level.'),
     '#default_value' => isset($attribute->ordering) ? $attribute->ordering : 0,
@@ -406,6 +407,7 @@ function uc_attribute_option_form($form, &$form_state, $attribute, $option = NUL
   );
   $form['ordering'] = array(
     '#type' => 'weight',
+    '#delta' => 50,
     '#title' => t('List position'),
     '#description' => t('Options will be listed sorted by this value and then by their name.<br />May be overridden at the product level.'),
     '#default_value' => $option->ordering,
@@ -618,8 +620,9 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
           ),
           'ordering' => array(
             '#type' => 'weight',
+            '#delta' => 25,
             '#default_value' => $attribute->ordering,
-            '#attributes' => array('class' => array('uc-attribute-table-weight')),
+            '#attributes' => array('class' => array('uc-attribute-table-ordering')),
           ),
           'display' => array(
             '#type' => 'select',
@@ -711,7 +714,7 @@ function theme_uc_object_attributes_form($variables) {
         );
       }
 
-      drupal_add_tabledrag('uc-attribute-table', 'order', 'sibling', 'uc-attribute-table-weight');
+      drupal_add_tabledrag('uc-attribute-table', 'order', 'sibling', 'uc-attribute-table-ordering');
     }
     else {
       if ($form['type']['#value'] == 'class') {
