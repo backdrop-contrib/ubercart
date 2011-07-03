@@ -82,7 +82,7 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
       );
 
       $contents['details'] = array(
-        '#prefix' => '<div id="payment-details" class="clearfix payment-details-'. $default . '">',
+        '#prefix' => '<div id="payment-details" class="clearfix payment-details-' . $default . '">',
         '#suffix' => '</div>',
       );
 
