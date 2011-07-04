@@ -38,6 +38,8 @@ function uc_stock_token_info() {
  * Implements hook_tokens().
  */
 function uc_stock_tokens($type, $tokens, $data = array(), $options = array()) {
+  $sanitize = !empty($options['sanitize']);
+
   $replacements = array();
 
   if ($type == 'uc_stock' && !empty($data['uc_stock'])) {
@@ -50,7 +52,7 @@ function uc_stock_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'model':
-          $replacements[$original] = $object->sku;
+          $replacements[$original] = $sanitize ? check_plain($object->sku) : $object->sku;
           break;
 
         case 'threshold':

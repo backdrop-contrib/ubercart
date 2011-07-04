@@ -188,8 +188,26 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
           $replacements[$original] = $subtotal;
           break;
 
+        case 'subtotal-value':
+          if (is_array($order->line_items)) {
+            foreach ($order->line_items as $key => $value) {
+              if ($value['type'] == 'subtotal') {
+                $subtotal = $order->line_items[$key]['amount'];
+              }
+              if ($value['type'] == 'shipping' && !isset($ship_method)) {
+                $ship_method = $value['title'];
+              }
+            }
+          }
+          $replacements[$original] = $subtotal;
+          break;
+
         case 'total':
           $replacements[$original] = uc_currency_format($order->order_total);
+          break;
+
+        case 'total-value':
+          $replacements[$original] = $order->order_total;
           break;
 
         case 'email':

@@ -128,6 +128,18 @@ function uc_product_tokens($type, $tokens, $data = array(), $options = array()) 
           $replacements[$original] = uc_currency_format($product->sell_price);
           break;
 
+        case 'list_price-value':
+          $replacements[$original] = $product->list_price;
+          break;
+
+        case 'cost-value':
+          $replacements[$original] = $product->cost;
+          break;
+
+        case 'sell_price-value':
+          $replacements[$original] = $product->sell_price;
+          break;
+
         case 'weight':
           $replacements[$original] = uc_weight_format($product->weight, $product->weight_units);
           break;
