@@ -291,6 +291,17 @@ function hook_uc_order_pane() {
 }
 
 /**
+ * Alter order pane definitions.
+ *
+ * @param $panes
+ *   Array with the panes information as defined in hook_uc_order_pane(),
+ *   passed by reference.
+ */
+function hook_uc_order_pane_alter(&$panes) {
+  $panes['payment']['callback'] = 'my_custom_module_callback';
+}
+
+/**
  * Builds and processes an order pane defined by hook_uc_order_pane().
  *
  * @param string $op

@@ -1461,6 +1461,9 @@ function _uc_order_pane_list($view = 'view') {
     $panes[$id] = $pane;
   }
 
+  // Allow other modules to alter the defaults.
+  drupal_alter('uc_order_pane', $panes);
+
   uasort($panes, 'uc_weight_sort');
 
   return $panes;
