@@ -946,12 +946,16 @@ function uc_shipping_shipment_edit_submit($form, &$form_state) {
  * Shows a printer-friendly version of a shipment.
  */
 function uc_shipping_shipment_print($order, $shipment, $labels = TRUE) {
-  return array(
+  $build = array(
     '#theme' => 'uc_shipping_shipment_print',
     '#order' => $order,
     '#shipment' => $shipment,
     '#labels' => $labels,
   );
+
+  drupal_add_http_header('Content-Type', 'text/html; charset=utf-8');
+  print theme('uc_packing_slip_page', array('content' => drupal_render($build)));
+  exit();
 }
 
 /**
@@ -964,22 +968,7 @@ function theme_uc_shipping_shipment_print($variables) {
   $shipment = $variables['shipment'];
   $labels = $variables['labels'];
 
-  $language = $GLOBALS['language'];
-  $output = <<<EOHTML
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="{$language->language}" lang="{$language->language}" dir="{$language->direction}">
-<head>
-  <title>Packing slip and labels</title>
-  <style>
-    .page-break {
-      page-break-before: always;
-    }
-  </style>
-</head>
-<body>
-EOHTML;
-
-  $output .= theme('uc_packing_slip', array('order' => $order, 'shipment' => $shipment));
+  $output = theme('uc_packing_slip', array('order' => $order, 'shipment' => $shipment));
 
   if ($labels) {
     foreach ($shipment->packages as $id => $package) {
@@ -996,10 +985,7 @@ EOHTML;
     }
   }
 
-  $output .= '</body></html>';
-
-  print $output;
-  exit();
+  return $output;
 }
 
 /**

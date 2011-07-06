@@ -213,12 +213,18 @@ function uc_shipping_theme() {
       'variables' => array('order' => NULL, 'shipment' => NULL),
       'template' => 'uc-packing-slip',
     ),
+    'uc_packing_slip_page' => array(
+      'variables' => array('content' => NULL),
+      'template' => 'uc-packing-slip-page',
+    ),
   );
 }
 
 /**
  * Preprocess function to make token values available as variables in the
  * packing slip template.
+ *
+ * @see uc-packing-slip.tpl.php
  */
 function template_preprocess_uc_packing_slip(&$variables) {
   $tokens = token_generate('site', drupal_map_assoc(array('logo')));
@@ -252,6 +258,17 @@ function template_preprocess_uc_packing_slip(&$variables) {
   $variables['carrier'] = check_plain($shipment->carrier);
   $variables['tracking_number'] = check_plain($shipment->tracking_number);
   $variables['packages'] = $shipment->packages;
+}
+
+/**
+ * Preprocesses a printable packing slip page.
+ *
+ * @see uc-packing-slip-page.tpl.php
+ */
+function template_preprocess_uc_packing_slip_page(&$variables) {
+  $language = isset($GLOBALS['language']) ? $GLOBALS['language'] : language_default();
+  $variables['language']          = $language;
+  $variables['language']->dir     = $language->direction ? 'rtl' : 'ltr';
 }
 
 /******************************************************************************
