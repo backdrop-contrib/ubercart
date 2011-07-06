@@ -186,16 +186,16 @@ function uc_order_menu() {
   $items['user/%user/orders/%uc_order/invoice'] = array(
     'title' => 'View invoice',
     'description' => 'View order invoice.',
-    'page callback' => 'uc_order_view',
-    'page arguments' => array(3, 'invoice'),
+    'page callback' => 'uc_order_view_invoice',
+    'page arguments' => array(3),
     'access callback' => 'uc_order_can_view_order',
     'access arguments' => array(1, 3),
   );
   $items['user/%user/orders/%uc_order/print'] = array(
     'title' => 'Print invoice',
     'description' => 'Print order invoice.',
-    'page callback' => 'uc_order_view',
-    'page arguments' => array(3, 'print'),
+    'page callback' => 'uc_order_view_invoice',
+    'page arguments' => array(3, TRUE),
     'access callback' => 'uc_order_can_view_order',
     'access arguments' => array(1, 3),
   );
@@ -257,8 +257,8 @@ function uc_order_menu() {
   );
   $items['admin/store/orders/%uc_order/invoice'] = array(
     'title' => 'Invoice',
-    'page callback' => 'uc_order_view',
-    'page arguments' => array(3, 'invoice'),
+    'page callback' => 'uc_order_view_invoice',
+    'page arguments' => array(3),
     'access arguments' => array('view all orders'),
     'type' => MENU_LOCAL_TASK,
     'weight' => 3,
@@ -270,7 +270,7 @@ function uc_order_menu() {
   );
   $items['admin/store/orders/%uc_order/invoice/print'] = array(
     'title' => 'Printable invoice',
-    'page arguments' => array(3, 'print'),
+    'page arguments' => array(3, TRUE),
     'access arguments' => array('view all orders'),
     'type' => MENU_LOCAL_TASK,
     'weight' => -5,
@@ -356,6 +356,10 @@ function uc_order_theme($existing, $type, $theme, $path) {
         'business_header' => FALSE,
         'shipping_method' => FALSE,
       ),
+    ),
+    'uc_order_invoice_page' => array(
+      'variables' => array('content' => NULL),
+      'template' => 'uc_order-invoice-page',
     ),
     'uc_order_state_table' => array(
       'render element' => 'form',
@@ -1140,37 +1144,6 @@ function uc_order_product_delete($order_product_id) {
  * Displays the order view screen, constructed via hook_uc_order_pane().
  */
 function uc_order_view($order, $view_mode = 'full') {
-  // Retrieve all profile fields and attach to $account->content.
-  uc_order_build_content($order, $view_mode);
-
-  $build = $order->content;
-  // We don't need duplicate rendering info in $order->content.
-  unset($order->content);
-
-  if ($view_mode == 'invoice') {
-    $build += array(
-      '#theme' => 'uc_order',
-      '#order' => $order,
-      '#op' => 'view',
-      '#template' => variable_get('uc_cust_order_invoice_template', 'customer'),
-    );
-  }
-
-  if ($view_mode == 'print') {
-    $output = '<div align="right" style="margin-bottom: 1em; margin-right: 1em;"><input type="button" value="' . t('Print invoice') . '" onclick="window.print();" /> '
-              . '<input type="button" value="' . t('Close window') . '" onclick="window.close();" /></div>';
-    $output .= theme('uc_order', array('order' => $order, 'op' => 'print', 'template' => variable_get('uc_cust_order_invoice_template', 'customer')));
-    print $output;
-    exit();
-  }
-
-  return $build;
-}
-
-/**
- *
- */
-function uc_order_build_content($order, $view_mode = 'full') {
   $order->content = array(
     'order_panes' => array(),
   );
@@ -1222,6 +1195,28 @@ function uc_order_build_content($order, $view_mode = 'full') {
       '#suffix' => '</div>',
     );
   }
+
+  return $order->content;
+}
+
+/**
+ * Displays an order invoice.
+ */
+function uc_order_view_invoice($order, $print = FALSE) {
+  $build = array(
+    '#theme' => 'uc_order',
+    '#order' => $order,
+    '#op' => $print ? 'print' : 'view',
+    '#template' => variable_get('uc_cust_order_invoice_template', 'customer'),
+  );
+
+  if ($print) {
+    drupal_add_http_header('Content-Type', 'text/html; charset=utf-8');
+    print theme('uc_order_invoice_page', array('content' => drupal_render($build)));
+    exit();
+  }
+
+  return $build;
 }
 
 /**
@@ -1728,6 +1723,9 @@ function _uc_order_get_screen_titles() {
 
 /**
  * Preprocesses a formatted invoice with an order's data.
+ *
+ * @see uc_order--admin.tpl.php
+ * @see uc_order--customer.tpl.php
  */
 function template_preprocess_uc_order(&$variables) {
   switch ($variables['op']) {
@@ -1797,6 +1795,35 @@ function template_preprocess_uc_order(&$variables) {
     'uc_order__customer',
     'uc_order__' . $variables['template'],
   );
+}
+
+/**
+ * Preprocesses a printable invoice page.
+ *
+ * @see uc_order-invoice-page.tpl.php
+ */
+function template_preprocess_uc_order_invoice_page(&$variables) {
+  // Construct page title
+  if (drupal_get_title()) {
+    $head_title = array(
+      'title' => strip_tags(drupal_get_title()),
+      'name' => variable_get('site_name', 'Drupal'),
+    );
+  }
+  else {
+    $head_title = array('name' => variable_get('site_name', 'Drupal'));
+    if (variable_get('site_slogan', '')) {
+      $head_title['slogan'] = variable_get('site_slogan', '');
+    }
+  }
+
+  // set the default language if necessary
+  $language = isset($GLOBALS['language']) ? $GLOBALS['language'] : language_default();
+
+  $variables['head_title'] = implode(' | ', $head_title);
+  $variables['base_path'] = base_path();
+  $variables['language']          = $language;
+  $variables['language']->dir     = $language->direction ? 'rtl' : 'ltr';
 }
 
 /**
