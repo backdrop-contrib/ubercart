@@ -1493,26 +1493,32 @@ function theme_uc_product_image($variables) {
     'alt' => $first['alt'],
     'title' => $first['title'],
   ));
-  $output .= '</a></div><div class="more-product-images">';
-  foreach ($images as $thumbnail) {
-    // Node preview adds extra values to $images that aren't files.
-    if (!is_array($thumbnail) || empty($thumbnail['uri'])) {
-      continue;
+  $output .= '</a></div>';
+
+  if (!empty($images)) {
+    $output .= '<div class="more-product-images">';
+    foreach ($images as $thumbnail) {
+      // Node preview adds extra values to $images that aren't files.
+      if (!is_array($thumbnail) || empty($thumbnail['uri'])) {
+        continue;
+      }
+      $output .= '<a href="' . image_style_url('uc_product_full', $thumbnail['uri']) . '" title="' . $thumbnail['title'] . '"';
+      if ($image_widget) {
+        $output .= $image_widget_func($rel_count);
+      }
+      $output .= '>';
+      $output .= theme('image_style', array(
+        'style_name' => 'uc_thumbnail',
+        'path' => $thumbnail['uri'],
+        'alt' => $thumbnail['alt'],
+        'title' => $thumbnail['title'],
+      ));
+      $output .= '</a>';
     }
-    $output .= '<a href="' . image_style_url('uc_product_full', $thumbnail['uri']) . '" title="' . $thumbnail['title'] . '"';
-    if ($image_widget) {
-      $output .= $image_widget_func($rel_count);
-    }
-    $output .= '>';
-    $output .= theme('image_style', array(
-      'style_name' => 'uc_thumbnail',
-      'path' => $thumbnail['uri'],
-      'alt' => $thumbnail['alt'],
-      'title' => $thumbnail['title'],
-    ));
-    $output .= '</a>';
+    $output .= '</div>';
   }
-  $output .= '</div></div>';
+
+  $output .= '</div>';
   $rel_count++;
 
   return $output;
