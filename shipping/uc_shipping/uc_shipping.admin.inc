@@ -1056,9 +1056,11 @@ function uc_shipping_make_shipment($order) {
     $methods = module_invoke_all('uc_shipping_method');
     if (isset($methods[$method_id])) {
       $method = $methods[$method_id];
-      $inc_file = drupal_get_path('module', $method['module']) . '/' . $method['ship']['file'];
-      if (is_file($inc_file)) {
-        require_once($inc_file);
+      if (isset($method['ship']['file'])) {
+        $inc_file = drupal_get_path('module', $method['module']) . '/' . $method['ship']['file'];
+        if (is_file($inc_file)) {
+          require_once($inc_file);
+        }
       }
       return drupal_get_form($method['ship']['callback'], $order, $package_ids);
     }
