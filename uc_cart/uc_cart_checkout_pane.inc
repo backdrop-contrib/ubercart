@@ -144,7 +144,7 @@ function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NUL
       // Invalidate if an account already exists for this e-mail address, and the user is not logged into that account
       if ($user->uid == 0 && !empty($pane['primary_email'])) {
         if (db_query("SELECT uid FROM {users} WHERE mail LIKE :mail", array(':mail' => $pane['primary_email']))->fetchField() > 0) {
-          form_set_error('panes][customer][primary_email', t('An account already exists for your e-mail address. You will either need to login with with this e-mail address or use a different e-mail address.'));
+          form_set_error('panes][customer][primary_email', t('An account already exists for your e-mail address. You will either need to login with this e-mail address or use a different e-mail address.'));
         }
       }
 
