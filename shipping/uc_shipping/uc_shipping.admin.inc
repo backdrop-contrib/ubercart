@@ -235,7 +235,7 @@ function uc_shipping_new_package_submit($form, &$form_state) {
           }
         }
       }
-      if (is_array($packages[0][$shipping_type])) {
+      if (isset($packages[0][$shipping_type])) {
         foreach ($packages[0][$shipping_type] as $id => $product) {
           $qty = $product->qty;
           $product->qty = 1;
