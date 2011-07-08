@@ -22,7 +22,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
    * Sets up the framework for testing cart links.
    */
   function setUp() {
-    parent::setUp(array('uc_cart_links', 'uc_attribute'), array('administer cart links', 'view cart links report'));
+    parent::setUp(array('uc_cart_links', 'uc_attribute'), array('administer cart links', 'view cart links report', 'access administration pages'));
   }
 
   /**
@@ -70,7 +70,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // Test presence of and contents of Help page
     $this->clickLink(t('View the help page'));
     $this->assertText(
-      '/cart/add/p1_q5-imonday_special?destination=cart',
+      'http://www.example.com/cart/add/&lt;cart_link_content&gt;',
       t('Help text found.')
     );
   }
@@ -182,7 +182,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     $this->drupalLogin($this->adminUser);
 
     //
-    // Test product action display
+    // Test product action message display
     //
 
     // Turn on display of product action message
@@ -212,11 +212,6 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
       t('Cart link product action: @link', array('@link' => substr($cart_links[$test_link], 10))),
       t('Cart link product action message not present.')
     );
-
-      //
-      // TODO: test -m0, which should supress the message even
-      // when message are enabled
-      //
 
     $this->drupalLogout();
   }
@@ -395,10 +390,99 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     $this->drupalLogout();
   }
 
-    // TODO: assert messages
-    //       - set messages
-    //       - use messages
+  /**
+   * Tests cart links messages.
+   *
+   * To stop the default "xxx was added to your shopping cart" message for
+   * a product, use the argument "_s". For example /cart/add/p23_s
+   * "_s" is an argument to the "p" action, and supresses the message for this
+   * product only.  Other products added by other actions in the cart link
+   * will still show the message.  e.g. /cart/add/p23_s-p15 will show a message
+   * for product 15 but not for product 23.
+   * 
+   * To insert your own message, first define your message in the Cart Links
+   * messages panel on the Cart Links settings page, by entering for example
+   * "99|My message text". Then use the action "-m99" (a dash, not an
+   * underscore) to add the message. For example, /cart/add/p23-m99
+   * 
+   * Note that just specifying "-m99" will display both your message 99 and the
+   * default message, unless you have turned off the default message with "_s".
+   * 
+   * For additional messages, add additional actions, e.g. "-m99-m1337".
+   */
+  function testCartLinksMessages() {
+
+    // TODO: test _s, which should supress the message for just the one product
+    // <product title> added to your shopping cart.
+
+    // TODO: 
+    //  - set messages in interface with setCartLinksUIMessages()
+    //  - use messages in links with -m<number>
+    //  - assert messages found in output
+
     // TODO: assert tracking information
+
+    // Create product
+    $products[] = $this->createCartLinksProduct(FALSE);
+
+    // Create a product class
+    $products[] = $this->createCartLinksProduct(FALSE);  // later ...
+
+    // Need to be admin to define messages
+    $this->drupalLogin($this->adminUser);
+
+    // Define some messages
+    $messages = array();
+    for ($i = 0; $i < 15; $i++) {
+      $key = mt_rand(1, 999);
+      $messages[$key] = $key . '|' . $this->randomName(32);
+    }
+    $this->setCartLinksUIMessages($messages);
+
+    // Create some valid cart links for these products
+    $link_array = $this->createValidCartLinks($products);
+    $cart_links = $link_array['links'];
+    $link_data  = $link_array['data'];
+
+    // Create a page containing these links
+    $page = $this->createCartLinksPage($cart_links);
+
+    $this->drupalLogin($this->adminUser);
+
+    //
+    // Test product action message display
+    //
+
+    // Turn on display of product action message
+    $this->setCartLinksUIProductActionMessage(TRUE);
+    // Go to page with cart links
+    $this->drupalGet('node/' . $page->nid);
+    // Pick one of the links at random
+    $test_link = array_rand($cart_links);
+    $this->clickLink(t('Cart Link #@link', array('@link' => $test_link)));
+    $this->assertText(
+      t('Cart link product action: @link', array('@link' => substr($cart_links[$test_link], 10))),
+      t('Cart link product action message found.')
+    );
+
+    // Empty cart (press remove button)
+    $this->drupalPost('cart', array(), t('Remove'));
+    $this->assertText('There are no products in your shopping cart.');
+
+    // Turn off display of product action message
+    $this->setCartLinksUIProductActionMessage(FALSE);
+    // Go to page with cart links
+    $this->drupalGet('node/' . $page->nid);
+    // Pick one of the links at random
+    $test_link = array_rand($cart_links);
+    $this->clickLink(t('Cart Link #@link', array('@link' => $test_link)));
+    $this->assertNoText(
+      t('Cart link product action: @link', array('@link' => substr($cart_links[$test_link], 10))),
+      t('Cart link product action message not present.')
+    );
+
+    $this->drupalLogout();
+  }
 
   /****************************************************************************
    * Utility Functions                                                        *
@@ -480,15 +564,16 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
    *   Messages have numeric key and text value, separated by '|'.
    */
   function setCartLinksUIMessages($messages = '') {
+    $message_string = implode("\n", $messages);
     $this->drupalPost(
       'admin/store/settings/cart-links',
-      array('uc_cart_links_messages' => $messages),
+      array('uc_cart_links_messages' => $message_string),
       t('Save configuration')
     );
     $this->assertFieldByName(
       'uc_cart_links_messages',
-      $messages,
-      t('Cart links messages contains "@messages".', array('@messages' => $messages))
+      $message_string,
+      t('Cart links messages contains "@messages".', array('@messages' => $message_string))
     );
   }
 
