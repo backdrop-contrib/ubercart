@@ -161,9 +161,10 @@ function uc_cart_links_creation_help() {
 
   $header = array(t('Argument'), t('Description'), t('Values'));
   $rows = array(
-    array('q', t('Specifies quantity to add.'), t('A positive integer.')),
-    array('a&lt;aid&gt;o&lt;oid&gt;', t('Specifies attribute/option for product.'), t('aid is the integer attribute ID. oid is the integer option ID for radio, checkbox, and select options, or a url-escaped text string for textfield options.')),
-    array('s', t('Silent.  Turns off default add-to-cart message.'), t('None.')),
+    array('q', t('Specifies quantity of this product to add.'), t('A positive integer.')),
+    array('a&lt;aid&gt;o&lt;oid&gt;', t('Specifies attribute/option for this product.'), t('aid is the integer attribute ID. oid is the integer option ID for radio, checkbox, and select options, or a url-escaped text string for textfield options.')),
+    array('s', t('Silent.  Supresses add-to-cart message for this product.
+    (The add-to-cart message may be enabled on the <a href="!url">cart settings page</a>).', array('!url' => url('admin/store/settings/cart/edit'))), t('None.')),
   );
   $build['args'] = array(
     '#prefix' => t('Optional arguments for "p" allow you to control the quantity, set product attributes and options, and supress the default product action message normally shown when a product is added to a cart. These optional arguments are appended to the "p" action and separated with an underscore.  Allowed arguments for "p" are:'),

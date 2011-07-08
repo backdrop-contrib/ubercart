@@ -154,6 +154,14 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
         }
       }
 
+      // Use the same link, but this time append an '_s' to turn
+      // off message display for this product
+      $this->drupalGet($cart_links[$key] . '_s');
+      $this->assertNoText(
+        t('Cart link product action:'),
+        t('Cart link product action message supressed.')
+      );
+
       // Empty cart (press remove button)
       $this->drupalPost('cart', array(), t('Remove'));
       $this->assertText('There are no products in your shopping cart.');
@@ -399,26 +407,18 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
    * product only.  Other products added by other actions in the cart link
    * will still show the message.  e.g. /cart/add/p23_s-p15 will show a message
    * for product 15 but not for product 23.
-   * 
+   *
    * To insert your own message, first define your message in the Cart Links
    * messages panel on the Cart Links settings page, by entering for example
    * "99|My message text". Then use the action "-m99" (a dash, not an
    * underscore) to add the message. For example, /cart/add/p23-m99
-   * 
+   *
    * Note that just specifying "-m99" will display both your message 99 and the
    * default message, unless you have turned off the default message with "_s".
-   * 
+   *
    * For additional messages, add additional actions, e.g. "-m99-m1337".
    */
   function testCartLinksMessages() {
-
-    // TODO: test _s, which should supress the message for just the one product
-    // <product title> added to your shopping cart.
-
-    // TODO: 
-    //  - set messages in interface with setCartLinksUIMessages()
-    //  - use messages in links with -m<number>
-    //  - assert messages found in output
 
     // TODO: assert tracking information
 
@@ -450,36 +450,25 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     $this->drupalLogin($this->adminUser);
 
     //
-    // Test product action message display
+    // Test message display
     //
 
-    // Turn on display of product action message
-    $this->setCartLinksUIProductActionMessage(TRUE);
     // Go to page with cart links
     $this->drupalGet('node/' . $page->nid);
-    // Pick one of the links at random
+
+    // Pick one link at random and append an '-m<#>' to display a message
     $test_link = array_rand($cart_links);
-    $this->clickLink(t('Cart Link #@link', array('@link' => $test_link)));
+    $message_key  = array_rand($messages);
+    $message_text = explode('|', $messages[$message_key]);
+    $this->drupalGet($cart_links[$test_link] . '-m' . $message_key);
     $this->assertText(
-      t('Cart link product action: @link', array('@link' => substr($cart_links[$test_link], 10))),
-      t('Cart link product action message found.')
+      t('@message', array('@message' => $message_text[1])),
+      t('Message @key displayed.', array('@key' => $message_key))
     );
 
     // Empty cart (press remove button)
     $this->drupalPost('cart', array(), t('Remove'));
     $this->assertText('There are no products in your shopping cart.');
-
-    // Turn off display of product action message
-    $this->setCartLinksUIProductActionMessage(FALSE);
-    // Go to page with cart links
-    $this->drupalGet('node/' . $page->nid);
-    // Pick one of the links at random
-    $test_link = array_rand($cart_links);
-    $this->clickLink(t('Cart Link #@link', array('@link' => $test_link)));
-    $this->assertNoText(
-      t('Cart link product action: @link', array('@link' => substr($cart_links[$test_link], 10))),
-      t('Cart link product action message not present.')
-    );
 
     $this->drupalLogout();
   }
@@ -719,7 +708,9 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
    *   -data: An array of metadata about the cart links so we won't have to try
    *   to re-construct this information by parsing the link at a later time.
    *
-   * 'links' and 'data' share the same keys.
+   * The 'links' and 'data' sub-arrays are both indexed by the keys used in
+   * the $products array that is passed in as an argument, so these keys may
+   * be used to lookup the link and metadata for a specific product.
    *
    * @param $products
    *   An array of products.
