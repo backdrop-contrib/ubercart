@@ -8,6 +8,8 @@
 /**
  * Preprocesses a cart link and confirm with the user if a destructive action
  * is included.
+ *
+ * @see uc_cart_links_form_submit()
  */
 function uc_cart_links_form($form, &$form_state, $arg1) {
   // Fail if the link is restricted.
@@ -42,6 +44,11 @@ function uc_cart_links_form($form, &$form_state, $arg1) {
   uc_cart_links_process($arg1);
 }
 
+/**
+ * Submit handler for uc_cart_links_form().
+ *
+ * @see uc_cart_links_form()
+ */
 function uc_cart_links_form_submit($form, &$form_state) {
   uc_cart_links_process(arg(2));
 }
@@ -56,7 +63,7 @@ function uc_cart_links_process($cart_action) {
   $actions = explode('-', urldecode($cart_action));
   $rebuild_cart = FALSE;
   $messages = array();
-  $id = '';
+  $id = t('(not specified)');
 
   foreach ($actions as $action) {
     switch (drupal_substr($action, 0, 1)) {
@@ -82,12 +89,12 @@ function uc_cart_links_process($cart_action) {
             case 'P':
               $p['nid'] = intval(drupal_substr($part, 1));
               break;
-            // Set the quantity to add to cart: q2
+            // Set the quantity to add to cart: _q2
             case 'q':
             case 'Q':
               $p['qty'] = intval(drupal_substr($part, 1));
               break;
-            // Set an attribute/option for the product: a3o6
+            // Set an attribute/option for the product: _a3o6
             case 'a':
             case 'A':
               $attribute = intval(drupal_substr($part, 1, stripos($part, 'o') - 1));
@@ -112,10 +119,10 @@ function uc_cart_links_process($cart_action) {
                 }
               }
               break;
-            // Suppress the add to cart message: m0
-            case 'm':
-            case 'M':
-              $msg = intval(drupal_substr($part, 1)) == 1 ? TRUE : FALSE;
+            // Suppress the add to cart message: _s
+            case 's':
+            case 'S':
+              $msg = FALSE;
               break;
           }
         }
