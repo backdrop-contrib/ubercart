@@ -12,7 +12,9 @@
  */
 function uc_cart_links_settings_form($form, &$form_state) {
   $form['instructions'] = array(
-    '#markup' => '<div>' . t('<a href="!url">View the help page</a> to learn how to create cart links.', array('!url' => url('admin/store/help/cart-links'))) . '</div>',
+    '#prefix' => '<p>',
+    '#markup' => t('<a href="!url">View the help page</a> to learn how to create cart links.', array('!url' => url('admin/help/uc_cart_links'))),
+    '#suffix' => '</p>',
   );
 
   $form['uc_cart_links_add_show'] = array(
@@ -106,7 +108,7 @@ function uc_cart_links_report() {
  * Provides instructions on how to create cart links.
  *
  * @return
- *   Help text in HTML format.
+ *   Form API array with help text.
  */
 function uc_cart_links_creation_help() {
   $build = array(
