@@ -344,7 +344,8 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     unset($cart_links[$test_link_0]);
     $test_link = array_rand($cart_links);
 
-    // Attempt to click it - it should fail
+    // Attempt to click it
+    // It should fail and redirect to the home page (default)
     $this->drupalGet('node/' . $page->nid);
     $this->clickLink(t('Cart Link #@link', array('@link' => $test_link)));
     $this->assertText(
@@ -355,6 +356,29 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
       t('Redirected to front page for link not in restrictions.')
     );
 
+    // Now create a special redirect page for bad links
+    $redirect_page = $this->drupalCreateNode(
+      array(
+        'body' => array(
+          LANGUAGE_NONE => array(
+            array('value' => 'ERROR: Invalid Cart Link!')
+          )
+        )
+      )
+    );
+
+    // Set redirect link
+    $this->setCartLinksUIRedirect('node/' . $redirect_page->nid);
+
+    // Attempt to click same restricted link as above.
+    // It should fail again but this time redirect to $redirect_page.
+    $this->drupalGet('node/' . $page->nid);
+    $this->clickLink(t('Cart Link #@link', array('@link' => $test_link)));
+    $this->assertText(
+      t('ERROR: Invalid Cart Link!'),
+      t('Redirected to error page for link not in restrictions.')
+    );
+
     // Remove restrictions, try to add again - it should pass
     $this->setCartLinksUIRestrictions('');
     $this->drupalGet('node/' . $page->nid);
@@ -363,34 +387,6 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
       t('@title added to your shopping cart.', array('@title' => $link_data[$test_link]['title'])),
       t('Product @title added to cart.', array('@title' => $link_data[$test_link]['title']))
     );
-
-    $this->drupalLogout();
-  }
-
-  /**
-   * Tests page redirection for invalid cart links.
-   */
-  function testCartLinksRedirect() {
-    // TODO: set redirect link
-    // TODO: assert redirection for invalid link
-    // TODO: assert redirection for restricted link
-    // TODO: assert non-redirect for valid link
-
-    // Create product
-    $products[] = $this->createCartLinksProduct(FALSE);
-
-    // Create a product class
-    $products[] = $this->createCartLinksProduct(FALSE);  // later ...
-
-    // Create some valid cart links for these products
-    $link_array = $this->createValidCartLinks($products);
-    $cart_links = $link_array['links'];
-    $link_data  = $link_array['data'];
-
-    // Create a page containing these links
-    $page = $this->createCartLinksPage($cart_links);
-
-    $this->drupalLogin($this->adminUser);
 
     $this->drupalLogout();
   }
@@ -653,13 +649,13 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
   function setCartLinksUIRedirect($url = '') {
     $this->drupalPost(
       'admin/store/settings/cart-links',
-      array('uc_cart_links_restrictions' => $restrictions),
+      array('uc_cart_links_invalid_page' => $url),
       t('Save configuration')
     );
     $this->assertFieldByName(
-      'uc_cart_links_restrictions',
-      $restrictions,
-      t('Cart links restrictions contains "@restrictions".', array('@restrictions' => $restrictions))
+      'uc_cart_links_invalid_page',
+      $url,
+      t('Cart links invalid page URL contains "@url".', array('@url' => $url))
     );
   }
 
