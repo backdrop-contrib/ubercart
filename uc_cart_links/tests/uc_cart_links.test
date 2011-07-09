@@ -93,9 +93,6 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // Need to test incorrect links as well:
     //   links which add invalid attributes
     //   links which omit required attributes
-    // links which empty cart
-    // links with click tracking
-    // links with messages
 
     // Create a page containing these links
     $page = $this->createCartLinksPage($cart_links);
@@ -420,13 +417,19 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
    */
   function testCartLinksMessages() {
 
-    // TODO: assert tracking information
-
     // Create product
     $products[] = $this->createCartLinksProduct(FALSE);
 
     // Create a product class
     $products[] = $this->createCartLinksProduct(FALSE);  // later ...
+
+    // Create some valid cart links for these products
+    $link_array = $this->createValidCartLinks($products);
+    $cart_links = $link_array['links'];
+    $link_data  = $link_array['data'];
+
+    // Create a page containing these links
+    $page = $this->createCartLinksPage($cart_links);
 
     // Need to be admin to define messages
     $this->drupalLogin($this->adminUser);
@@ -438,16 +441,6 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
       $messages[$key] = $key . '|' . $this->randomName(32);
     }
     $this->setCartLinksUIMessages($messages);
-
-    // Create some valid cart links for these products
-    $link_array = $this->createValidCartLinks($products);
-    $cart_links = $link_array['links'];
-    $link_data  = $link_array['data'];
-
-    // Create a page containing these links
-    $page = $this->createCartLinksPage($cart_links);
-
-    $this->drupalLogin($this->adminUser);
 
     //
     // Test message display
@@ -469,6 +462,67 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // Empty cart (press remove button)
     $this->drupalPost('cart', array(), t('Remove'));
     $this->assertText('There are no products in your shopping cart.');
+
+    $this->drupalLogout();
+  }
+
+  /**
+   * Tests cart links tracking.
+   */
+  function testCartLinksTracking() {
+
+    // Create product
+    $products[] = $this->createCartLinksProduct(FALSE);
+
+    // Create a product class
+    $products[] = $this->createCartLinksProduct(FALSE);  // later ...
+
+    // Create some valid cart links for these products
+    $link_array = $this->createValidCartLinks($products);
+    $cart_links = $link_array['links'];
+    $link_data  = $link_array['data'];
+
+    // Create a page containing these links
+    $page = $this->createCartLinksPage($cart_links);
+
+    $this->drupalLogin($this->adminUser);
+
+    //
+    // Test cart links tracking
+    //
+
+    // Go to page with cart links
+    $this->drupalGet('node/' . $page->nid);
+
+    // Create three tracking IDs
+    $tracking = array();
+    for ($i = 0; $i < 3; $i++) {
+      $tracking[$this->randomName(32)] = 0;
+    }
+
+    // Click a number of links to create some statistics
+    for ($i = 0; $i < 50; $i++) {
+      // Pick one link at random and append an '-i<tracking ID>'
+      $test_link = array_rand($cart_links);
+
+      // Assign one of the tracking IDs
+      $tracking_id = array_rand($tracking);
+      $this->drupalGet($cart_links[$test_link] . '-i' . $tracking_id);
+      // Keep a record of how many links were assigned this key
+      $tracking[$tracking_id] += 1;
+    }
+
+    // Check report to see these clicks have been recorded correctly
+    $this->drupalGet('admin/store/reports/cart-links');
+    $total = 0;
+    foreach ($tracking as $id => $clicks) {
+      $total += $clicks;
+      $this->assertRaw(
+        t('<td>@id</td><td>@clicks</td>', array('@id' => $id, '@clicks' => $clicks)),
+        t('Tracking ID @id received @clicks clicks.', array('@id' => $id, '@clicks' => $clicks))
+      );
+    }
+    $this->assertEqual($total, 50, t('Fifty clicks recorded.'));
 
     $this->drupalLogout();
   }
