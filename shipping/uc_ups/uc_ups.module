@@ -55,7 +55,10 @@ function uc_ups_theme() {
       'file' => 'uc_ups.admin.inc',
     ),
     'uc_ups_option_label' => array(
-      'variables' => array('service' => NULL),
+      'variables' => array(
+        'service'  => NULL,
+        'packages' => NULL,
+      ),
     ),
   );
 }
@@ -937,7 +940,7 @@ function uc_ups_quote($products, $details, $method) {
     if (isset($quote['rate'])) {
       $quotes[$key]['rate'] = $quote['rate'];
       $quotes[$key]['label'] = $method['quote']['accessorials'][$key];
-      $quotes[$key]['option_label'] = theme('uc_ups_option_label', array('service' => $method['quote']['accessorials'][$key]));
+      $quotes[$key]['option_label'] = theme('uc_ups_option_label', array('service' => $method['quote']['accessorials'][$key], 'packages' => $packages));
     }
   }
 
@@ -994,19 +997,26 @@ function uc_ups_quote($products, $details, $method) {
  * Theme function to format the UPS service name and rate amount line-item
  * shown to the customer.
  *
- * @param $service
- *   The UPS service name.
+ * @param $variables
+ *   Associative array containing information needed to theme a quote.
+ *   Contains two keys:
+ *   - service: The UPS service name.
+ *   - packages: Package information.
  *
  * @ingroup themeable
  */
 function theme_uc_ups_option_label($variables) {
   $service = $variables['service'];
+  $packages = $variables['packages'];
 
   // Start with logo as required by the UPS terms of service.
   $output = '<img class="ups-logo" src="' . url(drupal_get_path('module', 'uc_ups')) . '/uc_ups_logo.gif" alt="' . t('UPS Logo') . '" /> ';
 
   // Add the UPS service name.
   $output .= t('@service Rate', array('@service' => $service));
+
+  // Add package information
+  $output .= ' (' . format_plural(count($packages), '1 package', '@count packages') . ')';
 
   return $output;
 }
