@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Cart links menu items.
+ * Cart Links menu items.
  */
 
 /**
- * Preprocesses a cart link and confirm with the user if a destructive action
+ * Preprocesses a Cart Link and confirm with the user if a destructive action
  * is included.
  *
  * @see uc_cart_links_form_submit()
@@ -54,7 +54,7 @@ function uc_cart_links_form_submit($form, &$form_state) {
 }
 
 /**
- * Processes a cart link to fiddle with the cart and redirect the user.
+ * Processes a Cart Link to fiddle with the cart and redirect the user.
  *
  * @param $cart_action
  *   An action.
@@ -67,7 +67,7 @@ function uc_cart_links_process($cart_action) {
 
   foreach ($actions as $action) {
     switch (drupal_substr($action, 0, 1)) {
-      // Set the ID of the cart link.
+      // Set the ID of the Cart Link.
       case 'i':
       case 'I':
         $id = drupal_substr($action, 1);
@@ -145,7 +145,7 @@ function uc_cart_links_process($cart_action) {
             $rebuild_cart = TRUE;
           }
           else {
-            watchdog('uc_cart_link', 'Cart link on %url tried to add an unpublished product to the cart.', array('%url' => uc_referer_uri()), WATCHDOG_ERROR);
+            watchdog('uc_cart_link', 'Cart Link on %url tried to add an unpublished product to the cart.', array('%url' => uc_referer_uri()), WATCHDOG_ERROR);
           }
         }
         break;

@@ -2,18 +2,18 @@
 
 /**
  * @file
- * Cart links administration menu items.
+ * Cart Links administration menu items.
  */
 
 /**
- * Defines a form to configure the cart links settings.
+ * Defines a form to configure the Cart Links settings.
  *
  * @ingroup forms
  */
 function uc_cart_links_settings_form($form, &$form_state) {
   $form['instructions'] = array(
     '#prefix' => '<p>',
-    '#markup' => t('<a href="!url">View the help page</a> to learn how to create cart links.', array('!url' => url('admin/help/uc_cart_links'))),
+    '#markup' => t('<a href="!url">View the help page</a> to learn how to create Cart Links.', array('!url' => url('admin/help/uc_cart_links'))),
     '#suffix' => '</p>',
   );
 
@@ -24,24 +24,24 @@ function uc_cart_links_settings_form($form, &$form_state) {
   );
   $form['uc_cart_links_track'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Track clicks through cart links that specify tracking IDs.'),
+    '#title' => t('Track clicks through Cart Links that specify tracking IDs.'),
     '#default_value' => variable_get('uc_cart_links_track', TRUE),
   );
   $form['uc_cart_links_empty'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Allow cart links to empty customer carts.'),
+    '#title' => t('Allow Cart Links to empty customer carts.'),
     '#default_value' => variable_get('uc_cart_links_empty', TRUE),
   );
   $form['uc_cart_links_messages'] = array(
     '#type' => 'textarea',
-    '#title' => t('Cart links messages'),
-    '#description' => t('Enter messages available to the cart links API for display through a link. Separate messages with a line break. Each message should have a numeric key and text value, separated by "|". For example: 1337|Message text.'),
+    '#title' => t('Cart Links messages'),
+    '#description' => t('Enter messages available to the Cart Links API for display through a link. Separate messages with a line break. Each message should have a numeric key and text value, separated by "|". For example: 1337|Message text.'),
     '#default_value' => variable_get('uc_cart_links_messages', ''),
   );
   $form['uc_cart_links_restrictions'] = array(
     '#type' => 'textarea',
-    '#title' => t('Cart links restrictions'),
-    '#description' => t('To restrict what cart links may be used on your site, enter all valid cart links in this textbox.  Separate links with a line break. Leave blank to permit any cart link.'),
+    '#title' => t('Cart Links restrictions'),
+    '#description' => t('To restrict what Cart Links may be used on your site, enter all valid Cart Links in this textbox.  Separate links with a line break. Leave blank to permit any cart link.'),
     '#default_value' => variable_get('uc_cart_links_restrictions', ''),
   );
   $form['uc_cart_links_invalid_page'] = array(
@@ -57,7 +57,7 @@ function uc_cart_links_settings_form($form, &$form_state) {
 }
 
 /**
- * Displays the cart links report.
+ * Displays the Cart Links report.
  *
  * @return
  *   HTML output.
@@ -87,7 +87,7 @@ function uc_cart_links_report() {
 
   if (empty($rows)) {
     $rows[] = array(
-      array('data' => t('No cart links have been tracked yet.'), 'colspan' => 3),
+      array('data' => t('No Cart Links have been tracked yet.'), 'colspan' => 3),
     );
   }
 
@@ -105,7 +105,7 @@ function uc_cart_links_report() {
 }
 
 /**
- * Provides instructions on how to create cart links.
+ * Provides instructions on how to create Cart Links.
  *
  * @return
  *   Form API array with help text.
@@ -143,7 +143,7 @@ function uc_cart_links_creation_help() {
   $header = array(t('Action'), t('Description'), t('Argument'));
   $rows = array(
     array('p', t('Adds a product to the cart.'), t('A product node number, followed by optional arguments described in the table below.')),
-    array('i', t('Sets the ID of the cart link.'), t('An alphanumeric string to identify the link.')),
+    array('i', t('Sets the ID of the cart link.'), t('An alphanumeric string (32 characters max) to identify the link.')),
     array('m', t('Displays a message to the customer when the link is clicked.'), t('A <a href="!url">numeric message ID</a> to identify which message to display.', array('!url' => url('admin/store/settings/cart-links')))),
     array('e', t('Empties the cart. If used, this should be the first action.'), t('None.')),
   );
