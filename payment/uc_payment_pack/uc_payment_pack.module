@@ -126,7 +126,6 @@ function uc_payment_method_other($op, &$order) {
           ))
           ->execute();
       }
-
       break;
   }
 }
@@ -172,14 +171,16 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
     case 'cart-details':
       $build['policy'] = array('#markup' => '<p>' . variable_get('uc_cod_policy', t('Full payment is expected upon delivery or prior to pick-up.')) . '</p>');
 
-      if (($max = variable_get('uc_cod_max_order', 0)) > 0 && is_numeric($max)) {
-        $build['eligibility'] = array('#markup' => '<p>' . t('Orders totalling more than !number are <b>not eligible</b> for COD.', array('!number' => uc_currency_format($max))) . '</p>');
+      if (($max = variable_get('uc_cod_max_order', 0)) > 0 &&
+           is_numeric($max)) {
+        $build['eligibility'] = array(
+          '#markup' => '<p>' . t('Orders totalling more than !number are <b>not eligible</b> for COD.', array('!number' => uc_currency_format($max))) . '</p>'
+        );
       }
 
       if (variable_get('uc_cod_delivery_date', FALSE)) {
         $build += uc_payment_method_cod_form(array(), $form_state, $order);
       }
-
       return $build;
 
     case 'cart-process':
@@ -189,6 +190,7 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
       return TRUE;
 
     case 'cart-review':
+      $review = array();
       if (variable_get('uc_cod_delivery_date', FALSE)) {
         $date = uc_date_format(
           $order->payment_details['delivery_month'],
@@ -202,7 +204,6 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
     case 'order-view':
     case 'customer-view':
       $build = array('#markup' => '');
-
       if (variable_get('uc_cod_delivery_date', FALSE)) {
         $build['#markup'] = t('Desired delivery date:') . '<br />' .
           uc_date_format(
@@ -211,16 +212,13 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
             $order->payment_details['delivery_year']
           );
       }
-
       return $build;
 
     case 'order-details':
       $build = array();
-
       if (variable_get('uc_cod_delivery_date', FALSE)) {
         $build = uc_strip_form(drupal_get_form('uc_payment_method_cod_form', $order));
       }
-
       return $build;
 
     case 'edit-process':
@@ -251,26 +249,28 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
           ($max = variable_get('uc_cod_max_order', 0)) > 0 &&
           is_numeric($max) &&
           $order->order_total > $max) {
-          $result[] = array(
-            'pass' => FALSE,
-            'message' => t('Your final order total exceeds the maximum for COD payment.  Please go back and select a different method of payment.')
-          );
-          $_SESSION['expanded_panes'][] = 'payment';
-          return $result;
+        $result[] = array(
+          'pass' => FALSE,
+          'message' => t('Your final order total exceeds the maximum for COD payment.  Please go back and select a different method of payment.')
+        );
+        $_SESSION['expanded_panes'][] = 'payment';
+        return $result;
       }
+      // TODO: This falls through to the order-save case - is this deliberate?
+      // If so, it should be documented.
 
     case 'order-save':
       if (isset($order->payment_details['delivery_month']) &&
           isset($order->payment_details['delivery_day'])   &&
           isset($order->payment_details['delivery_year'])    ) {
-          db_merge('uc_payment_cod')
-            ->key(array('order_id' => $order->order_id))
-            ->fields(array(
-              'delivery_month' => $order->payment_details['delivery_month'],
-              'delivery_day'   => $order->payment_details['delivery_day'],
-              'delivery_year'  => $order->payment_details['delivery_year'],
-            ))
-            ->execute();
+        db_merge('uc_payment_cod')
+          ->key(array('order_id' => $order->order_id))
+          ->fields(array(
+            'delivery_month' => $order->payment_details['delivery_month'],
+            'delivery_day'   => $order->payment_details['delivery_day'],
+            'delivery_year'  => $order->payment_details['delivery_year'],
+          ))
+          ->execute();
       }
       break;
 
@@ -394,7 +394,6 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
       $build['policy'] = array(
         '#markup' => '<p>' . variable_get('uc_check_policy', '') . '</p>'
       );
-
       return $build;
 
     case 'cart-review':
@@ -442,18 +441,15 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
       else {
         $build['#markup'] = l(t('Receive Check'), 'admin/store/orders/' . $order->order_id . '/receive_check');
       }
-
       return $build;
 
     case 'customer-view':
       $build = array();
-
       $result = db_query("SELECT clear_date FROM {uc_payment_check} WHERE order_id = :id ", array(':id' => $order->order_id));
       if ($clear_date = $result->fetchField()) {
         $build['#markup'] = t('Check received') . '<br />' .
           t('Expected clear date:') . '<br />' . format_date($clear_date, 'uc_store');
       }
-
       return $build;
 
     case 'settings':
