@@ -8,8 +8,8 @@
 /**
  * UPS Online Tool settings.
  *
- * Records UPS account information neccessary to use the service. Allow testing
- * or production mode. Configure which UPS services are quoted to customers.
+ * Records UPS account information neccessary to use the service. Allows testing
+ * or production mode. Configures which UPS services are quoted to customers.
  *
  * @see uc_admin_settings_validate()
  * @ingroup forms
@@ -443,8 +443,9 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
     $package =& current($shipment->packages);
     $package->tracking_number = (string)$package_results->TrackingNumber;
     $label_image = (string)$package_results->LabelImage->GraphicImage;
-    if (file_preprare_directory('public://ups_labels', FILE_CREATE_DIRECTORY)) {
-      $label_path = 'public://ups_labels/label' . $package->tracking_number . '.gif';
+    $directory = 'public://ups_labels';
+    if (file_prepare_directory($directory, FILE_CREATE_DIRECTORY)) {
+      $label_path = $directory . '/label' . $package->tracking_number . '.gif';
       if ($label_file = file_save_data(base64_decode($label_image), $label_path, FILE_EXISTS_REPLACE)) {
         file_usage_add($label_file, 'uc_shipping', 'package', $package->package_id);
         $package->label_image = $label_file;
@@ -454,7 +455,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
       }
     }
     else {
-      drupal_set_message(t('Could not find or create the directory "ups_labels" in the file system path.'), 'error');
+      drupal_set_message(t('Could not find or create the directory %directory in the file system path.', array('%directory' => $directory)), 'error');
     }
     unset($package);
     next($shipment->packages);
