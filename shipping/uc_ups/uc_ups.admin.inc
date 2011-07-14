@@ -403,12 +403,12 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
     'data' => $request,
   ));
   $response = new SimpleXMLElement($result->data);
-  $code = (string)$response->Response->ResponseStatusCode;
+  $code = (string) $response->Response->ResponseStatusCode;
   if ($code == 0) { // failed request
     $error = $response->Response->Error;
-    $error_severity = (string)$error->ErrorSeverity;
-    $error_code = (string)$error->ErrorCode;
-    $error_description = (string)$error->ErrorDescription;
+    $error_severity = (string) $error->ErrorSeverity;
+    $error_code = (string) $error->ErrorCode;
+    $error_description = (string) $error->ErrorDescription;
     drupal_set_message(t('(@severity error @code) @description', array('@severity' => $error_severity, '@code' => $error_code, '@description' => $error_description)), 'error');
     if ($error_severity == 'HardError') {
       $form_state['redirect'] = 'admin/store/orders/' . $order_id . '/shipments/ups/' . implode('/', $packages);
@@ -431,9 +431,9 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
       $charge = $response->ShipmentResults->NegotiatedRates->NetSummaryCharges->GrandTotal;
     }
   }
-  $cost = (string)$charge->MonetaryValue;
+  $cost = (string) $charge->MonetaryValue;
   $shipment->cost = $cost;
-  $shipment->tracking_number = (string)$response->ShipmentResults->ShipmentIdentificationNumber;
+  $shipment->tracking_number = (string) $response->ShipmentResults->ShipmentIdentificationNumber;
   $ship_date = $_SESSION['ups']['ship_date'];
   $shipment->ship_date = gmmktime(12, 0, 0, $ship_date['month'], $ship_date['day'], $ship_date['year']);
   $exp_delivery = $_SESSION['ups']['expected_delivery'];
@@ -441,8 +441,9 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
 
   foreach ($response->ShipmentResults->PackageResults as $package_results) {
     $package =& current($shipment->packages);
-    $package->tracking_number = (string)$package_results->TrackingNumber;
-    $label_image = (string)$package_results->LabelImage->GraphicImage;
+    $package->tracking_number = (string) $package_results->TrackingNumber;
+    $label_image = (string) $package_results->LabelImage->GraphicImage;
+    // Save the label
     $directory = 'public://ups_labels';
     if (file_prepare_directory($directory, FILE_CREATE_DIRECTORY)) {
       $label_path = $directory . '/label' . $package->tracking_number . '.gif';
