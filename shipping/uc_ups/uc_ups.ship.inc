@@ -34,13 +34,15 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
           $addresses[] = $address;
         }
       }
-      // Create list of products and get a representative product for default values
+      // Create list of products and get a representative product (last one in
+      // the loop) to use for some default values
       $product_list = array();
       $declared_value = 0;
       foreach ($package->products as $product) {
         $product_list[] = $product->qty . ' x ' . $product->model;
         $declared_value += $product->qty * $product->price;
       }
+      // Use last product in package to determine package type
       $ups_data = db_query("SELECT pkg_type FROM {uc_ups_products} WHERE nid = :nid", array(':nid' => $product->nid))->fetchAssoc();
       $product->ups = $ups_data;
       $pkg_form = array('#type' => 'fieldset',
@@ -159,30 +161,51 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
     $method = $services[$default_service];
   }
 
-  // Inform user of customer's shipping choice
-  $form['shipping_choice'] = array(
-    '#markup' => t('Customer selected @method as the shipping method and paid @rate', array('@method' => $method, '@rate' => uc_currency_format($order->quote['rate']))),
+  // Container for shipment data
+  $form['shipment'] = array(
+    '#type'        => 'fieldset',
+    '#title'       => t('Shipment data'),
+    '#collapsible' => TRUE,
   );
 
-  $form['service'] = array(
+  // Inform user of customer's shipping choice
+  $form['shipment']['shipping_choice'] = array(
+    '#type'   => 'markup',
+    '#prefix' => '<div>',
+    '#markup' => t('Customer selected @method as the shipping method and paid @rate', array('@method' => $method, '@rate' => uc_currency_format($order->quote['rate']))),
+    '#suffix' => '</div>',
+  );
+
+  $form['shipment']['service'] = array(
     '#type' => 'select',
     '#title' => t('UPS service'),
     '#options' => $services,
     '#default_value' => $default_service,
   );
   $today = getdate();
-  $form['ship_date'] = array(
+  $form['shipment']['ship_date'] = array(
     '#type' => 'date',
     '#title' => t('Ship date'),
-    '#default_value' => array('year' => $today['year'], 'month' => $today['mon'], 'day' => $today['mday']),
+    '#default_value' => array(
+      'year' => $today['year'],
+      'month' => $today['mon'],
+      'day' => $today['mday']
+    ),
   );
-  $form['expected_delivery'] = array(
+  $form['shipment']['expected_delivery'] = array(
     '#type' => 'date',
     '#title' => t('Expected delivery'),
-    '#default_value' => array('year' => $today['year'], 'month' => $today['mon'], 'day' => $today['mday']),
+    '#default_value' => array(
+      'year' => $today['year'],
+      'month' => $today['mon'],
+      'day' => $today['mday']
+    ),
   );
   $form['actions'] = array('#type' => 'actions');
-  $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Review shipment'));
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Review shipment')
+  );
 
   return $form;
 }
@@ -641,7 +664,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
     // Save the label
     $directory = 'public://ups_labels';
     if (file_prepare_directory($directory, FILE_CREATE_DIRECTORY)) {
-      $label_path = $directory . '/label' . $package->tracking_number . '.gif';
+      $label_path = $directory . '/label-' . $package->tracking_number . '.gif';
       if ($label_file = file_save_data(base64_decode($label_image), $label_path, FILE_EXISTS_REPLACE)) {
         file_usage_add($label_file, 'uc_shipping', 'package', $package->package_id);
         $package->label_image = $label_file;

@@ -231,6 +231,26 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#disabled' => TRUE,
   );
 
+  // Container for label printing
+  $form['uc_ups_labels'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => t('Label Printing'),
+    '#description'   => t('Preferences for UPS Shipping Label Printing.  Additional permissions from UPS are required to use this feature.'),
+    '#collapsible'   => TRUE,
+    '#collapsed'     => TRUE,
+  );
+
+  $period = drupal_map_assoc(array(86400, 302400, 604800, 1209600, 2419200), 'format_interval');
+
+  // Form to select how long labels stay on server
+  $form['uc_ups_labels']['uc_ups_label_lifetime'] = array(
+    '#type'          => 'select',
+    '#title'         => t('Label lifetime'),
+    '#default_value' => variable_get('uc_ups_label_lifetime', 604800),
+    '#options'       => $period,
+    '#description'   => t('Controls how long labels are stored on the server before being automatically deleted. Cron must be enabled for automatic deletion. Default period is 1 week (604800 seconds).'),
+  );
+
   // Taken from system_settings_form(). Only, don't use its submit handler.
   $form['actions']['#type'] = 'actions';
   $form['actions']['submit'] = array(

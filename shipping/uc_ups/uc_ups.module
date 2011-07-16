@@ -42,6 +42,26 @@ function uc_ups_menu() {
 }
 
 /**
+ * Implements hook_cron().
+ *
+ * Deletes UPS shipping labels from the file system automatically
+ * on a periodic basis.  Default period is 1 week.
+ */
+function uc_ups_cron() {
+  $cutoff = REQUEST_TIME - variable_get('uc_ups_label_lifetime', 604800);
+
+  // Loop over label files in public://ups_labels and test
+  // creation date against 'uc_ups_label_lifetime'
+  $files = file_scan_directory('public://ups_labels', '/^label-/');
+  foreach ($files as $file) {
+    if ($cutoff > filectime($file->uri)) {
+      drupal_unlink($file->uri);
+      watchdog('uc_ups', 'Removed uc_ups label file @file.', array('@file' => $file->uri), WATCHDOG_NOTICE);
+    }
+  }
+}
+
+/**
  * Implements hook_theme().
  */
 function uc_ups_theme() {
