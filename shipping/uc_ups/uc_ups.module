@@ -48,7 +48,11 @@ function uc_ups_menu() {
  * on a periodic basis.  Default period is 1 week.
  */
 function uc_ups_cron() {
-  $cutoff = REQUEST_TIME - variable_get('uc_ups_label_lifetime', 604800);
+  $cutoff = REQUEST_TIME - variable_get('uc_ups_label_lifetime', 0);
+  if ($cutoff == REQUEST_TIME) {
+    // Label lifetime is set to 0, meaning never delete
+    return;
+  }
 
   // Loop over label files in public://ups_labels and test
   // creation date against 'uc_ups_label_lifetime'

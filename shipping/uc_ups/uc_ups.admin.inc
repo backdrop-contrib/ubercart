@@ -240,15 +240,16 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#collapsed'     => TRUE,
   );
 
-  $period = drupal_map_assoc(array(86400, 302400, 604800, 1209600, 2419200), 'format_interval');
+  $period = drupal_map_assoc(array(86400, 302400, 604800, 1209600, 2419200, 0), 'format_interval');
+  $period[0] = t('Forever');
 
   // Form to select how long labels stay on server
   $form['uc_ups_labels']['uc_ups_label_lifetime'] = array(
     '#type'          => 'select',
     '#title'         => t('Label lifetime'),
-    '#default_value' => variable_get('uc_ups_label_lifetime', 604800),
+    '#default_value' => variable_get('uc_ups_label_lifetime', 0),
     '#options'       => $period,
-    '#description'   => t('Controls how long labels are stored on the server before being automatically deleted. Cron must be enabled for automatic deletion. Default period is 1 week (604800 seconds).'),
+    '#description'   => t('Controls how long labels are stored on the server before being automatically deleted. Cron must be enabled for automatic deletion. Default is never delete the labels, keep them forever.'),
   );
 
   // Taken from system_settings_form(). Only, don't use its submit handler.
