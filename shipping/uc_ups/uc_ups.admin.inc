@@ -321,6 +321,7 @@ function uc_ups_admin_settings_submit($form, &$form_state) {
     'uc_ups_rate_markup',
     'uc_ups_weight_markup_type',
     'uc_ups_weight_markup',
+    'uc_ups_label_lifetime',
     'uc_ups_all_in_one',
     'uc_ups_unit_system',
     'uc_ups_insurance',
