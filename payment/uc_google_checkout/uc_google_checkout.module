@@ -712,7 +712,7 @@ function uc_google_checkout_send_request($api, $request) {
     'method' => 'POST',
     'data' => $request,
   ));
-  if ($response_obj->error) {
+  if (isset($response_obj->error)) {
     watchdog('google', '@error', array('@error' => $response_obj->error), WATCHDOG_ERROR);
   }
   $response = new SimpleXMLElement($response_obj->data);
@@ -731,10 +731,9 @@ function uc_google_checkout_send_request($api, $request) {
    * Copied from http://drupal.org/node/70915.
    */
   $messages = drupal_set_message();
-  $errors = $messages['error'];
-  $total = count($errors);
-  for ($i = 0; $i <= $total; $i++) {
-    if (strpos($errors[$i], 'SSL: fatal protocol error in')) {
+  $errors = isset($messages['error']) ? $messages['error'] : array();
+  foreach ($errors as $i => $error) {
+    if (strpos($error, 'SSL: fatal protocol error in')) {
       unset($_SESSION['messages']['error'][$i]);
     }
   }
