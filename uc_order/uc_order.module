@@ -467,7 +467,6 @@ function uc_order_entity_info() {
       'label' => t('Order'),
       'controller class' => 'UcOrderController',
       'base table' => 'uc_orders',
-      'uri callback' => 'uc_order_uri',
       'fieldable' => TRUE,
       'entity keys' => array(
         'id' => 'order_id',
@@ -495,10 +494,12 @@ function uc_order_entity_info() {
           'label' => t('Print invoice'),
         ),
       ),
-      'access callback' => 'uc_order_order_entity_access',
+      'uri callback' => 'uc_order_uri',
+      // Entity API callbacks
+      'access callback'   => 'uc_order_order_entity_access',
       'creation callback' => 'uc_order_new',
-      'save callback' => 'uc_order_save',
-      'delete callback' => 'uc_order_delete',
+      'save callback'     => 'uc_order_save',
+      'delete callback'   => 'uc_order_delete',
     ),
     'uc_order_product' => array(
       'label' => t('Order product'),
@@ -511,8 +512,9 @@ function uc_order_entity_info() {
           'label' => t('Order product'),
         ),
       ),
+      // Entity API callbacks
       'access callback' => 'uc_order_order_product_access',
-      'save callback' => 'uc_order_product_entity_save',
+      'save callback'   => 'uc_order_product_entity_save',
       'delete callback' => 'uc_order_product_delete',
     ),
   );
@@ -767,7 +769,7 @@ function uc_order_uc_invoice_templates() {
  ******************************************************************************/
 
 /**
- * Theme the order state table in the order workflow settings.
+ * Themes the order state table in the order workflow settings.
  *
  * @ingroup themeable
  */
@@ -787,7 +789,7 @@ function theme_uc_order_state_table($variables) {
 }
 
 /**
- * Theme the order state table in the order workflow settings.
+ * Themes the order state table in the order workflow settings.
  *
  * @ingroup themeable
  */
@@ -996,7 +998,17 @@ function uc_order_search_form_submit($form, &$form_state) {
  ******************************************************************************/
 
 /**
+ * Entity API "access callback" for uc_order entity.
  *
+ * Checks order access for various operations.
+ *
+ * @param $op
+ *   The operation being performed. One of 'view', 'update', 'create' or
+ *   'delete'.
+ * @param $order
+ *   Optionally an order to check access for.
+ * @param $account
+ *   The user to check for. Leave it to NULL to check for the current user.
  */
 function uc_order_order_entity_access($op, $order = NULL, $account = NULL) {
   if ($op == 'delete') {
@@ -1022,6 +1034,8 @@ function uc_order_order_entity_access($op, $order = NULL, $account = NULL) {
 }
 
 /**
+ * Entity API "creation callback" for uc_order entity.
+ *
  * Generates a new order for user $uid.
  */
 function uc_order_new($uid = 0, $state = 'in_checkout') {
@@ -1046,6 +1060,8 @@ function uc_order_new($uid = 0, $state = 'in_checkout') {
 }
 
 /**
+ * Entity API "save callback" for uc_order entity.
+ *
  * Saves an order to the database.
  */
 function uc_order_save($order) {
@@ -1092,7 +1108,59 @@ function uc_order_save($order) {
 }
 
 /**
+ * Entity API "delete callback" for uc_order entity.
  *
+ * Deletes an order and tells other modules to do the same.
+ *
+ * @param $order_id
+ *   The ID of the order you wish to delete.
+ */
+function uc_order_delete($order_id) {
+  global $user;
+
+  $order = uc_order_load($order_id);
+
+  // Perform the operations if we're deleting a valid order.
+  if ($order !== FALSE) {
+    uc_order_module_invoke('delete', $order, NULL);
+
+    // Delete data from the appropriate Ubercart order tables.
+    db_delete('uc_orders')
+      ->condition('order_id', $order_id)
+      ->execute();
+    db_delete('uc_order_products')
+      ->condition('order_id', $order_id)
+      ->execute();
+    db_delete('uc_order_comments')
+      ->condition('order_id', $order_id)
+      ->execute();
+    db_delete('uc_order_admin_comments')
+      ->condition('order_id', $order_id)
+      ->execute();
+    db_delete('uc_order_log')
+      ->condition('order_id', $order_id)
+      ->execute();
+
+    // Delete line items for the order.
+    uc_order_delete_line_item($order_id, TRUE);
+
+    // Log the action in the database.
+    watchdog('uc_order', 'Order @order_id deleted by user @uid.', array('@order_id' => $order_id, '@uid' => $user->uid));
+  }
+}
+
+/**
+ * Entity API "access callback" for uc_order_product entity.
+ *
+ * Checks order product access for various operations.
+ *
+ * @param $op
+ *   The operation being performed. One of 'view', 'update', 'create' or
+ *   'delete'.
+ * @param $order
+ *   Optionally an order to check access for.
+ * @param $account
+ *   The user to check for. Leave it to NULL to check for the current user.
  */
 function uc_order_order_product_access($op, $product = NULL, $account = NULL) {
   if (isset($product) && $product->order_id) {
@@ -1104,6 +1172,8 @@ function uc_order_order_product_access($op, $product = NULL, $account = NULL) {
 }
 
 /**
+ * Entity API "save callback" for uc_order_product entity.
+ *
  * Saves a product to an order.
  */
 function uc_order_product_save($order_id, $product) {
@@ -1130,14 +1200,20 @@ function uc_order_product_entity_save($product) {
 }
 
 /**
+ * Entity API "delete callback" for uc_order_product entity.
+ *
  * Removes a product from an order.
  */
 function uc_order_product_delete($order_product_id) {
+  // Allow other modules to take action before the product is removed
+  // from the order.  If the hook is involved after the item is deleted
+  // from {uc_order_products} then $order_product_id will be pointing to
+  // the deleted row, and will be useless.
+  module_invoke_all('uc_order_product_delete', $order_product_id);
+
   db_delete('uc_order_products')
     ->condition('order_product_id', $order_product_id)
     ->execute();
-
-  module_invoke_all('uc_order_product_delete', $order_product_id);
 }
 
 /**
@@ -1220,7 +1296,7 @@ function uc_order_view_invoice($order, $print = FALSE) {
 }
 
 /**
- *
+ * Controller class for uc_order entity.
  */
 class UcOrderController extends DrupalDefaultEntityController {
 
@@ -1275,7 +1351,7 @@ class UcOrderController extends DrupalDefaultEntityController {
 }
 
 /**
- * Loads an order from the database.
+ * Loads one order entity from the database.
  */
 function uc_order_load($order_id, $reset = FALSE) {
   if (is_null($order_id) || $order_id < 1) {
@@ -1288,7 +1364,7 @@ function uc_order_load($order_id, $reset = FALSE) {
 }
 
 /**
- * Loads order entities form the database.
+ * Loads one or more order entities from the database.
  *
  * @param $ids
  *   An array of order IDs.
@@ -1301,46 +1377,6 @@ function uc_order_load($order_id, $reset = FALSE) {
  */
 function uc_order_load_multiple($ids, $conditions = array(), $reset = FALSE) {
   return entity_load('uc_order', $ids, $conditions, $reset);
-}
-
-/**
- * Deletes an order and tells other modules to do the same.
- *
- * @param $order_id
- *   The ID of the order you wish to delete.
- */
-function uc_order_delete($order_id) {
-  global $user;
-
-  $order = uc_order_load($order_id);
-
-  // Perform the operations if we're deleting a valid order.
-  if ($order !== FALSE) {
-    uc_order_module_invoke('delete', $order, NULL);
-
-    // Delete data from the appropriate Ubercart order tables.
-    db_delete('uc_orders')
-      ->condition('order_id', $order_id)
-      ->execute();
-    db_delete('uc_order_products')
-      ->condition('order_id', $order_id)
-      ->execute();
-    db_delete('uc_order_comments')
-      ->condition('order_id', $order_id)
-      ->execute();
-    db_delete('uc_order_admin_comments')
-      ->condition('order_id', $order_id)
-      ->execute();
-    db_delete('uc_order_log')
-      ->condition('order_id', $order_id)
-      ->execute();
-
-    // Delete line items for the order.
-    uc_order_delete_line_item($order_id, TRUE);
-
-    // Log the action in the database.
-    watchdog('uc_order', 'Order @order_id deleted by user @uid.', array('@order_id' => $order_id, '@uid' => $user->uid));
-  }
 }
 
 /**
@@ -1619,7 +1655,7 @@ function uc_order_exists($order_id) {
 }
 
 /**
- * Calculates up an order's total!
+ * Calculates an order's total!
  */
 function uc_order_get_total($order, $products_only = FALSE) {
   $total = 0;
@@ -1653,7 +1689,7 @@ function uc_order_get_total($order, $products_only = FALSE) {
 }
 
 /**
- * Calculates up an order's product count
+ * Calculates an order's product count.
  */
 function uc_order_get_product_count($order) {
   $count = 0;
@@ -2083,9 +2119,9 @@ function uc_order_actions($order, $icon_html = FALSE) {
 }
 
 /**
- * Return TRUE if an order can be deleted by the current user.
- *
  * Access callback for admin/store/orders/%uc_order/delete.
+ *
+ * Returns TRUE if an order can be deleted by the current user.
  */
 function uc_order_can_delete($order, $account = NULL) {
   if (user_access('unconditionally delete orders', $account)) {
