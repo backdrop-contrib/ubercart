@@ -176,6 +176,13 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
     '#suffix' => '</div>',
   );
 
+  // Pass shipping charge paid information on to validation function so it
+  // can be displayed alongside actual costs
+  $form['shipment']['paid'] = array(
+    '#type'  => 'value',
+    '#value' => uc_currency_format($order->quote['rate']),
+  );
+
   $services = _uc_ups_service_list();
   $default_service = '';
   if ($method == 'ups') {
@@ -265,7 +272,7 @@ function uc_ups_fulfill_order_validate($form, &$form_state) {
 
   $_SESSION['ups']['destination'] = $destination;
   foreach ($form_state['values']['packages'] as $id => $pkg_form) {
-    $package = uc_shipping_package_load($id);
+    $package               = uc_shipping_package_load($id);
     $package->pkg_type     = $pkg_form['pkg_type'];
     $package->value        = $pkg_form['declared_value'];
     $package->weight       = $pkg_form['weight']['weight'];
@@ -277,8 +284,9 @@ function uc_ups_fulfill_order_validate($form, &$form_state) {
     $package->qty          = 1;
     $_SESSION['ups']['packages'][$id] = $package;
   }
-  $_SESSION['ups']['service'] = $form_state['values']['service'];
-  $_SESSION['ups']['ship_date'] = $form_state['values']['ship_date'];
+  $_SESSION['ups']['service']           = $form_state['values']['service'];
+  $_SESSION['ups']['paid']              = $form_state['values']['paid'];
+  $_SESSION['ups']['ship_date']         = $form_state['values']['ship_date'];
   $_SESSION['ups']['expected_delivery'] = $form_state['values']['expected_delivery'];
   $_SESSION['ups']['order_id'] = $form_state['values']['order_id'];
 
@@ -600,7 +608,8 @@ function theme_uc_ups_confirm_shipment($variables) {
   $output .= '<div class="shipment-data">';
   $method = uc_ups_uc_shipping_method();
   $output .= '<b>' . $method['ups']['quote']['accessorials'][$_SESSION['ups']['service']] . '</b><br />';
-  $output .= '<i>' . check_plain($_SESSION['ups']['rate']['type']) . '</i>: ' . theme('uc_price', array('price' => $_SESSION['ups']['rate']['amount'])) . ' (' . check_plain($_SESSION['ups']['rate']['currency']) . ')<br />';
+  $output .= '<i>' . check_plain($_SESSION['ups']['rate']['type']) . '</i>: ' . theme('uc_price', array('price' => $_SESSION['ups']['rate']['amount'])) . ' (' . check_plain($_SESSION['ups']['rate']['currency']) . ') -- ';
+  $output .= '<i>' . t('Paid') . '</i>: ' . $_SESSION['ups']['paid'] . '<br />';
   $ship_date = $_SESSION['ups']['ship_date'];
   $output .= 'Ship date: ' . format_date(gmmktime(12, 0, 0, $ship_date['month'], $ship_date['day'], $ship_date['year']), 'uc_store');
   $exp_delivery = $_SESSION['ups']['expected_delivery'];
