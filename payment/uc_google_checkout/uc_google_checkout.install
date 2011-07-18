@@ -148,17 +148,19 @@ function uc_google_checkout_schema() {
 function uc_google_checkout_install() {
   $t = get_t();
 
-  db_insert('uc_order_statuses')
-    ->fields(array('order_status_id', 'title', 'state', 'weight', 'locked'))
-    ->values(array(
-      'order_status_id' => 'in_google_checkout',
+  db_merge('uc_order_statuses')
+    ->key(array('order_status_id' => 'in_google_checkout'))
+    ->fields(array(
       'title' => $t('In Google Checkout'),
       'state' => 'in_checkout',
       'weight' => -7,
       'locked' => 1,
     ))
-    ->values(array(
-      'order_status_id' => 'chargeable',
+    ->execute();
+
+  db_merge('uc_order_statuses')
+    ->key(array('order_status_id' => 'chargeable'))
+    ->fields(array(
       'title' => $t('Chargeable'),
       'state' => 'post_checkout',
       'weight' => 2,
