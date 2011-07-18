@@ -9,6 +9,7 @@
  * Displays a list of an order's packaged products.
  */
 function uc_shipping_order_packages($order) {
+  $shipping_type_options = uc_quote_shipping_type_options();
   $header = array(t('Package ID'), t('Products'), t('Shipping type'), t('Package type'), t('Shipment ID'), t('Tracking number'), t('Labels'), array('data' => t('Actions'), 'colspan' => 4));
   $rows = array();
   $result = db_query("SELECT * FROM {uc_packages} WHERE order_id = :id", array(':id' => $order->order_id));
@@ -24,7 +25,7 @@ function uc_shipping_order_packages($order) {
     }
 
     $row[] = '<ul><li>' . implode('</li><li>', $product_list) . '</li></ul>';
-    $row[] = strtr($package->shipping_type, '_', ' ');
+    $row[] = isset($shipping_type_options[$package->shipping_type]) ? $shipping_type_options[$package->shipping_type] : strtr($package->shipping_type, '_', ' ');
     $row[] = check_plain($package->pkg_type);
     $row[] = isset($package->sid) ? l($package->sid, 'admin/store/orders/' . $order->order_id . '/shipments/' . $package->sid . '/view') : '';
     $row[] = isset($package->tracking_number) ? check_plain($package->tracking_number) : '';
@@ -101,9 +102,10 @@ function uc_shipping_new_package($form, &$form_state, $order) {
   $packaged_products = $result->fetchAllKeyed();
 
   $form['shipping_types'] = array();
+  $shipping_type_options = uc_quote_shipping_type_options();
   foreach ($shipping_types_products as $shipping_type => $products) {
     $form['shipping_types'][$shipping_type] = array('#type' => 'fieldset',
-      '#title' => ucwords(str_replace('_', ' ', $shipping_type)),
+      '#title' => isset($shipping_type_options[$shipping_type]) ? $shipping_type_options[$shipping_type] : ucwords(str_replace('_', ' ', $shipping_type)),
       '#collapsible' => TRUE,
       '#collapsed' => FALSE,
       '#weight' => $shipping_type_weights[$shipping_type],
@@ -307,8 +309,9 @@ function uc_shipping_package_edit($form, &$form_state, $order, $package) {
   }
   $form['products']['#theme'] = 'uc_shipping_edit_package_fieldset';
   $options = array();
+  $shipping_type_options = uc_quote_shipping_type_options();
   foreach (array_keys($shipping_types_products) as $type) {
-    $options[$type] = ucwords(str_replace('_', ' ', $type));
+    $options[$type] = isset($shipping_type_options[$type]) ? $shipping_type_options[$type] : ucwords(str_replace('_', ' ', $type));
   }
   $form['shipping_type'] = array('#type' => 'select',
     '#title' => t('Shipping type'),
@@ -372,7 +375,7 @@ function uc_shipping_package_edit_submit($form, &$form_state) {
 }
 
 /**
- * Confirm cancellation of a package's shipment.
+ * Confirms cancellation of a package's shipment.
  *
  * @see uc_shipping_package_cancel_confirm_submit()
  * @ingroup forms
@@ -581,7 +584,7 @@ function uc_shipping_new_shipment($form, &$form_state, $order) {
 }
 
 /**
- * Format and display the new shipment form.
+ * Formats and displays the new shipment form.
  *
  * @see uc_shipping_new_shipment()
  * @ingroup themeable
