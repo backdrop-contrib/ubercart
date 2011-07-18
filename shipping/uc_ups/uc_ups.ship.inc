@@ -153,12 +153,12 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
     $form['destination'][$field]['#required'] = TRUE;
   }
 
-  $services = _uc_ups_service_list();
-  $default_service = '';
-  $method = $order->quote['method'];
-  if ($method == 'ups') {
-    $default_service = $order->quote['accessorials'];
-    $method = $services[$default_service];
+  // Determine shipping option chosen by the customer
+  $method  = $order->quote['method'];
+  $methods = module_invoke_all('uc_shipping_method');
+  if (isset($methods[$method])) {
+    $services = $methods[$method]['quote']['accessorials'];
+    $method   = $services[$order->quote['accessorials']];
   }
 
   // Container for shipment data
@@ -172,9 +172,15 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
   $form['shipment']['shipping_choice'] = array(
     '#type'   => 'markup',
     '#prefix' => '<div>',
-    '#markup' => t('Customer selected @method as the shipping method and paid @rate', array('@method' => $method, '@rate' => uc_currency_format($order->quote['rate']))),
+    '#markup' => t('Customer selected "@method" as the shipping method and paid @rate', array('@method' => $method, '@rate' => uc_currency_format($order->quote['rate']))),
     '#suffix' => '</div>',
   );
+
+  $services = _uc_ups_service_list();
+  $default_service = '';
+  if ($method == 'ups') {
+    $default_service = $order->quote['accessorials'];
+  }
 
   $form['shipment']['service'] = array(
     '#type' => 'select',
