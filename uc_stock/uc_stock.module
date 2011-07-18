@@ -163,12 +163,14 @@ function uc_stock_uc_order_product_delete($order_product_id) {
  *   The product SKU of the stock level to adjust.
  * @param $qty
  *   The amount to add to or subtract from the stock level.
+ * @param $check_active
+ *   If FALSE, don't check if stock tracking is active for this SKU.
  */
 function uc_stock_adjust($sku, $qty, $check_active = TRUE) {
   $stock = db_query("SELECT active, stock FROM {uc_product_stock} WHERE sku = :sku", array(':sku' => $sku))->fetchObject();
 
   if ($check_active) {
-    if (!$stock->active) {
+    if (!$stock || !$stock->active) {
       return;
     }
   }
