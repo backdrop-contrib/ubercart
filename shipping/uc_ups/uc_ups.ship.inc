@@ -228,6 +228,14 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
  * @see uc_ups_confirm_shipment()
  */
 function uc_ups_fulfill_order_validate($form, &$form_state) {
+
+  $errors = form_get_errors();
+  if (isset($errors)) {
+    // Some required elements are missing - don't bother with making
+    // a UPS API call until that gets fixed.
+    return;
+  }
+
   $origin = new stdClass();
   $destination = new stdClass();
   $packages = array();
