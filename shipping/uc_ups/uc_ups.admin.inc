@@ -12,6 +12,7 @@
  * or production mode. Configures which UPS services are quoted to customers.
  *
  * @see uc_admin_settings_validate()
+ * @see uc_admin_settings_submit()
  * @ingroup forms
  */
 function uc_ups_admin_settings($form, &$form_state) {
