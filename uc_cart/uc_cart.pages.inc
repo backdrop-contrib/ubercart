@@ -146,6 +146,8 @@ function uc_cart_checkout_form($form, &$form_state) {
     $order->products = uc_cart_get_contents();
   }
 
+  $order->products = uc_cart_get_contents();
+
   $form['panes'] = array('#tree' => TRUE);
   $panes = _uc_checkout_pane_list();
 
@@ -277,7 +279,6 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
 
   if (empty($form_state['storage']['order'])) {
     $order = uc_order_new($user->uid);
-    $form_state['storage']['order'] = $order;
   }
   else {
     $order = $form_state['storage']['order'];
@@ -308,9 +309,7 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
   $order->line_items = array_merge($order->line_items, uc_order_load_line_items($order, FALSE));
   usort($order->line_items, 'uc_weight_sort');
 
-  uc_order_save($order);
-
-  $form_state['storage']['order'] = uc_order_load($order->order_id, TRUE);
+  $form_state['storage']['order'] = $order;
 }
 
 /**
@@ -320,6 +319,9 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
  * @see uc_cart_checkout_form_validate()
  */
 function uc_cart_checkout_form_submit($form, &$form_state) {
+  $order = $form_state['storage']['order'];
+  uc_order_save($order);
+
   if ($form_state['checkout_valid'] === FALSE) {
     $url = 'cart/checkout';
   }
