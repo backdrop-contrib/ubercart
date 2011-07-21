@@ -64,9 +64,15 @@ function uc_google_checkout_settings($form, &$form_state) {
   $form['messages']['uc_google_checkout_order_cancel_reason'] = array(
     '#type' => 'textarea',
     '#title' => t('Reason for canceling order'),
-    '#description' => t('This message will be sent with the cancelation notice through Google Checkout. Any comment given when the order is canceled will be sent as a separate message. This message uses <a href="!url">site, store, and order tokens</a>.', array('!url' => 'admin/store/help/tokens')),
+    '#description' => t('This message will be sent with the cancelation notice through Google Checkout. Any comment given when the order is canceled will be sent as a separate message.'),
     '#default_value' => variable_get('uc_google_checkout_order_cancel_reason', t('Order canceled. See order comments at [uc_order:url] for more information.')),
   );
+
+  if (module_exists('token')) {
+    $form['messages']['token_tree'] = array(
+      '#markup' => theme('token_tree', array('token_types' => array('uc_order', 'site', 'store'))),
+    );
+  }
 
   $form['button'] = array(
     '#type' => 'fieldset',

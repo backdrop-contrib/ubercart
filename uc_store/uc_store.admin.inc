@@ -375,39 +375,6 @@ function uc_store_configuration_page() {
 }
 
 /**
- * Displays store help page.
- */
-function uc_store_ubercart_help() {
-  $build = array();
-  $build['description'] = array(
-    '#markup' => '<p>' . t('Use the following links to find documentation and support:') . '</p>',
-  );
-
-  $items = array();
-  $items[] = l(t("Ubercart User's Guide"), 'http://www.ubercart.org/docs/user');
-  $items[] = l(t('Support Forums'), 'http://www.ubercart.org/forum');
-  $items[] = l(t('Drupal Handbook'), 'http://drupal.org/node/258');
-  $build['links'] = array(
-    '#theme' => 'item_list',
-    '#items' => $items,
-  );
-
-  return $build;
-}
-
-/**
- * Displays the tokens help page.
- */
-function uc_store_ubercart_help_tokens() {
-  $build = array();
-  $build['description'] = array(
-    '#markup' => '<p>' . t('Tokens are bracketed phrases you can use in certain text fields and boxes as placeholders for some other text. Tokens represent things like store variables, links to certain pages, order information, etc.  Tokens are used by including the token listed below in a text field that uses them.  The description for the textfields will alert you to which groups of tokens listed below may be used.') . '</p>',
-  );
-
-  return $build;
-}
-
-/**
  * Imports settings from a country file.
  *
  * @see uc_country_import_form_submit()

@@ -371,7 +371,6 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
   $form['completion_messages'] = array(
     '#type' => 'fieldset',
     '#title' => t('Completion messages'),
-    '#description' => t('You may use <a href="!url">order, store, and site tokens</a> in these messages.', array('!url' => url('admin/store/help/tokens'))),
     '#group' => 'checkout-settings',
   );
   $form['completion_messages']['uc_msg_order_submit'] = array(
@@ -409,6 +408,12 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     '#default_value' => variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping')),
     '#rows' => 3,
   );
+
+  if (module_exists('token')) {
+    $form['completion_messages']['token_tree'] = array(
+      '#markup' => theme('token_tree', array('token_types' => array('uc_order', 'site', 'store'))),
+    );
+  }
 
   return system_settings_form($form);
 }
