@@ -25,10 +25,8 @@ function uc_checkout_pane_cart($op, $order, $form = NULL, &$form_state = NULL) {
       return array('contents' => $contents, 'next-button' => FALSE);
 
     case 'review':
-      $items = uc_cart_get_contents();
-
       $output = '<table>';
-      foreach ($items as $item) {
+      foreach ($order->products as $item) {
         $desc = check_plain($item->title) . uc_product_get_description($item);
 
         $output .= '<tr valign="top"><td>' . $item->qty . '&times;</td><td width="100%">' . $desc
