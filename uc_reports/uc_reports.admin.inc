@@ -6,36 +6,6 @@
  */
 
 /**
- * Form builder for the admin settings.
- *
- * @ingroup forms
- */
-function uc_reports_settings_form($form, &$form_state) {
-  $form['uc_reports_table_size'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Paged table size'),
-    '#description' => t('The maximum number of rows displayed on one page for a report table.'),
-    '#default_value' => variable_get('uc_reports_table_size', 30),
-  );
-
-  $options = array();
-  foreach (uc_order_status_list() as $status) {
-    $options[$status['id']] = $status['title'];
-  }
-
-  $form['uc_reports_reported_statuses'] = array(
-    '#type' => 'select',
-    '#title' => t('Reported statuses'),
-    '#description' => t('Only orders with selected statuses will be included in reports.'),
-    '#options' => $options,
-    '#default_value' => variable_get('uc_reports_reported_statuses', array('completed')),
-    '#multiple' => TRUE,
-  );
-
-  return system_settings_form($form);
-}
-
-/**
  * Displays the customer report.
  */
 function uc_reports_customers() {

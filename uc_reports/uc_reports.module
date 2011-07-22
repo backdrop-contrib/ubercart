@@ -93,14 +93,6 @@ function uc_reports_menu() {
   global $user;
   $items = array();
 
-  $items['admin/store/settings/reports'] = array(
-    'title' => 'Report settings',
-    'description' => 'View the report settings.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_reports_settings_form'),
-    'access arguments' => array('administer store'),
-    'file' => 'uc_reports.admin.inc',
-  );
   $items['admin/store/reports/customers'] = array(
     'title' => 'Customer reports',
     'description' => 'View reports for store customers',
@@ -201,6 +193,38 @@ function uc_reports_permission() {
     'view reports' => array(
       'title' => t('View reports'),
     ),
+  );
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for uc_store_settings_form().
+ */
+function uc_reports_form_uc_store_settings_form_alter(&$form, &$form_state) {
+  $form['reports'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Report settings'),
+    '#group' => 'store',
+  );
+  $form['reports']['uc_reports_table_size'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Number of rows to show in reports'),
+    '#description' => t('The maximum number of rows displayed on one page for a report table.'),
+    '#default_value' => variable_get('uc_reports_table_size', 30),
+    '#size' => 5,
+  );
+
+  $options = array();
+  foreach (uc_order_status_list() as $status) {
+    $options[$status['id']] = $status['title'];
+  }
+
+  $form['reports']['uc_reports_reported_statuses'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Reported statuses'),
+    '#description' => t('Only orders with selected statuses will be included in reports.'),
+    '#options' => $options,
+    '#default_value' => variable_get('uc_reports_reported_statuses', array('completed')),
+    '#multiple' => TRUE,
   );
 }
 
