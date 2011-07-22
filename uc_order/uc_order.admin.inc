@@ -24,11 +24,6 @@ function uc_order_settings_form($form, &$form_state) {
     '#options' => drupal_map_assoc(range(10, 100, 10)),
     '#default_value' => variable_get('uc_order_number_displayed', 30),
   );
-  $form['admin']['uc_order_logging'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Enable order logging'),
-    '#default_value' => variable_get('uc_order_logging', TRUE),
-  );
   $form['admin']['uc_order_capitalize_addresses'] = array(
     '#type' => 'checkbox',
     '#title' => t('Capitalize address on order screens'),
@@ -1154,9 +1149,7 @@ function uc_order_edit_form_submit($form, &$form_state) {
   $order->line_items = array_merge($order->line_items, uc_order_load_line_items($order, FALSE));
   usort($order->line_items, 'uc_weight_sort');
 
-  if (variable_get('uc_order_logging', TRUE)) {
-    uc_order_log_changes($order->order_id, $log);
-  }
+  uc_order_log_changes($order->order_id, $log);
 
   field_attach_submit('uc_order', $order, $form, $form_state);
 
