@@ -36,7 +36,7 @@ function uc_google_checkout_help($page, $args) {
 function uc_google_checkout_menu() {
   $items = array();
 
-  $items['admin/store/settings/google_checkout'] = array(
+  $items['admin/store/settings/payment/method/google_checkout'] = array(
     'title' => 'Google Checkout settings',
     'description' => 'Set merchant ID and key for Google Checkout.',
     'page callback' => 'drupal_get_form',
@@ -44,11 +44,11 @@ function uc_google_checkout_menu() {
     'access arguments' => array('administer store'),
     'file' => 'uc_google_checkout.admin.inc',
   );
-  $items['admin/store/settings/google_checkout/account'] = array(
+  $items['admin/store/settings/payment/method/google_checkout/account'] = array(
     'title' => 'Account',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  $items['admin/store/settings/google_checkout/shipping'] = array(
+  $items['admin/store/settings/payment/method/google_checkout/shipping'] = array(
     'title' => 'Shipping',
     'description' => 'Calculate shipping charges for orders through Google Checkout.',
     'page callback' => 'drupal_get_form',
@@ -57,7 +57,7 @@ function uc_google_checkout_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'uc_google_checkout.admin.inc',
   );
-  $items['admin/store/settings/google_checkout/taxes'] = array(
+  $items['admin/store/settings/payment/method/google_checkout/taxes'] = array(
     'title' => 'Taxes',
     'description' => 'Calculate taxes for orders through Google Checkout.',
     'page callback' => 'drupal_get_form',
@@ -362,18 +362,6 @@ function uc_google_checkout_uc_payment_method() {
     'backend' => FALSE,
   );
   return $methods;
-}
-
-/**
- * Implements hook_uc_payment_gateway().
- */
-function uc_google_checkout_uc_payment_gateway() {
-  $gateways['google_checkout'] = array(
-    'title' => t('Google Checkout'),
-    'description' => t('Express payment with Google Checkout.'),
-    'google_checkout' => 'uc_google_checkout_charge',
-  );
-  return $gateways;
 }
 
 /**
@@ -776,13 +764,9 @@ function uc_payment_method_google_checkout($op, &$order) {
 
       return $build;
     case 'settings':
-      $form = array();
-
-      $form['link'] = array(
-        '#markup' => l(t('Click here to go to Google Checkout settings.'), 'admin/store/settings/google_checkout'),
-      );
-
-    return $form;
+      module_load_include('inc', 'uc_google_checkout', 'uc_google_checkout.admin');
+      $form_state = form_state_defaults();
+      return uc_google_checkout_settings(array(), $form_state);;
   }
 }
 

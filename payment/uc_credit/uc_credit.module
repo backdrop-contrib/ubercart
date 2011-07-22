@@ -101,21 +101,6 @@ function uc_credit_init() {
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for uc_payment_methods_form().
- */
-function uc_credit_form_uc_payment_methods_form_alter(&$form, &$form_state) {
-  if (user_access('administer credit cards')) {
-    if (empty($_POST) && uc_credit_encryption_key() === FALSE) {
-      // Report error and expand fieldset so the problem is easy to spot
-      form_set_error('uc_credit_encryption_path', t('Credit card encryption must be configured to accept credit card payments.'));
-      $form['method_credit']['#collapsed'] = FALSE;
-    }
-    $form['#validate'][] = 'uc_credit_settings_form_validate';
-    $form['#submit'][] = 'uc_credit_settings_form_submit';
-  }
-}
-
-/**
  * Implements hook_form_FORM_ID_alter() for uc_cart_checkout_form().
  */
 function uc_credit_form_uc_cart_checkout_form_alter(&$form, &$form_state) {
@@ -178,42 +163,6 @@ function uc_credit_form_uc_cart_checkout_review_form_alter(&$form, &$form_state)
 
   // Clear the session of the details.
   unset($_SESSION['sescrd']);
-}
-
-/**
- * Implements hook_form_FORM_ID_alter() for uc_payment_gateways_form().
- */
-function uc_credit_form_uc_payment_gateways_form_alter(&$form, &$form_state) {
-  // Loop through each of the gateways on the form.
-  foreach (element_children($form['gateways']) as $key) {
-    // Get the transaction types associated with this gateway.
-    $gateway_types = uc_credit_gateway_txn_types($key);
-
-    // Loop through all the available transaction types.
-    $options = array();
-
-    $txn_types = array(
-      UC_CREDIT_AUTH_ONLY => t('Authorization only'),
-      UC_CREDIT_AUTH_CAPTURE => t('Authorize and capture immediately'),
-      UC_CREDIT_REFERENCE_SET => t('Set a reference only'),
-    );
-
-    foreach ($txn_types as $type => $title) {
-      // Add the current one to the options if the gateway supports it.
-      if (in_array($type, $gateway_types)) {
-        $options[$type] = $title;
-      }
-    }
-
-    $form['gateways'][$key]['uc_pg_' . $key . '_cc_txn_type'] = array(
-      '#type' => 'radios',
-      '#title' => t('Default credit transaction type'),
-      '#description' => t('Only available transaction types are listed. The default will be used unless an administrator chooses otherwise through the terminal.'),
-      '#options' => $options,
-      '#default_value' => variable_get('uc_pg_' . $key . '_cc_txn_type', UC_CREDIT_AUTH_CAPTURE),
-      '#weight' => -5,
-    );
-  }
 }
 
 /**
@@ -681,12 +630,50 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
         return $form;
       }
 
+      $gateways = _uc_payment_gateway_list('credit');
+      if (!count($gateways)) {
+        $form['notice'] = array(
+          '#markup' => '<div>' . t('Please enable a credit card gateway module for your chosen payment provider.') . '</div>',
+        );
+        return $form;
+      }
+
+      $form['uc_credit'] = array('#type' => 'vertical_tabs');
+
+      $form['cc_basic'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Basic settings'),
+        '#group' => 'uc_credit',
+      );
+      $options = array();
+      foreach ($gateways as $id => $gateway) {
+        $options[$id] = $gateway['title'];
+      }
+      $form['cc_basic']['uc_payment_credit_gateway'] = array(
+        '#type' => 'radios',
+        '#title' => t('Default gateway'),
+        '#options' => $options,
+        '#default_value' => variable_get('uc_payment_credit_gateway', 'none'),
+      );
+      $form['cc_basic']['uc_credit_validate_numbers'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Validate credit card numbers at checkout.'),
+        '#description' => t('Invalid card numbers will show an error message to the user so they can correct it.<br />This feature is recommended unless you are in debug mode.'),
+        '#default_value' => variable_get('uc_credit_validate_numbers', TRUE),
+      );
+      $form['cc_basic']['uc_credit_checkout_process'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Attempt to process credit card payments at checkout.'),
+        '#description' => t('Failed attempts will prevent checkout completion and display the error message from above.<br />This box must be checked to process customer credit cards if you are not in debug mode.'),
+        '#default_value' => variable_get('uc_credit_checkout_process', TRUE),
+      );
+
       // Form elements that deal specifically with card number security.
       $form['cc_security'] = array(
         '#type' => 'fieldset',
-        '#title' => t('Credit card data security'),
+        '#title' => t('Security settings'),
         '#description' => t('You are responsible for the security of your website, including the protection of credit card numbers.  Please be aware that choosing some settings in this section may decrease the security of credit card data on your website and increase your liability for damages in the case of fraud.'),
-        '#collapsible' => FALSE,
+        '#group' => 'uc_credit',
       );
       $form['cc_security']['uc_credit_encryption_path'] = array(
         '#type' => 'textfield',
@@ -701,28 +688,8 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
         '#default_value' => variable_get('uc_credit_debug', FALSE),
       );
 
-      // Form elements that deal with the credit card workflow during checkout.
-      $form['cc_workflow'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Checkout workflow'),
-        '#description' => t('These settings alter the way credit card data is collected and used during checkout.'),
-        '#collapsible' => FALSE,
-      );
-      $form['cc_workflow']['uc_credit_validate_numbers'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Validate credit card numbers at checkout.'),
-        '#description' => t('Invalid card numbers will show an error message to the user so they can correct it.<br />This feature is recommended unless you are in debug mode.'),
-        '#default_value' => variable_get('uc_credit_validate_numbers', TRUE),
-      );
-      $form['cc_workflow']['uc_credit_checkout_process'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Attempt to process credit card payments at checkout.'),
-        '#description' => t('Failed attempts will prevent checkout completion and display the error message from above.<br />This box must be checked to process customer credit cards if you are not in debug mode.'),
-        '#default_value' => variable_get('uc_credit_checkout_process', TRUE),
-      );
-
       // Form elements to handle the automatic clearing of card data.
-      $form['cc_clear'] = array(
+      $form['cc_security']['cc_clear'] = array(
         '#type' => 'fieldset',
         '#title' => t('Debug mode data clearing'),
         '#description' => t('Specify below the status and age of orders whose credit card details will be removed.  This setting only applies when operating in debug mode. <strong>Cron must be running for this feature to work.</strong>', array('!url' => url('admin/store/settings/cart/edit'))),
@@ -731,7 +698,7 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
       foreach (uc_order_status_list() as $status) {
         $options[$status['id']] = $status['title'];
       }
-      $form['cc_clear']['uc_credit_clear_status'] = array(
+      $form['cc_security']['cc_clear']['uc_credit_clear_status'] = array(
         '#type' => 'select',
         '#title' => t('Order status'),
         '#options' => $options,
@@ -739,7 +706,7 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
         '#prefix' => '<div style="float: left; margin-right: 1em;">',
         '#suffix' => '</div>',
       );
-      $form['cc_clear']['uc_credit_number_duration'] = array(
+      $form['cc_security']['cc_clear']['uc_credit_number_duration'] = array(
         '#type' => 'select',
         '#title' => t('Age'),
         '#options' => drupal_map_assoc(range(1, 24)),
@@ -747,7 +714,7 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
         '#prefix' => '<div style="float: left; margin-right: 1em;">',
         '#suffix' => '</div>',
       );
-      $form['cc_clear']['uc_credit_number_unit'] = array(
+      $form['cc_security']['cc_clear']['uc_credit_number_unit'] = array(
         '#type' => 'select',
         '#title' => t('Unit of time'),
         '#options' => array(
@@ -766,7 +733,8 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
         '#type' => 'fieldset',
         '#title' => t('Credit card fields'),
         '#description' => t('Specify what information to collect from customers in addition to the card number.'),
-        '#collapsible' => FALSE,
+        '#group' => 'uc_credit',
+        '#weight' => 10,
       );
       $form['cc_fields']['uc_credit_cvv_enabled'] = array(
         '#type' => 'checkbox',
@@ -807,28 +775,28 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
         '#default_value' => variable_get('uc_credit_accepted_types', implode("\r\n", array(t('Visa'), t('Mastercard'), t('Discover'), t('American Express')))),
       );
 
-      // From elements that deal with card types accepted.
-      $form['cc_types'] = array(
+      // Form elements that deal with card types accepted.
+      $form['cc_fields']['cc_types'] = array(
         '#type' => 'fieldset',
-        '#title' => t('Accepted card types (for validation)'),
+        '#title' => t('Card types'),
         '#description' => t('Use the checkboxes to specify which card types you accept for payment. Selected card types will show their icons in the payment method selection list and be used for card number validation.'),
       );
-      $form['cc_types']['uc_credit_visa'] = array(
+      $form['cc_fields']['cc_types']['uc_credit_visa'] = array(
         '#type' => 'checkbox',
         '#title' => t('Visa'),
         '#default_value' => variable_get('uc_credit_visa', TRUE),
       );
-      $form['cc_types']['uc_credit_mastercard'] = array(
+      $form['cc_fields']['cc_types']['uc_credit_mastercard'] = array(
         '#type' => 'checkbox',
         '#title' => t('Mastercard'),
         '#default_value' => variable_get('uc_credit_mastercard', TRUE),
       );
-      $form['cc_types']['uc_credit_discover'] = array(
+      $form['cc_fields']['cc_types']['uc_credit_discover'] = array(
         '#type' => 'checkbox',
         '#title' => t('Discover'),
         '#default_value' => variable_get('uc_credit_discover', TRUE),
       );
-      $form['cc_types']['uc_credit_amex'] = array(
+      $form['cc_fields']['cc_types']['uc_credit_amex'] = array(
         '#type' => 'checkbox',
         '#title' => t('American Express'),
         '#default_value' => variable_get('uc_credit_amex', TRUE),
@@ -840,6 +808,8 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
         '#title' => t('Customer messages'),
         '#description' => t('Here you can alter messages displayed to customers using credit cards.'),
         '#collapsible' => FALSE,
+        '#group' => 'uc_credit',
+        '#weight' => 10,
       );
       $form['cc_messages']['uc_credit_policy'] = array(
         '#type' => 'textarea',
@@ -854,6 +824,59 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
         '#description' => t('Error message displayed to customers when an attempted payment fails at checkout.'),
         '#default_value' => variable_get('uc_credit_fail_message', t('We were unable to process your credit card payment. Please verify your details and try again.  If the problem persists, contact us to complete your order.')),
       );
+
+      $txn_types = array(
+        UC_CREDIT_AUTH_ONLY => t('Authorization only'),
+        UC_CREDIT_AUTH_CAPTURE => t('Authorize and capture immediately'),
+        UC_CREDIT_REFERENCE_SET => t('Set a reference only'),
+      );
+
+      foreach ($gateways as $id => $gateway) {
+        $form['gateways'][$id] = array(
+          '#type' => 'fieldset',
+          '#title' => $gateway['title'],
+          '#collapsible' => TRUE,
+          '#collapsed' => TRUE,
+          '#group' => 'uc_credit',
+          '#weight' => 5,
+        );
+        $form['gateways'][$id]['uc_pg_' . $id . '_enabled'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Enable this payment gateway for use.'),
+          '#default_value' => variable_get('uc_pg_' . $id . '_enabled', TRUE),
+          '#weight' => -10,
+        );
+
+        // Get the transaction types associated with this gateway.
+        $gateway_types = uc_credit_gateway_txn_types($id);
+        $options = array();
+        foreach ($txn_types as $type => $title) {
+          if (in_array($type, $gateway_types)) {
+            $options[$type] = $title;
+          }
+        }
+        $form['gateways'][$id]['uc_pg_' . $id . '_cc_txn_type'] = array(
+          '#type' => 'radios',
+          '#title' => t('Default credit transaction type'),
+          '#description' => t('Only available transaction types are listed. The default will be used unless an administrator chooses otherwise through the terminal.'),
+          '#options' => $options,
+          '#default_value' => variable_get('uc_pg_' . $id . '_cc_txn_type', UC_CREDIT_AUTH_CAPTURE),
+          '#weight' => -5,
+        );
+
+        if (isset($gateway['settings']) && function_exists($gateway['settings'])) {
+          $gateway_settings = $gateway['settings'](array(), $form_state);
+          if (is_array($gateway_settings)) {
+            $form['gateways'][$id] += $gateway_settings;
+          }
+        }
+      }
+
+      if (empty($_POST) && !uc_credit_encryption_key()) {
+        drupal_set_message(t('Credit card security settings must be configured to accept credit card payments.'), 'warning');
+      }
+      $form['#validate'][] = 'uc_credit_settings_form_validate';
+      $form['#submit'][] = 'uc_credit_settings_form_submit';
 
       return $form;
   }
