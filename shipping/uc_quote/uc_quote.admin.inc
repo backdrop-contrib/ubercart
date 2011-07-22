@@ -133,12 +133,13 @@ function uc_quote_method_settings($form, &$form_state) {
 
       $form['methods'][$id]['uc_quote_enabled'] = array(
         '#type' => 'checkbox',
+        '#title' => $title,
         '#default_value' => $enabled[$id],
       );
       $form['methods'][$id]['uc_quote_method_weight'] = array(
         '#type' => 'weight',
-        '#delta' => 5,
         '#default_value' => $weight[$id],
+        '#attributes' => array('class' => array('uc-quote-method-weight')),
       );
     }
   }
@@ -193,20 +194,23 @@ function uc_quote_method_settings($form, &$form_state) {
 function theme_uc_quote_method_settings($variables) {
   $form = $variables['form'];
 
-  $methods = uc_quote_shipping_method_options();
-  $output = '';
+  drupal_add_tabledrag('uc-quote-methods', 'order', 'sibling', 'uc-quote-method-weight');
 
-  $header = array(t('Enable'), t('Shipping method'), t('List position'));
+  $header = array(t('Shipping method'), t('List position'));
   $rows = array();
   foreach (element_children($form['methods']) as $method) {
-    $row = array();
-    $row[] = drupal_render($form['methods'][$method]['uc_quote_enabled']);
-    $row[] = $methods[$method];
-    $row[] = drupal_render($form['methods'][$method]['uc_quote_method_weight']);
-    $rows[] = $row;
-  }
-  $output .= theme('table', array('header' => $header, 'rows' => $rows));
+    $row = array(
+      drupal_render($form['methods'][$method]['uc_quote_enabled']),
+      drupal_render($form['methods'][$method]['uc_quote_method_weight']),
+    );
 
+    $rows[] = array(
+      'data' => $row,
+      'class' => array('draggable'),
+    );
+  }
+
+  $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-quote-methods')));
   $output .= drupal_render_children($form);
   return $output;
 }
