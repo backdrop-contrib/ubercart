@@ -381,7 +381,12 @@ function uc_store_configuration_page() {
  * @ingroup forms
  */
 function uc_country_import_form($form, &$form_state) {
-  $countries = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC")->fetchAll();
+  $countries = array();
+  $result = db_query("SELECT * FROM {uc_countries}");
+  foreach ($result as $country) {
+    $countries[t($country->country_name)] = $country;
+  }
+  uksort($countries, 'strnatcasecmp');
   $files = _uc_country_import_list();
 
   $header = array(t('Country'), t('Code'), t('Version'), t('Operations'));
@@ -389,7 +394,7 @@ function uc_country_import_form($form, &$form_state) {
   if (is_array($countries)) {
     foreach ($countries as $country) {
       $row = array(
-        $country->country_name,
+        t($country->country_name),
         $country->country_iso_code_3,
         array('data' => abs($country->version), 'align' => 'center')
       );
@@ -514,7 +519,12 @@ function uc_country_formats_form($form, &$form_state) {
     '#suffix' => '<p>' . t('Adding _if to any country variable will make it display only for addresses whose country is different than the default store country.') . '</p></div>',
   );
 
-  $countries = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC")->fetchAll();
+  $countries = array();
+  $result = db_query("SELECT * FROM {uc_countries}");
+  foreach ($result as $country) {
+    $countries[t($country->country_name)] = $country;
+  }
+  uksort($countries, 'strnatcasecmp');
 
   if (is_array($countries)) {
     $form['countries'] = array(
@@ -524,12 +534,12 @@ function uc_country_formats_form($form, &$form_state) {
     foreach ($countries as $country) {
       $form['countries'][$country->country_id] = array(
         '#type' => 'fieldset',
-        '#title' => $country->country_name,
+        '#title' => t($country->country_name),
         '#group' => 'country',
       );
       $form['countries'][$country->country_id]['address_format'] = array(
         '#type' => 'textarea',
-        '#title' => t('@country address format', array('@country' => $country->country_name)),
+        '#title' => t('@country address format', array('@country' => t($country->country_name))),
         '#default_value' => variable_get('uc_address_format_' . $country->country_id, ''),
         '#description' => t('Use the variables mentioned in the instructions to format an address for this country.'),
         '#rows' => 6,
@@ -912,10 +922,10 @@ function uc_country_disable($country_id) {
         ))
         ->condition('country_id', $country_id)
         ->execute();
-      drupal_set_message(t('!country disabled.', array('!country' => $country->country_name)));
+      drupal_set_message(t('!country disabled.', array('!country' => t($country->country_name))));
     }
     else {
-      drupal_set_message(t('!country is already disabled.', array('!country' => $country->country_name)), 'error');
+      drupal_set_message(t('!country is already disabled.', array('!country' => t($country->country_name))), 'error');
     }
   }
   else {
@@ -940,10 +950,10 @@ function uc_country_enable($country_id) {
         ))
         ->condition('country_id', $country_id)
         ->execute();
-      drupal_set_message(t('@country enabled.', array('@country' => $country->country_name)));
+      drupal_set_message(t('@country enabled.', array('@country' => t($country->country_name))));
     }
     else {
-      drupal_set_message(t('@country is already enabled.', array('@country' => $country->country_name)), 'error');
+      drupal_set_message(t('@country is already enabled.', array('@country' => t($country->country_name))), 'error');
     }
   }
   else {
@@ -963,7 +973,7 @@ function uc_country_enable($country_id) {
  */
 function uc_country_remove_form($form, &$form_state, $country_id) {
   // Fetch the country name from the database.
-  $country = db_query("SELECT country_name FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id))->fetchField();
+  $country = t(db_query("SELECT country_name FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id))->fetchField());
 
   // If orders exist for this country, show a warning message prior to removal.
   if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#value'] != t('Remove') && module_exists('uc_order')) {
@@ -1012,7 +1022,7 @@ function uc_country_remove_form_submit($form, &$form_state) {
     }
   }
 
-  drupal_set_message(t('!country removed.', array('!country' => $country->country_name)));
+  drupal_set_message(t('!country removed.', array('!country' => t($country->country_name))));
   drupal_goto('admin/store/settings/countries');
 }
 

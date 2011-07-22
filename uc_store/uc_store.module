@@ -302,6 +302,9 @@ function uc_store_process_address_field($element, $form_state) {
     switch ($base_field) {
       case 'country':
         $countries = db_query("SELECT country_id, country_name FROM {uc_countries} WHERE version > :version", array(':version' => 0))->fetchAllKeyed();
+        foreach ($countries as $country_id => $country_name) {
+          $countries[$country_id] = t($country_name);
+        }
         natcasesort($countries);
 
         $subelement = array(
@@ -1123,13 +1126,13 @@ function uc_address_format($first_name, $last_name, $company, $street1, $street2
     '!zone_code' => $zone_data['zone_code'],
     '!zone_name' => $zone_data['zone_name'],
     '!postal_code' => check_plain($postal_code),
-    '!country_name' => $country_data['country_name'],
+    '!country_name' => t($country_data['country_name']),
     '!country_code2' => $country_data['country_iso_code_2'],
     '!country_code3' => $country_data['country_iso_code_3'],
   );
 
   if (uc_store_default_country() != $country) {
-    $variables['!country_name_if'] = $country_data['country_name'];
+    $variables['!country_name_if'] = t($country_data['country_name']);
     $variables['!country_code2_if'] = $country_data['country_iso_code_2'];
     $variables['!country_code3_if'] = $country_data['country_iso_code_3'];
   }
@@ -1354,8 +1357,9 @@ function uc_zone_option_list() {
   $result = db_query("SELECT z.*, c.country_name FROM {uc_zones} AS z LEFT JOIN {uc_countries} AS c ON z.zone_country_id = c.country_id ORDER BY c.country_name, z.zone_name");
 
   foreach ($result as $zone) {
-    $options[$zone->country_name][$zone->zone_id] = $zone->zone_name;
+    $options[t($zone->country_name)][$zone->zone_id] = $zone->zone_name;
   }
+  uksort($options, 'strnatcasecmp');
 
   return $options;
 }
@@ -1411,11 +1415,12 @@ function uc_country_select($title, $default = NULL, $options = array()) {
 
   $countries = array();
   foreach ($result as $country) {
-    $countries[$country->country_id] = $country->$order_by;
+    $countries[$country->country_id] = ($order_by == 'country_name') ? t($country->$order_by) : $country->$order_by;
   }
   if (empty($countries)) {
     $countries[] = t('No countries found.');
   }
+  natcasesort($countries);
 
   if (!$default || !isset($countries[$default])) {
     $default = uc_store_default_country();
@@ -1459,15 +1464,16 @@ function uc_country_ajax_zone($form, &$form_state) {
  * Returns a list of available countries.
  */
 function uc_country_option_list() {
-  $result = db_query("SELECT * FROM {uc_countries} WHERE version > :version ORDER BY country_name", array(':version' => 0));
+  $result = db_query("SELECT * FROM {uc_countries} WHERE version > :version", array(':version' => 0));
 
   $options = array();
   while ($country = $result->fetchAssoc()) {
-    $options[$country['country_id']] = $country['country_name'];
+    $options[$country['country_id']] = t($country['country_name']);
   }
   if (count($options) == 0) {
     $options[] = t('No countries found.');
   }
+  natcasesort($options);
 
   return $options;
 }
@@ -1952,7 +1958,7 @@ function uc_store_default_country() {
 
   $result = db_query("SELECT COUNT(*) FROM {uc_countries} WHERE country_id = :id AND version > :version", array(':id' => $default, ':version' => 0))->fetchField();
   if ($result == 0) {
-    $default = db_query_range("SELECT country_id FROM {uc_countries} WHERE version > :version ORDER BY country_name", 0, 1, array(':version' => 0))->fetchField();
+    $default = db_query_range("SELECT country_id FROM {uc_countries} WHERE version > :version", 0, 1, array(':version' => 0))->fetchField();
   }
 
   return $default;
