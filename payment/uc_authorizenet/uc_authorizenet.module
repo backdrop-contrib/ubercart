@@ -210,10 +210,12 @@ function uc_authorizenet_settings_form($form, &$form_state) {
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for uc_payment_gateways_form().
+ * Implements hook_form_FORM_ID_alter() for uc_payment_method_settings_form().
  */
-function uc_authorizenet_form_uc_payment_gateways_form_alter(&$form, &$form_state) {
-  $form['#submit'][] = 'uc_authorizenet_payment_gateway_settings_submit';
+function uc_authorizenet_form_uc_payment_method_settings_form_alter(&$form, &$form_state) {
+  if ($form_state['build_info']['args'][0] == 'credit') {
+    $form['#submit'][] = 'uc_authorizenet_payment_gateway_settings_submit';
+  }
 }
 
 /**
@@ -1130,7 +1132,7 @@ function _uc_authorize_cim_xml_billto($order) {
     'state' => substr(uc_get_zone_code($order->billing_zone), 0, 2),
     'zip' => substr($order->billing_postal_code, 0, 20),
     'country' => !$billing_country ? '' : $billing_country[0]['country_iso_code_2'],
-    'phoneNumber' => substr($order->billing_phone, 0, 25), 
+    'phoneNumber' => substr($order->billing_phone, 0, 25),
   );
 }
 
