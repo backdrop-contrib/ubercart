@@ -306,7 +306,7 @@ function uc_order_status_create_form($form, &$form_state) {
     '#value' => t('Create'),
   );
   $form['actions']['cancel'] = array(
-    '#markup' => l(t('Cancel'), 'admin/store/settings/orders/edit/workflow'),
+    '#markup' => l(t('Cancel'), 'admin/store/settings/orders/workflow'),
   );
 
   return $form;
@@ -351,7 +351,7 @@ function uc_order_status_create_form_submit($form, &$form_state) {
 
   drupal_set_message(t('Custom order status created.'));
 
-  $form_state['redirect'] = 'admin/store/settings/orders/edit/workflow';
+  $form_state['redirect'] = 'admin/store/settings/orders/workflow';
 }
 
 /**
