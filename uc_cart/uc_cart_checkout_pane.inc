@@ -17,8 +17,6 @@
 function uc_checkout_pane_cart($op, $order, $form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
-      $order->products = uc_cart_get_contents();
-
       $contents['cart_review_table'] = array(
         '#theme' => 'uc_cart_review_table',
         '#items' => $order->products,
