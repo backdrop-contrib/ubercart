@@ -1798,25 +1798,23 @@ function uc_get_message($message_id) {
  */
 function theme_uc_pane_sort_table($variables) {
   $form = $variables['form'];
-
   $prefix = $form['#pane_prefix'];
-  if (isset($form['#table_attributes']) && is_array($form['#table_attributes'])) {
-    $attributes = $form['#table_attributes'];
-  }
-  else {
-    $attributes = array();
+
+  $attributes = array();
+  if (isset($form['#draggable'])) {
+    $attributes['id'] = $form['#draggable'] . '-table';
+    drupal_add_tabledrag($form['#draggable'] . '-table', 'order', 'sibling', $form['#draggable']);
   }
 
-  $header = array(t('Enabled'), t('Title'), t('List position'));
+  $header = array(t('Pane'), t('List position'));
 
   foreach (element_children($form) as $pane_id) {
     $rows[] = array(
-      array(
-        'data' => drupal_render($form[$pane_id][$prefix . '_' . $pane_id . '_enabled']),
-        'align' => 'center'
+      'data' => array(
+        drupal_render($form[$pane_id][$prefix . '_' . $pane_id . '_enabled']),
+        drupal_render($form[$pane_id][$prefix . '_' . $pane_id . '_weight']),
       ),
-      drupal_render($form[$pane_id]['title']),
-      drupal_render($form[$pane_id][$prefix . '_' . $pane_id . '_weight']),
+      'class' => array('draggable'),
     );
   }
 

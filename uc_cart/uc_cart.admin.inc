@@ -24,6 +24,27 @@ function uc_cart_cart_settings_form($form, &$form_state) {
       ),
     ),
   );
+
+  $panes = uc_cart_cart_pane_list(NULL);
+  $form['general']['panes'] = array(
+    '#theme' => 'uc_pane_sort_table',
+    '#pane_prefix' => 'uc_cap',
+    '#draggable' => 'uc-cart-pane-weight',
+  );
+  foreach ($panes as $id => $pane) {
+    $form['general']['panes'][$id]['uc_cap_' . $id . '_enabled'] = array(
+      '#type' => 'checkbox',
+      '#title' => $pane['title'],
+      '#default_value' => $pane['enabled'],
+    );
+    $form['general']['panes'][$id]['uc_cap_' . $id . '_weight'] = array(
+      '#type' => 'weight',
+      '#delta' => 10,
+      '#default_value' => $pane['weight'],
+      '#attributes' => array('class' => array('uc-cart-pane-weight')),
+    );
+  }
+
   $form['general']['uc_cart_add_item_msg'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display a message when a customer adds an item to their cart.'),
@@ -47,31 +68,6 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
     '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
   );
-
-  $panes = uc_cart_cart_pane_list(NULL);
-  $form['panes'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Cart panes'),
-    '#group' => 'cart-settings',
-  );
-  $form['panes']['panes'] = array(
-    '#theme' => 'uc_pane_sort_table',
-    '#pane_prefix' => 'uc_cap',
-  );
-  foreach ($panes as $id => $pane) {
-    $form['panes']['panes'][$id]['uc_cap_' . $id . '_enabled'] = array(
-      '#type' => 'checkbox',
-      '#default_value' => $pane['enabled'],
-    );
-    $form['panes']['panes'][$id]['title'] = array(
-      '#markup' => $pane['title'],
-    );
-    $form['panes']['panes'][$id]['uc_cap_' . $id . '_weight'] = array(
-      '#type' => 'weight',
-      '#delta' => 10,
-      '#default_value' => $pane['weight'],
-    );
-  }
 
   $form['lifetime'] = array(
     '#type' => 'fieldset',
@@ -240,6 +236,37 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     '#title' => t('Basic settings'),
     '#group' => 'checkout-settings',
   );
+
+  $panes = _uc_checkout_pane_list();
+  $form['checkout']['panes'] = array(
+    '#theme' => 'uc_pane_sort_table',
+    '#pane_prefix' => 'uc_pane',
+    '#draggable' => 'uc-checkout-pane-weight',
+  );
+  foreach ($panes as $id => $pane) {
+    $form['checkout']['panes'][$id]['uc_pane_' . $id . '_enabled'] = array(
+      '#type' => 'checkbox',
+      '#title' => $pane['title'],
+      '#default_value' => variable_get('uc_pane_' . $id . '_enabled', $pane['enabled']),
+    );
+    $form['checkout']['panes'][$id]['uc_pane_' . $id . '_weight'] = array(
+      '#type' => 'weight',
+      '#default_value' => variable_get('uc_pane_' . $id . '_weight', $pane['weight']),
+      '#attributes' => array('class' => array('uc-checkout-pane-weight')),
+    );
+    $form['checkout']['panes'][$id]['#weight'] = variable_get('uc_pane_' . $id . '_weight', $pane['weight']);
+
+    $null = NULL;
+    $pane_settings = $pane['callback']('settings', $null, array());
+    if (is_array($pane_settings)) {
+      $form['pane_' . $id] = $pane_settings + array(
+        '#type' => 'fieldset',
+        '#title' => t('!pane pane', array('!pane' => $pane['title'])),
+        '#group' => 'checkout-settings',
+      );
+    }
+  }
+
   $form['checkout']['uc_checkout_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable checkout.'),
@@ -311,41 +338,6 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
         ),
       ),
     );
-  }
-
-  $panes = _uc_checkout_pane_list();
-  $form['panes'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Checkout panes'),
-    '#group' => 'checkout-settings',
-  );
-  $form['panes']['panes'] = array(
-    '#theme' => 'uc_pane_sort_table',
-    '#pane_prefix' => 'uc_pane',
-  );
-  foreach ($panes as $id => $pane) {
-    $form['panes']['panes'][$id]['uc_pane_' . $id . '_enabled'] = array(
-      '#type' => 'checkbox',
-      '#default_value' => variable_get('uc_pane_' . $id . '_enabled', $pane['enabled']),
-    );
-    $form['panes']['panes'][$id]['title'] = array(
-      '#markup' => $pane['title'],
-    );
-    $form['panes']['panes'][$id]['uc_pane_' . $id . '_weight'] = array(
-      '#type' => 'weight',
-      '#default_value' => variable_get('uc_pane_' . $id . '_weight', $pane['weight']),
-    );
-    $form['panes']['panes'][$id]['#weight'] = variable_get('uc_pane_' . $id . '_weight', $pane['weight']);
-
-    $null = NULL;
-    $pane_settings = $pane['callback']('settings', $null, array());
-    if (is_array($pane_settings)) {
-      $form['pane_' . $id] = $pane_settings + array(
-        '#type' => 'fieldset',
-        '#title' => t('!pane pane', array('!pane' => $pane['title'])),
-        '#group' => 'checkout-settings',
-      );
-    }
   }
 
   $form['instructions'] = array(
