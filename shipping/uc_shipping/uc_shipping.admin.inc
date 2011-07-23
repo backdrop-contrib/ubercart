@@ -330,7 +330,8 @@ function uc_shipping_package_edit($form, &$form_state, $order, $package) {
       $product_row['checked'] = array('#type' => 'checkbox', '#default_value' => isset($package->products[$product->order_product_id]));
       $product_row['model'] = array('#markup' => check_plain($product->model));
       $product_row['name'] = array('#markup' => filter_xss_admin($product->title));
-      $product_row['qty'] = array('#type' => 'select',
+      $product_row['qty'] = array(
+        '#type' => 'select',
         '#options' => drupal_map_assoc(range(1, $product->qty)),
         '#default_value' => isset($package->products[$product->order_product_id]) ? $package->products[$product->order_product_id]->qty : 1,
       );
@@ -344,7 +345,8 @@ function uc_shipping_package_edit($form, &$form_state, $order, $package) {
   foreach (array_keys($shipping_types_products) as $type) {
     $options[$type] = isset($shipping_type_options[$type]) ? $shipping_type_options[$type] : ucwords(str_replace('_', ' ', $type));
   }
-  $form['shipping_type'] = array('#type' => 'select',
+  $form['shipping_type'] = array(
+    '#type' => 'select',
     '#title' => t('Shipping type'),
     '#options' => $options,
     '#default_value' => $package->shipping_type,
