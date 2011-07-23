@@ -1310,8 +1310,8 @@ function uc_order_edit_form_submit($form, &$form_state) {
 
   if (is_array($perform)) {
     foreach ($perform as $func => $ops) {
-      if (in_array($form_state['values']['op'], $ops)) {
-        $func($form_state['values']['op'], $order, $form, $form_state['values']);
+      if (in_array($form_state['triggering_element']['#value'], $ops)) {
+        $func($form_state['triggering_element']['#value'], $order, $form, $form_state['values']);
       }
     }
   }
