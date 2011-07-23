@@ -18,15 +18,18 @@ Drupal.behaviors.ucCartAdminFieldsetSummaries = {
 
     $('fieldset#edit-checkout', context).drupalSetSummary(function(context) {
       if ($('#edit-uc-checkout-enabled').is(':checked')) {
-        if ($('#edit-uc-checkout-anonymous').is(':checked')) {
-          return Drupal.t('Anonymous checkout is enabled.');
-        }
-        else {
-          return Drupal.t('Anonymous checkout is disabled.');
-        }
+        return Drupal.t('Checkout is enabled.');
       }
       else {
         return Drupal.t('Checkout is disabled.');
+      }
+    });
+    $('fieldset#edit-anonymous', context).drupalSetSummary(function(context) {
+      if ($('#edit-uc-checkout-anonymous').is(':checked')) {
+        return Drupal.t('Anonymous checkout is enabled.');
+      }
+      else {
+        return Drupal.t('Anonymous checkout is disabled.');
       }
     });
   }

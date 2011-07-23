@@ -184,27 +184,6 @@ function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NUL
       return $review;
 
     case 'settings':
-      $form['uc_cart_mail_existing'] = array(
-        '#type' => 'checkbox',
-        '#title' => t("Allow anonymous customers to use an existing account's email address."),
-        '#default_value' => variable_get('uc_cart_mail_existing', TRUE),
-        '#description' => t('If enabled, orders will be attached to the account matching the email address. If disabled, anonymous users using a registered email address must log in or use a different email address.'),
-      );
-      $form['uc_cart_email_validation'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Require e-mail confirmation in checkout for anonymous customers.'),
-        '#default_value' => variable_get('uc_cart_email_validation', FALSE),
-      );
-      $form['uc_cart_new_account_name'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Allow anonymous customers to specify a new user account name.'),
-        '#default_value' => variable_get('uc_cart_new_account_name', FALSE),
-      );
-      $form['uc_cart_new_account_password'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Allow anonymous customers to specify a new user account password.'),
-        '#default_value' => variable_get('uc_cart_new_account_password', FALSE),
-      );
       $form['uc_cart_new_account_details'] = array(
         '#type' => 'textarea',
         '#title' => t('New account details help message'),
