@@ -654,6 +654,8 @@ function _uc_usps_package_products($products, &$addresses) {
   $last_key = 0;
   $packages = array();
   if (variable_get('uc_usps_all_in_one', TRUE) && count($products) > 1) {
+    // "All in one" packaging strategy
+    // Only need to do this if more than one product line item in order
     $packages[$last_key] = array(0 => _uc_usps_new_package());
     foreach ($products as $product) {
       if ($product->nid) {
@@ -698,7 +700,7 @@ function _uc_usps_package_products($products, &$addresses) {
     }
     foreach ($packages as $key => $package) {
       $packages[$key][0]->pounds = floor($package[0]->weight);
-      $packages[$key][0]->ounces = 16 * ($package[0]->weight - $packages[$key][0]->pounds);
+      $packages[$key][0]->ounces = LB_TO_OZ * ($package[0]->weight - $packages[$key][0]->pounds);
       $packages[$key][0]->container = 'VARIABLE';
       $packages[$key][0]->size = 'REGULAR';
       // Packages are "machinable" if heavier than 6oz. and less than 35lbs.
@@ -711,6 +713,8 @@ function _uc_usps_package_products($products, &$addresses) {
     }
   }
   else {
+    // !variable_get('uc_usps_all_in_one', TRUE) || count($products) = 1
+    // "Each in own" packaging strategy, or only one product line item in order
     foreach ($products as $product) {
       if ($product->nid) {
         $address = uc_quote_get_default_shipping_address($product->nid);
@@ -739,17 +743,19 @@ function _uc_usps_package_products($products, &$addresses) {
         $weight = $product->weight * $product->pkg_qty;
         switch ($product->weight_units) {
           case 'g':
-            $weight = $weight / 1000;
+            // Convert to kg and fall through
+            $weight = $weight * G_TO_KG;
           case 'kg':
-            $weight = $weight * 2.2;
+            // Convert to lb and fall through
+            $weight = $weight * KG_TO_LB;
           case 'lb':
             $package->pounds = floor($weight);
-            $package->ounces = 16 * ($weight - $package->pounds);
-          break;
+            $package->ounces = LB_TO_OZ * ($weight - $package->pounds);
+            break;
           case 'oz':
-            $package->pounds = floor($weight / 16);
-            $package->ounces = $weight - $package->pounds * 16;
-          break;
+            $package->pounds = floor($weight * OZ_TO_LB);
+            $package->ounces = $weight - $package->pounds * LB_TO_OZ;
+             break;
         }
 
         // Grab some product properties directly from the (cached) product
@@ -769,8 +775,8 @@ function _uc_usps_package_products($products, &$addresses) {
         $package->length = max($product->length, $product->width) * $length_conversion;
         $package->width = min($product->length, $product->width) * $length_conversion;
         $package->height = $product->height * $length_conversion;
-        if ($package->length < $package->width) {
-          list($package->length, $package->width) = array($package->width, $package->length);
+        if ($package->length < $package->height) {
+          list($package->length, $package->height) = array($package->height, $package->length);
         }
         $package->girth = 2 * $package->width + 2 * $package->height;
         $package->size = $package->length + $package->girth;
@@ -805,22 +811,28 @@ function _uc_usps_package_products($products, &$addresses) {
         $weight = $product->weight * $remaining_qty;
         switch ($product->weight_units) {
           case 'g':
-            $weight = $weight / 1000;
+            // Convert to kg and fall through
+            $weight = $weight * G_TO_KG;
           case 'kg':
-            $weight = $weight * 2.2;
+            // Convert to lb and fall through
+            $weight = $weight * KG_TO_LB;
           case 'lb':
             $package->pounds = floor($weight);
-            $package->ounces = 16 * ($weight - $package->pounds);
-          break;
+            $package->ounces = LB_TO_OZ * ($weight - $package->pounds);
+            break;
           case 'oz':
-            $package->pounds = floor($weight / 16);
-            $package->ounces = $weight - $package->pounds * 16;
-          break;
+            $package->pounds = floor($weight * OZ_TO_LB);
+            $package->ounces = $weight - $package->pounds * LB_TO_OZ;
+             break;
         }
         $package->container = $product->usps['container'];
+        $length_conversion = uc_length_conversion($product->length_units, 'in');
         $package->length = max($product->length, $product->width) * $length_conversion;
         $package->width = min($product->length, $product->width) * $length_conversion;
         $package->height = $product->height * $length_conversion;
+        if ($package->length < $package->height) {
+          list($package->length, $package->height) = array($package->height, $package->length);
+        }
         $package->girth = 2 * $package->width + 2 * $package->height;
         $package->size = $package->length + $package->girth;
         if ($package->size <= 84) {
