@@ -417,7 +417,7 @@ function uc_paypal_ec_submit() {
     '#suffix' => '</div>',
   );
 
-  $build['line_items'] = array('#markup' => uc_order_pane_line_items('customer', $order));
+  $build['line_items'] = uc_order_pane_line_items('customer', $order);
 
   $build['instructions'] = array('#markup' => '<p>' . t("Your order is not complete until you click the 'Submit order' button below. Your PayPal account will be charged for the amount shown above once your order is placed. You will receive confirmation once your payment is complete.") . '</p>');
 

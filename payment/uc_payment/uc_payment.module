@@ -25,46 +25,18 @@ require_once('uc_payment_order_pane.inc');
 function uc_payment_menu() {
   $items['admin/store/settings/payment'] = array(
     'title' => 'Payment settings',
-    'description' => 'Configure the payment settings.',
-    'page callback' => 'uc_payment_settings_overview',
-    'access arguments' => array('administer store'),
-    'file' => 'uc_payment.admin.inc',
-  );
-  $items['admin/store/settings/payment/overview'] = array(
-    'title' => 'Overview',
-    'description' => 'View the payment settings.',
-    'access arguments' => array('administer store'),
-    'weight' => -10,
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-  );
-  $items['admin/store/settings/payment/edit'] = array(
-    'title' => 'Edit',
-    'description' => 'Edit the payment settings.',
+    'description' => 'Configure payment methods.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_payment_methods_form'),
     'access arguments' => array('administer store'),
-    'weight' => -5,
-    'type' => MENU_LOCAL_TASK,
     'file' => 'uc_payment.admin.inc',
   );
-  $items['admin/store/settings/payment/edit/methods'] = array(
-    'title' => 'Payment methods',
-    'description' => 'Edit the payment method settings.',
+  $items['admin/store/settings/payment/method/%'] = array(
+    'title callback' => 'uc_payment_method_title',
+    'title arguments' => array(5),
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_payment_methods_form'),
+    'page arguments' => array('uc_payment_method_settings_form', 5),
     'access arguments' => array('administer store'),
-    'weight' => -5,
-    'type' => MENU_LOCAL_TASK,
-    'file' => 'uc_payment.admin.inc',
-  );
-  $items['admin/store/settings/payment/edit/gateways'] = array(
-    'title' => 'Payment gateways',
-    'description' => 'Edit the payment gateway settings.',
-    'access arguments' => array('administer store'),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_payment_gateways_form'),
-    'weight' => 0,
-    'type' => MENU_LOCAL_TASK,
     'file' => 'uc_payment.admin.inc',
   );
 
@@ -104,6 +76,13 @@ function uc_payment_menu() {
   );
 
   return $items;
+}
+
+/**
+ * Title callback for payment method settings.
+ */
+function uc_payment_method_title($method_id) {
+  return t('!method settings', array('!method' => _uc_payment_method_data($method_id, 'name')));
 }
 
 /**

@@ -59,10 +59,12 @@ function uc_cybersource_page_alter(&$page) {
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for uc_payment_gateways_form().
+ * Implements hook_form_FORM_ID_alter() for uc_payment_method_settings_form().
  */
-function uc_cybersource_form_uc_payment_gateways_form_alter(&$form, &$form_state) {
-  $form['#submit'][] = 'uc_cybersource_payment_gateway_settings_submit';
+function uc_cybersource_form_uc_payment_method_settings_form_alter(&$form, &$form_state) {
+  if ($form_state['build_info']['args'][0] == 'credit') {
+    $form['#submit'][] = 'uc_cybersource_payment_gateway_settings_submit';
+  }
 }
 
 /**
@@ -225,7 +227,6 @@ function uc_cybersource_settings_form($form, &$form_state) {
       'test' => t('Test'),
     ),
     '#default_value' => variable_get('uc_cybersource_server', 'test'),
-    '#summary callback' => 'uc_summarize_null',
   );
   $form['uc_cybersource_method'] = array(
     '#type' => 'radios',
@@ -237,7 +238,6 @@ function uc_cybersource_settings_form($form, &$form_state) {
       'soap' => t('SOAP Toolkit API'),
     ),
     '#default_value' => variable_get('uc_cybersource_method', 'post'),
-    '#summary callback' => 'uc_summarize_null',
   );
 
   $form['uc_cybersource_avs'] = array(
@@ -257,7 +257,6 @@ function uc_cybersource_settings_form($form, &$form_state) {
     '#title' => t('SOAP Toolkit API settings'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
-    '#summary callback' => 'uc_summarize_null',
   );
   $form['soap']['uc_cybersource_soap_merchant_id'] = array(
     '#type' => 'textfield',
