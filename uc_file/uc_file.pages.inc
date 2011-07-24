@@ -55,7 +55,7 @@ function theme_uc_file_user_downloads($variables) {
     $rows[] = array(array('data' => t('No downloads found'), 'colspan' => 5));
   }
 
-  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  $output  = theme('table', array('header' => $header, 'rows' => $rows));
   $output .= theme('pager');
   $output .= '<div class="form-item"><p class="description">' .
   t('Once your download is finished, you must refresh the page to download again. (Provided you have permission)') .
@@ -66,7 +66,7 @@ function theme_uc_file_user_downloads($variables) {
 }
 
 /**
- * Table builder for user downloads
+ * Table builder for user downloads.
  */
 function uc_file_user_downloads($account) {
   // Create a header and the pager it belongs to.
@@ -329,8 +329,6 @@ function _uc_file_download_transfer($file_user, $ip) {
   // else set defaults and check for invalid ranges.
   $seek_end = intval((empty($seek_end)) ? ($size - 1) : min(abs(intval($seek_end)), ($size - 1)));
   $seek_start = intval((empty($seek_start) || $seek_end < abs(intval($seek_start))) ? 0 : max(abs(intval($seek_start)), 0));
-
-  ob_end_clean();
 
   // Only send partial content header if downloading a piece of the file (IE
   // workaround).
