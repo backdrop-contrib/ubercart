@@ -51,12 +51,6 @@ function uc_catalog_orphaned_products() {
   $build = array();
 
   if (variable_get('taxonomy_maintain_index_table', TRUE)) {
-    $build['explanation'] = array(
-      '#markup' => t('Orphaned products are products that you have created but not yet assigned to a category in your product catalog. All such products will appear as links below that you can follow to edit the product listings to assign them to categories.'),
-      '#prefix' => '<p>',
-      '#suffix' => '</p>',
-    );
-
     $vid = variable_get('uc_catalog_vid', 0);
     $product_types = uc_product_types();
     $field = field_info_field('taxonomy_catalog');
