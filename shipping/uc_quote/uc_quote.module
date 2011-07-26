@@ -639,6 +639,45 @@ function uc_checkout_pane_quotes($op, &$order, $form = NULL, &$form_state = NULL
 
       $contents['quotes'] += uc_quote_build_quote_form($order);
 
+      if (isset($contents['quotes']['quote_option']['#value'])) {
+        $default_option = $contents['quotes']['quote_option']['#value'];
+      }
+      elseif (isset($contents['quotes']['quote_option']['#default_value'])) {
+        $default_option = $contents['quotes']['quote_option']['#default_value'];
+      }
+
+      if (isset($default_option)) {
+        $order->quote['rate'] = $contents['quotes'][$default_option]['rate']['#value'];
+
+        $quote_option = explode('---', $default_option);
+        $order->quote['method'] = $quote_option[0];
+        $order->quote['accessorials'] = $quote_option[1];
+        $methods = array_filter(module_invoke_all('uc_shipping_method'), '_uc_quote_method_enabled');
+        $method = $methods[$quote_option[0]];
+
+        $label = $method['quote']['accessorials'][$quote_option[1]];
+
+        $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = :id AND type = :type", array(':id' => $order->order_id, ':type' => 'shipping'));
+        if ($lid = $result->fetchField()) {
+          uc_order_update_line_item($lid,
+            $label,
+            $order->quote['rate']
+          );
+        }
+        else {
+          uc_order_line_item_add($order->order_id, 'shipping',
+            $label,
+            $order->quote['rate']
+          );
+        }
+
+        // Update line items.
+        $order->line_items = uc_order_load_line_items($order, TRUE);
+        // Update calculated line items.
+        $order->line_items = array_merge($order->line_items, uc_order_load_line_items($order, FALSE));
+        usort($order->line_items, 'uc_weight_sort');
+      }
+
       return array('description' => $description, 'contents' => $contents);
 
     case 'process':
