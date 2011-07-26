@@ -89,13 +89,6 @@ function uc_cart_checkout() {
     drupal_goto('user', array('query' => drupal_get_destination()));
   }
 
-  $list = _uc_line_item_list();
-  foreach ($list as $line_item) {
-    if (isset($line_item['callback']) && function_exists($line_item['callback'])) {
-      $line_item['callback']('cart-preview', $items);
-    }
-  }
-
   drupal_add_js(drupal_get_path('module', 'uc_cart') . '/uc_cart.js');
   $build = drupal_get_form('uc_cart_checkout_form');
 
@@ -145,8 +138,6 @@ function uc_cart_checkout_form($form, &$form_state) {
     $order = new UcOrder();
     $order->products = uc_cart_get_contents();
   }
-
-  $order->products = uc_cart_get_contents();
 
   $form['panes'] = array('#tree' => TRUE);
   $panes = _uc_checkout_pane_list();
