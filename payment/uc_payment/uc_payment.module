@@ -126,6 +126,23 @@ function uc_payment_theme() {
 }
 
 /**
+ * Implements hook_form_FORM_ID_alter() for uc_cart_view_form().
+ *
+ * Add express buttons for enabled payment modules directly to the cart page.
+ */
+function uc_payment_form_uc_cart_view_form_alter(&$form, &$form_state) {
+  $methods = _uc_payment_method_list();
+  foreach ($methods as $id => $method) {
+    if ($method['checkout'] && isset($method['express'])) {
+      $form['actions'][$id] = $method['express'](array(), $form_state) + array(
+        '#prefix' => '<div align="right">',
+        '#suffix' => '</div>',
+      );
+    }
+  }
+}
+
+/**
  * Implements hook_form_FORM_ID_alter() for uc_cart_checkout_review_form().
  *
  * If a payment method redirects off-site, add the required form to the review page.

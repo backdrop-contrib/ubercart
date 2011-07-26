@@ -108,23 +108,6 @@ function uc_paypal_form_uc_cart_checkout_review_form_alter(&$form, &$form_state,
  ******************************************************************************/
 
 /**
- * Implements hook_uc_cart_pane().
- */
-function uc_paypal_uc_cart_pane() {
-  $panes['uc_paypal_ec'] = array(
-    'title' => t('PayPal Express Checkout'),
-    'enabled' => FALSE,
-    'weight' => 1,
-    'body' => drupal_get_form('uc_paypal_ec_form') + array(
-      '#prefix' => '<div align="right">',
-      '#suffix' => '</div>',
-    ),
-  );
-
-  return $panes;
-}
-
-/**
  * Implements hook_uc_payment_gateway().
  */
 function uc_paypal_uc_payment_gateway() {
@@ -182,6 +165,7 @@ function uc_paypal_uc_payment_method() {
     'weight' => 1,
     'checkout' => FALSE,
     'no_gateway' => TRUE,
+    'express' => 'uc_paypal_ec_form',
   );
 
   return $methods;
@@ -617,7 +601,7 @@ function uc_payment_method_paypal_ec($op, &$order) {
 
     case 'settings':
       $form['redirect'] = array(
-        '#markup' => '<div>' . t('For Express Checkout, you need to <a href="!cp_link">enable the cart pane</a> and <a href="!wpp_link">configure the Website Payments Pro settings</a>.', array('!cp_link' => url('admin/store/settings/cart/panes'), '!wpp_link' => url('admin/store/settings/payment/method/credit'))) . '</div>',
+        '#markup' => '<div>' . t('For Express Checkout, you need to <a href="!wpp_link">configure the Website Payments Pro settings</a>.', array('!wpp_link' => url('admin/store/settings/payment/method/credit'))) . '</div>',
       );
       $form['uc_paypal_ec_landingpage_style'] = array(
         '#type' => 'radios',
@@ -713,14 +697,11 @@ function uc_paypal_ec_checkout($form, &$form_state) {
  * @see uc_paypal_ec_form_submit()
  */
 function uc_paypal_ec_form($form, &$form_state) {
-  if (!variable_get('uc_cap_uc_paypal_ec_enabled', FALSE)) {
-    return;
-  }
-
   $form['submit'] = array(
     '#type' => 'image_button',
     '#src' => 'https://www.paypal.com/en_US/i/btn/btn_xpressCheckoutsm.gif',
     '#title' => t('Checkout with PayPal.'),
+    '#submit' => array('uc_cart_view_form_submit', 'uc_paypal_ec_form_submit'),
   );
 
   return $form;

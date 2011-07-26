@@ -158,15 +158,6 @@ function uc_google_checkout_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for uc_payment_methods_form().
- */
-function uc_google_checkout_form_uc_payment_methods_form_alter(&$form, &$form_state) {
-  // Make sure no one enables this for Ubercart checkout.
-  $form['pmtable']['google_checkout']['uc_payment_method_google_checkout_checkout']['#disabled'] = TRUE;
-  $form['pmtable']['google_checkout']['uc_payment_method_google_checkout_checkout']['#value'] = FALSE;
-}
-
-/**
  * Implements hook_form_FORM_ID_alter() for uc_payment_by_order_form().
  */
 function uc_google_checkout_form_uc_payment_by_order_form_alter(&$form, &$form_state) {
@@ -264,23 +255,6 @@ function uc_google_checkout_node_revision_delete($node) {
  ******************************************************************************/
 
 /**
- * Implements hook_uc_cart_pane().
- */
-function uc_google_checkout_uc_cart_pane() {
-  $panes['uc_google_checkout'] = array(
-    'title' => t('Google Checkout'),
-    'enabled' => TRUE,
-    'weight' => 1,
-    'body' => drupal_get_form('uc_google_checkout_cart_form') + array(
-      '#prefix' => '<div align="' . variable_get('uc_google_checkout_button_align', 'right') . '">',
-      '#suffix' => '</div>',
-    ),
-  );
-
-  return $panes;
-}
-
-/**
  * Implements hook_uc_order_pane().
  */
 function uc_google_checkout_uc_order_pane() {
@@ -360,6 +334,7 @@ function uc_google_checkout_uc_payment_method() {
     'weight' => 1,
     'checkout' => FALSE,
     'backend' => FALSE,
+    'express' => 'uc_google_checkout_cart_form',
   );
   return $methods;
 }
@@ -457,7 +432,7 @@ function uc_google_checkout_cart_form($form, &$form_state) {
   }
   if (!$merchant_id) {
     watchdog('google', 'Google Checkout is enabled, but no Merchant ID found.', array(), WATCHDOG_ERROR, 'admin/store/settings/google_checkout');
-    return;
+    return array();
   }
 
   global $user;
@@ -501,6 +476,7 @@ function uc_google_checkout_cart_form($form, &$form_state) {
       'width' => $width,
     ),
     '#description' => '<a href="javascript:void(window.open(\' http://checkout.google.com/seller/what_is_google_checkout.html\',\'whatischeckout\',\'scrollbars=0,resizable=1,directories=0,height=250,width=400\'));" OnMouseOver="return window.status = \'' . addslashes(t('What is Google Checkout?')) . '\';" OnMouseOut="return window.status = \'\';">' . addslashes(t('What is Google Checkout?')) . '</a>',
+    '#submit' => array('uc_cart_view_form_submit', 'uc_google_checkout_cart_form_submit'),
   );
 
   $form['analyticsdata'] = array(
