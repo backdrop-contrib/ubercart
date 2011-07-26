@@ -13,35 +13,18 @@
 function uc_order_settings_form($form, &$form_state) {
   $form['order-settings'] = array('#type' => 'vertical_tabs');
 
-  $form['admin'] = array(
+  $form['invoice'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Admin settings'),
+    '#title' => t('Invoice settings'),
     '#group' => 'order-settings',
   );
-  $form['admin']['uc_order_number_displayed'] = array(
-    '#type' => 'select',
-    '#title' => t('Number of orders on overview screen'),
-    '#options' => drupal_map_assoc(range(10, 100, 10)),
-    '#default_value' => variable_get('uc_order_number_displayed', 30),
-  );
-  $form['admin']['uc_order_capitalize_addresses'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Capitalize address on order screens'),
-    '#default_value' => variable_get('uc_order_capitalize_addresses', TRUE),
-  );
-
-  $form['customer'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Customer settings'),
-    '#group' => 'order-settings',
-  );
-  $form['customer']['uc_cust_view_order_invoices'] = array(
+  $form['invoice']['uc_cust_view_order_invoices'] = array(
     '#type' => 'checkbox',
     '#title' => t('Allow customers to view order invoices from their order history.'),
     '#description' => t('Enabling this feature allows pop-up invoices to be opened when a particular order is being viewed.'),
     '#default_value' => variable_get('uc_cust_view_order_invoices', TRUE),
   );
-  $form['customer']['uc_cust_order_invoice_template'] = array(
+  $form['invoice']['uc_cust_order_invoice_template'] = array(
     '#type' => 'select',
     '#title' => t('On-site invoice template'),
     '#description' => t('Select the invoice template to use when invoices are viewed on the site.'),
@@ -49,7 +32,7 @@ function uc_order_settings_form($form, &$form_state) {
     '#default_value' => variable_get('uc_cust_order_invoice_template', 'customer'),
   );
   if (module_exists('uc_cart') && module_exists('rules')) {
-    $form['customer']['uc_cust_order_invoice_template']['#description'] .= '<br />' . t('This is separate from the template used to e-mail invoices to customers which is configured through <a href="!url">Rules</a>.', array('!url' => url('admin/store/settings/checkout/rules')));
+    $form['invoice']['uc_cust_order_invoice_template']['#description'] .= '<br />' . t('This is separate from the template used to e-mail invoices to customers which is configured through <a href="!url">Rules</a>.', array('!url' => url('admin/store/settings/checkout/rules')));
   }
 
   return system_settings_form($form);

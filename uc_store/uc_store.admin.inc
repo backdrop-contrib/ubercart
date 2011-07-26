@@ -740,6 +740,7 @@ function uc_store_settings_form($form, &$form_state) {
       array('none' => t('(Do not display a message in the footer.)'))
     ),
     '#default_value' => variable_get('uc_footer_message', 0),
+    '#weight' => 10,
   );
 
   return system_settings_form($form);
