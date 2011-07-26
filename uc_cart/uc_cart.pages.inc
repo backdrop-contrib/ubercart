@@ -136,8 +136,9 @@ function uc_cart_checkout_form($form, &$form_state) {
 
   if (is_null($order)) {
     $order = new UcOrder();
-    $order->products = uc_cart_get_contents();
   }
+
+  $order->products = uc_cart_get_contents();
 
   $form['panes'] = array('#tree' => TRUE);
   $panes = _uc_checkout_pane_list();
