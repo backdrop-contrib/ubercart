@@ -16,10 +16,21 @@ function uc_quote_assemble_quotes($order) {
   }
 
   $products = $order->products;
+  foreach ($products as $id => $product) {
+    $node = (array) node_load($product->nid);
+    foreach ($node as $key => $value) {
+      if (!isset($product->$key)) {
+        $product->$key = $value;
+      }
+    }
+    $order->products[$id] = $product;
+  }
+
   $shipping_types = array();
   foreach ($products as $product) {
     $shipping_types[] =  uc_product_get_shipping_type($product);
   }
+
   $shipping_types = array_unique($shipping_types);
   $all_types = uc_quote_get_shipping_types();
   $shipping_type = '';
