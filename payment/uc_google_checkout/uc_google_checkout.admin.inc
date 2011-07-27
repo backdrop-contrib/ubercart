@@ -92,12 +92,6 @@ function uc_google_checkout_settings($form, &$form_state) {
     '#options' => array('large' => t('Large'), 'medium' => t('Medium'), 'small' => t('Small')),
     '#default_value' => variable_get('uc_google_checkout_button_size', 'large'),
   );
-  $form['button']['uc_google_checkout_button_align'] = array(
-    '#type' => 'radios',
-    '#title' => t('Button alignment'),
-    '#default_value' => variable_get('uc_google_checkout_button_align', 'right'),
-    '#options' => array('right' => t('Right'), 'left' => t('Left')),
-  );
 
   return system_settings_form($form);
 }
