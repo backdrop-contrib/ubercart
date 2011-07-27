@@ -231,6 +231,13 @@ function uc_order_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
+      'currency' => array(
+        'description' => 'The ISO currency code for the order.',
+        'type' => 'char',
+        'length' => 3,
+        'not null' => TRUE,
+        'default' => '',
+      ),
     ),
     'indexes' => array(
       'uid' => array('uid'),
@@ -689,4 +696,22 @@ function uc_order_update_7000() {
     'not null' => TRUE,
     'default' => '',
   ));
+}
+
+/**
+ * Add currency code field.
+ */
+function uc_order_update_7001() {
+  // Column may have been added by uc_order_update_6018() in 6.x-2.x.
+  if (!db_field_exists('uc_orders', 'currency')) {
+    db_add_field('uc_orders', 'currency', array(
+      'type' => 'char',
+      'length' => 3,
+      'not null' => TRUE,
+      'default' => '',
+    ));
+    db_update('uc_orders')
+      ->fields(array('currency' => variable_get('uc_currency_code', 'USD')))
+      ->execute();
+  }
 }
