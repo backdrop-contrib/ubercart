@@ -411,6 +411,7 @@ function uc_order_edit_products_form($form, &$form_state, $products) {
         '#type' => 'textfield',
         '#default_value' => $products[$i]->title,
         '#size' => 30,
+        '#maxlength' => 255,
       );
       $form['products'][$i]['model'] = array(
         '#type' => 'textfield',
