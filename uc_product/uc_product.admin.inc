@@ -40,14 +40,14 @@ function uc_product_administration() {
  * Displays a list of product classes.
  */
 function uc_product_class_default() {
-  $result = db_query("SELECT * FROM {uc_product_classes}");
+  $classes = uc_product_class_load();
   $header = array(t('Class ID'), t('Name'), t('Description'), t('Operations'));
   $rows = array();
-  foreach ($result as $class) {
-    $ops = array(
-      l(t('edit'), 'admin/store/products/classes/' . $class->pcid . '/edit'),
-      l(t('delete'), 'admin/store/products/classes/' . $class->pcid . '/delete'),
-    );
+  foreach ($classes as $class) {
+    $ops = array(l(t('edit'), 'admin/store/products/classes/'. $class->pcid .'/edit'));
+    if (empty($class->locked)) {
+      $ops[] = l(t('delete'), 'admin/store/products/classes/'. $class->pcid .'/delete');
+    }
     $rows[] = array(
       $class->pcid,
       $class->name,
