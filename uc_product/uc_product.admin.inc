@@ -410,6 +410,14 @@ function uc_product_class_form_submit($form, &$form_state) {
     ))
     ->execute();
 
+  db_update('node_type')
+    ->fields(array(
+      'name' => $form_state['values']['name'],
+      'description' => $form_state['values']['description'],
+    ))
+    ->condition('type', $pcid)
+    ->execute();
+
   uc_product_node_info(TRUE);
 
   if ($result == MergeQuery::STATUS_INSERT) {
