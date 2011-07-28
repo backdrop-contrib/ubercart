@@ -7,6 +7,7 @@
  * Available variables:
  * - $products: An array of products in the order.
  * - $line_items: An array of line items attached to the order.
+ * - $shippable: TRUE if the order is shippable.
  *
  * Tokens: All site, store and order tokens are also available as
  * variables, such as $site_logo, $store_name and $order_first_name.
@@ -96,7 +97,7 @@
                         <b><?php print t('Billing Phone:'); ?></b><br />
                         <?php print $order_billing_phone; ?><br />
                       </td>
-                      <?php if (uc_order_is_shippable($order)): ?>
+                      <?php if ($shippable): ?>
                       <td valign="top" width="50%">
                         <b><?php print t('Shipping Address:'); ?></b><br />
                         <?php print $order_shipping_address; ?><br />
@@ -133,7 +134,7 @@
                 </td>
               </tr>
 
-              <?php if (uc_order_is_shippable($order)): ?>
+              <?php if ($shippable): ?>
               <tr>
                 <td colspan="2" bgcolor="#EEEEEE">
                   <font color="#CC6600"><b><?php print t('Shipping Details:'); ?></b></font>
@@ -163,7 +164,7 @@
                       </td>
                     </tr>
 
-                    <?php if ($shipping_method && uc_order_is_shippable($order)): ?>
+                    <?php if ($shipping_method && $shippable): ?>
                     <tr>
                       <td nowrap="nowrap">
                         <b><?php print t('Shipping Method:'); ?></b>
