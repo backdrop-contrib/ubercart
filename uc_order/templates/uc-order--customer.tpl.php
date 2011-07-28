@@ -14,7 +14,11 @@
  *   - individual_price: If quantity is more than 1, the formatted product
  *     price of a single item.
  *   - details: Any extra details about the product, such as attributes.
- * - $line_items: An array of line item arrays attached to the order.
+ * - $line_items: An array of line item arrays attached to the order, each with
+ *   the following keys:
+ *   - line_item_id: The type of line item (subtotal, shipping, etc.).
+ *   - title: The line item display title.
+ *   - formatted_amount: The formatted amount of the line item.
  * - $shippable: TRUE if the order is shippable.
  *
  * Tokens: All site, store and order tokens are also available as
@@ -200,7 +204,7 @@
                         <?php print $item['title']; ?>:
                       </td>
                       <td>
-                        <?php print uc_currency_format($item['amount']); ?>
+                        <?php print $item['formatted_amount']; ?>
                       </td>
                     </tr>
 
