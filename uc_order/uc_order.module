@@ -1768,6 +1768,8 @@ function _uc_order_get_screen_titles() {
  * @see uc_order--customer.tpl.php
  */
 function template_preprocess_uc_order(&$variables) {
+  $order = &$variables['order'];
+
   switch ($variables['op']) {
     case 'checkout-mail':
       $variables['thank_you_message'] = TRUE;
@@ -1782,18 +1784,18 @@ function template_preprocess_uc_order(&$variables) {
       break;
   }
 
-  $variables['shippable'] = uc_order_is_shippable($variables['order']);
+  $variables['shippable'] = uc_order_is_shippable($order);
 
-  $variables['products'] = $variables['order']->products;
+  $variables['products'] = $order->products;
   if (!is_array($variables['products'])) {
     $variables['products'] = array();
   }
 
-  $variables['line_items'] = $variables['order']->line_items;
+  $variables['line_items'] = $order->line_items;
   $items = _uc_line_item_list();
   foreach ($items as $item) {
     if (isset($item['display_only']) && $item['display_only'] == TRUE) {
-      $result = $item['callback']('display', $variables['order']);
+      $result = $item['callback']('display', $order);
       if (is_array($result)) {
         foreach ($result as $line) {
           $variables['line_items'][] = array(
@@ -1814,7 +1816,7 @@ function template_preprocess_uc_order(&$variables) {
 
   // Generate tokens to use as template variables.
   $types = array(
-    'uc_order' => $variables['order'],
+    'uc_order' => $order,
   );
 
   $token_info = token_info();
