@@ -770,7 +770,7 @@ function uc_checkout_pane_quotes($op, &$order, $form = NULL, &$form_state = NULL
  * @see uc_quote_order_pane_quotes_submit()
  * @see uc_quote_apply_quote_to_order()
  */
-function uc_order_pane_quotes($op, $order, $form = NULL, &$form_state = NULL) {
+function uc_order_pane_quotes($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'edit-form':
       // Let Javascript know where we are.
@@ -791,23 +791,20 @@ function uc_order_pane_quotes($op, $order, $form = NULL, &$form_state = NULL) {
           ),
         ),
       );
-      $form['quotes']['add_quote'] = array(
-        '#type' => 'submit',
-        '#value' => t('Apply to order'),
-        '#attributes' => array('class' => array('save-button')),
-        '#disabled' => TRUE,
-        '#submit' => array('uc_quote_apply_quote_to_order'),
-      );
-
       $form['quotes']['quotes'] = array(
         '#tree' => TRUE,
         '#prefix' => '<div id="quote">',
         '#suffix' => '</div>',
       );
 
-      if (isset($form_state['quote_requested']) &&
-          $form_state['quote_requested'] == TRUE) {
+      if (!empty($form_state['quote_requested'])) {
         $form['quotes']['quotes'] += uc_quote_build_quote_form($order);
+
+        $form['quotes']['quotes']['add_quote'] = array(
+          '#type' => 'submit',
+          '#value' => t('Apply to order'),
+          '#submit' => array('uc_quote_apply_quote_to_order'),
+        );
       }
 
       return $form;
@@ -824,6 +821,7 @@ function uc_order_pane_quotes($op, $order, $form = NULL, &$form_state = NULL) {
  */
 function uc_quote_order_pane_quotes_submit($form, &$form_state) {
   $form_state['quote_requested'] = ($form_state['triggering_element']['#value'] == $form['quotes']['quote_button']['#value']);
+  $form_state['rebuild'] = TRUE;
 }
 
 /**
