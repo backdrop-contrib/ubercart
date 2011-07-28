@@ -228,7 +228,7 @@ function uc_shipping_theme() {
  */
 function template_preprocess_uc_packing_slip(&$variables) {
   $tokens = token_generate('site', drupal_map_assoc(array('logo')));
-  $variables['site_logo'] = $tokens['logo'];
+  $variables['site_logo'] = isset($tokens['logo']) ? $tokens['logo'] : '';
 
   $tokens = token_generate('store', drupal_map_assoc(array('name', 'address', 'phone')));
   $variables['store_name'] = $tokens['name'];
@@ -364,7 +364,8 @@ function uc_shipping_package_view($package) {
     $rows[] = array(t('Tracking number:'), check_plain($package->tracking_number));
   }
 
-  if ($shipment && isset($package->label_image) && file_exists($package->label_image->uri)) {
+  if ($shipment && isset($package->label_image) &&
+      file_exists($package->label_image->uri)) {
     $rows[] = array(t('Label:'), l(t('Click to view.'), 'admin/store/orders/' . $package->order_id . '/shipments/labels/' . $shipment->shipping_method . '/' . $package->label_image->uri));
   }
   else {
