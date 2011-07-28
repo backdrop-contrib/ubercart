@@ -18,10 +18,10 @@
 <?php foreach ($products as $product): ?>
 - <?php print $product->qty; ?> x <?php print $product->title . ' - ' . uc_currency_format($product->price * $product->qty); ?><br />
 &nbsp;&nbsp;<?php print t('SKU: ') . $product->model; ?><br />
-    <?php if (isset($product->data['attributes']) && is_array($product->data['attributes']) && count($product->data['attributes']) > 0): ?>
-    <?php foreach ($product->data['attributes'] as $attribute => $option) {
-      print '&nbsp;&nbsp;' . t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))) . '<br />';
-    } ?>
+    <?php if (!empty($product->data['attributes'])): ?>
+    <?php foreach ($product->data['attributes'] as $attribute => $option): ?>
+    &nbsp;&nbsp;<?php print t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))); ?><br />
+    <?php endforeach; ?>
     <?php endif; ?>
 <br />
 <?php endforeach; ?>

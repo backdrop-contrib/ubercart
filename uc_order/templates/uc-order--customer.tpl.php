@@ -183,11 +183,8 @@
                       </td>
                     </tr>
 
-                    <?php
-                    foreach ($line_items as $item):
-                      if ($item['line_item_id'] == 'subtotal' || $item['line_item_id'] == 'total') {
-                        continue;
-                      } ?>
+                    <?php foreach ($line_items as $item): ?>
+                    <?php if ($item['line_item_id'] == 'subtotal' || $item['line_item_id'] == 'total') continue; ?>
 
                     <tr>
                       <td nowrap="nowrap">
@@ -220,23 +217,24 @@
 
                         <table width="100%" style="font-family: verdana, arial, helvetica; font-size: small;">
 
-                          <?php foreach ($order->products as $product): ?>
+                          <?php foreach ($products as $product): ?>
                           <tr>
                             <td valign="top" nowrap="nowrap">
                               <b><?php print $product->qty; ?> x </b>
                             </td>
                             <td width="98%">
-                              <b><?php print $product->title . ' - ' . uc_currency_format($product->price * $product->qty); ?></b>
+                              <b><?php print $product->title; ?> - <?php print uc_currency_format($product->price * $product->qty); ?></b>
                               <?php if ($product->qty > 1):
                                 print t('(!price each)', array('!price' => uc_currency_format($product->price)));
                               endif; ?>
                               <br />
                               <?php print t('SKU: ') . $product->model; ?><br />
-                              <?php if (isset($product->data['attributes']) && is_array($product->data['attributes']) && count($product->data['attributes']) > 0): ?>
-                              <?php
-                                foreach ($product->data['attributes'] as $attribute => $option) {
-                                  print '<li>' . t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))) . '</li>';
-                                } ?>
+                              <?php if (!empty($product->data['attributes'])): ?>
+                              <ul>
+                              <?php foreach ($product->data['attributes'] as $attribute => $option): ?>
+                                <li><?php print t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))); ?></li>
+                              <?php endforeach; ?>
+                              </ul>
                               <?php endif; ?>
                               <br />
                             </td>
