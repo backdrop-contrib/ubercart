@@ -315,8 +315,10 @@ function uc_roles_action_user_email($account, $role_expiration, $from, $addresse
  *
  * @param $order
  *   An Ubercart order object.
+ * @param $message
+ *   If TRUE, messages will be displayed to the user about the renewal.
  */
-function uc_roles_action_order_renew($order) {
+function uc_roles_action_order_renew($order, $message) {
   // Load the order's user and exit if not available.
   if (!($account = user_load($order->uid))) {
     return;
@@ -336,22 +338,22 @@ function uc_roles_action_order_renew($order) {
       $existing_role = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid AND rid = :rid", array(':uid' => $account->uid, ':rid' => $role->rid))->fetchObject();
 
       // Determine the expiration timestamp for the role.
-      $expiration = _uc_roles_product_get_expiration($role, $product->qty, !is_null($existing_role->expiration) ? $existing_role->expiration : NULL);
+      $expiration = _uc_roles_product_get_expiration($role, $product->qty, isset($existing_role->expiration) ? $existing_role->expiration : NULL);
 
       // Leave an order comment.
-      if (!is_null($existing_role->expiration)) {
+      if (isset($existing_role->expiration)) {
         $op = 'renew';
         $comment = t('Customer user role %role renewed.', array('%role' => _uc_roles_get_name($role->rid)));
 
         // Renew the user's role.
-        uc_roles_renew($account, $role->rid, $expiration, !$settings['message']);
+        uc_roles_renew($account, $role->rid, $expiration, !$message);
       }
       else {
         $op = 'grant';
         $comment = t('Customer granted user role %role.', array('%role' => _uc_roles_get_name($role->rid)));
 
         // Grant the role to the user.
-        uc_roles_grant($account, $role->rid, $expiration, TRUE, !$settings['message']);
+        uc_roles_grant($account, $role->rid, $expiration, TRUE, !$message);
       }
 
       // Get the new expiration (if applicable)
