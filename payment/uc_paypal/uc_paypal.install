@@ -112,12 +112,16 @@ function uc_paypal_schema() {
 function uc_paypal_install() {
   $t = get_t();
 
-  db_insert('uc_order_statuses')
-    ->fields(array(
-      'order_status_id' => 'paypal_pending',
+  db_merge('uc_order_statuses')
+    ->key(array('order_status_id' => 'paypal_pending'))
+    ->insertFields(array(
       'title' => $t('PayPal pending'),
       'state' => 'payment_received',
       'weight' => 7,
+      'locked' => 1,
+    ))
+    ->updateFields(array(
+      'state' => 'payment_received',
       'locked' => 1,
     ))
     ->execute();
@@ -127,6 +131,13 @@ function uc_paypal_install() {
  * Implements hook_uninstall().
  */
 function uc_paypal_uninstall() {
+  db_update('uc_order_statuses')
+    ->fields(array(
+      'locked' => 0,
+    ))
+    ->condition('order_status_id', 'paypal_pending')
+    ->execute();
+
   db_delete('variable')
     ->condition('name', 'uc_paypal_%', 'LIKE')
     ->execute();
