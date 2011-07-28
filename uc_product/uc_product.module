@@ -386,7 +386,7 @@ function uc_product_form($node, $form_state) {
     '#type' => 'textfield',
     '#title' => t('SKU'),
     '#required' => TRUE,
-    '#default_value' => isset($node->model) ? $node->model : '',
+    '#default_value' => $node->model,
     '#description' => t('Product SKU/model.'),
     '#weight' => 0,
     '#size' => 32,
@@ -402,7 +402,7 @@ function uc_product_form($node, $form_state) {
     '#type' => 'textfield',
     '#title' => t('List price'),
     '#required' => FALSE,
-    '#default_value' => isset($node->list_price) ? uc_store_format_price_field_value($node->list_price) : 0,
+    '#default_value' => uc_store_format_price_field_value($node->list_price),
     '#description' => t('The listed MSRP.'),
     '#weight' => 0,
     '#size' => 15,
@@ -414,7 +414,7 @@ function uc_product_form($node, $form_state) {
     '#type' => 'textfield',
     '#title' => t('Cost'),
     '#required' => FALSE,
-    '#default_value' => isset($node->cost) ? uc_store_format_price_field_value($node->cost) : 0,
+    '#default_value' => uc_store_format_price_field_value($node->cost),
     '#description' => t("Your store's cost."),
     '#weight' => 1,
     '#size' => 15,
@@ -426,7 +426,7 @@ function uc_product_form($node, $form_state) {
     '#type' => 'textfield',
     '#title' => t('Sell price'),
     '#required' => TRUE,
-    '#default_value' => isset($node->sell_price) ? uc_store_format_price_field_value($node->sell_price) : 0,
+    '#default_value' => uc_store_format_price_field_value($node->sell_price),
     '#description' => t('Customer purchase price.'),
     '#weight' => 2,
     '#size' => 15,
@@ -438,7 +438,7 @@ function uc_product_form($node, $form_state) {
   $form['base']['shippable'] = array(
     '#type' => 'checkbox',
     '#title' => t('Product is shippable.'),
-    '#default_value' => isset($node->shippable) ? $node->shippable : variable_get('uc_product_shippable_' . $node->type, 1),
+    '#default_value' => $node->shippable,
     '#weight' => 10,
   );
 
@@ -455,7 +455,7 @@ function uc_product_form($node, $form_state) {
   $form['base']['weight']['weight'] = array(
     '#type' => 'textfield',
     '#title' => t('Weight'),
-    '#default_value' => isset($node->weight) ? $node->weight : 0,
+    '#default_value' => $node->weight,
     '#size' => 10,
     '#maxlength' => 15,
   );
@@ -468,7 +468,7 @@ function uc_product_form($node, $form_state) {
   $form['base']['weight']['weight_units'] = array(
     '#type' => 'select',
     '#title' => t('Units'),
-    '#default_value' => isset($node->weight_units) ? $node->weight_units : variable_get('uc_weight_unit', 'lb'),
+    '#default_value' => $node->weight_units,
     '#options' => $units,
   );
 
@@ -485,19 +485,19 @@ function uc_product_form($node, $form_state) {
   $form['base']['dimensions']['dim_length'] = array(
     '#type' => 'textfield',
     '#title' => t('Length'),
-    '#default_value' => isset($node->length) ? $node->length : '',
+    '#default_value' => $node->length,
     '#size' => 10,
   );
   $form['base']['dimensions']['dim_width'] = array(
     '#type' => 'textfield',
     '#title' => t('Width'),
-    '#default_value' => isset($node->width) ? $node->width : '',
+    '#default_value' => $node->width,
     '#size' => 10,
   );
   $form['base']['dimensions']['dim_height'] = array(
     '#type' => 'textfield',
     '#title' => t('Height'),
-    '#default_value' => isset($node->height) ? $node->height : '',
+    '#default_value' => $node->height,
     '#size' => 10,
   );
   $form['base']['dimensions']['length_units'] = array(
@@ -509,12 +509,12 @@ function uc_product_form($node, $form_state) {
       'cm' => t('Centimeters'),
       'mm' => t('Millimeters'),
     ),
-    '#default_value' => isset($node->length_units) ? $node->length_units : variable_get('uc_length_unit', 'in'),
+    '#default_value' => $node->length_units,
   );
   $form['base']['pkg_qty'] = array(
     '#type' => 'textfield',
     '#title' => t('Maximum package quantity'),
-    '#default_value' => isset($node->pkg_qty) ? $node->pkg_qty : 1,
+    '#default_value' => $node->pkg_qty,
     '#description' => t('At most, how many of these items can fit in your largest box? Orders that exceed this value will be split into multiple packages when retrieving shipping quotes.'),
     '#weight' => 25,
     '#size' => 5,
@@ -530,7 +530,7 @@ function uc_product_form($node, $form_state) {
     $form['base']['default_qty'] = array(
       '#type' => 'textfield',
       '#title' => t('Default quantity to add to cart'),
-      '#default_value' => isset($node->default_qty) ? $node->default_qty : 1,
+      '#default_value' => $node->default_qty,
       '#description' => t('Use 0 to disable the quantity field next to the add to cart button.'),
       '#weight' => 27,
       '#size' => 5,
@@ -540,7 +540,7 @@ function uc_product_form($node, $form_state) {
   else {
     $form['base']['default_qty'] = array(
       '#type' => 'value',
-      '#value' => isset($node->default_qty) ? $node->default_qty : 1,
+      '#value' => $node->default_qty,
     );
   }
 
@@ -549,7 +549,7 @@ function uc_product_form($node, $form_state) {
     '#title' => t('List position'),
     '#description' => t("Specify a value to set this product's position in product lists.<br />Products in the same position will be sorted alphabetically."),
     '#delta' => 25,
-    '#default_value' => isset($node->ordering) ? $node->ordering : 0,
+    '#default_value' => $node->ordering,
     '#weight' => 30,
   );
 
@@ -601,6 +601,34 @@ function uc_product_validate($node) {
     }
     elseif ($node->default_qty < 0) {
       form_set_error('default_qty', t("Adding negative items to the cart doesn't make sense, so don't make it easy."));
+    }
+  }
+}
+
+/**
+ * Implements hook_prepare().
+ */
+function uc_product_prepare($node) {
+  $defaults = array(
+    'model' => '',
+    'list_price' => 0,
+    'cost' => 0,
+    'sell_price' => 0,
+    'weight' => 0,
+    'weight_units' => variable_get('uc_weight_unit', 'lb'),
+    'length' => 0,
+    'width' => 0,
+    'height' => 0,
+    'length_units' => variable_get('uc_length_unit', 'in'),
+    'pkg_qty' => 1,
+    'default_qty' => 1,
+    'shippable' => variable_get('uc_product_shippable_' . $node->type, 1),
+    'ordering' => 0,
+  );
+
+  foreach ($defaults as $key => $value) {
+    if (!isset($node->$key)) {
+      $node->$key = $value;
     }
   }
 }
