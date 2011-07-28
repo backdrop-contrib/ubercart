@@ -64,7 +64,7 @@ function uc_quote_admin_settings($form, &$form_state) {
   $form['default_address'] = array(
     '#type' => 'fieldset',
     '#title' => t('Default pickup address'),
-    '#description' => t("When delivering products to customers, the original location of the product must be known in order to accurately quote the shipping cost and set up a delivery. This form provides the default location for products across the entire store. If a product's individual pickup address is blank, Ubercart looks for the manufacturer's. If that is also blank, it uses the store's default pickup address."),
+    '#description' => t("When delivering products to customers, the original location of the product must be known in order to accurately quote the shipping cost and set up a delivery. This form provides the default location for all products in the store. If a product's individual pickup address is blank, Ubercart uses the store's default pickup address specified here."),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
@@ -110,7 +110,7 @@ function uc_quote_admin_settings_submit($form, &$form_state) {
 /**
  * Settings for the shipping quote methods.
  *
- * Enable and reorder shipping quote methods. Set the default shipping type.
+ * Enables and reorders shipping quote methods. Sets the default shipping type.
  *
  * @see uc_quote_method_settings_validate()
  * @see uc_quote_method_settings_submit()

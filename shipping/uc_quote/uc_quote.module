@@ -180,9 +180,8 @@ function uc_quote_node_delete($node) {
 /**
  * Implements hook_form_alter().
  *
- * Adds a default shipping address for products and manufacturers. If it is
- * left blank, products default to their manufacturers', which default to
- * the store's.
+ * Adds a default shipping origin address for products. If left blank, the
+ * store's default origin address will be used.
  */
 function uc_quote_form_alter(&$form, &$form_state, $form_id) {
   // Alter the product node form.
@@ -260,6 +259,9 @@ function uc_quote_form_uc_cart_checkout_form_alter(&$form, &$form_state) {
   }
 }
 
+/**
+ *
+ */
 function uc_quote_select_address($form, $form_state) {
   $return = uc_quote_checkout_returned_rates($form, $form_state);
   $address = uc_checkout_pane_address_render($form, $form_state);
@@ -269,6 +271,9 @@ function uc_quote_select_address($form, $form_state) {
   return $return;
 }
 
+/**
+ *
+ */
 function uc_quote_process_checkout_address($element, $form_state) {
   $ajax = array(
     'callback' => 'uc_quote_checkout_returned_rates',
@@ -330,6 +335,8 @@ function uc_quote_uc_checkout_pane() {
 }
 
 /**
+ * Implements hook_uc_order_pane().
+ *
  * Defines the shipping quote order pane.
  */
 function uc_quote_uc_order_pane() {
@@ -361,17 +368,19 @@ function uc_quote_uc_order($op, $order, $arg2) {
           ))
           ->execute();
       }
-    break;
+      break;
+
     case 'load':
       $quote = db_query("SELECT method, accessorials, rate FROM {uc_order_quotes} WHERE order_id = :id", array(':id' => $order->order_id))->fetchAssoc();
       $order->quote = $quote;
       $order->quote['accessorials'] = strval($quote['accessorials']);
-    break;
+      break;
+
     case 'delete':
       db_delete('uc_order_quotes')
         ->condition('order_id', $order->order_id)
         ->execute();
-    break;
+      break;
   }
 }
 
@@ -443,7 +452,7 @@ function uc_quote_set_shipping_type($id_type, $id, $shipping_type) {
 }
 
 /**
- * Retrieves a product's or manufacturer's shipping type from the database.
+ * Retrieves a product's shipping type from the database.
  *
  * @param $id_type
  *   Type can be 'product' or 'manufacturer'.
@@ -486,8 +495,8 @@ function uc_product_get_shipping_type($product) {
 /**
  * Gets a product's default shipping address.
  *
- * Loads the default shipping address of a product, it's manufacturer's, or the
- * store's, whichever is available.
+ * Loads the default shipping address of a product, or the store's if
+ * the product shipping address is not set.
  *
  * @param $nid
  *   A product node id.
@@ -796,7 +805,8 @@ function uc_order_pane_quotes($op, $order, $form = NULL, &$form_state = NULL) {
         '#suffix' => '</div>',
       );
 
-      if (isset($form_state['quote_requested']) && $form_state['quote_requested'] == TRUE) {
+      if (isset($form_state['quote_requested']) &&
+          $form_state['quote_requested'] == TRUE) {
         $form['quotes']['quotes'] += uc_quote_build_quote_form($order);
       }
 
@@ -1025,7 +1035,7 @@ function _uc_quote_type_sort($a, $b) {
 /**
  * Callback for uasort().
  *
- * Sort service rates by increasing price.
+ * Sorts service rates by increasing price.
  */
 function uc_quote_price_sort($a, $b) {
   $ar = $a['rate'];

@@ -6,7 +6,7 @@
  */
 
 /**
- * Pulls the get_quote_from_* triggers and assemble their returned data.
+ * Pulls the get_quote_from_* triggers and assembles their returned data.
  */
 function uc_quote_assemble_quotes($order) {
   global $user;
