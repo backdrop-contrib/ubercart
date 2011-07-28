@@ -26,11 +26,6 @@ function uc_store_token_info() {
   $store['name'] = array(
     'name' => t('Store name'),
     'description' => t('The Ubercart store name.'),
-    );
-  $store['url'] = array(
-    'name' => t('URL'),
-    'description' => t('The Ubercart store URL.'),
-    'type' => 'url',
   );
   $store['link'] = array(
     'name' => t('Store link'),
@@ -105,10 +100,6 @@ function uc_store_tokens($type, $tokens, $data = array(), $options = array()) {
           $replacements[$original] = variable_get('uc_store_name', t('Our store'));
           break;
 
-        case 'url':
-          $replacements[$original] = $base_url;
-          break;
-
         case 'link':
           $replacements[$original] = l(variable_get('uc_store_name', t('Our store')), $base_url);
           break;
@@ -140,9 +131,6 @@ function uc_store_tokens($type, $tokens, $data = array(), $options = array()) {
     }
 
     // Handle chaining for tokens that have 'type' defined in hook_token_info()
-    if ($link_tokens = token_find_with_prefix($tokens, 'url')) {
-      $replacements += token_generate('url', $link_tokens, array('path' => $base_url), $options);
-    }
     if ($link_tokens = token_find_with_prefix($tokens, 'help-url')) {
       $replacements += token_generate('url', $link_tokens, array('path' => $variable_get('uc_store_help_page', '')), $options);
     }
