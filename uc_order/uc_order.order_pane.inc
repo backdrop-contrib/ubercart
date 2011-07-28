@@ -310,28 +310,15 @@ function uc_order_product_select_form($form, &$form_state, $order) {
 }
 
 /**
- * Intermediate div that lets you set the qty and attributes for a product.
- *
- * @see uc_order_add_product_form()
- */
-function uc_order_add_product($order, $product) {
-  $build = array();
-  $build['form'] = drupal_get_form('uc_order_add_product_form', $order, $product) + array(
-    '#prefix' => '<div style="margin: 1em;"><strong>Add ' . check_plain($product->title) . '</strong>',
-    '#suffix' => '</div>',
-  );
-
-  print drupal_render($build);
-  exit();
-}
-
-/**
  * Sets the quantity and attributes of a product added to the order.
  *
  * @see uc_order_add_product_form()
  * @ingroup forms
  */
 function uc_order_add_product_form($form, &$form_state, $order, $node) {
+  $form['title'] = array(
+    '#markup' => '<h3>' . check_plain($node->title) . '</h3>',
+  );
   $form['nid'] = array(
     '#type' => 'hidden',
     '#value' => $node->nid,
