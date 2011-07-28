@@ -5,8 +5,16 @@
  * This file is the default customer invoice template for Ubercart.
  *
  * Available variables:
- * - $products: An array of products in the order.
- * - $line_items: An array of line items attached to the order.
+ * - $products: An array of product objects in the order, with the following
+ *   members:
+ *   - title: The product title.
+ *   - model: The product SKU.
+ *   - qty: The quantity ordered.
+ *   - total_price: The formatted total price for the quantity ordered.
+ *   - individual_price: If quantity is more than 1, the formatted product
+ *     price of a single item.
+ *   - details: Any extra details about the product, such as attributes.
+ * - $line_items: An array of line item arrays attached to the order.
  * - $shippable: TRUE if the order is shippable.
  *
  * Tokens: All site, store and order tokens are also available as
@@ -224,20 +232,10 @@
                               <b><?php print $product->qty; ?> x </b>
                             </td>
                             <td width="98%">
-                              <b><?php print $product->title; ?> - <?php print uc_currency_format($product->price * $product->qty); ?></b>
-                              <?php if ($product->qty > 1):
-                                print t('(!price each)', array('!price' => uc_currency_format($product->price)));
-                              endif; ?>
-                              <br />
-                              <?php print t('SKU: ') . $product->model; ?><br />
-                              <?php if (!empty($product->data['attributes'])): ?>
-                              <ul>
-                              <?php foreach ($product->data['attributes'] as $attribute => $option): ?>
-                                <li><?php print t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))); ?></li>
-                              <?php endforeach; ?>
-                              </ul>
-                              <?php endif; ?>
-                              <br />
+                              <b><?php print $product->title; ?> - <?php print $product->total_price; ?></b>
+                              <?php print $product->individual_price; ?><br />
+                              <?php print t('SKU'); ?>: <?php print $product->model; ?><br />
+                              <?php print $product->details; ?>
                             </td>
                           </tr>
                           <?php endforeach; ?>

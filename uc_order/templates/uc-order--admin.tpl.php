@@ -16,8 +16,8 @@
 <p>
 <?php print t('Products:'); ?><br />
 <?php foreach ($products as $product): ?>
-- <?php print $product->qty; ?> x <?php print $product->title . ' - ' . uc_currency_format($product->price * $product->qty); ?><br />
-&nbsp;&nbsp;<?php print t('SKU: ') . $product->model; ?><br />
+- <?php print $product->qty; ?> x <?php print $product->title; ?> - <?php print $product->total_price; ?><br />
+&nbsp;&nbsp;<?php print t('SKU'); ?>: <?php print $product->model; ?><br />
     <?php if (!empty($product->data['attributes'])): ?>
     <?php foreach ($product->data['attributes'] as $attribute => $option): ?>
     &nbsp;&nbsp;<?php print t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))); ?><br />

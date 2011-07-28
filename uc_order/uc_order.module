@@ -1787,8 +1787,22 @@ function template_preprocess_uc_order(&$variables) {
   $variables['shippable'] = uc_order_is_shippable($order);
 
   $variables['products'] = $order->products;
-  if (!is_array($variables['products'])) {
-    $variables['products'] = array();
+  foreach ($variables['products'] as &$product) {
+    $product->total_price = uc_currency_format($product->price * $product->qty);
+    if ($product->qty > 1) {
+      $product->individual_price = t('(!price each)', array('!price' => uc_currency_format($product->price)));
+    }
+    else {
+      $product->individual_price = '';
+    }
+
+    $product->details = '';
+    if (!empty($product->data['attributes'])) {
+      foreach ($product->data['attributes'] as $attribute => $option) {
+        $attributes[] = t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option)));
+      }
+      $product->details .= theme('item_list', array('items' => $attributes));
+    }
   }
 
   $variables['line_items'] = $order->line_items;
