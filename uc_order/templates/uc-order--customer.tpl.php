@@ -16,16 +16,16 @@
             <table width="100%" style="font-family: verdana, arial, helvetica; font-size: small;">
               <tr>
                 <td>
-                  <?php echo $site_logo; ?>
+                  <?php print $site_logo; ?>
                 </td>
                 <td width="98%">
                   <div style="padding-left: 1em;">
-                  <span style="font-size: large;"><?php echo $store_name; ?></span><br />
-                  <?php echo $site_slogan; ?>
+                  <span style="font-size: large;"><?php print $store_name; ?></span><br />
+                  <?php print $site_slogan; ?>
                   </div>
                 </td>
                 <td nowrap="nowrap">
-                  <?php echo $store_address; ?><br /><?php echo $store_phone; ?>
+                  <?php print $store_address; ?><br /><?php print $store_phone; ?>
                 </td>
               </tr>
             </table>
@@ -37,31 +37,31 @@
           <td>
 
             <?php if ($thank_you_message): ?>
-            <p><b><?php echo t('Thanks for your order, !order_first_name!', array('!order_first_name' => $order_first_name)); ?></b></p>
+            <p><b><?php print t('Thanks for your order, !order_first_name!', array('!order_first_name' => $order_first_name)); ?></b></p>
 
             <?php if (isset($_SESSION['new_user'])): ?>
-            <p><b><?php echo t('An account has been created for you with the following details:'); ?></b></p>
-            <p><b><?php echo t('Username:'); ?></b> <?php echo $order_new_username; ?><br />
-            <b><?php echo t('Password:'); ?></b> <?php echo $order_new_password; ?></p>
+            <p><b><?php print t('An account has been created for you with the following details:'); ?></b></p>
+            <p><b><?php print t('Username:'); ?></b> <?php print $order_new_username; ?><br />
+            <b><?php print t('Password:'); ?></b> <?php print $order_new_password; ?></p>
             <?php endif; ?>
 
-            <p><b><?php echo t('Want to manage your order online?'); ?></b><br />
-            <?php echo t('If you need to check the status of your order, please visit our home page at !store_link and click on "My account" in the menu or login with the following link:', array('!store_link' => $store_link)); ?>
-            <br /><br /><?php echo $site_login_link; ?></p>
+            <p><b><?php print t('Want to manage your order online?'); ?></b><br />
+            <?php print t('If you need to check the status of your order, please visit our home page at !store_link and click on "My account" in the menu or login with the following link:', array('!store_link' => $store_link)); ?>
+            <br /><br /><?php print $site_login_link; ?></p>
             <?php endif; ?>
 
             <table cellpadding="4" cellspacing="0" border="0" width="100%" style="font-family: verdana, arial, helvetica; font-size: small;">
               <tr>
                 <td colspan="2" bgcolor="#006699" style="color: white;">
-                  <b><?php echo t('Purchasing Information:'); ?></b>
+                  <b><?php print t('Purchasing Information:'); ?></b>
                 </td>
               </tr>
               <tr>
                 <td nowrap="nowrap">
-                  <b><?php echo t('E-mail Address:'); ?></b>
+                  <b><?php print t('E-mail Address:'); ?></b>
                 </td>
                 <td width="98%">
-                  <?php echo $order_email; ?>
+                  <?php print $order_email; ?>
                 </td>
               </tr>
               <tr>
@@ -70,19 +70,19 @@
                   <table width="100%" cellspacing="0" cellpadding="0" style="font-family: verdana, arial, helvetica; font-size: small;">
                     <tr>
                       <td valign="top" width="50%">
-                        <b><?php echo t('Billing Address:'); ?></b><br />
-                        <?php echo $order_billing_address; ?><br />
+                        <b><?php print t('Billing Address:'); ?></b><br />
+                        <?php print $order_billing_address; ?><br />
                         <br />
-                        <b><?php echo t('Billing Phone:'); ?></b><br />
-                        <?php echo $order_billing_phone; ?><br />
+                        <b><?php print t('Billing Phone:'); ?></b><br />
+                        <?php print $order_billing_phone; ?><br />
                       </td>
                       <?php if (uc_order_is_shippable($order)): ?>
                       <td valign="top" width="50%">
-                        <b><?php echo t('Shipping Address:'); ?></b><br />
-                        <?php echo $order_shipping_address; ?><br />
+                        <b><?php print t('Shipping Address:'); ?></b><br />
+                        <?php print $order_shipping_address; ?><br />
                         <br />
-                        <b><?php echo t('Shipping Phone:'); ?></b><br />
-                        <?php echo $order_shipping_phone; ?><br />
+                        <b><?php print t('Shipping Phone:'); ?></b><br />
+                        <?php print $order_shipping_phone; ?><br />
                       </td>
                       <?php endif; ?>
                     </tr>
@@ -92,31 +92,31 @@
               </tr>
               <tr>
                 <td nowrap="nowrap">
-                  <b><?php echo t('Order Grand Total:'); ?></b>
+                  <b><?php print t('Order Grand Total:'); ?></b>
                 </td>
                 <td width="98%">
-                  <b><?php echo $order_total; ?></b>
+                  <b><?php print $order_total; ?></b>
                 </td>
               </tr>
               <tr>
                 <td nowrap="nowrap">
-                  <b><?php echo t('Payment Method:'); ?></b>
+                  <b><?php print t('Payment Method:'); ?></b>
                 </td>
                 <td width="98%">
-                  <?php echo $order_payment_method; ?>
+                  <?php print $order_payment_method; ?>
                 </td>
               </tr>
 
               <tr>
                 <td colspan="2" bgcolor="#006699" style="color: white;">
-                  <b><?php echo t('Order Summary:'); ?></b>
+                  <b><?php print t('Order Summary:'); ?></b>
                 </td>
               </tr>
 
               <?php if (uc_order_is_shippable($order)): ?>
               <tr>
                 <td colspan="2" bgcolor="#EEEEEE">
-                  <font color="#CC6600"><b><?php echo t('Shipping Details:'); ?></b></font>
+                  <font color="#CC6600"><b><?php print t('Shipping Details:'); ?></b></font>
                 </td>
               </tr>
               <?php endif; ?>
@@ -127,39 +127,39 @@
                   <table border="0" cellpadding="1" cellspacing="0" width="100%" style="font-family: verdana, arial, helvetica; font-size: small;">
                     <tr>
                       <td nowrap="nowrap">
-                        <b><?php echo t('Order #:'); ?></b>
+                        <b><?php print t('Order #:'); ?></b>
                       </td>
                       <td width="98%">
-                        <?php echo $order_link; ?>
+                        <?php print $order_link; ?>
                       </td>
                     </tr>
 
                     <tr>
                       <td nowrap="nowrap">
-                        <b><?php echo t('Order Date: '); ?></b>
+                        <b><?php print t('Order Date: '); ?></b>
                       </td>
                       <td width="98%">
-                        <?php echo $order_created; ?>
+                        <?php print $order_created; ?>
                       </td>
                     </tr>
 
                     <?php if ($shipping_method && uc_order_is_shippable($order)): ?>
                     <tr>
                       <td nowrap="nowrap">
-                        <b><?php echo t('Shipping Method:'); ?></b>
+                        <b><?php print t('Shipping Method:'); ?></b>
                       </td>
                       <td width="98%">
-                        <?php echo $order_shipping_method; ?>
+                        <?php print $order_shipping_method; ?>
                       </td>
                     </tr>
                     <?php endif; ?>
 
                     <tr>
                       <td nowrap="nowrap">
-                        <?php echo t('Products Subtotal:'); ?>&nbsp;
+                        <?php print t('Products Subtotal:'); ?>&nbsp;
                       </td>
                       <td width="98%">
-                        <?php echo $order_subtotal; ?>
+                        <?php print $order_subtotal; ?>
                       </td>
                     </tr>
 
@@ -171,10 +171,10 @@
 
                     <tr>
                       <td nowrap="nowrap">
-                        <?php echo $item['title']; ?>:
+                        <?php print $item['title']; ?>:
                       </td>
                       <td>
-                        <?php echo uc_currency_format($item['amount']); ?>
+                        <?php print uc_currency_format($item['amount']); ?>
                       </td>
                     </tr>
 
@@ -187,35 +187,35 @@
 
                     <tr>
                       <td nowrap="nowrap">
-                        <b><?php echo t('Total for this Order:'); ?>&nbsp;</b>
+                        <b><?php print t('Total for this Order:'); ?>&nbsp;</b>
                       </td>
                       <td>
-                        <b><?php echo $order_total; ?></b>
+                        <b><?php print $order_total; ?></b>
                       </td>
                     </tr>
 
                     <tr>
                       <td colspan="2">
-                        <br /><br /><b><?php echo t('Products on order:'); ?>&nbsp;</b>
+                        <br /><br /><b><?php print t('Products on order:'); ?>&nbsp;</b>
 
                         <table width="100%" style="font-family: verdana, arial, helvetica; font-size: small;">
 
                           <?php foreach ($order->products as $product): ?>
                           <tr>
                             <td valign="top" nowrap="nowrap">
-                              <b><?php echo $product->qty; ?> x </b>
+                              <b><?php print $product->qty; ?> x </b>
                             </td>
                             <td width="98%">
-                              <b><?php echo $product->title . ' - ' . uc_currency_format($product->price * $product->qty); ?></b>
+                              <b><?php print $product->title . ' - ' . uc_currency_format($product->price * $product->qty); ?></b>
                               <?php if ($product->qty > 1):
-                                echo t('(!price each)', array('!price' => uc_currency_format($product->price)));
+                                print t('(!price each)', array('!price' => uc_currency_format($product->price)));
                               endif; ?>
                               <br />
-                              <?php echo t('SKU: ') . $product->model; ?><br />
+                              <?php print t('SKU: ') . $product->model; ?><br />
                               <?php if (isset($product->data['attributes']) && is_array($product->data['attributes']) && count($product->data['attributes']) > 0): ?>
                               <?php
                                 foreach ($product->data['attributes'] as $attribute => $option) {
-                                  echo '<li>' . t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))) . '</li>';
+                                  print '<li>' . t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))) . '</li>';
                                 } ?>
                               <?php endif; ?>
                               <br />
@@ -237,19 +237,19 @@
                   <hr noshade="noshade" size="1" /><br />
 
                   <?php if ($help_text): ?>
-                  <p><b><?php echo t('Where can I get help with reviewing my order?'); ?></b><br />
-                  <?php echo t('To learn more about managing your orders on !store_link, please visit our <a href="!store_help_url">help page</a>.', array('!store_link' => $store_link, '!store_help_url' => $store_help_url)); ?>
+                  <p><b><?php print t('Where can I get help with reviewing my order?'); ?></b><br />
+                  <?php print t('To learn more about managing your orders on !store_link, please visit our <a href="!store_help_url">help page</a>.', array('!store_link' => $store_link, '!store_help_url' => $store_help_url)); ?>
                   <br /></p>
                   <?php endif; ?>
 
                   <?php if ($email_text): ?>
-                  <p><?php echo t('Please note: This e-mail message is an automated notification. Please do not reply to this message.'); ?></p>
+                  <p><?php print t('Please note: This e-mail message is an automated notification. Please do not reply to this message.'); ?></p>
 
-                  <p><?php echo t('Thanks again for shopping with us.'); ?></p>
+                  <p><?php print t('Thanks again for shopping with us.'); ?></p>
                   <?php endif; ?>
 
                   <?php if ($store_footer): ?>
-                  <p><b><?php echo $store_link; ?></b><br /><b><?php echo $site_slogan; ?></b></p>
+                  <p><b><?php print $store_link; ?></b><br /><b><?php print $site_slogan; ?></b></p>
                   <?php endif; ?>
                 </td>
               </tr>
