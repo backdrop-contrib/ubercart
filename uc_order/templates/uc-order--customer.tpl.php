@@ -3,9 +3,29 @@
 /**
  * @file
  * This file is the default customer invoice template for Ubercart.
+ *
+ * Available variables:
+ * - $products: An array of products in the order.
+ * - $line_items: An array of line items attached to the order.
+ *
+ * Tokens: All site, store and order tokens are also available as
+ * variables, such as $site_logo, $store_name and $order_first_name.
+ *
+ * Display options:
+ * - $op: 'view', 'print', 'checkout-mail' or 'admin-mail', depending on
+ *   which variant of the invoice is being rendered.
+ * - $business_header: TRUE if the invoice header should be displayed.
+ * - $shipping_method: TRUE if shipping information should be displayed.
+ * - $help_text: TRUE if the store help message should be displayed.
+ * - $email_text: TRUE if the "do not reply to this email" message should
+ *   be displayed.
+ * - $store_footer: TRUE if the store URL should be displayed.
+ * - $thank_you_message: TRUE if the 'thank you for your order' message
+ *   should be displayed.
+ *
+ * @see template_preprocess_uc_order()
  */
 ?>
-
 <table width="95%" border="0" cellspacing="0" cellpadding="1" align="center" bgcolor="#006699" style="font-family: verdana, arial, helvetica; font-size: small;">
   <tr>
     <td>
