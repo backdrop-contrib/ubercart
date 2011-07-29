@@ -11,14 +11,9 @@ var add_product_browser = '';
  */
 Drupal.behaviors.ucOrderClick = {
   attach: function(context, settings) {
-    jQuery('.uc-orders-table tr.odd, .uc-orders-table tr.even:not(.ucOrderClick-processed)', context).addClass('ucOrderClick-processed').each(
+    jQuery('.uc-orders-table tbody tr', context).dblclick(
       function() {
-        jQuery(this).dblclick(
-          function() {
-            var url = settings.ucURL.adminOrders + this.id.substring(6);
-            window.location = url;
-          }
-        );
+        window.location = settings.ucURL.adminOrders + this.id.substring(6);
       }
     );
   }
