@@ -685,20 +685,22 @@ function uc_roles_feature_form($form, &$form_state, $node, $feature) {
     '#default_value' => $default_shippable,
     '#description' => t('Check if this product SKU that uses role assignment is associated with a shippable product.'),
   );
-  $form['role_lifetime'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Expiration period'),
-  );
 
-  $form['role_lifetime']['end_override'] = array(
+  $form['end_override'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Override the default ending expiration'),
+    '#title' => t('Override the default expiration period.'),
     '#default_value' => $default_end_override,
   );
 
+  $form['role_lifetime'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Expiration period'),
+    '#states' => array(
+      'visible' => array('input[name="end_override"]' => array('checked' => TRUE)),
+    ),
+  );
   $form['role_lifetime']['expiration'] = array(
     '#type' => 'select',
-    '#title' => t('End'),
     '#options' => array(
       'rel' => t('Relative from activation time'),
       'abs' => t('Absolute role ending'),
@@ -712,6 +714,10 @@ function uc_roles_feature_form($form, &$form_state, $node, $feature) {
     '#maxlength' => 4,
     '#prefix' => '<div class="expiration">',
     '#suffix' => '</div>',
+    '#states' => array(
+      'visible' => array('select[name="expiration"]' => array('value' => 'rel')),
+      'invisible' => array('select[name="uc_roles_expire_relative_granularity"]' => array('value' => 'never')),
+    ),
   );
   $form['role_lifetime']['uc_roles_expire_relative_granularity'] = array(
     '#type' => 'select',
@@ -726,8 +732,17 @@ function uc_roles_feature_form($form, &$form_state, $node, $feature) {
     '#description' => t('From the time the expiration period started.'),
     '#prefix' => '<div class="expiration">',
     '#suffix' => '</div>',
+    '#states' => array(
+      'visible' => array('select[name="expiration"]' => array('value' => 'rel')),
+    ),
   );
-  $form['role_lifetime']['uc_roles_expire_absolute'] = array(
+  $form['role_lifetime']['absolute'] = array(
+    '#type' => 'container',
+    '#states' => array(
+      'visible' => array('select[name="expiration"]' => array('value' => 'abs')),
+    ),
+  );
+  $form['role_lifetime']['absolute']['uc_roles_expire_absolute'] = array(
     '#type' => 'date',
     '#description' => t('When this expiration period will end.'),
   );
@@ -908,14 +923,14 @@ function uc_roles_feature_settings($form, &$form_state) {
     '#description' => t('These are roles that Ubercart can grant to customers who purchase specified products. If you leave all roles unchecked, they will all be eligible for adding to a product.'),
     '#options' => $default_role_choices,
   );
+
   $form['role_lifetime'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Expiration period'),
+    '#title' => t('Default expiration period'),
   );
 
   $form['role_lifetime']['uc_roles_default_end_expiration'] = array(
     '#type' => 'select',
-    '#title' => t('End'),
     '#options' => array(
       'rel' => t('Relative from activation time'),
       'abs' => t('Absolute role ending'),
@@ -924,11 +939,15 @@ function uc_roles_feature_settings($form, &$form_state) {
   );
   $form['role_lifetime']['uc_roles_default_length'] = array(
     '#type' => 'textfield',
-    '#title' => t('Default expiration'),
     '#default_value' => (variable_get('uc_roles_default_granularity', 'never') == 'never') ? NULL : variable_get('uc_roles_default_length', NULL),
     '#size' => 4,
     '#maxlength' => 4,
     '#prefix' => '<div class="expiration">',
+    '#suffix' => '</div>',
+    '#states' => array(
+      'visible' => array('select[name="uc_roles_default_end_expiration"]' => array('value' => 'rel')),
+      'invisible' => array('select[name="uc_roles_default_granularity"]' => array('value' => 'never')),
+    ),
   );
   $form['role_lifetime']['uc_roles_default_granularity'] = array(
     '#type' => 'select',
@@ -941,9 +960,19 @@ function uc_roles_feature_settings($form, &$form_state) {
       'year' => t('year(s)')
     ),
     '#description' => t('The default amount of time a granted Ubercart role will last until it expires.'),
+    '#prefix' => '<div class="expiration">',
     '#suffix' => '</div>',
+    '#states' => array(
+      'visible' => array('select[name="uc_roles_default_end_expiration"]' => array('value' => 'rel')),
+    ),
   );
-  $form['role_lifetime']['uc_roles_default_end_time'] = array(
+  $form['role_lifetime']['absolute'] = array(
+    '#type' => 'container',
+    '#states' => array(
+      'visible' => array('select[name="uc_roles_default_end_expiration"]' => array('value' => 'abs')),
+    ),
+  );
+  $form['role_lifetime']['absolute']['uc_roles_default_end_time'] = array(
     '#type' => 'date',
     '#description' => t('When this expiration period will end.'),
     '#default_value' => variable_get('uc_roles_default_end_time', array(
@@ -966,6 +995,9 @@ function uc_roles_feature_settings($form, &$form_state) {
     '#maxlength' => 4,
     '#prefix' => '<div class="expiration">',
     '#suffix' => '</div>',
+    '#states' => array(
+      'disabled' => array('select[name="uc_roles_reminder_granularity"]' => array('value' => 'never')),
+    ),
   );
   $form['reminder']['uc_roles_reminder_granularity'] = array(
     '#type' => 'select',
