@@ -1490,8 +1490,10 @@ function uc_order_log($order) {
   $result = db_query("SELECT * FROM {uc_order_log} WHERE order_id = :id ORDER BY created, order_log_id", array(':id' => $order->order_id));
 
   foreach ($result as $change) {
-    $user = uc_get_initials($change->uid);
-    $rows[] = array('data' => array(format_date($change->created, 'short'), $user == '-' ? $user : l($user, 'user/' . $change->uid), $change->changes), 'valign' => 'top');
+    $rows[] = array(
+      'data' => array(format_date($change->created, 'short'), theme('uc_uid', $change->uid), $change->changes),
+      'valign' => 'top',
+    );
   }
 
   $build = array();

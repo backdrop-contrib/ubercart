@@ -149,14 +149,6 @@ function uc_store_menu() {
     'file' => 'uc_store.admin.inc',
     'weight' => -1,
   );
-  $items['admin/store/settings/store/initials'] = array(
-    'title' => 'User initials',
-    'description' => 'Assign initials to user accounts.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('uc_store_initials'),
-    'access arguments' => array('administer store'),
-    'file' => 'uc_store.admin.inc',
-  );
 
   $items['admin/store/customers/orders/%'] = array(
     'title' => 'Customer orders',
@@ -439,6 +431,9 @@ function uc_store_theme() {
     'uc_price' => array(
       'variables' => array('price' => 0),
     ),
+    'uc_uid' => array(
+      'variables' => array('uid' => 0),
+    ),
   );
 }
 
@@ -643,6 +638,20 @@ function uc_store_reviews() {
  */
 function theme_uc_price($variables) {
   return '<span class="uc-price">' . uc_currency_format($variables['price']) . '</span>';
+}
+
+/**
+ * Displays a username from a uid, in the standard format and with consistent markup.
+ *
+ * @ingroup themeable
+ */
+function theme_uc_uid($variables) {
+  if ($variables['uid']) {
+    return theme('username', array('account' => user_load($variables['uid'])));
+  }
+  else {
+    return '-';
+  }
 }
 
 /**
@@ -1657,19 +1666,6 @@ function uc_strip_form($form) {
   unset($form['form_token']);
 
   return $form;
-}
-
-/**
- * Returns the initials for a user account.
- *
- * @param $uid
- *   The Drupal user id number.
- */
-function uc_get_initials($uid) {
-  if ($uid == 0 || $uid == NULL) {
-    return '-';
-  }
-  return check_plain(variable_get('user_initials_' . $uid, $uid));
 }
 
 /**

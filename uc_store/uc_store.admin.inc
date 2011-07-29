@@ -759,59 +759,6 @@ function uc_store_settings_form_validate($form, &$form_state) {
 }
 
 /**
- * Form to enter initials for an administrative user.
- *
- * @see uc_store_initials_submit()
- * @ingroup forms
- */
-function uc_store_initials($form, &$form_state) {
-  $form['username'] = array(
-    '#type' => 'textfield',
-    '#title' => t('User name'),
-    '#description' => t('Enter the name of the user whose initials you want to adjust.'),
-    '#required' => TRUE,
-    '#size' => 32,
-    '#autocomplete_path' => 'user/autocomplete',
-  );
-  $form['initials'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Initials'),
-    '#description' => t('Enter initials or leave blank to erase current initials.'),
-    '#size' => 6,
-    '#maxlength' => 32,
-  );
-
-  $form['actions'] = array('#type' => 'actions');
-  $form['actions']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Submit'),
-  );
-
-  return $form;
-}
-
-/**
- * Form submission handler for uc_store_initials().
- *
- * @see uc_store_initials()
- */
-function uc_store_initials_submit($form, &$form_state) {
-  $result = db_query("SELECT uid FROM {users} WHERE name = :name", array(':name' => $form_state['values']['username']));
-  if ($user = $result->fetchObject()) {
-    if ($form_state['values']['initials'] == '') {
-      variable_del('user_initials_' . $user->uid);
-      drupal_set_message(t('Initials for !username deleted.', array('!username' => $form_state['values']['username'])));
-    }
-    else {
-      variable_set('user_initials_' . $user->uid, $form_state['values']['initials']);
-      drupal_set_message(t('Initials for !username set to !initials.',
-                           array('!username' => $form_state['values']['username'],
-                                 '!initials' => $form_state['values']['initials'])));
-    }
-  }
-}
-
-/**
  * Displays a list of orders made by a customer.
  *
  * $param $uid

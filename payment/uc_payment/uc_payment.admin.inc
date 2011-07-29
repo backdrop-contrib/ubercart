@@ -184,7 +184,7 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
         '#markup' => format_date($payment->received, 'custom', variable_get('date_format_uc_store', 'm/d/Y') . '<b\r />H:i:s'),
       );
       $form['payments'][$payment->receipt_id]['user'] = array(
-        '#markup' => uc_get_initials($payment->uid),
+        '#markup' => theme('uc_uid', $payment->uid),
       );
       $form['payments'][$payment->receipt_id]['method'] = array(
         '#markup' => ($payment->method == '') ? t('Unknown') : $payment->method,
