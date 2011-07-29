@@ -697,6 +697,11 @@ function uc_product_load($nodes) {
  * Implements hook_delete().
  */
 function uc_product_delete(&$node) {
+  $features = uc_product_feature_load_multiple($node->nid);
+  foreach ($features as $feature) {
+    uc_product_feature_delete($feature->pfid);
+  }
+
   db_delete('uc_products')
     ->condition('nid', $node->nid)
     ->execute();
