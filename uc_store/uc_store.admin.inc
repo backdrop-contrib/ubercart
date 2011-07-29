@@ -569,6 +569,136 @@ function uc_country_formats_form_submit($form, &$form_state) {
 }
 
 /**
+ * Form to configure address fields.
+ *
+ * @ingroup forms
+ * @see uc_store_address_fields_form_submit()
+ * @see uc_store_address_fields_form_reset()
+ * @see theme_uc_store_address_fields_form()
+ */
+function uc_store_address_fields_form($form, &$form_state) {
+  $form['fields'] = array(
+    '#tree' => TRUE,
+  );
+
+  $fields = array(
+    'first_name' => array(t('First name'), TRUE),
+    'last_name' => array(t('Last name'), TRUE),
+    'phone' => array(t('Phone number'), TRUE),
+    'company' => array(t('Company'), TRUE),
+    'street1' => array(t('Street address 1'), TRUE),
+    'street2' => array(t('Street address 2'), TRUE),
+    'city' => array(t('City'), TRUE),
+    'zone' => array(t('State/Province'), TRUE),
+    'country' => array(t('Country'), TRUE),
+    'postal_code' => array(t('Postal code'), TRUE),
+    'address' => array(t('Address'), FALSE),
+    'street' => array(t('Street address'), FALSE),
+  );
+  $current = variable_get('uc_address_fields', drupal_map_assoc(array('first_name', 'last_name', 'phone', 'company', 'street1', 'street2', 'city', 'zone', 'postal_code', 'country')));
+  $required = variable_get('uc_address_fields_required', drupal_map_assoc(array('first_name', 'last_name', 'street1', 'city', 'zone', 'postal_code', 'country')));
+  foreach ($fields as $field => $data) {
+    if ($data[1]) {
+      $form['fields'][$field]['enabled'] = array(
+        '#type' => 'checkbox',
+        '#default_value' => isset($current[$field]) ? TRUE : FALSE,
+      );
+      $form['fields'][$field]['required'] = array(
+        '#type' => 'checkbox',
+        '#default_value' => isset($required[$field]) ? TRUE : FALSE,
+      );
+    }
+    else {
+      $form['fields'][$field]['enabled'] = array(
+        '#markup' => '-',
+      );
+    }
+    $form['fields'][$field]['default'] = array(
+      '#markup' => $data[0],
+    );
+    $form['fields'][$field]['title'] = array(
+      '#type' => 'textfield',
+      '#default_value' => uc_get_field_name($field),
+      '#size' => 32,
+    );
+  }
+
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['save'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+  );
+  $form['actions']['reset'] = array(
+    '#type' => 'submit',
+    '#value' => t('Reset to defaults'),
+    '#submit' => array('uc_store_address_fields_form_reset'),
+  );
+
+  return $form;
+}
+
+/**
+ * Returns HTML for uc_store_address_fields_form().
+ *
+ * @see uc_store_address_fields_form()
+ * @ingroup themeable
+ */
+function theme_uc_store_address_fields_form($variables) {
+  $form = $variables['form'];
+
+  $header = array(t('Enabled'), t('Field'), t('Title'), t('Required'));
+
+  foreach (element_children($form['fields']) as $field) {
+    $rows[] = array(
+      array('data' => drupal_render($form['fields'][$field]['enabled']), 'align' => 'center'),
+      drupal_render($form['fields'][$field]['default']),
+      drupal_render($form['fields'][$field]['title']),
+      drupal_render($form['fields'][$field]['required']),
+    );
+  }
+
+  $output = theme('table', array('header' => $header, 'rows' => $rows)) . '<br />' . drupal_render_children($form);
+
+  return $output;
+}
+
+/**
+ * Saves the address fields settings.
+ *
+ * @see uc_store_address_fields_form()
+ */
+function uc_store_address_fields_form_submit($form, &$form_state) {
+  $fields = array();
+  $required = array();
+  foreach ($form_state['values']['fields'] as $field => $data) {
+    variable_set('uc_field_' . $field, $data['title']);
+    if (isset($data['enabled']) && $data['enabled']) {
+      $fields[] = $field;
+    }
+    if (isset($data['required']) && $data['required']) {
+      $required[] = $field;
+    }
+  }
+  variable_set('uc_address_fields', drupal_map_assoc($fields));
+  variable_set('uc_address_fields_required', drupal_map_assoc($required));
+  drupal_set_message(t('The configuration options have been saved.'));
+}
+
+/**
+ * Resets the address fields settings to their default values.
+ *
+ * @see uc_store_address_fields_form()
+ */
+function uc_store_address_fields_form_reset($form_id, &$form_state) {
+  foreach ($form_state['values']['fields'] as $field => $data) {
+    variable_del('uc_field_' . $field);
+  }
+  variable_del('uc_address_fields');
+  variable_del('uc_address_fields_required');
+  drupal_set_message(t('The configuration options have been reset to their default values.'));
+}
+
+/**
  * Form builder for store settings.
  *
  * @see uc_store_settings_form_validate()
