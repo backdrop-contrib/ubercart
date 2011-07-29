@@ -538,6 +538,8 @@ function uc_order_schema() {
     ),
     'indexes' => array(
       'order_id' => array('order_id'),
+      'qty' => array('qty'),
+      'nid' => array('nid'),
     ),
     'primary key' => array('order_product_id'),
     'foreign keys' => array(
@@ -713,5 +715,20 @@ function uc_order_update_7001() {
     db_update('uc_orders')
       ->fields(array('currency' => variable_get('uc_currency_code', 'USD')))
       ->execute();
+  }
+}
+
+
+/**
+ * Add indexes so product and customer reports are usable with large datasets.
+ */
+function uc_order_update_7002() {
+  // Indexes may have been added by uc_order_update_6019() in 6.x-2.x.
+  if (!db_index_exists('uc_order_products', 'qty')) {
+    db_add_index('uc_order_products', 'qty', array('qty'));
+  }
+
+  if (!db_index_exists('uc_order_products', 'nid')) {
+    db_add_index('uc_order_products', 'nid', array('nid'));
   }
 }
