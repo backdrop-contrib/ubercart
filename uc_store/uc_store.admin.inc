@@ -955,13 +955,6 @@ function uc_store_customer_orders($uid) {
 
   $build = array();
 
-  if (user_access('create orders')) {
-    $build['order_link'] = array(
-      '#markup' => '<p>' . l(t('Create an order for this customer.'), 'admin/store/orders/create/' . $uid) . '</p>',
-      '#weight' => -10,
-    );
-  }
-
   $build['description'] = array(
     '#markup' => '<p>' . t('!totals_orders orders shown match that account with !totals_items items purchased and !totals_total spent:',
        array(
@@ -969,6 +962,7 @@ function uc_store_customer_orders($uid) {
          '!totals_items' => $totals['items'],
          '!totals_total' => uc_currency_format($totals['total']),
        )) . '</p>',
+    '#weight' => -5,
   );
   $build['orders'] = array(
     '#theme' => 'table',
