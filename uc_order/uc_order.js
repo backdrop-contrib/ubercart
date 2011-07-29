@@ -4,7 +4,6 @@
  */
 
 var customer_select = '';
-var add_product_browser = '';
 
 /**
  * Adds the double click behavior to the order table at admin/store/orders.
