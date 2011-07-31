@@ -384,6 +384,9 @@ function uc_product_kit_theme() {
     'uc_product_kit_add_to_cart' => array(
       'variables' => array('node' => NULL, 'view_mode' => 'full'),
     ),
+    'uc_product_kit_list_item' => array(
+      'arguments' => array('product' => NULL),
+    ),
   );
 }
 
@@ -659,14 +662,9 @@ function uc_product_kit_view($node, $view_mode) {
     $node->content['products'] = array('#weight' => 6);
 
     foreach ($node->products as $product) {
-      if (node_access('view', $product)) {
-        $title = l($product->title, 'node/' . $product->nid);
-      }
-      else {
-        $title = check_plain($product->title);
-      }
-
-      $node->content['products'][$product->nid]['qty'] = array('#markup' => '<div class="product-qty">' . $product->qty . ' x ' . $title . '</div>');
+      $node->content['products'][$product->nid]['qty'] = array(
+        '#markup' => '<div class="product-qty">' . theme('uc_product_kit_list_item', array('product' => $product)) . '</div>',
+      );
       $node->content['products'][$product->nid]['#weight'] = $product->ordering;
     }
   }
@@ -680,6 +678,24 @@ function uc_product_kit_view($node, $view_mode) {
   }
 
   return $node;
+}
+
+/**
+ * Renders a product kit component.
+ *
+ * @ingroup themeable
+ */
+function theme_uc_product_kit_list_item($variables) {
+  $product = $variables['product'];
+
+  if (node_access('view', $product)) {
+    $title = l($product->title, 'node/' . $product->nid);
+  }
+  else {
+    $title = check_plain($product->title);
+  }
+
+  return $product->qty . ' x ' . $title;
 }
 
 /**
@@ -1041,14 +1057,11 @@ function uc_product_kit_uc_cart_display($item) {
     // Add product specific information
     $extra = uc_product_get_description($item);
 
-    if (node_access('view', node_load($item->nid))) {
-      $title = l($item->title, 'node/' . $item->nid);
-    }
-    else {
-      $title = $item->title;
-    }
     if ($kit->mutable == UC_PRODUCT_KIT_UNMUTABLE_WITH_LIST) {
-      $elements[$unique_id]['#extra'][] = array('data' => $item->qty . ' x ' . $title . $extra, 'class' => array('kit-component-cart-desc'));
+      $elements[$unique_id]['#extra'][] = array(
+        'data' => theme('uc_product_kit_list_item', array('product' => $item)) . $extra,
+        'class' => array('kit-component-cart-desc'),
+      );
     }
 
     $elements[$unique_id]['#total'] += $item->price * $item->qty;
