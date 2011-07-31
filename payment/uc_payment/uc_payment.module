@@ -447,10 +447,23 @@ function uc_payment_process_payment($method, $order_id, $amount, $data = NULL, $
 
 /**
  * Enter a payment for an order.
+ *
+ * @param $order_id
+ *   The order ID to apply the payment to.
+ * @param $method
+ *   The payment method ID.
+ * @param $amount
+ *   The amount of the payment.
+ * @param $uid
+ *   (optional) The user ID of the person logging the payment, or 0 if the
+ *   payment was processed automatically.
+ * @param $data
+ *   (optional) Any data that should be serialized and stored with the
+ *   payment.
+ * @param $comment
+ *   (optional) The comment to enter in the payment log.
  */
-function uc_payment_enter($order_id, $method, $amount, $uid, $data, $comment) {
-  global $user;
-
+function uc_payment_enter($order_id, $method, $amount, $uid = 0, $data = NULL, $comment = '') {
   $method_name = _uc_payment_method_data($method, 'review');
   if (empty($method_name)) {
     $method_name = _uc_payment_method_data($method, 'name');
@@ -490,8 +503,6 @@ function uc_payment_enter($order_id, $method, $amount, $uid, $data, $comment) {
  * Delete a payment from the database.
  */
 function uc_payment_delete($receipt_id) {
-  global $user;
-
   if (!is_numeric($receipt_id)) {
     return FALSE;
   }
