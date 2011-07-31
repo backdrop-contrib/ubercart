@@ -40,15 +40,6 @@ function uc_payment_menu() {
     'file' => 'uc_payment.admin.inc',
   );
 
-  $items['admin/store/orders/%uc_order/payment_details/%'] = array(
-    'title' => 'Payment details',
-    'description' => 'Add the payment details to the order pane.',
-    'page callback' => 'uc_payment_get_details',
-    'page arguments' => array(5, 'order', 3),
-    'access arguments' => array('edit orders'),
-    'type' => MENU_CALLBACK,
-  );
-
   $items['admin/store/orders/%uc_order/payments/select/%'] = array(
     'title' => 'Select payment gateway',
     'page callback' => 'uc_payment_gateway_select',
@@ -299,27 +290,6 @@ function theme_uc_payment_totals($variables) {
     . '</td></tr></table>';
 
   return $output;
-}
-
-function uc_payment_get_details($method_id, $view = 'cart', $order = NULL) {
-  if ($view == 'cart') {
-    if (!($order = uc_order_load($_SESSION['cart_order']))) {
-      $_SESSION['cart_order'] = NULL;
-      $order = NULL;
-    }
-
-    if ($order->order_status != 0 || ($user->uid && $user->uid != $order->uid)) {
-      $order = NULL;
-    }
-  }
-
-  $func = _uc_payment_method_data($method_id, 'callback');
-  if (function_exists($func)) {
-    $output = $func($view . '-details', $order);
-  }
-
-  print drupal_render($output);
-  exit();
 }
 
 function uc_payments_table() {

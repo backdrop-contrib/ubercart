@@ -64,11 +64,6 @@ function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) 
       return $build;
 
     case 'edit-form':
-      drupal_add_library('system', 'drupal.progress');
-      drupal_add_js(array('defPaymentMsg' => ''), 'setting');
-
-      $form['payment'] = array();
-
       $methods = _uc_payment_method_list();
       $options = array();
       foreach ($methods as $id => $method) {
@@ -79,41 +74,55 @@ function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) 
         '#title' => t('Payment method'),
         '#default_value' => $order->payment_method,
         '#options' => !empty($options) ? $options : array(t('None available')),
-        '#attributes' => array('onchange' => "get_payment_details(Drupal.settings.ucURL.adminOrders + '" . $order->order_id . "/payment_details/' + this.value);"),
         '#disabled' => empty($options),
+        '#ajax' => array(
+          'callback' => 'uc_payment_order_pane_ajax_callback',
+          'progress' => array('type' => 'throbber'),
+          'wrapper' => 'payment-details',
+        ),
       );
+
+      $form['payment']['payment_details'] = array(
+        '#tree' => TRUE,
+        '#prefix' => '<div id="payment-details">',
+        '#suffix' => '</div>',
+      );
+
+      $method = isset($form_state['values']['payment_method']) ? $form_state['values']['payment_method'] : $order->payment_method;
+      $func = _uc_payment_method_data($method, 'callback');
+      if (function_exists($func) && $details = $func('order-details', $order)) {
+        if (is_array($details)) {
+          $form['payment']['payment_details'] += $details;
+        }
+        else {
+          $form['payment']['payment_details']['#markup'] = $details;
+        }
+      }
       return $form;
 
     case 'edit-theme':
-      drupal_add_js(drupal_get_path('module', 'uc_payment') . '/uc_payment.js');
-
-      // build a JS array of our payment methods
-      $methods = _uc_payment_method_list();
-      $method_array_js = array();
-      foreach ($methods as $id => $method) {
-        $method_array_js[$method['name']] = $id;
-      }
-      drupal_add_js(array('methods' => $method_array_js), 'setting');
-
-      // begin the order lock, also get payment details
-      drupal_add_js(array('ucOrderInitiate' => TRUE), 'setting');
-
-      $output = '<table class="order-edit-table">';
-      foreach (element_children($form['payment']) as $field) {
-        $title = $form['payment'][$field]['#title'];
-        $form['payment'][$field]['#title'] = NULL;
-        $output .= '<tr><td class="oet-label">' . $title . ':</td><td>'
-                 . drupal_render($form['payment'][$field]) . '</td></tr>';
-      }
-      $output .= '</table><div id="payment_details"></div>';
-      return $output;
+      return drupal_render($form['payment']);
 
     case 'edit-process':
       $changes['payment_method'] = $form_state['values']['payment_method'];
+      $changes['payment_details'] = isset($form_state['values']['payment_details']) ? $form_state['values']['payment_details'] : array();
       $func = _uc_payment_method_data($form_state['values']['payment_method'], 'callback');
-      if (function_exists($func) && ($return = $func('edit-process', $form_state['values'])) != NULL && is_array($return)) {
-        $changes = array_merge($changes, $return);
+      if (function_exists($func) && ($return = $func('edit-process', $order, $form, $form_state)) != NULL && is_array($return)) {
+        $changes['payment_details'] = array_merge($changes['payment_details'], $return);
+      }
+
+      if (!isset($order->payment_details)) {
+        $order->payment_details = array();
       }
       return $changes;
   }
+}
+
+/**
+ * AJAX callback to render the payment method pane.
+ */
+function uc_payment_order_pane_ajax_callback($form, &$form_state) {
+  $commands[] = ajax_command_replace('#payment-details', drupal_render($form['payment']['payment_details']));
+  $commands[] = ajax_command_prepend('#payment-details', theme('status_messages'));
+  return array('#type' => 'ajax', '#commands' => $commands);
 }

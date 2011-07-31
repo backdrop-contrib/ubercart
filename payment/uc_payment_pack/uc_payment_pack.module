@@ -26,12 +26,6 @@ function uc_payment_pack_menu() {
  */
 function uc_payment_pack_theme() {
   return array(
-    'uc_payment_method_other_form' => array(
-      'render element' => 'form',
-    ),
-    'uc_payment_method_cod_form' => array(
-      'render element' => 'form',
-    ),
     'uc_payment_pack_receive_check_form' => array(
       'render element' => 'form',
       'file' => 'uc_payment_pack.admin.inc',
@@ -97,12 +91,14 @@ function uc_payment_method_other($op, &$order) {
       break;
 
     case 'order-details':
-      $details = drupal_get_form('uc_payment_method_other_form', $order);
-      return uc_strip_form($details);
-
-    case 'edit-process':
-      $changes['payment_details']['pm_other_description'] = check_plain($_POST['pm_other_description']);
-      return $changes;
+      $form['pm_other_description'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Description'),
+        '#default_value' => isset($order->payment_details['description']) ? $order->payment_details['description'] : '',
+        '#size' => 32,
+        '#maxlength' => 64,
+      );
+      return $form;
 
     case 'order-load':
       if ($description = db_query("SELECT description FROM {uc_payment_other} WHERE order_id = :id", array(':id' => $order->order_id))->fetchField()) {
@@ -128,39 +124,6 @@ function uc_payment_method_other($op, &$order) {
       }
       break;
   }
-}
-
-/**
- * Form to collect additional information needed by payment method "Other".
- *
- * @see theme_uc_payment_method_other_form()
- * @ingroup forms
- */
-function uc_payment_method_other_form($form, &$form_state, $order) {
-  $form['pm_other_description'] = array(
-    '#type' => 'textfield',
-    '#size' => 32,
-    '#maxlength' => 64,
-    '#default_value' => $order->payment_details['description'],
-  );
-
-  return $form;
-}
-
-/**
- * Theme function for uc_payment_method_other_form().
- *
- * @see uc_payment_method_other_form()
- * @ingroup themeable
- */
-function theme_uc_payment_method_other_form($variables) {
-  $form = $variables['form'];
-
-  $output = '<table class="order-edit-table"><tr><td class="oet-label">'
-          . t('Description:') . '</td><td>'
-          . drupal_render($form['pm_other_description'])
-          . '</td></tr></table>';
-  return $output;
 }
 
 /**
@@ -204,7 +167,10 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
     case 'order-view':
     case 'customer-view':
       $build = array('#markup' => '');
-      if (variable_get('uc_cod_delivery_date', FALSE)) {
+      if (variable_get('uc_cod_delivery_date', FALSE) &&
+          isset($order->payment_details['delivery_month']) &&
+          isset($order->payment_details['delivery_day']) &&
+          isset($order->payment_details['delivery_year'])) {
         $build['#markup'] = t('Desired delivery date:') . '<br />' .
           uc_date_format(
             $order->payment_details['delivery_month'],
@@ -217,21 +183,9 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
     case 'order-details':
       $build = array();
       if (variable_get('uc_cod_delivery_date', FALSE)) {
-        $build = uc_strip_form(drupal_get_form('uc_payment_method_cod_form', $order));
+        $build = uc_payment_method_cod_form(array(), $form_state, $order);
       }
       return $build;
-
-    case 'edit-process':
-      if (variable_get('uc_cod_delivery_date', FALSE)) {
-        return array(
-          'payment_details' => array(
-            'delivery_month' => intval($_POST['delivery_month']),
-            'delivery_day'   => intval($_POST['delivery_day']),
-            'delivery_year'  => intval($_POST['delivery_year']),
-          ),
-        );
-      }
-      return;
 
     case 'order-load':
       $result = db_query("SELECT * FROM {uc_payment_cod} WHERE order_id = :id", array(':id' => $order->order_id));
@@ -306,7 +260,6 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
  * Form to collect additional information needed by the "Cash on Delivery"
  * payment method.
  *
- * @see theme_uc_payment_method_cod_form()
  * @ingroup forms
  */
 function uc_payment_method_cod_form($form, &$form_state, $order) {
@@ -320,30 +273,6 @@ function uc_payment_method_cod_form($form, &$form_state, $order) {
   $form['delivery_year'] = uc_select_year(NULL, $year, format_date(REQUEST_TIME, 'custom', 'Y'), format_date(REQUEST_TIME, 'custom', 'Y') + 1);
 
   return $form;
-}
-
-/**
- * Theme function for uc_payment_method_cod_form().
- *
- * @see uc_payment_method_cod_form()
- * @ingroup themeable
- */
-function theme_uc_payment_method_cod_form($variables) {
-  drupal_add_css('.cod-table div, .cod-table { display: inline; } .cod-table tbody { border-top: 0px; }', 'inline');
-
-  $form = $variables['form'];
-
-  $output = '<table class="cod-table"><tr><td class="form-item" colspan="3"><label>' . t('Enter a desired delivery date:') . '</label></td></tr><tr><td>';
-  $output .= drupal_render($form['cod_delivery_month']);
-  $output .= '</td><td>';
-  $output .= drupal_render($form['cod_delivery_day']);
-  $output .= '</td><td>';
-  $output .= drupal_render($form['cod_delivery_year']);
-  $output .= '</td></tr></table>';
-
-  $output .= drupal_render_children($form);
-
-  return $output;
 }
 
 /**

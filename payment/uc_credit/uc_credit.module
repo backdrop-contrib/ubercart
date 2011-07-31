@@ -593,34 +593,11 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
 
     case 'order-details':
       if (variable_get('uc_credit_debug', FALSE)) {
-        $details = drupal_get_form('uc_payment_method_credit_form', $order);
-        return uc_strip_form($details);
+        return uc_payment_method_credit_form(array(), $form_state, $order);
       }
       else {
         return t('Use the terminal available through the<br />%button button on the View tab to<br />process credit card payments.', array('%button' => t('Process card')));
       }
-
-    case 'edit-process':
-      $cache = uc_credit_cache('load');
-
-      $changes['payment_details']['cc_type'] = check_plain($_POST['cc_type']);
-      $changes['payment_details']['cc_owner'] = check_plain($_POST['cc_owner']);
-      if (strpos($_POST['cc_number'], t('(Last 4) ')) !== 0) {
-        $changes['payment_details']['cc_number'] = check_plain($_POST['cc_number']);
-      }
-      else {
-        $changes['payment_details']['cc_number'] = $cache['cc_number'];
-      }
-      $changes['payment_details']['cc_exp_month'] = check_plain($_POST['cc_exp_month']);
-      $changes['payment_details']['cc_exp_year'] = check_plain($_POST['cc_exp_year']);
-      if ($_POST['cc_cvv'] !== str_repeat('-', strlen($_POST['cc_cvv']))) {
-        $changes['payment_details']['cc_cvv'] = check_plain($_POST['cc_cvv']);
-      }
-      else {
-        $changes['payment_details']['cc_cvv'] = $cache['cc_cvv'];
-      }
-      $changes['payment_details']['cc_bank'] = check_plain($_POST['cc_bank']);
-      return $changes;
 
     case 'settings':
       form_load_include($form_state, 'inc', 'uc_credit', 'uc_credit.admin');
