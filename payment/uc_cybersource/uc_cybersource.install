@@ -45,10 +45,13 @@ function uc_cybersource_requirements($phase) {
   // We need HOP.php if we're using the post method and also the Hosted Order
   // page, which is a payment method rather than a gateway.
   if ($method != 'soap') {
-    $requirements['uc_cybersource']['title'] = t('CyberSource HOP.php');
-    $requirements['uc_cybersource']['value'] = t('Missing');
     require_once('uc_cybersource.module');
-    if (!uc_cybersource_hop_include()) {
+    $has_cybersource_hop = uc_cybersource_hop_include();
+    $requirements['uc_cybersource'] = array(
+      'title' => t('CyberSource HOP.php'),
+      'value' => $has_cybersource_hop ? $t('Enabled') : $t('Not found'),
+    );
+    if (!$has_cybersource_hop) {
       $requirements['uc_cybersource']['description'] = t('For instructions on how to generate this file, please refer to <a href="http://www.cybersource.com/support_center/implementation/downloads/hosted_order_page/">CyberSource\'s Hosted Order Pages Documentation</a>, specifically the "Downloading Security Scripts" in Chapter 2 of the <a href="http://apps.cybersource.com/library/documentation/sbc/HOP_UG/html/">HOP User\'s Guide</a>.');
       $severity = $phase == 'install' ? REQUIREMENT_INFO : REQUIREMENT_ERROR;
       $requirements['uc_cybersource']['severity'] = $severity;
