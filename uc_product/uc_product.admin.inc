@@ -124,6 +124,13 @@ function uc_product_settings_form($form, &$form_state) {
         '#group' => 'product-settings',
       );
       $form[$feature['id']] += $feature['settings'](array(), $form_state);
+
+      if (function_exists($feature['settings'] . '_validate')) {
+        $form['#validate'][] = $feature['settings'] . '_validate';
+      }
+      if (function_exists($feature['settings'] . '_submit')) {
+        $form['#submit'][] = $feature['settings'] . '_submit';
+      }
     }
   }
 
