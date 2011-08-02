@@ -32,6 +32,9 @@ function uc_file_schema() {
       ),
     ),
     'primary key' => array('fid'),
+    'indexes' => array(
+      'filename' => array('filename'),
+    ),
   );
 
   $schema['uc_file_products'] = array(
@@ -244,4 +247,14 @@ function uc_file_update_7001() {
     'not null' => TRUE,
     'default' => '',
   ));
+}
+
+/**
+ * Add a index on filename since we query on it fairly frequently.
+ */
+function uc_file_update_7002() {
+  // Index may have been added by uc_file_update_6007() in 6.x-2.x.
+  if (!db_index_exists('uc_files', 'filename')) {
+    db_add_index('uc_files', 'filename', array('filename'));
+  }
 }
