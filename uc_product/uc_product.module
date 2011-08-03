@@ -109,7 +109,8 @@ function uc_product_menu() {
     'file' => 'uc_product.admin.inc',
   );
   $items['admin/store/products/classes/%uc_product_class/delete'] = array(
-    'access arguments' => array('administer product classes'),
+    'access callback' => 'uc_product_class_delete_access',
+    'access arguments' => array(4),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_product_class_delete_confirm', 4),
     'file' => 'uc_product.admin.inc',
@@ -124,6 +125,13 @@ function uc_product_menu() {
   );
 
   return $items;
+}
+
+/**
+ * Menu access callback for 'admin/store/products/classes/%uc_product_class/delete'.
+ */
+function uc_product_class_delete_access($class) {
+  return user_access('administer product classes') && !$class->locked;
 }
 
 /**
@@ -276,19 +284,20 @@ function uc_product_node_info($reset = FALSE) {
 
   if (empty($types) || $reset) {
     $types = array();
-    $types['product'] = array(
+    $defaults = module_invoke_all('uc_product_default_classes');
+    $types['product'] = isset($defaults['product']) ? $defaults['product'] : array();
+    $types['product'] += array(
       'name' => t('Product'),
       'base' => 'uc_product',
       'description' => t('Use <em>products</em> to represent items for sale on the website, including all the unique information that can be attributed to a specific model number.'),
       'title_label' => $title_label,
     );
 
-    $result = db_query("SELECT pcid, name, description FROM {uc_product_classes}");
-    foreach ($result as $class) {
-      $types[$class->pcid] = array(
-        'name' => $class->name,
-        'base' => 'uc_product',
-        'description' => $class->description,
+    $classes = uc_product_class_load(NULL, $reset);
+    foreach ($classes as $class) {
+      $class = (array) $class;
+      $class['base'] = 'uc_product';
+      $types[$class['pcid']] = $class + array(
         'title_label' => $title_label,
       );
     }
@@ -1787,17 +1796,48 @@ function uc_product_get_description($product) {
 }
 
 /**
- * Loads a product class.
+ * Load a product class or all classes.
  */
-function uc_product_class_load($class_id) {
-  static $classes = array();
+function uc_product_class_load($class_id = NULL, $reset = FALSE) {
+  static $classes;
+  if (!isset($classes) || $reset) {
+    // Load classes from database.
+    $classes = array();
+    $result = db_query("SELECT * FROM {uc_product_classes}");
+    while ($class = $result->fetchObject()) {
+      $class->locked = FALSE;
+      $classes[$class->pcid] = $class;
+    }
 
-  if (empty($classes[$class_id])) {
-    $class = db_query("SELECT * FROM {uc_product_classes} WHERE pcid = :pcid", array(':pcid' => $class_id))->fetchObject();
-    $classes[$class_id] = $class;
+    // Merge any module-defined classes.
+    foreach (module_invoke_all('uc_product_default_classes') as $pcid => $class) {
+      // The default class can be overridden by a module if needed,
+      // but is not treated as a real class elsewhere.
+      if ($pcid == 'product') {
+        continue;
+      }
+      $class += array(
+        'pcid' => $pcid,
+        'name' => $pcid,
+        'description' => '',
+      );
+
+      if (isset($classes[$pcid])) {
+        // Merge defaults with the existing database info.
+        $classes[$pcid] = (object) array_merge($class, (array) $classes[$pcid]);
+      }
+      else {
+        // Ensure the class info is saved in the database.
+        drupal_write_record('uc_product_classes', $class);
+        $classes[$pcid] = (object) $class;
+      }
+
+      // Module-defined classes cannot be deleted.
+      $classes[$pcid]->locked = TRUE;
+    }
   }
 
-  return $classes[$class_id];
+  return is_null($class_id) ? $classes : $classes[$class_id];
 }
 
 /**
@@ -2096,5 +2136,20 @@ function uc_product_views_api() {
   return array(
     'api' => '2.0',
     'path' => drupal_get_path('module', 'uc_product') . '/views',
+  );
+}
+
+
+/**
+ * Implementation of hook_features_api().
+ */
+function uc_product_features_api() {
+  return array(
+    'uc_product_classes' => array(
+      'name' => t('Ubercart product classes'),
+      'feature_source' => TRUE,
+      'default_hook' => 'uc_product_default_classes',
+      'file' => drupal_get_path('module', 'uc_product') .'/uc_product.features.inc',
+    ),
   );
 }
