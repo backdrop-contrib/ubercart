@@ -40,23 +40,6 @@ function hook_uc_product_class($type, $op) {
 }
 
 /**
- * Define default product classes.
- *
- * The results of this hook are eventually passed through hook_node_info(),
- * so you may include any keys that hook_node_info() uses. Defaults will
- * be provided where keys are not set. This hook can also be used to
- * override the default "product" product class name and description.
- */
-function hook_uc_product_default_classes() {
-  return array(
-    'my_class' => array(
-      'name' => t('My product class'),
-      'description' => t('Content type description for my product class.'),
-    ),
-  );
-}
-
-/**
  * Returns a structured array representing the given product's description.
  *
  * Modules that add data to cart items when they are selected should display it
