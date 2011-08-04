@@ -1116,11 +1116,7 @@ function uc_order_edit_form_submit($form, &$form_state) {
   }
 
   // Load line items again, since some may have been updated by the form.
-  $order->line_items = uc_order_load_line_items($order, TRUE);
-
-  // Merge it with the defaultish line items.
-  $order->line_items = array_merge($order->line_items, uc_order_load_line_items($order, FALSE));
-  usort($order->line_items, 'uc_weight_sort');
+  $order->line_items = uc_order_load_line_items($order);
 
   uc_order_log_changes($order->order_id, $log);
 

@@ -1297,11 +1297,7 @@ class UcOrderController extends DrupalDefaultEntityController {
       uc_order_module_invoke('load', $order, NULL);
 
       // Load line items... has to be last after everything has been loaded.
-      $order->line_items = uc_order_load_line_items($order, TRUE);
-
-      // Merge it with the defaultish line items.
-      $order->line_items = array_merge($order->line_items, uc_order_load_line_items($order, FALSE));
-      usort($order->line_items, 'uc_weight_sort');
+      $order->line_items = uc_order_load_line_items($order);
 
       $fields = array();
 
@@ -1426,43 +1422,41 @@ function uc_order_comment_save($order_id, $uid, $message, $type = 'admin', $stat
  *   - amount: The line item amount.
  *   - weight: The line item weight.
  */
-function uc_order_load_line_items($order, $stored) {
+function uc_order_load_line_items($order) {
   $items = array();
 
-  if ($stored) {
-    $result = db_query("SELECT * FROM {uc_order_line_items} WHERE order_id = :id", array(':id' => $order->order_id));
-    foreach ($result as $row) {
-      $items[] = array(
-        'line_item_id' => $row->line_item_id,
-        'type' => $row->type,
-        'title' => $row->title,
-        'amount' => $row->amount,
-        'weight' => $row->weight,
-        'data' => unserialize($row->data),
-      );
-    }
+  $result = db_query("SELECT * FROM {uc_order_line_items} WHERE order_id = :id", array(':id' => $order->order_id));
+  foreach ($result as $row) {
+    $item = array(
+      'line_item_id' => $row->line_item_id,
+      'type' => $row->type,
+      'title' => $row->title,
+      'amount' => $row->amount,
+      'weight' => $row->weight,
+      'data' => unserialize($row->data),
+    );
+    drupal_alter('uc_line_item', $item, $order);
+    $items[] = $item;
   }
-  else {
-    foreach (_uc_line_item_list() as $type) {
-      if (empty($type['display_only']) && !empty($type['callback']) && function_exists($type['callback'])) {
-        $result = $type['callback']('load', $order);
-        if ($result !== FALSE && is_array($result)) {
-          foreach ($result as $line) {
-            $items[] = array(
-              'line_item_id' => $line['id'],
-              'type' => $type['id'],
-              'title' => $line['title'],
-              'amount' => $line['amount'],
-              'weight' => isset($line['weight']) ? $line['weight'] : $type['weight'],
-              'data' => isset($line['data']) ? $line['data'] : array(),
-            );
-          }
+
+  foreach (_uc_line_item_list() as $type) {
+    if (empty($type['display_only']) && !empty($type['callback']) && function_exists($type['callback'])) {
+      $result = $type['callback']('load', $order);
+      if ($result !== FALSE && is_array($result)) {
+        foreach ($result as $line) {
+          $item = array(
+            'line_item_id' => $line['id'],
+            'type' => $type['id'],
+            'title' => $line['title'],
+            'amount' => $line['amount'],
+            'weight' => isset($line['weight']) ? $line['weight'] : $type['weight'],
+            'data' => isset($line['data']) ? $line['data'] : array(),
+          );
+          drupal_alter('uc_line_item', $item, $order);
+          $items[] = $item;
         }
       }
     }
-  }
-  foreach ($items as &$item) {
-    drupal_alter('uc_line_item', $item, $order);
   }
 
   usort($items, 'uc_weight_sort');
@@ -1485,8 +1479,7 @@ function uc_order_load_line_items($order, $stored) {
  *   - weight: The line item weight.
  */
 function uc_order_load_line_items_display($order) {
-  $line_items = uc_order_load_line_items($order, TRUE);
-  $line_items = array_merge($line_items, uc_order_load_line_items($order, FALSE));
+  $line_items = uc_order_load_line_items($order);
   $order->line_items = $line_items;
 
   $items = _uc_line_item_list();
