@@ -18,8 +18,14 @@ class UbercartOrderTestCase extends UbercartTestHelper {
   public function testOrderCreation() {
     $this->drupalLogin($this->adminUser);
 
-    $edit = array('uid' => $this->customer->uid);
-    $this->drupalPost('admin/store/orders/create', $edit, t('Create order'));
+    $edit = array(
+      'customer_type' => 'search',
+      'customer[email]' => $this->customer->mail,
+    );
+    $this->drupalPost('admin/store/orders/create', $edit, t('Search'));
+
+    $edit['customer[uid]'] = $this->customer->uid;
+    $this->drupalPost(NULL, $edit, t('Create order'));
     $this->assertText(t('Order created by the administration.'), 'Order created by the administration.');
     $this->assertFieldByName('uid_text', $this->customer->uid, 'The customer UID appears on the page.');
 
