@@ -34,7 +34,7 @@ function uc_line_item_total($op, $order) {
     case 'display':
       $lines[] = array(
         'id' => 'total',
-        'title' => t('Total'),
+        'title' => t('Order total'),
         'amount' => uc_order_get_total($order),
       );
       return $lines;

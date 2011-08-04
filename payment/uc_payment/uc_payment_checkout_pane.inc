@@ -18,15 +18,9 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
         'type' => 'setting',
       );
 
-      if (empty($order->line_items)) {
-        $order->line_items = uc_order_load_line_items($order, FALSE);
-      }
+      $order->line_items = uc_order_load_line_items_display($order);
 
       if (variable_get('uc_payment_show_order_total_preview', TRUE)) {
-        $contents['current_total'] = array(
-          '#type' => 'hidden',
-          '#value' => isset($order->order_total) && $order->order_total > 0 ? $order->order_total : NULL,
-        );
         $contents['line_items'] = array(
           '#theme' => 'uc_payment_totals',
           '#order' => $order,
@@ -112,24 +106,7 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
       return TRUE;
 
     case 'review':
-      $line_items = $order->line_items;
-      $items = _uc_line_item_list();
-      foreach ($items as $item) {
-        if (isset($item['display_only']) && $item['display_only'] == TRUE) {
-          $result = $item['callback']('display', $order);
-          if (is_array($result)) {
-            foreach ($result as $line) {
-              $line_items[] = array(
-                'title' => $line['title'],
-                'amount' => $line['amount'],
-                'weight' => $item['weight']
-              );
-            }
-          }
-        }
-      }
-      usort($line_items, 'uc_weight_sort');
-
+      $line_items = uc_order_load_line_items_display($order);
       foreach ($line_items as $line_item) {
         $review[] = array('title' => $line_item['title'], 'data' => theme('uc_price', array('price' => $line_item['amount'])));
       }

@@ -1444,9 +1444,7 @@ function uc_order_load_line_items($order, $stored) {
   }
   else {
     foreach (_uc_line_item_list() as $type) {
-      if ($type['stored'] == FALSE
-          && (isset($type['callback']) && function_exists($type['callback']))
-          && (!isset($type['display_only']) || $type['display_only'] == FALSE)) {
+      if (empty($type['display_only']) && !empty($type['callback']) && function_exists($type['callback'])) {
         $result = $type['callback']('load', $order);
         if ($result !== FALSE && is_array($result)) {
           foreach ($result as $line) {
@@ -1470,6 +1468,50 @@ function uc_order_load_line_items($order, $stored) {
   usort($items, 'uc_weight_sort');
 
   return $items;
+}
+
+/**
+ * Returns an array containing an order's line items ordered by weight,
+ * prepared for display.
+ *
+ * @param $order
+ *   An order object whose line items are to be loaded.
+ *
+ * @return
+ *   An array of line items, which are arrays containing the following keys:
+ *   - type: The line item type.
+ *   - title: The line item title.
+ *   - amount: The line item amount.
+ *   - weight: The line item weight.
+ */
+function uc_order_load_line_items_display($order) {
+  $line_items = uc_order_load_line_items($order, TRUE);
+  $line_items = array_merge($line_items, uc_order_load_line_items($order, FALSE));
+  $order->line_items = $line_items;
+
+  $items = _uc_line_item_list();
+  foreach ($items as $item) {
+    if (!empty($item['display_only'])) {
+      $result = $item['callback']('display', $order);
+      if (is_array($result)) {
+        foreach ($result as $line) {
+          $line_items[] = array(
+            'type' => $item['id'],
+            'title' => $line['title'],
+            'amount' => $line['amount'],
+            'weight' => $item['weight']
+          );
+        }
+      }
+    }
+  }
+  foreach ($line_items as &$item) {
+    $item['formatted_amount'] = uc_currency_format($item['amount']);
+  }
+
+  usort($line_items, 'uc_weight_sort');
+
+  return $line_items;
 }
 
 /**
@@ -1780,28 +1822,7 @@ function template_preprocess_uc_order(&$variables) {
     }
   }
 
-  $variables['line_items'] = $order->line_items;
-  $items = _uc_line_item_list();
-  foreach ($items as $item) {
-    if (isset($item['display_only']) && $item['display_only'] == TRUE) {
-      $result = $item['callback']('display', $order);
-      if (is_array($result)) {
-        foreach ($result as $line) {
-          $variables['line_items'][] = array(
-            'line_item_id' => $line['id'],
-            'title' => $line['title'],
-            'amount' => $line['amount'],
-            'weight' => $item['weight'],
-            'data' => isset($line['data']) ? $line['data'] : array(),
-          );
-        }
-      }
-    }
-  }
-  foreach ($variables['line_items'] as &$item) {
-    $item['formatted_amount'] = uc_currency_format($item['amount']);
-  }
-  usort($variables['line_items'], 'uc_weight_sort');
+  $variables['line_items'] = uc_order_load_line_items_display($variables['order']);
 
   // Generate tokens to use as template variables.
   $types = array(
