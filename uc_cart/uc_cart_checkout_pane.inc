@@ -25,15 +25,7 @@ function uc_checkout_pane_cart($op, $order, $form = NULL, &$form_state = NULL) {
       return array('contents' => $contents, 'next-button' => FALSE);
 
     case 'review':
-      $output = '<table>';
-      foreach ($order->products as $item) {
-        $desc = check_plain($item->title) . uc_product_get_description($item);
-
-        $output .= '<tr valign="top"><td>' . $item->qty . '&times;</td><td width="100%">' . $desc
-                  . '</td><td nowrap="nowrap">' . theme('uc_price', array('price' => $item->price * $item->qty)) . '</td></tr>';
-      }
-      $output .= '</table>';
-      $review[] = $output;
+      $review[] = theme('uc_checkout_pane_cart_review', array('items' => $order->products));
       return $review;
   }
 }
@@ -525,4 +517,26 @@ function theme_uc_cart_review_table($variables) {
   }
 
   return theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('cart-review'))));
+}
+
+/**
+ * Theme cart items on the checkout review order page.
+ *
+ * @param $items
+ *   Cart items.
+ * @return
+ *   A string of HTML for the page contents.
+ * @ingroup themeable
+ */
+function theme_uc_checkout_pane_cart_review($variables) {
+  $output = '<table>';
+  foreach ($variables['items'] as $item) {
+    $desc = check_plain($item->title) . uc_product_get_description($item);
+
+    $output .= '<tr valign="top"><td>' . $item->qty . '&times;</td><td width="100%">' . $desc
+              . '</td><td nowrap="nowrap">' . theme('uc_price', array('price' => $item->price * $item->qty)) . '</td></tr>';
+  }
+  $output .= '</table>';
+
+  return $output;
 }
