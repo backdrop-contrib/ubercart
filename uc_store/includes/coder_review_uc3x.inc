@@ -87,6 +87,13 @@ function coder_review_uc3x_reviews() {
       '#not' => '[\'"]#price',
       '#warning' => 'theme_uc_product_price() takes a render element with a "#value" and optional "#title" and "#attributes".'
     ),
+
+    // uc_order_load_line_items() has only one argument.
+    array(
+      '#type' => 'regex',
+      '#value' => 'uc_order_load_line_items\([^,]+,',
+      '#warning' => 'uc_order_load_line_items() takes only one argument, the order object. Both stored and calculated line items are returned at once.',
+    ),
   );
 
   $review = array(
