@@ -167,7 +167,7 @@ function uc_file_user_downloads($account) {
  *
  * @see _uc_file_download_validate()
  */
-function _uc_file_download($fid, $key = NULL) {
+function _uc_file_download($fid) {
   global $user;
 
   // Error messages for various failed download states.
@@ -184,11 +184,13 @@ function _uc_file_download($fid, $key = NULL) {
 
   $ip = ip_address();
   $file_download = uc_file_get_by_uid($user->uid, $fid);
-  if (!$file_download) {
-    $file_download = uc_file_get_by_key($key);
-  }
 
-  $file_download->full_path = uc_file_qualify_file($file_download->filename);
+  if (isset($file_download->filename)) {
+    $file_download->full_path = uc_file_qualify_file($file_download->filename);
+  }
+  else {
+    return MENU_ACCESS_DENIED;
+  }
 
   // If it's ok, we push the file to the user.
   $status = _uc_file_download_validate($file_download, $user, $ip);
