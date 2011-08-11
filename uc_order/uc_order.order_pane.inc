@@ -836,11 +836,7 @@ function uc_order_edit_line_items_recalculate($form, &$form_state) {
   $order = $form_state['build_info']['args'][0];
 
   // Load line items again, since some may have been updated by the form.
-  $order->line_items = uc_order_load_line_items($order, TRUE);
-
-  // Merge it with the defaultish line items.
-  $order->line_items = array_merge($order->line_items, uc_order_load_line_items($order, FALSE));
-  usort($order->line_items, 'uc_weight_sort');
+  $order->line_items = uc_order_load_line_items($order);
 }
 
 /**

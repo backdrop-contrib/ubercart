@@ -297,9 +297,7 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
     }
   }
 
-  $order->line_items = uc_order_load_line_items($order, TRUE);
-  $order->line_items = array_merge($order->line_items, uc_order_load_line_items($order, FALSE));
-  usort($order->line_items, 'uc_weight_sort');
+  $order->line_items = uc_order_load_line_items($order);
 
   $form_state['storage']['order'] = $order;
 }
