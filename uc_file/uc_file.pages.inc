@@ -125,7 +125,7 @@ function uc_file_user_downloads($account) {
 
     // Expiration set to 'never'
     if ($file->expiration == FALSE) {
-      $file_link = l(basename($file->filename), 'download/' . $file->fid . '/' . $file->file_key, $onclick);
+      $file_link = l(basename($file->filename), 'download/' . $file->fid, $onclick);
     }
 
     // Expired.
@@ -135,7 +135,7 @@ function uc_file_user_downloads($account) {
 
     // Able to be downloaded.
     else {
-      $file_link = l(basename($file->filename), 'download/' . $file->fid . '/' . $file->file_key, $onclick) . ' (' . t('expires on @date', array('@date' => format_date($file->expiration, 'uc_store'))) . ')';
+      $file_link = l(basename($file->filename), 'download/' . $file->fid, $onclick) . ' (' . t('expires on @date', array('@date' => format_date($file->expiration, 'uc_store'))) . ')';
     }
 
     $files[] = array(
@@ -167,7 +167,7 @@ function uc_file_user_downloads($account) {
  *
  * @see _uc_file_download_validate()
  */
-function _uc_file_download($fid, $key) {
+function _uc_file_download($fid, $key = NULL) {
   global $user;
 
   // Error messages for various failed download states.
@@ -183,7 +183,10 @@ function _uc_file_download($fid, $key) {
   );
 
   $ip = ip_address();
-  $file_download = uc_file_get_by_key($key);
+  $file_download = uc_file_get_by_uid($user->uid, $fid);
+  if (!$file_download) {
+    $file_download = uc_file_get_by_key($key);
+  }
 
   $file_download->full_path = uc_file_qualify_file($file_download->filename);
 

@@ -61,9 +61,9 @@ function uc_file_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'uc_file.pages.inc',
   );
-  $items['download/%/%'] = array(
+  $items['download/%'] = array(
     'page callback' => '_uc_file_download',
-    'page arguments' => array(1, 2),
+    'page arguments' => array(1),
     'access arguments' => array('download file'),
     'type' => MENU_CALLBACK,
     'file' => 'uc_file.pages.inc',
@@ -1666,6 +1666,19 @@ function &uc_file_get_by_key($key) {
   }
 
   return $cache[$key];
+}
+
+function &uc_file_get_by_uid($uid, $fid) {
+  $cache = _uc_file_get_cache();
+
+  if (!isset($cache[$uid][$fid])) {
+    $cache[$uid][$fid] = db_query("SELECT * FROM {uc_file_users} ufu " .
+      "LEFT JOIN {uc_files} uf ON uf.fid = ufu.fid " .
+      "WHERE ufu.fid = :fid AND ufu.uid = :uid", array(':uid' => $uid, ':fid' => $fid))->fetchObject();
+    $cache[$uid][$fid]->addresses = unserialize($cache[$uid][$fid]->addresses);
+  }
+
+  return $cache[$uid][$fid];
 }
 
 /**
