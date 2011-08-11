@@ -65,7 +65,7 @@ function theme_uc_file_downloads_token($variables) {
       continue;
     }
 
-    $output .= l($file_download->filename, 'download/' . $file_download->fid . '/' . $file_download->file_key, array('absolute' => TRUE)) . "\n";
+    $output .= l($file_download->filename, 'download/' . $file_download->fid, array('absolute' => TRUE)) . "\n";
   }
 
   return $output;
