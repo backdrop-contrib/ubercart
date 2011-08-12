@@ -471,7 +471,12 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
       $crypt = new uc_encryption_class;
 
       // Store the encrypted details in the session for the next pageload.
-      $_SESSION['sescrd'] = $crypt->encrypt($key, serialize($order->payment_details));
+      // We are using base64_encode() because the encrypt function works with a
+      // limited set of characters, not supporting the full Unicode character
+      // set or even extended ASCII characters that may be present.
+      // base64_encode() converts everything to a subset of ASCII, ensuring that
+      // the encryption algorithm does not mangle names.
+      $_SESSION['sescrd'] = $crypt->encrypt($key, base64_encode(serialize($order->payment_details)));
 
       // Log any errors to the watchdog.
       uc_store_encryption_errors($crypt, 'uc_credit');
@@ -933,7 +938,15 @@ function uc_credit_cache($op, $data = NULL, $encrypted = TRUE) {
       $crypt = new uc_encryption_class;
 
       // Save the unencrypted CC details for the duration of this request.
+      // In recent versions, we base64_encode() the payment details before
+      // encrypting. To preserve our ability to read old data that had been
+      // stored unencoded prior to an upgrade, we first try to unserialize the
+      // encrypted data.  If that fails, we assume it's the new format and we
+      // decode it before unserializing.
       $cc_cache = unserialize($crypt->decrypt($key, $data));
+      if ($cc_cache === FALSE) {
+        $cc_cache = unserialize(base64_decode($crypt->decrypt($key, $data)));
+      }
     }
     else {
       $cc_cache = $data;
