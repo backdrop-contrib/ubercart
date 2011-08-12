@@ -223,7 +223,7 @@ function uc_order_workflow_form_submit($form, &$form_state) {
 }
 
 /**
- * Present the form to create a custom order status.
+ * Presents the form to create a custom order status.
  *
  * @see uc_order_status_create_form_validate()
  * @see uc_order_status_create_form_submit()
@@ -281,7 +281,7 @@ function uc_order_status_create_form($form, &$form_state) {
 }
 
 /**
- * Ensure the new status id is unique and has no spaces.
+ * Ensures the new status id is unique and has no spaces.
  *
  * @see uc_order_status_create_form()
  * @see uc_order_status_create_form_submit()
@@ -1041,7 +1041,7 @@ function uc_order_edit_form($form, &$form_state, $order) {
 }
 
 /**
- * Prevent order edits from colliding.
+ * Prevents order edits from colliding.
  *
  * @see uc_order_edit_form()
  * @see uc_order_edit_form_submit()
@@ -1057,6 +1057,8 @@ function uc_order_edit_form_validate($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_order_edit_form().
+ *
  * @see uc_order_edit_form()
  * @see uc_order_edit_form_validate()
  * @see theme_uc_order_edit_form()
@@ -1136,6 +1138,8 @@ function uc_order_edit_form_submit($form, &$form_state) {
 }
 
 /**
+ * Formats the uc_order_edit_form().
+ *
  * @see uc_order_edit_form()
  * @see uc_order_edit_form_validate()
  * @see uc_order_edit_form_submit()
@@ -1229,7 +1233,7 @@ function uc_order_add_line_item_form($form, &$form_state, $order, $line_item_id)
 }
 
 /**
- * Validate new line item data.
+ * Validates new line item data.
  *
  * @see uc_order_add_line_item_form()
  */
@@ -1263,7 +1267,7 @@ function uc_order_add_line_item_form_submit($form, &$form_state) {
 }
 
 /**
- * Set recipients of an invoice, and mail it.
+ * Sets recipients of an invoice, then mails it.
  *
  * @see uc_order_mail_invoice_form_validate()
  * @see uc_order_mail_invoice_form_submit()

@@ -19,7 +19,7 @@ Drupal.behaviors.ucOrderClick = {
 }
 
 /**
- * Add the submit behavior to the order form
+ * Adds the submit behavior to the order form
  */
 Drupal.behaviors.ucOrderSubmit = {
   attach: function(context, settings) {
@@ -59,7 +59,7 @@ jQuery(document).ready(
 );
 
 /**
- * Copy the shipping data on the order edit screen to the corresponding billing
+ * Copys the shipping data on the order edit screen to the corresponding billing
  * fields if they exist.
  */
 function uc_order_copy_shipping_to_billing() {
@@ -77,7 +77,7 @@ function uc_order_copy_shipping_to_billing() {
 }
 
 /**
- * Copy the billing data on the order edit screen to the corresponding shipping
+ * Copys the billing data on the order edit screen to the corresponding shipping
  * fields if they exist.
  */
 function uc_order_copy_billing_to_shipping() {
@@ -95,7 +95,7 @@ function uc_order_copy_billing_to_shipping() {
 }
 
 /**
- * Load the address book div on the order edit screen.
+ * Loads the address book div on the order edit screen.
  */
 function load_address_select(uid, div, address_type) {
   var options = {
@@ -112,7 +112,7 @@ function load_address_select(uid, div, address_type) {
 }
 
 /**
- * Apply the selected address to the appropriate fields in the order edit form.
+ * Applys the selected address to the appropriate fields in the order edit form.
  */
 function apply_address(type, address_str) {
   eval('var address = ' + address_str + ';');
@@ -133,7 +133,7 @@ function apply_address(type, address_str) {
 }
 
 /**
- * Close the address book div.
+ * Closes the address book div.
  */
 function close_address_select(div) {
   jQuery(div).empty().removeClass('address-select-box');
@@ -141,7 +141,7 @@ function close_address_select(div) {
 }
 
 /**
- * Load the customer select div on the order edit screen.
+ * Loads the customer select div on the order edit screen.
  */
 function load_customer_search() {
   if (customer_select == 'search' && jQuery('#customer-select #edit-back').val() == null) {
@@ -161,7 +161,7 @@ function load_customer_search() {
 }
 
 /**
- * Display the results of the customer search.
+ * Displays the results of the customer search.
  */
 function load_customer_search_results() {
   jQuery.post(Drupal.settings.ucURL.adminOrders + 'customer/search',
@@ -178,7 +178,7 @@ function load_customer_search_results() {
 }
 
 /**
- * Set customer values from search selection.
+ * Sets customer values from search selection.
  */
 function select_customer_search() {
   var data = jQuery('#edit-cust-select').val();
@@ -187,7 +187,7 @@ function select_customer_search() {
 }
 
 /**
- * Display the new customer form.
+ * Displays the new customer form.
  */
 function load_new_customer_form() {
   if (customer_select == 'new') {
@@ -204,7 +204,7 @@ function load_new_customer_form() {
 }
 
 /**
- * Validate the customer's email address.
+ * Validates the customer's email address.
  */
 function check_new_customer_address() {
   var options = {
@@ -220,7 +220,7 @@ function check_new_customer_address() {
 }
 
 /**
- * Load existing customer as new order's customer.
+ * Loads existing customer as new order's customer.
  */
 function select_existing_customer(uid, email) {
   jQuery('input[name=uid], #edit-uid-text').val(uid);
@@ -234,7 +234,7 @@ function select_existing_customer(uid, email) {
 }
 
 /**
- * Hide the customer selection form.
+ * Hides the customer selection form.
  */
 function close_customer_select() {
   jQuery('#customer-select').empty().removeClass('customer-select-box');
@@ -243,7 +243,7 @@ function close_customer_select() {
 }
 
 /**
- * Prevent mistakes by confirming deletion.
+ * Prevents mistakes by confirming deletion.
  */
 function confirm_line_item_delete(message, img_id) {
   if (confirm(message)) {

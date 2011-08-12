@@ -80,7 +80,7 @@ function uc_order_update_line_item($id, $title, $amount, $data = NULL) {
 }
 
 /**
- * Deletes a line item, or pass $order as TRUE and $id as an order_id to
+ * Deletes a line item, or passes $order as TRUE and $id as an order_id to
  * delete every line item attached to an order.
  */
 function uc_order_delete_line_item($id, $order = FALSE) {
