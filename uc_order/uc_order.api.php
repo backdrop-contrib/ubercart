@@ -355,7 +355,7 @@ function uc_order_pane_callback($op, $order, &$form = NULL, &$form_state = NULL)
       $comments = uc_order_comments_load($form['order_id']['#value'], TRUE);
       if (is_array($comments) && count($comments) > 0) {
         foreach ($comments as $comment) {
-          $items[] = '[' . theme('uc_uid', $comment->uid) . '] ' . filter_xss_admin($comment->message);
+          $items[] = '[' . theme('uc_uid', array('uid' => $comment->uid)) . '] ' . filter_xss_admin($comment->message);
         }
       }
       else {

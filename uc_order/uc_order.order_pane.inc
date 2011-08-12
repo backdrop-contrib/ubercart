@@ -904,7 +904,7 @@ function uc_order_pane_admin_comments($op, $order, &$form = NULL, &$form_state =
       $comments = uc_order_comments_load($form['order_id']['#value'], TRUE);
       if (is_array($comments) && count($comments) > 0) {
         foreach ($comments as $comment) {
-          $items[] = '[' . theme('uc_uid', $comment->uid) . '] ' . filter_xss_admin($comment->message);
+          $items[] = '[' . theme('uc_uid', array('uid' => $comment->uid)) . '] ' . filter_xss_admin($comment->message);
         }
       }
       else {
@@ -1342,7 +1342,7 @@ function uc_op_order_comments_view_table($comments) {
         '#cell_attributes' => array('align' => 'center'),
       );
       $data['user'] = array(
-        '#markup' => theme('uc_uid', $comment->uid),
+        '#markup' => theme('uc_uid', array('uid' => $comment->uid)),
         '#cell_attributes' => array('align' => 'center'),
       );
       $data['notified'] = array(
@@ -1402,7 +1402,7 @@ function uc_op_admin_comments_view_table($comments) {
         '#cell_attributes' => array('align' => 'center', 'valign' => 'top'),
       );
       $data['user'] = array(
-        '#markup' => theme('uc_uid', $comment->uid),
+        '#markup' => theme('uc_uid', array('uid' => $comment->uid)),
         '#cell_attributes' => array('align' => 'center', 'valign' => 'top'),
       );
       $data['comment'] = array(

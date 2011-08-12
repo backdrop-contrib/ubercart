@@ -1338,7 +1338,7 @@ function uc_order_log($order) {
 
   foreach ($result as $change) {
     $rows[] = array(
-      'data' => array(format_date($change->created, 'short'), theme('uc_uid', $change->uid), $change->changes),
+      'data' => array(format_date($change->created, 'short'), theme('uc_uid', array('uid' => $change->uid)), $change->changes),
       'valign' => 'top',
     );
   }
