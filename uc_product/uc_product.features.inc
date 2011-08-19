@@ -6,7 +6,7 @@
  */
 
 /**
- * Implementation of hook_features_export_options().
+ * Implements hook_features_export_options().
  */
 function uc_product_classes_features_export_options() {
   $classes = array();
@@ -17,7 +17,7 @@ function uc_product_classes_features_export_options() {
 }
 
 /**
- * Implementation of hook_features_export().
+ * Implements hook_features_export().
  */
 function uc_product_classes_features_export($data, &$export, $module_name = '') {
   $export['dependencies']['uc_product'] = 'uc_product';
@@ -40,7 +40,7 @@ function uc_product_classes_features_export($data, &$export, $module_name = '') 
 }
 
 /**
- * Implementation of hook_features_export_render().
+ * Implements hook_features_export_render().
  */
 function uc_product_classes_features_export_render($module, $data, $export = NULL) {
   $output = node_features_export_render($module, $data, $export);
@@ -48,7 +48,7 @@ function uc_product_classes_features_export_render($module, $data, $export = NUL
 }
 
 /**
- * Implementation of hook_features_revert().
+ * Implements hook_features_revert().
  *
  * @see node_features_revert()
  */
