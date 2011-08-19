@@ -63,8 +63,14 @@ function uc_product_classes_features_revert($module) {
         // Our existing fields ($fields) needs to be the first argument here,
         // so only fields that don't exist in code can be de-activated.
         if ($deleted_fields = array_diff(content_features_fields_normal($type_name), content_features_fields_default($type_name))) {
-          foreach($deleted_fields as $field_name) {
-            db_query("UPDATE {". content_instance_tablename() ."} SET widget_active = 0 WHERE field_name = '%s' AND type_name = '%s'", $field_name, $type_name);
+          foreach ($deleted_fields as $field_name) {
+            db_update(content_instance_tablename())
+              ->fields(array(
+                  'widget_active' => 0,
+                ))
+              ->condition('field_name', $field_name)
+              ->condition('type_name', $type_name)
+              ->execute();
           }
         }
       }
@@ -73,8 +79,12 @@ function uc_product_classes_features_revert($module) {
       // want to delete the node type (and invoke hook_node_type()).
       // This can lead to bad consequences like CCK deleting field
       // storage in the DB.
-      db_query("DELETE FROM {node_type} WHERE type = '%s'", $type_name);
-      db_query("DELETE FROM {uc_product_classes} WHERE pcid = '%s'", $type_name);
+      db_delete('node_type')
+        ->condition('type', $type_name)
+        ->execute();
+      db_delete('uc_product_classes')
+        ->condition('pcid', $type_name)
+        ->execute();
     }
     uc_product_node_info(TRUE);
     node_types_rebuild();

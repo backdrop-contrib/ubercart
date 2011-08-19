@@ -44,9 +44,9 @@ function uc_product_class_default() {
   $header = array(t('Class ID'), t('Name'), t('Description'), t('Operations'));
   $rows = array();
   foreach ($classes as $class) {
-    $ops = array(l(t('edit'), 'admin/store/products/classes/'. $class->pcid .'/edit'));
+    $ops = array(l(t('edit'), 'admin/store/products/classes/' . $class->pcid . '/edit'));
     if (empty($class->locked)) {
-      $ops[] = l(t('delete'), 'admin/store/products/classes/'. $class->pcid .'/delete');
+      $ops[] = l(t('delete'), 'admin/store/products/classes/' . $class->pcid . '/delete');
     }
     $rows[] = array(
       $class->pcid,
