@@ -193,7 +193,7 @@ function uc_file_schema() {
       ),
     ),
     'indexes' => array(
-      'fid' => array('fid'),
+      'fid_uid' => array('fid', 'uid'),
       'uid' => array('uid'),
     ),
     'primary key' => array('fuid'),
@@ -256,5 +256,16 @@ function uc_file_update_7002() {
   // Index may have been added by uc_file_update_6007() in 6.x-2.x.
   if (!db_index_exists('uc_files', 'filename')) {
     db_add_index('uc_files', 'filename', array('filename'));
+  }
+}
+
+/**
+ * Change index on uc_file_users.fid to be over fid and uid.
+ */
+function uc_file_update_7003() {
+  // Index may have been changed in 6.x-2.x.
+  if (!db_index_exists('uc_file_users', 'fid_uid')) {
+    db_add_index('uc_file_users', 'fid_uid', array('fid', 'uid'));
+    db_drop_index('uc_file_users', 'fid');
   }
 }
