@@ -364,7 +364,7 @@ function _uc_file_download_transfer($file_user, $ip) {
     // Push the data to the client.
     print(fread($fp, UC_FILE_BYTE_SIZE));
     flush();
-    ob_flush();
+    @ob_flush();
   }
 
   // Finished serving the file, close the stream and log the download
