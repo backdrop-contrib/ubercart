@@ -369,11 +369,16 @@ function _uc_file_download_transfer($file_user, $ip) {
     // Push the data to the client.
     print(fread($fp, UC_FILE_BYTE_SIZE));
     flush();
+
+    // Supress PHP notice that occurs when output buffering isn't enabled.
+    // The ob_flush() is needed because if output buffering *is* enabled,
+    // clicking on the file download link won't download anything if the buffer
+    // isn't flushed.
     @ob_flush();
   }
 
   // Finished serving the file, close the stream and log the download
-  // to the user table
+  // to the user table.
   fclose($fp);
 
   _uc_file_log_download($file_user, $ip);
