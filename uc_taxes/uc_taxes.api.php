@@ -43,8 +43,6 @@ function hook_uc_calculate_tax($order) {
     $use_same_rates = FALSE;
   }
 
-  $use_rules = module_exists('rules');
-
   foreach (uc_taxes_rate_load() as $tax) {
     if ($use_same_rates) {
       foreach ((array)$order->line_items as $old_line) {
@@ -55,15 +53,8 @@ function hook_uc_calculate_tax($order) {
       }
     }
 
-    if ($use_rules) {
-      $set = rules_config_load('uc_taxes_' . $tax->id);
-      $apply = $set->execute($order);
-    }
-    else {
-      $apply = TRUE;
-    }
-
-    if ($apply) {
+    $set = rules_config_load('uc_taxes_' . $tax->id);
+    if ($set->execute($order)) {
       $line_item = uc_taxes_apply_tax($order, $tax);
       if ($line_item) {
         $order->taxes[$line_item->id] = $line_item;

@@ -146,12 +146,10 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
     '#default_value' => $rate_id ? $rate->inclusion_text : '',
   );
 
-  if (module_exists('rules')) {
-    $conditions = rules_config_load('uc_taxes_' . $rate_id);
-    if ($conditions) {
-      RulesPluginUI::$basePath = 'admin/config/workflow/rules/components';
-      $conditions->form($form, $form_state);
-    }
+  $conditions = rules_config_load('uc_taxes_' . $rate_id);
+  if ($conditions) {
+    RulesPluginUI::$basePath = 'admin/config/workflow/rules/components';
+    $conditions->form($form, $form_state);
   }
 
   $form['actions'] = array('#type' => 'actions');
@@ -206,12 +204,10 @@ function uc_taxes_form_submit($form, &$form_state) {
   uc_taxes_rate_save((object) $rate);
 
   // Update the name of the associated conditions.
-  if (module_exists('rules')) {
-    $conditions = rules_config_load('uc_taxes_' . $rate['id']);
-    if ($conditions) {
-      $conditions->label = $rate['name'];
-      $conditions->save();
-    }
+  $conditions = rules_config_load('uc_taxes_' . $rate['id']);
+  if ($conditions) {
+    $conditions->label = $rate['name'];
+    $conditions->save();
   }
 
   // Display a message and redirect back to the overview.
@@ -236,7 +232,7 @@ function uc_taxes_clone($rate_id) {
   $rate = uc_taxes_rate_save($rate);
 
   // Clone the associated conditions as well.
-  if (module_exists('rules') && $conditions = rules_config_load('uc_taxes_' . $rate_id)) {
+  if ($conditions = rules_config_load('uc_taxes_' . $rate_id)) {
     unset($conditions->id);
     $conditions->save('uc_taxes_' . $rate->id);
   }

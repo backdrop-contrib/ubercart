@@ -992,18 +992,10 @@ function uc_order_view_update_form($form, &$form_state, $order) {
     '#weight' => -10,
   );
 
-  if (module_exists('rules')) {
-    $form['controls']['notify'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Send e-mail notification on update.'),
-    );
-  }
-  else {
-    $form['controls']['notify'] = array(
-      '#type' => 'value',
-      '#value' => FALSE,
-    );
-  }
+  $form['controls']['notify'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Send e-mail notification on update.'),
+  );
 
   $form['controls']['actions'] = array('#type' => 'actions');
   $form['controls']['actions']['submit'] = array(
@@ -1048,7 +1040,7 @@ function uc_order_view_update_form_submit($form, &$form_state) {
   }
 
   // Let Rules send email if requested.
-  if (module_exists('rules') && $form_state['values']['notify']) {
+  if ($form_state['values']['notify']) {
     $order = uc_order_load($form_state['values']['order_id']);
     rules_invoke_event('uc_order_status_email_update', $order);
   }

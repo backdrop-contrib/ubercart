@@ -102,9 +102,7 @@ function hook_uc_line_item() {
  */
 function hook_uc_line_item_alter(&$item, $order) {
   $account = user_load($order->uid);
-  if (module_exists('rules')) {
-    rules_invoke_event('calculate_line_item_discounts', $item, $account);
-  }
+  rules_invoke_event('calculate_line_item_discounts', $item, $account);
 }
 
 /**

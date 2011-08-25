@@ -32,7 +32,7 @@ function uc_order_settings_form($form, &$form_state) {
     '#options' => uc_order_template_options(),
     '#default_value' => variable_get('uc_cust_order_invoice_template', 'customer'),
   );
-  if (module_exists('uc_cart') && module_exists('rules')) {
+  if (module_exists('uc_cart')) {
     $form['invoice']['uc_cust_order_invoice_template']['#description'] .= '<br />' . t('This is separate from the template used to e-mail invoices to customers which is configured through <a href="!url">Rules</a>.', array('!url' => url('admin/store/settings/checkout/rules')));
   }
 

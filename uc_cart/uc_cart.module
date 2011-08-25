@@ -44,18 +44,16 @@ function uc_cart_menu() {
     'access arguments' => array('administer store'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  if (module_exists('rules')) {
-    $items['admin/store/settings/checkout/rules'] = array(
-      'title' => 'Rules',
-      'description' => 'Edit the checkout rules.',
-      'page callback' => 'uc_cart_checkout_rules',
-      'access arguments' => array('administer store'),
-      'type' => MENU_LOCAL_TASK,
-      'weight' => 2,
-      'file' => 'uc_cart.admin.inc',
-    );
-    $items += rules_ui()->config_menu('admin/store/settings/checkout/rules');
-  }
+  $items['admin/store/settings/checkout/rules'] = array(
+    'title' => 'Rules',
+    'description' => 'Edit the checkout rules.',
+    'page callback' => 'uc_cart_checkout_rules',
+    'access arguments' => array('administer store'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2,
+    'file' => 'uc_cart.admin.inc',
+  );
+  $items += rules_ui()->config_menu('admin/store/settings/checkout/rules');
 
   $items['cart'] = array(
     'title' => 'Shopping cart',
@@ -1259,9 +1257,7 @@ function uc_cart_complete_sale($order, $login = FALSE) {
   uc_cart_empty(uc_cart_get_id(FALSE), 'checkout');
 
   module_invoke_all('uc_checkout_complete', $order, $account);
-  if (module_exists('rules')) {
-    rules_invoke_event('uc_checkout_complete', $order);
-  }
+  rules_invoke_event('uc_checkout_complete', $order);
 
   // Clear our the session variables used to force the cart workflow.
   unset($_SESSION['cart_order'], $_SESSION['do_review'], $_SESSION['do_complete'], $_SESSION['new_user']);
@@ -1271,27 +1267,6 @@ function uc_cart_complete_sale($order, $login = FALSE) {
     '#message' => $output_message,
     '#order' => $order,
   );
-}
-
-/**
- * Implements hook_uc_checkout_complete().
- *
- * Sends basic e-mail notifications if Rules is not installed.
- */
-function uc_cart_uc_checkout_complete($order) {
-  if (!module_exists('rules')) {
-    module_load_include('inc', 'uc_order', 'uc_order.rules');
-
-    $subject = t('Your Order at !store', array('!store' => variable_get('uc_store_name', t('Our store'))));
-
-    if (variable_get('uc_checkout_email_customer', TRUE)) {
-      uc_order_action_email_invoice($order, uc_store_email_from(), $order->primary_email, $subject, 'customer', 'checkout-mail');
-    }
-
-    if (variable_get('uc_checkout_email_admin', TRUE)) {
-      uc_order_action_email_invoice($order, uc_store_email_from(), variable_get('uc_store_email', ini_get('sendmail_from')), $subject, 'admin', 'admin-mail');
-    }
-  }
 }
 
 /**

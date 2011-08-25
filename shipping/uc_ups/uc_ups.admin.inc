@@ -75,18 +75,16 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#description' => t('Select the UPS services that are available to customers.'),
   );
 
-  if (module_exists('rules')) {
-    $form['services']['service_conditions'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('UPS service conditions'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-    $conditions = rules_config_load('get_quote_from_ups');
-    if ($conditions) {
-      RulesPluginUI::$basePath = 'admin/config/workflow/rules/components';
-      $conditions->form($form['services']['service_conditions'], $form_state);
-    }
+  $form['services']['service_conditions'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('UPS service conditions'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $conditions = rules_config_load('get_quote_from_ups');
+  if ($conditions) {
+    RulesPluginUI::$basePath = 'admin/config/workflow/rules/components';
+    $conditions->form($form['services']['service_conditions'], $form_state);
   }
 
   // Container for quote options

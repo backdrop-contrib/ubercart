@@ -51,9 +51,7 @@ function uc_roles_cron() {
     // Role expired.
     elseif ($expiration->expiration <= REQUEST_TIME) {
       uc_roles_revoke($account, $expiration->rid);
-      if (module_exists('rules')) {
-        rules_invoke_event('uc_roles_notify_revoke', $account, $expiration);
-      }
+      rules_invoke_event('uc_roles_notify_revoke', $account, $expiration);
     }
 
     // Remind the user about an upcoming expiration.
@@ -66,9 +64,7 @@ function uc_roles_cron() {
       // If we're past the expiration time minus the reminder time.
       $threshold = _uc_roles_get_expiration(-$reminder_qty, $reminder_granularity, $expiration->expiration);
       if ($threshold <= REQUEST_TIME) {
-        if (module_exists('rules')) {
-          rules_invoke_event('uc_roles_notify_reminder', $account, $expiration);
-        }
+        rules_invoke_event('uc_roles_notify_reminder', $account, $expiration);
 
         db_update('uc_roles_expirations')
           ->fields(array('notified' => 1))
