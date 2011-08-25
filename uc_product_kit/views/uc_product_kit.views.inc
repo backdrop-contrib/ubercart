@@ -9,12 +9,12 @@ function uc_product_kit_views_data() {
     'group' => t('Product Kit'),
     'join' => array(
       'uc_products' => array(
-        'left_field' => 'nid',
-        'field' => 'nid',
+        'left_field' => 'vid',
+        'field' => 'vid',
       ),
       'node' => array(
-        'left_field' => 'nid',
-        'field' => 'nid',
+        'left_field' => 'vid',
+        'field' => 'vid',
       ),
     ),
   );
