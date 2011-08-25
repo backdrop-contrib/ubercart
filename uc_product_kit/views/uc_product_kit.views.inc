@@ -10,11 +10,11 @@ function uc_product_kit_views_data() {
     'join' => array(
       'uc_products' => array(
         'left_field' => 'nid',
-        'field' => 'product_id',
+        'field' => 'nid',
       ),
       'node' => array(
         'left_field' => 'nid',
-        'field' => 'product_id',
+        'field' => 'nid',
       ),
     ),
   );
@@ -67,7 +67,7 @@ function uc_product_kit_views_data() {
     ),
     'relationship' => array(
       'handler' => 'views_handler_relationship',
-      'base' => 'uc_products',
+      'base' => 'node',
       'base field' => 'nid',
       'label' => t('product'),
     ),
