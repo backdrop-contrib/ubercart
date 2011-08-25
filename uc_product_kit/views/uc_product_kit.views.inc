@@ -184,22 +184,3 @@ function uc_product_kit_views_data() {
 
   return $data;
 }
-
-/**
- * Implements hook_views_handlers().
- */
-function uc_product_kit_views_handlers() {
-  return array(
-    'info' => array(
-      'path' => drupal_get_path('module', 'uc_product_kit') .'/views',
-    ),
-    'handlers' => array(
-      'uc_product_kit_handler_filter_product_kit' => array(
-        'parent' => 'views_handler_filter_boolean_operator',
-      ),
-      'uc_product_kit_handler_filter_product_kit_item' => array(
-        'parent' => 'views_handler_filter_boolean_operator',
-      ),
-    ),
-  );
-}
