@@ -10,9 +10,9 @@ var customer_select = '';
  */
 Drupal.behaviors.ucOrderClick = {
   attach: function(context, settings) {
-    jQuery('.uc-orders-table tbody tr', context).dblclick(
+    jQuery('.view-uc-orders tbody tr', context).dblclick(
       function() {
-        window.location = settings.ucURL.adminOrders + this.id.substring(6);
+        window.location = jQuery(this).find('.views-field-order-id a').attr('href');
       }
     );
   }
@@ -33,30 +33,6 @@ Drupal.behaviors.ucOrderSubmit = {
     );
   }
 }
-
-jQuery(document).ready(
-  function() {
-    jQuery('.uc-orders-table tr.odd, .uc-orders-table tr.even').each(
-      function() {
-        jQuery(this).dblclick(
-          function() {
-            var url = Drupal.settings.ucURL.adminOrders + this.id.substring(6);
-            window.location = url;
-          }
-        );
-      }
-    );
-
-    jQuery('#uc-order-edit-form').submit(
-      function() {
-        jQuery('#products-selector').empty().removeClass();
-        jQuery('#delivery_address_select').empty().removeClass();
-        jQuery('#billing_address_select').empty().removeClass();
-        jQuery('#customer-select').empty().removeClass();
-      }
-    );
-  }
-);
 
 /**
  * Copys the shipping data on the order edit screen to the corresponding billing

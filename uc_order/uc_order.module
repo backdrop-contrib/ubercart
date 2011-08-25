@@ -112,14 +112,8 @@ function uc_order_menu() {
   $items['admin/store/orders'] = array(
     'title' => 'Orders',
     'description' => 'View and process orders.',
-    'page callback' => 'uc_order_admin',
-    'access arguments' => array('view all orders'),
-    'weight' => -10,
-    'file' => 'uc_order.admin.inc',
-  );
-  $items['admin/store/orders/view'] = array(
-    'title' => 'View orders',
-    'description' => 'View and process the orders received through your website.',
+    'page callback' => 'drupal_goto',
+    'page arguments' => array('admin/store/orders/view'),
     'access arguments' => array('view all orders'),
     'weight' => -10,
     'file' => 'uc_order.admin.inc',
@@ -573,6 +567,35 @@ function uc_order_views_api() {
     'api' => '2.0',
     'path' => drupal_get_path('module', 'uc_order') . '/views',
   );
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for views_exposed_form().
+ */
+function uc_order_form_views_exposed_form_alter(&$form, &$form_state) {
+  if ($form['#id'] == 'views-exposed-form-uc-orders-admin-page') {
+    $form['#attached']['js'][] = drupal_get_path('module', 'uc_order') . '/uc_order.js';
+    $form['#attached']['js'][] = array(
+      'data' => array(
+        'ucURL' => array(
+          'adminOrders' => url('admin/store/orders/'),
+        ),
+      ),
+      'type' => 'setting',
+    );
+
+    $form['#submit'][] = 'uc_order_form_views_exposed_form_submit';
+  }
+}
+
+/**
+ * Redirects if an order ID was entered in the exposed field.
+ */
+function uc_order_form_views_exposed_form_submit($form, &$form_state) {
+  if (!empty($form_state['values']['order_id']) && uc_order_exists($form_state['values']['order_id'])) {
+    $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'];
+    $form_state['no_redirect'] = FALSE;
+  }
 }
 
 /**
