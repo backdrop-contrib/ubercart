@@ -60,7 +60,6 @@ function uc_usps_admin_settings($form, &$form_state) {
   );
   $conditions = rules_config_load('get_quote_from_usps_env');
   if ($conditions) {
-    RulesPluginUI::$basePath = 'admin/config/workflow/rules/components';
     $conditions->form($form['domestic']['env_conditions'], $form_state);
   }
 
@@ -80,7 +79,6 @@ function uc_usps_admin_settings($form, &$form_state) {
   );
   $conditions = rules_config_load('get_quote_from_usps');
   if ($conditions) {
-    RulesPluginUI::$basePath = 'admin/config/workflow/rules/components';
     $conditions->form($form['domestic']['parcel_conditions'], $form_state);
   }
 
@@ -108,7 +106,6 @@ function uc_usps_admin_settings($form, &$form_state) {
   );
   $conditions = rules_config_load('get_quote_from_usps_intl_env');
   if ($conditions) {
-    RulesPluginUI::$basePath = 'admin/config/workflow/rules/components';
     $conditions->form($form['international']['env_conditions'], $form_state);
   }
 
@@ -128,7 +125,6 @@ function uc_usps_admin_settings($form, &$form_state) {
   );
   $conditions = rules_config_load('get_quote_from_usps_intl');
   if ($conditions) {
-    RulesPluginUI::$basePath = 'admin/config/workflow/rules/components';
     $conditions->form($form['international']['parcel_conditions'], $form_state);
   }
 
