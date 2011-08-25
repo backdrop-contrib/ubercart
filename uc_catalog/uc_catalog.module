@@ -242,7 +242,7 @@ function uc_catalog_taxonomy_term_delete($term) {
 /**
  * Implements hook_link_alter().
  *
- * Rewrite taxonomy term links to point to the catalog.
+ * Rewrites taxonomy term links to point to the catalog.
  */
 function uc_catalog_link_alter(&$links, $node) {
   // Link back to the catalog and not the taxonomy term page
@@ -511,19 +511,17 @@ function uc_catalog_browse($tid = 0) {
  * "Product Catalog".
  *
  * @param $branch
- *   A treeNode object. Determines if the URL points to itself,
- *   or possibly one of it's children, if present.
- *   If the URL points to itself or one of its products, it displays its name,
- *   and expands to show its children, otherwise displays a link and a count of
- *   the products in it.
- *   If the URL points to one of it's children, it still displays a link and
- *   product count, but must still be expanded.
- *   Otherwise, it is collapsed and a link.
+ *   A treeNode object. Determines if the URL points to itself, or possibly one
+ *   of its children, if present. If the URL points to itself or one of its
+ *   products, it displays its name and expands to show its children, otherwise
+ *   displays a link and a count of the products in it. If the URL points to
+ *   one of its children, it still displays a link and product count, but must
+ *   still be expanded. Otherwise, it is collapsed and a link.
  *
  * @return
  *   An array whose first element is true if the treeNode is in hierarchy of
  *   the URL path. The second element is the HTML of the list item of itself
- *   and it's children.
+ *   and its children.
  */
 function _uc_catalog_navigation($branch) {
   static $terms;
@@ -537,6 +535,7 @@ function _uc_catalog_navigation($branch) {
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'node')
     ->entityCondition('bundle', $types)
+    ->propertyCondition('status', 1) // Don't include unpublished products
     ->fieldCondition('taxonomy_catalog', 'tid', $branch->tid)
     ->count();
   $num = $query->execute();
