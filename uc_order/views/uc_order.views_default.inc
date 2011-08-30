@@ -228,6 +228,7 @@ function uc_order_views_default_views() {
   $handler->display->display_options['menu']['title'] = 'View orders';
   $handler->display->display_options['menu']['description'] = 'View and process the orders received through your website.';
   $handler->display->display_options['menu']['weight'] = '-10';
+  $handler->display->display_options['menu']['name'] = 'management';
 
   $views[$view->name] = $view;
   return $views;
