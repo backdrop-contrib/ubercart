@@ -97,8 +97,8 @@ class uc_encryption_class {
     $target = NULL;
     $factor2 = 0;
 
-    for ($i = 0; $i < strlen($source); $i++) {
-      $char1 = substr($source, $i, 1);
+    for ($i = 0; $i < drupal_strlen($source); $i++) {
+      $char1 = drupal_substr($source, $i, 1);
 
       $num1 = strpos($this->scramble1, $char1);
       if ($num1 === FALSE) {
