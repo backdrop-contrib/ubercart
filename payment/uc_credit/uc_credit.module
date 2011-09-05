@@ -188,7 +188,7 @@ function uc_credit_cron() {
       );
 
       // Stuff the serialized and encrypted CC details into the array.
-      $data['cc_data'] = $crypt->encrypt(uc_credit_encryption_key(), serialize($cc_data));
+      $data['cc_data'] = $crypt->encrypt(uc_credit_encryption_key(), base64_encode(serialize($cc_data)));
       uc_store_encryption_errors($crypt, 'uc_credit');
 
       // Save it again.
@@ -939,14 +939,13 @@ function uc_credit_cache($op, $data = NULL, $encrypted = TRUE) {
 
       // Save the unencrypted CC details for the duration of this request.
       // In recent versions, we base64_encode() the payment details before
-      // encrypting. To preserve our ability to read old data that had been
-      // stored unencoded prior to an upgrade, we first try to unserialize the
-      // encrypted data.  If that fails, we assume it's the new format and we
-      // decode it before unserializing.
-      $cc_cache = unserialize($crypt->decrypt($key, $data));
-      if ($cc_cache === FALSE) {
-        $cc_cache = unserialize(base64_decode($crypt->decrypt($key, $data)));
+      // encrypting. We can detect encoded data by the lack of colons,
+      // due to base64's limited character set.
+      $data = $crypt->decrypt($key, $data);
+      if (strpos($data, ':') === FALSE) {
+        $data = base64_decode($data);
       }
+      $cc_cache = unserialize($data);
     }
     else {
       $cc_cache = $data;
@@ -1159,7 +1158,7 @@ function _uc_credit_save_cc_data_to_order($cc_data, $order_id) {
   $data = unserialize($data);
 
   // Stuff the serialized and encrypted CC details into the array.
-  $data['cc_data'] = $crypt->encrypt(uc_credit_encryption_key(), serialize($cc_data));
+  $data['cc_data'] = $crypt->encrypt(uc_credit_encryption_key(), base64_encode(serialize($cc_data)));
   uc_store_encryption_errors($crypt, 'uc_credit');
 
   // Save it again.

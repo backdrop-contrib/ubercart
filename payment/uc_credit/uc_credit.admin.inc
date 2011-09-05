@@ -661,7 +661,7 @@ function uc_credit_terminal_form_submit($form, &$form_state) {
     }
 
     // Stuff the serialized and encrypted CC details into the array.
-    $data['cc_data'] = $crypt->encrypt(uc_credit_encryption_key(), serialize($cc_data));
+    $data['cc_data'] = $crypt->encrypt(uc_credit_encryption_key(), base64_encode(serialize($cc_data)));
     uc_store_encryption_errors($crypt, 'uc_credit');
 
     // Save it again.
