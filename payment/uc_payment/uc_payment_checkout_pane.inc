@@ -61,6 +61,7 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
       $contents['payment_method'] = array(
         '#type' => 'radios',
         '#title' => t('Payment method'),
+        '#title_display' => 'invisible',
         '#options' => $options,
         '#default_value' => $default,
         '#disabled' => count($options) == 1 ? TRUE : FALSE,
