@@ -255,7 +255,7 @@ function theme_uc_cart_checkout_form($variables) {
     }
   }
 
-  $output .= '<div id="checkout-form-bottom">' . drupal_render_children($form) . '</div>';
+  $output .= drupal_render_children($form);
 
   return $output;
 }
