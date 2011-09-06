@@ -515,71 +515,42 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
 
       // Add the hidden span for the CC details if possible.
       if (user_access('view cc details')) {
-        drupal_add_js(drupal_get_path('module', 'uc_credit') . '/uc_credit.js');
-
         $rows = array();
 
-        if (variable_get('uc_credit_type_enabled', TRUE) && isset($order->payment_details['cc_type'])) {
-          $type = check_plain($order->payment_details['cc_type']);
-          if (strlen($type) > 0) {
-            $rows[] = array(t('Card Type:'), $type);
-          }
+        if (!empty($order->payment_details['cc_type'])) {
+          $rows[] = t('Card Type') . ': ' . check_plain($order->payment_details['cc_type']);
         }
 
-        if (variable_get('uc_credit_owner_enabled', FALSE) && isset($order->payment_details['cc_owner'])) {
-          $owner = check_plain($order->payment_details['cc_owner']);
-          if (strlen($owner) > 0) {
-            $rows[] = array(t('Card Owner:'), $owner);
-          }
+        if (!empty($order->payment_details['cc_owner'])) {
+          $rows[] = t('Card Owner') . ': ' . check_plain($order->payment_details['cc_owner']);
         }
 
-        $rows[] = array(t('Card Number:'), uc_credit_display_number($order->payment_details['cc_number']));
+        $rows[] = t('Card Number') . ': ' . uc_credit_display_number($order->payment_details['cc_number']);
 
-        if (isset($order->payment_details['cc_exp_month']) && isset($order->payment_details['cc_exp_year'])) {
-          $exp = $order->payment_details['cc_exp_month'] . '/' . $order->payment_details['cc_exp_year'];
-          if (strlen($exp) > 1) {
-            $rows[] = array(t('Expiration:'), $exp);
-          }
+        if (!empty($order->payment_details['cc_start_month']) && !empty($order->payment_details['cc_start_year'])) {
+          $rows[] = t('Start Date') . ': ' . $order->payment_details['cc_start_month'] . '/' . $order->payment_details['cc_start_year'];
         }
 
-        if (variable_get('uc_credit_debug', FALSE)) {
-          if (variable_get('uc_credit_start_enabled', FALSE) && isset($order->payment_details['cc_start_month']) && isset($order->payment_details['cc_start_year'])) {
-            $start = $order->payment_details['cc_start_month'] . '/' . $order->payment_details['cc_start_year'];
-            if (strlen($start) > 1) {
-              $rows[] = array(t('Start Date:'), $start);
-            }
-          }
+        if (!empty($order->payment_details['cc_exp_month']) && !empty($order->payment_details['cc_exp_year'])) {
+          $rows[] = t('Expiration') . ': ' . $order->payment_details['cc_exp_month'] . '/' . $order->payment_details['cc_exp_year'];
+        }
 
-          if (variable_get('uc_credit_issue_enabled', FALSE) && isset($order->payment_details['cc_issue'])) {
-            $issue = $order->payment_details['cc_issue'];
-            if (strlen($issue) > 0) {
-              $rows[] = array(t('Issue Number:'), $issue);
-            }
-          }
+        if (!empty($order->payment_details['cc_issue'])) {
+          $rows[] = t('Issue Number') . ': ' . check_plain($order->payment_details['cc_issue']);
+        }
 
-          if (variable_get('uc_credit_cvv_enabled', TRUE) && isset($order->payment_details['cc_cvv'])) {
-            $cvv = user_access('view cc numbers') ? $order->payment_details['cc_cvv'] : str_repeat('-', strlen($order->payment_details['cc_cvv']));
-            if (strlen($cvv) > 0) {
-              $rows[] = array(t('CVV:'), $cvv);
-            }
-          }
+        if (user_access('view cc numbers') && !empty($order->payment_details['cc_cvv'])) {
+          $rows[] = t('CVV') . ': ' . check_plain($order->payment_details['cc_cvv']);
+        }
 
-          if (variable_get('uc_credit_bank_enabled', TRUE) && isset($order->payment_details['cc_bank'])) {
-            $bank = check_plain($order->payment_details['cc_bank']);
-            if (strlen($bank) > 0) {
-              $rows[] = array(t('Issuing Bank:'), $bank);
-            }
-          }
+        if (!empty($order->payment_details['cc_bank'])) {
+          $rows[] = t('Issuing Bank') . ': ' . check_plain($order->payment_details['cc_bank']);
         }
 
         $build['cc_info'] = array(
-          '#theme' => 'table',
-          '#rows' => $rows,
-          '#attributes' => array(
-            'style' => 'width: auto',
-          ),
-          '#prefix' => '<a id="cc_details_title" href="#" style="display: none;">' . t('View card details.') . '</a><span id="cc_details">',
-          '#suffix' => '</span>',
+          '#prefix' => '<a href="#" onclick="jQuery(this).hide().next().show();">' . t('Show card details') . '</a><div style="display: none;">',
+          '#markup' => implode('<br />', $rows),
+          '#suffix' => '</div>',
         );
 
         // Add the form to process the card if applicable.
