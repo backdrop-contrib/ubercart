@@ -10,12 +10,14 @@
  *
  * @see uc_payment_pack_receive_check_form_validate()
  * @see uc_payment_pack_receive_check_form_submit()
- * @see theme_uc_payment_pack_receive_check_form()
  * @ingroup forms
  */
 function uc_payment_pack_receive_check_form($form, &$form_state, $order) {
   $balance = uc_payment_balance($order);
-  $form['balance'] = array('#markup' => uc_currency_format($balance));
+  $form['balance'] = array(
+    '#prefix' => '<strong>' . t('Order balance:') . '</strong> ',
+    '#markup' => uc_currency_format($balance),
+  );
   $form['order_id'] = array(
     '#type' => 'hidden',
     '#value' => $order->order_id,
@@ -54,24 +56,6 @@ function uc_payment_pack_receive_check_form($form, &$form_state, $order) {
   );
 
   return $form;
-}
-
-/**
- * Themes the receive check form.
- *
- * @see uc_payment_pack_receive_check_form()
- * @see uc_payment_pack_receive_check_form_submit()
- * @ingroup themeable
- */
-function theme_uc_payment_pack_receive_check_form($variables) {
-  $form = $variables['form'];
-
-  $output = '<p>' . t('Use the form to enter the check into the payments system and set the expected clear date.') . '</p>';
-  $output .= '<p><strong>' . t('Order balance:') . '</strong> ' . drupal_render($form['balance']) . '</p>';
-
-  $output .= drupal_render_children($form);
-
-  return $output;
 }
 
 /**
