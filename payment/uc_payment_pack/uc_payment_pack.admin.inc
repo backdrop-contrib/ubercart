@@ -20,11 +20,6 @@ function uc_payment_pack_receive_check_form($form, &$form_state, $order) {
     '#type' => 'hidden',
     '#value' => $order->order_id,
   );
-  $form['check_exists'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Check has already cleared.'),
-    '#attributes' => array('onclick' => 'receive_check_toggle(this.checked);'),
-  );
   $form['amount'] = array(
     '#type' => 'textfield',
     '#title' => t('Amount'),
@@ -71,8 +66,6 @@ function uc_payment_pack_receive_check_form($form, &$form_state, $order) {
 function theme_uc_payment_pack_receive_check_form($variables) {
   $form = $variables['form'];
 
-  drupal_add_js(drupal_get_path('module', 'uc_payment') . '/uc_payment.js');
-
   $output = '<p>' . t('Use the form to enter the check into the payments system and set the expected clear date.') . '</p>';
   $output .= '<p><strong>' . t('Order balance:') . '</strong> ' . drupal_render($form['balance']) . '</p>';
 
@@ -88,7 +81,7 @@ function theme_uc_payment_pack_receive_check_form($variables) {
  * @see uc_payment_pack_receive_check_form_submit()
  */
 function uc_payment_pack_receive_check_form_validate($form, &$form_state) {
-  if (!$form_state['values']['check_exists'] && !is_numeric($form_state['values']['amount'])) {
+  if (!is_numeric($form_state['values']['amount'])) {
     form_set_error('amount', t('The amount must be a number.'));
   }
 }
