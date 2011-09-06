@@ -89,10 +89,7 @@ function uc_cart_checkout() {
     drupal_goto('user', array('query' => drupal_get_destination()));
   }
 
-  drupal_add_js(drupal_get_path('module', 'uc_cart') . '/uc_cart.js');
-  $build = drupal_get_form('uc_cart_checkout_form');
-
-  return $build;
+  return drupal_get_form('uc_cart_checkout_form');
 }
 
 /**
@@ -139,6 +136,17 @@ function uc_cart_checkout_form($form, &$form_state) {
   }
 
   $order->products = uc_cart_get_contents();
+
+  $form['#attached']['js'][] = drupal_get_path('module', 'uc_cart') . '/uc_cart.js';
+  $form['#attached']['css'][] = drupal_get_path('module', 'uc_cart') . '/uc_cart.css';
+
+  if ($instructions = variable_get('uc_checkout_instructions', '')) {
+    $form['instructions'] = array(
+      '#prefix' => '<div id="checkout-instructions">',
+      '#markup' => filter_xss_admin($instructions),
+      '#suffix' => '</div>',
+    );
+  }
 
   $form['panes'] = array('#tree' => TRUE);
   $panes = _uc_checkout_pane_list();
@@ -224,40 +232,6 @@ function uc_cart_checkout_form($form, &$form_state) {
   unset($_SESSION['do_review']);
 
   return $form;
-}
-
-/**
- * Adds markup and styling to the checkout panes.
- *
- * @see uc_cart_checkout_form()
- * @ingroup themeable
- */
-function theme_uc_cart_checkout_form($variables) {
-  $form = $variables['form'];
-
-  drupal_add_css(drupal_get_path('module', 'uc_cart') . '/uc_cart.css');
-
-  $output = '<div id="checkout-instructions">' . filter_xss_admin(variable_get('uc_checkout_instructions', '')) . '</div>';
-
-  foreach (element_children($form['panes']) as $pane_id) {
-    if (function_exists(($func = _uc_checkout_pane_data($pane_id, 'callback')))) {
-      $result = $func('theme', $form['panes'][$pane_id], NULL);
-      if (!empty($result)) {
-        $output .= $result;
-        $form['panes'][$pane_id] = array();
-      }
-      else {
-        $output .= drupal_render($form['panes'][$pane_id]);
-      }
-    }
-    else {
-      $output .= drupal_render($form['panes'][$pane_id]);
-    }
-  }
-
-  $output .= drupal_render_children($form);
-
-  return $output;
 }
 
 /**
