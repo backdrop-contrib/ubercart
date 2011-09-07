@@ -26,4 +26,14 @@ class UcAddress {
     $this->country = variable_get('uc_store_country', 840);
   }
 
+  function isSamePhysicalLocation($obj){
+    $physicalAttributes = array('street1', 'street2', 'city', 'zone', 'country', 'postal_code');
+    foreach ($physicalAttributes as $attr) {
+      if ($this->$attr != $obj->$attr) {
+        return FALSE;
+      }
+    }
+    return TRUE;
+  }
+
 }

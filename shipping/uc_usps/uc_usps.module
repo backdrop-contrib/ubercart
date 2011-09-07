@@ -664,17 +664,17 @@ function _uc_usps_package_products($products, &$addresses) {
         // shipped. We will keep track of the different addresses in an array
         // and use their keys for the array of packages.
 
+        $key = NULL;
         $address = uc_quote_get_default_shipping_address($product->nid);
-        if (in_array($address, $addresses)) {
-          // This is an existing address.
-          foreach ($addresses as $index => $value) {
-            if ($address == $value) {
-              $key = $index;
-              break;
-            }
+        foreach ($addresses as $index => $value) {
+          if ($address->isSamePhysicalLocation($value)) {
+            // This is an existing address.
+            $key = $index;
+            break;
           }
         }
-        else {
+
+        if (!isset($key)) {
           // This is a new address. Increment the address counter $last_key
           // instead of using [] so that it can be used in $packages and
           // $addresses.
