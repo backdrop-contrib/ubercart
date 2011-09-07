@@ -352,12 +352,6 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
       // fall through
     case 'Failure':
       $message = t('<b>@type failed.</b>', array('@type' => $types[$data['txn_type']])) . _uc_paypal_build_error_messages($nvp_response);
-      if ($data['txn_type'] != UC_CREDIT_PRIOR_AUTH_CAPTURE) {
-        $message .= '<br />' . t('<b>Address:</b> @avscode', array('@avscode' => _uc_paypal_avscode_message($nvp_response['AVSCODE'])));
-        if (variable_get('uc_credit_cvv_enabled', TRUE)) {
-          $message .= '<br />' . t('<b>CVV2:</b> @cvvmatch', array('@cvvmatch' => _uc_paypal_cvvmatch_message($nvp_response['CVV2MATCH'])));
-        }
-      }
       $result = array(
         'success' => FALSE,
         'message' => $message,
@@ -1074,7 +1068,6 @@ function _uc_paypal_avscode_message($code) {
         return t('The merchant did not provide AVS information. Not processed.');
       case '4':
         return t('Address not checked, or acquirer had no response. Service not available.');
-      case 'Null':
       default:
         return t('No AVS response was obtained.');
     }
@@ -1108,6 +1101,8 @@ function _uc_paypal_avscode_message($code) {
       return t('Service not supported');
     case 'U':
       return t('Unavailable');
+    case 'Null':
+      return t('No AVS response was obtained.');
     default:
       return t('An unknown error occurred.');
   }
