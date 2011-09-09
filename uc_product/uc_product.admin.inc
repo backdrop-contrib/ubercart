@@ -307,13 +307,7 @@ function uc_product_feature_confirm_delete_submit($form, &$form_state) {
 }
 
 /**
- * Sets up imagefield and imagecache for products.
- *
- * @param $checks
- *   A bitmap describing the state of the image modules. Four checks are made
- *   to fill this bitmap: an imagefield exists, an imagefield is attached to
- *   product, the imagecache presets exist, and each preset has at least one
- *   action.
+ * Sets up image field for products.
  *
  * @see uc_product_uc_store_status()
  */
