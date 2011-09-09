@@ -34,7 +34,7 @@ function uc_order_views_data() {
       'handler' => 'uc_order_handler_field_order_id',
       'click sortable' => TRUE,
     ),
-     'sort' => array(
+    'sort' => array(
       'handler' => 'views_handler_sort',
     ),
     'filter' => array(
@@ -65,7 +65,7 @@ function uc_order_views_data() {
       ),
       'click sortable' => TRUE,
     ),
-     'sort' => array(
+    'sort' => array(
       'handler' => 'views_handler_sort',
     ),
     'filter' => array(
@@ -93,7 +93,7 @@ function uc_order_views_data() {
       'click sortable' => TRUE,
       'float' => TRUE,
     ),
-     'sort' => array(
+    'sort' => array(
       'handler' => 'views_handler_sort',
     ),
     'filter' => array(
@@ -118,7 +118,7 @@ function uc_order_views_data() {
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
     ),
-     'sort' => array(
+    'sort' => array(
       'handler' => 'views_handler_sort',
     ),
     'filter' => array(
@@ -168,7 +168,7 @@ function uc_order_views_data() {
       'handler' => 'views_handler_field_date',
       'click sortable' => TRUE,
     ),
-     'sort' => array(
+    'sort' => array(
       'handler' => 'views_handler_sort_date',
     ),
     'filter' => array(
@@ -187,7 +187,7 @@ function uc_order_views_data() {
       'handler' => 'views_handler_field_date',
       'click sortable' => TRUE,
     ),
-     'sort' => array(
+    'sort' => array(
       'handler' => 'views_handler_sort_date',
     ),
     'filter' => array(
