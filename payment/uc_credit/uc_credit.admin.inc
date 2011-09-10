@@ -399,8 +399,9 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
     '#description' => t('Use the available buttons in this fieldset to process with the specified card details.'),
   );
   $form['specify_card']['cc_data'] = array(
-    '#theme' => 'uc_payment_method_credit_form',
     '#tree' => TRUE,
+    '#prefix' => '<div class="payment-details-credit clearfix">',
+    '#suffix' => '</div>',
   );
   $form['specify_card']['cc_data'] += uc_payment_method_credit_form(array(), $form_state, $order);
   unset($form['specify_card']['cc_data']['cc_policy']);
@@ -549,6 +550,8 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
       $form['references']['#collapsed'] = TRUE;
     }
   }
+
+  $form['#attached']['css'][] = drupal_get_path('module', 'uc_payment') . '/uc_payment.css';
 
   return $form;
 }

@@ -85,9 +85,7 @@ function uc_credit_permission() {
  */
 function uc_credit_theme() {
   return array(
-    'uc_payment_method_credit_form' => array(
-      'render element' => 'form',
-    ),
+    'uc_credit_cvv_help' => array(),
   );
 }
 
@@ -605,7 +603,9 @@ function uc_payment_method_credit_form($form, &$form_state, $order) {
     $order->payment_details = array();
   }
 
-  $form['cc_policy'] = array('#markup' => variable_get('uc_credit_policy', t('Your billing information must match the billing address for the credit card entered below or we will be unable to process your payment.')));
+  $form['cc_policy'] = array(
+    '#markup' => '<p>' . variable_get('uc_credit_policy', t('Your billing information must match the billing address for the credit card entered below or we will be unable to process your payment.')) . '</p>'
+  );
 
   $types = variable_get('uc_credit_accepted_types', implode("\r\n", array(t('Visa'), t('Mastercard'), t('Discover'), t('American Express'))));
   if (variable_get('uc_credit_type_enabled', FALSE) && $types) {
@@ -657,14 +657,15 @@ function uc_payment_method_credit_form($form, &$form_state, $order) {
   if (variable_get('uc_credit_start_enabled', FALSE)) {
     $month = isset($order->payment_details['cc_start_month']) ? $order->payment_details['cc_start_month'] : NULL;
     $year = isset($order->payment_details['cc_start_year']) ? $order->payment_details['cc_start_year'] : NULL;
-    $form['cc_start_month'] = uc_select_month(t('Start Month'), $month, TRUE);
-    $form['cc_start_year'] = uc_select_year(t('Start Year'), $year, date('Y') - 10, date('Y'), TRUE);
+    $form['cc_start_month'] = uc_select_month(t('Start date'), $month, TRUE);
+    $form['cc_start_year'] = uc_select_year(t('Start year'), $year, date('Y') - 10, date('Y'), TRUE);
+    $form['cc_start_year']['#field_suffix'] = t('(if present)');
   }
 
   $month = isset($order->payment_details['cc_exp_month']) ? $order->payment_details['cc_exp_month'] : 1;
   $year = isset($order->payment_details['cc_exp_year']) ? $order->payment_details['cc_exp_year'] : date('Y');
-  $form['cc_exp_month'] = uc_select_month(t('Expiration Month'), $month);
-  $form['cc_exp_year'] = uc_select_year(t('Expiration Year'), $year);
+  $form['cc_exp_month'] = uc_select_month(t('Expiration date'), $month);
+  $form['cc_exp_year'] = uc_select_year(t('Expiration year'), $year);
 
   if (variable_get('uc_credit_issue_enabled', FALSE)) {
     // Set up the default Issue Number on the credit card form.
@@ -686,11 +687,12 @@ function uc_payment_method_credit_form($form, &$form_state, $order) {
 
     $form['cc_issue'] = array(
       '#type' => 'textfield',
-      '#title' => t('Issue Number'),
+      '#title' => t('Issue number'),
       '#default_value' => $default_card_issue,
       '#attributes' => array('autocomplete' => 'off'),
       '#size' => 2,
       '#maxlength' => 2,
+      '#field_suffix' => t('(if present)'),
     );
   }
 
@@ -719,6 +721,7 @@ function uc_payment_method_credit_form($form, &$form_state, $order) {
       '#attributes' => array('autocomplete' => 'off'),
       '#size' => variable_get('uc_credit_amex', TRUE) ? 4 : 3,
       '#maxlength' => variable_get('uc_credit_amex', TRUE) ? 4 : 3,
+      '#field_suffix' => theme('uc_credit_cvv_help'),
     );
   }
 
@@ -733,109 +736,21 @@ function uc_payment_method_credit_form($form, &$form_state, $order) {
     );
   }
 
-  $form['#theme'] = 'uc_payment_method_credit_form';
-
   unset($_SESSION['clear_cc']);
 
   return $form;
 }
 
 /**
- * Themes the credit form to be in a compact table.
+ * Themes the credit card CVV help link.
  */
-function theme_uc_payment_method_credit_form($variables) {
-  $form = $variables['form'];
-
-  // Comment out this function to just straight display the form.
-  $form['cc_number']['#title'] = '';
-  $form['cc_start_month']['#title'] = '';
-  $form['cc_start_year']['#title'] = '';
-  $form['cc_exp_month']['#title'] = '';
-  $form['cc_exp_year']['#title'] = '';
-  $form['cc_issue']['#title'] = '';
-
-  if (arg(1) == 'checkout') {
-    $path = base_path() . drupal_get_path('module', 'uc_credit');
-    $output = '<table class="inline-pane-table" cellpadding="2">';
-    if (strlen($form['cc_policy']['#markup']) > 0) {
-      $output .= '<tr><td colspan="2" class="description">' . $form['cc_policy']['#markup']
-                . '</td></tr>';
-    }
-    if (variable_get('uc_credit_type_enabled', FALSE)) {
-      $form['cc_type']['#title'] = '';
-      $output .= '<tr><td class="field-label">' . t('Card Type:') . '</td><td>'
-               . drupal_render($form['cc_type']) . '</td></tr>';
-    }
-    if (variable_get('uc_credit_owner_enabled', FALSE)) {
-      $form['cc_owner']['#title'] = '';
-      $output .= '<tr><td class="field-label">' . t('Card Owner:') . '</td><td>'
-               . drupal_render($form['cc_owner']) . '</td></tr>';
-    }
-    $output .= '<tr><td class="field-label">' . t('Card Number:') . '</td><td>'
-             . drupal_render($form['cc_number']) . '</td></tr>';
-    if (variable_get('uc_credit_start_enabled', FALSE)) {
-      $output .= '<tr><td class="field-label">' . t('Start Date:') . '</td><td>'
-               . drupal_render($form['cc_start_month']) . ' ' . drupal_render($form['cc_start_year'])
-                . ' ' . t('(if present)') . '</td></tr>';
-    }
-    $output .= '<tr><td class="field-label">' . t('Expiration Date:') . '</td><td>'
-             . drupal_render($form['cc_exp_month']) . ' '
-             . drupal_render($form['cc_exp_year']) . '</td></tr>';
-    if (variable_get('uc_credit_issue_enabled', FALSE)) {
-      $output .= '<tr><td class="field-label">' . t('Issue Number:') . '</td><td>'
-               . drupal_render($form['cc_issue']) . ' ' . t('(if present)') . '</td></tr>';
-    }
-    if (variable_get('uc_credit_cvv_enabled', TRUE)) {
-      $form['cc_cvv']['#title'] = '';
-      $output .= '<tr><td class="field-label">' . t('CVV:') . '</td><td>' . drupal_render($form['cc_cvv'])
-                . ' <img src="' . $path . '/images/info.png" onclick="cvv_info_popup();" style="cursor: pointer; position: relative; top: 3px;" /> <a style="cursor: pointer; font-weight: normal;" onclick="cvv_info_popup();">'
-                . t("What's the CVV?") . '</a></td></tr>';
-    }
-    if (variable_get('uc_credit_bank_enabled', FALSE)) {
-      $form['cc_bank']['#title'] = '';
-      $output .= '<tr><td class="field-label">' . t('Issuing Bank:') . '</td><td>'
-               . drupal_render($form['cc_bank']) . '</td></tr>';
-    }
-    $output .= '</table>';
-  }
-  else {
-    $output = '<table class="order-edit-table"><tbody style="border-top: 0px;">';
-    if (variable_get('uc_credit_type_enabled', FALSE)) {
-      $form['cc_type']['#title'] = '';
-      $output .= '<tr><td class="oet-label">' . t('Card Type:') . '</td><td>'
-               . drupal_render($form['cc_type']) . '</td></tr>';
-    }
-    if (variable_get('uc_credit_owner_enabled', FALSE)) {
-      $form['cc_owner']['#title'] = '';
-      $output .= '<tr><td class="oet-label">' . t('Card Owner:') . '</td><td>'
-               . drupal_render($form['cc_owner']) . '</td></tr>';
-    }
-    $output .= '<tr><td class="oet-label">' . t('Card Number:') . '</td><td>'
-             . drupal_render($form['cc_number']) . '</td></tr>';
-    if (variable_get('uc_credit_start_enabled', FALSE)) {
-      $output .= '<tr><td class="oet-label">' . t('Start Date:') . '</td><td>'
-               . drupal_render($form['cc_start_month']) . ' ' . drupal_render($form['cc_start_year'])
-                . ' ' . t('(if present)') . '</td></tr>';
-    }
-    $output .= '<tr><td class="oet-label">' . t('Expiration Date:') . '</td><td>'
-             . drupal_render($form['cc_exp_month']) . ' '
-             . drupal_render($form['cc_exp_year']) . '</td></tr>';
-    if (variable_get('uc_credit_issue_enabled', FALSE)) {
-      $output .= '<tr><td class="oet-label">' . t('Issue Number:') . '</td><td>'
-               . drupal_render($form['cc_issue']) . ' ' . t('(if present)') . '</td></tr>';
-    }
-    if (variable_get('uc_credit_cvv_enabled', TRUE)) {
-      $form['cc_cvv']['#title'] = '';
-      $output .= '<tr><td class="oet-label">' . t('CVV:') . '</td><td>'
-               . drupal_render($form['cc_cvv']) . '</td></tr>';
-    }
-    if (variable_get('uc_credit_bank_enabled', FALSE)) {
-      $form['cc_bank']['#title'] = '';
-      $output .= '<tr><td class="oet-label">' . t('Issuing Bank:') . '</td><td>'
-               . drupal_render($form['cc_bank']) . '</td></tr>';
-    }
-    $output .= '</td></tr></tbody></table>';
-  }
+function theme_uc_credit_cvv_help($variables) {
+  $output = '<div class="uc-credit-cvv-help">';
+  $output .= theme('image', array('path' => drupal_get_path('module', 'uc_credit') . '/images/info.png'));
+  $output .= ' ' . l(t("What's the CVV?"), 'cart/checkout/credit/cvv_info', array('attributes' => array(
+    'onclick' => "window.open(this.href, 'CVV_Info', 'toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=1,width=480,height=460'); return false;",
+  )));
+  $output .= '</div>';
 
   return $output;
 }

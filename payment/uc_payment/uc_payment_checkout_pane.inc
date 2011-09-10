@@ -12,11 +12,6 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
   switch ($op) {
     case 'view':
       $contents['#attached']['css'][] = drupal_get_path('module', 'uc_payment') . '/uc_payment.css';
-      $contents['#attached']['js'][] = drupal_get_path('module', 'uc_payment') . '/uc_payment.js';
-      $contents['#attached']['js'][] = array(
-        'data' => array('ucURL' => array('creditCardCVVInfo' => url('cart/checkout/credit/cvv_info'))),
-        'type' => 'setting',
-      );
 
       $order->line_items = uc_order_load_line_items_display($order);
 
