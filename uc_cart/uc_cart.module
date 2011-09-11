@@ -190,6 +190,7 @@ function uc_cart_init() {
   $conf['i18n_variables'][] = 'uc_msg_order_existing_user';
   $conf['i18n_variables'][] = 'uc_msg_order_logged_in';
   $conf['i18n_variables'][] = 'uc_msg_order_new_user';
+  $conf['i18n_variables'][] = 'uc_msg_order_new_user_logged_in';
   $conf['i18n_variables'][] = 'uc_msg_order_submit';
 }
 
@@ -697,6 +698,7 @@ function uc_cart_uc_message() {
   $messages['completion_logged_in'] = t('Thank you for shopping at [store:name]. While logged in, you may continue shopping or <a href="[uc_order:url]">view your current order status</a> and order history.');
   $messages['completion_existing_user'] = t("Thank you for shopping at [store:name]. Your current order has been attached to the account we found matching your e-mail address.\n\n<a href=\"!user_url\">Login</a> to view your current order status and order history. Remember to login when you make your next purchase for a faster checkout experience!", array('!user_url' => url('user')));
   $messages['completion_new_user'] = t("Thank you for shopping at [store:name]. A new account has been created for you here that you may use to view your current order status.\n\n<a href=\"!user_url\">Login</a> to your new account using the following information:\n\n<strong>Username:</strong> !new_username\n<strong>Password:</strong> !new_password", array('!user_url' => url('user')));
+  $messages['completion_new_user_logged_in'] = t("Thank you for shopping at [store-name]. A new account has been created for you here that you may use to view your current order status.\n\nYour password and further instructions have been sent to your e-mail address.\n\nFor your convenience, you are already logged in with your newly created account.");
   $messages['continue_shopping'] = t('<a href="[site:url]">Return to the front page.</a>');
 
   return $messages;
@@ -1080,126 +1082,115 @@ function uc_cart_continue_shopping_url($unset = TRUE) {
 function uc_cart_complete_sale($order, $login = FALSE) {
   global $user;
 
-  // Logic to create new user if necessary:
-  if ($order->uid == 0) {
-    // Check for an existing user account with the e-mail address from checkout.
-    $result = db_query("SELECT uid FROM {users} WHERE mail LIKE :email", array(':email' => $order->primary_email));
+  // Ensure we have the latest order data.
+  $order->data = unserialize(db_query("SELECT data FROM {uc_orders} WHERE order_id = :order_id", array(':order_id' => $order->order_id))->fetchField());
 
-    // If it was found, update the order.
-    if ($account = $result->fetchObject()) {
-      $order->uid = $account->uid;
-      $account = user_load($account->uid);
-      db_update('uc_orders')
-        ->fields(array('uid' => $order->uid))
-        ->condition('order_id', $order->order_id)
-        ->execute();
-      $message_type = 'existing_user';
-    }
-    else {
-      // Get a valid new username.
-      if (empty($order->data['new_user']['name'])) {
-        $name = uc_store_email_to_username($order->primary_email);
+  // Ensure that user creation and triggers are only run once.
+  if (empty($order->data['complete_sale'])) {
+    uc_cart_complete_sale_account($order);
+
+    // Store account data.
+    db_update('uc_orders')
+      ->fields(array(
+        'uid' => $order->uid,
+        'data' => serialize($order->data),
+      ))
+      ->condition('order_id', $order->order_id)
+      ->execute();
+
+    // Move an order's status from "In Checkout" to "Pending"
+    $status = db_query("SELECT order_status FROM {uc_orders} WHERE order_id = :order_id", array(':order_id' => $order->order_id))->fetchField();
+    if (uc_order_status_data($status, 'state') == 'in_checkout') {
+      $status = uc_order_state_default('post_checkout');
+      if (uc_order_update_status($order->order_id, $status)) {
+        $order->order_status = $status;
       }
-      else {
-        $name = $order->data['new_user']['name'];
-      }
-
-      // Setup the account fields array and save it as a new user.
-      $fields = array(
-        'name' => $name,
-        'mail' => $order->primary_email,
-        'init' => $order->primary_email,
-        'pass' => empty($order->data['new_user']['pass']) ? user_password(variable_get('uc_pwd_length', 6)) : $order->data['new_user']['pass'],
-        'roles' => array(),
-        'status' => variable_get('uc_new_customer_status_active', TRUE) ? 1 : 0,
-      );
-      $account = user_save('', $fields);
-
-      // Send the customer their account details if enabled.
-      if (variable_get('uc_new_customer_email', TRUE)) {
-        // Manually set the password so it appears in the e-mail.
-        $account->password = $fields['pass'];
-
-        // Send the e-mail through the user module.
-        drupal_mail('user', 'register_no_approval_required', $order->primary_email, NULL, array('account' => $account), uc_store_email_from());
-      }
-
-      // Store the login details in the session for use on the page display.
-      $_SESSION['new_user'] = array('name' => $fields['name'], 'pass' => $fields['pass']);
-
-      // Update the order's uid in this request and in the database.
-      $order->uid = $account->uid;
-      unset($order->data['new_user']['pass']);
-      db_update('uc_orders')
-        ->fields(array(
-          'uid' => $order->uid,
-          'data' => serialize($order->data),
-        ))
-        ->condition('order_id', $order->order_id)
-        ->execute();
-
-      // Login the user if specified.
-      if ($login) {
-        $form_state = array('values' => $fields);
-        drupal_form_submit('user_login', $form_state);
-      }
-
-      $message_type = 'new_user';
     }
-  }
-  else {
-    if ($order->uid == $user->uid) {
-      $message_type = 'logged_in';
-      $account = clone $user;
-    }
-    else {
-      $message_type = 'existing_user';
-      $account = user_load($order->uid);
-    }
+
+    // Invoke the checkout complete trigger and hook.
+    $account = user_load($order->uid);
+    module_invoke_all('uc_checkout_complete', $order, $account);
+    rules_invoke_event('uc_checkout_complete', $order);
   }
 
-  $messages = array();
-  $messages[] = variable_get('uc_msg_order_submit', uc_get_message('completion_message'));
-  if ($message = variable_get('uc_msg_order_' . $message_type, uc_get_message('completion_' . $message_type))) {
-    if (isset($_SESSION['new_user'])) {
-      $variables['!new_username'] = check_plain($_SESSION['new_user']['name']);
-      $variables['!new_password'] = check_plain($_SESSION['new_user']['pass']);
-      $messages[] = strtr($message, $variables);
-    }
-    else {
-      $messages[] = $message;
-    }
-  }
-  $messages[] = variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping'));
+  $type = $order->data['complete_sale'];
 
-  $output_message = '';
-  foreach ($messages as $message) {
-    $message = filter_xss_admin(token_replace($message, array('uc_order' => $order)));
-    $output_message .= $message;
+  // Log in new users, if requested.
+  if ($type == 'new_user' && $login && !$user->uid) {
+    $type = 'new_user_logged_in';
+    $user = user_load($order->uid);
   }
 
-  // Move an order's status from "In Checkout" to "Pending"
-  if (uc_order_status_data($order->order_status, 'state') == 'in_checkout') {
-    $status = uc_order_state_default('post_checkout');
-    if (uc_order_update_status($order->order_id, $status)) {
-      $order->order_status = $status;
-    }
+  $variables['!new_username'] = isset($order->data['new_user']['name']) ? $order->data['new_user']['name'] : '';
+  $variables['!new_password'] = isset($order->data['new_user']['pass']) ? $order->data['new_user']['pass'] : '';
+  $messages = array(
+    'uc_msg_order_submit' => uc_get_message('completion_message'),
+    'uc_msg_order_' . $type => strtr(uc_get_message('completion_' . $type), $variables),
+    'uc_msg_continue_shopping' => uc_get_message('continue_shopping'),
+  );
+  foreach ($messages as $id => &$message) {
+    $message = variable_get($id, $message);
+    $message = token_replace($message, array('uc_order' => $order));
   }
+  $output = filter_xss_admin(implode('', $messages));
 
   // Empty that cart...
   uc_cart_empty(uc_cart_get_id(FALSE), 'checkout');
 
-  module_invoke_all('uc_checkout_complete', $order, $account);
-  rules_invoke_event('uc_checkout_complete', $order);
-
-  // Clear our the session variables used to force the cart workflow.
-  unset($_SESSION['cart_order'], $_SESSION['do_review'], $_SESSION['do_complete'], $_SESSION['new_user']);
-
   return array(
     '#theme' => 'uc_cart_complete_sale',
-    '#message' => $output_message,
+    '#message' => $output,
     '#order' => $order,
   );
+}
+
+/**
+ * Link a completed sale to a user.
+ *
+ * @param $order
+ *   The order object that has just been completed.
+ */
+function uc_cart_complete_sale_account($order) {
+  // Order already has a user ID, so the user was logged in during checkout.
+  if ($order->uid) {
+    $order->data['complete_sale'] = 'logged_in';
+    return;
+  }
+
+  $result = db_query("SELECT uid FROM {users} WHERE mail LIKE :email", array(':email' => $order->primary_email));
+
+  // Email address matches an existing account.
+  if ($account = $result->fetchObject()) {
+    $order->uid = $account->uid;
+    $order->data['complete_sale'] = 'existing_user';
+    return;
+  }
+
+  // Create a new user.
+  $fields = isset($order->data['new_user']) ? $order->data['new_user'] : array();
+  $fields += array(
+    'name' => uc_store_email_to_username($order->primary_email),
+    'mail' => $order->primary_email,
+    'init' => $order->primary_email,
+    'pass' => user_password(),
+    'roles' => array(),
+    'status' => variable_get('uc_new_customer_status_active', TRUE) ? 1 : 0,
+  );
+  $account = user_save('', $fields);
+
+  // Send the customer their account details if enabled.
+  if (variable_get('uc_new_customer_email', TRUE)) {
+    // Manually set the password so it appears in the e-mail.
+    $account->password = $fields['pass'];
+    drupal_mail('user', 'register_no_approval_required', $order->primary_email, NULL, array('account' => $account), uc_store_email_from());
+  }
+
+  $order->uid = $account->uid;
+  $order->data['new_user'] = array(
+    'name' => $fields['name'],
+    'pass' => $fields['pass'],
+  );
+  $order->data['complete_sale'] =  'new_user';
 }
 
 /**

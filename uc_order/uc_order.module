@@ -301,6 +301,31 @@ function uc_order_init() {
 }
 
 /**
+ * Implements hook_cron().
+ */
+function uc_order_cron() {
+  // Ensure that passwords are not stored in plaintext longer than 15 minutes.
+  $first = variable_get('uc_order_cron_last', 0);
+  $last = time() - (15 * 60);
+
+  $result = db_query("SELECT order_id, data FROM {uc_orders} WHERE created >= :first AND created <= :last", array(':first' => $first, ':last' => $last));
+  while ($row = $result->fetchObject()) {
+    $data = unserialize($row->data);
+    if (isset($data['new_user']['pass'])) {
+      unset($data['new_user']['pass']);
+      db_update('uc_orders')
+        ->fields(array(
+          'data' => serialize(data),
+        ))
+        ->condition('order_id', $row->order_id)
+        ->execute();
+    }
+  }
+
+  variable_set('uc_order_cron_last', $last);
+}
+
+/**
  * Implements hook_theme().
  */
 function uc_order_theme($existing, $type, $theme, $path) {
@@ -1555,7 +1580,12 @@ function uc_order_update_status($order_id, $status) {
 
   // Attempt the update if the order exists.
   if ($order !== FALSE) {
-    // Return false if any module says the update is not good to go.
+    // Return TRUE if the order status is already set.
+    if ($order->order_status == $status) {
+      return TRUE;
+    }
+
+    // Return FALSE if any module says the update is not good to go.
     foreach (module_implements('uc_order') as $module) {
       $function = $module . '_uc_order';
       // $order must be passed by reference.

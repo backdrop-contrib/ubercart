@@ -143,14 +143,14 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'new-username':
-          if (isset($_SESSION['new_user']) && is_array($_SESSION['new_user'])) {
-            $replacements[$original] = $sanitize ? check_plain($_SESSION['new_user']['name']) : $_SESSION['new_user']['name'];
+          if (isset($order->data['new_user']['name'])) {
+            $replacements[$original] = $sanitize ? check_plain($order->data['new_user']['name']) : $order->data['new_user']['name'];
           }
           break;
 
         case 'new-password':
-          if (isset($_SESSION['new_user']) && is_array($_SESSION['new_user'])) {
-            $replacements[$original] = $sanitize ? check_plain($_SESSION['new_user']['pass']) : $_SESSION['new_user']['pass'];
+          if (isset($order->data['new_user']['pass'])) {
+            $replacements[$original] = $sanitize ? check_plain($order->data['new_user']['pass']) : $order->data['new_user']['pass'];
           }
           break;
 

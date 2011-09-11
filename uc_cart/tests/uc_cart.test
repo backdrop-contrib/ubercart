@@ -18,83 +18,241 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     );
   }
 
+  function setUp() {
+    $modules = array('uc_payment', 'uc_payment_pack', 'uc_roles');
+    $permissions = array('administer permissions');
+    parent::setUp($modules, $permissions);
+  }
+
+  /**
+   * Creates a new order.
+   */
+  function createOrder($fields = array()) {
+    $order = uc_order_new();
+    foreach ($fields as $key => $value) {
+      $order->$key = $value;
+    }
+
+    if (empty($order->primary_email)) {
+      $order->primary_email = $this->randomString() .'@example.org';
+    }
+
+    if (!isset($fields['products'])) {
+      $item = clone $this->product;
+      $item->qty = 1;
+      $item->price = $item->sell_price;
+      $item->data = array();
+      $order->products = array($item);
+    }
+
+    $order->order_total = uc_order_get_total($order, TRUE);
+    $order->line_items = uc_order_load_line_items($order, TRUE);
+    uc_order_save($order);
+
+    return $order;
+  }
+
   function testCart() {
     // Test the empty cart text.
     $this->drupalGet('cart');
     $this->assertText('There are no products in your shopping cart.');
 
     // Add an item to the cart as an anonymous user.
-    $this->drupalPost(
-      'node/' . $this->product->nid,
-      array(),
-      t('Add to cart')
-    );
-    $this->assertText(
-      $this->product->title . ' added to your shopping cart.'
-    );
+    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $this->assertText($this->product->title . ' added to your shopping cart.');
 
     // Log in and check the item is still in the cart.
     $this->drupalLogin($this->customer);
     $this->drupalGet('cart');
-    $this->assertText(
-      $this->product->title,
-      t('The product remains in the cart after logging in.')
-    );
-    $this->assertFieldByName(
-      'items[0][qty]',
-      1,
-      t('The product quantity is 1.')
-    );
+    $this->assertText($this->product->title, t('The product remains in the cart after logging in.'));
+    $this->assertFieldByName('items[0][qty]', 1, t('The product quantity is 1.'));
 
     // Update the quantity.
     $qty = mt_rand(2, 100);
-    $this->drupalPost(
-      'cart',
-      array('items[0][qty]' => $qty),
-      t('Update cart')
-    );
+    $this->drupalPost('cart', array('items[0][qty]' => $qty), t('Update cart'));
     $this->assertText('Your cart has been updated.');
-    $this->assertFieldByName(
-      'items[0][qty]',
-      $qty,
-      t('The product quantity was updated.')
-    );
+    $this->assertFieldByName('items[0][qty]', $qty, t('The product quantity was updated.'));
 
     // Test the remove item button.
-    $this->drupalPost(
-      'cart',
-      array(),
-      t('Remove')
-    );
-    $this->assertText(
-      $this->product->title . ' removed from your shopping cart.'
-    );
-    $this->assertText(
-      'There are no products in your shopping cart.'
-    );
+    $this->drupalPost('cart', array(), t('Remove'));
+    $this->assertText($this->product->title . ' removed from your shopping cart.');
+    $this->assertText('There are no products in your shopping cart.');
     $this->drupalLogout();
   }
 
   function testCheckout() {
-    // Test as anonymous user.
-    $this->drupalPost(
-      'node/' . $this->product->nid,
-      array(),
-      t('Add to cart')
+    // Allow customer to specify username and password, and log in new users after checkout.
+    $settings = array(
+      'uc_cart_new_account_name' => TRUE,
+      'uc_cart_new_account_password' => TRUE,
+      'uc_new_customer_login' => TRUE
     );
-    $this->checkout();
-    $this->assertRaw('Your order is complete!');
-
-    // Test as authenticated user.
-    $this->drupalLogin($this->customer);
-    $this->drupalPost(
-      'node/' . $this->product->nid,
-      array(),
-      t('Add to cart')
-    );
-    $this->checkout();
-    $this->assertRaw('Your order is complete!');
+    $this->drupalLogin($this->adminUser);
+    $this->drupalPost('admin/store/settings/checkout', $settings, t('Save configuration'));
     $this->drupalLogout();
+
+    $new_user = new stdClass;
+    $new_user->name = $this->randomName(20);
+    $new_user->pass_raw = $this->randomString(20);
+
+    // Test as anonymous user.
+    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $this->checkout(array(
+      'panes[customer][new_account][name]' => $new_user->name,
+      'panes[customer][new_account][pass]' => $new_user->pass_raw,
+      'panes[customer][new_account][pass_confirm]' => $new_user->pass_raw,
+    ));
+    $this->assertRaw('Your order is complete!');
+    $this->assertRaw('you are already logged in');
+
+    // Confirm login.
+    $this->drupalGet('<front>');
+    $this->assertText('My account', 'User is logged in.');
+
+    // Check that cart is now empty.
+    $this->drupalGet('cart');
+    $this->assertText('There are no products in your shopping cart.');
+
+    // Check that the password works.
+    $this->drupalLogout();
+    $this->drupalLogin($new_user);
+
+    // Test again as authenticated user.
+    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $this->checkout();
+    $this->assertRaw('Your order is complete!');
+    $this->assertRaw('While logged in');
+
+    // Test again with generated username and password.
+    $this->drupalLogout();
+    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $this->checkout();
+    $this->assertRaw('Your order is complete!');
+    $this->assertRaw('you are already logged in');
+
+    // New account email is last but one.
+    $mail = array_pop(array_slice($this->drupalGetMails(), -2, 1));
+    $new_user = new stdClass;
+    $new_user->name = $mail['params']['account']->name;
+    $new_user->pass_raw = $mail['params']['account']->password;
+    $this->assertTrue(!empty($new_user->name), 'New username is not empty.');
+    $this->assertTrue(!empty($new_user->pass_raw), 'New password is not empty.');
+    $this->assertTrue(strpos($mail['body'], $new_user->name) !== FALSE, 'Mail body contains username.');
+    // In D7, new account emails do not contain the password.
+    //$this->assertTrue(strpos($mail['body'], $new_user->pass_raw) !== FALSE, 'Mail body contains password.');
+
+    // Invoice email is last.
+    $mail = array_pop(array_slice($this->drupalGetMails(), -1, 1));
+    $this->assertTrue(strpos($mail['body'], $new_user->name) !== FALSE, 'Invoice body contains username.');
+    $this->assertTrue(strpos($mail['body'], $new_user->pass_raw) !== FALSE, 'Invoice body contains password.');
+
+    // Check that the password works.
+    $this->drupalLogout();
+    $this->drupalLogin($new_user);
+
+    // Test again with an existing email address
+    $this->drupalLogout();
+    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $this->checkout(array('panes[customer][primary_email]' => $this->customer->mail));
+    $this->assertRaw('Your order is complete!');
+    $this->assertRaw('order has been attached to the account we found');
+  }
+
+  function testCheckoutComplete() {
+    // Payment notification is received first.
+    $order_data = array('primary_email' => 'simpletest@ubercart.org');
+    $order = $this->createOrder($order_data);
+    uc_payment_enter($order->order_id, 'SimpleTest', $order->order_total);
+    $output = uc_cart_complete_sale($order);
+
+    // Check that a new account was created.
+    $this->assertTrue(strpos($output['#message'], 'new account has been created') !== FALSE, 'Checkout message mentions new account.');
+
+    // 2 e-mails: new account, customer invoice
+    $mails = $this->drupalGetMails();
+    $this->assertEqual(count($mails), 2, '2 e-mails were sent.');
+    variable_del('drupal_test_email_collector');
+
+    $password = $mails[0]['params']['account']->password;
+    $this->assertTrue(!empty($password), 'New password is not empty.');
+    // In D7, new account emails do not contain the password.
+    //$this->assertTrue(strpos($mails[0]['body'], $password) !== FALSE, 'Mail body contains password.');
+
+    // Different user, sees the checkout page first.
+    $order_data = array('primary_email' => 'simpletest2@ubercart.org');
+    $order = $this->createOrder($order_data);
+    $output = uc_cart_complete_sale($order, TRUE);
+    uc_payment_enter($order->order_id, 'SimpleTest', $order->order_total);
+
+    // 2 e-mails: new account, customer invoice
+    $mails = $this->drupalGetMails();
+    $this->assertEqual(count($mails), 2, '2 e-mails were sent.');
+    variable_del('drupal_test_email_collector');
+
+    $password = $mails[0]['params']['account']->password;
+    $this->assertTrue(!empty($password), 'New password is not empty.');
+    // In D7, new account emails do not contain the password.
+    //$this->assertTrue(strpos($mails[0]['body'], $password) !== FALSE, 'Mail body contains password.');
+
+    // Same user, new order.
+    $order = $this->createOrder($order_data);
+    $output = uc_cart_complete_sale($order, TRUE);
+    uc_payment_enter($order->order_id, 'SimpleTest', $order->order_total);
+
+    // Check that no new account was created.
+    $this->assertTrue(strpos($output['#message'], 'order has been attached to the account') !== FALSE, 'Checkout message mentions existing account.');
+
+    // 1 e-mail: customer invoice
+    $mails = $this->drupalGetMails();
+    $this->assertEqual(count($mails), 1, '1 e-mail was sent.');
+    variable_del('drupal_test_email_collector');
+  }
+
+  function testCheckoutRoleAssignment() {
+    // Add role assignment to the test product.
+    $rid = $this->drupalCreateRole(array('access content'));
+    $this->drupalLogin($this->adminUser);
+    $this->drupalPost('node/'. $this->product->nid .'/edit/features', array('feature' => 'role'), t('Add'));
+    $this->drupalPost(NULL, array('uc_roles_role' => $rid), t('Save feature'));
+
+    // Process an anonymous, shippable order.
+    $item = clone $this->product;
+    $item->qty = 1;
+    $item->price = $item->sell_price;
+    $item->data = array('shippable' => TRUE);
+    $order = $this->createOrder(array(
+      'products' => array($item),
+    ));
+    uc_payment_enter($order->order_id, 'SimpleTest', $order->order_total);
+
+    // Find the order uid.
+    $uid = db_query("SELECT uid FROM {uc_orders} ORDER BY order_id DESC")->fetchField();
+    $account = user_load($uid);
+    $this->assertTrue(isset($account->roles[$rid]), 'New user was granted role.');
+    $order = uc_order_load($order->order_id);
+    $this->assertEqual($order->order_status, 'payment_received', 'Shippable order was set to payment received.');
+
+    // 3 e-mails: new account, customer invoice, role assignment
+    $mails = $this->drupalGetMails();
+    $this->assertEqual(count($mails), 3, '3 e-mails were sent.');
+    variable_del('drupal_test_email_collector');
+
+    // Test again with an existing email address and a non-shippable order.
+    $item->data = array('shippable' => FALSE);
+    $order = $this->createOrder(array(
+      'primary_email' => $this->customer->mail,
+      'products' => array($item),
+    ));
+    uc_payment_enter($order->order_id, 'SimpleTest', $order->order_total);
+    $account = user_load($this->customer->uid);
+    $this->assertTrue(isset($account->roles[$rid]), 'Existing user was granted role.');
+    $order = uc_order_load($order->order_id);
+    $this->assertEqual($order->order_status, 'completed', 'Non-shippable order was set to completed.');
+
+    // 2 e-mails: customer invoice, role assignment
+    $mails = $this->drupalGetMails();
+    $this->assertEqual(count($mails), 2, '2 e-mails were sent.');
+    variable_del('drupal_test_email_collector');
   }
 }
 

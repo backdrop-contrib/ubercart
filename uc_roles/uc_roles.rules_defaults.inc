@@ -17,8 +17,7 @@ function uc_roles_default_rules_configuration() {
   $rule->label = t('Grant or renew purchased roles');
   $rule->active = TRUE;
   $rule->event('uc_order_status_update');
-  $rule->condition(rules_condition('data_is', array('data:select' => 'order:order-status', 'value' => 'completed'))->negate())
-    ->condition('data_is', array('data:select' => 'updated_order:order-status', 'value' => 'completed'))
+  $rule->condition('data_is', array('data:select' => 'updated_order:order-status', 'value' => 'payment_received'))
     ->action('uc_roles_order_renew', array('order:select' => 'updated_order', 'message' => FALSE));
   $configs['uc_role_renewal'] = $rule;
 

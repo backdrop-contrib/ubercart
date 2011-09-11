@@ -69,6 +69,22 @@ function uc_order_rules_event_info() {
  * Implements hook_rules_condition_info().
  */
 function uc_order_rules_condition_info() {
+  $conditions['uc_order_condition_order_state'] = array(
+    'label' => t("Check an order's state"),
+    'group' => t('Order'),
+    'parameter' => array(
+      'order' => array(
+        'type' => 'uc_order',
+        'label' => t('Order'),
+      ),
+      'order_state' => array(
+        'type' => 'text',
+        'label' => t('Order state'),
+        'options list' => 'uc_order_condition_order_state_options',
+        'restriction' => 'input',
+      ),
+    ),
+  );
   $conditions['uc_order_condition_has_products'] = array(
     'label' => t("Check an order's products"),
     'group' => t('Order: Product'),
@@ -278,6 +294,29 @@ function uc_order_rules_action_info() {
 /******************************************************************************
  * Condition Callbacks and Forms                                              *
  ******************************************************************************/
+
+/**
+ * Checks the current order state.
+ */
+function uc_order_condition_order_state($order, $order_state) {
+  return uc_order_status_data($order->order_status, 'state') == $order_state;
+}
+
+/**
+ * Options callback.
+ *
+ * @see uc_order_condition_order_state()
+ */
+function uc_order_condition_order_state_options() {
+  foreach (uc_order_state_list('general') as $state) {
+    $options[$state['id']] = $state['title'];
+  }
+  foreach (uc_order_state_list('specific') as $state) {
+    $options[$state['id']] = $state['title'];
+  }
+
+  return $options;
+}
 
 /**
  * Checks that the order has the selected combination of products.
