@@ -11,137 +11,161 @@
 function uc_product_views_default_views() {
   $view = new view;
   $view->name = 'uc_products';
-  $view->description = 'List of products.';
+  $view->description = '';
   $view->tag = 'Ubercart';
-  $view->view_php = '';
   $view->base_table = 'node';
-  $view->is_cacheable = FALSE;
-  $view->api_version = 2;
-  $view->disabled = TRUE; /* Edit this to TRUE to make a default view disabled initially */
-  $handler = $view->new_display('default', 'Defaults', 'default');
+  $view->human_name = '';
+  $view->core = 0;
+  $view->api_version = '3.0';
+  $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
 
-  $fields = array(
+  /* Display: Defaults */
+  $handler = $view->new_display('default', 'Defaults', 'default');
+  $handler->display->display_options['title'] = 'Products';
+  $handler->display->display_options['access']['type'] = 'perm';
+  $handler->display->display_options['access']['perm'] = 'administer products';
+  $handler->display->display_options['cache']['type'] = 'none';
+  $handler->display->display_options['query']['type'] = 'views_query';
+  $handler->display->display_options['query']['options']['query_comment'] = FALSE;
+  $handler->display->display_options['exposed_form']['type'] = 'basic';
+  $handler->display->display_options['pager']['type'] = 'full';
+  $handler->display->display_options['pager']['options']['items_per_page'] = '50';
+  $handler->display->display_options['pager']['options']['offset'] = '0';
+  $handler->display->display_options['pager']['options']['id'] = '0';
+  $handler->display->display_options['pager']['options']['expose']['items_per_page_options_all'] = 0;
+  $handler->display->display_options['style_plugin'] = 'table';
+  $handler->display->display_options['style_options']['columns'] = array(
+    'uc_product_image' => 'uc_product_image',
+    'title' => 'title',
+    'sell_price' => 'sell_price',
+    'changed' => 'changed',
+  );
+  $handler->display->display_options['style_options']['default'] = 'changed';
+  $handler->display->display_options['style_options']['info'] = array(
+    'uc_product_image' => array(
+      'align' => 'views-align-center',
+      'separator' => '',
+    ),
     'title' => array(
-      'label' => 'Title',
-      'link_to_node' => 1,
-      'exclude' => 0,
-      'id' => 'title',
-      'table' => 'node',
-      'field' => 'title',
-      'relationship' => 'none',
+      'sortable' => 1,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
     ),
     'sell_price' => array(
-      'label' => 'Sell price',
-      'exclude' => 0,
-      'id' => 'sell_price',
-      'table' => 'uc_products',
-      'field' => 'sell_price',
-      'relationship' => 'none',
+      'sortable' => 1,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
     ),
-    'buyitnowbutton' => array(
-      'label' => 'Buy it now button',
-      'exclude' => 0,
-      'id' => 'buyitnowbutton',
-      'table' => 'uc_products',
-      'field' => 'buyitnowbutton',
-      'relationship' => 'none',
+    'changed' => array(
+      'sortable' => 1,
+      'default_sort_order' => 'desc',
+      'align' => '',
+      'separator' => '',
     ),
   );
+  $handler->display->display_options['style_options']['override'] = 1;
+  $handler->display->display_options['style_options']['sticky'] = 1;
+  $handler->display->display_options['style_options']['order'] = 'desc';
+  $handler->display->display_options['style_options']['empty_table'] = 0;
+  /* Field: Content: Image */
+  $handler->display->display_options['fields']['uc_product_image']['id'] = 'uc_product_image';
+  $handler->display->display_options['fields']['uc_product_image']['table'] = 'field_data_uc_product_image';
+  $handler->display->display_options['fields']['uc_product_image']['field'] = 'uc_product_image';
+  $handler->display->display_options['fields']['uc_product_image']['alter']['alter_text'] = 0;
+  $handler->display->display_options['fields']['uc_product_image']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['uc_product_image']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['uc_product_image']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['uc_product_image']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['uc_product_image']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['uc_product_image']['alter']['nl2br'] = 0;
+  $handler->display->display_options['fields']['uc_product_image']['alter']['word_boundary'] = 1;
+  $handler->display->display_options['fields']['uc_product_image']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['uc_product_image']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['uc_product_image']['alter']['trim'] = 0;
+  $handler->display->display_options['fields']['uc_product_image']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['uc_product_image']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['uc_product_image']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['uc_product_image']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['uc_product_image']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['uc_product_image']['hide_alter_empty'] = 0;
+  $handler->display->display_options['fields']['uc_product_image']['click_sort_column'] = 'fid';
+  $handler->display->display_options['fields']['uc_product_image']['settings'] = array(
+    'image_style' => 'uc_product_list',
+    'image_link' => 'content',
+  );
+  $handler->display->display_options['fields']['uc_product_image']['group_rows'] = 1;
+  $handler->display->display_options['fields']['uc_product_image']['delta_limit'] = '1';
+  $handler->display->display_options['fields']['uc_product_image']['delta_offset'] = '0';
+  $handler->display->display_options['fields']['uc_product_image']['delta_reversed'] = 0;
+  $handler->display->display_options['fields']['uc_product_image']['field_api_classes'] = 0;
+  /* Field: Content: Title */
+  $handler->display->display_options['fields']['title']['id'] = 'title';
+  $handler->display->display_options['fields']['title']['table'] = 'node';
+  $handler->display->display_options['fields']['title']['field'] = 'title';
+  $handler->display->display_options['fields']['title']['link_to_node'] = 1;
+  /* Field: Product: Sell price */
+  $handler->display->display_options['fields']['sell_price']['id'] = 'sell_price';
+  $handler->display->display_options['fields']['sell_price']['table'] = 'uc_products';
+  $handler->display->display_options['fields']['sell_price']['field'] = 'sell_price';
+  /* Field: Content: Post date */
+  $handler->display->display_options['fields']['changed']['id'] = 'changed';
+  $handler->display->display_options['fields']['changed']['table'] = 'node';
+  $handler->display->display_options['fields']['changed']['field'] = 'changed';
+  $handler->display->display_options['fields']['changed']['label'] = 'Updated';
+  $handler->display->display_options['fields']['changed']['alter']['alter_text'] = 0;
+  $handler->display->display_options['fields']['changed']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['changed']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['changed']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['changed']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['changed']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['changed']['alter']['nl2br'] = 0;
+  $handler->display->display_options['fields']['changed']['alter']['word_boundary'] = 1;
+  $handler->display->display_options['fields']['changed']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['changed']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['changed']['alter']['trim'] = 0;
+  $handler->display->display_options['fields']['changed']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['changed']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['changed']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['changed']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['changed']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['changed']['hide_alter_empty'] = 0;
+  $handler->display->display_options['fields']['changed']['date_format'] = 'uc_store';
+  $handler->display->display_options['path'] = 'products';
+  /* Filter criterion: Content: Published */
+  $handler->display->display_options['filters']['status']['id'] = 'status';
+  $handler->display->display_options['filters']['status']['table'] = 'node';
+  $handler->display->display_options['filters']['status']['field'] = 'status';
+  $handler->display->display_options['filters']['status']['value'] = 1;
+  $handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
+  /* Filter criterion: Node: Is a product */
+  $handler->display->display_options['filters']['is_product']['id'] = 'is_product';
+  $handler->display->display_options['filters']['is_product']['table'] = 'uc_products';
+  $handler->display->display_options['filters']['is_product']['field'] = 'is_product';
+  $handler->display->display_options['filters']['is_product']['value'] = 1;
+  $handler->display->display_options['filters']['is_product']['expose']['operator'] = FALSE;
+  /* Filter criterion: Content: Title */
+  $handler->display->display_options['filters']['title']['id'] = 'title';
+  $handler->display->display_options['filters']['title']['table'] = 'node';
+  $handler->display->display_options['filters']['title']['field'] = 'title';
+  $handler->display->display_options['filters']['title']['operator'] = 'contains';
+  $handler->display->display_options['filters']['title']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['title']['expose']['operator_id'] = 'title_op';
+  $handler->display->display_options['filters']['title']['expose']['label'] = 'Title';
+  $handler->display->display_options['filters']['title']['expose']['operator'] = 'title_op';
+  $handler->display->display_options['filters']['title']['expose']['identifier'] = 'title';
+  $handler->display->display_options['filters']['title']['expose']['required'] = 0;
+  $handler->display->display_options['filters']['title']['expose']['multiple'] = FALSE;
 
-  if ($field = variable_get('uc_image_product', '')) {
-    $fields[$field . '_fid'] = array(
-      'label' => '',
-      'link_to_node' => 1,
-      'label_type' => 'widget',
-      'format' => 'product_list_linked',
-      'multiple' => array(
-        'group' => 1,
-        'multiple_number' => '1',
-        'multiple_from' => '0',
-        'multiple_reversed' => 0,
-      ),
-      'exclude' => 0,
-      'id' => $field . '_fid',
-      'table' => 'node_data_' . $field,
-      'field' => $field . '_fid',
-      'relationship' => 'none',
-      'override' => array(
-        'button' => 'Override',
-      ),
-    );
-  }
-  $handler->override_option('fields', $fields);
-  $handler->override_option('filters', array(
-    'status' => array(
-      'operator' => '=',
-      'value' => 1,
-      'group' => '0',
-      'exposed' => FALSE,
-      'expose' => array(
-        'operator' => FALSE,
-        'label' => '',
-      ),
-      'id' => 'status',
-      'table' => 'node',
-      'field' => 'status',
-      'relationship' => 'none',
-    ),
-    'is_product' => array(
-      'operator' => '=',
-      'value' => 1,
-      'group' => '0',
-      'exposed' => FALSE,
-      'expose' => array(
-        'operator' => FALSE,
-        'label' => '',
-      ),
-      'id' => 'is_product',
-      'table' => 'uc_products',
-      'field' => 'is_product',
-      'relationship' => 'none',
-    ),
-  ));
-  $handler->override_option('access', array(
-    'type' => 'none',
-    'role' => array(),
-    'perm' => '',
-  ));
-  $handler->override_option('title', 'Products');
-  $handler->override_option('use_pager', '1');
-  $handler->override_option('style_plugin', 'table');
-  $handler->override_option('style_options', array(
-    'grouping' => '',
-    'override' => 1,
-    'sticky' => 0,
-    'order' => 'asc',
-    'columns' => array(
-      'title' => 'title',
-      'sell_price' => 'sell_price',
-    ),
-    'info' => array(
-      'title' => array(
-        'sortable' => 1,
-        'separator' => '',
-      ),
-      'sell_price' => array(
-        'sortable' => 1,
-        'separator' => '',
-      ),
-    ),
-    'default' => 'title',
-  ));
-  $handler = $view->new_display('page', 'Page', 'page_1');
-  $handler->override_option('path', 'products');
-  $handler->override_option('menu', array(
-    'type' => 'none',
-    'title' => '',
-    'weight' => 0,
-  ));
-  $handler->override_option('tab_options', array(
-    'type' => 'none',
-    'title' => '',
-    'weight' => 0,
-  ));
+  /* Display: Page */
+  $handler = $view->new_display('page', 'Admin page', 'admin_page');
+  $handler->display->display_options['path'] = 'admin/store/products/view';
+  $handler->display->display_options['menu']['type'] = 'normal';
+  $handler->display->display_options['menu']['title'] = 'View products';
+  $handler->display->display_options['menu']['description'] = 'View and search products available through your website.';
+  $handler->display->display_options['menu']['weight'] = '-10';
+  $handler->display->display_options['menu']['name'] = 'management';
 
   $views[$view->name] = $view;
 

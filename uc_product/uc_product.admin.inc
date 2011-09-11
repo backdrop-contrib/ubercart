@@ -6,37 +6,6 @@
  */
 
 /**
- * Lists all products.
- */
-function uc_product_administration() {
-  $build = array();
-
-  $header = array();
-  $tbl_columns = uc_product_table_header();
-  foreach ($tbl_columns as $column) {
-    $header[] = $column['cell'];
-  }
-
-  // Display 50 products per page.
-  $query = db_select('node', 'n')->extend('PagerDefault')->extend('TableSort')
-    ->fields('n', array('nid'))
-    ->orderByHeader($header)
-    ->limit(50);
-  $query->join('uc_products', 'p', 'n.vid = p.vid');
-
-  $nids = $query->execute()->fetchCol();
-
-  // Display the product table and pager if necessary.
-  $build['table'] = tapir_get_table('uc_product_table', $nids);
-  $build['pager'] = array(
-    '#theme' => 'pager',
-    '#weight' => 5,
-  );
-
-  return $build;
-}
-
-/**
  * Displays a list of product classes.
  */
 function uc_product_class_default() {

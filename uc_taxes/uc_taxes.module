@@ -237,41 +237,6 @@ function uc_taxes_uc_cart_item($op, $item) {
   }
 }
 
-/**
- * Implements hook_tapir_table_alter().
- */
-function uc_taxes_tapir_table_alter(&$table, $table_id) {
-  switch ($table_id) {
-    case 'uc_product_table':
-      if (isset($table['#columns']['price'])) {
-        $nodes = node_load_multiple($table['#parameters'][1]);
-        $taxes = uc_taxes_rate_load();
-
-        $i = 0;
-        foreach ($nodes as $node) {
-          $amount = 0;
-          $suffix = '';
-          foreach ($taxes as $tax) {
-            if ($tax->display_include && in_array($node->type, $tax->taxed_product_types) && ($tax->shippable == 0 || $node->shippable == 1)) {
-              $amount += $node->sell_price * $tax->rate;
-              $suffix .= $tax->inclusion_text;
-            }
-          }
-
-          $table[$i]['price']['#price'] += $amount;
-
-          if (!isset($table[$i]['price']['#suffix'])) {
-            $table[$i]['price']['#suffix'] = '';
-          }
-          $table[$i]['price']['#suffix'] .= filter_xss($suffix);
-
-          ++$i;
-        }
-      }
-      break;
-  }
-}
-
 /******************************************************************************
  * Menu Callbacks                                                             *
  ******************************************************************************/

@@ -21,18 +21,12 @@ function uc_product_menu() {
   $items['admin/store/products'] = array(
     'title' => 'Products',
     'description' => 'Administer products, classes, and more.',
+    'page callback' => 'drupal_goto',
+    'page arguments' => array('admin/store/products/view'),
     'access arguments' => array('administer products'),
-    'page callback' => 'uc_product_administration',
     'weight' => -2,
-    'file' => 'uc_product.admin.inc',
   );
-  $items['admin/store/products/view'] = array(
-    'title' => 'View products',
-    'description' => 'Build and view a list of product nodes.',
-    'access arguments' => array('administer products'),
-    'weight' => -10,
-    'file' => 'uc_product.admin.inc',
-  );
+  // admin/store/products/view is provided by Views.
   $items['admin/store/products/classes'] = array(
     'title' => 'Manage classes',
     'description' => 'Create and edit product node types.',
@@ -1155,116 +1149,6 @@ function uc_product_uc_product_class($pcid, $op) {
 /******************************************************************************
  * Module Functions                                                           *
  ******************************************************************************/
-
-/**
- * Returns the table header for the product view table.
- *
- * @see uc_product_table()
- */
-function uc_product_table_header() {
-  static $columns = array();
-
-  if (empty($columns)) {
-    $columns['image'] = array(
-      'weight' => -5,
-      'cell' => array('data' => t('Image')),
-    );
-    $columns['name'] = array(
-      'weight' => 0,
-      'cell' => array('data' => t('Name'), 'field' => 'n.title'),
-    );
-
-    $columns['list_price'] = array(
-      'weight' => 3,
-      'cell' => array('data' => t('List price'), 'field' => 'p.list_price'),
-    );
-
-    $columns['price'] = array(
-      'weight' => 5,
-      'cell' => array('data' => t('Price'), 'field' => 'p.sell_price'),
-    );
-
-    if (module_exists('uc_cart') && arg(0) != 'admin') {
-      $columns['add_to_cart'] = array(
-        'weight' => 10,
-        'cell' => array('data' => t('Add to cart'), 'nowrap' => 'nowrap'),
-      );
-    }
-
-    $table_id = 'uc_product_table';
-    drupal_alter('tapir_table_header', $columns, $table_id);
-  }
-
-  return $columns;
-}
-
-/**
- * Displays product fields in a TAPIr table.
- *
- * Displays image, name, price, and add to cart form.
- */
-function uc_product_table($args = array()) {
-  $table = array(
-    '#type' => 'tapir_table',
-    '#attributes' => array(
-      'class' => array('category-products'),
-    ),
-    '#columns' => uc_product_table_header(),
-    '#rows' => array(),
-  );
-
-  $remove_image_column = TRUE;
-
-  foreach ($args as $nid) {
-    $data = array();
-    $node = node_load($nid);
-
-    if (!empty($node->uc_product_image)) {
-      $remove_image_column = FALSE;
-
-      $data['image'] = uc_product_get_picture($nid, 'uc_product_list');
-    }
-    else {
-      $data['image'] = array(
-        '#markup' => t('n/a'),
-      );
-    }
-
-    $data['name'] = array(
-      '#markup' => l($node->title, 'node/' . $node->nid),
-      '#cell_attributes' => array('width' => '100%'),
-    );
-
-    $data['list_price'] = array('#theme' => 'uc_price', '#price' => $node->list_price);
-    $data['price'] = array('#theme' => 'uc_price', '#price' => $node->sell_price);
-
-    if (module_exists('uc_cart') && arg(0) != 'admin') {
-      $data['add_to_cart'] = drupal_get_form('uc_catalog_buy_it_now_form_' . $node->nid, $node);
-    }
-
-    $table[] = $data;
-  }
-
-  if ($remove_image_column) {
-    unset($table['#columns']['image']);
-    foreach (element_children($table) as $row) {
-      unset($table[$row]['image']);
-    }
-  }
-
-  if (!count(element_children($table))) {
-    $table[] = array(
-      'name' => array(
-        '#markup' => t('No products available.'),
-        '#cell_attributes' => array(
-          'colspan' => 'full',
-        ),
-      ),
-    );
-  }
-
-  return $table;
-}
 
 /**
  * Form builder for uc_catalog_buy_it_now_form().

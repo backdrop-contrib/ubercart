@@ -38,45 +38,6 @@ function hook_tapir_table_alter(&$table, $table_id) {
 }
 
 /**
- * Allows modules to alter TAPIr table headers.
- *
- * This is most often done when a developer wants to add a sortable field to
- * the table. A sortable field is one where the header can be clicked to sort
- * the table results. This cannot be done using hook_tapir_table_alter() as
- * once that is called the query has already executed.
- *
- * The example below adds a 'designer' column to the catalog product table. The
- * example module would also have added joins to the query using
- * hook_db_rewrite_sql() in order for table 'td2' to be valid. The 'name' field
- * is displayed in the table and the header has the title 'Designer'.
- *
- * Also shown are changes made to the header titles for list_price and
- * price fields.
- *
- * @see hook_db_rewrite_sql()
- *
- * @param $header
- *   Reference to the array header declaration (i.e $table['#header']).
- * @param $table_id
- *   Table ID. Also the function called to build the table declaration.
- */
-function hook_tapir_table_header_alter(&$header, $table_id) {
-  if ($table_id == 'uc_product_table') {
-    $header['designer'] = array(
-      'weight' => 2,
-      'cell' => array(
-        'data' => t('Designer'),
-        'field' => 'td2.name',
-      ),
-    );
-
-    $header['list_price']['cell']['data'] = t('RRP');
-    $header['price']['cell']['data'] = t('Sale');
-    $header['add_to_cart']['cell']['data'] = '';
-  }
-}
-
-/**
  * Allows modules to modify forms before Drupal invokes hook_form_alter().
  *
  * This hook will normally be used by core modules so any form modifications
