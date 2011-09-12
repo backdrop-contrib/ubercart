@@ -35,30 +35,30 @@ function uc_payment_pack_init() {
  */
 function uc_payment_pack_uc_payment_method() {
   $methods['check'] = array(
-    'name' => t('Check', array(), array('context' => 'cheque')),
-    'title' => t('Check or money order'),
-    'desc' => t('Pay by mailing a check or money order.'),
-    'callback' => 'uc_payment_method_check',
-    'weight' => 1,
-    'checkout' => TRUE,
+    'name'       => t('Check', array(), array('context' => 'cheque')),
+    'title'      => t('Check or money order'),
+    'desc'       => t('Pay by mailing a check or money order.'),
+    'callback'   => 'uc_payment_method_check',
+    'weight'     => 1,
+    'checkout'   => TRUE,
     'no_gateway' => TRUE,
   );
   $methods['cod'] = array(
-    'name' => t('COD'),
-    'title' => t('Cash on delivery'),
-    'desc' => t('Pay cash on delivery on pick-up.'),
-    'callback' => 'uc_payment_method_cod',
-    'weight' => 1,
-    'checkout' => FALSE,
+    'name'       => t('COD'),
+    'title'      => t('Cash on delivery'),
+    'desc'       => t('Pay cash on delivery on pick-up.'),
+    'callback'   => 'uc_payment_method_cod',
+    'weight'     => 1,
+    'checkout'   => FALSE,
     'no_gateway' => TRUE,
   );
   $methods['other'] = array(
-    'name' => t('Other'),
-    'title' => t('Other'),
-    'desc' => t('A generic payment method type.'),
-    'callback' => 'uc_payment_method_other',
-    'weight' => 10,
-    'checkout' => FALSE,
+    'name'       => t('Other'),
+    'title'      => t('Other'),
+    'desc'       => t('A generic payment method type.'),
+    'callback'   => 'uc_payment_method_other',
+    'weight'     => 10,
+    'checkout'   => FALSE,
     'no_gateway' => TRUE,
   );
 
@@ -73,7 +73,7 @@ function uc_payment_method_other($op, &$order) {
     case 'order-view':
     case 'customer-view':
       // Fetch the description for the payment entered by the administrator.
-      if ($description = db_query("SELECT description FROM {uc_payment_other} WHERE order_id = :id", array(':id' => $order->order_id))->fetchField()) {
+      if ($description = db_query('SELECT description FROM {uc_payment_other} WHERE order_id = :id', array(':id' => $order->order_id))->fetchField()) {
         return array('#markup' => t('Description: @desc', array('@desc' => $description)));
       }
       break;
@@ -89,7 +89,8 @@ function uc_payment_method_other($op, &$order) {
       return $form;
 
     case 'order-load':
-      if ($description = db_query("SELECT description FROM {uc_payment_other} WHERE order_id = :id", array(':id' => $order->order_id))->fetchField()) {
+      $description = db_query('SELECT description FROM {uc_payment_other} WHERE order_id = :id', array(':id' => $order->order_id))->fetchField();
+      if (isset($description)) {
         $order->payment_details['description'] = $description;
       }
       break;
@@ -120,7 +121,9 @@ function uc_payment_method_other($op, &$order) {
 function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
   switch ($op) {
     case 'cart-details':
-      $build['policy'] = array('#markup' => '<p>' . variable_get('uc_cod_policy', t('Full payment is expected upon delivery or prior to pick-up.')) . '</p>');
+      $build['policy'] = array(
+        '#markup' => '<p>' . variable_get('uc_cod_policy', t('Full payment is expected upon delivery or prior to pick-up.')) . '</p>'
+      );
 
       if (($max = variable_get('uc_cod_max_order', 0)) > 0 &&
            is_numeric($max)) {
@@ -176,7 +179,7 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
       return $build;
 
     case 'order-load':
-      $result = db_query("SELECT * FROM {uc_payment_cod} WHERE order_id = :id", array(':id' => $order->order_id));
+      $result = db_query('SELECT * FROM {uc_payment_cod} WHERE order_id = :id', array(':id' => $order->order_id));
       if ($row = $result->fetchObject()) {
         $order->payment_details = array(
           'delivery_month' => $row->delivery_month,
@@ -251,14 +254,22 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
  * @ingroup forms
  */
 function uc_payment_method_cod_form($form, &$form_state, $order) {
-  $month = (!empty($order->payment_details['delivery_month'])) ? $order->payment_details['delivery_month'] : format_date(REQUEST_TIME, 'custom', 'n');
+  $month = !empty($order->payment_details['delivery_month']) ?
+           $order->payment_details['delivery_month'] :
+           format_date(REQUEST_TIME, 'custom', 'n');
+  $day   = !empty($order->payment_details['delivery_day']) ?
+           $order->payment_details['delivery_day'] :
+           format_date(REQUEST_TIME, 'custom', 'j');
+  $year  = !empty($order->payment_details['delivery_year']) ?
+           $order->payment_details['delivery_year'] :
+           format_date(REQUEST_TIME, 'custom', 'Y');
+
+  $form['description'] = array(
+    '#markup' => '<div>' . t('Enter a desired delivery date:') . '</div>',
+  );
   $form['delivery_month'] = uc_select_month(NULL, $month);
-
-  $day = (!empty($order->payment_details['delivery_day'])) ? $order->payment_details['delivery_day'] : format_date(REQUEST_TIME, 'custom', 'j');
-  $form['delivery_day'] = uc_select_day(NULL, $day);
-
-  $year = (!empty($order->payment_details['delivery_year'])) ? $order->payment_details['delivery_year'] : format_date(REQUEST_TIME, 'custom', 'Y');
-  $form['delivery_year'] = uc_select_year(NULL, $year, format_date(REQUEST_TIME, 'custom', 'Y'), format_date(REQUEST_TIME, 'custom', 'Y') + 1);
+  $form['delivery_day']   = uc_select_day(NULL, $day);
+  $form['delivery_year']  = uc_select_year(NULL, $year, format_date(REQUEST_TIME, 'custom', 'Y'), format_date(REQUEST_TIME, 'custom', 'Y') + 1);
 
   return $form;
 }
@@ -351,7 +362,7 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
     case 'order-view':
       $build = array('#suffix' => '<br />');
 
-      $result = db_query("SELECT clear_date FROM {uc_payment_check} WHERE order_id = :id ", array(':id' => $order->order_id));
+      $result = db_query('SELECT clear_date FROM {uc_payment_check} WHERE order_id = :id ', array(':id' => $order->order_id));
       if ($clear_date = $result->fetchField()) {
         $build['#markup'] = t('Clear Date:') . ' ' . format_date($clear_date, 'uc_store');
       }
@@ -362,7 +373,7 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
 
     case 'customer-view':
       $build = array();
-      $result = db_query("SELECT clear_date FROM {uc_payment_check} WHERE order_id = :id ", array(':id' => $order->order_id));
+      $result = db_query('SELECT clear_date FROM {uc_payment_check} WHERE order_id = :id ', array(':id' => $order->order_id));
       if ($clear_date = $result->fetchField()) {
         $build['#markup'] = t('Check received') . '<br />' .
           t('Expected clear date:') . '<br />' . format_date($clear_date, 'uc_store');
