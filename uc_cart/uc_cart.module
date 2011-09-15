@@ -154,6 +154,9 @@ function uc_cart_theme() {
         'summary_links' => NULL,
       ),
     ),
+    'uc_cart_view_form' => array(
+      'render element' => 'form',
+    ),
     'uc_empty_cart' => array(
       'variables' => array(),
     ),
@@ -838,6 +841,7 @@ function theme_uc_empty_cart() {
  * @see uc_cart_view_form_submit()
  * @see uc_cart_view_form_continue_shopping()
  * @see uc_cart_view_form_checkout()
+ * @see theme_uc_cart_view_form()
  * @see uc_cart_view_table()
  * @ingroup forms
  */
@@ -975,6 +979,28 @@ function uc_cart_view_form_continue_shopping($form, &$form_state) {
  */
 function uc_cart_view_form_checkout($form, &$form_state) {
   $form_state['redirect'] = 'cart/checkout';
+}
+
+/**
+ * Themes the uc_cart_view_form().
+ *
+ * Output a hidden copy of the update cart button first, so pressing Enter
+ * updates the cart instead of removing an item.
+ *
+ * @see uc_cart_view_form()
+ * @ingroup themeable
+ */
+function theme_uc_cart_view_form($variables) {
+  $form = &$variables['form'];
+
+  $output = '<div class="uc-default-submit">';
+  $output .= drupal_render($form['actions']['update']);
+  $output .= '</div>';
+  $form['actions']['update']['#printed'] = FALSE;
+
+  $output .= drupal_render_children($form);
+
+  return $output;
 }
 
 /**
