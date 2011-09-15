@@ -191,3 +191,27 @@ function uc_taxes_update_7001() {
     $l_insert->execute();
   }
 }
+
+/**
+ * Fix schema mismatch in update 7000.
+ */
+function uc_taxes_update_7002() {
+  if (db_field_exists('uc_taxes', 'include')) {
+    db_change_field('uc_taxes', 'include', 'display_include', array(
+      'description' => 'Boolean flag indicating that product prices should be displayed including the tax.',
+      'type' => 'int',
+      'size' => 'tiny',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+    ));
+  }
+
+  db_change_field('uc_taxes', 'inclusion_text', 'inclusion_text', array(
+    'description' => 'Text to be shown near a product price that includes tax.',
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => TRUE,
+    'default' => '',
+  ));
+}
