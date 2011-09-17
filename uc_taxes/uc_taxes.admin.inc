@@ -202,6 +202,9 @@ function uc_taxes_form_submit($form, &$form_state) {
   );
   uc_taxes_rate_save((object) $rate);
 
+  // Ensure Rules picks up the new condition.
+  entity_flush_caches();
+
   // Update the name of the associated conditions.
   $conditions = rules_config_load('uc_taxes_' . $rate['id']);
   if ($conditions) {
