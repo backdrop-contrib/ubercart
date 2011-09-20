@@ -116,8 +116,9 @@ function uc_cart_checkout_form($form, &$form_state) {
     }
   }
 
-  // Check the referer URI to clear order details and prevent identity theft.
-  if (uc_referer_check(array('cart/checkout', 'cart/checkout/review'))) {
+  // If there hasn't been activity on checkout page for 20 minutes, clear order
+  // details and prevent identity theft.
+  if (isset($_SESSION['uc_cart_checkout']) && $_SESSION['uc_cart_checkout'] > REQUEST_TIME - 1200) {
     if ($order == FALSE || uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
       unset($_SESSION['cart_order']);
       $order = NULL;
