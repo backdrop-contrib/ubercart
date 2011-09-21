@@ -600,33 +600,6 @@ function uc_store_page_alter(&$page) {
     '#message' => $messages[$id],
   );
 }
-
-/**
- * Implements hook_exit().
- */
-function uc_store_exit() {
-  // Don't save anything to the session if this is the first request of a session
-  if (empty($_COOKIE[session_name()])) {
-    return;
-  }
-
-  // Save the current request for tracking paths on subsequent page requests.
-  // When HTTP_REFERER is set, the session version is not; and vice versa.
-  if ($_SERVER['HTTP_REFERER'] == '') {
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') ? 'https' : 'http';
-    $q = isset($_GET['q']) ? $_GET['q'] : '';
-    $_SESSION['uc_referer_uri'] = $protocol . '://' . $_SERVER['SERVER_NAME'] . $GLOBALS['base_path'] . $q;
-  }
-  else {
-    if (isset($_SESSION['uc_referer_uri'])) {
-      unset($_SESSION['uc_referer_uri']);
-    }
-  }
-
-  // Save the timestamp of the last access.
-  // $_SESSION['uc_last_access'] = REQUEST_TIME;
-}
-
 /**
  * Implements hook_reviews().
  *
@@ -1848,51 +1821,6 @@ function uc_store_default_country() {
   watchdog('uc_store', 'uc_add_js() has been deprecated. Use drupal_add_js() in your code.', array(), WATCHDOG_ERROR);
   drupal_add_js($data, array('type' => $type, 'scope' => $scope, 'defer' => $defer, 'cache'=>$cache));
 } */
-
-/**
- * Checks referers to see if they are in the allowed list.
- */
-function uc_referer_check($urls) {
-  global $base_path;
-
-  $http_referer = uc_referer_uri();
-
-  // Always return true if we have no referer; covers the case of page refreshes
-  // and switching from HTTP to HTTPS. This bypasses the two-time check below...
-  // is it safe?
-  if (empty($http_referer)) {
-    return TRUE;
-  }
-
-  // Check the user didn't shamelessly two-time us with another site.
-  $referer = parse_url($http_referer);
-  if ($referer['host'] != $_SERVER['SERVER_NAME']) {
-    return FALSE;
-  }
-
-  // Check the base path.
-  if (strncmp($referer['path'], $base_path, strlen($base_path))) {
-    return FALSE;
-  }
-
-  // Convert any path aliases.
-  $path = drupal_get_normal_path(substr($referer['path'], strlen($base_path)));
-
-  // The check itself.
-  return in_array($path, $urls);
-}
-
-/**
- * Provides a more reliable referrer for Ubercart.
- */
-function uc_referer_uri() {
-  if ($_SERVER['HTTP_REFERER'] == '') {
-    return isset($_SESSION['uc_referer_uri']) ? $_SESSION['uc_referer_uri'] : '';
-  }
-  else {
-    return $_SERVER['HTTP_REFERER'];
-  }
-}
 
 /**
  * Gets image widgets defined by various modules.

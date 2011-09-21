@@ -145,7 +145,7 @@ function uc_cart_links_process($cart_action) {
             $rebuild_cart = TRUE;
           }
           else {
-            watchdog('uc_cart_link', 'Cart Link on %url tried to add an unpublished product to the cart.', array('%url' => uc_referer_uri()), WATCHDOG_ERROR);
+            watchdog('uc_cart_link', 'Cart Link on %url tried to add an unpublished product to the cart.', array('%url' => $_SERVER['HTTP_REFERER']), WATCHDOG_ERROR);
           }
         }
         break;
@@ -195,7 +195,7 @@ function uc_cart_links_process($cart_action) {
       ->execute();
   }
 
-  $_SESSION['uc_cart_last_url'] = uc_referer_uri();
+  $_SESSION['uc_cart_last_url'] = $_SERVER['HTTP_REFERER'];
 
   drupal_goto();
 }

@@ -116,18 +116,12 @@ function uc_cart_checkout_form($form, &$form_state) {
     }
   }
 
-  // Check the referer URI to clear order details and prevent identity theft.
-  if (uc_referer_check(array('cart/checkout', 'cart/checkout/review'))) {
-    if ($order == FALSE || uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
-      unset($_SESSION['cart_order']);
-      $order = NULL;
+  // If there hasn't been activity on the checkout page for 20 minutes, clear
+  // order details and prevent identity theft.
+  if (!$order || uc_order_status_data($order->order_status, 'state') != 'in_checkout' || $order->modified < REQUEST_TIME - 1200 || ($user->uid > 0 && $user->uid != $order->uid)) {
+    if (isset($_SESSION['cart_order'])) {
+      unset ($_SESSION['cart_order']);
     }
-    elseif (uc_order_status_data($order->order_status, 'state') != 'in_checkout' || ($user->uid > 0 && $user->uid != $order->uid)) {
-      $order = NULL;
-    }
-  }
-  else {
-    unset($_SESSION['cart_order']);
     $order = NULL;
   }
 
