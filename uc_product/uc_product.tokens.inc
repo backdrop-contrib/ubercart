@@ -9,174 +9,220 @@
  * Implements hook_token_info().
  */
 function uc_product_token_info() {
-  $types = array(
-    'name' => t('Products'),
+  $node['product'] = array(
+    'name' => t('Product'),
+    'description' => t('Ubercart product data of the node.'),
+    'type' => 'uc_product',
+  );
+
+  $types['uc_product'] = array(
+    'name' => t('Product'),
     'description' => t('Tokens for Ubercart products.'),
-    'needs-data' => 'product',
+    'needs-data' => 'node',
   );
-
-  $tokens = array();
-
-  $tokens['model'] = array(
-    'name' => t('Model number'),
-    'description' => t("The product's model number."),
+  $product['model'] = array(
+    'name' => t('SKU / Model'),
+    'description' => t("The product's SKU or model number."),
   );
-
-  $tokens['list_price'] = array(
+  $product['list-price'] = array(
     'name' => t('List price'),
     'description' => t("The product's list price."),
+    'type' => 'uc_price',
   );
-  $tokens['cost'] = array(
+  $product['cost'] = array(
     'name' => t('Cost'),
     'description' => t("The product's cost."),
+    'type' => 'uc_price',
   );
-  $tokens['sell_price'] = array(
+  $product['sell-price'] = array(
     'name' => t('Sell price'),
     'description' => t("The product's sell price."),
+    'type' => 'uc_price',
   );
-
-  $tokens['weight'] = array(
+  $product['weight'] = array(
     'name' => t('Weight'),
-    'description' => t("The product's formatted weight."),
+    'description' => t("The product's weight."),
+    'type' => 'uc_weight',
   );
-
-  $tokens['weight-value'] = array(
-    'name' => t('Weight value'),
-    'description' => t("The numerical value of the product's weight."),
-  );
-  $tokens['weight_units'] = array(
-    'name' => t('Weight units'),
-    'description' => t("The unit of measurement for the product's weight."),
-  );
-
-  $tokens['length'] = array(
+  $product['length'] = array(
     'name' => t('Length'),
-    'description' => t("The product's formatted length."),
+    'description' => t("The product's length."),
+    'type' => 'uc_dimension',
   );
-  $tokens['width'] = array(
+  $product['width'] = array(
     'name' => t('Width'),
-    'description' => t("The product's formatted width."),
+    'description' => t("The product's width."),
+    'type' => 'uc_dimension',
   );
-  $tokens['height'] = array(
+  $product['height'] = array(
     'name' => t('Height'),
-    'description' => t("The product's formatted height."),
+    'description' => t("The product's height."),
+    'type' => 'uc_dimension',
   );
 
-  $tokens['length-value'] = array(
-    'name' => t('Length value'),
-    'description' => t("The numerical value of the product's length."),
+  $types['uc_price'] = array(
+    'name' => t('Price'),
+    'needs-data' => 'uc_price',
   );
-  $tokens['width-value'] = array(
-    'name' => t('Width value'),
-    'description' => t("The numerical value of the product's width."),
+  $price['formatted'] = array(
+    'name' => t('Formatted'),
+    'description' => t('A formatted price.'),
   );
-  $tokens['height-value'] = array(
-    'name' => t('Height value'),
-    'description' => t("The numerical value of the product's height."),
-  );
-  $tokens['length_units'] = array(
-    'name' => t('Length units'),
-    'description' => t("The unit of measurement for the product's length, width, and height."),
+  $price['raw'] = array(
+    'name' => t('Raw value'),
+    'description' => t('A decimal price.'),
   );
 
-  // Inherit all 'node' type tokens
-  $nodetokens = node_token_info();
+  $types['uc_weight'] = array(
+    'name' => t('Weight'),
+    'needs-data' => 'uc_weight',
+  );
+  $weight['formatted'] = array(
+    'name' => t('Formatted'),
+    'description' => t('A formatted weight.'),
+  );
+  $weight['raw'] = array(
+    'name' => t('Raw value'),
+    'description' => t('A decimal weight.'),
+  );
+  $weight['units'] = array(
+    'name' => t('Units'),
+    'description' => t('The unit of measurement.'),
+  );
+
+  $types['uc_dimension'] = array(
+    'name' => t('Dimension'),
+    'needs-data' => 'uc_dimension',
+  );
+  $dimension['formatted'] = array(
+    'name' => t('Formatted'),
+    'description' => t('A formatted dimension.'),
+  );
+  $dimension['raw'] = array(
+    'name' => t('Raw value'),
+    'description' => t('A decimal dimension.'),
+  );
+  $dimension['units'] = array(
+    'name' => t('Units'),
+    'description' => t('The unit of measurement.'),
+  );
 
   return array(
-    'types' => array('product' => $types),
-    'tokens' => array('product' => $tokens + $nodetokens['tokens']['node']),
+    'types' => $types,
+    'tokens' => array(
+      'node' => $node,
+      'uc_product' => $product,
+      'uc_price' => $price,
+      'uc_weight' => $weight,
+      'uc_dimension' => $dimension,
+    ),
   );
+}
+
+/**
+ * Implements hook_token_info_alter().
+ *
+ * Remove unwanted entity tokens.
+ */
+function uc_product_token_info_alter(&$info) {
+  $tokens = array(
+    'model', 'list-price', 'cost', 'sell-price', 'weight', 'weight-units',
+    'length', 'width', 'height', 'length_units', 'pkg-qty', 'ordering', 'shippable',
+  );
+
+  foreach ($tokens as $token) {
+    if (!empty($info['tokens']['node'][$token]['entity-token'])) {
+      unset($info['tokens']['node'][$token]);
+    }
+  }
 }
 
 /**
  * Implements hook_tokens().
  */
 function uc_product_tokens($type, $tokens, $data = array(), $options = array()) {
-  $language_code = NULL;
-  if (isset($options['language'])) {
-    $language_code = $options['language']->language;
-  }
   $sanitize = !empty($options['sanitize']);
-
   $replacements = array();
 
-  if ($type == 'product'                      &&
-      !empty($data['product'])                &&
-      uc_product_is_product($data['product'])    ) {
-
-    $product = $data['product'];
-    // We want to inherit all 'node' tokens since products are nodes,
-    // so treat all tokens as node tokens first, then process them
-    // as product tokens so we can add or override what node does.
-    $replacements += token_generate('node', $tokens, array('node' => $product), $options);
+  if ($type == 'node' && !empty($data['node']) && uc_product_is_product($data['node'])) {
+    $product = &$data['node'];
 
     foreach ($tokens as $name => $original) {
       switch ($name) {
-        case 'model':
+        case 'product:model':
           $replacements[$original] = $sanitize ? check_plain($product->model) : $product->model;
           break;
 
-        case 'list_price':
+        case 'product:list-price':
+        case 'product:list-price:formatted':
           $replacements[$original] = uc_currency_format($product->list_price);
           break;
 
-        case 'cost':
+        case 'product:cost':
+        case 'product:cost:formatted':
           $replacements[$original] = uc_currency_format($product->cost);
           break;
 
-        case 'sell_price':
+        case 'product:sell-price':
+        case 'product:sell-price:formatted':
           $replacements[$original] = uc_currency_format($product->sell_price);
           break;
 
-        case 'list_price-value':
+        case 'product:list-price:raw':
           $replacements[$original] = $product->list_price;
           break;
 
-        case 'cost-value':
+        case 'product:cost:raw':
           $replacements[$original] = $product->cost;
           break;
 
-        case 'sell_price-value':
+        case 'product:sell-price:raw':
           $replacements[$original] = $product->sell_price;
           break;
 
-        case 'weight':
+        case 'product:weight':
+        case 'product:weight:formatted':
           $replacements[$original] = uc_weight_format($product->weight, $product->weight_units);
           break;
 
-        case 'weight-value':
+        case 'product:weight:raw':
           $replacements[$original] = $product->weight;
           break;
 
-        case 'weight_units':
+        case 'product:weight:units':
           $replacements[$original] = $product->weight_units;
           break;
 
-        case 'length':
+        case 'product:length':
+        case 'product:length:formatted':
           $replacements[$original] = uc_length_format($product->length, $product->length_units);
           break;
 
-        case 'width':
+        case 'product:width':
+        case 'product:width:formatted':
           $replacements[$original] = uc_length_format($product->width, $product->length_units);
           break;
 
-        case 'height':
+        case 'product:height':
+        case 'product:height:formatted':
           $replacements[$original] = uc_length_format($product->height, $product->length_units);
           break;
 
-        case 'length-value':
+        case 'product:length:raw':
           $replacements[$original] = $product->length;
           break;
 
-        case 'width-value':
+        case 'product:width:raw':
           $replacements[$original] = $product->width;
           break;
 
-        case 'height-value':
+        case 'product:height:raw':
           $replacements[$original] = $product->height;
           break;
 
-        case 'length_units':
+        case 'product:length:units':
+        case 'product:width:units':
+        case 'product:height:units':
           $replacements[$original] = $product->length_units;
           break;
       }
