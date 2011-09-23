@@ -134,6 +134,7 @@ function uc_cart_checkout_form($form, &$form_state) {
 
   $order->products = uc_cart_get_contents();
 
+  $form['#attributes']['class'][] = 'uc-cart-checkout-form';
   $form['#attached']['js'][] = drupal_get_path('module', 'uc_cart') . '/uc_cart.js';
   $form['#attached']['css'][] = drupal_get_path('module', 'uc_cart') . '/uc_cart.css';
 
