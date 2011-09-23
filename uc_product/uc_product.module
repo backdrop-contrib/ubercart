@@ -394,40 +394,26 @@ function uc_product_form($node, $form_state) {
   );
 
   $form['base']['prices']['list_price'] = array(
-    '#type' => 'textfield',
+    '#type' => 'uc_price',
     '#title' => t('List price'),
-    '#required' => FALSE,
-    '#default_value' => uc_store_format_price_field_value($node->list_price),
+    '#default_value' => $node->list_price,
     '#description' => t('The listed MSRP.'),
     '#weight' => 0,
-    '#size' => 15,
-    '#maxlength' => 15,
-    '#field_prefix' => $sign_flag ? '' : $currency_sign,
-    '#field_suffix' => $sign_flag ? $currency_sign : '',
   );
   $form['base']['prices']['cost'] = array(
-    '#type' => 'textfield',
+    '#type' => 'uc_price',
     '#title' => t('Cost'),
-    '#required' => FALSE,
-    '#default_value' => uc_store_format_price_field_value($node->cost),
+    '#default_value' => $node->cost,
     '#description' => t("Your store's cost."),
     '#weight' => 1,
-    '#size' => 15,
-    '#maxlength' => 15,
-    '#field_prefix' => $sign_flag ? '' : $currency_sign,
-    '#field_suffix' => $sign_flag ? $currency_sign : '',
   );
   $form['base']['prices']['sell_price'] = array(
-    '#type' => 'textfield',
+    '#type' => 'uc_price',
     '#title' => t('Sell price'),
     '#required' => TRUE,
-    '#default_value' => uc_store_format_price_field_value($node->sell_price),
+    '#default_value' => $node->sell_price,
     '#description' => t('Customer purchase price.'),
     '#weight' => 2,
-    '#size' => 15,
-    '#maxlength' => 15,
-    '#field_prefix' => $sign_flag ? '' : $currency_sign,
-    '#field_suffix' => $sign_flag ? $currency_sign : '',
   );
 
   $form['base']['shippable'] = array(
@@ -575,20 +561,9 @@ function theme_uc_product_inline_form($variables) {
 /**
  * Implements hook_validate().
  *
- * Ensures that prices, weight, dimensions, and quantity are positive numbers.
+ * Ensures that weight, dimensions, and quantity are positive numbers.
  */
 function uc_product_validate($node) {
-  $pattern = '/^\d*(\.\d*)?$/';
-  $price_error = t('Price must be in a valid number format. No commas and only one decimal point.');
-  if (!empty($node->list_price) && !is_numeric($node->list_price) && !preg_match($pattern, $node->list_price)) {
-    form_set_error('list_price', $price_error);
-  }
-  if (!empty($node->cost) && !is_numeric($node->cost) && !preg_match($pattern, $node->cost)) {
-    form_set_error('cost', $price_error);
-  }
-  if (!is_numeric($node->sell_price) && !preg_match($pattern, $node->sell_price)) {
-    form_set_error('sell_price', $price_error);
-  }
   foreach (array('weight', 'length', 'width', 'height') as $property) {
     if (!empty($node->$property) && (!is_numeric($node->$property) || $node->$property < 0)) {
       form_set_error($property, t('@property must be a positive number. No commas and only one decimal point.', array('@property' => ucfirst($property))));
