@@ -546,7 +546,13 @@ function uc_taxes_apply_tax($order, $tax) {
         continue;
       }
       if (in_array($line_item['type'], $taxed_line_items)) {
-        $taxable_amount += $line_item['amount'];
+        $callback = _uc_line_item_data($line_item['type'], 'tax_adjustment');
+        if (isset($callback) && function_exists($callback)) {
+          $taxable_amount += $callback($line_item['amount'], $order, $tax);
+        }
+        else {
+          $taxable_amount += $line_item['amount'];
+        }
       }
     }
   }
