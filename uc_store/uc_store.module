@@ -286,6 +286,22 @@ function uc_store_element_info() {
     '#hidden' => FALSE,
   );
 
+  $sign_flag = variable_get('uc_sign_after_amount', FALSE);
+  $currency_sign = variable_get('uc_currency_sign', '$');
+
+  $types['uc_price'] = array(
+    '#input' => TRUE,
+    '#size' => 15,
+    '#maxlength' => 15,
+    '#autocomplete_path' => FALSE,
+    '#process' => array('ajax_process_form'),
+    '#element_validate' => array('uc_store_validate_uc_price'),
+    '#theme' => 'textfield',
+    '#theme_wrappers' => array('form_element'),
+    '#field_prefix' => $sign_flag ? '' : $currency_sign,
+    '#field_suffix' => $sign_flag ? $currency_sign : '',
+  );
+
   return $types;
 }
 
@@ -436,6 +452,24 @@ function uc_store_pre_render_address_field($element) {
     unset($element['#required']);
   }
   return $element;
+}
+
+/**
+ * Helper function to determine the value for a uc_price form element.
+ */
+function form_type_uc_price_value($element, $input = FALSE) {
+  if ($input === FALSE) {
+    return uc_store_format_price_field_value($element['#default_value']);
+  }
+}
+
+/**
+ * Form element validation handler for #type 'uc_price'.
+ */
+function uc_store_validate_uc_price(&$element, &$form_state) {
+  if (!empty($element['#value']) && !preg_match('/^\d*(\.\d*)?$/', $element['#value'])) {
+    form_error($element, t('The price must contain only numbers and an optional decimal point.'));
+  }
 }
 
 /**
