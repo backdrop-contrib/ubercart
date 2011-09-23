@@ -425,15 +425,15 @@ function uc_attribute_option_form($form, &$form_state, $attribute, $option = NUL
     '#weight' => 8,
   );
   $form['adjustments']['cost'] = array(
-    '#type' => 'textfield',
+    '#type' => 'uc_price',
     '#title' => t('Cost'),
-    '#default_value' => uc_store_format_price_field_value($option->cost),
+    '#default_value' => $option->cost,
     '#weight' => 1,
   );
   $form['adjustments']['price'] = array(
-    '#type' => 'textfield',
+    '#type' => 'uc_price',
     '#title' => t('Price'),
-    '#default_value' => uc_store_format_price_field_value($option->price),
+    '#default_value' => $option->price,
     '#weight' => 2,
   );
   $form['adjustments']['weight'] = array(
@@ -463,12 +463,6 @@ function uc_attribute_option_form($form, &$form_state, $attribute, $option = NUL
 function uc_attribute_option_form_validate($form, &$form_state) {
   $pattern = '/^-?\d*(\.\d*)?$/';
   $price_error = t('This must be in a valid number format. No commas and only one decimal point.');
-  if (!is_numeric($form_state['values']['cost']['#value']) && !preg_match($pattern, $form_state['values']['cost']['#value'])) {
-    form_set_error('cost', $price_error);
-  }
-  if (!is_numeric($form_state['values']['price']['#value']) && !preg_match($pattern, $form_state['values']['price']['#value'])) {
-    form_set_error('price', $price_error);
-  }
   if (!is_numeric($form_state['values']['weight']['#value']) && !preg_match($pattern, $form_state['values']['weight']['#value'])) {
     form_set_error('weight', $price_error);
   }
@@ -943,13 +937,13 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
           '#title' => check_plain($option->name),
         );
         $form['attributes'][$aid]['options'][$oid]['cost'] = array(
-          '#type' => 'textfield',
-          '#default_value' => uc_store_format_price_field_value(is_null($option->cost) ? $option->default_cost : $option->cost),
+          '#type' => 'uc_price',
+          '#default_value' => is_null($option->cost) ? $option->default_cost : $option->cost,
           '#size' => 6,
         );
         $form['attributes'][$aid]['options'][$oid]['price'] = array(
-          '#type' => 'textfield',
-          '#default_value' => uc_store_format_price_field_value(is_null($option->price) ? $option->default_price : $option->price),
+          '#type' => 'uc_price',
+          '#default_value' => is_null($option->price) ? $option->default_price : $option->price,
           '#size' => 6,
         );
         $form['attributes'][$aid]['options'][$oid]['weight'] = array(
