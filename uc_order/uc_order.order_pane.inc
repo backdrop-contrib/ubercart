@@ -431,13 +431,13 @@ function uc_order_edit_products_form($form, &$form_state, $products) {
         '#options' => $units,
       );
       $form['products'][$i]['cost'] = array(
-        '#type' => 'textfield',
-        '#default_value' => uc_store_format_price_field_value($products[$i]->cost),
+        '#type' => 'uc_price',
+        '#default_value' => $products[$i]->cost,
         '#size' => 5,
       );
       $form['products'][$i]['price'] = array(
-        '#type' => 'textfield',
-        '#default_value' => uc_store_format_price_field_value($products[$i]->price),
+        '#type' => 'uc_price',
+        '#default_value' => $products[$i]->price,
         '#size' => 5,
       );
       $form['products'][$i]['data'] = array(
