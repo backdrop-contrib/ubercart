@@ -253,3 +253,17 @@ function uc_store_update_7005() {
 function uc_store_update_7006() {
   db_delete('variable')->condition('name', 'user_initials_%', 'LIKE')->execute();
 }
+
+/**
+ * Ensure Rules and Views are installed.
+ */
+function uc_store_update_7007() {
+  $modules = array('rules', 'views');
+  module_enable($modules);
+
+  foreach ($modules as $module) {
+    if (!module_exists($module)) {
+      throw new DrupalUpdateException(t('Rules and Views are now dependencies of Ubercart, but are not currently available. Please download them to sites/all/modules and run update.php again.'));
+    }
+  }
+}
