@@ -429,12 +429,14 @@ function uc_attribute_option_form($form, &$form_state, $attribute, $option = NUL
     '#title' => t('Cost'),
     '#default_value' => $option->cost,
     '#weight' => 1,
+    '#allow_negative' => TRUE,
   );
   $form['adjustments']['price'] = array(
     '#type' => 'uc_price',
     '#title' => t('Price'),
     '#default_value' => $option->price,
     '#weight' => 2,
+    '#allow_negative' => TRUE,
   );
   $form['adjustments']['weight'] = array(
     '#type' => 'textfield',
@@ -940,11 +942,13 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
           '#type' => 'uc_price',
           '#default_value' => is_null($option->cost) ? $option->default_cost : $option->cost,
           '#size' => 6,
+          '#allow_negative' => TRUE,
         );
         $form['attributes'][$aid]['options'][$oid]['price'] = array(
           '#type' => 'uc_price',
           '#default_value' => is_null($option->price) ? $option->default_price : $option->price,
           '#size' => 6,
+          '#allow_negative' => TRUE,
         );
         $form['attributes'][$aid]['options'][$oid]['weight'] = array(
           '#type' => 'textfield',

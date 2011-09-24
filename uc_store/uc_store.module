@@ -300,6 +300,7 @@ function uc_store_element_info() {
     '#theme_wrappers' => array('form_element'),
     '#field_prefix' => $sign_flag ? '' : $currency_sign,
     '#field_suffix' => $sign_flag ? $currency_sign : '',
+    '#allow_negative' => FALSE,
   );
 
   return $types;
@@ -467,8 +468,16 @@ function form_type_uc_price_value($element, $input = FALSE) {
  * Form element validation handler for #type 'uc_price'.
  */
 function uc_store_validate_uc_price(&$element, &$form_state) {
-  if (!empty($element['#value']) && !preg_match('/^\d*(\.\d*)?$/', $element['#value'])) {
-    form_error($element, t('The price must contain only numbers and an optional decimal point.'));
+  if (!empty($element['#value'])) {
+    if (!empty($element['#allow_negative'])) {
+      $pattern = '/^-?\d*(\.\d*)?$/';
+    }
+    else {
+      $pattern = '/^\d*(\.\d*)?$/';
+    }
+    if (!preg_match($pattern, $element['#value'])) {
+      form_error($element, t('The price must contain only numbers and an optional decimal point.'));
+    }
   }
 }
 
