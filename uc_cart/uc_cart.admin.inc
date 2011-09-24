@@ -64,13 +64,10 @@ function uc_cart_cart_settings_form($form, &$form_state) {
   );
 
   $form['general']['uc_minimum_subtotal'] = array(
-    '#type' => 'textfield',
+    '#type' => 'uc_price',
     '#title' => t('Minimum order subtotal'),
     '#description' => t('Customers will not be allowed to check out if the subtotal of items in their cart is less than this amount.'),
     '#default_value' => variable_get('uc_minimum_subtotal', 0),
-    '#size' => 16,
-    '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
-    '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
   );
 
   $form['lifetime'] = array(
