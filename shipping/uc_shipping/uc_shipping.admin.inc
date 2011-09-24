@@ -810,17 +810,9 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
       $pkg_form['pkg_type']['#description'] = '';
     }
     $pkg_form['declared_value'] = array(
-      '#type'          => 'textfield',
+      '#type'          => 'uc_price',
       '#title'         => t('Declared value'),
-      '#field_prefix'  => variable_get('uc_sign_after_amount', FALSE) ?
-                          '' :
-                          variable_get('uc_currency_sign', '$'),
-      '#field_suffix'  => variable_get('uc_sign_after_amount', FALSE) ?
-                          variable_get('uc_currency_sign', '$') :
-                          '',
-      '#default_value' => isset($package->value) ?
-                          $package->value :
-                          $declared_value,
+      '#default_value' => isset($package->value) ? $package->value : $declared_value,
     );
     $pkg_form['weight'] = array(
       '#type'        => 'container',
