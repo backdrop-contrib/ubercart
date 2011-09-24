@@ -1367,11 +1367,8 @@ function uc_order_add_line_item_form($form, &$form_state, $order, $line_item_id)
       '#default_value' => _uc_line_item_data($line_item_id, 'title'),
     );
     $form['amount'] = array(
-      '#type' => 'textfield',
+      '#type' => 'uc_price',
       '#title' => t('Line Item Amount'),
-      '#description' => t('Amount of the line item without a currency sign.'),
-      '#size' => 6,
-      '#maxlength' => 13,
     );
   }
 
@@ -1402,11 +1399,6 @@ function uc_order_add_line_item_form_validate($form, &$form_state) {
   $func = _uc_line_item_data($form_state['values']['line_item_id'], 'callback');
   if (function_exists($func) && ($form = $func('form', $form_state['values']['order_id'])) != NULL) {
     $func('validate', $form_state['values']['order_id']);
-  }
-  else {
-    if (!is_numeric($form_state['values']['amount'])) {
-      form_set_error('amount', t('Amount must be numeric.'));
-    }
   }
 }
 
