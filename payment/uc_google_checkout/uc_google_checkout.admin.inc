@@ -346,13 +346,9 @@ function uc_google_checkout_terminal_form($form, &$form_state, $order, $amount =
   }
 
   $form['amount'] = array(
-    '#type' => 'textfield',
+    '#type' => 'uc_price',
     '#title' => t('Amount'),
-    '#default_value' => uc_currency_format($amount, FALSE, FALSE, '.'),
-    '#size' => 10,
-    '#weight' => 0,
-    '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
-    '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
+    '#default_value' => $amount,
   );
   $form['gc_balance'] = array(
     '#type' => 'value',
@@ -383,9 +379,6 @@ function uc_google_checkout_terminal_form($form, &$form_state, $order, $amount =
  * @see uc_google_checkout_terminal_form_submit()
  */
 function uc_google_checkout_terminal_form_validate($form, &$form_state) {
-  if (!is_numeric($form_state['values']['amount']) || $form_state['values']['amount'] == 0) {
-    form_set_error('amount', t('You must enter a number for the amount.'));
-  }
   if ($form_state['values']['action'] == 'charge' && $form_state['values']['amount'] > $form_state['values']['gc_balance']) {
     form_set_error('amount', t('Google does not allow charges greater than the balance.'));
   }
