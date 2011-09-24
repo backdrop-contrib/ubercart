@@ -389,7 +389,7 @@ function uc_file_admin_files_form_action_validate($form, &$form_state) {
     case 'uc_file_upload':
 
       // Upload the file and get its object.
-      if ($temp_file = file_save_upload('upload', array())) {
+      if ($temp_file = file_save_upload('upload', array('file_validate_extensions' => array()))) {
 
         // Check if any hook_uc_file_action('upload_validate', $args)
         // are implemented.
