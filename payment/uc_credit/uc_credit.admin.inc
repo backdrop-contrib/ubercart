@@ -383,13 +383,10 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
 
   // Let the administrator set the amount to charge.
   $form['amount'] = array(
-    '#type' => 'textfield',
+    '#type' => 'uc_price',
     '#title' => t('Charge Amount'),
     '#default_value' => $balance > 0 ? uc_currency_format($balance, FALSE, FALSE, '.') : 0,
-    '#size' => 10,
     '#disabled' => $lock_amount,
-    '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
-    '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
   );
 
   // Build a credit card form.
@@ -560,16 +557,6 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
  * Validation handler for credit terminal form.
  */
 function uc_credit_terminal_form_validate($form, &$form_state) {
-  switch ($form_state['values']['op']) {
-    case t('Charge amount'):
-    case t('Authorize amount only'):
-    case t('Capture amount to this authorization'):
-    case t('Charge amount to this reference'):
-      if (!is_numeric($form_state['values']['amount']) || $form_state['values']['amount'] <= 0) {
-        form_set_error('amount', t('You must enter a positive number for the amount.'));
-      }
-  }
-
   if (uc_order_load($form_state['values']['order_id']) === FALSE) {
     form_set_error('', t('Invalid order ID.  Unable to process payment.'));
   }
