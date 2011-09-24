@@ -14,9 +14,6 @@
  * @ingroup forms
  */
 function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
-  $sign_flag = variable_get('uc_sign_after_amount', FALSE);
-  $currency_sign = variable_get('uc_currency_sign', '$');
-
   if ($mid && ($method = db_query("SELECT * FROM {uc_flatrate_methods} WHERE mid = :mid", array(':mid' => $mid))->fetchObject())) {
     $form['mid'] = array('#type' => 'value', '#value' => $mid);
   }
@@ -44,24 +41,18 @@ function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
     '#required' => TRUE,
   );
   $form['base_rate'] = array(
-    '#type' => 'textfield',
+    '#type' => 'uc_price',
     '#title' => t('Base price'),
     '#description' => t('The starting price for shipping costs.'),
     '#default_value' => $method->base_rate,
     '#required' => TRUE,
-    '#size' => 16,
-    '#field_prefix' => $sign_flag ? '' : $currency_sign,
-    '#field_suffix' => $sign_flag ? $currency_sign : '',
   );
   $form['product_rate'] = array(
-    '#type' => 'textfield',
+    '#type' => 'uc_price',
     '#title' => t('Default product shipping rate'),
     '#description' => t('Additional shipping cost per product in cart.'),
     '#default_value' => $method->product_rate,
     '#required' => TRUE,
-    '#size' => 16,
-    '#field_prefix' => $sign_flag ? '' : $currency_sign,
-    '#field_suffix' => $sign_flag ? $currency_sign : '',
   );
 
   $conditions = rules_config_load('get_quote_from_flatrate_' . $mid);
