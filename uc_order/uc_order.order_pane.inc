@@ -333,11 +333,9 @@ function uc_order_add_product_form($form, &$form_state, $order, $node) {
     '#value' => $node->nid,
   );
   $form['qty'] = array(
-    '#type' => 'textfield',
+    '#type' => 'uc_quantity',
     '#title' => t('Qty'),
-    '#default_value' => '1',
-    '#size' => 2,
-    '#maxlength' => 5,
+    '#default_value' => 1,
   );
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
@@ -398,10 +396,8 @@ function uc_order_edit_products_form($form, &$form_state, $products) {
         '#value' => $products[$i]->nid,
       );
       $form['products'][$i]['qty'] = array(
-        '#type' => 'textfield',
+        '#type' => 'uc_quantity',
         '#default_value' => $products[$i]->qty,
-        '#size' => 2,
-        '#maxlength' => 6,
       );
       $form['products'][$i]['title'] = array(
         '#type' => 'textfield',
