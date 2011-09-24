@@ -969,15 +969,9 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
     ),
   );
   $form['shipment']['cost'] = array(
-    '#type'          => 'textfield',
+    '#type'          => 'uc_price',
     '#title'         => t('Shipping cost'),
     '#default_value' => isset($shipment->cost) ? $shipment->cost : 0,
-    '#field_prefix'  => variable_get('uc_sign_after_amount', FALSE) ?
-                        '' :
-                        variable_get('uc_currency_sign', '$'),
-    '#field_suffix'  => variable_get('uc_sign_after_amount', FALSE) ?
-                        variable_get('uc_currency_sign', '$') :
-                        '',
   );
 
   $form['actions'] = array(
