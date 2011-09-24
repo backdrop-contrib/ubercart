@@ -1084,7 +1084,10 @@ function theme_uc_product_attributes($variables) {
         $optionstr .= t(', !option', array('!option' => $option));
       }
     }
-    $option_rows[$key] = t('@attribute: @option', array('@attribute' => $attributes[$key]['#attribute_name'], '@option' => $optionstr));
+
+    if ($optionstr != '') {
+      $option_rows[$key] = t('@attribute: @option', array('@attribute' => $attributes[$key]['#attribute_name'], '@option' => $optionstr));
+    }
   }
 
   if (!empty($option_rows)) {
