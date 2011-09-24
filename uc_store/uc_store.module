@@ -304,6 +304,19 @@ function uc_store_element_info() {
     '#empty_zero' => TRUE,
   );
 
+  $types['uc_quantity'] = array(
+    '#input' => TRUE,
+    '#size' => 5,
+    '#maxlength' => 6,
+    '#required' => TRUE,
+    '#autocomplete_path' => FALSE,
+    '#process' => array('ajax_process_form'),
+    '#element_validate' => array('uc_store_validate_uc_quantity'),
+    '#theme' => 'textfield',
+    '#theme_wrappers' => array('form_element'),
+    '#allow_zero' => FALSE,
+  );
+
   return $types;
 }
 
@@ -483,6 +496,18 @@ function uc_store_validate_uc_price(&$element, &$form_state) {
     if (!preg_match($pattern, $element['#value'])) {
       form_error($element, t('The price must contain only numbers and an optional decimal point.'));
     }
+  }
+}
+
+/**
+ * Form element validation handler for #type 'uc_quantity'.
+ */
+function uc_store_validate_uc_quantity(&$element, &$form_state) {
+  if (!preg_match('/^\d+/', $element['#value'])) {
+    form_error($element, t('The quantity must be a number.'));
+  }
+  elseif (empty($element['#allow_zero']) && !$element['#value']) {
+    form_error($element, t('The quantity cannot be zero.'));
   }
 }
 
