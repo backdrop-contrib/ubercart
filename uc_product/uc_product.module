@@ -344,7 +344,6 @@ function uc_product_edit_access($node) {
 /**
  * Implements hook_form().
  *
- * @see uc_product_form_validate()
  * @see theme_uc_product_inline_form()
  * @ingroup forms
  */
@@ -435,7 +434,7 @@ function uc_product_form($node, $form_state) {
     '#title' => t('Weight'),
     '#default_value' => $node->weight,
     '#size' => 10,
-    '#maxlength' => 15,
+    '#element_validate' => array('uc_store_validate_number_not_negative'),
   );
   $units = array(
     'lb' => t('Pounds'),
@@ -465,18 +464,21 @@ function uc_product_form($node, $form_state) {
     '#title' => t('Length'),
     '#default_value' => $node->length,
     '#size' => 10,
+    '#element_validate' => array('uc_store_validate_number_not_negative'),
   );
   $form['base']['dimensions']['dim_width'] = array(
     '#type' => 'textfield',
     '#title' => t('Width'),
     '#default_value' => $node->width,
     '#size' => 10,
+    '#element_validate' => array('uc_store_validate_number_not_negative'),
   );
   $form['base']['dimensions']['dim_height'] = array(
     '#type' => 'textfield',
     '#title' => t('Height'),
     '#default_value' => $node->height,
     '#size' => 10,
+    '#element_validate' => array('uc_store_validate_number_not_negative'),
   );
   $form['base']['dimensions']['length_units'] = array(
     '#type' => 'select',
@@ -550,19 +552,6 @@ function theme_uc_product_inline_form($variables) {
   $output .= '</tr></table>';
 
   return $output;
-}
-
-/**
- * Implements hook_validate().
- *
- * Ensures that weight, dimensions, and quantity are positive numbers.
- */
-function uc_product_validate($node) {
-  foreach (array('weight', 'length', 'width', 'height') as $property) {
-    if (!empty($node->$property) && (!is_numeric($node->$property) || $node->$property < 0)) {
-      form_set_error($property, t('@property must be a positive number. No commas and only one decimal point.', array('@property' => ucfirst($property))));
-    }
-  }
 }
 
 /**
