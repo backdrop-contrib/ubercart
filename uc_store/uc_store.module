@@ -301,6 +301,7 @@ function uc_store_element_info() {
     '#field_prefix' => $sign_flag ? '' : $currency_sign,
     '#field_suffix' => $sign_flag ? $currency_sign : '',
     '#allow_negative' => FALSE,
+    '#empty_zero' => TRUE,
   );
 
   return $types;
@@ -461,6 +462,10 @@ function uc_store_pre_render_address_field($element) {
 function form_type_uc_price_value($element, $input = FALSE) {
   if ($input === FALSE && !empty($element['#default_value'])) {
     return uc_store_format_price_field_value($element['#default_value']);
+  }
+  elseif (empty($input) && empty($element['#required']) && !empty($element['#empty_zero'])) {
+    // Empty non-required prices should be treated as zero.
+    return 0;
   }
 }
 
