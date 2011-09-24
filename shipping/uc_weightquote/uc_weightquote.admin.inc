@@ -8,7 +8,6 @@
 /**
  * Configures the store default product shipping rates.
  *
- * @see uc_weightquote_admin_method_edit_form_validate()
  * @see uc_weightquote_admin_method_edit_form_submit()
  * @see uc_weightquote_admin_method_edit_form_delete()
  * @ingroup forms
@@ -80,21 +79,6 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
 }
 
 /**
- * Form validation for uc_weightquote_admin_method_edit_form().
- *
- * @see uc_weightquote_admin_method_edit_form()
- * @see uc_weightquote_admin_method_edit_form_submit()
- */
-function uc_weightquote_admin_method_edit_form_validate($form, &$form_state) {
-  if (!empty($form_state['values']['base_rate']) && !is_numeric($form_state['values']['base_rate'])) {
-    form_set_error('base_rate', t('The base rate must be a numeric amount.'));
-  }
-  if (!empty($form_state['values']['product_rate']) && !is_numeric($form_state['values']['product_rate'])) {
-    form_set_error('product_rate', t('The product rate must be a numeric amount.'));
-  }
-}
-
-/**
  * Helper function to delete a weightquote method.
  *
  * @see uc_weightquote_admin_method_edit_form()
@@ -107,7 +91,6 @@ function uc_weightquote_admin_method_edit_form_delete($form, &$form_state) {
  * Form submission handler for uc_weightquote_admin_method_edit_form().
  *
  * @see uc_weightquote_admin_method_edit_form()
- * @see uc_weightquote_admin_method_edit_form_validate()
  */
 function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
   if (isset($form_state['values']['mid'])) {
