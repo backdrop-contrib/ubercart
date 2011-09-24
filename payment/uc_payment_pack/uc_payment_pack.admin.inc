@@ -8,7 +8,6 @@
 /**
  * Receives a check for an order and put in a clear date.
  *
- * @see uc_payment_pack_receive_check_form_validate()
  * @see uc_payment_pack_receive_check_form_submit()
  * @ingroup forms
  */
@@ -23,12 +22,9 @@ function uc_payment_pack_receive_check_form($form, &$form_state, $order) {
     '#value' => $order->order_id,
   );
   $form['amount'] = array(
-    '#type' => 'textfield',
+    '#type' => 'uc_price',
     '#title' => t('Amount'),
-    '#default_value' => uc_currency_format($balance, FALSE, FALSE, '.'),
-    '#size' => 10,
-    '#field_prefix' => variable_get('uc_sign_after_amount', FALSE) ? '' : variable_get('uc_currency_sign', '$'),
-    '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
+    '#default_value' => $balance,
   );
   $form['comment'] = array(
     '#type' => 'textfield',
@@ -59,22 +55,9 @@ function uc_payment_pack_receive_check_form($form, &$form_state, $order) {
 }
 
 /**
- * Form validation for uc_payment_pack_receive_check_form().
- *
- * @see uc_payment_pack_receive_check_form()
- * @see uc_payment_pack_receive_check_form_submit()
- */
-function uc_payment_pack_receive_check_form_validate($form, &$form_state) {
-  if (!is_numeric($form_state['values']['amount'])) {
-    form_set_error('amount', t('The amount must be a number.'));
-  }
-}
-
-/**
  * Submit handler for uc_payment_pack_receive_check_form().
  *
  * @see uc_payment_pack_receive_check_form()
- * @see uc_payment_pack_receive_check_form_validate()
  */
 function uc_payment_pack_receive_check_form_submit($form, &$form_state) {
   global $user;
