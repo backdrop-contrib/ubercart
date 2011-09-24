@@ -14,9 +14,6 @@
  * @ingroup forms
  */
 function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
-  $sign_flag = variable_get('uc_sign_after_amount', FALSE);
-  $currency_sign = variable_get('uc_currency_sign', '$');
-
   if ($mid && ($method = db_query("SELECT * FROM {uc_weightquote_methods} WHERE mid = :mid", array(':mid' => $mid))->fetchObject())) {
     $form['mid'] = array('#type' => 'value', '#value' => $mid);
   }
@@ -44,24 +41,19 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
     '#required' => TRUE,
   );
   $form['base_rate'] = array(
-    '#type' => 'textfield',
+    '#type' => 'uc_price',
     '#title' => t('Base price'),
     '#description' => t('The starting price for weight-based shipping costs.'),
     '#default_value' => $method->base_rate,
     '#required' => TRUE,
-    '#size' => 16,
-    '#field_prefix' => $sign_flag ? '' : $currency_sign,
-    '#field_suffix' => $sign_flag ? $currency_sign : '',
   );
   $form['product_rate'] = array(
-    '#type' => 'textfield',
+    '#type' => 'uc_price',
     '#title' => t('Default cost adjustment per !unit', array('!unit' => variable_get('uc_weight_unit', 'lb'))),
     '#description' => t('The amount per weight unit to add to the shipping cost for an item.<br />Example: to add $5 per pound, put 5 in here.'),
     '#default_value' => $method->product_rate,
     '#required' => TRUE,
-    '#size' => 16,
-    '#field_prefix' => $sign_flag ? '' : $currency_sign,
-    '#field_suffix' => t('!sign per !unit', array('!sign' => $sign_flag ? $currency_sign : '', '!unit' => variable_get('uc_weight_unit', 'lb'))),
+    '#field_suffix' => t('per @unit', array('@unit' => variable_get('uc_weight_unit', 'lb'))),
   );
 
   $conditions = rules_config_load('get_quote_from_weightquote_' . $mid);
