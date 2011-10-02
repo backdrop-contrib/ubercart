@@ -44,7 +44,7 @@ function hook_ucga_display() {
 
 /**
  * Allows modules to alter items before they're added to the UC Google Analytics
- *   e-commerce tracking code.
+ * e-commerce tracking code.
  *
  * The UC Google Analytics module constructs function calls that work through
  * the Google Analytics JS API to report purchased items for e-commerce tracking
@@ -60,12 +60,13 @@ function hook_ucga_display() {
  *   The product object as found in the $order object.
  * @param $trans
  *   The array of arguments that were passed to Google Analytics to represent
- *     the transaction.
+ *   the transaction.
  * @param $order
  *   The order object being reported to Google Analytics.
+ *
  * @return
  *   Nothing should be returned. Hook implementations should receive the $item
- *     array by reference and alter it directly.
+ *   array by reference and alter it directly.
  */
 function hook_ucga_item_alter(&$item, $product, $trans, $order) {
   // Example implementation: always set the category to "UBERCART".

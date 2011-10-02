@@ -67,6 +67,7 @@ function hook_uc_product_default_classes() {
  * @param $product
  *   Product. Usually one of the values of the array returned by
  *   uc_cart_get_contents().
+ *
  * @return
  *   A structured array that can be fed into drupal_render().
  */

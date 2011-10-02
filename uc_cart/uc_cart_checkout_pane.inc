@@ -526,8 +526,10 @@ function theme_uc_cart_review_table($variables) {
  *
  * @param $items
  *   Cart items.
+ *
  * @return
  *   A string of HTML for the page contents.
+ *
  * @ingroup themeable
  */
 function theme_uc_checkout_pane_cart_review($variables) {

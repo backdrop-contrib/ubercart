@@ -194,6 +194,7 @@ function hook_uc_order($op, $order, $arg2) {
  *
  * @param $order
  *   An order object.
+ *
  * @return
  *   An array of specialized link arrays. Each link has the following keys:
  *   - name: The title of page being linked.
@@ -250,8 +251,8 @@ function hook_uc_order_actions($order) {
  * function should contain.
  *
  * @return
- *   An array of order pane arrays, keyed by the internal ID of the pane, with the
- *   following members:
+ *   An array of order pane arrays, keyed by the internal ID of the pane, with
+ *   the following members:
  *   - callback:
  *     - type: string
  *     - value: The name of the callback function for this pane.  View
@@ -313,6 +314,7 @@ function hook_uc_order_pane_alter(&$panes) {
  *   The order's edit form. NULL for non-edit ops.
  * @param array &$form_state
  *   The form state array of the edit form. NULL for non-edit ops.
+ *
  * @return
  *   Varies according to the value of $op:
  *   - view: A render array showing admin-visible order data.
@@ -378,6 +380,7 @@ function uc_order_pane_callback($op, $order, &$form = NULL, &$form_state = NULL)
  *   The product object as found in the $order object.
  * @param $order
  *   The order object to which the product belongs.
+ *
  * @return
  *   Nothing should be returned. Hook implementations should receive the
  *   $product object by reference and alter it directly.
