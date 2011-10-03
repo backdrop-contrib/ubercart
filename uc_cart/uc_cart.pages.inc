@@ -18,11 +18,6 @@ function uc_cart_view() {
     return MENU_NOT_FOUND;
   }
 
-  // Clear the cart order session variable if it exists.
-  if (!empty($_SESSION['cart_order'])) {
-    unset($_SESSION['cart_order']);
-  }
-
   // Load the array of shopping cart items.
   $items = uc_cart_get_contents();
 
