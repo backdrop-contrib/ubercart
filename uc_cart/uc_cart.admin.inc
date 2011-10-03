@@ -352,14 +352,6 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     ),
   );
 
-  $form['checkout']['uc_checkout_timeout'] = array(
-    '#type' => 'textfield',
-    '#size' => 20,
-    '#title' => t('Checkout expiration timeout'),
-    '#default_value' => variable_get('uc_checkout_timeout', 1200),
-    '#description' => t('The amount of time (in seconds) that can pass without user interaction before the details of an in-checkout order are cleared.')
-  );
-
   $form['instructions'] = array(
     '#type' => 'fieldset',
     '#title' => t('Instruction messages'),
