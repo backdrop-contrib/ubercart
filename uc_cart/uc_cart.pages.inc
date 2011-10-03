@@ -18,11 +18,6 @@ function uc_cart_view() {
     return MENU_NOT_FOUND;
   }
 
-  // Clear the cart order session variable if it exists.
-  if (!empty($_SESSION['cart_order'])) {
-    unset($_SESSION['cart_order']);
-  }
-
   // Load the array of shopping cart items.
   $items = uc_cart_get_contents();
 
@@ -118,21 +113,24 @@ function uc_cart_checkout_form($form, &$form_state) {
 
   // If there hasn't been activity on the checkout page for 20 minutes, clear
   // order details and prevent identity theft.
-  if (!$order || uc_order_status_data($order->order_status, 'state') != 'in_checkout' || $order->modified < REQUEST_TIME - 1200 || ($user->uid > 0 && $user->uid != $order->uid)) {
-    if (isset($_SESSION['cart_order'])) {
-      unset ($_SESSION['cart_order']);
-    }
-    $order = NULL;
+  if (!$order || uc_order_status_data($order->order_status, 'state') != 'in_checkout' || $order->modified < REQUEST_TIME - 600 || ($user->uid > 0 && $user->uid != $order->uid)) {
+    $order = uc_order_new($user->uid);
+    $_SESSION['cart_order'] = $order->order_id;
   }
-
-  if (is_null($order)) {
-    $order = new UcOrder();
-  }
+  // For existing orders, delete products so they can be refreshed from cart contents.
   else {
-    $form_state['storage']['order'] = $order;
+    db_delete('uc_order_products')
+    ->condition('order_id', $order->order_id)
+    ->execute();
   }
 
+  // Refresh the order line-items and products.
   $order->products = uc_cart_get_contents();
+  $order->line_items = uc_order_load_line_items($order);
+  $order->order_total = uc_order_get_total($order, TRUE);
+
+  // Store the order.
+  $form_state['storage']['order'] = $order;
 
   $form['#attributes']['class'][] = 'uc-cart-checkout-form';
   $form['#attached']['js'][] = drupal_get_path('module', 'uc_cart') . '/uc_cart.js';
@@ -207,13 +205,6 @@ function uc_cart_checkout_form($form, &$form_state) {
   }
   unset($form_state['expanded_panes']);
 
-  $contents = uc_cart_get_contents();
-
-  $form['cart_contents'] = array(
-    '#type' => 'hidden',
-    '#value' => serialize($contents),
-  );
-
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['cancel'] = array(
     '#type' => 'submit',
@@ -241,20 +232,10 @@ function uc_cart_checkout_form($form, &$form_state) {
 function uc_cart_checkout_form_validate($form, &$form_state) {
   global $user;
 
-  if (empty($form_state['storage']['order'])) {
-    $order = uc_order_new($user->uid);
-  }
-  else {
-    $order = $form_state['storage']['order'];
-  }
-  $_SESSION['cart_order'] = $order->order_id;
+  $order = $form_state['storage']['order'];
 
-  db_delete('uc_order_products')
-    ->condition('order_id', $order->order_id)
-    ->execute();
-  $order->products = unserialize($form_state['values']['cart_contents']);
-
-  $order->order_total = uc_order_get_total($order, TRUE);
+  // Update the order "modified" time to prevent timeout on ajax requests.
+  $order->modified = REQUEST_TIME;
 
   // Validate/process the cart panes.  A FALSE value results in failed checkout.
   $form_state['checkout_valid'] = TRUE;
@@ -268,8 +249,6 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
       }
     }
   }
-
-  $order->line_items = uc_order_load_line_items($order);
 
   $form_state['storage']['order'] = $order;
 }

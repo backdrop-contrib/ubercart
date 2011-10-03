@@ -605,7 +605,8 @@ function uc_product_kit_form(&$node, $form_state) {
 function uc_product_kit_view($node, $view_mode) {
   $node->content['display_price'] = array(
     '#theme' => 'uc_product_price',
-    '#value' => $node->sell_price,
+    '#value' => $node->display_price,
+    'suffix' => array('#markup' => $node->display_price_suffix),
     '#attributes' => array(
       'class' => array(
         'product-kit',
@@ -962,6 +963,7 @@ function uc_product_kit_uc_cart_item($op, $item) {
         $kit_discount = $kit->products[$item->nid]->discount;
         if ($kit_discount !== '') {
           $item->price += $kit_discount;
+          $item->display_price += $kit_discount;
         }
       }
     break;
@@ -1039,6 +1041,7 @@ function uc_product_kit_uc_cart_display($item) {
   else {
     if (!isset($products[$unique_id])) {
       // Initialize table row
+      $kit_qty = $item->qty / $kit->products[$item->nid]->qty;
       $element = array();
       $element['nid'] = array('#type' => 'value', '#value' => $kit->nid);
       $element['module'] = array('#type' => 'value', '#value' => 'uc_product_kit');
@@ -1046,12 +1049,13 @@ function uc_product_kit_uc_cart_display($item) {
       $element['title'] = array('#markup' => l($kit->title, 'node/' . $kit->nid));
       $element['qty'] = array(
         '#type' => 'textfield',
-        '#default_value' => $item->qty / $kit->products[$item->nid]->qty,
+        '#default_value' => $kit_qty,
         '#size' => 5,
         '#maxlength' => 6,
       );
       $element['description'] = array('#markup' => '');
-      $element['#total'] = 0;
+      $element['#total'] = $kit->display_price * $kit_qty;
+      $element['#suffix'] = $kit->display_price_suffix;
       $element['#extra'] = array();
 
       $elements[$unique_id] = $element;
@@ -1066,7 +1070,6 @@ function uc_product_kit_uc_cart_display($item) {
       );
     }
 
-    $elements[$unique_id]['#total'] += $item->price * $item->qty;
     $elements[$unique_id]['data'][$item->nid] = $item;
     $products[$unique_id][] = $item->nid;
 
@@ -1081,7 +1084,6 @@ function uc_product_kit_uc_cart_display($item) {
 
     if ($done) {
       drupal_add_css(drupal_get_path('module', 'uc_product_kit') . '/uc_product_kit.css');
-
       $elements[$unique_id]['data'] = array('#type' => 'value', '#value' => serialize($elements[$unique_id]['data']));
       if ($kit->mutable == UC_PRODUCT_KIT_UNMUTABLE_WITH_LIST) {
         $elements[$unique_id]['description']['#markup'] .= theme('item_list', array('items' => $elements[$unique_id]['#extra'], 'attributes' => array('class' => array('product-description'))));

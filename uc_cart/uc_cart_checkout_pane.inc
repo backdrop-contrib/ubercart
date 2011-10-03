@@ -484,17 +484,23 @@ function theme_uc_cart_review_table($variables) {
 
   // Set up table rows.
   foreach ($items as $item) {
-    $total = $item->price * $item->qty;
-    $subtotal += $total;
+    $display_item = module_invoke($item->module, 'uc_cart_display', $item);
+    if (!empty($display_item)) {
+      $total = $display_item['#total'];
+      $subtotal += $total;
+      $description = $display_item['title']['#markup'];
+      if (!empty($display_item['description']['#markup'])) {
+        $description .= $display_item['description']['#markup'];
+      }
+      $qty = t('@qty&times;', array('@qty' => $display_item['qty']['#default_value']));
+      $suffix = !empty($display_item['#suffix']) ? $display_item['#suffix'] : '';
 
-    $description = check_plain($item->title) . uc_product_get_description($item);
-
-    // Remove node from context to prevent the price from being altered.
-    $rows[] = array(
-      array('data' => t('@qty&times;', array('@qty' => $item->qty)), 'class' => array('qty')),
-      array('data' => $description, 'class' => array('products')),
-      array('data' => array('#theme' => 'uc_price', '#price' => $total), 'class' => array('price')),
-    );
+      $rows[] = array(
+        array('data' => $qty, 'class' => array('qty')),
+        array('data' => $description, 'class' => array('products')),
+        array('data' => array('#theme' => 'uc_price', '#price' => $total, '#suffix' => $suffix), 'class' => array('price')),
+      );
+    }
   }
 
   // Add the subtotal as the final row.
