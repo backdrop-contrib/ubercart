@@ -685,6 +685,8 @@ function uc_product_load($nodes) {
     foreach ($node as $field => $value) {
       $nodes[$node->nid]->$field = $value;
     }
+    $nodes[$node->nid]->display_price = $node->sell_price;
+    $nodes[$node->nid]->display_price_suffix = '';
   }
 }
 
@@ -708,7 +710,8 @@ function uc_product_delete(&$node) {
 function uc_product_view($node, $view_mode) {
   $node->content['display_price'] = array(
     '#theme' => 'uc_product_price',
-    '#value' => $node->sell_price,
+    '#value' => $node->display_price,
+    'suffix' => array('#markup' => $node->display_price_suffix),
     '#attributes' => array(
       'class' => array(
         'display-price',
@@ -1067,7 +1070,8 @@ function uc_product_uc_cart_display($item) {
     '#markup' => node_access('view', $node) ? l($item->title, 'node/' . $node->nid) : check_plain($item->title),
   );
 
-  $element['#total'] = $item->price * $item->qty;
+  $element['#total'] = $item->display_price * $item->qty;
+  $element['#suffix'] = $item->display_price_suffix;
   $element['data'] = array('#type' => 'hidden', '#value' => serialize($item->data));
   $element['qty'] = array(
     '#type' => 'textfield',

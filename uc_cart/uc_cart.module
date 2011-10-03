@@ -855,7 +855,6 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
 
   $i = 0;
   foreach ($items as $item) {
-    module_invoke_all('uc_cart_item', 'view', $item);
     $display_item = module_invoke($item->module, 'uc_cart_display', $item);
     if (!empty($display_item)) {
       $form['items'][$i] = $display_item;
@@ -892,6 +891,10 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
         '#theme' => 'uc_price',
         '#price' => $display_item['#total'],
       );
+      if (!empty($display_item['#suffix'])) {
+        $form['items'][$i]['total']['#suffix'] = $display_item['#suffix'];
+        unset($form['items'][$i]['#suffix']);
+      }
       $i++;
     }
   }
@@ -1287,6 +1290,8 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
       $item->data = unserialize($item->data);
       $item->module = $item->data['module'];
       $item->model = $product->model;
+      $item->display_price = $product->display_price;
+      $item->display_price_suffix = $product->display_price_suffix;
 
       // Invoke hook_uc_cart_item() with $op = 'load' in enabled modules.
       foreach (module_implements('uc_cart_item') as $module) {
