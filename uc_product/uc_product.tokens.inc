@@ -62,6 +62,7 @@ function uc_product_token_info() {
 
   $types['uc_price'] = array(
     'name' => t('Price'),
+    'description' => 'Tokens for price formats.',
     'needs-data' => 'uc_price',
   );
   $price['formatted'] = array(
@@ -75,6 +76,7 @@ function uc_product_token_info() {
 
   $types['uc_weight'] = array(
     'name' => t('Weight'),
+    'description' => 'Tokens for weight formats.',
     'needs-data' => 'uc_weight',
   );
   $weight['formatted'] = array(
@@ -92,6 +94,7 @@ function uc_product_token_info() {
 
   $types['uc_dimension'] = array(
     'name' => t('Dimension'),
+    'description' => 'Tokens for length, width, and height.',
     'needs-data' => 'uc_dimension',
   );
   $dimension['formatted'] = array(
