@@ -205,13 +205,6 @@ function uc_cart_checkout_form($form, &$form_state) {
   }
   unset($form_state['expanded_panes']);
 
-  $contents = uc_cart_get_contents();
-
-  $form['cart_contents'] = array(
-    '#type' => 'hidden',
-    '#value' => serialize($contents),
-  );
-
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['cancel'] = array(
     '#type' => 'submit',
@@ -240,13 +233,6 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
   global $user;
 
   $order = $form_state['storage']['order'];
-
-  db_delete('uc_order_products')
-    ->condition('order_id', $order->order_id)
-    ->execute();
-  $order->products = unserialize($form_state['values']['cart_contents']);
-
-  $order->order_total = uc_order_get_total($order, TRUE);
 
   // Update the order "modified" time to prevent timeout on ajax requests.
   $order->modified = REQUEST_TIME;
