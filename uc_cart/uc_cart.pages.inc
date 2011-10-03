@@ -118,7 +118,7 @@ function uc_cart_checkout_form($form, &$form_state) {
 
   // If there hasn't been activity on the checkout page for 20 minutes, clear
   // order details and prevent identity theft.
-  if (!$order || uc_order_status_data($order->order_status, 'state') != 'in_checkout' || $order->modified < REQUEST_TIME - 1200 || ($user->uid > 0 && $user->uid != $order->uid)) {
+  if (!$order || uc_order_status_data($order->order_status, 'state') != 'in_checkout' || $order->modified < REQUEST_TIME - variable_get('uc_checkout_timeout', 1200) || ($user->uid > 0 && $user->uid != $order->uid)) {
     $order = uc_order_new($user->uid);
     $_SESSION['cart_order'] = $order->order_id;
   }
