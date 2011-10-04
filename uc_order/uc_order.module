@@ -1210,6 +1210,15 @@ function uc_order_product_save($order_id, $product) {
   $key = empty($product->order_product_id) ? array() : 'order_product_id';
   // @TODO order_id should be in the object by this point.
   $product->order_id = $order_id;
+  if (empty($product->weight_units)) {
+    if (empty($product->nid)) {
+      $product->weight_units = variable_get('uc_weight_unit', 'lb');
+    }
+    else {
+      $units = db_query("SELECT weight_units FROM {node} AS n JOIN {uc_products} AS p ON n.vid = p.vid WHERE n.nid = :nid", array(':nid' => $product->nid))->fetchField();
+      $product->weight_units = empty($units) ? variable_get('uc_weight_unit', 'lb') : $units;
+    }
+  }
   return drupal_write_record('uc_order_products', $product, $key);
 }
 

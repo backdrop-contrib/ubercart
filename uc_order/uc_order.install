@@ -529,6 +529,13 @@ function uc_order_schema() {
         'not null' => TRUE,
         'default' => 0.0,
       ),
+      'weight_units' => array(
+        'description' => 'Unit of measure for the weight field.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => 'lb',
+      ),
       'data' => array(
         'description' => 'A serialized array of extra data.',
         'type' => 'text',
@@ -743,4 +750,56 @@ function uc_order_update_7003() {
     'not null' => TRUE,
     'default' => 0,
   ));
+}
+
+/**
+ * Add weight units to order products.
+ */
+function uc_order_update_7004(&$sandbox) {
+  if (!isset($sandbox['progress'])) {
+    if (db_field_exists('uc_order_products', 'weight_units')) {
+      return;
+    }
+
+    $sandbox['progress'] = 0;
+    $sandbox['current_nid'] = 0;
+    $sandbox['max'] = db_query("SELECT COUNT(DISTINCT nid) FROM {uc_products}")->fetchField();
+
+    db_add_field('uc_order_products', 'weight_units', array(
+      'description' => 'Unit of measure for the weight field.',
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => TRUE,
+      'default' => 'lb',
+    ));
+
+    db_update('uc_order_products')
+      ->fields(array('weight_units' => variable_get('uc_weight_unit', 'lb')))
+      ->condition('nid', 0)
+      ->execute();
+  }
+
+  $t = get_t();
+
+  $limit = 200;
+
+  $result = db_query_range("SELECT n.nid, n.title, p.weight_units FROM {node} AS n JOIN {uc_products} AS p ON n.vid = p.vid WHERE n.nid > :current ORDER BY n.nid", 0, $limit, array(':current' => $sandbox['current_nid']));
+
+  foreach ($result as $node) {
+    db_update('uc_order_products')
+      ->fields(array('weight_units' => $node->weight_units))
+      ->condition('nid', $node->nid)
+      ->execute();
+
+    $sandbox['progress']++;
+    $sandbox['current_nid'] = $node->nid;
+    $sandbox['message'] = $t('Copied weight units from %title.', array('%title' => $node->title));
+  }
+
+  if ($sandbox['progress'] < $sandbox['max']) {
+    $sandbox['#finished'] = min(0.99, $sandbox['progress'] / $sandbox['max']);
+  }
+  else {
+    $sandbox['#finished'] = 1;
+  }
 }

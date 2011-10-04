@@ -415,9 +415,25 @@ function uc_order_edit_products_form($form, &$form_state, $products) {
         '#size' => 6,
       );
       $form['products'][$i]['weight'] = array(
+        '#type' => 'container',
+        '#theme' => 'uc_product_inline_form',
+      );
+      $form['products'][$i]['weight']['weight'] = array(
         '#type' => 'textfield',
         '#default_value' => $products[$i]->weight,
         '#size' => 3,
+      );
+      $units = array(
+        'lb' => t('Pounds'),
+        'kg' => t('Kilograms'),
+        'oz' => t('Ounces'),
+        'g'  => t('Grams'),
+      );
+      $form['products'][$i]['weight']['weight_units'] = array(
+        '#type' => 'select',
+        '#title' => t('Units'),
+        '#default_value' => $products[$i]->weight_units,
+        '#options' => $units,
       );
       $form['products'][$i]['cost'] = array(
         '#type' => 'textfield',

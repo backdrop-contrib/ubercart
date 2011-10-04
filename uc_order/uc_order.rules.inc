@@ -433,7 +433,7 @@ function uc_order_condition_products_weight($order, $products, $weight_units, $w
   foreach ($order->products as $product) {
     $unit_conversion = uc_weight_conversion($product->weight_units, $weight_units);
     $totals['all'] += $product->qty * $product->weight * $unit_conversion;
-    $totals[$product->model] = $product->qty * $product->weight * $unit_conversion;
+    $totals[$product->nid] = $product->qty * $product->weight * $unit_conversion;
   }
   if (in_array('all', $products)) {
     $total = $totals['all'];

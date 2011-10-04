@@ -552,13 +552,15 @@ function uc_shipping_new_shipment($form, &$form_state, $order) {
   $form['order_id'] = array('#type' => 'hidden', '#value' => $order->order_id);
 
   $packages_by_type = array();
+  $units = variable_get('uc_weight_unit', 'lb');
   $result = db_query("SELECT * FROM {uc_packages} WHERE order_id = :id AND sid IS NULL", array(':id' => $order->order_id));
   foreach ($result as $package) {
     $products = array();
     $weight = 0;
-    $result2 = db_query("SELECT pp.order_product_id, pp.qty, pp.qty * op.weight AS weight, op.title, op.model FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id WHERE pp.package_id = :id", array(':id' => $package->package_id));
+    $result2 = db_query("SELECT pp.order_product_id, pp.qty, pp.qty * op.weight AS weight, op.weight_units, op.title, op.model FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id WHERE pp.package_id = :id", array(':id' => $package->package_id));
     foreach ($result2 as $product) {
-      $weight += $product->weight;
+      $units_conversion = uc_weight_conversion($product->weight_units, $units);
+      $weight += $product->weight * $units_conversion;
       $products[$product->order_product_id] = $product;
     }
     $package->weight = $weight;
@@ -591,7 +593,7 @@ function uc_shipping_new_shipment($form, &$form_state, $order) {
         $product_list[] = $product->qty . ' x ' . check_plain($product->model);
       }
       $package_row['products'] = array('#markup' => '<ul><li>' . implode('</li><li>', $product_list) . '</li></ul>');
-      $package_row['weight'] = array('#markup' => $package->weight);
+      $package_row['weight'] = array('#markup' => uc_weight_format($package->weight, $units));
       $form['shipping_types'][$shipping_type]['packages'][$package->package_id] = $package_row;
     }
 
