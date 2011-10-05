@@ -11,12 +11,6 @@
  * @ingroup forms
  */
 function uc_cart_links_settings_form($form, &$form_state) {
-  $form['instructions'] = array(
-    '#prefix' => '<p>',
-    '#markup' => t('<a href="!url">View the help page</a> to learn how to create Cart Links.', array('!url' => url('admin/help/uc_cart_links'))),
-    '#suffix' => '</p>',
-  );
-
   $form['uc_cart_links_add_show'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display the cart link product action when you add a product to your cart.'),
