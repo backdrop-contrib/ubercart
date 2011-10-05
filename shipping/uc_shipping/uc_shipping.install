@@ -380,19 +380,25 @@ function uc_shipping_update_7000(&$sandbox) {
       foreach ($packages as $package) {
         $found = TRUE;
 
-        $stat = stat($package->label_image);
-        $info = getimagesize($package->label_image);
-        $file = array(
-          'uid' => 1,
-          'filename' => basename($package->label_image),
-          'uri' => file_stream_wrapper_uri_normalize($scheme . '://' . $package->label_image),
-          'filemime' => $info['mime'],
-          'filesize' => $stat['size'],
-          'status' => FILE_STATUS_PERMANENT,
-          'timestamp' => $stat['ctime'],
-        );
+        $uri = file_stream_wrapper_uri_normalize($scheme . '://' . $package->label_image);
 
-        $fid = db_insert('file_managed')->fields($file)->execute();
+        $fid = db_query("SELECT fid FROM {file_managed} WHERE uri = :uri", array(':uri' => $uri))->fetchField();
+
+        if (!$fid) {
+          $stat = stat($package->label_image);
+          $info = getimagesize($package->label_image);
+          $file = array(
+            'uid' => 1,
+            'filename' => basename($package->label_image),
+            'uri' => $uri,
+            'filemime' => $info['mime'],
+            'filesize' => $stat['size'],
+            'status' => FILE_STATUS_PERMANENT,
+            'timestamp' => $stat['ctime'],
+          );
+
+          $fid = db_insert('file_managed')->fields($file)->execute();
+        }
 
         db_update('uc_packages')
           ->fields(array('label_image_id' => $fid))
