@@ -295,7 +295,7 @@ function uc_store_element_info() {
     '#maxlength' => 15,
     '#autocomplete_path' => FALSE,
     '#process' => array('ajax_process_form'),
-    '#element_validate' => array('uc_store_validate_uc_price'),
+    '#element_validate' => array('uc_store_validate_number'),
     '#theme' => 'textfield',
     '#theme_wrappers' => array('form_element'),
     '#field_prefix' => $sign_flag ? '' : $currency_sign,
@@ -483,18 +483,16 @@ function form_type_uc_price_value($element, $input = FALSE) {
 }
 
 /**
- * Form element validation handler for #type 'uc_price'.
+ * Generic form element validation handler for numbers.
  */
-function uc_store_validate_uc_price(&$element, &$form_state) {
-  if (!empty($element['#value'])) {
-    if (!empty($element['#allow_negative'])) {
-      $pattern = '/^-?\d*(\.\d*)?$/';
+function uc_store_validate_number(&$element, &$form_state) {
+  $value = $element['#value'];
+  if ($value != '') {
+    if (!is_numeric($value)) {
+      form_error($element, t('%name must be a number.', array('%name' => $element['#title'])));
     }
-    else {
-      $pattern = '/^\d*(\.\d*)?$/';
-    }
-    if (!preg_match($pattern, $element['#value'])) {
-      form_error($element, t('The price must contain only numbers and an optional decimal point.'));
+    elseif (empty($element['#allow_negative']) && $value < 0) {
+      form_error($element, t('%name must not be negative.', array('%name' => $element['#title'])));
     }
   }
 }
@@ -508,21 +506,6 @@ function uc_store_validate_uc_quantity(&$element, &$form_state) {
   }
   elseif (empty($element['#allow_zero']) && !$element['#value']) {
     form_error($element, t('The quantity cannot be zero.'));
-  }
-}
-
-/**
- * Form element validation handler for non-negative numbers.
- */
-function uc_store_validate_number_not_negative(&$element, &$form_state) {
-  $value = $element['#value'];
-  if ($value != '') {
-    if (!is_numeric($value)) {
-      form_error($element, t('%name must be a number.', array('%name' => $element['#title'])));
-    }
-    elseif ($value < 0) {
-      form_error($element, t('%name must not be negative.', array('%name' => $element['#title'])));
-    }
   }
 }
 
