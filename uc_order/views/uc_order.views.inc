@@ -585,7 +585,9 @@ function uc_order_views_data() {
     ),
   );
 
-  $data['uc_order_comments']['table']['group'] = t('Ubercart order comments');
+  // Order comments table.
+  // TODO: refactor this into a groupwise max relationship.
+  $data['uc_order_comments']['table']['group'] = t('Order comments');
   $data['uc_order_comments']['table']['join'] = array(
     'uc_orders' => array(
       'left_field' => 'order_id',
@@ -599,7 +601,7 @@ function uc_order_views_data() {
   );
 
   $data['uc_order_comments']['message'] = array(
-    'title' => t('Order Comments'),
+    'title' => t('Comment'),
     'help' => t('The comment body.'),
     'field' => array(
       'handler' => 'views_handler_field',
