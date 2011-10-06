@@ -467,7 +467,7 @@ function uc_order_views_data() {
   }
 
   // Ordered products.
-  $data['uc_order_products']['table']['group'] = t('Order product');
+  $data['uc_order_products']['table']['group'] = t('Ordered product');
 
   // Pull in node fields directly.
   $data['node']['table']['join']['uc_order_products'] = array(
@@ -508,7 +508,7 @@ function uc_order_views_data() {
 
   $data['uc_order_products']['qty'] = array(
     'title' => t('Qty'),
-    'help' => t('The number of the products ordered.'),
+    'help' => t('The quantity ordered.'),
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -520,9 +520,10 @@ function uc_order_views_data() {
       'handler' => 'views_handler_filter_numeric',
     ),
   );
+
   $data['uc_order_products']['price'] = array(
     'title' => t('Price'),
-    'help' => t('The price paid for the ordered product.'),
+    'help' => t('The price paid for one product.'),
     'field' => array(
       'handler' => 'uc_order_handler_field_money_amount',
       'click sortable' => TRUE,
@@ -535,9 +536,10 @@ function uc_order_views_data() {
       'handler' => 'views_handler_filter_numeric',
     ),
   );
+
   $data['uc_order_products']['cost'] = array(
     'title' => t('Cost'),
-    'help' => t('The cost to the store for the product.'),
+    'help' => t('The cost to the store for one product.'),
     'field' => array(
       'handler' => 'uc_order_handler_field_money_amount',
       'click sortable' => TRUE,
@@ -550,40 +552,24 @@ function uc_order_views_data() {
       'handler' => 'views_handler_filter_numeric',
     ),
   );
+
   $data['uc_order_products']['weight'] = array(
     'title' => t('Weight'),
-    'help' => t('The physical weight.'),
+    'help' => t('The physical weight of one product.'),
     'field' => array(
       'additional fields' => array(
         'weight_units' => array(
-          'table' => 'uc_products',
           'field' => 'weight_units',
         ),
       ),
       'handler' => 'uc_product_handler_field_weight',
-      'click sortable' => TRUE,
       'float' => TRUE,
     ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_numeric',
-    ),
   );
-  $data['uc_order_products']['nid'] = array(
-    'title' => t('Product nid'),
-    'help' => t('The node of the ordered product'),
-    'relationship' => array(
-      'base' => 'node',
-      'field' => 'nid',
-      'handler' => 'views_handler_relationship',
-      'title' => t('Product node'),
-    ),
-  );
+
   $data['uc_order_products']['title'] = array(
-    'title' => t('Product title'),
-    'help' => t('The product title.'),
+    'title' => t('Title'),
+    'help' => t('The title of the product.'),
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -596,14 +582,6 @@ function uc_order_views_data() {
     ),
     'argument' => array(
       'handler' => 'views_handler_argument_string',
-    ),
-  );
-
-  $data['uc_order_products']['data'] = array(
-    'title' => t('Product attributes'),
-    'help' => t('Filter by the value of a purchased products selected attributes.'),
-    'filter' => array(
-      'handler' => 'views_handler_filter_in_operator',
     ),
   );
 
