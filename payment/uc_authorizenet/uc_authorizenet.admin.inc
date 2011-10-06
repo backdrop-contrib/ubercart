@@ -74,7 +74,7 @@ function uc_authorizenet_arb_admin_update_form_submit($form, &$form_state) {
 }
 
 /**
- * Displays a confirm form for cancelling a subscription.
+ * Displays a confirm form for canceling a subscription.
  *
  * @see uc_authorizenet_arb_admin_cancel_form_submit()
  * @ingroup forms
@@ -100,7 +100,7 @@ function uc_authorizenet_arb_admin_cancel_form_submit($form, &$form_state) {
 
   // If the cancellation was successful...
   if ($result) {
-    drupal_set_message(t('Subscription cancelled through Authorize.Net.'));
+    drupal_set_message(t('Subscription canceled through Authorize.Net.'));
 
     // Set the fee's recurring charges to 0.
     uc_recurring_fee_cancel($fee['rfid']);

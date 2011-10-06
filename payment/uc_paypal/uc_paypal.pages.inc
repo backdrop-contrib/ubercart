@@ -113,7 +113,7 @@ function uc_paypal_ipn() {
 
     switch ($payment_status) {
       case 'Canceled_Reversal':
-        uc_order_comment_save($order_id, 0, t('PayPal has cancelled the reversal and returned !amount !currency to your account.', array('!amount' => uc_currency_format($payment_amount, FALSE), '!currency' => $payment_currency)), 'admin');
+        uc_order_comment_save($order_id, 0, t('PayPal has canceled the reversal and returned !amount !currency to your account.', array('!amount' => uc_currency_format($payment_amount, FALSE), '!currency' => $payment_currency)), 'admin');
         break;
 
       case 'Completed':
@@ -470,7 +470,7 @@ function uc_paypal_complete($order) {
 function uc_paypal_cancel() {
   unset($_SESSION['cart_order']);
 
-  drupal_set_message(t('Your PayPal payment was cancelled. Please feel free to continue shopping or contact us for assistance.'));
+  drupal_set_message(t('Your PayPal payment was canceled. Please feel free to continue shopping or contact us for assistance.'));
 
   drupal_goto(variable_get('uc_paypal_wps_cancel_return_url', 'cart'));
 }

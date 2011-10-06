@@ -281,7 +281,7 @@ function uc_cart_checkout_form_submit($form, &$form_state) {
  */
 function uc_cart_checkout_form_cancel($form, &$form_state) {
   if (isset($_SESSION['cart_order']) && intval($_SESSION['cart_order']) > 0) {
-    uc_order_comment_save($_SESSION['cart_order'], 0, t('Customer cancelled this order from the checkout form.'));
+    uc_order_comment_save($_SESSION['cart_order'], 0, t('Customer canceled this order from the checkout form.'));
     unset($_SESSION['cart_order']);
   }
 
