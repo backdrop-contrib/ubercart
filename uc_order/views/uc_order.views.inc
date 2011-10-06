@@ -466,20 +466,26 @@ function uc_order_views_data() {
     );
   }
 
-  //Make the uc_order_products table visible for Views module
+  // Ordered products.
   $data['uc_order_products']['table']['group'] = t('Order product');
 
-  $data['uc_order_products']['table']['join']['uc_orders'] = array(
-    'left_field' => 'order_id',
-    'field' => 'order_id',
-  );
-  $data['uc_order_products']['table']['join']['node'] = array(
-    'left_field' => 'nid',
-    'field' => 'nid',
-  );
+  // Pull in node fields directly.
   $data['node']['table']['join']['uc_order_products'] = array(
     'left_field' => 'nid',
     'field' => 'nid',
+  );
+
+  // Expose products to their orders as a relationship.
+  $data['uc_orders']['products'] = array(
+    'relationship' => array(
+      'title' => t('Products'),
+      'help' => t('Relate products to an order. This relationship will create one record for each product ordered.'),
+      'handler' => 'views_handler_relationship',
+      'base' => 'uc_order_products',
+      'base field' => 'order_id',
+      'relationship field' => 'order_id',
+      'label' => t('products'),
+    ),
   );
 
   $data['uc_order_products']['model'] = array(
@@ -598,32 +604,6 @@ function uc_order_views_data() {
     'help' => t('Filter by the value of a purchased products selected attributes.'),
     'filter' => array(
       'handler' => 'views_handler_filter_in_operator',
-    ),
-  );
-
-  $data['node']['table']['join']['uc_orders'] = array(
-    'left_table' => 'uc_order_products',
-    'left_field' => 'nid',
-    'field' => 'nid',
-  );
-
-  $data['term_node']['table']['join'] = array(
-    'uc_orders' => array(
-      'left_table' => 'uc_order_products',
-      'left_field' => 'nid',
-      'field' => 'nid',
-    ),
-  );
-
-  $data['uc_orders']['table']['join'] = array(
-    'node' => array(
-      'left_table' => 'uc_order_products',
-      'left_field' => 'order_id',
-      'field' => 'order_id',
-    ),
-    'uc_order_products' => array(
-      'left_field' => 'order_id',
-      'field' => 'order_id',
     ),
   );
 
