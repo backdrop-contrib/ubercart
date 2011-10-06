@@ -5,31 +5,28 @@
  * Views hooks and callback registries.
  */
 
-define('UC_PAYER_PREFIX', "Payer's");
-define('UC_RECIPIENT_PREFIX', "Recipient's");
-
 /**
  * Implements hook_views_data().
  */
 function uc_order_views_data() {
-  // Make the uc_orders table visible for Views module
+  // Orders table.
   $data['uc_orders']['table']['group'] = t('Order');
-
   $data['uc_orders']['table']['base'] = array(
     'field' => 'order_id',
     'title' => t('Orders'),
     'help' => t('Orders placed in your Ubercart store.'),
   );
 
+  // Pull in user fields directly.
   $data['users']['table']['join']['uc_orders'] = array(
     'left_field' => 'uid',
     'field' => 'uid',
   );
 
-  // Optionally link to order and allow order_id as argument
+  // Order ID field.
   $data['uc_orders']['order_id'] = array(
     'title' => t('Order ID'),
-    'help' => t('Primary key: the order ID.'),
+    'help' => t('The order ID.'),
     'field' => array(
       'handler' => 'uc_order_handler_field_order_id',
       'click sortable' => TRUE,
@@ -40,7 +37,6 @@ function uc_order_views_data() {
     'filter' => array(
       'handler' => 'views_handler_filter_numeric',
     ),
-    // Information for accepting an order id as an argument
     'argument' => array(
       'handler' => 'views_handler_argument_numeric',
       'name field' => 'title',
@@ -56,7 +52,7 @@ function uc_order_views_data() {
     ),
   );
   $data['uc_orders']['order_status'] = array(
-    'title' => t('Order Status'),
+    'title' => t('Order status'),
     'help' => t('The order status.'),
     'field' => array(
       'handler' => 'uc_order_handler_field_order_status',
@@ -73,20 +69,21 @@ function uc_order_views_data() {
     ),
   );
 
+  // Expose the uid as a relationship.
   $data['uc_orders']['uid'] = array(
-    'title' => t('User ID'),
-    'help' => t('The customer that placed the order.'),
+    'title' => t('Customer'),
+    'help' => t('Relate an order to the user who placed it.'),
     'relationship' => array(
       'base' => 'users',
       'field' => 'uid',
       'handler' => 'views_handler_relationship',
-      'label' => t('Order User'),
+      'label' => t('order user'),
     ),
   );
 
   // Changed field handler to display as a price
   $data['uc_orders']['order_total'] = array(
-    'title' => t('Order Total'),
+    'title' => t('Order total'),
     'help' => t('The total amount to be paid for the order.'),
     'field' => array(
       'handler' => 'uc_order_handler_field_money_amount',
@@ -106,13 +103,12 @@ function uc_order_views_data() {
     'help' => t('The total cost of the products in the order.'),
     'field' => array(
       'handler' => 'uc_order_handler_field_order_cost',
-      //'click sortable' => TRUE,
       'float' => TRUE,
     ),
   );
 
   $data['uc_orders']['payment_method'] = array(
-    'title' => t('Payment Method'),
+    'title' => t('Payment method'),
     'help' => t('The method of payment.'),
     'field' => array(
       'handler' => 'views_handler_field',
@@ -127,8 +123,8 @@ function uc_order_views_data() {
   );
 
   $data['uc_orders']['cc_type'] = array(
-    'title' => t('Credit Card Type'),
-    'help' => t('Credit card type used if the payment method was credit.'),
+    'title' => t('Credit card type'),
+    'help' => t('Credit card type used, if the payment method was credit.'),
     'real field' => 'data',
     'field' => array(
       'handler' => 'uc_order_handler_field_order_cc_data',
@@ -137,8 +133,8 @@ function uc_order_views_data() {
   );
 
   $data['uc_orders']['cc_number'] = array(
-    'title' => t('Credit Card Number'),
-    'help' => t('Credit card number (last 4) used if the payment method was credit.'),
+    'title' => t('Credit card number'),
+    'help' => t('Credit card number (last 4) used, if the payment method was credit.'),
     'real field' => 'data',
     'field' => array(
       'handler' => 'uc_order_handler_field_order_cc_data',
@@ -148,7 +144,7 @@ function uc_order_views_data() {
 
   $data['uc_orders']['product_count'] = array(
     'title' => t('Product count'),
-    'help' => t('The total product quantity of the order.'),
+    'help' => t('The total number of products in the order.'),
     'field' => array(
       'handler' => 'views_handler_field_numeric',
       'click sortable' => TRUE,
@@ -162,8 +158,8 @@ function uc_order_views_data() {
   );
 
   $data['uc_orders']['created'] = array(
-    'title' => t('Creation Date'),
-    'help' => t('The time the order was created.'),
+    'title' => t('Creation date'),
+    'help' => t('The date and time the order was created.'),
     'field' => array(
       'handler' => 'views_handler_field_date',
       'click sortable' => TRUE,
@@ -181,7 +177,7 @@ function uc_order_views_data() {
   }
 
   $data['uc_orders']['modified'] = array(
-    'title' => t('Modification Date'),
+    'title' => t('Last modified'),
     'help' => t('The time the order was last modified.'),
     'field' => array(
       'handler' => 'views_handler_field_date',
@@ -223,25 +219,30 @@ function uc_order_views_data() {
     ),
   );
 
-  $string_fields = array(
-    'first_name' => 'first name',
-    'last_name' => 'last name',
-    'phone' => 'phone number',
-    'company' => 'company',
-    'street1' => 'address line 1',
-    'street2' => 'address line 2',
-    'city' => 'city',
-    'postal_code' => 'zip/postal code',
+  $addresses = array(
+    'billing' => t('Billing address'),
+    'delivery' => t('Delivery address'),
   );
 
-  foreach (array('delivery', 'billing') as $prefix) {
-    $args = array(
-      '!titleprefix' => ($prefix == 'delivery' ? UC_RECIPIENT_PREFIX : UC_PAYER_PREFIX),
-    );
-    foreach ($string_fields as $field => $suffix) {
+  $fields = array(
+    'first_name' => t('First name'),
+    'last_name' => t('Last name'),
+    'phone' => t('Phone number'),
+    'company' => t('Company'),
+    'street1' => t('Street address 1'),
+    'street2' => t('Street address 2'),
+    'city' => t('City'),
+    'postal_code' => t('Postal code'),
+  );
+
+  foreach ($addresses as $prefix => $address) {
+    $group = t('Order') . ': ' . $address;
+
+    foreach ($fields as $field => $label) {
       $data['uc_orders'][$prefix . '_' . $field] = array(
-        'title' => t('!titleprefix !titlesuffix', $args + array('!titlesuffix' => $suffix)),
-        'help' => t('Part of the !titleprefix address.', $args),
+        'group' => $group,
+        'title' => $label,
+        'help' => t('The !field of the !address of the order.', array('!field' => strtolower($label), '!address' => strtolower($address))),
         'field' => array(
           'handler' => 'views_handler_field',
           'click sortable' => TRUE,
@@ -256,8 +257,9 @@ function uc_order_views_data() {
     }
 
     $data['uc_orders'][$prefix . '_full_name'] = array(
-      'title' => t('!titleprefix full name', $args),
-      'help' => $prefix == 'delivery' ? t('The full name (first and last) of the person receiving shipment.') : t('The full name (first and last) of the person paying for the order.'),
+      'group' => $group,
+      'title' => t('Full name'),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('full name'), '!address' => strtolower($address))),
       'field' => array(
         'additional fields' => array(
           $prefix . '_first_name',
@@ -273,53 +275,16 @@ function uc_order_views_data() {
         'handler' => 'views_handler_filter_string',
       ),
     );
-  }
 
-  $country_views = array(
-    'billing_countries' => array(
-      'field' => 'billing_country',
-      'prefix' => UC_PAYER_PREFIX,
-    ),
-    'delivery_countries' => array(
-      'field' => 'delivery_country',
-      'prefix' => UC_RECIPIENT_PREFIX,
-    ),
-  );
-
-  foreach ($country_views as $key => $value) {
-    $data['uc_orders'][$value['field']] = array(
-      'title' => t('@prefix country', array('@prefix' => $value['prefix'])),
-      'help' => t('Relate orders to @field', array('@field' => str_replace('_', ' ', $value['field']))),
-      'filter' => array(
-        'handler' => 'uc_order_handler_filter_country',
-      ),
-      'relationship' => array(
-        'handler' => 'views_handler_relationship',
-        'base' => 'uc_countries',
-        'relationship table' => $key,
-        'field' => 'country_id',
-        'label' => t('@prefix country', array('@prefix' => $value['prefix'])),
-      ),
-    );
-
-    $data[$key]['table']['group'] = t('Ubercart order');
-
-    $data[$key]['table']['join']['uc_orders'] = array(
+    $data[$prefix . '_countries']['table']['group'] = $group;
+    $data[$prefix . '_countries']['table']['join']['uc_orders'] = array(
       'table' => 'uc_countries',
-      'left_field' => $value['field'],
+      'left_field' => $prefix . '_country',
       'field' => 'country_id',
     );
-    // Join to the uc_order_products, if used as base, via uc_orders
-    $data[$key]['table']['join']['uc_order_products'] = $data[$key]['table']['join']['uc_orders'];
-    $data[$key]['table']['join']['uc_order_products']['left_table'] = 'uc_orders';
-
-    $data[$key]['country_id'] = array(
-      'title' => t('@prefix country', array('@prefix' => $value['prefix'])),
-      'help' => t('Numeric ISO code for the @prefix country.', array('@prefix' => $value['prefix'])),
-      'field' => array(
-        'handler' => 'views_handler_field_numeric',
-        'click sortable' => TRUE,
-      ),
+    $data[$prefix . '_countries']['country_id'] = array(
+      'title' => t('ISO country code (numeric)'),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('numeric ISO country code'), '!address' => strtolower($address))),
       'argument' => array(
         'handler' => 'views_handler_argument_numeric',
         'name field' => 'country_iso_code_2',
@@ -329,13 +294,10 @@ function uc_order_views_data() {
       'filter' => array(
         'handler' => 'views_handler_filter_numeric',
       ),
-      'sort' => array(
-        'handler' => 'views_handler_sort',
-      ),
     );
-    $data[$key]['country_name'] = array(
-      'title' => t('@persons country name', array('@persons' => $value['prefix'])),
-      'help' => t('Name of the @persons country.', array('@persons' => $value['prefix'])),
+    $data[$prefix . '_countries']['country_name'] = array(
+      'title' => t('Country'),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('country name'), '!address' => strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -347,9 +309,9 @@ function uc_order_views_data() {
         'handler' => 'views_handler_filter_string',
       ),
     );
-    $data[$key]['country_iso_code_2'] = array(
-      'title' => t('@persons country ISO code (2 characters)', array('@persons' => $value['prefix'])),
-      'help' => t('The two-character ISO country code.'),
+    $data[$prefix . '_countries']['country_iso_code_2'] = array(
+      'title' => t('ISO country code (2 characters)'),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('ISO country code'), '!address' => strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -361,9 +323,9 @@ function uc_order_views_data() {
         'handler' => 'views_handler_filter_string',
       ),
     );
-    $data[$key]['country_iso_code_3'] = array(
-      'title' => t('@persons country ISO code (3 characters)', array('@persons' => $value['prefix'])),
-      'help' => t('The three-character ISO country code.'),
+    $data[$prefix . '_countries']['country_iso_code_3'] = array(
+      'title' => t('ISO country code (3 characters)'),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('ISO country code'), '!address' => strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -375,73 +337,16 @@ function uc_order_views_data() {
         'handler' => 'views_handler_filter_string',
       ),
     );
-  }
 
-  $zone_views = array(
-    'billing_zones' => array(
-      'field' => 'billing_zone',
-      'prefix' => UC_PAYER_PREFIX,
-    ),
-    'delivery_zones' => array(
-      'field' => 'delivery_zone',
-      'prefix' => UC_RECIPIENT_PREFIX,
-    ),
-  );
-
-  foreach ($zone_views as $key => $value) {
-    $data['uc_orders'][$value['field']] = array(
-      'title' => t('@prefix zone', array('@prefix' => $value['prefix'])),
-      'help' => t('Relate orders to @field.', array('@field' => str_replace('_', ' ', $value['field']))),
-      'filter' => array(
-        'handler' => 'uc_order_handler_filter_zone',
-      ),
-      'relationship' => array(
-        'handler' => 'views_handler_relationship',
-        'base' => 'uc_zones',
-        'relationship table' => $key,
-        'field' => 'zone_id',
-        'label' => t('@persons zone', array('@persons' => $value['prefix'])),
-      ),
-    );
-
-    $data[$key]['table']['group'] = t('Ubercart order');
-
-    $data[$key]['table']['join']['uc_orders'] = array(
+    $data[$prefix . '_zones']['table']['group'] = $group;
+    $data[$prefix . '_zones']['table']['join']['uc_orders'] = array(
       'table' => 'uc_zones',
-      'left_field' => $value['field'],
+      'left_field' => $prefix . '_zone',
       'field' => 'zone_id',
     );
-
-    // join to the uc_order_products, if used as base, via uc_orders
-    $data[$key]['table']['join']['uc_order_products'] = $data[$key]['table']['join']['uc_orders'];
-    $data[$key]['table']['join']['uc_order_products']['left_table'] = 'uc_orders';
-
-    $data[$key]['zone_id'] = array(
-      'title' => t('@persons zone id', array('@persons' => $value['prefix'])),
-      'help' => t('The zone ID.'),
-      'field' => array(
-        'handler' => 'views_handler_field_numeric',
-        'click sortable' => TRUE,
-      ),
-      // Information for accepting an order id as an argument
-      'argument' => array(
-        'handler' => 'views_handler_argument_numeric',
-        'name field' => 'zone_code',
-        'numeric' => TRUE,
-        'validate type' => 'zone_id',
-      ),
-      // Information for accepting an order id as a filter
-      'filter' => array(
-        'handler' => 'views_handler_filter_numeric',
-      ),
-      // Information for sorting on an order id.
-      'sort' => array(
-        'handler' => 'views_handler_sort',
-      ),
-    );
-    $data[$key]['zone_name'] = array(
-      'title' => t('@persons zone name', array('@persons' => $value['prefix'])),
-      'help' => t('The zone name.'),
+    $data[$prefix . '_zones']['zone_name'] = array(
+      'title' => t('State/Province'),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('state or province'), '!address' => strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -453,10 +358,9 @@ function uc_order_views_data() {
         'handler' => 'views_handler_filter_string',
       ),
     );
-
-    $data[$key]['zone_code'] = array(
-      'title' => t('@persons zone code', array('@persons' => $value['prefix'])),
-      'help' => t('Standard abbreviation of the zone name.'),
+    $data[$prefix . '_zones']['zone_code'] = array(
+      'title' => t('State/Province code'),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('state or province code'), '!address' => strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -470,20 +374,26 @@ function uc_order_views_data() {
     );
   }
 
-  //Make the uc_order_products table visible for Views module
-  $data['uc_order_products']['table']['group'] = t('Order product');
+  // Ordered products.
+  $data['uc_order_products']['table']['group'] = t('Ordered product');
 
-  $data['uc_order_products']['table']['join']['uc_orders'] = array(
-    'left_field' => 'order_id',
-    'field' => 'order_id',
-  );
-  $data['uc_order_products']['table']['join']['node'] = array(
-    'left_field' => 'nid',
-    'field' => 'nid',
-  );
+  // Pull in node fields directly.
   $data['node']['table']['join']['uc_order_products'] = array(
     'left_field' => 'nid',
     'field' => 'nid',
+  );
+
+  // Expose products to their orders as a relationship.
+  $data['uc_orders']['products'] = array(
+    'relationship' => array(
+      'title' => t('Products'),
+      'help' => t('Relate products to an order. This relationship will create one record for each product ordered.'),
+      'handler' => 'views_handler_relationship',
+      'base' => 'uc_order_products',
+      'base field' => 'order_id',
+      'relationship field' => 'order_id',
+      'label' => t('products'),
+    ),
   );
 
   $data['uc_order_products']['model'] = array(
@@ -506,7 +416,7 @@ function uc_order_views_data() {
 
   $data['uc_order_products']['qty'] = array(
     'title' => t('Qty'),
-    'help' => t('The number of the products ordered.'),
+    'help' => t('The quantity ordered.'),
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -518,9 +428,10 @@ function uc_order_views_data() {
       'handler' => 'views_handler_filter_numeric',
     ),
   );
+
   $data['uc_order_products']['price'] = array(
     'title' => t('Price'),
-    'help' => t('The price paid for the ordered product.'),
+    'help' => t('The price paid for one product.'),
     'field' => array(
       'handler' => 'uc_order_handler_field_money_amount',
       'click sortable' => TRUE,
@@ -533,9 +444,10 @@ function uc_order_views_data() {
       'handler' => 'views_handler_filter_numeric',
     ),
   );
+
   $data['uc_order_products']['cost'] = array(
     'title' => t('Cost'),
-    'help' => t('The cost to the store for the product.'),
+    'help' => t('The cost to the store for one product.'),
     'field' => array(
       'handler' => 'uc_order_handler_field_money_amount',
       'click sortable' => TRUE,
@@ -548,40 +460,24 @@ function uc_order_views_data() {
       'handler' => 'views_handler_filter_numeric',
     ),
   );
+
   $data['uc_order_products']['weight'] = array(
     'title' => t('Weight'),
-    'help' => t('The physical weight.'),
+    'help' => t('The physical weight of one product.'),
     'field' => array(
       'additional fields' => array(
         'weight_units' => array(
-          'table' => 'uc_products',
           'field' => 'weight_units',
         ),
       ),
       'handler' => 'uc_product_handler_field_weight',
-      'click sortable' => TRUE,
       'float' => TRUE,
     ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_numeric',
-    ),
   );
-  $data['uc_order_products']['nid'] = array(
-    'title' => t('Product nid'),
-    'help' => t('The node of the ordered product'),
-    'relationship' => array(
-      'base' => 'node',
-      'field' => 'nid',
-      'handler' => 'views_handler_relationship',
-      'title' => t('Product node'),
-    ),
-  );
+
   $data['uc_order_products']['title'] = array(
-    'title' => t('Product title'),
-    'help' => t('The product title.'),
+    'title' => t('Title'),
+    'help' => t('The title of the product.'),
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -597,41 +493,9 @@ function uc_order_views_data() {
     ),
   );
 
-  $data['uc_order_products']['data'] = array(
-    'title' => t('Product attributes'),
-    'help' => t('Filter by the value of a purchased products selected attributes.'),
-    'filter' => array(
-      'handler' => 'views_handler_filter_in_operator',
-    ),
-  );
-
-  $data['node']['table']['join']['uc_orders'] = array(
-    'left_table' => 'uc_order_products',
-    'left_field' => 'nid',
-    'field' => 'nid',
-  );
-
-  $data['term_node']['table']['join'] = array(
-    'uc_orders' => array(
-      'left_table' => 'uc_order_products',
-      'left_field' => 'nid',
-      'field' => 'nid',
-    ),
-  );
-
-  $data['uc_orders']['table']['join'] = array(
-    'node' => array(
-      'left_table' => 'uc_order_products',
-      'left_field' => 'order_id',
-      'field' => 'order_id',
-    ),
-    'uc_order_products' => array(
-      'left_field' => 'order_id',
-      'field' => 'order_id',
-    ),
-  );
-
-  $data['uc_order_comments']['table']['group'] = t('Ubercart order comments');
+  // Order comments table.
+  // TODO: refactor this into a groupwise max relationship.
+  $data['uc_order_comments']['table']['group'] = t('Order comments');
   $data['uc_order_comments']['table']['join'] = array(
     'uc_orders' => array(
       'left_field' => 'order_id',
@@ -645,7 +509,7 @@ function uc_order_views_data() {
   );
 
   $data['uc_order_comments']['message'] = array(
-    'title' => t('Order Comments'),
+    'title' => t('Comment'),
     'help' => t('The comment body.'),
     'field' => array(
       'handler' => 'views_handler_field',
