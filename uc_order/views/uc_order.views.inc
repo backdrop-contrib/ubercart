@@ -9,24 +9,24 @@
  * Implements hook_views_data().
  */
 function uc_order_views_data() {
-  // Make the uc_orders table visible for Views module
+  // Orders table.
   $data['uc_orders']['table']['group'] = t('Order');
-
   $data['uc_orders']['table']['base'] = array(
     'field' => 'order_id',
     'title' => t('Orders'),
     'help' => t('Orders placed in your Ubercart store.'),
   );
 
+  // Pull in user fields directly.
   $data['users']['table']['join']['uc_orders'] = array(
     'left_field' => 'uid',
     'field' => 'uid',
   );
 
-  // Optionally link to order and allow order_id as argument
+  // Order ID field.
   $data['uc_orders']['order_id'] = array(
     'title' => t('Order ID'),
-    'help' => t('Primary key: the order ID.'),
+    'help' => t('The order ID.'),
     'field' => array(
       'handler' => 'uc_order_handler_field_order_id',
       'click sortable' => TRUE,
@@ -37,7 +37,6 @@ function uc_order_views_data() {
     'filter' => array(
       'handler' => 'views_handler_filter_numeric',
     ),
-    // Information for accepting an order id as an argument
     'argument' => array(
       'handler' => 'views_handler_argument_numeric',
       'name field' => 'title',
@@ -53,7 +52,7 @@ function uc_order_views_data() {
     ),
   );
   $data['uc_orders']['order_status'] = array(
-    'title' => t('Order Status'),
+    'title' => t('Order status'),
     'help' => t('The order status.'),
     'field' => array(
       'handler' => 'uc_order_handler_field_order_status',
@@ -70,20 +69,21 @@ function uc_order_views_data() {
     ),
   );
 
+  // Expose the uid as a relationship.
   $data['uc_orders']['uid'] = array(
-    'title' => t('User ID'),
-    'help' => t('The customer that placed the order.'),
+    'title' => t('Customer'),
+    'help' => t('Relate an order to the user who placed it.'),
     'relationship' => array(
       'base' => 'users',
       'field' => 'uid',
       'handler' => 'views_handler_relationship',
-      'label' => t('Order User'),
+      'label' => t('order user'),
     ),
   );
 
   // Changed field handler to display as a price
   $data['uc_orders']['order_total'] = array(
-    'title' => t('Order Total'),
+    'title' => t('Order total'),
     'help' => t('The total amount to be paid for the order.'),
     'field' => array(
       'handler' => 'uc_order_handler_field_money_amount',
@@ -103,13 +103,12 @@ function uc_order_views_data() {
     'help' => t('The total cost of the products in the order.'),
     'field' => array(
       'handler' => 'uc_order_handler_field_order_cost',
-      //'click sortable' => TRUE,
       'float' => TRUE,
     ),
   );
 
   $data['uc_orders']['payment_method'] = array(
-    'title' => t('Payment Method'),
+    'title' => t('Payment method'),
     'help' => t('The method of payment.'),
     'field' => array(
       'handler' => 'views_handler_field',
@@ -124,8 +123,8 @@ function uc_order_views_data() {
   );
 
   $data['uc_orders']['cc_type'] = array(
-    'title' => t('Credit Card Type'),
-    'help' => t('Credit card type used if the payment method was credit.'),
+    'title' => t('Credit card type'),
+    'help' => t('Credit card type used, if the payment method was credit.'),
     'real field' => 'data',
     'field' => array(
       'handler' => 'uc_order_handler_field_order_cc_data',
@@ -134,8 +133,8 @@ function uc_order_views_data() {
   );
 
   $data['uc_orders']['cc_number'] = array(
-    'title' => t('Credit Card Number'),
-    'help' => t('Credit card number (last 4) used if the payment method was credit.'),
+    'title' => t('Credit card number'),
+    'help' => t('Credit card number (last 4) used, if the payment method was credit.'),
     'real field' => 'data',
     'field' => array(
       'handler' => 'uc_order_handler_field_order_cc_data',
@@ -145,7 +144,7 @@ function uc_order_views_data() {
 
   $data['uc_orders']['product_count'] = array(
     'title' => t('Product count'),
-    'help' => t('The total product quantity of the order.'),
+    'help' => t('The total number of products in the order.'),
     'field' => array(
       'handler' => 'views_handler_field_numeric',
       'click sortable' => TRUE,
@@ -159,8 +158,8 @@ function uc_order_views_data() {
   );
 
   $data['uc_orders']['created'] = array(
-    'title' => t('Creation Date'),
-    'help' => t('The time the order was created.'),
+    'title' => t('Creation date'),
+    'help' => t('The date and time the order was created.'),
     'field' => array(
       'handler' => 'views_handler_field_date',
       'click sortable' => TRUE,
@@ -178,7 +177,7 @@ function uc_order_views_data() {
   }
 
   $data['uc_orders']['modified'] = array(
-    'title' => t('Modification Date'),
+    'title' => t('Last modified'),
     'help' => t('The time the order was last modified.'),
     'field' => array(
       'handler' => 'views_handler_field_date',
