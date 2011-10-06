@@ -5,9 +5,6 @@
  * Views hooks and callback registries.
  */
 
-define('UC_PAYER_PREFIX', "Payer's");
-define('UC_RECIPIENT_PREFIX', "Recipient's");
-
 /**
  * Implements hook_views_data().
  */
@@ -236,7 +233,7 @@ function uc_order_views_data() {
 
   foreach (array('delivery', 'billing') as $prefix) {
     $args = array(
-      '!titleprefix' => ($prefix == 'delivery' ? UC_RECIPIENT_PREFIX : UC_PAYER_PREFIX),
+      '!titleprefix' => ($prefix == 'delivery' ? t('Delivery') : t('Billing')),
     );
     foreach ($string_fields as $field => $suffix) {
       $data['uc_orders'][$prefix . '_' . $field] = array(
@@ -278,11 +275,11 @@ function uc_order_views_data() {
   $country_views = array(
     'billing_countries' => array(
       'field' => 'billing_country',
-      'prefix' => UC_PAYER_PREFIX,
+      'prefix' => t('Billing'),
     ),
     'delivery_countries' => array(
       'field' => 'delivery_country',
-      'prefix' => UC_RECIPIENT_PREFIX,
+      'prefix' => t('Delivery'),
     ),
   );
 
@@ -380,11 +377,11 @@ function uc_order_views_data() {
   $zone_views = array(
     'billing_zones' => array(
       'field' => 'billing_zone',
-      'prefix' => UC_PAYER_PREFIX,
+      'prefix' => t('Billing'),
     ),
     'delivery_zones' => array(
       'field' => 'delivery_zone',
-      'prefix' => UC_RECIPIENT_PREFIX,
+      'prefix' => t('Delivery'),
     ),
   );
 
