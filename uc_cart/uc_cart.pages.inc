@@ -224,6 +224,16 @@ function uc_cart_checkout_form($form, &$form_state) {
 }
 
 /**
+ * Default theme function for the checkout form.
+ *
+ * @see uc_cart_checkout_form()
+ * @ingroup themeable
+ */
+function theme_uc_cart_checkout_form($variables) {
+  return drupal_render_children($variables['form']);
+}
+
+/**
  * Form validation for uc_cart_checkout_form().
  *
  * @see uc_cart_checkout_form()
