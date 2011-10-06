@@ -219,25 +219,36 @@ function uc_order_views_data() {
     ),
   );
 
-  $string_fields = array(
-    'first_name' => 'first name',
-    'last_name' => 'last name',
-    'phone' => 'phone number',
-    'company' => 'company',
-    'street1' => 'address line 1',
-    'street2' => 'address line 2',
-    'city' => 'city',
-    'postal_code' => 'zip/postal code',
+  $addresses = array(
+    'billing' => array(
+      'label' => t('Billing address'),
+    ),
+    'delivery' => array(
+      'label' => t('Delivery address'),
+    ),
   );
 
-  foreach (array('delivery', 'billing') as $prefix) {
-    $args = array(
-      '!titleprefix' => ($prefix == 'delivery' ? t('Delivery') : t('Billing')),
-    );
-    foreach ($string_fields as $field => $suffix) {
+  $fields = array(
+    'first_name' => t('First name'),
+    'last_name' => t('Last name'),
+    'phone' => t('Phone number'),
+    'company' => t('Company'),
+    'street1' => t('Street address 1'),
+    'street2' => t('Street address 2'),
+    'city' => t('City'),
+//    'zone' => t('State/Province'),
+    'postal_code' => t('Postal code'),
+//    'country' => t('Country'),
+  );
+
+  foreach ($addresses as $prefix => $address) {
+    $group = t('Order') . ': ' . $address['label'];
+
+    foreach ($fields as $field => $label) {
       $data['uc_orders'][$prefix . '_' . $field] = array(
-        'title' => t('!titleprefix !titlesuffix', $args + array('!titlesuffix' => $suffix)),
-        'help' => t('Part of the !titleprefix address.', $args),
+        'group' => $group,
+        'title' => $label,
+        'help' => t('The !field of the !address of the order.', array('!field' => strtolower($label), '!address' => strtolower($address['label']))),
         'field' => array(
           'handler' => 'views_handler_field',
           'click sortable' => TRUE,
@@ -252,8 +263,9 @@ function uc_order_views_data() {
     }
 
     $data['uc_orders'][$prefix . '_full_name'] = array(
-      'title' => t('!titleprefix full name', $args),
-      'help' => $prefix == 'delivery' ? t('The full name (first and last) of the person receiving shipment.') : t('The full name (first and last) of the person paying for the order.'),
+      'group' => $group,
+      'title' => t('Full name'),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('full name'), '!address' => strtolower($address['label']))),
       'field' => array(
         'additional fields' => array(
           $prefix . '_first_name',
