@@ -281,53 +281,16 @@ function uc_order_views_data() {
         'handler' => 'views_handler_filter_string',
       ),
     );
-  }
 
-  $country_views = array(
-    'billing_countries' => array(
-      'field' => 'billing_country',
-      'prefix' => t('Billing'),
-    ),
-    'delivery_countries' => array(
-      'field' => 'delivery_country',
-      'prefix' => t('Delivery'),
-    ),
-  );
-
-  foreach ($country_views as $key => $value) {
-    $data['uc_orders'][$value['field']] = array(
-      'title' => t('@prefix country', array('@prefix' => $value['prefix'])),
-      'help' => t('Relate orders to @field', array('@field' => str_replace('_', ' ', $value['field']))),
-      'filter' => array(
-        'handler' => 'uc_order_handler_filter_country',
-      ),
-      'relationship' => array(
-        'handler' => 'views_handler_relationship',
-        'base' => 'uc_countries',
-        'relationship table' => $key,
-        'field' => 'country_id',
-        'label' => t('@prefix country', array('@prefix' => $value['prefix'])),
-      ),
-    );
-
-    $data[$key]['table']['group'] = t('Ubercart order');
-
-    $data[$key]['table']['join']['uc_orders'] = array(
+    $data[$prefix . '_countries']['table']['group'] = $group;
+    $data[$prefix . '_countries']['table']['join']['uc_orders'] = array(
       'table' => 'uc_countries',
-      'left_field' => $value['field'],
+      'left_field' => $prefix . '_country',
       'field' => 'country_id',
     );
-    // Join to the uc_order_products, if used as base, via uc_orders
-    $data[$key]['table']['join']['uc_order_products'] = $data[$key]['table']['join']['uc_orders'];
-    $data[$key]['table']['join']['uc_order_products']['left_table'] = 'uc_orders';
-
-    $data[$key]['country_id'] = array(
-      'title' => t('@prefix country', array('@prefix' => $value['prefix'])),
-      'help' => t('Numeric ISO code for the @prefix country.', array('@prefix' => $value['prefix'])),
-      'field' => array(
-        'handler' => 'views_handler_field_numeric',
-        'click sortable' => TRUE,
-      ),
+    $data[$prefix . '_countries']['country_id'] = array(
+      'title' => t('ISO country code (numeric)'),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('numeric ISO country code'), '!address' => strtolower($address['label']))),
       'argument' => array(
         'handler' => 'views_handler_argument_numeric',
         'name field' => 'country_iso_code_2',
@@ -337,13 +300,10 @@ function uc_order_views_data() {
       'filter' => array(
         'handler' => 'views_handler_filter_numeric',
       ),
-      'sort' => array(
-        'handler' => 'views_handler_sort',
-      ),
     );
-    $data[$key]['country_name'] = array(
-      'title' => t('@persons country name', array('@persons' => $value['prefix'])),
-      'help' => t('Name of the @persons country.', array('@persons' => $value['prefix'])),
+    $data[$prefix . '_countries']['country_name'] = array(
+      'title' => t('Country'),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('country name'), '!address' => strtolower($address['label']))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -355,9 +315,9 @@ function uc_order_views_data() {
         'handler' => 'views_handler_filter_string',
       ),
     );
-    $data[$key]['country_iso_code_2'] = array(
-      'title' => t('@persons country ISO code (2 characters)', array('@persons' => $value['prefix'])),
-      'help' => t('The two-character ISO country code.'),
+    $data[$prefix . '_countries']['country_iso_code_2'] = array(
+      'title' => t('ISO country code (2 characters)'),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('ISO country code'), '!address' => strtolower($address['label']))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -369,9 +329,9 @@ function uc_order_views_data() {
         'handler' => 'views_handler_filter_string',
       ),
     );
-    $data[$key]['country_iso_code_3'] = array(
-      'title' => t('@persons country ISO code (3 characters)', array('@persons' => $value['prefix'])),
-      'help' => t('The three-character ISO country code.'),
+    $data[$prefix . '_countries']['country_iso_code_3'] = array(
+      'title' => t('ISO country code (3 characters)'),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('ISO country code'), '!address' => strtolower($address['label']))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
