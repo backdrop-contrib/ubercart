@@ -220,12 +220,8 @@ function uc_order_views_data() {
   );
 
   $addresses = array(
-    'billing' => array(
-      'label' => t('Billing address'),
-    ),
-    'delivery' => array(
-      'label' => t('Delivery address'),
-    ),
+    'billing' => t('Billing address'),
+    'delivery' => t('Delivery address'),
   );
 
   $fields = array(
@@ -236,19 +232,17 @@ function uc_order_views_data() {
     'street1' => t('Street address 1'),
     'street2' => t('Street address 2'),
     'city' => t('City'),
-//    'zone' => t('State/Province'),
     'postal_code' => t('Postal code'),
-//    'country' => t('Country'),
   );
 
   foreach ($addresses as $prefix => $address) {
-    $group = t('Order') . ': ' . $address['label'];
+    $group = t('Order') . ': ' . $address;
 
     foreach ($fields as $field => $label) {
       $data['uc_orders'][$prefix . '_' . $field] = array(
         'group' => $group,
         'title' => $label,
-        'help' => t('The !field of the !address of the order.', array('!field' => strtolower($label), '!address' => strtolower($address['label']))),
+        'help' => t('The !field of the !address of the order.', array('!field' => strtolower($label), '!address' => strtolower($address))),
         'field' => array(
           'handler' => 'views_handler_field',
           'click sortable' => TRUE,
@@ -265,7 +259,7 @@ function uc_order_views_data() {
     $data['uc_orders'][$prefix . '_full_name'] = array(
       'group' => $group,
       'title' => t('Full name'),
-      'help' => t('The !field of the !address of the order.', array('!field' => t('full name'), '!address' => strtolower($address['label']))),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('full name'), '!address' => strtolower($address))),
       'field' => array(
         'additional fields' => array(
           $prefix . '_first_name',
@@ -290,7 +284,7 @@ function uc_order_views_data() {
     );
     $data[$prefix . '_countries']['country_id'] = array(
       'title' => t('ISO country code (numeric)'),
-      'help' => t('The !field of the !address of the order.', array('!field' => t('numeric ISO country code'), '!address' => strtolower($address['label']))),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('numeric ISO country code'), '!address' => strtolower($address))),
       'argument' => array(
         'handler' => 'views_handler_argument_numeric',
         'name field' => 'country_iso_code_2',
@@ -303,7 +297,7 @@ function uc_order_views_data() {
     );
     $data[$prefix . '_countries']['country_name'] = array(
       'title' => t('Country'),
-      'help' => t('The !field of the !address of the order.', array('!field' => t('country name'), '!address' => strtolower($address['label']))),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('country name'), '!address' => strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -317,7 +311,7 @@ function uc_order_views_data() {
     );
     $data[$prefix . '_countries']['country_iso_code_2'] = array(
       'title' => t('ISO country code (2 characters)'),
-      'help' => t('The !field of the !address of the order.', array('!field' => t('ISO country code'), '!address' => strtolower($address['label']))),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('ISO country code'), '!address' => strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -331,7 +325,7 @@ function uc_order_views_data() {
     );
     $data[$prefix . '_countries']['country_iso_code_3'] = array(
       'title' => t('ISO country code (3 characters)'),
-      'help' => t('The !field of the !address of the order.', array('!field' => t('ISO country code'), '!address' => strtolower($address['label']))),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('ISO country code'), '!address' => strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -352,7 +346,7 @@ function uc_order_views_data() {
     );
     $data[$prefix . '_zones']['zone_name'] = array(
       'title' => t('State/Province'),
-      'help' => t('The !field of the !address of the order.', array('!field' => t('state or province'), '!address' => strtolower($address['label']))),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('state or province'), '!address' => strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -366,7 +360,7 @@ function uc_order_views_data() {
     );
     $data[$prefix . '_zones']['zone_code'] = array(
       'title' => t('State/Province code'),
-      'help' => t('The !field of the !address of the order.', array('!field' => t('state or province code'), '!address' => strtolower($address['label']))),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('state or province code'), '!address' => strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
