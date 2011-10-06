@@ -343,73 +343,16 @@ function uc_order_views_data() {
         'handler' => 'views_handler_filter_string',
       ),
     );
-  }
 
-  $zone_views = array(
-    'billing_zones' => array(
-      'field' => 'billing_zone',
-      'prefix' => t('Billing'),
-    ),
-    'delivery_zones' => array(
-      'field' => 'delivery_zone',
-      'prefix' => t('Delivery'),
-    ),
-  );
-
-  foreach ($zone_views as $key => $value) {
-    $data['uc_orders'][$value['field']] = array(
-      'title' => t('@prefix zone', array('@prefix' => $value['prefix'])),
-      'help' => t('Relate orders to @field.', array('@field' => str_replace('_', ' ', $value['field']))),
-      'filter' => array(
-        'handler' => 'uc_order_handler_filter_zone',
-      ),
-      'relationship' => array(
-        'handler' => 'views_handler_relationship',
-        'base' => 'uc_zones',
-        'relationship table' => $key,
-        'field' => 'zone_id',
-        'label' => t('@persons zone', array('@persons' => $value['prefix'])),
-      ),
-    );
-
-    $data[$key]['table']['group'] = t('Ubercart order');
-
-    $data[$key]['table']['join']['uc_orders'] = array(
+    $data[$prefix . '_zones']['table']['group'] = $group;
+    $data[$prefix . '_zones']['table']['join']['uc_orders'] = array(
       'table' => 'uc_zones',
-      'left_field' => $value['field'],
+      'left_field' => $prefix . '_zone',
       'field' => 'zone_id',
     );
-
-    // join to the uc_order_products, if used as base, via uc_orders
-    $data[$key]['table']['join']['uc_order_products'] = $data[$key]['table']['join']['uc_orders'];
-    $data[$key]['table']['join']['uc_order_products']['left_table'] = 'uc_orders';
-
-    $data[$key]['zone_id'] = array(
-      'title' => t('@persons zone id', array('@persons' => $value['prefix'])),
-      'help' => t('The zone ID.'),
-      'field' => array(
-        'handler' => 'views_handler_field_numeric',
-        'click sortable' => TRUE,
-      ),
-      // Information for accepting an order id as an argument
-      'argument' => array(
-        'handler' => 'views_handler_argument_numeric',
-        'name field' => 'zone_code',
-        'numeric' => TRUE,
-        'validate type' => 'zone_id',
-      ),
-      // Information for accepting an order id as a filter
-      'filter' => array(
-        'handler' => 'views_handler_filter_numeric',
-      ),
-      // Information for sorting on an order id.
-      'sort' => array(
-        'handler' => 'views_handler_sort',
-      ),
-    );
-    $data[$key]['zone_name'] = array(
-      'title' => t('@persons zone name', array('@persons' => $value['prefix'])),
-      'help' => t('The zone name.'),
+    $data[$prefix . '_zones']['zone_name'] = array(
+      'title' => t('State/Province'),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('state or province'), '!address' => strtolower($address['label']))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -421,10 +364,9 @@ function uc_order_views_data() {
         'handler' => 'views_handler_filter_string',
       ),
     );
-
-    $data[$key]['zone_code'] = array(
-      'title' => t('@persons zone code', array('@persons' => $value['prefix'])),
-      'help' => t('Standard abbreviation of the zone name.'),
+    $data[$prefix . '_zones']['zone_code'] = array(
+      'title' => t('State/Province code'),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('state or province code'), '!address' => strtolower($address['label']))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
