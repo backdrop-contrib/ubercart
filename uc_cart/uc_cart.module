@@ -1629,29 +1629,13 @@ function uc_cart_cart_pane_list($items) {
 /**
  * Determines whether a cart contains shippable items or not.
  */
-function uc_cart_is_shippable($cart_id = NULL, $action = '') {
-  static $shippable;
-
-  if ($action != 'refresh' && ($shippable === FALSE || $shippable === TRUE)) {
-    return $shippable;
-  }
-
-  $shippable = FALSE;
+function uc_cart_is_shippable($cart_id = NULL) {
   $items = uc_cart_get_contents($cart_id);
 
-  // Return FALSE if the cart is empty!
-  if (empty($items)) {
-    return FALSE;
-  }
-
   foreach ($items as $item) {
-    $result[] = uc_cart_product_is_shippable($item);
-  }
-
-  // Return TRUE if any product in the cart is shippable.
-  if (in_array(TRUE, $result)) {
-    $shippable = TRUE;
-    return TRUE;
+    if (uc_cart_product_is_shippable($item)) {
+      return TRUE;
+    }
   }
 
   return FALSE;
