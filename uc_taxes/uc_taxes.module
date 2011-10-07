@@ -82,6 +82,24 @@ function uc_taxes_module_implements_alter(&$implementations, $hook) {
 }
 
 /**
+ * Implements hook_uc_cart_item().
+ *
+ * Adds included taxes (VAT) to display price of applicable products.
+ */
+function uc_taxes_uc_cart_item($op, $item) {
+  if ($op == 'load') {
+    $product = node_load($item->nid);
+
+    list($amount, $suffixes) = uc_taxes_get_included_tax($product, $item->price);
+
+    $item->display_price += $amount;
+    if (!empty($suffixes)) {
+      $item->display_price_suffix .= implode(' ', $suffixes);
+    }
+  }
+}
+
+/**
  * Implements hook_node_load().
  * Adds included taxes (VAT) to display price of applicable products.
  */
