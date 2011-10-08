@@ -106,6 +106,15 @@ function uc_product_views_data() {
     ),
   );
 
+  $data['uc_products']['display_price'] = array(
+    'title' => t('Display price'),
+    'help' => t('The price for which the product is sold, altered for display (e.g. with inclusive taxes).'),
+    'field' => array(
+      'handler' => 'uc_product_handler_field_display_price',
+      'real field' => 'nid',
+    ),
+  );
+
   $data['uc_products']['weight'] = array(
     'title' => t('Weight'),
     'help' => t('The physical weight.'),

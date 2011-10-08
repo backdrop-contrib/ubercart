@@ -37,7 +37,7 @@ function uc_product_views_default_views() {
   $handler->display->display_options['style_options']['columns'] = array(
     'uc_product_image' => 'uc_product_image',
     'title' => 'title',
-    'sell_price' => 'sell_price',
+    'display_price' => 'display_price',
     'changed' => 'changed',
   );
   $handler->display->display_options['style_options']['default'] = 'changed';
@@ -52,9 +52,7 @@ function uc_product_views_default_views() {
       'align' => '',
       'separator' => '',
     ),
-    'sell_price' => array(
-      'sortable' => 1,
-      'default_sort_order' => 'asc',
+    'display_price' => array(
       'align' => '',
       'separator' => '',
     ),
@@ -105,10 +103,10 @@ function uc_product_views_default_views() {
   $handler->display->display_options['fields']['title']['table'] = 'node';
   $handler->display->display_options['fields']['title']['field'] = 'title';
   $handler->display->display_options['fields']['title']['link_to_node'] = 1;
-  /* Field: Product: Sell price */
-  $handler->display->display_options['fields']['sell_price']['id'] = 'sell_price';
-  $handler->display->display_options['fields']['sell_price']['table'] = 'uc_products';
-  $handler->display->display_options['fields']['sell_price']['field'] = 'sell_price';
+  /* Field: Product: Display price */
+  $handler->display->display_options['fields']['display_price']['id'] = 'display_price';
+  $handler->display->display_options['fields']['display_price']['table'] = 'uc_products';
+  $handler->display->display_options['fields']['display_price']['field'] = 'display_price';
   /* Field: Content: Post date */
   $handler->display->display_options['fields']['changed']['id'] = 'changed';
   $handler->display->display_options['fields']['changed']['table'] = 'node';

@@ -54,7 +54,7 @@ class uc_product_handler_field_price extends views_handler_field_numeric {
     }
 
     if ($this->options['format'] == 'uc_price') {
-      return uc_currency_format($values->{$this->field_alias});
+      return uc_currency_format($this->get_value($values));
     }
   }
 }
