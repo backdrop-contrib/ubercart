@@ -35,8 +35,8 @@ Drupal.behaviors.ucOrderSubmit = {
 }
 
 /**
- * Copys the shipping data on the order edit screen to the corresponding billing
- * fields if they exist.
+ * Copies the shipping data on the order edit screen to the corresponding
+ * billing fields if they exist.
  */
 function uc_order_copy_shipping_to_billing() {
   if (jQuery('#edit-delivery-zone').html() != jQuery('#edit-billing-zone').html()) {
@@ -53,18 +53,18 @@ function uc_order_copy_shipping_to_billing() {
 }
 
 /**
- * Copys the billing data on the order edit screen to the corresponding shipping
- * fields if they exist.
+ * Copies the billing data on the order edit screen to the corresponding
+ * shipping fields if they exist.
  */
 function uc_order_copy_billing_to_shipping() {
-  if ($('#edit-billing-zone').html() != $('#edit-delivery-zone').html()) {
-    $('#edit-delivery-zone').empty().append($('#edit-billing-zone').children().clone());
+  if (jQuery('#edit-billing-zone').html() != jQuery('#edit-delivery-zone').html()) {
+    jQuery('#edit-delivery-zone').empty().append(jQuery('#edit-billing-zone').children().clone());
   }
 
-  $('#uc-order-edit-form input, select, textarea').each(
+  jQuery('#uc-order-edit-form input, select, textarea').each(
     function() {
       if (this.id.substring(0, 12) == 'edit-billing') {
-        $('#edit-delivery' + this.id.substring(12)).val($(this).val());
+        jQuery('#edit-delivery' + this.id.substring(12)).val(jQuery(this).val());
       }
     }
   );
