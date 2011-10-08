@@ -93,19 +93,3 @@ function uc_stock_views_data() {
 
   return $data;
 }
-
-/**
- * Implements hook_views_handlers().
- */
-function uc_stock_views_handlers() {
-  return array(
-    'info' => array(
-      'path' => drupal_get_path('module', 'uc_stock') . '/views',
-    ),
-    'handlers' => array(
-      'uc_stock_views_handler_filter_below_threshold' => array(
-        'parent' => 'views_handler_filter_boolean_operator',
-      ),
-    ),
-  );
-}
