@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Views 2 hooks and callback registries.
+ * Views hooks and callback registries.
  */
 
 /**
@@ -11,16 +11,15 @@
 function uc_stock_views_data() {
   $data['uc_product_stock']['table']['group'] = t('Stock');
 
-  $data['uc_product_stock']['table']['join'] = array(
-    'node' => array(
-      'left_field' => 'nid',
-      'field' => 'nid',
-    ),
+  // Attach stock data to nodes.
+  $data['uc_product_stock']['table']['join']['node'] = array(
+    'left_field' => 'nid',
+    'field' => 'nid',
   );
 
   $data['uc_product_stock']['sku'] = array(
     'title' => t('SKU'),
-    'help' => t('The model or SKU of the stock level'),
+    'help' => t('The model or SKU of the stock level.'),
     'field' => array(
       'click sortable' => TRUE,
     ),
@@ -34,9 +33,10 @@ function uc_stock_views_data() {
       'handler' => 'views_handler_argument_string',
     ),
   );
+
   $data['uc_product_stock']['active'] = array(
     'title' => t('Active'),
-    'help' => t('Whether or not the stock level is currently being tracked'),
+    'help' => t('Whether or not stock is currently being tracked.'),
     'field' => array(
       'handler' => 'views_handler_field_boolean',
       'click sortable' => TRUE,
@@ -50,9 +50,10 @@ function uc_stock_views_data() {
       'handler' => 'views_handler_sort',
     ),
   );
+
   $data['uc_product_stock']['stock'] = array(
-    'title' => t('Stock Level'),
-    'help' => t('The current stock level'),
+    'title' => t('Level'),
+    'help' => t('The current stock level.'),
     'field' => array(
       'handler' => 'views_handler_field_numeric',
       'click sortable' => TRUE,
@@ -64,9 +65,10 @@ function uc_stock_views_data() {
       'handler' => 'views_handler_sort',
     ),
   );
+
   $data['uc_product_stock']['threshold'] = array(
     'title' => t('Threshold'),
-    'help' => t('The threshold or warning limit of the stock level'),
+    'help' => t('The level at which a stock warning can be sent.'),
     'field' => array(
       'handler' => 'views_handler_field_numeric',
       'click sortable' => TRUE,
@@ -78,12 +80,13 @@ function uc_stock_views_data() {
       'handler' => 'views_handler_sort',
     ),
   );
+
   $data['uc_product_stock']['below_threshold'] = array(
-    'title' => t('Is Below Threshold'),
+    'title' => t('Is below threshold'),
     'help' => t('Filter the node based on whether its stock level is below the threshold for the SKU.'),
     'filter' => array(
       'handler' => 'uc_stock_views_handler_filter_below_threshold',
-      'label' => t('Is Below Threshold'),
+      'label' => t('Is below threshold'),
       'type' => 'yes-no',
     ),
   );
