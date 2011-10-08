@@ -3,12 +3,13 @@
 /**
  * @file
  * Payment administration menu items.
- *
  */
 
 
 /**
  * Displays an overview of the available payment methods.
+ *
+ * @see theme_uc_payment_methods_table()
  */
 function uc_payment_methods_form($form, &$form_state) {
   $methods = _uc_payment_method_list();
@@ -64,6 +65,9 @@ function uc_payment_methods_form($form, &$form_state) {
 }
 
 /**
+ * Themes the table that displays available payment methods.
+ *
+ * @see uc_payment_methods_form()
  * @ingroup themeable
  */
 function theme_uc_payment_method_table($variables) {
@@ -117,6 +121,10 @@ function uc_payment_gateway_select() {
   return $build;
 }
 
+/**
+ * @see uc_payment_gateway_select_form_submit()
+ * @ingroup forms
+ */
 function uc_payment_gateway_select_form($form, &$form_state, $options, $method, $order_id, $amount, $data) {
   $form['method'] = array(
     '#type' => 'hidden',
@@ -149,6 +157,11 @@ function uc_payment_gateway_select_form($form, &$form_state, $options, $method, 
   return $form;
 }
 
+/**
+ * Submit handler for uc_payment_gateway_select_form().
+ *
+ * @see uc_payment_gateway_select_form()
+ */
 function uc_payment_gateway_select_form_submit($form, &$form_state) {
   unset($_SESSION['uc_payment_method']);
   unset($_SESSION['uc_payment_order_id']);
