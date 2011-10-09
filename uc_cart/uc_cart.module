@@ -157,6 +157,9 @@ function uc_cart_theme() {
     'uc_cart_view_form' => array(
       'render element' => 'form',
     ),
+    'uc_cart_checkout_buttons' => array(
+      'render element' => 'buttons',
+    ),
     'uc_empty_cart' => array(
       'variables' => array(),
     ),
@@ -933,8 +936,11 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
     '#name' => 'update-cart',
     '#value' => t('Update cart'),
   );
+  $form['actions']['checkout'] = array(
+    '#theme' => 'uc_cart_checkout_buttons',
+  );
   if (variable_get('uc_checkout_enabled', TRUE)) {
-    $form['actions']['checkout'] = array(
+    $form['actions']['checkout']['checkout'] = array(
       '#type' => 'submit',
       '#value' => t('Checkout'),
       '#submit' => array('uc_cart_view_form_submit', 'uc_cart_view_form_checkout'),
@@ -1001,6 +1007,45 @@ function theme_uc_cart_view_form($variables) {
   $form['actions']['update']['#printed'] = FALSE;
 
   $output .= drupal_render_children($form);
+
+  return $output;
+}
+
+/**
+ * Themes the cart checkout button(s).
+ *
+ * @see uc_cart_view_form()
+ * @ingroup themeable
+ */
+function theme_uc_cart_checkout_buttons($variables) {
+  $output = '';
+
+  if ($buttons = element_children($variables['buttons'])) {
+    // Render the first button.
+    $button = array_shift($buttons);
+    $output = drupal_render($variables['buttons'][$button]);
+
+    // Render any remaining buttons inside a separate container.
+    if ($buttons) {
+      $output .= '<div class="uc-cart-checkout-button-container clearfix">';
+
+      // Render the second button.
+      $output .= '<div class="uc-cart-checkout-button">';
+      $output .= '<div class="uc-cart-checkout-button-separator">' . t('- or -') . '</div>';
+      $button = array_shift($buttons);
+      $output .= drupal_render($variables['buttons'][$button]);
+      $output .= '</div>';
+
+      // Render any remaining buttons.
+      foreach ($buttons as $button) {
+        $output .= '<div class="uc-cart-checkout-button">';
+        $output .= drupal_render($variables['buttons'][$button]);
+        $output .= '</div>';
+      }
+
+      $output .= '</div>';
+    }
+  }
 
   return $output;
 }
