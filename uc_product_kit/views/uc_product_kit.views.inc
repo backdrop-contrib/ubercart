@@ -3,73 +3,51 @@
  * Implements hook_views_data()
  */
 function uc_product_kit_views_data() {
-  $data = array();
+  $data['uc_product_kits']['table']['group'] = t('Product kit');
 
-  $data['uc_product_kits']['table'] = array(
-    'group' => t('Product Kit'),
-    'join' => array(
-      'uc_products' => array(
-        'left_field' => 'vid',
-        'field' => 'vid',
-      ),
-      'node' => array(
-        'left_field' => 'vid',
-        'field' => 'vid',
-      ),
-    ),
+  // Explain how to link product kit nodes to back to their parents.
+  $data['node']['table']['join']['uc_product_kits'] = array(
+    'left_field' => 'vid',
+    'field' => 'vid',
+  );
+  $data['uc_products']['table']['join']['uc_product_kits'] = array(
+    'left_field' => 'vid',
+    'field' => 'vid',
   );
 
-  $data['uc_product_kits']['nid'] = array(
-    'title' => t('Node ID'),
-    'help' => t('The {node}.nid of the product kit.'),
-    'field' => array(
-      'handler' => 'views_handler_field_node',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_numeric',
-      'allow empty' => TRUE,
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_node_nid',
-      'numeric' => TRUE,
-      'validate type' => 'nid',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
+  // Relate components to their parent kits.
+  $data['uc_products']['product_kit'] = array(
+    'group' => t('Product kit'),
     'relationship' => array(
+      'title' => t('Parent'),
+      'help' => t('Relate product kit components to their parent kits.'),
       'handler' => 'views_handler_relationship',
-      'base' => 'node',
-      'base field' => 'nid',
+      'base' => 'uc_product_kits',
+      'base field' => 'product_id',
+      'relationship field' => 'nid',
       'label' => t('kit'),
     ),
   );
 
-  $data['uc_product_kits']['product_id'] = array(
-    'title' => t('Product'),
-    'help' => t('The {uc_products}.nid of a product contained in the kit.'),
-    'field' => array(
-      'handler' => 'views_handler_field_node',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_numeric',
-      'allow empty' => TRUE,
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_node_nid',
-      'numeric' => TRUE,
-      'validate type' => 'nid',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
+  // Explain how to link parents back to their components.
+  $data['uc_product_kit_parents']['table']['join']['node'] = array(
+    'left_field' => 'vid',
+    'field' => 'vid',
+    'table' => 'uc_product_kits',
+  );
+
+  // Relate kits to their components.
+  $data['uc_products']['product_kit_component'] = array(
+    'group' => t('Product kit'),
     'relationship' => array(
+      'title' => t('Component'),
+      'help' => t('Relate product kits to their components. This relationship will create one record for each component of the kit.'),
       'handler' => 'views_handler_relationship',
       'base' => 'node',
       'base field' => 'nid',
-      'label' => t('product'),
+      'relationship table' => 'uc_product_kit_parents',
+      'relationship field' => 'product_id',
+      'label' => t('component'),
     ),
   );
 
