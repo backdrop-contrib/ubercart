@@ -283,6 +283,10 @@ function uc_catalog_views_default_views() {
   $handler->display->display_options['sorts']['weight']['id'] = 'weight';
   $handler->display->display_options['sorts']['weight']['table'] = 'taxonomy_term_data';
   $handler->display->display_options['sorts']['weight']['field'] = 'weight';
+  /* Sort criterion: Taxonomy term: Name */
+  $handler->display->display_options['sorts']['name']['id'] = 'name';
+  $handler->display->display_options['sorts']['name']['table'] = 'taxonomy_term_data';
+  $handler->display->display_options['sorts']['name']['field'] = 'name';
   /* Argument: Taxonomy: Parent term */
   $handler->display->display_options['arguments']['parent']['id'] = 'parent';
   $handler->display->display_options['arguments']['parent']['table'] = 'taxonomy_term_hierarchy';
