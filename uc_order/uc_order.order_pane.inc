@@ -449,7 +449,6 @@ function uc_order_edit_products_form($form, &$form_state, $products) {
   else {
     $form['products'] = array(
       '#markup' => t('This order contains no products.'),
-      '#cell_attributes' => array('colspan' => 'full'),
       '#prefix' => '<div id="order-edit-products">',
       '#suffix' => '</div>',
     );
