@@ -31,7 +31,7 @@ function uc_catalog_views_default_views() {
     'model' => 'model',
     'timestamp' => 'timestamp',
     'title' => 'title',
-    'sell_price' => 'sell_price',
+    'display_price' => 'display_price',
     'buyitnowbutton' => 'buyitnowbutton',
   );
   $handler->display->display_options['style_options']['default'] = '-1';
@@ -55,7 +55,7 @@ function uc_catalog_views_default_views() {
       'align' => '',
       'separator' => '',
     ),
-    'sell_price' => array(
+    'display_price' => array(
       'sortable' => 1,
       'align' => '',
       'separator' => '',
@@ -135,23 +135,10 @@ function uc_catalog_views_default_views() {
   $handler->display->display_options['fields']['title']['empty_zero'] = 0;
   $handler->display->display_options['fields']['title']['link_to_node'] = 1;
   /* Field: Product: Sell price */
-  $handler->display->display_options['fields']['sell_price']['id'] = 'sell_price';
-  $handler->display->display_options['fields']['sell_price']['table'] = 'uc_products';
-  $handler->display->display_options['fields']['sell_price']['field'] = 'sell_price';
-  $handler->display->display_options['fields']['sell_price']['label'] = 'Price';
-  $handler->display->display_options['fields']['sell_price']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['sell_price']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['sell_price']['alter']['absolute'] = 0;
-  $handler->display->display_options['fields']['sell_price']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['sell_price']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['sell_price']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['sell_price']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['sell_price']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['sell_price']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['sell_price']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['sell_price']['set_precision'] = 0;
-  $handler->display->display_options['fields']['sell_price']['precision'] = '0';
-  $handler->display->display_options['fields']['sell_price']['format_plural'] = 0;
+  $handler->display->display_options['fields']['display_price']['id'] = 'display_price';
+  $handler->display->display_options['fields']['display_price']['table'] = 'uc_products';
+  $handler->display->display_options['fields']['display_price']['field'] = 'display_price';
+  $handler->display->display_options['fields']['display_price']['label'] = 'Price';
   /* Field: Product: Buy it now button */
   $handler->display->display_options['fields']['buyitnowbutton']['id'] = 'buyitnowbutton';
   $handler->display->display_options['fields']['buyitnowbutton']['table'] = 'uc_products';
