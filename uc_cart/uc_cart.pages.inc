@@ -153,6 +153,12 @@ function uc_cart_checkout_form($form, &$form_state) {
   }
 
   foreach ($panes as $id => $pane) {
+    if ($pane['enabled'] && isset($pane['callback']) && function_exists($pane['callback'])) {
+      $pane['callback']('prepare', $order, $form, $form_state);
+    }
+  }
+
+  foreach ($panes as $id => $pane) {
     if ($pane['enabled']) {
       $pane['prev'] = _uc_cart_checkout_prev_pane($panes, $id);
       $pane['next'] = _uc_cart_checkout_next_pane($panes, $id);
