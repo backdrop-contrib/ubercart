@@ -14,6 +14,21 @@
  * @ingroup forms
  */
 function uc_catalog_settings_form($form, &$form_state) {
+  $view = views_get_view('uc_catalog');
+  $displays = array();
+  foreach ($view->display as $display) {
+    if ($display->display_plugin == 'page') {
+      $displays[$display->id] = $display->display_title;
+    }
+  }
+
+  $form['catalog-top-level']['uc_catalog_display'] = array(
+    '#type' => 'select',
+    '#title' => t('Catalog display'),
+    '#default_value' => variable_get('uc_catalog_display', 'catalog'),
+    '#options' => $displays,
+  );
+
   $vid = variable_get('uc_catalog_vid', NULL);
   if ($vid) {
     $catalog = taxonomy_vocabulary_load($vid);

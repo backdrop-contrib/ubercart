@@ -21,8 +21,7 @@ function uc_catalog_views_default_views() {
 
   /* Display: Defaults */
   $handler = $view->new_display('default', 'Defaults', 'default');
-  $handler->display->display_options['title'] = variable_get('uc_catalog_name', t('Catalog'));;
-  $handler->display->display_options['css_class'] = 'uc-catalog';
+  $handler->display->display_options['title'] = variable_get('uc_catalog_name', t('Catalog'));
   $handler->display->display_options['access']['type'] = 'none';
   $handler->display->display_options['cache']['type'] = 'none';
   $handler->display->display_options['query']['type'] = 'views_query';
@@ -146,7 +145,7 @@ function uc_catalog_views_default_views() {
   /* Display: Page */
   $handler = $view->new_display('page', 'Grid', 'catalog_grid');
   $handler->display->display_options['defaults']['css_class'] = FALSE;
-  $handler->display->display_options['css_class'] = 'uc-catalog-grid';
+  $handler->display->display_options['css_class'] = 'uc-catalog';
   $handler->display->display_options['defaults']['style_plugin'] = FALSE;
   $handler->display->display_options['style_plugin'] = 'grid';
   $handler->display->display_options['style_options']['columns'] = '3';
