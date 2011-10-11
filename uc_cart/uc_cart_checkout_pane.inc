@@ -461,8 +461,15 @@ function _uc_checkout_pane_data($pane_id, $key) {
 /**
  * Formats the cart contents table on the checkout page.
  *
- * @param $show_subtotal
- *   TRUE or FALSE indicating if you want a subtotal row displayed in the table.
+ * @param $variables
+ *   An associative array containing:
+ *   - show_subtotal: TRUE or FALSE indicating if you want a subtotal row
+ *     displayed in the table.
+ *   - items: An associative array of cart item information containing:
+ *     - qty: Quantity in cart.
+ *     - title: Item title.
+ *     - price: Item price.
+ *     - desc: Item description.
  *
  * @return
  *   The HTML output for the cart review table.
@@ -528,10 +535,15 @@ function theme_uc_cart_review_table($variables) {
 }
 
 /**
- * Theme cart items on the checkout review order page.
+ * Themes cart items on the checkout review order page.
  *
- * @param $items
- *   Cart items.
+ * @param $variables
+ *   An associative array containing:
+ *   - items: An associative array of cart item information containing:
+ *     - qty: Quantity in cart.
+ *     - title: Item title.
+ *     - price: Item price.
+ *     - desc: Item description.
  *
  * @return
  *   A string of HTML for the page contents.

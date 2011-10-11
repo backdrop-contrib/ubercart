@@ -232,6 +232,10 @@ function uc_cart_checkout_form($form, &$form_state) {
 /**
  * Default theme function for the checkout form.
  *
+ * @param $variables
+ *   An associative array containing:
+ *   - form: A render element representing the form.
+ *
  * @see uc_cart_checkout_form()
  * @ingroup themeable
  */
@@ -354,13 +358,14 @@ function uc_cart_checkout_review() {
 /**
  * Themes the checkout review order page.
  *
- * @param $panes
- *   An associative array for each checkout pane that has information to add to
- *   the review page.  The key is the pane's title and the value is either the
- *   data returned for that pane or an array of returned data.
- * @param $form
- *   The HTML version of the form that by default includes the 'Back' and
- *   'Submit order' buttons at the bottom of the review page.
+ * @param $variables
+ *   An associative array containing:
+ *   - form: A render element representing the form, that by default includes
+ *     the 'Back' and 'Submit order' buttons at the bottom of the review page.
+ *   - panes: An associative array for each checkout pane that has information
+ *     to add to the review page, keyed by the pane title:
+ *     - <pane title>: The data returned for that pane or an array of returned
+ *       data.
  *
  * @return
  *   A string of HTML for the page contents.
