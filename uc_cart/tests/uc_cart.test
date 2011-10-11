@@ -80,6 +80,17 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->drupalLogout();
   }
 
+  function testDeletedCartItem() {
+    // Add a product to the cart, then delete the node.
+    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    node_delete($this->product->nid);
+
+    // Test that the cart is empty.
+    $this->drupalGet('cart');
+    $this->assertText('There are no products in your shopping cart.');
+    $this->assertEqual(uc_cart_get_total_qty(), 0, 'There are no items in the cart.');
+  }
+
   function testCheckout() {
     // Allow customer to specify username and password, and log in new users after checkout.
     $settings = array(
