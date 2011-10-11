@@ -128,6 +128,16 @@ function uc_catalog_views_default_views() {
   $handler->display->display_options['arguments']['term_node_tid_depth']['break_phrase'] = 0;
   $handler->display->display_options['arguments']['term_node_tid_depth']['set_breadcrumb'] = 1;
   $handler->display->display_options['arguments']['term_node_tid_depth']['use_taxonomy_term_path'] = 0;
+  /* Filter criterion: Content: Published */
+  $handler->display->display_options['filters']['status']['id'] = 'status';
+  $handler->display->display_options['filters']['status']['table'] = 'node';
+  $handler->display->display_options['filters']['status']['field'] = 'status';
+  $handler->display->display_options['filters']['status']['value'] = '1';
+  /* Filter criterion: Node: Is a product */
+  $handler->display->display_options['filters']['is_product']['id'] = 'is_product';
+  $handler->display->display_options['filters']['is_product']['table'] = 'uc_products';
+  $handler->display->display_options['filters']['is_product']['field'] = 'is_product';
+  $handler->display->display_options['filters']['is_product']['value'] = '1';
 
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'catalog');
