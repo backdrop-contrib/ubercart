@@ -325,6 +325,10 @@ function uc_attribute_options_form_submit($form, &$form_state) {
 /**
  * Formats an attribute and its options.
  *
+ * @param $variables
+ *   An associative array containing:
+ *   - form: A render element representing the form.
+ *
  * @ingroup themeable
  */
 function theme_uc_attribute_options_form($variables) {
@@ -681,6 +685,10 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
 /**
  * Displays the formatted attribute form.
  *
+ * @param $variables
+ *   An associative array containing:
+ *   - form: A render element representing the form.
+ *
  * @see uc_object_attributes_form()
  * @ingroup themeable
  */
@@ -991,6 +999,10 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
 /**
  * Displays the option form.
  *
+ * @param $variables
+ *   An associative array containing:
+ *   - form: A render element representing the form.
+ *
  * @see uc_object_options_form()
  * @ingroup themeable
  */
@@ -1052,11 +1064,13 @@ function theme_uc_object_options_form($variables) {
 /**
  * Returns a themed set of attribute options for use in order displays.
  *
- * @param $element
- *   Structured array containing the set of attributes with each element
- *   having a key of attribute ID and the following keys:
- *     #attribute_name - Attribute name
- *     #options - Array of option names
+ * @param $variables
+ *   An associative array containing:
+ *   - attributes: An associative array containing the set of attributes,
+ *     with each element keyed by attribute ID:
+ *     - <aid>: An associative array containing:
+ *       - #attribute_name: Attribute name.
+ *       - #options: Array of option names.
  *
  * @return
  *   Themed set of attribute options.
