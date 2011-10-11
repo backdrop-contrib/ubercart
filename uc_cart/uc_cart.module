@@ -1276,7 +1276,7 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
 
   if (!isset($items[$cid])) {
     $items[$cid] = array();
-    $result = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c ON n.nid = c.nid WHERE c.cart_id = :id ORDER BY c.cart_item_id ASC", array(':id' => $cid));
+    $result = db_query("SELECT * FROM {uc_cart_products} WHERE cart_id = :id ORDER BY cart_item_id ASC", array(':id' => $cid));
 
     foreach ($result as $item) {
       $items[$cid][] = uc_cart_get_item($item);
@@ -1339,7 +1339,7 @@ function uc_cart_get_total_qty($cid = NULL) {
  */
 function uc_cart_get_item($item) {
   if (!is_object($item)) {
-    $item = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c ON n.nid = c.nid WHERE c.cart_item_id = :id", array(':id' => $item))->fetchObject();
+    $item = db_query("SELECT * FROM {uc_cart_products} WHERE cart_item_id = :id", array(':id' => $item))->fetchObject();
   }
 
   if (empty($item)) {
@@ -1347,6 +1347,8 @@ function uc_cart_get_item($item) {
   }
 
   $product = node_load($item->nid);
+  $item->vid = $product->vid;
+  $item->title = $product->title;
   $item->cost = $product->cost;
   $item->price = $product->sell_price;
   $item->weight = $product->weight;
