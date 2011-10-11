@@ -140,8 +140,53 @@ function uc_catalog_views_default_views() {
   $handler->display->display_options['filters']['is_product']['value'] = '1';
 
   /* Display: Page */
-  $handler = $view->new_display('page', 'Page', 'catalog');
+  $handler = $view->new_display('page', 'Table', 'catalog');
   $handler->display->display_options['path'] = '_catalog';
+
+  /* Display: Page */
+  $handler = $view->new_display('page', 'Grid', 'catalog_grid');
+  $handler->display->display_options['defaults']['css_class'] = FALSE;
+  $handler->display->display_options['css_class'] = 'uc-catalog-grid';
+  $handler->display->display_options['defaults']['style_plugin'] = FALSE;
+  $handler->display->display_options['style_plugin'] = 'grid';
+  $handler->display->display_options['style_options']['columns'] = '3';
+  $handler->display->display_options['style_options']['fill_single_line'] = 1;
+  $handler->display->display_options['defaults']['style_options'] = FALSE;
+  $handler->display->display_options['defaults']['row_plugin'] = FALSE;
+  $handler->display->display_options['row_plugin'] = 'fields';
+  $handler->display->display_options['defaults']['row_options'] = FALSE;
+  $handler->display->display_options['defaults']['fields'] = FALSE;
+  /* Field: Content: Title */
+  $handler->display->display_options['fields']['title']['id'] = 'title';
+  $handler->display->display_options['fields']['title']['table'] = 'node';
+  $handler->display->display_options['fields']['title']['field'] = 'title';
+  $handler->display->display_options['fields']['title']['label'] = '';
+  /* Field: Product: SKU */
+  $handler->display->display_options['fields']['model']['id'] = 'model';
+  $handler->display->display_options['fields']['model']['table'] = 'uc_products';
+  $handler->display->display_options['fields']['model']['field'] = 'model';
+  $handler->display->display_options['fields']['model']['label'] = '';
+  /* Field: Content: Image */
+  $handler->display->display_options['fields']['entity_id']['id'] = 'entity_id';
+  $handler->display->display_options['fields']['entity_id']['table'] = 'field_data_uc_product_image';
+  $handler->display->display_options['fields']['entity_id']['field'] = 'uc_product_image';
+  $handler->display->display_options['fields']['entity_id']['label'] = '';
+  $handler->display->display_options['fields']['entity_id']['hide_empty'] = 1;
+  $handler->display->display_options['fields']['entity_id']['settings'] = array(
+    'image_style' => 'uc_product_list',
+    'image_link' => 'content',
+  );
+  /* Field: Product: Display price */
+  $handler->display->display_options['fields']['display_price']['id'] = 'display_price';
+  $handler->display->display_options['fields']['display_price']['table'] = 'uc_products';
+  $handler->display->display_options['fields']['display_price']['field'] = 'display_price';
+  $handler->display->display_options['fields']['display_price']['label'] = '';
+  /* Field: Product: Buy it now button */
+  $handler->display->display_options['fields']['buyitnowbutton']['id'] = 'buyitnowbutton';
+  $handler->display->display_options['fields']['buyitnowbutton']['table'] = 'uc_products';
+  $handler->display->display_options['fields']['buyitnowbutton']['field'] = 'buyitnowbutton';
+  $handler->display->display_options['fields']['buyitnowbutton']['label'] = '';
+  $handler->display->display_options['path'] = '_catalog_grid';
 
   $views[$view->name] = $view;
 
