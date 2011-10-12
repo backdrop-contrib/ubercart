@@ -233,7 +233,8 @@ function uc_order_rules_action_info() {
       'from' => array(
         'type' => 'text',
         'label' => t('Sender'),
-        'description' => t("Enter the 'From' email addresses, or leave blank to use your store email address. You may use order tokens for dynamic email addresses."),
+        'description' => t("Enter the 'From' email address, or leave blank to use your store email address. You may use order tokens for dynamic email addresses."),
+        'optional' => TRUE,
       ),
       'addresses' => array(
         'type' => 'text',
@@ -264,10 +265,13 @@ function uc_order_rules_action_info() {
       'from' => array(
         'type' => 'text',
         'label' => t('Sender'),
+        'description' => t("Enter the 'From' email address, or leave blank to use your store email address. You may use order tokens for dynamic email addresses."),
+        'optional' => TRUE,
       ),
       'addresses' => array(
         'type' => 'text',
         'label' => t('Recipients'),
+        'description' => t('Enter the email addresses to receive the invoice, one on each line. You may use order tokens for dynamic email addresses.'),
       ),
       'subject' => array(
         'type' => 'text',
