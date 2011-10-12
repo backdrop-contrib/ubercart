@@ -684,19 +684,20 @@ function uc_roles_feature_form($form, &$form_state, $node, $feature) {
 
   $form['end_override'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Override the default expiration period.'),
+    '#title' => t('Override the <a href="!url">default role expiration</a>.', array('!url' => url('admin/store/settings/products'))),
     '#default_value' => $default_end_override,
   );
 
   $form['role_lifetime'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Expiration period'),
+    '#title' => t('Role expiration'),
     '#states' => array(
       'visible' => array('input[name="end_override"]' => array('checked' => TRUE)),
     ),
   );
   $form['role_lifetime']['expiration'] = array(
     '#type' => 'select',
+    '#title' => t('Expiration type'),
     '#options' => array(
       'rel' => t('Relative from activation time'),
       'abs' => t('Absolute role ending'),
@@ -725,7 +726,7 @@ function uc_roles_feature_form($form, &$form_state, $node, $feature) {
       'year' => t('year(s)')
     ),
     '#default_value' => $default_granularity,
-    '#description' => t('From the time the expiration period started.'),
+    '#description' => t('From the time the role was purchased.'),
     '#prefix' => '<div class="expiration">',
     '#suffix' => '</div>',
     '#states' => array(
@@ -740,7 +741,7 @@ function uc_roles_feature_form($form, &$form_state, $node, $feature) {
   );
   $form['role_lifetime']['absolute']['uc_roles_expire_absolute'] = array(
     '#type' => 'date',
-    '#description' => t('When this expiration period will end.'),
+    '#description' => t('Expire the role at the beginning of this day.'),
   );
   if ($end_time) {
     $form['role_lifetime']['uc_roles_expire_absolute']['#default_value'] = $end_time;
@@ -922,11 +923,12 @@ function uc_roles_feature_settings($form, &$form_state) {
 
   $form['role_lifetime'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Default expiration period'),
+    '#title' => t('Default role expiration'),
   );
 
   $form['role_lifetime']['uc_roles_default_end_expiration'] = array(
     '#type' => 'select',
+    '#title' => t('Expiration type'),
     '#options' => array(
       'rel' => t('Relative from activation time'),
       'abs' => t('Absolute role ending'),
@@ -955,7 +957,7 @@ function uc_roles_feature_settings($form, &$form_state) {
       'month' => t('month(s)'),
       'year' => t('year(s)')
     ),
-    '#description' => t('The default amount of time a granted Ubercart role will last until it expires.'),
+    '#description' => t('From the time the role was purchased.'),
     '#prefix' => '<div class="expiration">',
     '#suffix' => '</div>',
     '#states' => array(
@@ -970,7 +972,7 @@ function uc_roles_feature_settings($form, &$form_state) {
   );
   $form['role_lifetime']['absolute']['uc_roles_default_end_time'] = array(
     '#type' => 'date',
-    '#description' => t('When this expiration period will end.'),
+    '#description' => t('Expire the role at the beginning of this day.'),
     '#default_value' => variable_get('uc_roles_default_end_time', array(
       'day' => date('j'),
       'month' => date('n'),
