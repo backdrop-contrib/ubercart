@@ -44,7 +44,7 @@ function uc_store_token_info() {
     'description' => t('The Ubercart store phone number.'),
   );
   $store['fax'] = array(
-    'name' => t('Fax Number'),
+    'name' => t('Fax number'),
     'description' => t('The Ubercart store fax number.'),
   );
   $store['address'] = array(
