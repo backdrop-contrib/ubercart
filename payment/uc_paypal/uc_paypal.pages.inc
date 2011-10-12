@@ -43,7 +43,6 @@ function uc_paypal_ipn() {
   $payment_status = check_plain($_POST['payment_status']);
   $payment_amount = check_plain($_POST['mc_gross']);
   $payment_currency = check_plain($_POST['mc_currency']);
-  $payment_fee = check_plain($_POST['mc_fee']);
   $receiver_email = check_plain($_POST['business']);
   if ($receiver_email == '') {
     $receiver_email = check_plain($_POST['receiver_email']);
