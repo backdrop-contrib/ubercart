@@ -1033,20 +1033,20 @@ function theme_uc_order_view_update_controls($variables) {
 function uc_order_view_update_form_submit($form, &$form_state) {
   global $user;
 
-  if ($form_state['values']['status'] != $form_state['values']['current_status']) {
-    if (uc_order_update_status($form_state['values']['order_id'], $form_state['values']['status'])) {
-      if (is_null($form_state['values']['order_comment']) || strlen($form_state['values']['order_comment']) == 0) {
-        uc_order_comment_save($form_state['values']['order_id'], $user->uid, '-', 'order', $form_state['values']['status'], $form_state['values']['notify']);
-      }
-    }
-  }
-
   if (!is_null($form_state['values']['order_comment']) && strlen(trim($form_state['values']['order_comment'])) > 0) {
     uc_order_comment_save($form_state['values']['order_id'], $user->uid, $form_state['values']['order_comment'], 'order', $form_state['values']['status'], $form_state['values']['notify']);
   }
 
   if (!is_null($form_state['values']['admin_comment']) && strlen(trim($form_state['values']['admin_comment'])) > 0) {
     uc_order_comment_save($form_state['values']['order_id'], $user->uid, $form_state['values']['admin_comment']);
+  }
+
+  if ($form_state['values']['status'] != $form_state['values']['current_status']) {
+    if (uc_order_update_status($form_state['values']['order_id'], $form_state['values']['status'])) {
+      if (is_null($form_state['values']['order_comment']) || strlen($form_state['values']['order_comment']) == 0) {
+        uc_order_comment_save($form_state['values']['order_id'], $user->uid, '-', 'order', $form_state['values']['status'], $form_state['values']['notify']);
+      }
+    }
   }
 
   // Let Rules send email if requested.
