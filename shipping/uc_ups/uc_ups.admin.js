@@ -9,7 +9,7 @@ Drupal.behaviors.upsAdminFieldsetSummaries = {
   attach: function (context) {
     $('fieldset#edit-uc-ups-credentials', context).drupalSetSummary(function(context) {
       var server = $('#edit-uc-ups-connection-address :selected', context).text().toLowerCase();
-      return Drupal.t('Using UPS @role server.', { '@role': server });
+      return Drupal.t('Using UPS @role server', { '@role': server });
     });
 
     $('fieldset#edit-uc-ups-markups', context).drupalSetSummary(function(context) {
@@ -19,15 +19,6 @@ Drupal.behaviors.upsAdminFieldsetSummaries = {
         + Drupal.t('Weight markup') + ': '
         + $('#edit-uc-ups-weight-markup', context).val() + ' '
         + $('#edit-uc-ups-weight-markup-type', context).val();
-    });
-
-    $('fieldset#edit-uc-ups-validation', context).drupalSetSummary(function(context) {
-      if ($('#edit-uc-ups-address-validation').is(':checked')) {
-        return Drupal.t('Validation is enabled.');
-      }
-      else {
-        return Drupal.t('Validation is disabled.');
-      }
     });
   }
 };

@@ -9,10 +9,10 @@ Drupal.behaviors.uspsAdminFieldsetSummaries = {
   attach: function (context) {
     $('fieldset#edit-domestic', context).drupalSetSummary(function(context) {
       if ($('#edit-uc-usps-online-rates').is(':checked')) {
-        return Drupal.t('Using "online" rates.');
+        return Drupal.t('Using "online" rates');
       }
       else {
-        return Drupal.t('Using standard rates.');
+        return Drupal.t('Using standard rates');
       }
     });
 
