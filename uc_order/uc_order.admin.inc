@@ -11,6 +11,8 @@
  * @ingroup forms
  */
 function uc_order_settings_form($form, &$form_state) {
+
+  // Put fieldsets into vertical tabs
   $form['order-settings'] = array('#type' => 'vertical_tabs');
 
   $form['invoice'] = array(

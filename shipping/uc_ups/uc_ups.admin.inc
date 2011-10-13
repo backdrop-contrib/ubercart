@@ -18,9 +18,13 @@
 function uc_ups_admin_settings($form, &$form_state) {
 
   // Put fieldsets into vertical tabs
-  $form['ups-settings'] = array('#type' => 'vertical_tabs');
-  $form['#attached']['js'] = array(
-    'vertical-tabs' => drupal_get_path('module', 'uc_ups') . '/uc_ups.admin.js',
+  $form['ups-settings'] = array(
+    '#type' => 'vertical_tabs',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_ups') . '/uc_ups.admin.js',
+      ),
+    ),
   );
 
   // Container for credential forms

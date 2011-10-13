@@ -15,9 +15,13 @@
 function uc_usps_admin_settings($form, &$form_state) {
 
   // Put fieldsets into vertical tabs
-  $form['usps-settings'] = array('#type' => 'vertical_tabs');
-  $form['#attached']['js'] = array(
-    'vertical-tabs' => drupal_get_path('module', 'uc_usps') . '/uc_usps.admin.js',
+  $form['usps-settings'] = array(
+    '#type' => 'vertical_tabs',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_usps') . '/uc_usps.admin.js',
+      ),
+    ),
   );
 
   // Container for credential forms

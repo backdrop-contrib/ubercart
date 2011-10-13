@@ -12,17 +12,21 @@
  * @ingroup forms
  */
 function uc_cart_cart_settings_form($form, &$form_state) {
-  $form['cart-settings'] = array('#type' => 'vertical_tabs');
 
-  $form['general'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Basic settings'),
-    '#group' => 'cart-settings',
+  // Put fieldsets into vertical tabs
+  $form['cart-settings'] = array(
+    '#type' => 'vertical_tabs',
     '#attached' => array(
       'js' => array(
         'vertical-tabs' => drupal_get_path('module', 'uc_cart') . '/uc_cart.admin.js',
       ),
     ),
+  );
+
+  $form['general'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Basic settings'),
+    '#group' => 'cart-settings',
   );
 
   $panes = uc_cart_cart_pane_list(NULL);
@@ -222,6 +226,8 @@ function uc_cart_cart_settings_form_validate($form, &$form_state) {
  * @ingroup forms
  */
 function uc_cart_checkout_settings_form($form, &$form_state) {
+
+  // Put fieldsets into vertical tabs
   $form['checkout-settings'] = array(
     '#type' => 'vertical_tabs',
     '#attached' => array(

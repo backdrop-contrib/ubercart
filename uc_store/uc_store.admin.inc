@@ -713,7 +713,7 @@ function uc_store_address_fields_form_reset($form_id, &$form_state) {
  * @ingroup forms
  */
 function uc_store_settings_form($form, &$form_state) {
-  $form['store']['#type'] = 'vertical_tabs';
+  $form['store'] = array('#type' => 'vertical_tabs');
 
   $form['basic'] = array(
     '#type' => 'fieldset',

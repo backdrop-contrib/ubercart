@@ -48,6 +48,8 @@ function uc_product_class_default() {
  * @ingroup forms
  */
 function uc_product_settings_form($form, &$form_state) {
+
+  // Put fieldsets into vertical tabs
   $form['product-settings'] = array('#type' => 'vertical_tabs');
 
   $form['product'] = array(
