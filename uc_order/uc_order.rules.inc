@@ -312,11 +312,11 @@ function uc_order_condition_order_state($order, $order_state) {
  * @see uc_order_condition_order_state()
  */
 function uc_order_condition_order_state_options() {
-  foreach (uc_order_state_list('general') as $state) {
-    $options[$state['id']] = $state['title'];
+  foreach (uc_order_state_list('general') as $id => $state) {
+    $options[$id] = $state['title'];
   }
-  foreach (uc_order_state_list('specific') as $state) {
-    $options[$state['id']] = $state['title'];
+  foreach (uc_order_state_list('specific') as $id => $state) {
+    $options[$id] = $state['title'];
   }
 
   return $options;
