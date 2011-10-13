@@ -25,7 +25,7 @@ function uc_usps_admin_settings($form, &$form_state) {
   $form['uc_usps_credentials']['uc_usps_user_id'] = array(
     '#type' => 'textfield',
     '#title' => t('USPS user ID'),
-    '#description' => t('To acquire or locate your user ID, refer to the <a href="!url">USPS documentation</a>.', array('!url' => 'http://www.ubercart.org/docs/user/312/usps_web_tool_shipping_quote_settings')),
+    '#description' => t('To acquire or locate your user ID, refer to the <a href="!url">USPS documentation</a>.', array('!url' => 'http://drupal.org/node/1308256')),
     '#default_value' => variable_get('uc_usps_user_id', ''),
   );
 
