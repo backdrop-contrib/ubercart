@@ -290,6 +290,10 @@ function uc_stock_edit_form_submit($form, &$form_state) {
 /**
  * Returns HTML for uc_stock_edit_form().
  *
+ * @param $variables
+ *   An associative array containing:
+ *   - form: A render element representing the form.
+ *
  * @see uc_stock_edit_form()
  * @see uc_stock_edit_form_submit()
  * @ingroup themeable
