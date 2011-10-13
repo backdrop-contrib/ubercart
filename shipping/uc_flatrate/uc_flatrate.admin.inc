@@ -6,36 +6,6 @@
  */
 
 /**
- * Lists and compares all flatrate shipping quote methods.
- */
-function uc_flatrate_admin_methods() {
-  $build = array();
-  $rows = array();
-
-  $result = db_query("SELECT mid, title, label, base_rate, product_rate FROM {uc_flatrate_methods}");
-  foreach ($result as $method) {
-    $row = array();
-    $row[] = check_plain($method->title);
-    $row[] = check_plain($method->label);
-    $row[] = uc_currency_format($method->base_rate);
-    $row[] = uc_currency_format($method->product_rate);
-    $row[] = l(t('edit'), 'admin/store/settings/quotes/methods/flatrate/' . $method->mid);
-    $rows[] = $row;
-  }
-
-  if (count($rows)) {
-    $header = array(t('Title'), t('Label'), t('Base rate'), t('Default product rate'), array('data' => t('Operations'), 'colspan' => 1));
-    $build['methods'] = array(
-      '#theme' => 'table',
-      '#header' => $header,
-      '#rows' => $rows,
-    );
-  }
-
-  return $build;
-}
-
-/**
  * Configures the store default product shipping rates.
  *
  * @see uc_flatrate_admin_method_edit_form_validate()
@@ -170,7 +140,7 @@ function uc_flatrate_admin_method_edit_form_submit($form, &$form_state) {
     drupal_set_message(t('Created and enabled new flat rate shipping method.'));
   }
 
-  $form_state['redirect'] = 'admin/store/settings/quotes/methods/flatrate';
+  $form_state['redirect'] = 'admin/store/settings/quotes/methods';
 }
 
 /******************************************************************************
@@ -187,7 +157,7 @@ function uc_flatrate_admin_method_confirm_delete($form, &$form_state, $mid) {
   $form['mid'] = array('#type' => 'value', '#value' => $mid);
 
   return confirm_form($form, t('Do you want to delete this shipping method?'),
-    'admin/store/settings/quotes/methods/flatrate',
+    'admin/store/settings/quotes/methods',
     t('This will remove the shipping method and the product-specific overrides (if applicable). This action can not be undone.'),
     t('Delete'));
 }
@@ -218,5 +188,5 @@ function uc_flatrate_admin_method_confirm_delete_submit($form, &$form_state) {
   variable_set('uc_quote_method_weight', $weight);
 
   drupal_set_message(t('Flat rate shipping method deleted.'));
-  $form_state['redirect'] = 'admin/store/settings/quotes/methods/flatrate';
+  $form_state['redirect'] = 'admin/store/settings/quotes/methods';
 }
