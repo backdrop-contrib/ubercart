@@ -576,6 +576,7 @@ function uc_reports_products_custom_form_submit($form, &$form_state) {
  *
  * Straight duplication of theme_table, but our row handling is different.
  *
+ * @see theme_table()
  * @ingroup themeable
  */
 function theme_uc_reports_product_table($variables) {
@@ -583,9 +584,12 @@ function theme_uc_reports_product_table($variables) {
   $rows = $variables['rows'];
   $attributes = $variables['attributes'];
   $caption = $variables['caption'];
+  $colgroups = $variables['colgroups'];
+  $sticky = $variables['sticky'];
+  $empty = $variables['empty'];
 
   // Add sticky headers, if applicable.
-  if (count($header)) {
+  if (count($header) && $sticky) {
     drupal_add_js('misc/tableheader.js');
     // Add 'sticky-enabled' class to the table to identify it for JS.
     // This is needed to target tables constructed by this function.
@@ -596,6 +600,55 @@ function theme_uc_reports_product_table($variables) {
 
   if (isset($caption)) {
     $output .= '<caption>' . $caption . "</caption>\n";
+  }
+
+  // Format the table columns:
+  if (count($colgroups)) {
+    foreach ($colgroups as $number => $colgroup) {
+      $attributes = array();
+
+      // Check if we're dealing with a simple or complex column
+      if (isset($colgroup['data'])) {
+        foreach ($colgroup as $key => $value) {
+          if ($key == 'data') {
+            $cols = $value;
+          }
+          else {
+            $attributes[$key] = $value;
+          }
+        }
+      }
+      else {
+        $cols = $colgroup;
+      }
+
+      // Build colgroup
+      if (is_array($cols) && count($cols)) {
+        $output .= ' <colgroup' . drupal_attributes($attributes) . '>';
+        $i = 0;
+        foreach ($cols as $col) {
+          $output .= ' <col' . drupal_attributes($col) . ' />';
+        }
+        $output .= " </colgroup>\n";
+      }
+      else {
+        $output .= ' <colgroup' . drupal_attributes($attributes) . " />\n";
+      }
+    }
+  }
+
+  // Add the 'empty' row message if available.
+  if (!count($rows) && $empty) {
+    $header_count = 0;
+    foreach ($header as $header_cell) {
+      if (is_array($header_cell)) {
+        $header_count += isset($header_cell['colspan']) ? $header_cell['colspan'] : 1;
+      }
+      else {
+        $header_count++;
+      }
+    }
+    $rows[] = array(array('data' => $empty, 'colspan' => $header_count, 'class' => array('empty', 'message')));
   }
 
   // Format the table header:
@@ -629,6 +682,7 @@ function theme_uc_reports_product_table($variables) {
           if ($key == 'data') {
             $cells = $value;
           }
+          // The following elseif clause is where we differ from theme_table()
           elseif ($key == 'primary') {
             $class = $flip[$class];
           }
@@ -642,6 +696,7 @@ function theme_uc_reports_product_table($variables) {
       }
       if (count($cells)) {
         // Add odd/even class
+        // We don't flip here like theme_table(), because we did that above.
         $attributes['class'][] = $class;
 
         // Build row
