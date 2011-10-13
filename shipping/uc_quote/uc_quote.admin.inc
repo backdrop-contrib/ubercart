@@ -124,22 +124,34 @@ function uc_quote_method_settings($form, &$form_state) {
 
   $enabled = variable_get('uc_quote_enabled', array());
   $weight = variable_get('uc_quote_method_weight', array());
-  $methods = uc_quote_shipping_method_options();
-  if (is_array($methods)) {
-    foreach ($methods as $id => $title) {
+  $methods = module_invoke_all('uc_shipping_method');
+  uasort($methods, '_uc_quote_type_sort');
+
+  foreach ($methods as $method) {
+    if (isset($method['quote'])) {
+      $id = $method['id'];
+
       // Ensure default values are set.
       $enabled += array($id => FALSE);
       $weight += array($id => 0);
 
       $form['methods'][$id]['uc_quote_enabled'] = array(
         '#type' => 'checkbox',
-        '#title' => $title,
+        '#title' => $method['title'],
         '#default_value' => $enabled[$id],
+      );
+      $form['methods'][$id]['description'] = array(
+        '#markup' => isset($method['description']) ? $method['description'] : '',
       );
       $form['methods'][$id]['uc_quote_method_weight'] = array(
         '#type' => 'weight',
         '#default_value' => $weight[$id],
         '#attributes' => array('class' => array('uc-quote-method-weight')),
+      );
+      $form['methods'][$id]['operations'] = array(
+        '#theme' => 'links',
+        '#links' => isset($method['operations']) ? $method['operations'] : array(),
+        '#attributes' => array('class' => array('links', 'inline')),
       );
     }
   }
@@ -196,12 +208,14 @@ function theme_uc_quote_method_settings($variables) {
 
   drupal_add_tabledrag('uc-quote-methods', 'order', 'sibling', 'uc-quote-method-weight');
 
-  $header = array(t('Shipping method'), t('List position'));
+  $header = array(t('Shipping method'), t('Details'), t('List position'), t('Operations'));
   $rows = array();
   foreach (element_children($form['methods']) as $method) {
     $row = array(
       drupal_render($form['methods'][$method]['uc_quote_enabled']),
+      drupal_render($form['methods'][$method]['description']),
       drupal_render($form['methods'][$method]['uc_quote_method_weight']),
+      drupal_render($form['methods'][$method]['operations']),
     );
 
     $rows[] = array(
