@@ -285,6 +285,10 @@ function uc_store_customer_search_form($form, &$form_state) {
 /**
  * Returns HTML for the customer search fieldset
  *
+ * @param $variables
+ *   An associative array containing:
+ *   - form: A render element representing the form.
+ *
  * @ingroup themeable
  */
 function theme_uc_store_customer_search_fieldset($variables) {
@@ -639,6 +643,10 @@ function uc_store_address_fields_form($form, &$form_state) {
 
 /**
  * Returns HTML for uc_store_address_fields_form().
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - form: A render element representing the form.
  *
  * @see uc_store_address_fields_form()
  * @ingroup themeable
