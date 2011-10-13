@@ -64,7 +64,7 @@ function uc_ups_admin_settings($form, &$form_state) {
   $form['uc_ups_credentials']['uc_ups_connection_address'] = array(
     '#type' => 'select',
     '#title' => t('Server mode'),
-    '#description' => t('Use the Testing server while developing and configuring your site. Switch to the Production server only after you have demonstartated that transactions on the Testing server are working and you are ready to go live.'),
+    '#description' => t('Use the Testing server while developing and configuring your site. Switch to the Production server only after you have demonstrated that transactions on the Testing server are working and you are ready to go live.'),
     '#options' => array('https://wwwcie.ups.com/ups.app/xml/' => t('Testing'),
       'https://www.ups.com/ups.app/xml/' => t('Production'),
     ),
