@@ -11,8 +11,8 @@
  * Records UPS account information neccessary to use the service. Allows testing
  * or production mode. Configures which UPS services are quoted to customers.
  *
- * @see uc_admin_settings_validate()
- * @see uc_admin_settings_submit()
+ * @see uc_ups_admin_settings_validate()
+ * @see uc_ups_admin_settings_submit()
  * @ingroup forms
  */
 function uc_ups_admin_settings($form, &$form_state) {
