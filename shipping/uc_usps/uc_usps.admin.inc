@@ -13,6 +13,10 @@
  * @ingroup forms
  */
 function uc_usps_admin_settings($form, &$form_state) {
+
+  // Put fieldsets into vertical tabs
+  $form['usps-settings'] = array('#type' => 'vertical_tabs');
+
   // Container for credential forms
   $form['uc_usps_credentials'] = array(
     '#type'          => 'fieldset',
@@ -20,6 +24,12 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description'   => t('Account number and authorization information.'),
     '#collapsible'   => TRUE,
     '#collapsed'     => TRUE,
+    '#group'         => 'usps-settings',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_usps') . '/uc_usps.admin.js',
+      ),
+    ),
   );
 
   $form['uc_usps_credentials']['uc_usps_user_id'] = array(
@@ -35,6 +45,12 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Set the conditions that will return a USPS quote.'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
+    '#group'         => 'usps-settings',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_usps') . '/uc_usps.admin.js',
+      ),
+    ),
   );
 
   $form['domestic']['uc_usps_online_rates'] = array(
@@ -88,6 +104,12 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Set the conditions that will return a USPS International quote.'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
+    '#group'         => 'usps-settings',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_usps') . '/uc_usps.admin.js',
+      ),
+    ),
   );
 
   $form['international']['uc_usps_intl_env_services'] = array(
@@ -135,6 +157,12 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description'   => t('Preferences that affect computation of quote.'),
     '#collapsible'   => TRUE,
     '#collapsed'     => TRUE,
+    '#group'         => 'usps-settings',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_usps') . '/uc_usps.admin.js',
+      ),
+    ),
   );
 
   $form['uc_usps_quote_options']['uc_usps_all_in_one'] = array(
@@ -182,6 +210,12 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description'   => t('Modifiers to the shipping weight and quoted rate.'),
     '#collapsible'   => TRUE,
     '#collapsed'     => TRUE,
+    '#group'         => 'usps-settings',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_usps') . '/uc_usps.admin.js',
+      ),
+    ),
   );
 
   $form['uc_usps_markups']['uc_usps_rate_markup_type'] = array(
