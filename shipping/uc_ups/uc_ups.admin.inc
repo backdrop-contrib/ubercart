@@ -16,6 +16,10 @@
  * @ingroup forms
  */
 function uc_ups_admin_settings($form, &$form_state) {
+
+  // Put fieldsets into vertical tabs
+  $form['ups-settings'] = array('#type' => 'vertical_tabs');
+
   // Container for credential forms
   $form['uc_ups_credentials'] = array(
     '#type'          => 'fieldset',
@@ -23,6 +27,12 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#description'   => t('Account number and authorization information.'),
     '#collapsible'   => TRUE,
     '#collapsed'     => TRUE,
+    '#group'         => 'ups-settings',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_ups') . '/uc_ups.admin.js',
+      ),
+    ),
   );
 
   $form['uc_ups_credentials']['uc_ups_access_license'] = array(
@@ -65,6 +75,12 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#description' => t('Set the conditions that will return a UPS quote.'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
+    '#group'         => 'ups-settings',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_ups') . '/uc_ups.admin.js',
+      ),
+    ),
   );
 
   $form['services']['uc_ups_services'] = array(
@@ -93,6 +109,12 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#description'   => t('Preferences that affect computation of quote.'),
     '#collapsible'   => TRUE,
     '#collapsed'     => TRUE,
+    '#group'         => 'ups-settings',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_ups') . '/uc_ups.admin.js',
+      ),
+    ),
   );
 
   $form['uc_ups_quote_options']['uc_ups_all_in_one'] = array(
@@ -185,6 +207,12 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#description'   => t('Modifiers to the shipping weight and quoted rate.'),
     '#collapsible'   => TRUE,
     '#collapsed'     => TRUE,
+    '#group'         => 'ups-settings',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_ups') . '/uc_ups.admin.js',
+      ),
+    ),
   );
 
   // Form to select type of rate markup
@@ -236,6 +264,12 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#description'   => t('Preferences for UPS Shipping Label Printing.  Additional permissions from UPS are required to use this feature.'),
     '#collapsible'   => TRUE,
     '#collapsed'     => TRUE,
+    '#group'         => 'ups-settings',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'uc_ups') . '/uc_ups.admin.js',
+      ),
+    ),
   );
 
   $period = drupal_map_assoc(array(86400, 302400, 604800, 1209600, 2419200, 0), 'format_interval');
