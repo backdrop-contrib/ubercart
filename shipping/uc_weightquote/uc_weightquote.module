@@ -15,13 +15,6 @@
 function uc_weightquote_menu() {
   $items = array();
 
-  $items['admin/store/settings/quotes/methods/weightquote'] = array(
-    'title' => 'Weight quote',
-    'page callback' => 'uc_weightquote_admin_methods',
-    'access arguments' => array('configure quotes'),
-    'type' => MENU_LOCAL_TASK,
-    'file' => 'uc_weightquote.admin.inc',
-  );
   $items['admin/store/settings/quotes/methods/weightquote/add'] = array(
     'title' => 'Add weight quote',
     'page callback' => 'drupal_get_form',
@@ -178,7 +171,7 @@ function uc_weightquote_uc_shipping_method() {
   $enabled = variable_get('uc_quote_enabled', array());
   $weight = variable_get('uc_quote_method_weight', array());
 
-  $result = db_query("SELECT mid, title, label FROM {uc_weightquote_methods}");
+  $result = db_query("SELECT mid, title, label, base_rate, product_rate FROM {uc_weightquote_methods}");
   foreach ($result as $method) {
     // Ensure the default values are set.
     $enabled += array('weightquote_' . $method->mid => FALSE);
@@ -188,6 +181,17 @@ function uc_weightquote_uc_shipping_method() {
       'id' => 'weightquote_' . $method->mid,
       'module' => 'uc_weightquote',
       'title' => $method->title,
+      'description' => t('!base_rate + !product_rate per !unit', array('!base_rate' => uc_currency_format($method->base_rate), '!product_rate' => uc_currency_format($method->product_rate), '!unit' => variable_get('uc_weight_unit', 'lb'))),
+      'operations' => array(
+        'edit' => array(
+          'title' => t('edit'),
+          'href' => 'admin/store/settings/quotes/methods/weightquote/' . $method->mid,
+        ),
+        'delete' => array(
+          'title' => t('delete'),
+          'href' => 'admin/store/settings/quotes/weightquote/' . $method->mid . '/delete',
+        ),
+      ),
       'enabled' => isset($enabled['weightquote_' . $method->mid]) ? $enabled['weightquote_' . $method->mid] : FALSE,
       'quote' => array(
         'type' => 'order',
