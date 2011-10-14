@@ -45,20 +45,12 @@ function uc_order_views_data() {
     ),
   );
 
-  $data['uc_order_statuses']['table']['join'] = array(
-    'uc_orders' => array(
-      'left_field' => 'order_status',
-      'field' => 'order_status_id',
-    ),
-  );
+  // Order status field.
   $data['uc_orders']['order_status'] = array(
     'title' => t('Order status'),
     'help' => t('The order status.'),
     'field' => array(
       'handler' => 'uc_order_handler_field_order_status',
-      'additional fields' => array(
-        'title' => array('table' => 'uc_order_statuses', 'field' => 'title'),
-      ),
       'click sortable' => TRUE,
     ),
     'sort' => array(
