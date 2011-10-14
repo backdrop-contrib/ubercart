@@ -444,7 +444,9 @@ function uc_order_condition_products_weight($order, $products, $weight_units, $w
   }
   else {
     foreach ($products as $product) {
-      $total += $totals[$product];
+      if (isset($totals[$product])) {
+        $total += $totals[$product];
+      }
     }
   }
   switch ($op) {
