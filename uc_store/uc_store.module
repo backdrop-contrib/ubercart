@@ -1704,6 +1704,18 @@ function uc_store_address() {
 }
 
 /**
+ * Returns the store e-mail address if set, otherwise the site email address.
+ */
+function uc_store_email() {
+  $email_from = variable_get('uc_store_email', '');
+  if (empty($email_from)) {
+    $email_from = variable_get('site_mail', ini_get('sendmail_from'));
+  }
+
+ return $email_from;
+}
+
+/**
  * Returns store name and e-mail address in an RFC 2822 compliant string.
  *
  * The return string is intended for use as a "From" address when sending
@@ -1714,11 +1726,7 @@ function uc_store_address() {
  *   An RFC 2822 compliant e-mail address.
  */
 function uc_store_email_from() {
-  // Use store e-mail address if set, else use site e-mail address
-  $email_from = variable_get('uc_store_email', '');
-  if (empty($email_from)) {
-    $email_from = variable_get('site_mail', ini_get('sendmail_from'));
-  }
+  $email_from = uc_store_email();
 
   // Add the store name to the e-mail "From" line.
   // Must be optional to prevent server conflicts.

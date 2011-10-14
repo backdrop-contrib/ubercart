@@ -356,8 +356,8 @@ function uc_ups_fulfill_order_submit($form, &$form_state) {
 function uc_ups_shipment_request($packages, $origin, $destination, $ups_service) {
   $store['name'] = variable_get('uc_store_name', NULL);
   $store['owner'] = variable_get('uc_store_owner', NULL);
-  $store['email'] = variable_get('uc_store_email', NULL);
-  $store['email_from'] = variable_get('uc_store_email', NULL);
+  $store['email'] = uc_store_email();
+  $store['email_from'] = uc_store_email();
   $store['phone'] = variable_get('uc_store_phone', NULL);
   $store['fax'] = variable_get('uc_store_fax', NULL);
   $store['street1'] = variable_get('uc_store_street1', NULL);

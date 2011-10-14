@@ -109,7 +109,7 @@ function uc_store_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'email':
-          $replacements[$original] = variable_get('uc_store_email', '');
+          $replacements[$original] = uc_store_email(),
           break;
 
         case 'phone':

@@ -20,7 +20,7 @@ function uc_stock_settings_form($form, &$form_state) {
   $form['uc_stock_threshold_notification_recipients'] = array(
     '#type' => 'textfield',
     '#title' => t('Notification recipients'),
-    '#default_value' => variable_get('uc_stock_threshold_notification_recipients', variable_get('uc_store_email', ini_get('sendmail_from'))),
+    '#default_value' => variable_get('uc_stock_threshold_notification_recipients', uc_store_email()),
     '#description' => t('The list of comma seperated email addresses that will receive the notification.'),
   );
 

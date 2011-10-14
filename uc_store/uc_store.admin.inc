@@ -729,7 +729,7 @@ function uc_store_settings_form($form, &$form_state) {
     '#size' => 32,
     '#maxlength' => 128,
     '#required' => TRUE,
-    '#default_value' => variable_get('uc_store_email', NULL),
+    '#default_value' => uc_store_email(),
   );
   $form['basic']['uc_store_email_include_name'] = array(
     '#type' => 'checkbox',
