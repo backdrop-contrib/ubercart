@@ -383,6 +383,12 @@ function uc_order_views_data() {
     'field' => 'nid',
   );
 
+  // Pull in order fields directly.
+  $data['uc_orders']['table']['join']['uc_order_products'] = array(
+    'left_field' => 'order_id',
+    'field' => 'order_id',
+  );
+
   // Expose products to their orders as a relationship.
   $data['uc_orders']['products'] = array(
     'relationship' => array(
