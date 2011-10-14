@@ -183,6 +183,10 @@ function uc_file_admin_files_form_show_submit($form, &$form_state) {
 /**
  * Returns HTML for uc_file_admin_files_form_show().
  *
+ * @param $variables
+ *   An associative array containing:
+ *   - form: A render element representing the form.
+ *
  * @see uc_file_admin_files_form_show_files()
  * @ingroup themeable
  */

@@ -30,9 +30,19 @@ define('UC_FILE_ERROR_HOOK_ERROR'             , 7);
 /**
  * Themes user file downloads page.
  *
- * @param $files
- *   Array of the files.
+ * @param $variables
+ *   An associative array containing:
+ *   - header: Table header array, in format required by theme_table().
+ *   - files: Associative array of downloadable files, containing:
+ *     - granted: Timestamp of file grant.
+ *     - link: URL of file.
+ *     - description: File name, as it should appear to user after downloading.
+ *     - accessed: Integer number of times file has been downloaded.
+ *     - download_limit: Integer limit on downloads.
+ *     - addresses: Integer number of IP addresses used.
+ *     - address_limit: Integer limit on IP addresses.
  *
+ * @see theme_table()
  * @ingroup themeable
  */
 function theme_uc_file_user_downloads($variables) {
