@@ -171,7 +171,7 @@ function uc_credit_cron() {
   if (variable_get('uc_credit_debug', FALSE)) {
     $time = strtotime(variable_get('uc_credit_number_duration', '1') . ' ' . variable_get('uc_credit_number_unit', 'years') . ' ago');
     $key = uc_credit_encryption_key();
-    $crypt = new uc_encryption_class;
+    $crypt = new UbercartEncryption();
 
     $result = db_query("SELECT order_id, data FROM {uc_orders} WHERE modified <= :last AND order_status = :status", array(':last' => $time, ':status' => variable_get('uc_credit_clear_status', uc_order_state_default('completed'))));
     while ($order = $result->fetchObject()) {
@@ -466,7 +466,7 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
 
       // Initialize the encryption key and class.
       $key = uc_credit_encryption_key();
-      $crypt = new uc_encryption_class;
+      $crypt = new UbercartEncryption();
 
       // Store the encrypted details in the session for the next pageload.
       // We are using base64_encode() because the encrypt function works with a
@@ -821,7 +821,7 @@ function uc_credit_cache($op, $data = NULL, $encrypted = TRUE) {
     if ($encrypted) {
       // Initialize the encryption key and class.
       $key = uc_credit_encryption_key();
-      $crypt = new uc_encryption_class;
+      $crypt = new UbercartEncryption();
 
       // Save the unencrypted CC details for the duration of this request.
       // In recent versions, we base64_encode() the payment details before
@@ -1037,7 +1037,7 @@ function uc_credit_encryption_key() {
  * Saves a CC data array to an order's data array.
  */
 function _uc_credit_save_cc_data_to_order($cc_data, $order_id) {
-  $crypt = new uc_encryption_class;
+  $crypt = new UbercartEncryption();
 
   // Load up the existing data array.
   $data = db_query("SELECT data FROM {uc_orders} WHERE order_id = :id", array(':id' => $order_id))->fetchField();
