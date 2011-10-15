@@ -42,7 +42,7 @@ function hook_uc_payment_entered($order, $method, $amount, $account, $data, $com
 /**
  * Registers payment gateway callbacks.
  *
- * @see http://www.ubercart.org/docs/api/hook_payment_gateway
+ * @see http://www.ubercart.org/docs/api/hook_uc_payment_gateway
  *
  * @return
  *   Returns an array of payment gateways, keyed by the gateway ID, and with

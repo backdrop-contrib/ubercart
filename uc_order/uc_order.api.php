@@ -35,7 +35,7 @@ function hook_uc_invoice_templates() {
  * customers to use coupons and wants to represent an entered coupon as a line
  * item.
  *
- * Once a line item has been defined in hook_line_item, Ubercart will begin
+ * Once a line item has been defined in hook_uc_line_item, Ubercart will begin
  * interacting with it in various parts of the code. One of the primary ways
  * this is done is through the callback function you specify for the line item.
  *
@@ -106,10 +106,10 @@ function hook_uc_line_item_alter(&$item, $order) {
 }
 
 /**
- * Alters the line item definitions declared in hook_line_item().
+ * Alters the line item definitions declared in hook_uc_line_item().
  *
  * @param &$items
- *   The combined return value of hook_line_item().
+ *   The combined return value of hook_uc_line_item().
  */
 function hook_uc_line_item_data_alter(&$items) {
   // Tax amounts are added in to other line items, so the actual tax line
@@ -130,8 +130,9 @@ function hook_uc_line_item_data_alter(&$items) {
  * Checkout. When a customer completes checkout, the order's status gets updated
  * to show that the sale has gone through. Once an order is created, and even
  * during its creation, it may be acted on by any module to connect extra
- * information to an order. Every time an action occurs to an order, hook_order()
- * gets invoked to let your modules know what's happening and make stuff happen.
+ * information to an order. Every time an action occurs to an order,
+ * hook_uc_order() gets invoked to let your modules know what's happening and
+ * make stuff happen.
  *
  * @param $op
  *   The action being performed.
@@ -240,9 +241,9 @@ function hook_uc_order_actions($order) {
  * a custom checkout pane to find out a customer's desired delivery date would
  * then create a corresponding order pane to show the data on the order screens.
  *
- * hook_order_pane() works by defining new order panes and providing a little bit
- * of information about them. View the return value section below for information
- * about what parts of an order pane are defined by the hook.
+ * hook_uc_order_pane() works by defining new order panes and providing a little
+ * bit of information about them. View the return value section below for
+ * information about what parts of an order pane are defined by the hook.
  *
  * The real meat of an order pane is its callback function (which is specified in
  * the hook). The callback function handles what gets displayed on which screen
@@ -386,7 +387,7 @@ function uc_order_pane_callback($op, $order, &$form = NULL, &$form_state = NULL)
  *   $product object by reference and alter it directly.
  */
 function hook_uc_order_product_alter(&$product, $order) {
-  drupal_set_message('hook_order_product_alter(&$product, $order):');
+  drupal_set_message('hook_uc_order_product_alter(&$product, $order):');
   drupal_set_message('&$product: <pre>' . print_r($product, TRUE) . '</pre>');
   drupal_set_message('$order: <pre>' . print_r($order, TRUE) . '</pre>');
 }

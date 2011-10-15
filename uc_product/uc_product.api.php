@@ -61,7 +61,7 @@ function hook_uc_product_default_classes() {
  *
  * Modules that add data to cart items when they are selected should display it
  * with this hook. The return values from each implementation will be
- * sent through to hook_product_description_alter() implementations and then
+ * sent through to hook_uc_product_description_alter() implementations and then
  * all descriptions are rendered using drupal_render().
  *
  * @param $product
