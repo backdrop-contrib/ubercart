@@ -297,7 +297,9 @@ function uc_cart_checkout_form_submit($form, &$form_state) {
 }
 
 /**
- * @see uc_checkout_form()
+ * Submit handler for "Cancel" button on uc_cart_checkout_form().
+ *
+ * @see uc_cart_checkout_form()
  */
 function uc_cart_checkout_form_cancel($form, &$form_state) {
   if (isset($_SESSION['cart_order']) && intval($_SESSION['cart_order']) > 0) {

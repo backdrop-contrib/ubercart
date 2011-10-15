@@ -33,7 +33,7 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
   }
 
   /**
-   * Provide link to node option
+   * Provides link to node option.
    */
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);

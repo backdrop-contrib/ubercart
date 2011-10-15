@@ -31,7 +31,7 @@ class uc_order_handler_field_order_id extends views_handler_field {
   }
 
   /**
-   * Provide link to order adminstration page
+   * Provides link to order adminstration page.
    */
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
