@@ -9,16 +9,19 @@
  * Preprocesses a Cart Link and confirm with the user if a destructive action
  * is included.
  *
+ * @param $actions
+ *   A Cart Link URL is structured like "/cart/add/$actions". 
+ *
  * @see uc_cart_links_form_submit()
  */
-function uc_cart_links_form($form, &$form_state, $arg1) {
+function uc_cart_links_form($form, &$form_state, $actions) {
   // Fail if the link is restricted.
   $data = variable_get('uc_cart_links_restrictions', '');
   if (!empty($data)) {
     $restrictions = explode("\n", variable_get('uc_cart_links_restrictions', ''));
     $restrictions = array_map('trim', $restrictions);
 
-    if (!empty($restrictions) && !in_array($arg1, $restrictions)) {
+    if (!empty($restrictions) && !in_array($actions, $restrictions)) {
       $url = variable_get('uc_cart_links_invalid_page', '');
       if (empty($url)) {
         $url = '<front>';
@@ -31,7 +34,7 @@ function uc_cart_links_form($form, &$form_state, $arg1) {
   // Confirm with the user if the form contains a destructive action.
   $items = uc_cart_get_contents();
   if (variable_get('uc_cart_links_empty', TRUE) && !empty($items)) {
-    $actions = explode('-', urldecode($arg1));
+    $actions = explode('-', urldecode($actions));
     foreach ($actions as $action) {
       $action = drupal_substr($action, 0, 1);
       if ($action == 'e' || $action == 'E') {
@@ -41,7 +44,7 @@ function uc_cart_links_form($form, &$form_state, $arg1) {
   }
 
   // No destructive actions, so process the link immediately.
-  uc_cart_links_process($arg1);
+  uc_cart_links_process($actions);
 }
 
 /**
@@ -56,11 +59,11 @@ function uc_cart_links_form_submit($form, &$form_state) {
 /**
  * Processes a Cart Link to fiddle with the cart and redirect the user.
  *
- * @param $cart_action
- *   An action.
+ * @param $cart_actions
+ *   A Cart Link URL is structured like "/cart/add/$cart_actions". 
  */
-function uc_cart_links_process($cart_action) {
-  $actions = explode('-', urldecode($cart_action));
+function uc_cart_links_process($cart_actions) {
+  $actions = explode('-', urldecode($cart_actions));
   $rebuild_cart = FALSE;
   $messages = array();
   $id = t('(not specified)');
