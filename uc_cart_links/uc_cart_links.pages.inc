@@ -9,19 +9,19 @@
  * Preprocesses a Cart Link and confirm with the user if a destructive action
  * is included.
  *
- * @param $actions
- *   A Cart Link URL is structured like "/cart/add/$actions". 
+ * @param $cart_actions
+ *   A Cart Link URL is structured like "/cart/add/$cart_actions". 
  *
  * @see uc_cart_links_form_submit()
  */
-function uc_cart_links_form($form, &$form_state, $actions) {
+function uc_cart_links_form($form, &$form_state, $cart_actions) {
   // Fail if the link is restricted.
   $data = variable_get('uc_cart_links_restrictions', '');
   if (!empty($data)) {
     $restrictions = explode("\n", variable_get('uc_cart_links_restrictions', ''));
     $restrictions = array_map('trim', $restrictions);
 
-    if (!empty($restrictions) && !in_array($actions, $restrictions)) {
+    if (!empty($restrictions) && !in_array($cart_actions, $restrictions)) {
       $url = variable_get('uc_cart_links_invalid_page', '');
       if (empty($url)) {
         $url = '<front>';
@@ -34,7 +34,7 @@ function uc_cart_links_form($form, &$form_state, $actions) {
   // Confirm with the user if the form contains a destructive action.
   $items = uc_cart_get_contents();
   if (variable_get('uc_cart_links_empty', TRUE) && !empty($items)) {
-    $actions = explode('-', urldecode($actions));
+    $actions = explode('-', urldecode($cart_actions));
     foreach ($actions as $action) {
       $action = drupal_substr($action, 0, 1);
       if ($action == 'e' || $action == 'E') {
@@ -44,7 +44,7 @@ function uc_cart_links_form($form, &$form_state, $actions) {
   }
 
   // No destructive actions, so process the link immediately.
-  uc_cart_links_process($actions);
+  uc_cart_links_process($cart_actions);
 }
 
 /**
