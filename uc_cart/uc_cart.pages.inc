@@ -179,7 +179,7 @@ function uc_cart_checkout_form($form, &$form_state) {
           '#type' => 'fieldset',
           '#title' => $pane['title'],
           '#description' => !empty($return['description']) ? $return['description'] : NULL,
-          '#collapsible' => $pane['collapsible'],
+          '#collapsible' => $pane['collapsible'] && variable_get('uc_use_next_buttons', FALSE),
           '#collapsed' => variable_get('uc_use_next_buttons', FALSE) ? $collapsed : FALSE,
           '#id' => $id . '-pane',
           '#theme' => isset($return['theme']) ? $return['theme'] : NULL,
