@@ -322,21 +322,21 @@ function uc_store_customer_search_form_submit($form, &$form_state) {
     $first_name = '0';
   }
   else {
-    $first_name = strtolower(trim($form_state['values']['first_name']));
+    $first_name = drupal_strtolower(trim($form_state['values']['first_name']));
   }
 
   if (strlen(trim($form_state['values']['last_name'])) == 0) {
     $last_name = '0';
   }
   else {
-    $last_name = strtolower(trim($form_state['values']['last_name']));
+    $last_name = drupal_strtolower(trim($form_state['values']['last_name']));
   }
 
   if (strlen(trim($form_state['values']['email'])) == 0) {
     $email = '0';
   }
   else {
-    $email = strtolower(trim($form_state['values']['email']));
+    $email = drupal_strtolower(trim($form_state['values']['email']));
   }
 
   drupal_goto('admin/store/customers/search/results/' . $first_name . '/'
