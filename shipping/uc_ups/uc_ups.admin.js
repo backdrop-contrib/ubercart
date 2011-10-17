@@ -20,6 +20,16 @@ Drupal.behaviors.upsAdminFieldsetSummaries = {
         + $('#edit-uc-ups-weight-markup', context).val() + ' '
         + $('#edit-uc-ups-weight-markup-type', context).val();
     });
+
+    $('fieldset#edit-uc-ups-quote-options', context).drupalSetSummary(function(context) {
+      if ($('#edit-uc-ups-insurance').is(':checked')) {
+        return Drupal.t('Packages are insured');
+      }
+      else {
+        return Drupal.t('Packages are not insured');
+      }
+    });
+
   }
 };
 
