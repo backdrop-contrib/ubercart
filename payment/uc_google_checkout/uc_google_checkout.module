@@ -527,6 +527,15 @@ function uc_google_checkout_cart_form_submit($form, &$form_state) {
   }
 }
 
+/**
+ * Builds the XML request to send shopping cart information to Google Checkout.
+ *
+ * @param $order
+ * The mostly empty order object containing the contents of the shopping cart.
+ *
+ * @return string
+ * The XML request.
+ */
 function uc_google_checkout_cart_request($order) {
   if (variable_get('uc_google_checkout_mode', 'checkout') == 'checkout') {
     $merchant_id = variable_get('uc_google_checkout_merchant_id', '');
@@ -637,6 +646,12 @@ function uc_google_checkout_cart_request($order) {
   return $output;
 }
 
+/**
+ * Helper function to build HTTP headers for requests to Google Checkout.
+ *
+ * @return array
+ *
+ */
 function uc_google_checkout_headers() {
   if (variable_get('uc_google_checkout_mode', 'checkout') == 'checkout') {
     $merchant_id = variable_get('uc_google_checkout_merchant_id', '');
@@ -656,6 +671,17 @@ function uc_google_checkout_headers() {
   return $headers;
 }
 
+/**
+ * Sends the built request to Google Checkout over HTTP.
+ *
+ * @param string $api
+ * The particular API the request should be processed by.
+ * @param string $request
+ * XML request string.
+ *
+ * @return SimpleXMLElement
+ * The XML response object.
+ */
 function uc_google_checkout_send_request($api, $request) {
   if (variable_get('uc_google_checkout_mode', 'checkout') == 'checkout') {
     $merchant_id = variable_get('uc_google_checkout_merchant_id', '');
@@ -715,6 +741,11 @@ function uc_google_checkout_send_request($api, $request) {
   return $response;
 }
 
+/**
+ * Indicates whether the customer accepts marketing emails.
+ *
+ * Order pane callback.
+ */
 function uc_google_checkout_pane_email_allowed($op, $order) {
   switch ($op) {
     case 'customer':
@@ -731,8 +762,7 @@ function uc_google_checkout_pane_email_allowed($op, $order) {
 }
 
 /**
- * Adds setting callbacks to the payment settings section
- * The fulfillment sections need coded still. JS.
+ * Adds setting callbacks to the payment settings section.
  */
 function uc_payment_method_google_checkout($op, &$order) {
   switch ($op) {
@@ -747,6 +777,16 @@ function uc_payment_method_google_checkout($op, &$order) {
   }
 }
 
+/**
+ * Saves an order to the database from a new order notification.
+ *
+ * @param SimpleXMLElement $new_order
+ * "new-order" notification from Google Checkout.
+ *
+ * @return boolean
+ * TRUE if an order was successfully updated from the XML response.
+ * FALSE if an order could not be found from the given order ID.
+ */
 function uc_google_checkout_new_order($new_order) {
   $order_id = $new_order->{'shopping-cart'}->{'merchant-private-data'}->{'order-id'};
   $cart_id = (string) $new_order->{'shopping-cart'}->{'merchant-private-data'}->{'cart-id'};
@@ -870,6 +910,16 @@ function uc_google_checkout_new_order($new_order) {
   }
 }
 
+/**
+ * Saves AVS and CVN response to the order comments.
+ *
+ * @param SimpleXMLElement $risk
+ * XML response holding risk information associated with fulfilling the order.
+ * @return boolean
+ * TRUE if an order corresponding to the Google order number was found and
+ * updated.
+ * FALSE otherwise.
+ */
 function uc_google_checkout_accept_risk($risk) {
   $order_id = uc_google_checkout_get_order($risk->{'google-order-number'});
   if ($order_id) {
@@ -931,6 +981,16 @@ function uc_google_checkout_accept_risk($risk) {
   }
 }
 
+/**
+ * Processes order status changes originating from Google Checkout.
+ *
+ * @param SimpleXMLElement $change
+ * XML containing the status change information.
+ * @return boolean
+ * TRUE if an order corresponding to the Google order number was found and
+ * updated.
+ * FALSE otherwise.
+ */
 function uc_google_checkout_order_state_change($change) {
   $order_id = uc_google_checkout_get_order($change->{'google-order-number'});
   if ($order_id) {
@@ -1001,6 +1061,17 @@ function uc_google_checkout_order_state_change($change) {
   }
 }
 
+/**
+ * Responds to payment authorization notification.
+ *
+ * @param SimpleXMLElement $auth
+ * XML notification of payment authorization.
+ *
+ * @return boolean
+ * TRUE if an order corresponding to the Google order number was found and
+ * updated.
+ * FALSE otherwise.
+ */
 function uc_google_checkout_authorize_amount($auth) {
   global $user;
 
@@ -1022,6 +1093,17 @@ function uc_google_checkout_authorize_amount($auth) {
   }
 }
 
+/**
+ * Sends charge request to Google Checkout.
+ *
+ * @param int $order_id
+ * The order ID.
+ * @param double $amount
+ * The total payment amount to be charged.
+ *
+ * @return string
+ * Redirect path for form submission. Points to the order-view page.
+ */
 function uc_google_checkout_charge($order_id, $amount) {
   $google_order_number = uc_google_checkout_get_google_number($order_id);
   $output = '';
@@ -1040,6 +1122,17 @@ function uc_google_checkout_charge($order_id, $amount) {
   return 'admin/store/orders/' . $order_id;
 }
 
+/**
+ * Responds to the charge-order notification.
+ *
+ * Enters a payment to the order for the amount given.
+ *
+ * @param type $charge
+ * @return boolean
+ * TRUE if an order corresponding to the Google order number was found and
+ * updated.
+ * FALSE otherwise.
+ */
 function uc_google_checkout_charge_order($charge) {
   $order_id = uc_google_checkout_get_order($charge->{'google-order-number'});
   if ($order_id) {
@@ -1055,6 +1148,21 @@ function uc_google_checkout_charge_order($charge) {
   }
 }
 
+/**
+ * Sends a refund request to Google Checkout.
+ *
+ * @param int $order_id
+ * The order ID.
+ * @param double $amount
+ * The amount to refund in the site's currency.
+ * @param string $reason
+ * The reason for the refund.
+ * @param string $comment
+ * Additional comments displayed to the customer.
+ *
+ * @return string
+ * Redirect path for form submission. Points to the order-view page.
+ */
 function uc_google_checkout_refund($order_id, $amount, $reason, $comment = '') {
   $google_order_number = uc_google_checkout_get_google_number($order_id);
   $output = '';
@@ -1075,6 +1183,18 @@ function uc_google_checkout_refund($order_id, $amount, $reason, $comment = '') {
   return 'admin/store/orders/' . $order_id;
 }
 
+/**
+ * Responds to the refund-order notification.
+ *
+ * Enters a negative payment to the order for the amount given.
+ *
+ * @param SimpleXMLElement $refund
+ * XML notification
+ * @return boolean
+ * TRUE if an order corresponding to the Google order number was found and
+ * updated.
+ * FALSE otherwise.
+ */
 function uc_google_checkout_refund_order($refund) {
   $order_id = uc_google_checkout_get_order($refund->{'google-order-number'});
   if ($order_id) {
@@ -1089,6 +1209,9 @@ function uc_google_checkout_refund_order($refund) {
   }
 }
 
+/**
+ * Submit callback. Sends order update notifcations through Google Checkout.
+ */
 function uc_google_checkout_notify_update($form, &$form_state) {
   $order = uc_order_load($form_state['values']['order_id']);
   if ($order !== FALSE && isset($order->google_order_number) && isset($form_state['values']['order_comment']) && drupal_strlen($form_state['values']['order_comment'])) {
@@ -1097,6 +1220,17 @@ function uc_google_checkout_notify_update($form, &$form_state) {
   }
 }
 
+/**
+ * Builds the send-buyer-message request.
+ *
+ * @param int $order_id
+ * The order ID.
+ * @param string $message
+ * The update message.
+ *
+ * @return string
+ * The XML request.
+ */
 function uc_google_checkout_buyer_message_request($order_id, $message) {
   $google_order_number = uc_google_checkout_get_google_number($order_id);
   $output = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -1109,6 +1243,13 @@ function uc_google_checkout_buyer_message_request($order_id, $message) {
   return $output;
 }
 
+/**
+ * Sends the cancel-order request.
+ *
+ * @param object $order
+ * @return boolean
+ * TRUE if the request succeeded, FALSE otherwise.
+ */
 function uc_google_checkout_cancel_order($order) {
   $request = '<?xml version="1.0" encoding="UTF-8"?>';
   $request .= "\n";
@@ -1124,6 +1265,12 @@ function uc_google_checkout_cancel_order($order) {
   }
 }
 
+/**
+ * Acknowledges that the notification was received successfully.
+ *
+ * @param string $serial_number
+ * Unique identifier for the notification.
+ */
 function uc_google_checkout_notification_acknowledgement($serial_number) {
   drupal_add_http_header('Status', '200 OK');
   print '<?xml version="1.0" encoding="UTF-8"?>';
@@ -1132,6 +1279,12 @@ function uc_google_checkout_notification_acknowledgement($serial_number) {
   exit();
 }
 
+/**
+ * Reports that the notification was not understood.
+ *
+ * @param string $message
+ * Optional error message.
+ */
 function uc_google_checkout_notification_error($message = NULL) {
   if (is_null($message)) {
     $message = t('Unknown order id or malformed XML.');
@@ -1141,18 +1294,43 @@ function uc_google_checkout_notification_error($message = NULL) {
   exit();
 }
 
+/**
+ * Transforms a Google order number to an Ubercart order ID.
+ *
+ * @param string $google_order_number
+ * Google's order number.
+ * @return int
+ * The order ID, or FALSE if not found.
+ */
 function uc_google_checkout_get_order($google_order_number) {
   return db_query("SELECT order_id FROM {uc_gc_orders} WHERE gc_order_number = :number", array(':number' => $google_order_number))->fetchField();
 }
 
+/**
+ * Transforms an Ubercart order ID to a Google order number.
+ *
+ * @param int $order_id
+ * @return string
+ * The Google order number, or FALSE if not found.
+ */
 function uc_google_checkout_get_google_number($order_id) {
   return db_query("SELECT gc_order_number FROM {uc_gc_orders} WHERE order_id = :id", array(':id' => $order_id))->fetchField();
 }
 
+/**
+ * Helper function to return all valid shipping services in Google Checkout.
+ *
+ * @return array
+ */
 function uc_google_checkout_shipping_services() {
   return array_merge(uc_google_checkout_fedex_services(), uc_google_checkout_ups_services(), uc_google_checkout_usps_services());
 }
 
+/**
+ * Lists the available FedEx shipping services.
+ *
+ * @return array
+ */
 function uc_google_checkout_fedex_services() {
   return array(
     'fedex_ground' => 'Ground',
@@ -1165,6 +1343,11 @@ function uc_google_checkout_fedex_services() {
   );
 }
 
+/**
+ * Lists the available UPS shipping services.
+ *
+ * @return array
+ */
 function uc_google_checkout_ups_services() {
   return array(
     'ups_next_day' => 'Next Day Air',
@@ -1177,6 +1360,11 @@ function uc_google_checkout_ups_services() {
   );
 }
 
+/**
+ * Lists the available USPS shipping services.
+ *
+ * @return array
+ */
 function uc_google_checkout_usps_services() {
   return array(
     'usps_express' => 'Express Mail',
@@ -1186,6 +1374,11 @@ function uc_google_checkout_usps_services() {
   );
 }
 
+/**
+ * Lists the available shipping companies.
+ *
+ * @return array
+ */
 function uc_google_checkout_shipping_companies() {
   return array(
     'fedex' => 'FedEx',
@@ -1201,6 +1394,15 @@ function _uc_google_checkout_currency_codes() {
   return drupal_map_assoc(array('AUD', 'CAD', 'EUR', 'GBP', 'HKD', 'JPY', 'USD'));
 }
 
+/**
+ * Maps AVS codes to messages.
+ *
+ * @param string $code
+ * Optional AVS respons code.
+ * @return
+ * If $code is given, returns the corresponding message. Otherwise, returns the
+ * array of all messages.
+ */
 function uc_google_checkout_avs_code($code = NULL) {
   $codes = array(
     'Y' => t('Full AVS match (address and postal code)'),
@@ -1218,6 +1420,15 @@ function uc_google_checkout_avs_code($code = NULL) {
   }
 }
 
+/**
+ * Maps CVN codes to messages.
+ *
+ * @param string $code
+ * Optional CVN respons code.
+ * @return
+ * If $code is given, returns the corresponding message. Otherwise, returns the
+ * array of all messages.
+ */
 function uc_google_checkout_cvn_code($code = NULL) {
   $codes = array(
     'M' => t('CVN match'),
