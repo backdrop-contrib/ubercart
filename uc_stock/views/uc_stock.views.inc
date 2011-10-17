@@ -85,7 +85,7 @@ function uc_stock_views_data() {
     'title' => t('Is below threshold'),
     'help' => t('Filter the node based on whether its stock level is below the threshold for the SKU.'),
     'filter' => array(
-      'handler' => 'uc_stock_views_handler_filter_below_threshold',
+      'handler' => 'uc_stock_handler_filter_below_threshold',
       'label' => t('Is below threshold'),
       'type' => 'yes-no',
     ),
