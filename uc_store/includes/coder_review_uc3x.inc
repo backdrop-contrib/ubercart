@@ -50,6 +50,13 @@ function coder_review_uc3x_reviews() {
       '#warning' => 'uc_payment_process() is now uc_payment_process_payment() because of hook_process().',
     ),
 
+    // uc_add_js() was removed, use drupal_add_js() instead.
+    array(
+      '#type' => 'grep',
+      '#value' => 'uc_add_js(',
+      '#warning' => 'uc_add_js() has been removed.  Use drupal_add_js() instead.',
+    ),
+
     // Checkout and order pane callback arguments changed.
     array(
       '#type' => 'regex',
