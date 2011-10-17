@@ -272,6 +272,9 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#type' => 'submit',
     '#value' => t('Save configuration'),
   );
+  $form['actions']['cancel'] = array(
+    '#markup' => l(t('Cancel'), 'admin/store/settings/quotes'),
+  );
 
   if (!empty($_POST) && form_get_errors()) {
     drupal_set_message(t('The settings have not been saved because of the errors.'), 'error');
