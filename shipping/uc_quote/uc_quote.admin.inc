@@ -208,7 +208,7 @@ function theme_uc_quote_method_settings($variables) {
 
   drupal_add_tabledrag('uc-quote-methods', 'order', 'sibling', 'uc-quote-method-weight');
 
-  $header = array(t('Shipping method'), t('Details'), t('List position'), t('Operations'));
+  $header = array(t('Shipping method'), t('Details'),  array('data' => t('List position'), 'sort' => 'asc'), t('Operations'));
   $rows = array();
   foreach (element_children($form['methods']) as $method) {
     $row = array(
