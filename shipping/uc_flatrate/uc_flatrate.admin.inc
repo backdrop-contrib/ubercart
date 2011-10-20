@@ -98,15 +98,6 @@ function uc_flatrate_admin_method_edit_form_submit($form, &$form_state) {
   }
   else {
     drupal_write_record('uc_flatrate_methods', $form_state['values']);
-    $mid = $form_state['values']['mid'];
-
-    $enabled = variable_get('uc_quote_enabled', array());
-    $enabled['flatrate_' . $mid] = TRUE;
-    variable_set('uc_quote_enabled', $enabled);
-
-    $weight = variable_get('uc_quote_method_weight', array());
-    $weight['flatrate_' . $mid] = 0;
-    variable_set('uc_quote_method_weight', $weight);
 
     // Ensure Rules picks up the new condition.
     entity_flush_caches();
@@ -152,14 +143,6 @@ function uc_flatrate_admin_method_confirm_delete_submit($form, &$form_state) {
     ->execute();
 
   rules_config_delete(array('get_quote_from_flatrate_' . $mid));
-
-  $enabled = variable_get('uc_quote_enabled', array());
-  unset($enabled['flatrate_' . $mid]);
-  variable_set('uc_quote_enabled', $enabled);
-
-  $weight = variable_get('uc_quote_method_weight', array());
-  unset($weight['flatrate_' . $mid]);
-  variable_set('uc_quote_method_weight', $weight);
 
   drupal_set_message(t('Flat rate shipping method deleted.'));
   $form_state['redirect'] = 'admin/store/settings/quotes/methods';

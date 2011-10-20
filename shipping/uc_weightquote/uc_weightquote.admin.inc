@@ -99,15 +99,6 @@ function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
   }
   else {
     drupal_write_record('uc_weightquote_methods', $form_state['values']);
-    $mid = $form_state['values']['mid'];
-
-    $enabled = variable_get('uc_quote_enabled', array());
-    $enabled['weightquote_' . $mid] = TRUE;
-    variable_set('uc_quote_enabled', $enabled);
-
-    $weight = variable_get('uc_quote_method_weight', array());
-    $weight['weightquote_' . $mid] = 0;
-    variable_set('uc_quote_method_weight', $weight);
 
     // Ensure Rules picks up the new condition.
     entity_flush_caches();
@@ -153,14 +144,6 @@ function uc_weightquote_admin_method_confirm_delete_submit($form, &$form_state) 
     ->execute();
 
   rules_config_delete(array('get_quote_from_weightquote_' . $mid));
-
-  $enabled = variable_get('uc_quote_enabled', array());
-  unset($enabled['weightquote_' . $mid]);
-  variable_set('uc_quote_enabled', $enabled);
-
-  $weight = variable_get('uc_quote_method_weight', array());
-  unset($weight['weightquote_' . $mid]);
-  variable_set('uc_quote_method_weight', $weight);
 
   drupal_set_message(t('Weight quote shipping method deleted.'));
   $form_state['redirect'] = 'admin/store/settings/quotes/methods';

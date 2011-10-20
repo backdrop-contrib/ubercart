@@ -164,15 +164,8 @@ function uc_flatrate_node_revision_delete($node) {
 function uc_flatrate_uc_shipping_method() {
   $methods = array();
 
-  $enabled = variable_get('uc_quote_enabled', array());
-  $weight = variable_get('uc_quote_method_weight', array());
-
   $result = db_query("SELECT mid, title, label, base_rate, product_rate FROM {uc_flatrate_methods}");
   foreach ($result as $method) {
-    // Ensure default values are set.
-    $enabled += array('flatrate_' . $method->mid => TRUE);
-    $weight += array('flatrate_' . $method->mid => 0);
-
     $methods['flatrate_' . $method->mid] = array(
       'id' => 'flatrate_' . $method->mid,
       'module' => 'uc_flatrate',
@@ -188,7 +181,6 @@ function uc_flatrate_uc_shipping_method() {
           'href' => 'admin/store/settings/quotes/flatrate/' . $method->mid . '/delete',
         ),
       ),
-      'enabled' => $enabled['flatrate_' . $method->mid],
       'quote' => array(
         'type' => 'order',
         'callback' => 'uc_flatrate_quote',
@@ -196,7 +188,7 @@ function uc_flatrate_uc_shipping_method() {
           $method->label,
         ),
       ),
-      'weight' => $weight['flatrate_' . $method->mid],
+      'enabled' => TRUE,
     );
   }
 

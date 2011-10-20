@@ -669,7 +669,7 @@ function uc_checkout_pane_quotes($op, &$order, $form = NULL, &$form_state = NULL
         $quote_option = explode('---', $default_option);
         $order->quote['method'] = $quote_option[0];
         $order->quote['accessorials'] = $quote_option[1];
-        $methods = array_filter(module_invoke_all('uc_shipping_method'), '_uc_quote_method_enabled');
+        $methods = uc_quote_methods();
         $method = $methods[$quote_option[0]];
 
         $label = $method['quote']['accessorials'][$quote_option[1]];
@@ -730,7 +730,7 @@ function uc_checkout_pane_quotes($op, &$order, $form = NULL, &$form_state = NULL
       $quote_option = explode('---', $form_state['values']['panes']['quotes']['quotes']['quote_option']);
       $order->quote['method'] = $quote_option[0];
       $order->quote['accessorials'] = $quote_option[1];
-      $methods = array_filter(module_invoke_all('uc_shipping_method'), '_uc_quote_method_enabled');
+      $methods = uc_quote_methods();
       $method = $methods[$quote_option[0]];
 
       $label = $method['quote']['accessorials'][$quote_option[1]];
@@ -845,7 +845,7 @@ function uc_quote_apply_quote_to_order($form, &$form_state) {
       $quote_option = explode('---', $form_state['values']['quotes']['quote_option']);
       $order->quote['method'] = $quote_option[0];
       $order->quote['accessorials'] = $quote_option[1];
-      $methods = array_filter(module_invoke_all('uc_shipping_method'), '_uc_quote_method_enabled');
+      $methods = uc_quote_methods();
       $method = $methods[$quote_option[0]];
 
       $label = $method['quote']['accessorials'][$quote_option[1]];
@@ -1023,10 +1023,37 @@ function theme_uc_quote_returned_rates($variables) {
 }
 
 /**
- * Callback for array_filter().
+ * Returns an array of available shipping quote methods.
+ *
+ * @param $all
+ *   If FALSE, only enabled shipping methods are returned.
  */
-function _uc_quote_method_enabled($method) {
-  return $method['enabled'];
+function uc_quote_methods($all = FALSE) {
+  $enabled = variable_get('uc_quote_enabled', array());
+  $weight = variable_get('uc_quote_method_weight', array());
+
+  $methods = array();
+  foreach (module_invoke_all('uc_shipping_method') as $id => $method) {
+    // Set defaults.
+    $method += array(
+      'enabled' => FALSE,
+      'weight' => 0,
+    );
+
+    // Override defaults with store configuration, if any.
+    if (isset($enabled[$id])) {
+      $method['enabled'] = $enabled[$id];
+    }
+    if (isset($weight[$id])) {
+      $method['weight'] = $weight[$id];
+    }
+
+    if ($all || $method['enabled']) {
+      $methods[$id] = $method;
+    }
+  }
+  uasort($methods, '_uc_quote_type_sort');
+  return $methods;
 }
 
 /**
@@ -1057,19 +1084,6 @@ function uc_quote_price_sort($a, $b) {
   else {
     return ($ar < $br) ? -1 : 1;
   }
-}
-
-/**
- * Returns an array of quote types to be selected in a form.
- */
-function uc_quote_type_options() {
-  $methods = module_invoke_all('uc_shipping_method');
-  foreach ($methods as $method) {
-    if (isset($method['quote'])) {
-      $types[$method['id']] = $method['title'];
-    }
-  }
-  return $types;
 }
 
 /**

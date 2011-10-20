@@ -122,30 +122,21 @@ function uc_quote_method_settings($form, &$form_state) {
     '#tree' => TRUE,
   );
 
-  $enabled = variable_get('uc_quote_enabled', array());
-  $weight = variable_get('uc_quote_method_weight', array());
-  $methods = module_invoke_all('uc_shipping_method');
-  uasort($methods, '_uc_quote_type_sort');
-
-  foreach ($methods as $method) {
+  foreach (uc_quote_methods(TRUE) as $method) {
     if (isset($method['quote'])) {
       $id = $method['id'];
-
-      // Ensure default values are set.
-      $enabled += array($id => FALSE);
-      $weight += array($id => 0);
 
       $form['methods'][$id]['uc_quote_enabled'] = array(
         '#type' => 'checkbox',
         '#title' => $method['title'],
-        '#default_value' => $enabled[$id],
+        '#default_value' => $method['enabled'],
       );
       $form['methods'][$id]['description'] = array(
         '#markup' => isset($method['description']) ? $method['description'] : '',
       );
       $form['methods'][$id]['uc_quote_method_weight'] = array(
         '#type' => 'weight',
-        '#default_value' => $weight[$id],
+        '#default_value' => $method['weight'],
         '#attributes' => array('class' => array('uc-quote-method-weight')),
       );
       $form['methods'][$id]['operations'] = array(

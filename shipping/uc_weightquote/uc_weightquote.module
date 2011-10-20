@@ -165,15 +165,8 @@ function uc_weightquote_node_revision_delete($node) {
 function uc_weightquote_uc_shipping_method() {
   $methods = array();
 
-  $enabled = variable_get('uc_quote_enabled', array());
-  $weight = variable_get('uc_quote_method_weight', array());
-
   $result = db_query("SELECT mid, title, label, base_rate, product_rate FROM {uc_weightquote_methods}");
   foreach ($result as $method) {
-    // Ensure the default values are set.
-    $enabled += array('weightquote_' . $method->mid => FALSE);
-    $weight += array('weightquote_' . $method->mid => 0);
-
     $methods['weightquote_' . $method->mid] = array(
       'id' => 'weightquote_' . $method->mid,
       'module' => 'uc_weightquote',
@@ -189,7 +182,6 @@ function uc_weightquote_uc_shipping_method() {
           'href' => 'admin/store/settings/quotes/weightquote/' . $method->mid . '/delete',
         ),
       ),
-      'enabled' => isset($enabled['weightquote_' . $method->mid]) ? $enabled['weightquote_' . $method->mid] : FALSE,
       'quote' => array(
         'type' => 'order',
         'callback' => 'uc_weightquote_quote',
@@ -197,7 +189,7 @@ function uc_weightquote_uc_shipping_method() {
           $method->label,
         ),
       ),
-      'weight' => isset($weight['weightquote_' . $method->mid]) ? $weight['weightquote_' . $method->mid] : 0,
+      'enabled' => TRUE,
     );
   }
 

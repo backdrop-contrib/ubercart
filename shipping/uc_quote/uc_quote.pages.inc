@@ -45,8 +45,7 @@ function uc_quote_assemble_quotes($order) {
       $type_weight = $all_types[$type]['weight'];
     }
   }
-  $methods = array_filter(module_invoke_all('uc_shipping_method'), '_uc_quote_method_enabled');
-  uasort($methods, '_uc_quote_type_sort');
+  $methods = uc_quote_methods();
   foreach ($methods as $id => $method) {
     if ($method['quote']['type'] != 'order' && $method['quote']['type'] != $shipping_type) {
       unset($methods[$id]);
