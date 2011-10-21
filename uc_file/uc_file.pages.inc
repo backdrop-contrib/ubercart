@@ -160,11 +160,17 @@ function uc_file_user_downloads($account) {
     $row++;
   }
 
-  return array(
+  $build['downloads'] = array(
     '#theme' => 'uc_file_user_downloads',
     '#header' => $header,
     '#files' => $files,
   );
+
+  if (user_access('administer users')) {
+    $build['admin'] = drupal_get_form('uc_file_user_form', $account);
+  }
+
+  return $build;
 }
 
 /**
