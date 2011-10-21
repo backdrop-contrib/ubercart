@@ -22,31 +22,15 @@ function uc_attribute_admin() {
   $display_types = _uc_attribute_display_types();
 
   $query = db_select('uc_attributes', 'a')->extend('PagerDefault')->extend('TableSort')
+    ->fields('a', array('aid', 'name', 'label', 'required', 'ordering', 'display'))
     ->orderByHeader($header)
     ->limit(30);
-  $query->leftJoin('uc_attribute_options', 'ao', 'a.aid = ao.aid');
-
-  $query->fields('a', array(
-    'aid',
-    'name',
-    'label',
-    'required',
-    'ordering',
-    'display',
-  ));
-  $query->addExpression('COUNT(ao.oid)', 'options');
-
-  $query->groupBy('a.aid')
-    ->groupBy('a.name')
-    ->groupBy('a.label')
-    ->groupBy('a.required')
-    ->groupBy('a.ordering')
-    ->groupBy('a.display');
 
   $rows = array();
 
   $result = $query->execute();
   foreach ($result as $attr) {
+    $attr->options = db_query('SELECT COUNT(*) FROM {uc_attribute_options} WHERE aid = :aid', array(':aid' => $attr->aid))->fetchField();
     if (empty($attr->label)) {
       $attr->label = $attr->name;
     }
