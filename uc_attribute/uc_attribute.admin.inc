@@ -47,16 +47,11 @@ function uc_attribute_admin() {
     );
   }
 
-  if (count($rows) == 0) {
-    $rows[] = array(
-      array('data' => t('No product attributes have been added yet.'), 'colspan' => '9')
-    );
-  }
-
   $build['attributes'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
+    '#empty' => t('No product attributes have been added yet.'),
   );
   $build['pager'] = array(
     '#theme' => 'pager',
