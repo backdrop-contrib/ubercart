@@ -50,16 +50,15 @@ function uc_file_admin_files_form($form, &$form_state) {
 function uc_file_admin_files_form_show_files($form, &$form_state) {
   $form['#tree'] = TRUE;
 
-  $form['#header'] = array(
-    array(),
-    array('data' => t('File'), 'field' => 'f.filename', 'sort' => 'asc'),
-    array('data' => t('Product'), 'field' => 'n.title'),
-    array('data' => t('SKU'), 'field' => 'fp.model')
+  $header = array(
+    'filename' => array('data' => t('File'), 'field' => 'f.filename', 'sort' => 'asc'),
+    'title' => array('data' => t('Product'), 'field' => 'n.title'),
+    'model' => array('data' => t('SKU'), 'field' => 'fp.model')
   );
 
   // Create pager.
   $query = db_select('uc_files', 'f')->extend('PagerDefault')->extend('TableSort')
-    ->orderByHeader($form['#header'])
+    ->orderByHeader($header)
     ->limit(UC_FILE_PAGER_SIZE);
   $query->leftJoin('uc_file_products', 'fp', 'f.fid = fp.fid');
   $query->leftJoin('uc_product_features', 'pf', 'fp.pfid = pf.pfid');
@@ -77,21 +76,24 @@ function uc_file_admin_files_form_show_files($form, &$form_state) {
   $query->setCountQuery($count_query);
   $result = $query->execute();
 
-  // Create checkboxes for each file.
-  $form['file_select'] = array('#tree' => TRUE);
+  $options = array();
   foreach ($result as $file) {
-    $form['file_select'][$file->fid]['check'] = array('#type' => 'checkbox');
-    $form['file_select'][$file->fid]['filename'] = array('#markup' => $file->filename);
-    $form['file_select'][$file->fid]['title'] = array('#markup' => $file->title);
-    $form['file_select'][$file->fid]['nid'] = array('#markup' => $file->nid);
-    $form['file_select'][$file->fid]['model'] = array('#markup' => $file->model);
+    $options[$file->fid] = array(
+      'filename' => array(
+        'data' => check_plain($file->filename),
+        'class' => is_dir(uc_file_qualify_file($file->filename)) ? array('uc-file-directory-view') : array(),
+      ),
+      'title' => l($file->title, 'node/' . $file->nid),
+      'model' => check_plain($file->model),
+    );
   }
 
-  // Implement a Checkall / Uncheck all deal.
-  $check_all = l(t('Check all'), "admin/store/products/files", array('attributes' => array('id' => 'uc_file_select_all'), 'fragment' => 'NULL'));
-  $uncheck_all = l(t('Uncheck all'), 'admin/store/products/files', array('attributes' => array('id' => 'uc_file_select_none'), 'fragment' => 'NULL'));
-  $form['uc_file_select'] = array(
-    '#markup' => $check_all . ' / ' . $uncheck_all,
+  // Create checkboxes for each file.
+  $form['file_select'] = array(
+    '#type' => 'tableselect',
+    '#header' => $header,
+    '#options' => $options,
+    '#empty' => t('No file downloads available.'),
   );
 
   $form['uc_file_action'] = array(
@@ -193,41 +195,10 @@ function uc_file_admin_files_form_show_submit($form, &$form_state) {
 function theme_uc_file_admin_files_form_show($variables) {
   $form = $variables['form'];
 
-  $output = '';
-
-  $header = $form['#header'];
-
-  // Format the file table.
-  $rows = array();
-  foreach ($form['file_select'] as $fid => $value) {
-
-    // We only want numeric fid's
-    if (!is_numeric($fid)) {
-      continue;
-    }
-
-    $filename = drupal_render($form['file_select'][$fid]['filename']);
-
-    // Make directories bold + italic (or whatever's in the CSS).
-    $class = is_dir(uc_file_qualify_file($filename)) ? 'uc-file-directory-view' : '';
-
-    $rows[] = array(
-      array('data' => drupal_render($form['file_select'][$fid]['check'])),
-      array('data' => $filename, 'class' => array($class)),
-      array('data' => l(drupal_render($form['file_select'][$fid]['title']), 'node/' . drupal_render($form['file_select'][$fid]['nid']))),
-      array('data' => drupal_render($form['file_select'][$fid]['model']))
-    );
-  }
-
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No file downloads available.'), 'colspan' => 4));
-  }
-
   // Render everything.
-  $output .= '<p>' . t('File downloads can be attached to any Ubercart product as a product feature. For security reasons the <a href="!download_url">file downloads directory</a> is separated from the Drupal <a href="!file_url">file system</a>. Below is the list of files (and their associated Ubercart products, if any) that can be used for file downloads.', array('!download_url' => url('admin/store/settings/products', array('query' => array('destination' => 'admin/store/products/files'))), '!file_url' => url('admin/config/media/file-system'))) . '</p>';
+  $output = '<p>' . t('File downloads can be attached to any Ubercart product as a product feature. For security reasons the <a href="!download_url">file downloads directory</a> is separated from the Drupal <a href="!file_url">file system</a>. Below is the list of files (and their associated Ubercart products, if any) that can be used for file downloads.', array('!download_url' => url('admin/store/settings/products', array('query' => array('destination' => 'admin/store/products/files'))), '!file_url' => url('admin/config/media/file-system'))) . '</p>';
   $output .= drupal_render($form['uc_file_action']);
-  $output .= drupal_render($form['uc_file_select']);
-  $output .= theme('table', array('header' => $header, 'rows' => $rows));
+  $output .= drupal_render($form['file_select']);
   $output .= theme('pager');
   $output .= drupal_render_children($form);
 
@@ -243,15 +214,7 @@ function theme_uc_file_admin_files_form_show($variables) {
  * @ingroup forms
  */
 function uc_file_admin_files_form_action($form, &$form_state) {
-  $file_ids = array();
-  if (isset($form_state['values']['file_select'])) {
-    foreach ((array)$form_state['values']['file_select'] as $fid => $value) {
-      $value = $value['check'];
-      if ($value) {
-        $file_ids[] = $fid;
-      }
-    }
-  }
+  $file_ids = array_filter($form_state['values']['file_select']);
 
   $form['file_ids'] = array('#type' => 'value', '#value' => $file_ids);
   $form['action'] = array('#type' => 'value', '#value' => $form_state['values']['uc_file_action']['action']);

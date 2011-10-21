@@ -18,28 +18,6 @@ jQuery(document).ready(
   }
 );
 
-// When you click 'Check all' on the file action form.
-Drupal.behaviors.ucFileSelectAll = {
-  attach: function(context, settings) {
-    jQuery('#uc_file_select_all:not(.ucFileSelectAll-processed)', context).addClass('ucFileSelectAll-processed').click(
-      function() {
-        jQuery('.form-checkbox').attr('checked', true);
-      }
-    );
-  }
-}
-
-// When you click 'Uncheck all' on the file action form.
-Drupal.behaviors.ucFileSelectNone = {
-  attach: function(context, settings) {
-    jQuery('#uc_file_select_none:not(.ucFileSelectNone-processed)', context).addClass('ucFileSelectNone-processed').click(
-      function() {
-        jQuery('.form-checkbox').removeAttr('checked');
-      }
-    );
-  }
-}
-
 // When you (un)check the recursion option on the file deletion form.
 Drupal.behaviors.ucFileDeleteList = {
   attach: function(context, settings) {
