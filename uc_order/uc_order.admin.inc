@@ -756,6 +756,19 @@ function uc_order_create_form_create_submit($form, &$form_state) {
 }
 
 /**
+ * Creates a new order for the specified customer, and redirects to the
+ * order edit page.
+ */
+function uc_order_create_for_user($account) {
+  global $user;
+
+  $order = uc_order_new($account->uid, 'post_checkout');
+  uc_order_comment_save($order->order_id, $user->uid, t('Order created by the administration.'), 'admin');
+
+  drupal_goto('admin/store/orders/' . $order->order_id . '/edit');
+}
+
+/**
  * Displays a search form to browse all received orders.
  */
 function uc_order_usearch() {
