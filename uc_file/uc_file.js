@@ -15,11 +15,6 @@ function _uc_file_delete_list_populate() {
 jQuery(document).ready(
   function() {
     _uc_file_delete_list_populate();
-
-    toggle_limit_settings('#edit-download-override', '#edit-download-limit-number-wrapper');
-    toggle_limit_settings('#edit-location-override', '#edit-download-limit-addresses-wrapper');
-    toggle_limit_settings('#edit-time-override', '#edit-download-limit-duration-qty-wrapper');
-    toggle_limit_settings('#edit-time-override', '#edit-download-limit-duration-granularity-wrapper');
   }
 );
 
@@ -73,48 +68,5 @@ function uc_file_update_download(id, accessed, limit) {
     downloads += limit == -1 ? 'Unlimited' : limit;
     jQuery('td#download-' + id).html(downloads);
     jQuery('td#download-' + id).attr("onclick", "");
-  }
-}
-
-Drupal.behaviors.ucFileLimitDownloads = {
-  attach: function(context, settings) {
-    jQuery('#edit-download-override:not(.ucFileLimitDownloads-processed)', context).addClass('ucFileLimitDownloads-processed').click(
-      function() {
-        toggle_limit_settings('#edit-download-override', '#edit-download-limit-number-wrapper');
-      }
-    );
-  }
-}
-
-Drupal.behaviors.ucFileLimitLocations = {
-  attach: function(context, settings) {
-    jQuery('#edit-location-override:not(.ucFileLimitLocations-processed)', context).addClass('ucFileLimitLocations-processed').click(
-      function() {
-        toggle_limit_settings('#edit-location-override', '#edit-download-limit-addresses-wrapper');
-      }
-    );
-  }
-}
-
-Drupal.behaviors.ucFileLimitTime = {
-  attach: function(context, settings) {
-    jQuery('#edit-time-override:not(.ucFileLimitTime-processed)', context).addClass('ucFileLimitTime-processed').click(
-      function() {
-        toggle_limit_settings('#edit-time-override', '#edit-download-limit-duration-qty-wrapper');
-        toggle_limit_settings('#edit-time-override', '#edit-download-limit-duration-granularity-wrapper');
-      }
-    );
-  }
-}
-
-/**
- * Toggle the limit settings.
- */
-function toggle_limit_settings(cause, effect) {
-  if (jQuery(cause).attr('checked')) {
-    jQuery(effect).show();
-  }
-  else {
-    jQuery(effect).hide();
   }
 }
