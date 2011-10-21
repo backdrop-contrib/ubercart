@@ -6,20 +6,6 @@
 var uc_file_list = {};
 
 /**
- * Disables duration amount when its type is "never".
- */
-function _uc_file_expiration_disable_check(granularity, quantity) {
-  // 'never' means there's no point in setting a duration.
-  if (jQuery(granularity).val() == 'never') {
-    jQuery(quantity).attr('disabled', 'disabled').val('');
-  }
-  // Anything besides 'never' should enable setting a duration.
-  else {
-    jQuery(quantity).removeAttr('disabled');
-  }
-}
-
-/**
  * Adds files to delete to the list.
  */
 function _uc_file_delete_list_populate() {
@@ -28,8 +14,6 @@ function _uc_file_delete_list_populate() {
 
 jQuery(document).ready(
   function() {
-    _uc_file_expiration_disable_check('#edit-download-limit-duration-granularity', '#edit-download-limit-duration-qty');
-    _uc_file_expiration_disable_check('#edit-download-limit-duration-granularity', '#edit-download-limit-duration-qty');
     _uc_file_delete_list_populate();
 
     toggle_limit_settings('#edit-download-override', '#edit-download-limit-number-wrapper');
@@ -38,17 +22,6 @@ jQuery(document).ready(
     toggle_limit_settings('#edit-time-override', '#edit-download-limit-duration-granularity-wrapper');
   }
 );
-
-// When you change the per-file expiration granularity select.
-Drupal.behaviors.ucFileDownloadGranularity = {
-  attach: function(context, settings) {
-    jQuery('#edit-download-limit-duration-granularity:not(.ucFileDownloadGranularity-processed)', context).addClass('ucFileDownloadGranularity-processed').change(
-      function() {
-        _uc_file_expiration_disable_check('#edit-download-limit-duration-granularity', '#edit-download-limit-duration-qty');
-      }
-    );
-  }
-}
 
 // When you click 'Check all' on the file action form.
 Drupal.behaviors.ucFileSelectAll = {
