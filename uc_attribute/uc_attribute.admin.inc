@@ -991,33 +991,33 @@ function theme_uc_object_options_form($variables) {
   if (isset($form['attributes'])) {
     foreach (element_children($form['attributes']) as $key) {
       $rows = array();
-      if (element_children($form['attributes'][$key]['options'])) {
-        foreach (element_children($form['attributes'][$key]['options']) as $oid) {
-          $row = array(
+      foreach (element_children($form['attributes'][$key]['options']) as $oid) {
+        $rows[] = array(
+          'data' => array(
             drupal_render($form['attributes'][$key]['options'][$oid]['select']),
             drupal_render($form['attributes'][$key]['default'][$oid]),
             drupal_render($form['attributes'][$key]['options'][$oid]['cost']),
             drupal_render($form['attributes'][$key]['options'][$oid]['price']),
             drupal_render($form['attributes'][$key]['options'][$oid]['weight']),
             drupal_render($form['attributes'][$key]['options'][$oid]['ordering']),
-          );
-
-          $rows[] = array(
-            'data' => $row,
-            'class' => array('draggable'),
-          );
-        }
+          ),
+          'class' => array('draggable'),
+        );
       }
 
       $table_id = 'uc-attribute-option-table-' . $tables++;
-      if (!empty($rows)) {
-        drupal_add_tabledrag($table_id, 'order', 'sibling', 'uc-attribute-option-table-ordering');
-      }
-      else {
-        $rows[] = array(array('data' => t('This attribute does not have any options.'), 'colspan' => 6));
-      }
+      drupal_add_tabledrag($table_id, 'order', 'sibling', 'uc-attribute-option-table-ordering');
 
-      $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('product_attributes'), 'id' => $table_id), 'caption' => '<h2>' . drupal_render($form['attributes'][$key]['name']) . '</h2>'));
+      $output .= theme('table', array(
+        'header' => $header,
+        'rows' => $rows,
+        'attributes' => array(
+          'class' => array('product_attributes'),
+          'id' => $table_id,
+        ),
+        'caption' => '<h2>' . drupal_render($form['attributes'][$key]['name']) . '</h2>',
+        'empty' => t('This attribute does not have any options.'),
+      ));
     }
   }
 
