@@ -672,9 +672,10 @@ function theme_uc_object_attributes_form($variables) {
   if ($form['view']['#value'] == 'overview') {
     $header = array(t('Remove'), t('Name'), t('Label'), t('Default'), t('Required'), t('List position'), t('Display'));
 
-    if (count(element_children($form['attributes'])) > 0) {
-      foreach (element_children($form['attributes']) as $aid) {
-        $row = array(
+    $rows = array();
+    foreach (element_children($form['attributes']) as $aid) {
+      $rows[] = array(
+        'data' => array(
           drupal_render($form['attributes'][$aid]['remove']),
           drupal_render($form['attributes'][$aid]['name']),
           drupal_render($form['attributes'][$aid]['label']),
@@ -682,32 +683,26 @@ function theme_uc_object_attributes_form($variables) {
           drupal_render($form['attributes'][$aid]['required']),
           drupal_render($form['attributes'][$aid]['ordering']),
           drupal_render($form['attributes'][$aid]['display']),
-        );
-
-        $rows[] = array(
-          'data' => $row,
-          'class' => array('draggable'),
-        );
-      }
-
-      drupal_add_tabledrag('uc-attribute-table', 'order', 'sibling', 'uc-attribute-table-ordering');
-    }
-    else {
-      if ($form['type']['#value'] == 'class') {
-        $path = url('admin/store/products/classes/' . $form['id']['#value'] . '/attributes/add');
-      }
-      elseif ($form['type']['#value'] == 'product') {
-        $path = url('node/' . $form['id']['#value'] . '/edit/attributes/add');
-      }
-
-      if ($path) {
-        $rows[] = array(
-          array('data' => t('You must first <a href="!url">add attributes to this !type</a>.', array('!url' => $path, '!type' => $form['type']['#value'])), 'colspan' => 6),
-        );
-      }
+        ),
+        'class' => array('draggable'),
+      );
     }
 
-    $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-attribute-table')));
+    drupal_add_tabledrag('uc-attribute-table', 'order', 'sibling', 'uc-attribute-table-ordering');
+
+    if ($form['type']['#value'] == 'class') {
+      $path = url('admin/store/products/classes/' . $form['id']['#value'] . '/attributes/add');
+    }
+    elseif ($form['type']['#value'] == 'product') {
+      $path = url('node/' . $form['id']['#value'] . '/edit/attributes/add');
+    }
+
+    $output = theme('table', array(
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => array('id' => 'uc-attribute-table'),
+      'empty' => t('You must first <a href="!url">add attributes to this !type</a>.', array('!url' => $path, '!type' => $form['type']['#value'])),
+    ));
   }
   else {
     $output = '<div class="uc-attributes-add-link">';
