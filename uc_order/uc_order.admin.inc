@@ -1148,16 +1148,13 @@ function uc_order_history($user) {
     );
   }
 
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No orders available.'), 'colspan' => 5));
-  }
-
   $build = array();
   $build['orders'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
     '#attributes' => array('class' => array('uc-order-history')),
+    '#empty' => t('No orders available.'),
   );
   $build['pager'] = array(
     '#theme' => 'pager',
