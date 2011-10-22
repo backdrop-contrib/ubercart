@@ -81,9 +81,6 @@ function uc_reports_customers() {
     );
     $csv_rows[] = array($customer_number, $customer_order_name, $customer_name, $orders, $products, $customer['total'], $customer['average']);
   }
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No customers found'), 'colspan' => count($header)));
-  }
   $csv_data = uc_reports_store_csv('uc_customers', $csv_rows);
 
   $build['report'] = array(
@@ -91,6 +88,7 @@ function uc_reports_customers() {
     '#header' => $header,
     '#rows' => $rows,
     '#attributes' => array('width' => '100%', 'class' => array('uc-sales-table')),
+    '#empty' => t('No customers found'),
   );
   $build['pager'] = array(
     '#theme' => 'pager',
@@ -127,6 +125,7 @@ function uc_reports_products() {
   $page_size = (isset($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
   $order_statuses = _uc_reports_order_statuses();
   $row_cell = $page * variable_get('uc_reports_table_size', 30) + 1;
+  $rows = array();
   $csv_rows = array();
 
   // Hard code the ignore of the product kit for this report.
@@ -252,9 +251,6 @@ function uc_reports_products() {
     }
     $row_cell++;
   }
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No products found'), 'colspan' => count($header)));
-  }
   $csv_data = uc_reports_store_csv('uc_products', $csv_rows);
 
   $build['report'] = array(
@@ -262,6 +258,7 @@ function uc_reports_products() {
     '#header' => $header,
     '#rows' => $rows,
     '#attributes' => array('width' => '100%', 'class' => array('uc-sales-table')),
+    '#empty' => t('No products found'),
   );
   $build['pager'] = array(
     '#theme' => 'pager',
@@ -323,6 +320,7 @@ function uc_reports_products_custom() {
   $views_column = module_exists('statistics') && variable_get('statistics_count_content_views', FALSE);
   $page = isset($_GET['page']) ? intval($_GET['page']) : 0;
   $page_size = isset($_GET['nopage']) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
+  $rows = array();
   $csv_rows = array();
 
   // Hard code the ignore of the product kit for this report.
@@ -454,9 +452,6 @@ function uc_reports_products_custom() {
       $csv_rows[] = array($row_cell, $product_csv, $sold_csv, $revenue_csv, $gross_csv);
     }
   }
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No products found'), 'colspan' => count($header)));
-  }
   $csv_data = uc_reports_store_csv('uc_products', $csv_rows);
 
   // Build the page output holding the form, table, and CSV export link.
@@ -466,6 +461,7 @@ function uc_reports_products_custom() {
     '#header' => $header,
     '#rows' => $rows,
     '#attributes' => array('width' => '100%', 'class' => array('uc-sales-table')),
+    '#empty' => t('No products found'),
   );
   $build['pager'] = array(
     '#theme' => 'pager',
