@@ -315,9 +315,10 @@ function theme_uc_attribute_options_form($variables) {
 
   $header = array(t('Name'), t('Default cost'), t('Default price'), t('Default weight'), array('data' => t('List position'), 'sort' => 'asc'), array('data' => t('Operations'), 'colspan' => 2));
 
-  if (count(element_children($form['options'])) > 0) {
-    foreach (element_children($form['options']) as $oid) {
-      $row = array(
+  $rows = array();
+  foreach (element_children($form['options']) as $oid) {
+    $rows[] = array(
+      'data' => array(
         drupal_render($form['options'][$oid]['name']),
         drupal_render($form['options'][$oid]['cost']),
         drupal_render($form['options'][$oid]['price']),
@@ -325,23 +326,19 @@ function theme_uc_attribute_options_form($variables) {
         drupal_render($form['options'][$oid]['ordering']),
         drupal_render($form['options'][$oid]['edit']),
         drupal_render($form['options'][$oid]['delete']),
-      );
-
-      $rows[] = array(
-        'data' => $row,
-        'class' => array('draggable'),
-      );
-    }
-
-    drupal_add_tabledrag('uc-attribute-option-table', 'order', 'sibling', 'uc-attribute-option-table-ordering');
-  }
-  else {
-    $rows[] = array(
-      array('data' => t('No options for this attribute have been added yet.'), 'colspan' => 7),
+      ),
+      'class' => array('draggable'),
     );
   }
 
-  $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-attribute-option-table')));
+  drupal_add_tabledrag('uc-attribute-option-table', 'order', 'sibling', 'uc-attribute-option-table-ordering');
+
+  $output = theme('table', array(
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => array('id' => 'uc-attribute-option-table'),
+    'empty' => t('No options for this attribute have been added yet.'),
+  ));
 
   $output .= drupal_render_children($form);
 
@@ -675,9 +672,10 @@ function theme_uc_object_attributes_form($variables) {
   if ($form['view']['#value'] == 'overview') {
     $header = array(t('Remove'), t('Name'), t('Label'), t('Default'), t('Required'), t('List position'), t('Display'));
 
-    if (count(element_children($form['attributes'])) > 0) {
-      foreach (element_children($form['attributes']) as $aid) {
-        $row = array(
+    $rows = array();
+    foreach (element_children($form['attributes']) as $aid) {
+      $rows[] = array(
+        'data' => array(
           drupal_render($form['attributes'][$aid]['remove']),
           drupal_render($form['attributes'][$aid]['name']),
           drupal_render($form['attributes'][$aid]['label']),
@@ -685,32 +683,26 @@ function theme_uc_object_attributes_form($variables) {
           drupal_render($form['attributes'][$aid]['required']),
           drupal_render($form['attributes'][$aid]['ordering']),
           drupal_render($form['attributes'][$aid]['display']),
-        );
-
-        $rows[] = array(
-          'data' => $row,
-          'class' => array('draggable'),
-        );
-      }
-
-      drupal_add_tabledrag('uc-attribute-table', 'order', 'sibling', 'uc-attribute-table-ordering');
-    }
-    else {
-      if ($form['type']['#value'] == 'class') {
-        $path = url('admin/store/products/classes/' . $form['id']['#value'] . '/attributes/add');
-      }
-      elseif ($form['type']['#value'] == 'product') {
-        $path = url('node/' . $form['id']['#value'] . '/edit/attributes/add');
-      }
-
-      if ($path) {
-        $rows[] = array(
-          array('data' => t('You must first <a href="!url">add attributes to this !type</a>.', array('!url' => $path, '!type' => $form['type']['#value'])), 'colspan' => 6),
-        );
-      }
+        ),
+        'class' => array('draggable'),
+      );
     }
 
-    $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-attribute-table')));
+    drupal_add_tabledrag('uc-attribute-table', 'order', 'sibling', 'uc-attribute-table-ordering');
+
+    if ($form['type']['#value'] == 'class') {
+      $path = url('admin/store/products/classes/' . $form['id']['#value'] . '/attributes/add');
+    }
+    elseif ($form['type']['#value'] == 'product') {
+      $path = url('node/' . $form['id']['#value'] . '/edit/attributes/add');
+    }
+
+    $output = theme('table', array(
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => array('id' => 'uc-attribute-table'),
+      'empty' => t('You must first <a href="!url">add attributes to this !type</a>.', array('!url' => $path, '!type' => $form['type']['#value'])),
+    ));
   }
   else {
     $output = '<div class="uc-attributes-add-link">';
@@ -994,33 +986,33 @@ function theme_uc_object_options_form($variables) {
   if (isset($form['attributes'])) {
     foreach (element_children($form['attributes']) as $key) {
       $rows = array();
-      if (element_children($form['attributes'][$key]['options'])) {
-        foreach (element_children($form['attributes'][$key]['options']) as $oid) {
-          $row = array(
+      foreach (element_children($form['attributes'][$key]['options']) as $oid) {
+        $rows[] = array(
+          'data' => array(
             drupal_render($form['attributes'][$key]['options'][$oid]['select']),
             drupal_render($form['attributes'][$key]['default'][$oid]),
             drupal_render($form['attributes'][$key]['options'][$oid]['cost']),
             drupal_render($form['attributes'][$key]['options'][$oid]['price']),
             drupal_render($form['attributes'][$key]['options'][$oid]['weight']),
             drupal_render($form['attributes'][$key]['options'][$oid]['ordering']),
-          );
-
-          $rows[] = array(
-            'data' => $row,
-            'class' => array('draggable'),
-          );
-        }
+          ),
+          'class' => array('draggable'),
+        );
       }
 
       $table_id = 'uc-attribute-option-table-' . $tables++;
-      if (!empty($rows)) {
-        drupal_add_tabledrag($table_id, 'order', 'sibling', 'uc-attribute-option-table-ordering');
-      }
-      else {
-        $rows[] = array(array('data' => t('This attribute does not have any options.'), 'colspan' => 6));
-      }
+      drupal_add_tabledrag($table_id, 'order', 'sibling', 'uc-attribute-option-table-ordering');
 
-      $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('product_attributes'), 'id' => $table_id), 'caption' => '<h2>' . drupal_render($form['attributes'][$key]['name']) . '</h2>'));
+      $output .= theme('table', array(
+        'header' => $header,
+        'rows' => $rows,
+        'attributes' => array(
+          'class' => array('product_attributes'),
+          'id' => $table_id,
+        ),
+        'caption' => '<h2>' . drupal_render($form['attributes'][$key]['name']) . '</h2>',
+        'empty' => t('This attribute does not have any options.'),
+      ));
     }
   }
 

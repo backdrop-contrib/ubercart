@@ -1148,16 +1148,13 @@ function uc_order_history($user) {
     );
   }
 
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No orders available.'), 'colspan' => 5));
-  }
-
   $build = array();
   $build['orders'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
     '#attributes' => array('class' => array('uc-order-history')),
+    '#empty' => t('No orders available.'),
   );
   $build['pager'] = array(
     '#theme' => 'pager',
@@ -1502,6 +1499,8 @@ function uc_order_mail_invoice_form_submit($form, &$form_state) {
 function uc_order_log($order) {
   $result = db_query("SELECT * FROM {uc_order_log} WHERE order_id = :id ORDER BY created, order_log_id", array(':id' => $order->order_id));
 
+  $header = array(t('Time'), t('User'), t('Changes'));
+  $rows = array();
   foreach ($result as $change) {
     $rows[] = array(
       'data' => array(format_date($change->created, 'short'), theme('uc_uid', array('uid' => $change->uid)), $change->changes),
@@ -1509,19 +1508,12 @@ function uc_order_log($order) {
     );
   }
 
-  $build = array();
-
-  if (isset($rows)) {
-    $header = array(t('Time'), t('User'), t('Changes'));
-    $build['log'] = array(
-      '#theme' => 'table',
-      '#header' => $header,
-      '#rows' => $rows,
-    );
-  }
-  else {
-    $build['log'] = array('#markup' => '<p>' . t('No changes have been logged for this order.') . '</p>');
-  }
+  $build['log'] = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows,
+    '#empty' => t('No changes have been logged for this order.'),
+  );
 
   return $build;
 }
