@@ -151,7 +151,7 @@ function uc_cart_links_creation_help() {
 
   $build['required'] = array(
     '#prefix' => '<p>',
-    '#markup' => t('The only required part of the <code><em>&lt;cart_link_content&gt;</em></code> is the "p" action, which must be immediately followed by a product node number.  For example, to add product node 23 to a cart, use the following:<blockquote><code>/cart/add/p23</code></blockquote>To use this on your site, simply create an HTML anchor tag referencing your Cart Link URL:<blockquote><code>&lt;a href="http://www.example.com/cart/add/p23"&gt;' . t('Link text.') . '&lt;/a&gt;</code></blockquote>'),
+    '#markup' => t('The only required part of the <code><em>&lt;cart_link_content&gt;</em></code> is the "p" action, which must be immediately followed by a product node number.  For example, to add product node 23 to a cart, use the following:<blockquote><code>/cart/add/p23</code></blockquote>To use this on your site, simply create an HTML anchor tag referencing your Cart Link URL:<blockquote><code>&lt;a href="http://www.example.com/cart/add/p23"&gt;Link text.&lt;/a&gt;</code></blockquote>'),
     '#suffix' => '</p>',
   );
 
