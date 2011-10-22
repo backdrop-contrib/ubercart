@@ -63,7 +63,7 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
   $form['name'] = array(
     '#type' => 'textfield',
     '#title' => t('Name'),
-    '#description' => t('This name will appear to the customer when this tax is applied to an order.<br />It will also be used to name the corresponding predicate for this rate.'),
+    '#description' => t('This name will appear to the customer when this tax is applied to an order.'),
     '#default_value' => $rate_id ? $rate->name : '',
     '#required' => TRUE,
   );
