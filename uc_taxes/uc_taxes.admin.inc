@@ -9,15 +9,10 @@
  * Displays a list of tax rates.
  */
 function uc_taxes_admin_settings() {
-  $rows = array();
-
   $header = array(t('Name'), t('Rate'), t('Taxed products'), t('Taxed product types'), t('Taxed line items'), t('Weight'), array('data' => t('Operations'), 'colspan' => 3));
 
-  // Loop through all the defined tax rates.
+  $rows = array();
   foreach (uc_taxes_rate_load() as $rate_id => $rate) {
-    // Build the operations links for the tax rate.
-
-    // Add the row to the table.
     $rows[] = array(
       check_plain($rate->name),
       $rate->rate * 100 . '%',
@@ -31,16 +26,11 @@ function uc_taxes_admin_settings() {
     );
   }
 
-  // Let the user know if no tax rates are defined.
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No rates available.'), 'colspan' => 9));
-  }
-
-  // Build the output including the table and a link to add a new rate.
   $build['taxes'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
+    '#empty' => t('No rates available.'),
   );
 
   return $build;
