@@ -61,11 +61,12 @@ function theme_uc_file_user_downloads($variables) {
     );
     $row++;
   }
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No downloads found'), 'colspan' => 5));
-  }
 
-  $output  = theme('table', array('header' => $header, 'rows' => $rows));
+  $output = theme('table', array(
+    'header' => $header,
+    'rows' => $rows,
+    'empty' => t('No downloads found'),
+  ));
   $output .= theme('pager');
   $output .= '<div class="form-item"><p class="description">' .
   t('Once your download is finished, you must refresh the page to download again. (Provided you have permission)') .
