@@ -72,7 +72,7 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
     '#type' => 'textfield',
     '#title' => t('Rate'),
     '#description' => t('The tax rate as a percent or decimal. Examples: 6%, .06'),
-    '#default_value' => $rate_id ? $rate->rate : '',
+    '#default_value' => $rate_id ? (($rate->rate * 100) . '%') : '',
     '#size' => 15,
     '#required' => TRUE,
   );
