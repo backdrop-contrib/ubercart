@@ -315,9 +315,10 @@ function theme_uc_attribute_options_form($variables) {
 
   $header = array(t('Name'), t('Default cost'), t('Default price'), t('Default weight'), array('data' => t('List position'), 'sort' => 'asc'), array('data' => t('Operations'), 'colspan' => 2));
 
-  if (count(element_children($form['options'])) > 0) {
-    foreach (element_children($form['options']) as $oid) {
-      $row = array(
+  $rows = array();
+  foreach (element_children($form['options']) as $oid) {
+    $rows[] = array(
+      'data' => array(
         drupal_render($form['options'][$oid]['name']),
         drupal_render($form['options'][$oid]['cost']),
         drupal_render($form['options'][$oid]['price']),
@@ -325,23 +326,19 @@ function theme_uc_attribute_options_form($variables) {
         drupal_render($form['options'][$oid]['ordering']),
         drupal_render($form['options'][$oid]['edit']),
         drupal_render($form['options'][$oid]['delete']),
-      );
-
-      $rows[] = array(
-        'data' => $row,
-        'class' => array('draggable'),
-      );
-    }
-
-    drupal_add_tabledrag('uc-attribute-option-table', 'order', 'sibling', 'uc-attribute-option-table-ordering');
-  }
-  else {
-    $rows[] = array(
-      array('data' => t('No options for this attribute have been added yet.'), 'colspan' => 7),
+      ),
+      'class' => array('draggable'),
     );
   }
 
-  $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-attribute-option-table')));
+  drupal_add_tabledrag('uc-attribute-option-table', 'order', 'sibling', 'uc-attribute-option-table-ordering');
+
+  $output = theme('table', array(
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => array('id' => 'uc-attribute-option-table'),
+    'empty' => t('No options for this attribute have been added yet.'),
+  ));
 
   $output .= drupal_render_children($form);
 
