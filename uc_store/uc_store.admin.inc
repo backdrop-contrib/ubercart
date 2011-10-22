@@ -913,7 +913,7 @@ function uc_store_customer_orders($uid) {
 
   $header = array(t('View'), t('Order ID'), t('Date'), t('Billing name'),
                   t('Shipping name'), t('Items'), t('Total'));
-
+  $rows = array();
   $totals = array('orders' => 0, 'items' => 0, 'total' => 0);
   foreach ($result as $order) {
     $icons = l(uc_store_get_icon('file:order_view'),
@@ -953,11 +953,6 @@ function uc_store_customer_orders($uid) {
       'id' => 'order-' . $order->order_id,
     );
   }
-  if (empty($rows)) {
-    $rows[] = array(
-      array('data' => t('No orders found.'), 'colspan' => 7)
-    );
-  }
 
   drupal_add_js(drupal_get_path('module', 'uc_store') . '/uc_store.js');
 
@@ -977,6 +972,7 @@ function uc_store_customer_orders($uid) {
     '#header' => $header,
     '#rows' => $rows,
     '#attributes' => array('width' => '100%', 'class' => array('uc-cust-orders-table')),
+    '#empty' => t('No orders found.'),
   );
   $build['pager'] = array(
     '#theme' => 'pager',
