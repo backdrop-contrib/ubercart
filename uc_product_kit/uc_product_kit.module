@@ -399,6 +399,9 @@ function uc_product_kit_load($nodes) {
  */
 function uc_product_kit_theme() {
   return array(
+    'uc_product_kit_items_form' => array(
+      'render element' => 'form',
+    ),
     'uc_product_kit_add_to_cart' => array(
       'variables' => array('node' => NULL, 'view_mode' => 'full'),
     ),
@@ -502,7 +505,6 @@ function uc_product_kit_form(&$node, $form_state) {
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     '#weight' => -10,
-    '#attributes' => array('class' => array('product-field')) ,
     '#group' => 'additional_settings',
   );
   $form['base']['mutable'] = array(
@@ -525,7 +527,12 @@ function uc_product_kit_form(&$node, $form_state) {
   );
   $total = 0;
   $base_total = 0;
-  $form['base']['items'] = array('#tree' => TRUE, '#weight' => 1);
+  $form['base']['items'] = array(
+    '#tree' => TRUE,
+    '#theme' => 'uc_product_kit_items_form',
+    '#weight' => 1,
+    '#description' => t('Enter a positive or negative discount to raise or lower the item price by that amount. The change is applied to each item in the kit.'),
+  );
   if (!empty($node->products)) {
     foreach ($node->products as $i => $product) {
       $form['base']['items'][$i] = array(
@@ -538,18 +545,21 @@ function uc_product_kit_form(&$node, $form_state) {
       $form['base']['items'][$i]['qty'] = array(
         '#type' => 'uc_quantity',
         '#title' => t('Quantity'),
+        '#title_display' => 'invisible',
         '#default_value' => $product->qty,
       );
       $form['base']['items'][$i]['ordering'] = array(
         '#type' => 'weight',
         '#title' => t('List position'),
+        '#title_display' => 'invisible',
         '#default_value' => isset($product->ordering) ? $product->ordering : 0,
+        '#attributes' => array('class' => array('uc-product-kit-item-ordering')),
       );
 
       $form['base']['items'][$i]['discount'] = array(
         '#type' => 'textfield',
         '#title' => t('Discount'),
-        '#description' => t('Enter a positive or negative value to raise or lower the item price by that amount. This change is applied to each %product in the kit.', array('%product' => $product->title)),
+        '#title_display' => 'invisible',
         '#field_prefix' => uc_currency_format($product->sell_price) . ' + ',
         '#default_value' => isset($product->discount) ? number_format($product->discount, 3, '.', '') : 0,
         '#size' => 5,
@@ -605,6 +615,40 @@ function uc_product_kit_form(&$node, $form_state) {
   );
 
   return $form;
+}
+
+/**
+ * Renders the list of kit components on the product kit edit form.
+ *
+ * @ingroup themeable
+ */
+function theme_uc_product_kit_items_form($variables) {
+  $form = &$variables['form'];
+
+  $header = array(t('Product'), t('Quantity'), t('List position'), t('Discount'));
+
+  foreach (element_children($form) as $item) {
+    $row = array(
+      drupal_render($form[$item]['link']),
+      drupal_render($form[$item]['qty']),
+      drupal_render($form[$item]['ordering']),
+      drupal_render($form[$item]['discount']),
+    );
+    $rows[] = array(
+      'data' => $row,
+      'class' => array('draggable'),
+    );
+  }
+
+  drupal_add_tabledrag('uc-product-kit-item-table', 'order', 'sibling', 'uc-product-kit-item-ordering');
+
+  $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-product-kit-item-table')));
+
+  if (!empty($form['#description'])) {
+    $output .= '<div class="description">' . $form['#description'] . "</div>\n";
+  }
+
+  return $output;
 }
 
 /**
