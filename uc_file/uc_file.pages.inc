@@ -387,7 +387,7 @@ function _uc_file_download_transfer($file_user, $ip) {
     print(fread($fp, UC_FILE_BYTE_SIZE));
     flush();
 
-    // Supress PHP notice that occurs when output buffering isn't enabled.
+    // Suppress PHP notice that occurs when output buffering isn't enabled.
     // The ob_flush() is needed because if output buffering *is* enabled,
     // clicking on the file download link won't download anything if the buffer
     // isn't flushed.

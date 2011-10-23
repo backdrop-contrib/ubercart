@@ -242,7 +242,7 @@ function uc_google_checkout_taxes_settings_submit($form, &$form_state) {
 }
 
 /**
- * Menu callback function that presents payment terminal form to adminstrator.
+ * Menu callback function that presents payment terminal form to administrator.
  */
 function uc_google_checkout_terminal($order) {
   $order_id = $order->order_id;

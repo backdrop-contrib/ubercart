@@ -173,10 +173,10 @@ function hook_uc_file_action($op, $args) {
  *
  * Stores, either for customization, copy protection or other reasons, might
  * want to send customized downloads to customers. This hook will allow this
- * to happen.  Before a file is opened to be transfered to a customer, this
+ * to happen.  Before a file is opened to be transferred to a customer, this
  * hook will be called to make any altercations to the file that will be used
  * to transfer the download to the customer. This, in effect, will allow a
- * developer to create a new, personalized, file that will get transfered to
+ * developer to create a new, personalized, file that will get transferred to
  * a customer.
  *
  * @param $file_user
@@ -186,9 +186,9 @@ function hook_uc_file_action($op, $args) {
  * @param $ip
  *   The IP address from which the customer is downloading the file.
  * @param $fid
- *   The file id of the file being transfered.
+ *   The file id of the file being transferred.
  * @param $file
- *   The file path of the file to be transfered.
+ *   The file path of the file to be transferred.
  *
  * @return
  *   The path of the new file to transfer to customer.

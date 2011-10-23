@@ -8,7 +8,7 @@
 /**
  * UPS Online Tool settings.
  *
- * Records UPS account information neccessary to use the service. Allows testing
+ * Records UPS account information necessary to use the service. Allows testing
  * or production mode. Configures which UPS services are quoted to customers.
  *
  * @see uc_ups_admin_settings_validate()
