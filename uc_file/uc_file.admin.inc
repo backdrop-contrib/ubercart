@@ -345,9 +345,10 @@ function uc_file_admin_files_form_action($form, &$form_state) {
 }
 
 /**
- * Validation handler for uc_file_admin_files_form().
+ * Validation handler for uc_file_admin_files_form_action().
  *
  * @see uc_file_admin_files_form_action()
+ * @see uc_file_admin_files_form_action_submit()
  */
 function uc_file_admin_files_form_action_validate($form, &$form_state) {
 
@@ -388,9 +389,9 @@ function uc_file_admin_files_form_action_validate($form, &$form_state) {
 }
 
 /**
- * Submit handler for uc_file_admin_files_form().
+ * Submit handler for uc_file_admin_files_form_action().
  *
- * @see uc_file_admin_files_action()
+ * @see uc_file_admin_files_form_action()
  */
 function uc_file_admin_files_form_action_submit($form, &$form_state) {
 
