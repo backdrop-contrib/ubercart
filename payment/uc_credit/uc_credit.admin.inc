@@ -54,14 +54,8 @@ function uc_credit_settings_form($form, &$form_state) {
   $form['cc_basic']['uc_credit_validate_numbers'] = array(
     '#type' => 'checkbox',
     '#title' => t('Validate credit card numbers at checkout.'),
-    '#description' => t('Invalid card numbers will show an error message to the user so they can correct it.<br />This feature is recommended unless you are in debug mode.'),
+    '#description' => t('Invalid card numbers will show an error message to the user so they can correct it.'),
     '#default_value' => variable_get('uc_credit_validate_numbers', TRUE),
-  );
-  $form['cc_basic']['uc_credit_checkout_process'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Attempt to process credit card payments at checkout.'),
-    '#description' => t('Failed attempts will prevent checkout completion and display the error message from above.<br />This box must be checked to process customer credit cards if you are not in debug mode.'),
-    '#default_value' => variable_get('uc_credit_checkout_process', TRUE),
   );
 
   // Form elements that deal specifically with card number security.
@@ -76,52 +70,6 @@ function uc_credit_settings_form($form, &$form_state) {
     '#title' => t('Encryption key directory'),
     '#description' => t('The card type, expiration date and last four digits of the card number are encrypted and stored temporarily while the customer is in the process of checking out.<br /><b>You must enable encryption</b> by following the <a href="!url">encryption instructions</a> in order to accept credit card payments.<br />In short, you must enter the path of a directory outside of your document root where the encryption key may be stored.<br />Relative paths will be resolved relative to the Drupal installation directory.<br />Once this directory is set, you should not change it.', array('!url' => 'http://drupal.org/node/1309226')),
     '#default_value' => uc_credit_encryption_key() ? variable_get('uc_credit_encryption_path', t('Not configured.')) : t('Not configured.'),
-  );
-  $form['cc_security']['uc_credit_debug'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Operate in credit card debug mode.'),
-    '#description' => t('In debug mode, the full credit card number is stored which may be in violation of PCI security standards.<br />Debug mode is only recommended for testing transactions with fake credit card details.'),
-    '#default_value' => variable_get('uc_credit_debug', FALSE),
-  );
-
-  // Form elements to handle the automatic clearing of card data.
-  $form['cc_security']['cc_clear'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Debug mode data clearing'),
-    '#description' => t('Specify below the status and age of orders whose credit card details will be removed.  This setting only applies when operating in debug mode. <strong>Cron must be running for this feature to work.</strong>'),
-    '#collapsible' => FALSE,
-  );
-  foreach (uc_order_status_list() as $status) {
-    $options[$status['id']] = $status['title'];
-  }
-  $form['cc_security']['cc_clear']['uc_credit_clear_status'] = array(
-    '#type' => 'select',
-    '#title' => t('Order status'),
-    '#options' => $options,
-    '#default_value' => variable_get('uc_credit_clear_status', uc_order_state_default('completed')),
-    '#prefix' => '<div style="float: left; margin-right: 1em;">',
-    '#suffix' => '</div>',
-  );
-  $form['cc_security']['cc_clear']['uc_credit_number_duration'] = array(
-    '#type' => 'select',
-    '#title' => t('Age'),
-    '#options' => drupal_map_assoc(range(1, 24)),
-    '#default_value' => variable_get('uc_credit_number_duration', '3'),
-    '#prefix' => '<div style="float: left; margin-right: 1em;">',
-    '#suffix' => '</div>',
-  );
-  $form['cc_security']['cc_clear']['uc_credit_number_unit'] = array(
-    '#type' => 'select',
-    '#title' => t('Unit of time'),
-    '#options' => array(
-      'hours' => t('hour(s)'),
-      'days' => t('day(s)'),
-      'weeks' => t('week(s)'),
-      'years' => t('year(s)'),
-    ),
-    '#default_value' => variable_get('uc_credit_number_unit', 'days'),
-    '#prefix' => '<div style="float: left;">',
-    '#suffix' => '</div>',
   );
 
   // Form elements that deal with the type of data requested at checkout.
@@ -395,10 +343,6 @@ function uc_credit_settings_form_submit($form, &$form_state) {
       }
     }
   }
-
-  if (!$form_state['values']['uc_credit_checkout_process'] && !$form_state['values']['uc_credit_debug']) {
-    drupal_set_message(t('You have chosen to not process credit card payments during checkout, but customer credit card data is not being stored once checkout is completed. This configuration is not recommended for a live site, as you will not be able to collect payment for your orders.'), 'error');
-  }
 }
 
 /**
@@ -410,10 +354,6 @@ function uc_credit_terminal($order) {
   );
 
   $build['instructions'] = array('#markup' => '<p>' . t('Use this terminal to process credit card payments through your default gateway.') . '</p>');
-
-  if (!variable_get('uc_credit_debug', FALSE) || variable_get('uc_credit_checkout_process', TRUE)) {
-    $build['warning'] = array('#markup' => '<p>' . t('Be warned that credit card data will automatically be converted to the last 4 digits of the card once a transaction has occurred.  As such, subsequent charges after a partial payment will not have any stored credit card information to use.') . '</p>');
-  }
 
   $build['details']['order_total'] = array('#markup' => '<div><strong>' . t('Order total: @total', array('@total' => uc_currency_format($order->order_total))) . '</strong></div>');
   $build['details']['balance'] = array('#markup' => '<div><strong>' . t('Balance: @balance', array('@balance' => uc_currency_format(uc_payment_balance($order)))) . '</strong></div>');
@@ -688,42 +628,12 @@ function uc_credit_terminal_form_submit($form, &$form_state) {
   }
 
   $result = uc_payment_process_payment('credit', $form_state['values']['order_id'], $form_state['values']['amount'], $data, TRUE, NULL, FALSE);
+  _uc_credit_save_cc_data_to_order(uc_credit_cache('load'), $form_state['values']['order_id']);
 
   if ($result) {
-    $crypt = new UbercartEncryption();
-
-    // Load up the existing data array.
-    $data = db_query("SELECT data FROM {uc_orders} WHERE order_id = :id", array(':id' => $form_state['values']['order_id']))->fetchField();
-    $data = unserialize($data);
-
-    $cache = uc_credit_cache('load');
-
-    if (variable_get('uc_credit_debug', FALSE) && !variable_get('uc_credit_checkout_process', TRUE)) {
-      $cc_data = $cache;
-    }
-    else {
-      $cc_data = array(
-        'cc_number' => substr($cache['cc_number'], -4),
-      );
-    }
-
-    // Stuff the serialized and encrypted CC details into the array.
-    $data['cc_data'] = $crypt->encrypt(uc_credit_encryption_key(), base64_encode(serialize($cc_data)));
-    uc_store_encryption_errors($crypt, 'uc_credit');
-
-    // Save it again.
-    db_update('uc_orders')
-      ->fields(array('data' => serialize($data)))
-      ->condition('order_id', $form_state['values']['order_id'])
-      ->execute();
-
     drupal_set_message(t('The credit card was processed successfully. See the admin comments for more details.'));
   }
   else {
-    if (variable_get('uc_credit_debug', FALSE)) {
-      _uc_credit_save_cc_data_to_order(uc_credit_cache('load'), $form_state['values']['order_id']);
-    }
-
     drupal_set_message(t('There was an error processing the credit card.  See the admin comments for details.'), 'error');
   }
 

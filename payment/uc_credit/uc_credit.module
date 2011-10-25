@@ -170,41 +170,6 @@ function uc_credit_form_uc_cart_checkout_review_form_alter(&$form, &$form_state)
 }
 
 /**
- * Implements hook_cron().
- */
-function uc_credit_cron() {
-  // Truncate stored data when in debug per the credt card method settings.
-  if (variable_get('uc_credit_debug', FALSE)) {
-    $time = strtotime(variable_get('uc_credit_number_duration', '1') . ' ' . variable_get('uc_credit_number_unit', 'years') . ' ago');
-    $key = uc_credit_encryption_key();
-    $crypt = new UbercartEncryption();
-
-    $result = db_query("SELECT order_id, data FROM {uc_orders} WHERE modified <= :last AND order_status = :status", array(':last' => $time, ':status' => variable_get('uc_credit_clear_status', uc_order_state_default('completed'))));
-    while ($order = $result->fetchObject()) {
-      // Load up the existing data array.
-      $data = unserialize($order->data);
-
-      $cache = uc_credit_cache('save', $data['cc_data']);
-
-      $cc_data = array(
-        'cc_number' => substr($data['cc_data']['cc_number'], -4),
-        'cc_type' => $data['cc_data']['cc_type'],
-      );
-
-      // Stuff the serialized and encrypted CC details into the array.
-      $data['cc_data'] = $crypt->encrypt(uc_credit_encryption_key(), base64_encode(serialize($cc_data)));
-      uc_store_encryption_errors($crypt, 'uc_credit');
-
-      // Save it again.
-      db_update('uc_orders')
-        ->fields(array('data' => serialize($data)))
-        ->condition('order_id', $order->order_id)
-        ->execute();
-    }
-  }
-}
-
-/**
  * Implements hook_exit().
  */
 function uc_credit_exit() {
@@ -248,14 +213,6 @@ function uc_credit_uc_store_status() {
     );
   }
 
-  if (variable_get('uc_credit_debug', FALSE)) {
-    $statuses[] = array(
-      'status' => 'warning',
-      'title' => t('Credit card debug mode'),
-      'desc' => t('Because you are using debug mode, credit card details may be stored in violation of PCI security standards. Debug mode is only recommended for testing transactions with fake credit card details.'),
-    );
-  }
-
   return $statuses;
 }
 
@@ -278,49 +235,27 @@ function uc_credit_uc_order($op, $order, $arg2) {
         unset($_SESSION['cc_pay']);
 
         // Process CC transactions when an order is submitted after review.
-        if (variable_get('uc_credit_checkout_process', TRUE)) {
-          // Stuff the transaction type into the data array.
-          $gateway_id = uc_credit_default_gateway();
-          $data = array(
-            'txn_type' => variable_get('uc_pg_' . $gateway_id . '_cc_txn_type', UC_CREDIT_AUTH_CAPTURE),
-          );
+        $gateway_id = uc_credit_default_gateway();
+        $data = array(
+          'txn_type' => variable_get('uc_pg_' . $gateway_id . '_cc_txn_type', UC_CREDIT_AUTH_CAPTURE),
+        );
 
-          // Attempt to process the CC payment.
-          $order->payment_details = uc_credit_cache('load');
-          $pass = uc_payment_process_payment('credit', $order->order_id, $order->order_total, $data, TRUE, NULL, FALSE);
+        // Attempt to process the CC payment.
+        $order->payment_details = uc_credit_cache('load');
+        $pass = uc_payment_process_payment('credit', $order->order_id, $order->order_total, $data, TRUE, NULL, FALSE);
 
-          // If the payment failed, store the data back in the session and
-          // halt the checkout process.
-          if (!$pass) {
-            $message = variable_get('uc_credit_fail_message', t('We were unable to process your credit card payment. Please verify your details and try again.  If the problem persists, contact us to complete your order.'));
-            return array(array('pass' => FALSE, 'message' => $message));
-          }
-        }
-        elseif (variable_get('uc_credit_debug', FALSE)) {
-          // If we aren't set to process transactions immediately and we're in
-          // debug mode, store the CC data in the order so it can be viewed
-          // later for test processing.
-          $cc_data = $order->payment_details;
-
-          _uc_credit_save_cc_data_to_order($cc_data, $order->order_id);
+        // If the payment failed, store the data back in the session and
+        // halt the checkout process.
+        if (!$pass) {
+          $message = variable_get('uc_credit_fail_message', t('We were unable to process your credit card payment. Please verify your details and try again.  If the problem persists, contact us to complete your order.'));
+          return array(array('pass' => FALSE, 'message' => $message));
         }
       }
       break;
 
     case 'save':
-      if (isset($order->payment_method) && $order->payment_method == 'credit') {
-        // Build an array of CC data to store with the order.
-        if (!empty($order->payment_details)) {
-          $cc_data = $order->payment_details;
-
-          // If not in debug mode, save only some limited, PCI compliant data.
-          if (!variable_get('uc_credit_debug', FALSE)) {
-            $cc_data['cc_number'] = substr($cc_data['cc_number'], -4);
-            unset($cc_data['cc_cvv']);
-          }
-
-          _uc_credit_save_cc_data_to_order($cc_data, $order->order_id);
-        }
+      if (isset($order->payment_method) && $order->payment_method == 'credit' && !empty($order->payment_details)) {
+        _uc_credit_save_cc_data_to_order($order->payment_details, $order->order_id);
       }
       break;
 
@@ -572,12 +507,7 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
       return $build;
 
     case 'order-details':
-      if (variable_get('uc_credit_debug', FALSE)) {
-        return uc_payment_method_credit_form(array(), $form_state, $order);
-      }
-      else {
-        return t('Use the terminal available through the<br />%button button on the View tab to<br />process credit card payments.', array('%button' => t('Process card')));
-      }
+      return t('Use the terminal available through the<br />%button button on the View tab to<br />process credit card payments.', array('%button' => t('Process card')));
 
     case 'settings':
       form_load_include($form_state, 'inc', 'uc_credit', 'uc_credit.admin');
@@ -1044,13 +974,16 @@ function uc_credit_encryption_key() {
  * Saves a CC data array to an order's data array.
  */
 function _uc_credit_save_cc_data_to_order($cc_data, $order_id) {
-  $crypt = new UbercartEncryption();
+  // Save only some limited, PCI compliant data.
+  $cc_data['cc_number'] = substr($cc_data['cc_number'], -4);
+  unset($cc_data['cc_cvv']);
 
   // Load up the existing data array.
   $data = db_query("SELECT data FROM {uc_orders} WHERE order_id = :id", array(':id' => $order_id))->fetchField();
   $data = unserialize($data);
 
   // Stuff the serialized and encrypted CC details into the array.
+  $crypt = new UbercartEncryption();
   $data['cc_data'] = $crypt->encrypt(uc_credit_encryption_key(), base64_encode(serialize($cc_data)));
   uc_store_encryption_errors($crypt, 'uc_credit');
 
