@@ -326,13 +326,14 @@ function uc_product_class_form($form, &$form_state, $class = NULL) {
   $form['name'] = array(
     '#type' => 'textfield',
     '#title' => t('Class name'),
+    '#description' => t('The human-readable name of this content type as it should appear on the !create_content page.  There are no character restrictions on this name.', array('!create_content' => l(t('Create content'), 'node/add'))),
     '#default_value' => $classname,
     '#required' => TRUE,
   );
   $form['description'] = array(
     '#type' => 'textarea',
     '#title' => t('Description'),
-    '#description' => t('This text describes the content type created for this product class to administrators.'),
+    '#description' => t('This text describes the content type to administrators.'),
     '#default_value' => $classdesc,
   );
   $form['actions'] = array('#type' => 'actions');
