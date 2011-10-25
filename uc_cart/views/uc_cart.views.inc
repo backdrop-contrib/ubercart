@@ -66,7 +66,7 @@ function uc_cart_views_data() {
   );
 
   $data['uc_cart_products']['qty'] = array(
-    'title' => t('Qty'),
+    'title' => t('Quantity'),
     'help' => t('The quantity to be ordered.'),
     'field' => array(
       'handler' => 'views_handler_field_numeric',

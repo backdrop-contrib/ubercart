@@ -334,7 +334,7 @@ function uc_order_add_product_form($form, &$form_state, $order, $node) {
   );
   $form['qty'] = array(
     '#type' => 'uc_quantity',
-    '#title' => t('Qty'),
+    '#title' => theme('uc_qty_label'),
     '#default_value' => 1,
   );
   $form['actions'] = array('#type' => 'actions');
@@ -397,21 +397,29 @@ function uc_order_edit_products_form($form, &$form_state, $products) {
       );
       $form['products'][$i]['qty'] = array(
         '#type' => 'uc_quantity',
+        '#title' => theme('uc_qty_label'),
+        '#title_display' => 'invisible',
         '#default_value' => $products[$i]->qty,
       );
       $form['products'][$i]['title'] = array(
         '#type' => 'textfield',
+        '#title' => t('Title'),
+        '#title_display' => 'invisible',
         '#default_value' => $products[$i]->title,
         '#size' => 30,
         '#maxlength' => 255,
       );
       $form['products'][$i]['model'] = array(
         '#type' => 'textfield',
+        '#title' => t('SKU'),
+        '#title_display' => 'invisible',
         '#default_value' => $products[$i]->model,
         '#size' => 6,
       );
       $form['products'][$i]['weight'] = array(
         '#type' => 'textfield',
+        '#title' => t('Weight'),
+        '#title_display' => 'invisible',
         '#default_value' => $products[$i]->weight,
         '#size' => 3,
       );
@@ -423,16 +431,22 @@ function uc_order_edit_products_form($form, &$form_state, $products) {
       );
       $form['products'][$i]['weight_units'] = array(
         '#type' => 'select',
+        '#title' => t('Units'),
+        '#title_display' => 'invisible',
         '#default_value' => $products[$i]->weight_units,
         '#options' => $units,
       );
       $form['products'][$i]['cost'] = array(
         '#type' => 'uc_price',
+        '#title' => t('Cost'),
+        '#title_display' => 'invisible',
         '#default_value' => $products[$i]->cost,
         '#size' => 5,
       );
       $form['products'][$i]['price'] = array(
         '#type' => 'uc_price',
+        '#title' => t('Price'),
+        '#title_display' => 'invisible',
         '#default_value' => $products[$i]->price,
         '#size' => 5,
       );
@@ -1062,7 +1076,7 @@ function uc_op_products_view_table($order) {
 
   $table['#columns']['qty'] = array(
     'cell' => array(
-      'data' => t('Qty'),
+      'data' => theme('uc_qty_label'),
       'class' => array('text-right'),
     ),
     'weight' => 0,
@@ -1166,7 +1180,7 @@ function uc_op_products_customer_table($order) {
 
   $table['#columns']['qty'] = array(
     'cell' => array(
-      'data' => t('Qty'),
+      'data' => theme('uc_qty_label'),
       'class' => array('text-right'),
     ),
     'weight' => 0,
@@ -1276,7 +1290,7 @@ function uc_op_products_edit_table() {
     'weight' => 0,
   );
   $table['#columns']['qty'] = array(
-    'cell' => t('Qty'),
+    'cell' => theme('uc_qty_label'),
     'weight' => 1,
   );
   $table['#columns']['title'] = array(

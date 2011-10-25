@@ -413,7 +413,7 @@ function uc_order_views_data() {
   );
 
   $data['uc_order_products']['qty'] = array(
-    'title' => t('Qty'),
+    'title' => t('Quantity'),
     'help' => t('The quantity ordered.'),
     'field' => array(
       'handler' => 'views_handler_field',

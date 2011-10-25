@@ -247,10 +247,14 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
     }
     $form['payments']['new']['method'] = array(
       '#type' => 'select',
+      '#title' => t('Method'),
+      '#title_display' => 'invisible',
       '#options' => $options,
     );
     $form['payments']['new']['amount'] = array(
       '#type' => 'textfield',
+      '#title' => t('Amount'),
+      '#title_display' => 'invisible',
       '#size' => 6,
     );
     $form['payments']['new']['balance'] = array(
@@ -258,11 +262,13 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
     );
     $form['payments']['new']['comment'] = array(
       '#type' => 'textfield',
+      '#title' => t('Comment'),
+      '#title_display' => 'invisible',
       '#size' => 32,
       '#maxlength' => 256,
     );
-    $form['payments']['new']['actions'] = array('#type' => 'actions');
-    $form['payments']['new']['actions']['action'] = array(
+    $form['payments']['new']['action'] = array('#type' => 'actions');
+    $form['payments']['new']['action']['action'] = array(
       '#type' => 'submit',
       '#value' => t('Enter'),
     );

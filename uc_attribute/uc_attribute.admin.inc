@@ -573,6 +573,8 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
         $form['attributes'][$attribute->aid] = array(
           'remove' => array(
             '#type' => 'checkbox',
+            '#title' => t('Remove'),
+            '#title_display' => 'invisible',
             '#default_value' => 0,
           ),
           'name' => array(
@@ -580,6 +582,8 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
           ),
           'label' => array(
             '#type' => 'textfield',
+            '#title' => t('Label'),
+            '#title_display' => 'invisible',
             '#default_value' => empty($attribute->label) ? $attribute->name : $attribute->label,
             '#size' => 20,
           ),
@@ -588,16 +592,22 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
           ),
           'required' => array(
             '#type' => 'checkbox',
+            '#title' => t('Required'),
+            '#title_display' => 'invisible',
             '#default_value' => $attribute->required,
           ),
           'ordering' => array(
             '#type' => 'weight',
+            '#title' => t('List position'),
+            '#title_display' => 'invisible',
             '#delta' => 25,
             '#default_value' => $attribute->ordering,
             '#attributes' => array('class' => array('uc-attribute-table-ordering')),
           ),
           'display' => array(
             '#type' => 'select',
+            '#title' => t('Display'),
+            '#title_display' => 'invisible',
             '#default_value' => $attribute->display,
             '#options' => _uc_attribute_display_types(),
           ),
@@ -911,23 +921,31 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
         );
         $form['attributes'][$aid]['options'][$oid]['cost'] = array(
           '#type' => 'uc_price',
+          '#title' => t('Cost'),
+          '#title_display' => 'invisible',
           '#default_value' => is_null($option->cost) ? $option->default_cost : $option->cost,
           '#size' => 6,
           '#allow_negative' => TRUE,
         );
         $form['attributes'][$aid]['options'][$oid]['price'] = array(
           '#type' => 'uc_price',
+          '#title' => t('Price'),
+          '#title_display' => 'invisible',
           '#default_value' => is_null($option->price) ? $option->default_price : $option->price,
           '#size' => 6,
           '#allow_negative' => TRUE,
         );
         $form['attributes'][$aid]['options'][$oid]['weight'] = array(
           '#type' => 'textfield',
+          '#title' => t('Weight'),
+          '#title_display' => 'invisible',
           '#default_value' => is_null($option->weight) ? $option->default_weight : $option->weight,
           '#size' => 5,
         );
         $form['attributes'][$aid]['options'][$oid]['ordering'] = array(
           '#type' => 'weight',
+          '#title' => t('List position'),
+          '#title_display' => 'invisible',
           '#delta' => 50,
           '#default_value' => is_null($option->ordering) ? $option->default_ordering : $option->ordering,
           '#attributes' => array('class' => array('uc-attribute-option-table-ordering')),
@@ -936,6 +954,8 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
 
       $form['attributes'][$aid]['default'] = array(
         '#type' => 'radios',
+        '#title' => t('Default'),
+        '#title_display' => 'invisible',
         '#options' => $options,
         '#default_value' => $attribute->default_option,
       );
