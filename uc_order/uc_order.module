@@ -75,6 +75,41 @@ function uc_order_menu() {
   global $user;
   $items = array();
 
+  $items['admin/store/customers'] = array(
+    'title' => 'Customers',
+    'description' => 'View and modify customer information and orders.',
+    'page callback' => 'uc_order_customers',
+    'access arguments' => array('view customers'),
+    'weight' => -6,
+    'file' => 'uc_order.customers.inc',
+    'position' => 'left',
+  );
+  $items['admin/store/customers/view'] = array(
+    'title' => 'View customers',
+    'description' => 'View and modify customer information and orders.',
+    'page arguments' => array(NULL, NULL, '25'),
+    'access arguments' => array('view customers'),
+    'weight' => -10,
+    'file' => 'uc_order.customers.inc',
+  );
+  $items['admin/store/customers/search'] = array(
+    'title' => 'Search customers',
+    'description' => 'Search through your customer list.',
+    'page callback' => 'uc_order_customer_search',
+    'access arguments' => array('view customers'),
+    'weight' => -5,
+    'file' => 'uc_order.customers.inc',
+  );
+  $items['admin/store/customers/orders/%'] = array(
+    'title' => 'Customer orders',
+    'description' => 'View a list of orders placed by this customer.',
+    'page callback' => 'uc_order_customer_orders',
+    'page arguments' => array(4),
+    'access arguments' => array('view all orders'),
+    'weight' => -5,
+    'file' => 'uc_order.customers.inc',
+  );
+
   $items['admin/store/settings/orders'] = array(
     'title' => 'Orders',
     'description' => 'Configure the display and workflow for orders.',
@@ -367,6 +402,9 @@ function uc_order_theme($existing, $type, $theme, $path) {
     'uc_order_search_fieldset' => array(
       'render element' => 'form',
     ),
+    'uc_order_customer_search_fieldset' => array(
+      'render element' => 'form',
+    ),
     'uc_order_edit_form' => array(
       'render element' => 'form',
       'file' => 'uc_order.admin.inc',
@@ -411,6 +449,9 @@ function uc_order_permission() {
   return array(
     'administer order workflow' => array(
       'title' => t('Administer order workflow'),
+    ),
+    'view customers' => array(
+      'title' => t('View customers'),
     ),
     'view own orders' => array(
       'title' => t('View own orders'),

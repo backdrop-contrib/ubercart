@@ -1,6 +1,6 @@
 /**
  * @file
- * Adds click events to the order and customer tables.
+ * Adds click events to the customer and order tables.
  */
 
 Drupal.behaviors.ucCustomerAdmin = {
