@@ -27,6 +27,31 @@ function uc_credit_update_last_removed() {
  * Remove credit card debug mode.
  */
 function uc_credit_update_7000() {
+  // Truncate stored data from debug mode.
+  $key = uc_credit_encryption_key();
+  $crypt = new UbercartEncryption();
+
+  $result = db_query("SELECT order_id, data FROM {uc_orders} WHERE data LIKE :cc_data", array(':cc_data' => '%cc_data%'));
+  while ($order = $result->fetchObject()) {
+    // Load up the existing data array.
+    $data = unserialize($order->data);
+
+    $cc_data = array(
+      'cc_number' => substr($data['cc_data']['cc_number'], -4),
+      'cc_type' => $data['cc_data']['cc_type'],
+    );
+
+    // Stuff the serialized and encrypted CC details into the array.
+    $data['cc_data'] = $crypt->encrypt(uc_credit_encryption_key(), base64_encode(serialize($cc_data)));
+    uc_store_encryption_errors($crypt, 'uc_credit');
+
+    // Save it again.
+    db_update('uc_orders')
+      ->fields(array('data' => serialize($data)))
+      ->condition('order_id', $order->order_id)
+      ->execute();
+  }
+
   variable_del('uc_credit_checkout_process');
   variable_del('uc_credit_debug');
   variable_del('uc_credit_clear_status');
