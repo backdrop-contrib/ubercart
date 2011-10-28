@@ -5,32 +5,38 @@
  * Defines the credit card payment method and hooks in payment gateways.
  */
 
-// Used to just authorize an amount on a credit card account.
+
+/** Just authorize an amount on a credit card account. */
 define('UC_CREDIT_AUTH_ONLY', 'authorize');
 
-// Used to capture funds from a prior authorization.
+/** Capture funds from a prior authorization. */
 define('UC_CREDIT_PRIOR_AUTH_CAPTURE', 'prior_auth_capture');
 
-// Used to authorize and capture money all at once.
+/** Authorize and capture money all at once. */
 define('UC_CREDIT_AUTH_CAPTURE', 'auth_capture');
 
-// Used to set up a credit card reference through the payment gateway.
+/** Set up a credit card reference through the payment gateway. */
 define('UC_CREDIT_REFERENCE_SET', 'reference_set');
 
-// Used to capture funds using a credit card reference.
+/** Capture funds using a credit card reference. */
 define('UC_CREDIT_REFERENCE_TXN', 'reference_txn');
 
-// Used to remove a reference from the payment gateway.
+/** Remove a reference from the payment gateway. */
 define('UC_CREDIT_REFERENCE_REMOVE', 'reference_remove');
 
-// Used to credit funds to a reference at the payment gateway.
+/** Credit funds to a reference at the payment gateway. */
 define('UC_CREDIT_REFERENCE_CREDIT', 'reference_credit');
 
-// Used to credit funds to a credit card account.
+/** Credit funds to a credit card account. */
 define('UC_CREDIT_CREDIT', 'credit');
 
-// Used to void a transaction before the transaction clears.
+/** Void a transaction before the transaction clears. */
 define('UC_CREDIT_VOID', 'void');
+
+
+/** Name of encryption key file. */
+define('UC_CREDIT_KEYFILE_NAME', 'uc_credit.key');
+
 
 /*******************************************************************************
  * Hook Functions (Drupal)
@@ -1002,6 +1008,9 @@ function _uc_credit_valid_card_issue($issue) {
 /**
  * Loads the key for CC number encryption from a file.
  *
+ * Path to key file is stored in system variable 'uc_credit_encryption_path'.
+ * Key file name is stored in constant UC_CREDIT_KEYFILE_NAME..
+ *
  * @return
  *   FALSE if no encryption key is found.
  */
@@ -1012,17 +1021,15 @@ function uc_credit_encryption_key() {
     return $key;
   }
 
-  $dir = variable_get('uc_credit_encryption_path', t('Not configured, see below.'));
-
-  if (!empty($dir) && $dir !== t('Not configured, see below.')) {
-    $filename = rtrim($dir, '/\\') . '/uc_credit.key';
-
-    if (file_exists($filename)) {
-      if (!$file = fopen($filename, 'r')) {
+  $key_dir = variable_get('uc_credit_encryption_path', '');
+  if (is_dir($key_dir)) {
+    $key_file = $key_dir . '/' . UC_CREDIT_KEYFILE_NAME;
+    if (file_exists($key_file)) {
+      if (!$file = @fopen($key_file, 'r')) {
         return FALSE;
       }
 
-      $key = fread($file, filesize($filename));
+      $key = fread($file, filesize($key_file));
       fclose($file);
     }
   }
