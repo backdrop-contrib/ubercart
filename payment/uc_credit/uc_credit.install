@@ -37,11 +37,11 @@ function uc_credit_update_7000() {
   while ($order = $result->fetchObject()) {
     // Load up the existing data array.
     $data = unserialize($order->data);
+    $cc_data = uc_credit_cache('save', $data['cc_data']);
 
-    $cc_data = array(
-      'cc_number' => substr($data['cc_data']['cc_number'], -4),
-      'cc_type' => $data['cc_data']['cc_type'],
-    );
+    // Save only some limited, PCI compliant data.
+    $cc_data['cc_number'] = substr($cc_data['cc_number'], -4);
+    unset($cc_data['cc_cvv']);
 
     // Stuff the serialized and encrypted CC details into the array.
     $data['cc_data'] = $crypt->encrypt(uc_credit_encryption_key(), base64_encode(serialize($cc_data)));
