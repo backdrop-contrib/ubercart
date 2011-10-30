@@ -101,20 +101,20 @@ function uc_quote_node_update($node) {
       uc_quote_set_shipping_type('product', $node->nid, $node->shipping_type);
     }
 
-    if ($node->street1) {
+    if (!empty($node->shipping_address['street1'])) {
       db_merge('uc_quote_product_locations')
         ->key(array('nid' => $node->nid))
         ->fields(array(
-          'first_name' => $node->first_name,
-          'last_name' => $node->last_name,
-          'company' => $node->company,
-          'street1' => $node->street1,
-          'street2' => $node->street2,
-          'city' => $node->city,
-          'zone' => $node->zone,
-          'postal_code' => $node->postal_code,
-          'country' => $node->country,
-          'phone' => $node->phone,
+          'first_name' => $node->shipping_address['first_name'],
+          'last_name' => $node->shipping_address['last_name'],
+          'company' => $node->shipping_address['company'],
+          'street1' => $node->shipping_address['street1'],
+          'street2' => $node->shipping_address['street2'],
+          'city' => $node->shipping_address['city'],
+          'zone' => $node->shipping_address['zone'],
+          'postal_code' => $node->shipping_address['postal_code'],
+          'country' => $node->shipping_address['country'],
+          'phone' => $node->shipping_address['phone'],
         ))
         ->execute();
     }
@@ -221,7 +221,7 @@ function uc_quote_form_alter(&$form, &$form_state, $form_id) {
     );
 
     // Add the default pickup address fieldset.
-    $form['shipping']['default_address'] = array(
+    $form['shipping']['shipping_address'] = array(
       '#type' => 'fieldset',
       '#title' => t('Default product pickup address'),
       '#description' => t('When delivering products to customers, the original location of the product must be known in order to accurately quote the shipping cost and set up a delivery. If this pickup address is left blank, this product will default to the <a href="!url">store pickup address</a>.', array('!url' => url('admin/store/settings/quotes'))),
@@ -229,9 +229,10 @@ function uc_quote_form_alter(&$form, &$form_state, $form_id) {
       '#collapsed' => TRUE,
       '#weight' => -6,
     );
-    $form['shipping']['default_address']['address'] = array(
+    $form['shipping']['shipping_address']['#tree'] = TRUE;
+    $form['shipping']['shipping_address']['address'] = array(
       '#type' => 'uc_address',
-      '#default_value' => isset($form_state['values']) ? $form_state['values'] : $address,
+      '#default_value' => isset($form_state['values']['shipping_address']) ? $form_state['values']['shipping_address'] : $address,
       '#required' => FALSE,
     );
   }
