@@ -740,7 +740,7 @@ function uc_order_create_form_create_submit($form, &$form_state) {
       if ($form_state['values']['customer']['sendmail']) {
         // Manually set the password so it appears in the e-mail.
         $account->password = $fields['pass'];
-        drupal_mail('user', 'register_admin_created', $email, NULL, array('account' => $account), uc_store_email_from());
+        drupal_mail('user', 'register_admin_created', $email, uc_store_mail_recipient_language($email), array('account' => $account), uc_store_email_from());
         drupal_set_message(t('A welcome message has been e-mailed to the new user.'));
       }
       break;
@@ -959,7 +959,7 @@ function uc_order_select_customer($email = NULL) {
         $account->password = $fields['pass'];
 
         // Send the e-mail through the user module.
-        drupal_mail('user', 'register_admin_created', $email, NULL, array('account' => $account), uc_store_email_from());
+        drupal_mail('user', 'register_admin_created', $email, uc_store_mail_recipient_language($email), array('account' => $account), uc_store_email_from());
 
         $build['email']['#markup'] .= t('Account details sent to e-mail provided.<br /><br /><strong>Username:</strong> @username<br /><strong>Password:</strong> @password', array('@username' => $fields['name'], '@password' => $fields['pass'])) . '<br /><br />';
       }
