@@ -28,7 +28,7 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
   $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Shipping method title'),
-    '#description' => t('The name shown to distinguish it from other weightquote methods.'),
+    '#description' => t('The name shown to administrators distinguish this method from other weightquote methods.'),
     '#default_value' => $method->title,
     '#required' => TRUE,
   );

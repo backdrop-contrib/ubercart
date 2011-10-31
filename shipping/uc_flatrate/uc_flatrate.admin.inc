@@ -28,7 +28,7 @@ function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
   $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Shipping method title'),
-    '#description' => t('The name shown to distinguish it from other flatrate methods.'),
+    '#description' => t('The name shown to administrators distinguish this method from other flatrate methods.'),
     '#default_value' => $method->title,
     '#required' => TRUE,
   );
