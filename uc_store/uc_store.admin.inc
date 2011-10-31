@@ -155,41 +155,34 @@ function uc_country_import_form($form, &$form_state) {
   foreach ($files as $file) {
     $import_list[$file['file']] = $file['file'];
   }
-  if (is_array($import_list)) {
+
+  if (!empty($import_list)) {
     ksort($import_list);
+
+    $form['country_import'] = array(
+      '#title' => t('Import countries'),
+      '#type' => 'fieldset',
+      '#collapsed' => TRUE,
+      '#collapsible' => TRUE,
+    );
+
+    $form['country_import']['text'] = array(
+      '#markup' => '<p>' . t('To import new country data, select it in the list and click the import button. If you are using a custom or contributed import file, it must be placed in the Ubercart folder uc_store/countries.') . '</p>',
+    );
+    $form['country_import']['import_file'] = array(
+      '#type' => 'select',
+      '#title' => t('Country'),
+      '#options' => $import_list,
+      '#multiple' => TRUE,
+      '#size' => min(10, count($import_list)),
+    );
+    $form['country_import']['actions'] = array('#type' => 'actions');
+    $form['country_import']['actions']['import_button'] = array(
+      '#type' => 'submit',
+      '#value' => t('Import'),
+    );
   }
 
-  if (is_array($import_list)) {
-    $options = $import_list;
-  }
-  else {
-    $options = array(t('-None available-'));
-  }
-
-  $form['country_import'] = array(
-    '#title' => t('Import countries'),
-    '#type' => 'fieldset',
-    '#collapsed' => TRUE,
-    '#collapsible' => TRUE,
-  );
-
-  $form['country_import']['text'] = array(
-    '#markup' => '<p>' . t('To import new country data, select it in the list and click the import button. If you are using a custom or contributed import file, it must be placed in the Ubercart folder uc_store/countries.') . '</p>',
-  );
-  $form['country_import']['import_file'] = array(
-    '#type' => 'select',
-    '#title' => t('Country'),
-    '#options' => $options,
-    '#disabled' => !is_array($import_list),
-    '#multiple' => is_array($import_list),
-    '#size' => min(10, count($options)),
-  );
-  $form['country_import']['actions'] = array('#type' => 'actions');
-  $form['country_import']['actions']['import_button'] = array(
-    '#type' => 'submit',
-    '#value' => t('Import'),
-    '#disabled' => !is_array($import_list),
-  );
   $form['country_table'] = array(
     '#theme' => 'table',
     '#header' => $header,
