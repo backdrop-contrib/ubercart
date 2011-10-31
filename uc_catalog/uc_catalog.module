@@ -541,10 +541,6 @@ function _uc_catalog_navigation($branch) {
     ->count();
   $num = $query->execute();
 
-  // No nodes in category or descendants. Not in path and display nothing.
-  if (!$num) {
-    return array(FALSE, '');
-  }
 
   $branch_path = uc_catalog_path($branch);
   if (!isset($breadcrumb)) {
@@ -580,24 +576,31 @@ function _uc_catalog_navigation($branch) {
     $inpath = $here;
   }
 
-  // Checks to see if node counts are desired in navigation
-  $num_text = '';
-  if (variable_get('uc_catalog_block_nodecount', TRUE)) {
-    $num_text = ' (' . $num . ')';
-  }
-
   $lis = array();
   $expand = variable_get('uc_catalog_expand_categories', FALSE);
-  $link = l($branch->name . $num_text, $branch_path);
   if ($expand || count($branch->children)) {
     foreach ($branch->children as $twig) {
       // Expand if children are in the menu path. Capture their output.
-      list($child_in_path, $lis[]) = _uc_catalog_navigation($twig);
+      list($child_in_path, $lis[], $child_num) = _uc_catalog_navigation($twig);
+      $num += $child_num;
       if ($child_in_path) {
         $inpath = $child_in_path;
       }
     }
   }
+
+  // No nodes in category or descendants. Not in path and display nothing.
+  if (!$num) {
+    return array(FALSE, '', 0);
+  }
+
+  // Checks to see if node counts are desired in navigation
+  $num_text = '';
+  if (variable_get('uc_catalog_block_nodecount', TRUE)) {
+    $num_text = ' (' . $num . ')';
+  }
+  $link = l($branch->name . $num_text, $branch_path);
+
   $output = theme('uc_catalog_item', array(
     'here' => $here,
     'link' => $link,
@@ -608,7 +611,7 @@ function _uc_catalog_navigation($branch) {
   ));
 
   // Tell parent category your status, and pass on output.
-  return array($inpath, $output);
+  return array($inpath, $output, $num);
 }
 
 /**
