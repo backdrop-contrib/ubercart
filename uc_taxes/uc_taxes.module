@@ -147,6 +147,14 @@ function uc_taxes_uc_line_item() {
     'calculated' => TRUE,
     'display_only' => FALSE,
   );
+  $items['tax_display'] = array(
+    'title' => t('Tax'),
+    'callback' => 'uc_line_item_tax_display',
+    'weight' => 5,
+    'stored' => FALSE,
+    'calculated' => TRUE,
+    'display_only' => TRUE,
+  );
   $items['tax_subtotal'] = array(
     'title' => t('Subtotal excluding taxes'),
     'callback' => 'uc_line_item_tax_subtotal',
@@ -175,7 +183,7 @@ function uc_taxes_uc_order($op, $order, $arg2) {
           if ($line['type'] == 'tax') {
             $delete = TRUE;
             foreach ($line_items as $id => $new_line) {
-              if ($new_line['title'] == $line['title']) {
+              if ($new_line['data']['tax_id'] == $line['data']['tax_id']) {
                 if ($new_line['amount'] != $line['amount']) {
                   uc_order_update_line_item($line['line_item_id'], $new_line['title'], $new_line['amount'], $new_line['data']);
                   $order->line_items[$i]['amount'] = $new_line['amount'];
@@ -222,6 +230,30 @@ function uc_line_item_tax($op, $order) {
       $lines = array();
       $taxes = uc_taxes_calculate($order);
       foreach ($taxes as $tax) {
+        $lines[] = array(
+          'id' => ($tax->summed ? 'tax' : 'tax_included'),
+          'title' => $tax->name,
+          'amount' => $tax->amount,
+          'weight' => variable_get('uc_li_tax_weight', 9) + $tax->weight / 10,
+          'data' => $tax->data,
+        );
+      }
+      return $lines;
+  }
+}
+
+function uc_line_item_tax_display($op, $order) {
+  switch ($op) {
+    case 'display':
+      $lines = array();
+      $taxes = uc_taxes_calculate($order);
+      foreach ($taxes as $tax) {
+        foreach ($order->line_items as $line_item) {
+          if ($line_item['type'] == 'tax' && $line_item['data']['tax_id'] == $tax->id) {
+            continue 2;
+          }
+        }
+
         $lines[] = array(
           'id' => ($tax->summed ? 'tax' : 'tax_included'),
           'title' => $tax->name,
