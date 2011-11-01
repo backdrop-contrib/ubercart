@@ -175,6 +175,7 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'subtotal':
+          $subtotal = '';
           if (is_array($order->line_items)) {
             foreach ($order->line_items as $key => $value) {
               if ($value['type'] == 'subtotal') {
