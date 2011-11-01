@@ -1171,14 +1171,17 @@ function uc_cart_complete_sale($order, $login = FALSE) {
   $variables['!new_password'] = isset($order->data['new_user']['pass']) ? $order->data['new_user']['pass'] : '';
   $messages = array(
     'uc_msg_order_submit' => uc_get_message('completion_message'),
-    'uc_msg_order_' . $type => strtr(uc_get_message('completion_' . $type), $variables),
+    'uc_msg_order_' . $type => uc_get_message('completion_' . $type),
     'uc_msg_continue_shopping' => uc_get_message('continue_shopping'),
   );
   foreach ($messages as $id => &$message) {
     $message = variable_get($id, $message);
     $message = token_replace($message, array('uc_order' => $order));
+    if ($id == 'uc_msg_order_' . $type) {
+      $message = strtr($message, $variables);
+    }
   }
-  $output = filter_xss_admin(implode('', $messages));
+  $output = filter_xss_admin(implode(' ', $messages));
 
   // Empty that cart...
   uc_cart_empty(uc_cart_get_id(FALSE), 'checkout');
