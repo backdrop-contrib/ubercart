@@ -9,7 +9,7 @@
  * Credit card settings form.
  *
  * @see uc_credit_settings_form_validate()
- * @see uc_credit_settings_submit()
+ * @see uc_credit_settings_form_submit()
  */
 function uc_credit_settings_form($form, &$form_state) {
   if (!user_access('administer credit cards')) {
@@ -233,7 +233,7 @@ function uc_credit_settings_form($form, &$form_state) {
  * exists, and is readable. and writeable so
  *
  * @see uc_credit_settings_form()
- * @see uc_credit_settings_submit()
+ * @see uc_credit_settings_form_submit()
  */
 function uc_credit_settings_form_validate($form, &$form_state) {
 
@@ -316,7 +316,7 @@ function uc_credit_settings_form_validate($form, &$form_state) {
 /**
  * Creates the encryption key file if it doesn't already exist.
  *
- * @see uc_credit_settings()
+ * @see uc_credit_settings_form()
  * @see uc_credit_settings_form_validate()
  */
 function uc_credit_settings_form_submit($form, &$form_state) {
@@ -365,6 +365,9 @@ function uc_credit_terminal($order) {
 
 /**
  * Displays the credit card terminal form for administrators.
+ *
+ * @see uc_credit_terminal_form_validate()
+ * @see uc_credit_terminal_form_submit()
  */
 function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FALSE) {
   // Get the transaction types available to our default gateway.
@@ -552,6 +555,9 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
 
 /**
  * Validation handler for credit terminal form.
+ *
+ * @see uc_credit_terminal_form()
+ * @see uc_credit_terminal_form_submit()
  */
 function uc_credit_terminal_form_validate($form, &$form_state) {
   if (uc_order_load($form_state['values']['order_id']) === FALSE) {
@@ -561,6 +567,9 @@ function uc_credit_terminal_form_validate($form, &$form_state) {
 
 /**
  * Submit handler for credit terminal form.
+ *
+ * @see uc_credit_terminal_form()
+ * @see uc_credit_terminal_form_validate()
  */
 function uc_credit_terminal_form_submit($form, &$form_state) {
   // Load the order.
