@@ -80,11 +80,13 @@ function uc_product_settings_form($form, &$form_state) {
     '#default_value' => variable_get('uc_product_image_widget', NULL),
   );
 
-  $form['product']['uc_product_add_to_cart_qty'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Display an optional quantity field in the <em>Add to Cart</em> form.'),
-    '#default_value' => variable_get('uc_product_add_to_cart_qty', FALSE),
-  );
+  if (module_exists('uc_cart')) {
+    $form['product']['uc_product_add_to_cart_qty'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Display an optional quantity field in the <em>Add to Cart</em> form.'),
+      '#default_value' => variable_get('uc_product_add_to_cart_qty', FALSE),
+    );
+  }
 
   foreach (module_invoke_all('uc_product_feature') as $feature) {
     if (isset($feature['settings']) &&
