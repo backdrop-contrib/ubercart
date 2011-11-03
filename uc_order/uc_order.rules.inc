@@ -355,8 +355,8 @@ function uc_order_condition_has_products($order, $products, $required, $forbidde
 function uc_order_condition_has_products_options() {
   $options = array();
   $result = db_query("SELECT nid FROM {uc_products}");
-  foreach ($result as $product) {
-    $options += uc_product_get_models(node_load($product->nid), FALSE);
+  foreach ($result as $nid) {
+    $options += uc_product_get_models($nid, FALSE);
   }
 
   return $options;

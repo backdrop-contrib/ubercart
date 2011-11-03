@@ -1504,11 +1504,11 @@ function uc_product_is_product_form($form) {
  *   An associative array of model numbers. The key for '- Any -' is the empty
  *   string.
  */
-function uc_product_get_models($node, $add_blank = TRUE) {
+function uc_product_get_models($nid, $add_blank = TRUE) {
   // Get any modules' SKUs on this node.
-  $models = module_invoke_all('uc_product_models', $node);
+  $models = module_invoke_all('uc_product_models', $nid);
   // Add the base SKU of the node.
-  $models[] = $node->model;
+  $models[] = db_query('SELECT model FROM {uc_products} WHERE nid = :nid', array(':nid' => $nid))->fetchField();
 
   // Now we map the SKUs to the keys, for form handling, etc.
   $models = drupal_map_assoc($models);

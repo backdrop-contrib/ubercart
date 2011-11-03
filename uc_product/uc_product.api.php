@@ -134,9 +134,9 @@ function hook_uc_product_description_alter(&$description, $product) {
  *
  * Code lifted from uc_attribute.module.
  */
-function hook_uc_product_models($node) {
+function hook_uc_product_models($nid) {
   // Get all the SKUs for all the attributes on this node.
-  $models = db_query("SELECT DISTINCT model FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $node->nid))->fetchCol();
+  $models = db_query("SELECT DISTINCT model FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $nid))->fetchCol();
 
   return $models;
 }
