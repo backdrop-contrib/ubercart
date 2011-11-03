@@ -141,7 +141,7 @@ function uc_roles_rules_action_info() {
 
   // Send an email to a user with a role expiration
   $actions['uc_roles_user_email'] = array(
-    'label' => t('Send an order email regarding roles.'),
+    'label' => t('Send a user an email regarding roles.'),
     'group' => t('Notification'),
     'base' => 'uc_roles_action_user_email',
     'parameter' => array(
