@@ -354,7 +354,7 @@ function uc_ups_fulfill_order_submit($form, &$form_state) {
  *   ShipConfirm XML document to send to UPS.
  */
 function uc_ups_shipment_request($packages, $origin, $destination, $ups_service) {
-  $store['name'] = variable_get('uc_store_name', NULL);
+  $store['name'] = uc_store_name();
   $store['owner'] = variable_get('uc_store_owner', NULL);
   $store['email'] = uc_store_email();
   $store['email_from'] = uc_store_email();

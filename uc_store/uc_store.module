@@ -1756,10 +1756,17 @@ function theme_uc_pane_sort_table($variables) {
 }
 
 /**
+ * Returns the store name if set, or the site name otherwise.
+ */
+function uc_store_name() {
+  return variable_get('uc_store_name', variable_get('site_name', 'Ubercart'));
+}
+
+/**
  * Returns the user-defined store address.
  */
 function uc_store_address() {
-  $store_address = uc_address_format(NULL, NULL, variable_get('uc_store_name', NULL),
+  $store_address = uc_address_format(NULL, NULL, uc_store_name(),
     variable_get('uc_store_street1', NULL), variable_get('uc_store_street2', NULL),
     variable_get('uc_store_city', NULL), variable_get('uc_store_zone', NULL),
     variable_get('uc_store_postal_code', NULL), uc_store_default_country());
@@ -1795,12 +1802,7 @@ function uc_store_email_from() {
   // Add the store name to the e-mail "From" line.
   // Must be optional to prevent server conflicts.
   if (variable_get('uc_store_email_include_name', TRUE)) {
-    $store = variable_get('uc_store_name', '');
-    if (!empty($store)) {
-      // Handle non-ASCII characters in store name and wrap in double quotes
-      // if it contains RFC 2822 'special' characters
-      $email_from = uc_store_rfc2822_display_name($store) . ' <' . $email_from . '>';
-    }
+    $email_from = uc_store_rfc2822_display_name(uc_store_name()) . ' <' . $email_from . '>';
   }
 
   return $email_from;

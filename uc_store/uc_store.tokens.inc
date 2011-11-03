@@ -97,11 +97,11 @@ function uc_store_tokens($type, $tokens, $data = array(), $options = array()) {
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'name':
-          $replacements[$original] = variable_get('uc_store_name', t('Our store'));
+          $replacements[$original] = uc_store_name();
           break;
 
         case 'link':
-          $replacements[$original] = l(variable_get('uc_store_name', t('Our store')), $base_url);
+          $replacements[$original] = l(uc_store_name(), $base_url);
           break;
 
         case 'owner':

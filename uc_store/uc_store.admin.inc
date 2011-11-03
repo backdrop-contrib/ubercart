@@ -443,7 +443,7 @@ function uc_store_settings_form($form, &$form_state) {
     '#title' => t('Basic information'),
     '#group' => 'store',
   );
-  $form['basic']['uc_store_name'] = uc_textfield(t('Store name'), variable_get('uc_store_name', NULL), FALSE, NULL, 64);
+  $form['basic']['uc_store_name'] = uc_textfield(t('Store name'), uc_store_name(), FALSE, NULL, 64);
   $form['basic']['uc_store_owner'] = uc_textfield(t('Store owner'), variable_get('uc_store_owner', NULL), FALSE, NULL, 64);
   $form['basic']['uc_store_email'] = array(
     '#type' => 'textfield',
