@@ -269,7 +269,7 @@ function uc_country_formats_form($form, &$form_state) {
         '#title' => t('@country address format', array('@country' => t($country->country_name))),
         '#default_value' => variable_get('uc_address_format_' . $country->country_id, ''),
         '#description' => t('Use the variables mentioned in the instructions to format an address for this country.'),
-        '#rows' => 6,
+        '#rows' => 7,
       );
     }
   }
