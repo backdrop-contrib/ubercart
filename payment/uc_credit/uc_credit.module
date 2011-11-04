@@ -80,9 +80,6 @@ function uc_credit_permission() {
     'view cc details' => array(
       'title' => t('View cc details'),
     ),
-    'view cc numbers' => array(
-      'title' => t('View cc numbers'),
-    ),
   );
 }
 
@@ -442,7 +439,7 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
       }
       $review[] = array('title' => t('Expiration'), 'data' => $order->payment_details['cc_exp_month'] . '/' . $order->payment_details['cc_exp_year']);
       if (variable_get('uc_credit_issue_enabled', FALSE)) {
-        $review[] = array('title' => t('Issue Number'), 'data' => user_access('view cc numbers') ? $order->payment_details['cc_issue'] : str_repeat('-', strlen($order->payment_details['cc_issue'])));
+        $review[] = array('title' => t('Issue Number'), 'data' => $order->payment_details['cc_issue']);
       }
       if (variable_get('uc_credit_bank_enabled', FALSE)) {
         $review[] = array('title' => t('Issuing Bank'), 'data' => check_plain($order->payment_details['cc_bank']));
@@ -478,10 +475,6 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
           $rows[] = t('Issue Number') . ': ' . check_plain($order->payment_details['cc_issue']);
         }
 
-        if (user_access('view cc numbers') && !empty($order->payment_details['cc_cvv'])) {
-          $rows[] = t('CVV') . ': ' . check_plain($order->payment_details['cc_cvv']);
-        }
-
         if (!empty($order->payment_details['cc_bank'])) {
           $rows[] = t('Issuing Bank') . ': ' . check_plain($order->payment_details['cc_bank']);
         }
@@ -502,7 +495,7 @@ function uc_payment_method_credit($op, &$order, $form = NULL, &$form_state = NUL
 
     case 'customer-view':
       $build['#markup'] = t('Card Number:') . '<br />'
-        . uc_credit_display_number($order->payment_details['cc_number'], TRUE);
+        . uc_credit_display_number($order->payment_details['cc_number']);
 
       return $build;
 
@@ -572,10 +565,6 @@ function uc_payment_method_credit_form($form, &$form_state, $order) {
     // Display the number as is if it does not validate so it can be corrected.
     $default_num = $order->payment_details['cc_number'];
   }
-  elseif (user_access('view cc numbers')) {
-    // Display the full number to those with access.
-    $default_num = $order->payment_details['cc_number'];
-  }
   else {
     // Otherwise default to the last 4 digits.
     $default_num = t('(Last 4) ') . substr($order->payment_details['cc_number'], -4);
@@ -612,10 +601,6 @@ function uc_payment_method_credit_form($form, &$form_state, $order) {
       // Display the Issue Number as is if it does not validate so it can be corrected.
       $default_card_issue = $order->payment_details['cc_issue'];
     }
-    elseif (user_access('view cc numbers')) {
-      // Display the full number to those with access.
-      $default_card_issue = $order->payment_details['cc_issue'];
-    }
     else {
       // Otherwise mask it with dashes.
       $default_card_issue = str_repeat('-', strlen($order->payment_details['cc_issue']));
@@ -639,10 +624,6 @@ function uc_payment_method_credit_form($form, &$form_state, $order) {
     }
     elseif (!_uc_credit_valid_cvv($order->payment_details['cc_cvv'])) {
       // Display the CVV as is if it does not validate so it can be corrected.
-      $default_cvv = $order->payment_details['cc_cvv'];
-    }
-    elseif (user_access('view cc numbers')) {
-      // Display the full number to those with access.
       $default_cvv = $order->payment_details['cc_cvv'];
     }
     else {
@@ -725,17 +706,12 @@ function uc_credit_order_view_form_submit($form, &$form_state) {
 /**
  * Returns a credit card number with appropriate masking.
  */
-function uc_credit_display_number($number, $masked = FALSE) {
+function uc_credit_display_number($number) {
   if (strlen($number) == 4) {
     return t('(Last 4) ') . $number;
   }
 
-  if (user_access('view cc numbers') && !$masked) {
-    return $number;
-  }
-  else {
-    return str_repeat('-', 12) . substr($number, -4);
-  }
+  return str_repeat('-', 12) . substr($number, -4);
 }
 
 /**
