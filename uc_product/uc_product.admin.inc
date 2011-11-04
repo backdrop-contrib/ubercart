@@ -24,15 +24,13 @@ function uc_product_class_default() {
       implode(' ', $ops),
     );
   }
-  if (count($rows) == 0) {
-    $rows[] = array(array('data' => t('No product classes have been defined yet.'), 'colspan' => '5'));
-  }
 
   $build = array();
   $build['product_classes'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
+    '#empty' => t('No product classes have been defined yet.'),
   );
   $build['header'] = array(
     '#markup' => '<h2>' . t('Add a class') . '</h2>',
