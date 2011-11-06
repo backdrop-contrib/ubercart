@@ -66,6 +66,7 @@ function theme_uc_roles_expiration($variables) {
   $form = $variables['form'];
 
   $header = _uc_roles_expiration_header();
+  $rows = array();
 
   if (isset($form['name'])) {
     foreach (element_children($form['name']) as $key) {
@@ -78,12 +79,12 @@ function theme_uc_roles_expiration($variables) {
       );
     }
   }
-  else  {
-    $rows[] = array(array('data' => t('No expirations set to occur'), 'colspan' => '5'));
-  }
 
-  // Render everything.
-  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  $output = theme('table', array(
+    'header' => $header,
+    'rows' => $rows,
+    'empty' => t('No expirations set to occur'),
+  ));
   $output .= theme('pager');
   $output .= drupal_render_children($form);
 
