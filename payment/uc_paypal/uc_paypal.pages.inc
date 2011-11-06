@@ -447,7 +447,7 @@ function uc_paypal_complete($order) {
   // user tried to adjust the order on this side while at PayPal. If it was a
   // legitimate checkout, the IPN will still come in from PayPal so the order
   // gets processed correctly. We'll leave an ambiguous message just in case.
-  if (intval($_SESSION['cart_order']) != $order->order_id) {
+  if (!isset($_SESSION['cart_order']) || intval($_SESSION['cart_order']) != $order->order_id) {
     drupal_set_message(t('Thank you for your order! PayPal will notify us once your payment has been processed.'));
     drupal_goto('cart');
   }
