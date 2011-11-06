@@ -355,7 +355,7 @@ function _uc_file_download_transfer($file_user, $ip) {
   // Only send partial content header if downloading a piece of the file (IE
   // workaround).
   if ($seek_start > 0 || $seek_end < ($size - 1)) {
-    drupal_add_http_header('206 Partial Content');
+    drupal_add_http_header('Status', '206 Partial Content');
   }
 
   // Standard headers, including content-range and length
