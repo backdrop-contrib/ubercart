@@ -64,14 +64,11 @@ function uc_shipping_order_packages($order) {
     $rows[] = $row;
   }
 
-  if (empty($rows)) {
-    $rows[][] = array('data' => t("This order's products have not been organized into packages."), 'colspan' => 11);
-  }
-
   $build['packages'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
+    '#empty' => t("This order's products have not been organized into packages."),
   );
 
   $result = db_query("SELECT op.order_product_id, CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = :id AND op.data LIKE :data GROUP BY op.order_product_id HAVING SUM(pp.qty) IS NULL OR CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END > SUM(pp.qty)", array(':id' => $order->order_id, ':data' => '%s:9:"shippable";s:1:"1";%'));
@@ -514,14 +511,11 @@ function uc_shipping_order_shipments($order) {
     $rows[] = $row;
   }
 
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No shipments have been made for this order.'), 'colspan' => 12));
-  }
-
   $build['shipments'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
+    '#empty' => t('No shipments have been made for this order.'),
   );
 
   $packages = db_query("SELECT COUNT(*) FROM {uc_packages} WHERE order_id = :id AND sid IS NULL", array(':id' => $order->order_id))->fetchField();
