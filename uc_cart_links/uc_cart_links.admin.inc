@@ -79,16 +79,11 @@ function uc_cart_links_report() {
     );
   }
 
-  if (empty($rows)) {
-    $rows[] = array(
-      array('data' => t('No Cart Links have been tracked yet.'), 'colspan' => 3),
-    );
-  }
-
   $build['report'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
+    '#empty' => t('No Cart Links have been tracked yet.'),
   );
   $build['pager'] = array(
     '#theme' => 'pager',
