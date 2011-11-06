@@ -58,7 +58,7 @@ function coder_review_uc3x_reviews() {
     ),
 
     // First argument to uc_product_get_models() and hook_uc_product_models()
-    // changed from $node to $nid. 
+    // changed from $node to $nid.
     array(
       '#type' => 'regex',
       '#value' => '(\buc_product_get_models|\B_uc_product_models)\s*\(',

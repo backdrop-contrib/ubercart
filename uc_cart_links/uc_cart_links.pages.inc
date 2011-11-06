@@ -10,7 +10,7 @@
  * is included.
  *
  * @param $cart_actions
- *   A Cart Link URL is structured like "/cart/add/$cart_actions". 
+ *   A Cart Link URL is structured like "/cart/add/$cart_actions".
  *
  * @see uc_cart_links_form_submit()
  */
@@ -60,7 +60,7 @@ function uc_cart_links_form_submit($form, &$form_state) {
  * Processes a Cart Link to fiddle with the cart and redirect the user.
  *
  * @param $cart_actions
- *   A Cart Link URL is structured like "/cart/add/$cart_actions". 
+ *   A Cart Link URL is structured like "/cart/add/$cart_actions".
  */
 function uc_cart_links_process($cart_actions) {
   $actions = explode('-', urldecode($cart_actions));
