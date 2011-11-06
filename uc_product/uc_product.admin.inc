@@ -114,37 +114,30 @@ function uc_product_settings_form($form, &$form_state) {
 function uc_product_features($node, $fid = NULL, $pfid = NULL) {
   drupal_set_title($node->title);
 
-  $build = array();
-
   $header = array(t('Type'), t('Description'), t('Operations'));
+  $rows = array();
 
   $features = uc_product_feature_load_multiple($node->nid);
-  if (empty($features)) {
-    $rows[] = array(
-      array('data' => t('No features found for this product.'), 'colspan' => 3),
+  foreach ($features as $feature) {
+    $operations = array(
+      l(t('edit'), 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid),
+      l(t('delete'), 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid . '/delete'),
     );
-  }
-  else {
-    foreach ($features as $feature) {
-      $operations = array(
-        l(t('edit'), 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid),
-        l(t('delete'), 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid . '/delete'),
-      );
-      $rows[] = array(
-        'data' => array(
-          array('data' => uc_product_feature_data($feature->fid, 'title'), 'nowrap' => 'nowrap'),
-          array('data' => $feature->description, 'width' => '100%'),
-          array('data' => implode(' ', $operations), 'nowrap' => 'nowrap'),
-        ),
-        'valign' => 'top',
-      );
-    }
+    $rows[] = array(
+      'data' => array(
+        array('data' => uc_product_feature_data($feature->fid, 'title'), 'nowrap' => 'nowrap'),
+        array('data' => $feature->description, 'width' => '100%'),
+        array('data' => implode(' ', $operations), 'nowrap' => 'nowrap'),
+      ),
+      'valign' => 'top',
+    );
   }
 
   $build['features'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
+    '#empty' => t('No features found for this product.'),
   );
   $build['add_form'] = drupal_get_form('uc_product_feature_add_form', $node);
 
