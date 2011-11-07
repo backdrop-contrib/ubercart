@@ -91,7 +91,7 @@ function uc_stock_report() {
   $result = $query->execute();
   foreach ($result as $stock) {
     $op = array();
-    if (user_access('administer products')) {
+    if (user_access('administer product stock')) {
       $op[] = l(t('edit'), 'node/' . $stock->nid . '/edit/stock', $options = array('query' => array('destination' => 'admin/store/reports/stock')));
     }
 
