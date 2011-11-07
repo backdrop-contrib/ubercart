@@ -349,12 +349,6 @@ function uc_credit_settings_form_submit($form, &$form_state) {
  * Displays the credit card terminal page.
  */
 function uc_credit_terminal($order) {
-  $build['return'] = array(
-    '#markup' => l(t('Return to order view screen.'), 'admin/store/orders/' . $order->order_id),
-  );
-
-  $build['instructions'] = array('#markup' => '<p>' . t('Use this terminal to process credit card payments through your default gateway.') . '</p>');
-
   $build['details']['order_total'] = array('#markup' => '<div><strong>' . t('Order total: @total', array('@total' => uc_currency_format($order->order_total))) . '</strong></div>');
   $build['details']['balance'] = array('#markup' => '<div><strong>' . t('Balance: @balance', array('@balance' => uc_currency_format(uc_payment_balance($order)))) . '</strong></div>');
 
