@@ -246,16 +246,6 @@ function uc_google_checkout_taxes_settings_submit($form, &$form_state) {
  */
 function uc_google_checkout_terminal($order) {
   $order_id = $order->order_id;
-
-  if ($order === FALSE) {
-    drupal_set_message(t('Order @order_id does not exist.', array('@order_id' => $order_id)));
-    drupal_goto('admin/store/orders');
-  }
-
-  $build['return'] = array(
-    '#markup' => l(t('Return to order view screen.'), 'admin/store/orders/' . $order_id),
-  );
-
   $gc_balance = $order->gc_total;
   $payments = uc_payment_load_payments($order_id);
   if (is_array($payments)) {
@@ -266,8 +256,6 @@ function uc_google_checkout_terminal($order) {
     }
   }
   $balance = uc_payment_balance($order);
-
-  $build['instructions'] = array('#markup' => '<p>' . t('Use this terminal to process credit card payments:') . '</p>');
 
   $build['details'] = array(
     '#prefix' => '<table style="width: auto;"><tbody style="border-top: 0px;">',
