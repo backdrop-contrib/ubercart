@@ -829,6 +829,9 @@ function uc_object_attributes_form_submit($form, &$form_state) {
   }
 
   if ($form_state['values']['type'] == 'product') {
+    if (module_exists('entitycache')) {
+      cache_clear_all($form_state['values']['id'], 'cache_entity_node');
+    }
     $form_state['redirect'] = 'node/' . $form_state['values']['id'] . '/edit/attributes';
   }
   else {
