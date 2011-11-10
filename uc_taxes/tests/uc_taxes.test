@@ -208,6 +208,9 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
       $rate->rate = 0.1;
       $rate = uc_taxes_rate_save($rate);
 
+      // Ensure Rules picks up the new condition.
+      entity_flush_caches();
+
       $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
       $this->assertText(t('Order changes saved.'));
       $this->assertRaw('<img id="li-' . $line['line_item_id'] . '"', t('Found the same "Remove line item" button for the tax.'));
@@ -226,6 +229,9 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
 
       $rate->rate = 0.3;
       $rate = uc_taxes_rate_save($rate);
+
+      // Ensure Rules picks up the new condition.
+      entity_flush_caches();
 
       $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
       $this->assertText(t('Order changes saved.'));
