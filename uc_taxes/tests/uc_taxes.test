@@ -137,6 +137,15 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
     );
     uc_taxes_rate_save($rate);
 
+    // Ensure Rules picks up the new condition.
+    entity_flush_caches();
+
+    $this->drupalGet('admin/store/settings/taxes');
+    $this->assertText($rate->name, t('Tax was saved successfully.'));
+
+    $this->drupalGet("admin/store/settings/taxes/$rate->id/edit");
+    $this->assertText(t('Conditions'), t('Rules configuration linked to tax.'));
+
     $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
 
     // Manually step through checkout. $this->checkout() doesn't know about taxes.
