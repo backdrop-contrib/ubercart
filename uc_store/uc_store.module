@@ -308,6 +308,7 @@ function uc_store_element_info() {
 function uc_store_process_address_field($element, $form_state) {
   $element['#tree'] = TRUE;
   $prefix = $element['#key_prefix'] ? ($element['#key_prefix'] . '_') : '';
+  $weight = uc_store_address_field_weights();
 
   if (isset($form_state['uc_address'])) {
     // Use submitted Ajax values.
@@ -413,6 +414,7 @@ function uc_store_process_address_field($element, $form_state) {
       '#pre_render' => array('uc_store_pre_render_address_field'),
       '#access' => $element['#hidden'] ? FALSE : uc_address_field_enabled($base_field),
       '#required' => $element['#required'] ? uc_address_field_required($base_field) : FALSE,
+      '#weight' => (isset($weight[$base_field])) ? $weight[$base_field] : 0,
     );
   }
   return $element;
@@ -1208,6 +1210,15 @@ function uc_address_field_required($field) {
   $fields = variable_get('uc_address_fields_required', drupal_map_assoc(array('first_name', 'last_name', 'street1', 'city', 'zone', 'postal_code', 'country')));
 
   return isset($fields[$field]);
+}
+
+/**
+ * Returns the weights of address fields.
+ *
+ * @return array
+ */
+function uc_store_address_field_weights() {
+  return variable_get('uc_address_fields_weight', array('first_name' => 0, 'last_name' => 1, 'company' => 2, 'street1' => 3, 'street2' => 4, 'city' => 5, 'zone' => 6, 'country' => 7, 'postal_code' => 8, 'phone' => 9));
 }
 
 /**

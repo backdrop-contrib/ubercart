@@ -324,6 +324,7 @@ function uc_store_address_fields_form($form, &$form_state) {
   );
   $current = variable_get('uc_address_fields', drupal_map_assoc(array('first_name', 'last_name', 'phone', 'company', 'street1', 'street2', 'city', 'zone', 'postal_code', 'country')));
   $required = variable_get('uc_address_fields_required', drupal_map_assoc(array('first_name', 'last_name', 'street1', 'city', 'zone', 'postal_code', 'country')));
+  $weight = uc_store_address_field_weights();
   foreach ($fields as $field => $data) {
     if ($data[1]) {
       $form['fields'][$field]['enabled'] = array(
@@ -334,10 +335,10 @@ function uc_store_address_fields_form($form, &$form_state) {
         '#type' => 'checkbox',
         '#default_value' => isset($required[$field]) ? TRUE : FALSE,
       );
-    }
-    else {
-      $form['fields'][$field]['enabled'] = array(
-        '#markup' => '-',
+      $form['fields'][$field]['weight'] = array(
+        '#type' => 'weight',
+        '#default_value' => (isset($weight[$field])) ? $weight[$field] : 0,
+        '#attributes' => array('class' => array('uc-store-address-fields-weight')),
       );
     }
     $form['fields'][$field]['default'] = array(
@@ -348,6 +349,7 @@ function uc_store_address_fields_form($form, &$form_state) {
       '#default_value' => uc_get_field_name($field),
       '#size' => 32,
     );
+    $form['fields'][$field]['#weight'] = (isset($weight[$field])) ? $weight[$field] : 99;
   }
 
   $form['actions'] = array('#type' => 'actions');
@@ -377,18 +379,34 @@ function uc_store_address_fields_form($form, &$form_state) {
 function theme_uc_store_address_fields_form($variables) {
   $form = $variables['form'];
 
-  $header = array(t('Enabled'), t('Field'), t('Title'), t('Required'));
+  $header = array(t('Field'), t('Title'), t('Enabled'), t('Required'), t('List position'));
+
+  // Sort fields by weight
+  uasort($form['fields'], 'element_sort');
 
   foreach (element_children($form['fields']) as $field) {
-    $rows[] = array(
-      array('data' => drupal_render($form['fields'][$field]['enabled']), 'align' => 'center'),
+    $row = array(
       drupal_render($form['fields'][$field]['default']),
       drupal_render($form['fields'][$field]['title']),
+      drupal_render($form['fields'][$field]['enabled']),
       drupal_render($form['fields'][$field]['required']),
+      drupal_render($form['fields'][$field]['weight']),
+    );
+
+    $rows[] = array(
+      'data' => $row,
+      'class' => isset($form['fields'][$field]['weight']) ? array('draggable') : array(),
     );
   }
 
-  $output = theme('table', array('header' => $header, 'rows' => $rows)) . '<br />' . drupal_render_children($form);
+  drupal_add_tabledrag('uc-store-address-fields-weight-table', 'order', 'sibling', 'uc-store-address-fields-weight');
+
+  $output = theme('table', array(
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => array('id' => 'uc-store-address-fields-weight-table'),
+  ));
+  $output .= drupal_render_children($form);
 
   return $output;
 }
@@ -401,6 +419,7 @@ function theme_uc_store_address_fields_form($variables) {
 function uc_store_address_fields_form_submit($form, &$form_state) {
   $fields = array();
   $required = array();
+  $weight = array();
   foreach ($form_state['values']['fields'] as $field => $data) {
     variable_set('uc_field_' . $field, $data['title']);
     if (isset($data['enabled']) && $data['enabled']) {
@@ -409,9 +428,13 @@ function uc_store_address_fields_form_submit($form, &$form_state) {
     if (isset($data['required']) && $data['required']) {
       $required[] = $field;
     }
+    if (isset($data['weight'])) {
+      $weight[$field] = $data['weight'];
+    }
   }
   variable_set('uc_address_fields', drupal_map_assoc($fields));
   variable_set('uc_address_fields_required', drupal_map_assoc($required));
+  variable_set('uc_address_fields_weight', $weight);
   drupal_set_message(t('The configuration options have been saved.'));
 }
 
@@ -426,6 +449,7 @@ function uc_store_address_fields_form_reset($form_id, &$form_state) {
   }
   variable_del('uc_address_fields');
   variable_del('uc_address_fields_required');
+  variable_del('uc_address_fields_weight');
   drupal_set_message(t('The configuration options have been reset to their default values.'));
 }
 
