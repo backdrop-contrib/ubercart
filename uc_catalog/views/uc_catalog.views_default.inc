@@ -230,6 +230,7 @@ function uc_catalog_views_default_views() {
   $handler->display->display_options['fields']['tid']['alter']['html'] = 0;
   $handler->display->display_options['fields']['tid']['hide_empty'] = 0;
   $handler->display->display_options['fields']['tid']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['tid']['separator'] = '';
   $handler->display->display_options['fields']['tid']['format_plural'] = 0;
   /* Field: Fields: uc_catalog_image */
   $handler->display->display_options['fields']['entity_id']['id'] = 'entity_id';
