@@ -212,6 +212,12 @@ function uc_shipping_schema() {
         'not null' => TRUE,
         'default' => 0.0,
       ),
+      'changed' => array(
+        'description' => 'The Unix timestamp indicating the last time the shipment was modified.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'primary key' => array('sid'),
     'foreign keys' => array(
@@ -425,5 +431,19 @@ function uc_shipping_update_7000(&$sandbox) {
 
       return t('!number label images moved to the file table.', array('!number' => $sandbox['total']));
     }
+  }
+}
+
+/**
+ * Add 'changed' column to shipments.
+ */
+function uc_shipping_update_7001() {
+  if (!db_field_exists('uc_shipments', 'changed')) {
+    db_add_field('uc_shipments', 'changed', array(
+      'description' => 'The Unix timestamp indicating the last time the shipment was modified.',
+      'type' => 'int',
+      'not null' => TRUE,
+      'default' => 0,
+    ));
   }
 }
