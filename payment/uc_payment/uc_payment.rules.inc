@@ -47,6 +47,14 @@ function uc_payment_rules_condition_info() {
         'options list' => 'uc_payment_condition_balance_options',
         'restriction' => 'input',
       ),
+      'include_authorizations' => array(
+        'type' => 'boolean',
+        'label' => t('Include authorizations?'),
+        'description' => t('Should "authorization only" credit card transactions be used in calculating the order balance?'),
+        'restriction' => 'input',
+        'optional' => TRUE,
+        'default value' => FALSE,
+      ),
     ),
   );
 
@@ -56,8 +64,13 @@ function uc_payment_rules_condition_info() {
 /**
  * Condition: Check the current order balance.
  */
-function uc_payment_condition_order_balance($order, $balance_comparison) {
+function uc_payment_condition_order_balance($order, $balance_comparison, $include_authorizations) {
   $balance = uc_payment_balance($order);
+  if ($include_authorizations) {
+    foreach ((array) $order->data['cc_txns']['authorizations'] as $auth_id => $data) {
+      $balance -= $data['amount'];
+    }
+  }
 
   switch ($balance_comparison) {
     case 'less':
