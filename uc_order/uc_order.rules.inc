@@ -358,6 +358,7 @@ function uc_order_condition_has_products_options() {
   foreach ($result as $row) {
     $options += uc_product_get_models($row->nid, FALSE);
   }
+  asort($options);
 
   return $options;
 }
