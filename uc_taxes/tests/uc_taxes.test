@@ -214,7 +214,7 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
       $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
       $this->assertText(t('Order changes saved.'));
       $this->assertRaw('<img id="li-' . $line['line_item_id'] . '"', t('Found the same "Remove line item" button for the tax.'));
-      $this->assertFieldByName('line_items[' . $line['line_item_id'] . '][amount]', $rate->rate * $this->product->sell_price, t('Tax has new amount.'));
+      $this->assertFieldByName('line_items[' . $line['line_item_id'] . '][amount]', number_format($rate->rate * $this->product->sell_price, 2), t('Tax has new amount.'));
 
       uc_order_update_status($order_id, 'completed');
 
@@ -225,7 +225,7 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
         }
       }
 
-      $this->assertTrue($rate->rate * $this->product->sell_price == $line['amount'], t('Stored tax line item has the correct amount.'));
+      $this->assertTrue(number_format($rate->rate * $this->product->sell_price, 2) == number_format($line['amount'], 2), t('Stored tax line item has the correct amount.'));
 
       $rate->rate = 0.3;
       $rate = uc_taxes_rate_save($rate);
