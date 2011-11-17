@@ -82,6 +82,28 @@ function uc_taxes_module_implements_alter(&$implementations, $hook) {
 }
 
 /**
+ * Implements hook_form_uc_order_edit_form_alter().
+ */
+function uc_taxes_form_uc_order_edit_form_alter(&$form, &$form_state) {
+  $order = $form['#order'];
+  $line_items = $order->line_items;
+
+  foreach ($line_items as $item) {
+    // Tax line items are stored in the database, but they can't be changed by
+    // the user.
+    if ($item['type'] == 'tax') {
+      $form['line_items'][$item['line_item_id']]['title'] = array(
+        '#markup' => check_plain($item['title']),
+      );
+      $form['line_items'][$item['line_item_id']]['amount'] = array(
+        '#theme' => 'uc_price',
+        '#price' => $item['amount'],
+      );
+    }
+  }
+}
+
+/**
  * Implements hook_uc_cart_item().
  *
  * Adds included taxes (VAT) to display price of applicable products.
