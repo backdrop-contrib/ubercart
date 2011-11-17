@@ -28,15 +28,26 @@ function uc_credit_update_last_removed() {
 /**
  * Remove credit card debug mode.
  */
-function uc_credit_update_7000() {
+function uc_credit_update_7000(&$sandbox) {
   drupal_load('module', 'uc_credit');
 
-  // Truncate stored data from debug mode.
-  $key = uc_credit_encryption_key();
+  if (!isset($sandbox['progress'])) {
+    // Truncate stored data from debug mode.
+    $key = uc_credit_encryption_key();
+
+    $sandbox['progress'] = 0;
+    $sandbox['current_order_id'] = 0;
+    $sandbox['max'] = db_query("SELECT COUNT(order_id) FROM {uc_orders} WHERE data LIKE :cc_data", array(':cc_data' => '%cc_data%'))->fetchField();
+  }
+
+  $t = get_t();
+  $limit = 100;
   $crypt = new UbercartEncryption();
 
-  $result = db_query("SELECT order_id, data FROM {uc_orders} WHERE data LIKE :cc_data", array(':cc_data' => '%cc_data%'));
+  $result = db_query_range("SELECT order_id, data FROM {uc_orders} WHERE order_id >= :current AND data LIKE :cc_data ORDER BY order_id", 0, $limit, array(':current' => $sandbox['current_order_id'], ':cc_data' => '%cc_data%'));
   while ($order = $result->fetchObject()) {
+    $sandbox['current_order_id'] = $order->order_id;
+
     // Load up the existing data array.
     $data = unserialize($order->data);
     $cc_data = uc_credit_cache('save', $data['cc_data']);
@@ -53,11 +64,22 @@ function uc_credit_update_7000() {
       ->fields(array('data' => serialize($data)))
       ->condition('order_id', $order->order_id)
       ->execute();
+
+    $sandbox['progress']++;
+    $sandbox['message'] = $t('Scrubbed credit card data from order @order_id', array('@order_id' => $order->order_id));
   }
 
-  variable_del('uc_credit_checkout_process');
-  variable_del('uc_credit_debug');
-  variable_del('uc_credit_clear_status');
-  variable_del('uc_credit_number_duration');
-  variable_del('uc_credit_number_unit');
+
+  if ($sandbox['progress'] < $sandbox['max']) {
+    $sandbox['#finished'] = min(0.99, $sandbox['progress'] / $sandbox['max']);
+  }
+  else {
+    $sandbox['#finished'] = 1;
+
+    variable_del('uc_credit_checkout_process');
+    variable_del('uc_credit_debug');
+    variable_del('uc_credit_clear_status');
+    variable_del('uc_credit_number_duration');
+    variable_del('uc_credit_number_unit');
+  }
 }
