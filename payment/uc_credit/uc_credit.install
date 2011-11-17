@@ -34,7 +34,7 @@ function uc_credit_update_7000(&$sandbox) {
   if (!isset($sandbox['progress'])) {
     $sandbox['progress'] = 0;
     $sandbox['current_order_id'] = 0;
-    $sandbox['max'] = db_query("SELECT COUNT(order_id) FROM {uc_orders} WHERE data LIKE :cc_data", array(':cc_data' => '%cc_data%'))->fetchField();
+    $sandbox['max'] = db_query("SELECT COUNT(order_id) FROM {uc_orders} WHERE data LIKE '%cc_data%'")->fetchField();
   }
 
   $t = get_t();
@@ -42,7 +42,8 @@ function uc_credit_update_7000(&$sandbox) {
   $crypt = new UbercartEncryption();
   $key = uc_credit_encryption_key();
 
-  $result = db_query_range("SELECT order_id, data FROM {uc_orders} WHERE order_id >= :current AND data LIKE :cc_data ORDER BY order_id", 0, $limit, array(':current' => $sandbox['current_order_id'], ':cc_data' => '%cc_data%'));
+  // Truncate stored data from debug mode.
+  $result = db_query_range("SELECT order_id, data FROM {uc_orders} WHERE order_id > :current AND data LIKE '%cc_data%' ORDER BY order_id", 0, $limit, array(':current' => $sandbox['current_order_id']));
   while ($order = $result->fetchObject()) {
     $sandbox['current_order_id'] = $order->order_id;
 
