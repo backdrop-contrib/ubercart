@@ -407,8 +407,9 @@ function uc_store_process_address_field($element, $form_state) {
     }
 
     // Set common values for all address fields.
+    $label = uc_get_field_name($base_field);
     $element[$field] = $subelement + array(
-      '#title' => uc_get_field_name($base_field),
+      '#title' => $label ? $label : ' ',
       '#default_value' => $value[$field],
       '#parents' => array_merge(array_slice($element['#parents'], 0, -1), array($field)),
       '#pre_render' => array('uc_store_pre_render_address_field'),
@@ -1171,26 +1172,22 @@ function uc_get_field_name($field) {
   $fields = array(
     'first_name' => t('First name'),
     'last_name' => t('Last name'),
-    'email' => t('E-mail'),
-    'phone' => t('Phone number'),
     'company' => t('Company'),
-    'address' => t('Address'),
-    'street' => t('Street address'),
-    'street1' => t('Street address 1'),
-    'street2' => t('Street address 2'),
+    'street1' => t('Street address'),
+    'street2' => t(''),
     'city' => t('City'),
     'zone' => t('State/Province'),
-    'postal_code' => t('Postal code'),
     'country' => t('Country'),
+    'postal_code' => t('Postal code'),
+    'phone' => t('Phone number'),
   );
 
-  $default = $fields[$field];
-  if (empty($default)) {
+  if (!isset($fields[$field])) {
     drupal_set_message(t('The field title %field is being accessed incorrectly.', array('%field' => $field)), 'error');
     return '';
   }
 
-  return variable_get('uc_field_' . $field, $default);
+  return variable_get('uc_field_' . $field, $fields[$field]);
 }
 
 /**

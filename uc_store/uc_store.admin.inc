@@ -309,40 +309,36 @@ function uc_store_address_fields_form($form, &$form_state) {
   );
 
   $fields = array(
-    'first_name' => array(t('First name'), TRUE),
-    'last_name' => array(t('Last name'), TRUE),
-    'phone' => array(t('Phone number'), TRUE),
-    'company' => array(t('Company'), TRUE),
-    'street1' => array(t('Street address 1'), TRUE),
-    'street2' => array(t('Street address 2'), TRUE),
-    'city' => array(t('City'), TRUE),
-    'zone' => array(t('State/Province'), TRUE),
-    'country' => array(t('Country'), TRUE),
-    'postal_code' => array(t('Postal code'), TRUE),
-    'address' => array(t('Address'), FALSE),
-    'street' => array(t('Street address'), FALSE),
+    'first_name' => t('First name'),
+    'last_name' => t('Last name'),
+    'company' => t('Company'),
+    'street1' => t('Street address 1'),
+    'street2' => t('Street address 2'),
+    'city' => t('City'),
+    'zone' => t('State/Province'),
+    'country' => t('Country'),
+    'postal_code' => t('Postal code'),
+    'phone' => t('Phone number'),
   );
   $current = variable_get('uc_address_fields', drupal_map_assoc(array('first_name', 'last_name', 'phone', 'company', 'street1', 'street2', 'city', 'zone', 'postal_code', 'country')));
   $required = variable_get('uc_address_fields_required', drupal_map_assoc(array('first_name', 'last_name', 'street1', 'city', 'zone', 'postal_code', 'country')));
   $weight = uc_store_address_field_weights();
-  foreach ($fields as $field => $data) {
-    if ($data[1]) {
-      $form['fields'][$field]['enabled'] = array(
-        '#type' => 'checkbox',
-        '#default_value' => isset($current[$field]) ? TRUE : FALSE,
-      );
-      $form['fields'][$field]['required'] = array(
-        '#type' => 'checkbox',
-        '#default_value' => isset($required[$field]) ? TRUE : FALSE,
-      );
-      $form['fields'][$field]['weight'] = array(
-        '#type' => 'weight',
-        '#default_value' => (isset($weight[$field])) ? $weight[$field] : 0,
-        '#attributes' => array('class' => array('uc-store-address-fields-weight')),
-      );
-    }
+  foreach ($fields as $field => $label) {
+    $form['fields'][$field]['enabled'] = array(
+      '#type' => 'checkbox',
+      '#default_value' => isset($current[$field]) ? TRUE : FALSE,
+    );
+    $form['fields'][$field]['required'] = array(
+      '#type' => 'checkbox',
+      '#default_value' => isset($required[$field]) ? TRUE : FALSE,
+    );
+    $form['fields'][$field]['weight'] = array(
+      '#type' => 'weight',
+      '#default_value' => (isset($weight[$field])) ? $weight[$field] : 0,
+      '#attributes' => array('class' => array('uc-store-address-fields-weight')),
+    );
     $form['fields'][$field]['default'] = array(
-      '#markup' => $data[0],
+      '#markup' => $label,
     );
     $form['fields'][$field]['title'] = array(
       '#type' => 'textfield',
@@ -395,7 +391,7 @@ function theme_uc_store_address_fields_form($variables) {
 
     $rows[] = array(
       'data' => $row,
-      'class' => isset($form['fields'][$field]['weight']) ? array('draggable') : array(),
+      'class' => array('draggable'),
     );
   }
 
