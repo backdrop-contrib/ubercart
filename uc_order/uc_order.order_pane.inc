@@ -835,7 +835,7 @@ function uc_order_pane_line_items_submit($form, &$form_state) {
 
   if (is_array($values['line_items'])) {
     foreach ($values['line_items'] as $line) {
-      if (is_numeric($line['li_id']) && intval($line['li_id']) > 0) {
+      if (is_numeric($line['li_id']) && intval($line['li_id']) > 0 && isset($line['title']) && isset($line['amount'])) {
         uc_order_update_line_item($line['li_id'], $line['title'], $line['amount']);
       }
     }

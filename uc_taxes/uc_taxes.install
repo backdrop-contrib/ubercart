@@ -215,3 +215,39 @@ function uc_taxes_update_7002() {
     'default' => '',
   ));
 }
+
+/**
+ * Make sure orders have stored tax data.
+ */
+function uc_taxes_update_7003(&$sandbox) {
+  if (!isset($sandbox['progress'])) {
+    $taxes = db_query("SELECT id FROM {uc_taxes}")->fetchField();
+    if (!$taxes) {
+      return;
+    }
+
+    $sandbox['current'] = 0;
+    $sandbox['progress'] = 0;
+    $sandbox['max'] = db_query("SELECT COUNT(order_id) FROM {uc_orders}")->fetchField();
+  }
+
+  $t = get_t();
+  $limit = 100;
+
+  $orders = db_query_range("SELECT order_id FROM {uc_orders} WHERE order_id > :current ORDER BY order_id", 0, $limit, array(':current' => $sandbox['current']))->fetchCol();
+  foreach ($orders as $order_id) {
+    $order = uc_order_load($order_id);
+
+    uc_order_save($order);
+
+    $sandbox['current'] = $order_id;
+    $sandbox['progress']++;
+  }
+
+  if ($sandbox['progress'] < $sandbox['max']) {
+    $sandbox['#finished'] = min(0.99, $sandbox['progress'] / $sandbox['max']);
+  }
+  else {
+    $sandbox['#finished'] = 1;
+  }
+}

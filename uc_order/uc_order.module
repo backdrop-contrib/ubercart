@@ -1577,7 +1577,7 @@ function uc_order_load_line_items($order) {
   $order->line_items = $items;
 
   foreach (_uc_line_item_list() as $type) {
-    if (empty($type['display_only']) && !empty($type['callback']) && function_exists($type['callback'])) {
+    if ($type['stored'] == FALSE && empty($type['display_only']) && !empty($type['callback']) && function_exists($type['callback'])) {
       $result = $type['callback']('load', $order);
       if ($result !== FALSE && is_array($result)) {
         foreach ($result as $line) {
@@ -1616,20 +1616,22 @@ function uc_order_load_line_items($order) {
  *   - weight: The line item weight.
  */
 function uc_order_load_line_items_display($order) {
+  $temp = clone $order;
   $line_items = uc_order_load_line_items($order);
-  $order->line_items = $line_items;
+  $temp->line_items = &$line_items;
 
   $items = _uc_line_item_list();
   foreach ($items as $item) {
     if (!empty($item['display_only'])) {
-      $result = $item['callback']('display', $order);
+      $result = $item['callback']('display', $temp);
       if (is_array($result)) {
         foreach ($result as $line) {
           $line_items[] = array(
             'type' => $item['id'],
             'title' => $line['title'],
             'amount' => $line['amount'],
-            'weight' => $item['weight']
+            'weight' => isset($line['weight']) ? $line['weight'] : $item['weight'],
+            'data' => isset($line['data']) ? $line['data'] : array(),
           );
         }
       }

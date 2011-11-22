@@ -82,6 +82,28 @@ function uc_taxes_module_implements_alter(&$implementations, $hook) {
 }
 
 /**
+ * Implements hook_form_uc_order_edit_form_alter().
+ */
+function uc_taxes_form_uc_order_edit_form_alter(&$form, &$form_state) {
+  $order = $form['#order'];
+  $line_items = $order->line_items;
+
+  foreach ($line_items as $item) {
+    // Tax line items are stored in the database, but they can't be changed by
+    // the user.
+    if ($item['type'] == 'tax') {
+      $form['line_items'][$item['line_item_id']]['title'] = array(
+        '#markup' => check_plain($item['title']),
+      );
+      $form['line_items'][$item['line_item_id']]['amount'] = array(
+        '#theme' => 'uc_price',
+        '#price' => $item['amount'],
+      );
+    }
+  }
+}
+
+/**
  * Implements hook_uc_cart_item().
  *
  * Adds included taxes (VAT) to display price of applicable products.
@@ -147,6 +169,14 @@ function uc_taxes_uc_line_item() {
     'calculated' => TRUE,
     'display_only' => FALSE,
   );
+  $items['tax_display'] = array(
+    'title' => t('Tax'),
+    'callback' => 'uc_line_item_tax_display',
+    'weight' => 5,
+    'stored' => FALSE,
+    'calculated' => TRUE,
+    'display_only' => TRUE,
+  );
   $items['tax_subtotal'] = array(
     'title' => t('Subtotal excluding taxes'),
     'callback' => 'uc_line_item_tax_subtotal',
@@ -175,7 +205,7 @@ function uc_taxes_uc_order($op, $order, $arg2) {
           if ($line['type'] == 'tax') {
             $delete = TRUE;
             foreach ($line_items as $id => $new_line) {
-              if ($new_line['title'] == $line['title']) {
+              if ($new_line['data']['tax_id'] == $line['data']['tax_id']) {
                 if ($new_line['amount'] != $line['amount']) {
                   uc_order_update_line_item($line['line_item_id'], $new_line['title'], $new_line['amount'], $new_line['data']);
                   $order->line_items[$i]['amount'] = $new_line['amount'];
@@ -222,6 +252,30 @@ function uc_line_item_tax($op, $order) {
       $lines = array();
       $taxes = uc_taxes_calculate($order);
       foreach ($taxes as $tax) {
+        $lines[] = array(
+          'id' => ($tax->summed ? 'tax' : 'tax_included'),
+          'title' => $tax->name,
+          'amount' => $tax->amount,
+          'weight' => variable_get('uc_li_tax_weight', 9) + $tax->weight / 10,
+          'data' => $tax->data,
+        );
+      }
+      return $lines;
+  }
+}
+
+function uc_line_item_tax_display($op, $order) {
+  switch ($op) {
+    case 'display':
+      $lines = array();
+      $taxes = uc_taxes_calculate($order);
+      foreach ($taxes as $tax) {
+        foreach ($order->line_items as $line_item) {
+          if ($line_item['type'] == 'tax' && $line_item['data']['tax_id'] == $tax->id) {
+            continue 2;
+          }
+        }
+
         $lines[] = array(
           'id' => ($tax->summed ? 'tax' : 'tax_included'),
           'title' => $tax->name,
@@ -458,8 +512,7 @@ function uc_taxes_uc_calculate_tax($order) {
       }
     }
 
-    $set = rules_config_load('uc_taxes_' . $tax->id);
-    if ($set->execute($order)) {
+    if (rules_invoke_component('uc_taxes_' . $tax->id, $order)) {
       $line_item = uc_taxes_apply_tax($order, $tax);
       if ($line_item) {
         $order->taxes[$line_item->id] = $line_item;
