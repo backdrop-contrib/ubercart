@@ -105,51 +105,16 @@ function uc_taxes_form_uc_order_edit_form_alter(&$form, &$form_state) {
 }
 
 /**
- * Implements hook_uc_cart_item().
+ * Implements hook_uc_product_alter().
  *
  * Adds included taxes (VAT) to display price of applicable products.
  */
-function uc_taxes_uc_cart_item($op, $item) {
-  if ($op == 'load') {
-    $product = node_load($item->nid);
+function uc_taxes_uc_product_alter(&$node) {
+  list($amount, $suffixes) = uc_taxes_get_included_tax($node, $node->price);
 
-    list($amount, $suffixes) = uc_taxes_get_included_tax($product, $item->price);
-
-    $item->display_price += $amount;
-    if (!empty($suffixes)) {
-      $item->display_price_suffix .= implode(' ', $suffixes);
-    }
-  }
-}
-
-/**
- * Implements hook_node_load().
- *
- * Adds included taxes (VAT) to display price of applicable products.
- */
-function uc_taxes_node_load($nodes, $types) {
-  foreach ($nodes as &$node) {
-    if (uc_product_is_product($node)) {
-      $amount = 0;
-      $suffixes = array();
-      if ($node->type == 'product_kit') {
-        // For product kits, the total tax is the sum of the tax on the discounted
-        // prices of component products.
-        foreach ($node->products as $pid => &$product) {
-          $discount =  ($node->mutable != UC_PRODUCT_KIT_MUTABLE) ? $product->discount : 0;
-          list($this_amount, $these_suffixes) = uc_taxes_get_included_tax($product, $product->sell_price + $discount);
-          $amount += $this_amount * $product->qty;
-          $suffixes += $these_suffixes;
-        }
-      }
-      else {
-        list($amount, $suffixes) = uc_taxes_get_included_tax($node);
-      }
-      $node->display_price += $amount;
-      if (!empty($suffixes)) {
-        $node->display_price_suffix .= implode(' ', $suffixes);
-      }
-    }
+  $node->display_price += $amount;
+  if (!empty($suffixes)) {
+    $node->display_price_suffix .= implode(' ', $suffixes);
   }
 }
 

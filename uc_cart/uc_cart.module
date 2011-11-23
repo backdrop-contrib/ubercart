@@ -1361,37 +1361,12 @@ function uc_cart_get_item($item) {
     $item = db_query("SELECT * FROM {uc_cart_products} WHERE cart_item_id = :id", array(':id' => $item))->fetchObject();
   }
 
-  if (empty($item)) {
-    return;
+  if ($item && $product = uc_product_load_variant($item->nid, unserialize($item->data))) {
+    $product->cart_item_id = $item->cart_item_id;
+    $product->qty = $item->qty;
+    $product->module = $product->data['module'];
+    return $product;
   }
-
-  $product = node_load($item->nid);
-  if (!$product) {
-    return;
-  }
-
-  $item->vid = $product->vid;
-  $item->title = $product->title;
-  $item->cost = $product->cost;
-  $item->price = $product->sell_price;
-  $item->weight = $product->weight;
-  $item->weight_units = $product->weight_units;
-  $item->data = unserialize($item->data);
-  $item->module = $item->data['module'];
-  $item->model = $product->model;
-  $item->display_price = $product->sell_price;
-  $item->display_price_suffix = '';
-
-  // Invoke hook_uc_cart_item() with $op = 'load' in enabled modules.
-  foreach (module_implements('uc_cart_item') as $module) {
-    $func = $module . '_uc_cart_item';
-    if (function_exists($func)) {
-      // $item must be passed by reference.
-      $func('load', $item);
-    }
-  }
-
-  return $item;
 }
 
 /**

@@ -29,8 +29,14 @@ function uc_product_entity_property_info_alter(&$info) {
     );
     $properties['sell_price'] = array(
       'label' => t('Sell price'),
-      'description' => t('The amount the customer pays for the product.'),
+      'description' => t('The base amount the customer pays for the product.'),
       'type' => 'decimal',
+    );
+    $properties['price'] = array(
+      'label' => t('Price'),
+      'description' => t('The amount the customer pays for this specific product.'),
+      'type' => 'decimal',
+      'setter callback' => 'entity_property_verbatim_set',
     );
     $properties['weight'] = array(
       'label' => t('Weight'),

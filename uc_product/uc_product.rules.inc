@@ -6,6 +6,25 @@
  */
 
 /**
+ * Implements hook_rules_event_info().
+ */
+function uc_product_rules_event_info() {
+  $events['uc_product_load'] = array(
+    'label' => t('A product is being loaded'),
+    'group' => t('Node'),
+    'variables' => array(
+      'node' => array(
+        'type' => 'node',
+        'label' => t('Node'),
+        'skip save' => TRUE,
+      ),
+    ),
+  );
+
+  return $events;
+}
+
+/**
  * Implements hook_rules_condition_info().
  */
 function uc_product_rules_condition_info() {

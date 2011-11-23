@@ -365,33 +365,34 @@ function uc_product_kit_load($nodes) {
     $nodes[$prod->nid]->mutable = $prod->mutable;
     $nodes[$prod->nid]->synchronized = $prod->synchronized;
 
-    // Save products in an associative array to know exactly which products
-    // belong to which kit.
-    $all_products[$prod->nid][$prod->product_id] = $prod;
-  }
-
-  foreach ($all_products as $kit_products) {
-    $products = node_load_multiple(array_keys($kit_products));
-    foreach ($products as $p) {
-      // Get our component product.
-      $prod = $kit_products[$p->nid];
-
-      // We need to clone the object to avoid changes by reference
-      // http://www.php.net/manual/en/language.references.php#93812
-      $product = clone $p;
-
-      // Add the component information.
-      $product->qty = $prod->qty;
-      $product->discount = $prod->discount;
-      $product->ordering = $prod->ordering;
-
-      // Add product to the kit.
-      $nodes[$prod->nid]->products[$product->nid] = $product;
+    // Add the component information.
+    $data = array();
+    if ($prod->mutable != UC_PRODUCT_KIT_MUTABLE) {
+      $data = array('kit_id' => $prod->nid, 'kit_discount' => $prod->discount);
     }
+    $product = uc_product_load_variant($prod->product_id, $data);
+    $product->qty = $prod->qty;
+    $product->discount = $prod->discount;
+    $product->ordering = $prod->ordering;
+
+    // Add product to the kit.
+    $nodes[$prod->nid]->products[$product->nid] = $product;
   }
 
   // Add product data to kits.
   uc_product_load($nodes);
+
+  // Recalculate display price.
+  foreach ($nodes as &$node) {
+    if ($node->mutable != UC_PRODUCT_KIT_MUTABLE) {
+      $node->display_price = 0;
+      $node->display_price_suffix = '';
+      foreach ($node->products as $pid => &$product) {
+        $node->display_price += $product->display_price * $product->qty;
+        $node->display_price_suffix .= $product->display_price_suffix;
+      }
+    }
+  }
 }
 
 /**
@@ -1011,21 +1012,26 @@ function uc_product_kit_uc_add_to_cart($nid, $qty, $kit_data) {
 }
 
 /**
- * Implements hook_uc_cart_item().
+ * Implements hook_uc_product_alter().
  */
-function uc_product_kit_uc_cart_item($op, $item) {
-  switch ($op) {
-    case 'load':
-      if (isset($item->data['kit_id']) && ($kit = node_load($item->data['kit_id'])) && $kit->mutable != UC_PRODUCT_KIT_MUTABLE) {
-        $kit_discount = $kit->products[$item->nid]->discount;
-        if ($kit_discount !== '') {
-          $item->price += $kit_discount;
-          $item->display_price += $kit_discount;
-        }
-      }
-    break;
+function uc_product_kit_uc_product_alter(&$node) {
+  if (isset($node->data['kit_id'])) {
+    // If this is a kit component load, we would cause infinite recursion trying
+    // to node_load() the parent, but we already have the discount available.
+    if (isset($node->data['kit_discount'])) {
+      $discount = isset($node->data['kit_discount']);
+    }
+    elseif (($kit = node_load($node->data['kit_id'])) && $kit->mutable != UC_PRODUCT_KIT_MUTABLE) {
+      $discount = $kit->products[$node->nid]->discount;
+    }
+    else {
+      $discount = 0;
+    }
+    $node->price += $discount;
+    $node->display_price += $discount;
   }
 }
+
 
 /**
  * Implements hook_uc_order_product_alter().

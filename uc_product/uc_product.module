@@ -614,9 +614,32 @@ function uc_product_load($nodes) {
     foreach ($node as $field => $value) {
       $nodes[$node->nid]->$field = $value;
     }
-    $nodes[$node->nid]->display_price = $node->sell_price;
-    $nodes[$node->nid]->display_price_suffix = '';
+    _uc_product_calculate($nodes[$node->nid]);
   }
+}
+
+/**
+ * Load a specific altered variant of a product.
+ */
+function uc_product_load_variant($nid, $data) {
+  $node = clone node_load($nid);
+  $node->data = $data;
+  _uc_product_calculate($node);
+  return $node;
+}
+
+/**
+ * Calculate the sale and display prices for a product.
+ */
+function _uc_product_calculate(&$node) {
+  $node->price = $node->sell_price;
+
+  rules_invoke_event('uc_product_load', $node);
+
+  $node->display_price = $node->price;
+  $node->display_price_suffix = '';
+
+  drupal_alter('uc_product', $node);
 }
 
 /**

@@ -498,40 +498,34 @@ function uc_attribute_uc_product_class($type, $op) {
 }
 
 /**
- * Implements hook_uc_cart_item().
+ * Implements hook_uc_product_alter().
  */
-function uc_attribute_uc_cart_item($op, $item) {
-  switch ($op) {
-    case 'load':
-      if (!isset($item->data['attributes'])) {
-        return;
-      }
+function uc_attribute_uc_product_alter(&$node) {
+  if (isset($node->data['attributes'])) {
+    $options = _uc_cart_product_get_options($node);
+    foreach ($options as $option) {
+      $node->cost += $option['cost'];
+      $node->price += $option['price'];
+      $node->display_price += $option['price'];
+      $node->weight += $option['weight'];
+    }
 
-      $options = _uc_cart_product_get_options($item);
-      foreach ($options as $option) {
-        $item->cost += $option['cost'];
-        $item->price += $option['price'];
-        $item->display_price += $option['price'];
-        $item->weight += $option['weight'];
-      }
-
-      $combination = array();
-      foreach ((array)$item->data['attributes'] as $aid => $value) {
-        if (is_numeric($value)) {
-          $attribute = uc_attribute_load($aid, $item->nid, 'product');
-          if ($attribute && ($attribute->display == 1 || $attribute->display == 2)) {
-            $combination[$aid] = $value;
-          }
+    $combination = array();
+    foreach ($node->data['attributes'] as $aid => $value) {
+      if (is_numeric($value)) {
+        $attribute = uc_attribute_load($aid, $node->nid, 'product');
+        if ($attribute && ($attribute->display == 1 || $attribute->display == 2)) {
+          $combination[$aid] = $value;
         }
       }
-      ksort($combination);
+    }
+    ksort($combination);
 
-      $model = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = :nid AND combination LIKE :combo", array(':nid' => $item->nid, ':combo' => serialize($combination)))->fetchField();
+    $model = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = :nid AND combination LIKE :combo", array(':nid' => $node->nid, ':combo' => serialize($combination)))->fetchField();
 
-      if (!empty($model)) {
-        $item->model = $model;
-      }
-      break;
+    if (!empty($model)) {
+      $node->model = $model;
+    }
   }
 }
 
@@ -1259,16 +1253,18 @@ function _uc_attribute_alter_form($product) {
     foreach ($attribute->options as $option) {
       $display_price = '';
       if (in_array($attribute->aid, $priced_attributes)) {
+        $variant = uc_product_load_variant($product->nid, array('attributes' => array($attribute->aid => $option->oid)));
         switch (variable_get('uc_attribute_option_price_format', 'adjustment')) {
           case 'total':
             if (count($priced_attributes) == 1 && $attribute->display != 3) {
-              $display_price = uc_currency_format($product->sell_price + $option->price);
+              $display_price = uc_currency_format($variant->display_price);
               break;
             }
           case 'adjustment':
-            if ($option->price != 0) {
-              $display_price = $option->price > 0 ? '+' : '-';
-              $display_price .= uc_currency_format(abs($option->price));
+            $adjustment = $variant->display_price - $product->display_price;
+            if ($adjustment != 0) {
+              $display_price = $adjustment > 0 ? '+' : '-';
+              $display_price .= uc_currency_format(abs($adjustment));
             }
             break;
         }
