@@ -385,15 +385,31 @@ function uc_product_kit_load($nodes) {
   // Recalculate display price.
   foreach ($nodes as &$node) {
     if ($node->mutable != UC_PRODUCT_KIT_MUTABLE) {
-      $node->display_price = 0;
+      $node->display_price_adjustment = 0;
       $node->display_price_suffixes = array();
       foreach ($node->products as $pid => &$product) {
-        $node->display_price += $product->display_price * $product->qty;
+        $node->display_price_adjustment += $product->display_price_adjustment * $product->qty;
         $node->display_price_suffixes += $product->display_price_suffixes;
       }
     }
   }
 }
+
+/**
+ * Implements hook_module_implements_alter().
+ *
+ * Ensure that our component products have their discounts applied before any other
+ * product alterations are made.
+ */
+function uc_product_kit_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'uc_product_alter') {
+    $group = $implementations['uc_product_kit'];
+    unset($implementations['uc_product_kit']);
+    $implementations =  array('uc_product_kit' => $group) + $implementations;
+  }
+}
+
+
 
 /**
  * Implements hook_theme().
@@ -664,7 +680,7 @@ function theme_uc_product_kit_items_form($variables) {
 function uc_product_kit_view($node, $view_mode) {
   $node->content['display_price'] = array(
     '#theme' => 'uc_product_price',
-    '#value' => $node->display_price,
+    '#value' => $node->price + $node->display_price_adjustment,
     'suffix' => array('#markup' => implode(' ', $node->display_price_suffixes)),
     '#attributes' => array(
       'class' => array(
@@ -1028,7 +1044,6 @@ function uc_product_kit_uc_product_alter(&$node) {
       $discount = 0;
     }
     $node->price += $discount;
-    $node->display_price += $discount;
   }
 }
 
@@ -1135,7 +1150,7 @@ function uc_product_kit_uc_cart_display($item) {
       );
     }
 
-    $elements[$unique_id]['#total'] += $item->display_price * $item->qty;
+    $elements[$unique_id]['#total'] += ($item->price + $item->display_price_adjustment) * $item->qty;
     $elements[$unique_id]['data'][$item->nid] = $item;
     $products[$unique_id][] = $item->nid;
 

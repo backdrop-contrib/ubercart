@@ -76,7 +76,7 @@ function uc_taxes_menu() {
  * calculations are made.
  */
 function uc_taxes_module_implements_alter(&$implementations, $hook) {
-  if ($hook == 'uc_order') {
+  if (in_array($hook, array('uc_order', 'uc_product_alter'))) {
     $group = $implementations['uc_taxes'];
     unset($implementations['uc_taxes']);
     $implementations['uc_taxes'] = $group;
@@ -112,7 +112,7 @@ function uc_taxes_form_uc_order_edit_form_alter(&$form, &$form_state) {
 function uc_taxes_uc_product_alter(&$node) {
   list($amount, $suffixes) = uc_taxes_get_included_tax($node, $node->price);
 
-  $node->display_price += $amount;
+  $node->display_price_adjustment += $amount;
   if (!empty($suffixes)) {
     $node->display_price_suffixes += $suffixes;
   }

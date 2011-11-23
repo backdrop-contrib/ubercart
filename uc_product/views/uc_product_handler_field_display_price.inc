@@ -21,6 +21,6 @@ class uc_product_handler_field_display_price extends uc_product_handler_field_pr
   function get_value($values, $field = NULL) {
     $nid = parent::get_value($values, $field);
     $node = node_load($nid);
-    return $node->display_price;
+    return $node->price + $node->display_price_adjustment;
   }
 }

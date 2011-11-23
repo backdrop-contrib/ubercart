@@ -506,7 +506,6 @@ function uc_attribute_uc_product_alter(&$node) {
     foreach ($options as $option) {
       $node->cost += $option['cost'];
       $node->price += $option['price'];
-      $node->display_price += $option['price'];
       $node->weight += $option['weight'];
     }
 
@@ -1257,11 +1256,11 @@ function _uc_attribute_alter_form($product) {
         switch (variable_get('uc_attribute_option_price_format', 'adjustment')) {
           case 'total':
             if (count($priced_attributes) == 1 && $attribute->display != 3) {
-              $display_price = uc_currency_format($variant->display_price);
+              $display_price = uc_currency_format($variant->price + $variant->display_price_adjustment);
               break;
             }
           case 'adjustment':
-            $adjustment = $variant->display_price - $product->display_price;
+            $adjustment = ($variant->price + $variant->display_price_adjustment) - ($product->price + $product->display_price_adjustment);
             if ($adjustment != 0) {
               $display_price = $adjustment > 0 ? '+' : '-';
               $display_price .= uc_currency_format(abs($adjustment));
