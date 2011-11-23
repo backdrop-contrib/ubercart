@@ -386,10 +386,10 @@ function uc_product_kit_load($nodes) {
   foreach ($nodes as &$node) {
     if ($node->mutable != UC_PRODUCT_KIT_MUTABLE) {
       $node->display_price = 0;
-      $node->display_price_suffix = '';
+      $node->display_price_suffixes = array();
       foreach ($node->products as $pid => &$product) {
         $node->display_price += $product->display_price * $product->qty;
-        $node->display_price_suffix .= $product->display_price_suffix;
+        $node->display_price_suffixes += $product->display_price_suffixes;
       }
     }
   }
@@ -665,7 +665,7 @@ function uc_product_kit_view($node, $view_mode) {
   $node->content['display_price'] = array(
     '#theme' => 'uc_product_price',
     '#value' => $node->display_price,
-    'suffix' => array('#markup' => $node->display_price_suffix),
+    'suffix' => array('#markup' => implode(' ', $node->display_price_suffixes)),
     '#attributes' => array(
       'class' => array(
         'product-kit',
@@ -1120,7 +1120,7 @@ function uc_product_kit_uc_cart_display($item) {
       );
       $element['description'] = array('#markup' => '');
       $element['#total'] = 0;
-      $element['#suffix'] = $kit->display_price_suffix;
+      $element['#suffix'] = implode(' ', $kit->display_price_suffixes);
       $element['#extra'] = array();
 
       $elements[$unique_id] = $element;

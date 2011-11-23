@@ -637,7 +637,7 @@ function _uc_product_calculate(&$node) {
   rules_invoke_event('uc_product_load', $node);
 
   $node->display_price = $node->price;
-  $node->display_price_suffix = '';
+  $node->display_price_suffixes = array();
 
   drupal_alter('uc_product', $node);
 }
@@ -663,7 +663,7 @@ function uc_product_view($node, $view_mode) {
   $node->content['display_price'] = array(
     '#theme' => 'uc_product_price',
     '#value' => $node->display_price,
-    'suffix' => array('#markup' => $node->display_price_suffix),
+    'suffix' => array('#markup' => implode(' ', $node->display_price_suffixes)),
     '#attributes' => array(
       'class' => array(
         'display-price',
@@ -1023,7 +1023,7 @@ function uc_product_uc_cart_display($item) {
   );
 
   $element['#total'] = $item->display_price * $item->qty;
-  $element['#suffix'] = $item->display_price_suffix;
+  $element['#suffix'] = implode(' ', $item->display_price_suffixes);
   $element['data'] = array('#type' => 'hidden', '#value' => serialize($item->data));
   $element['qty'] = array(
     '#type' => 'uc_quantity',
