@@ -614,28 +614,27 @@ function uc_product_load($nodes) {
     foreach ($node as $field => $value) {
       $nodes[$node->nid]->$field = $value;
     }
-    _uc_product_calculate($nodes[$node->nid]);
+    $nodes[$node->nid]->price = $nodes[$node->nid]->sell_price;
+    $nodes[$node->nid]->display_price_adjustment = 0;
+    $nodes[$node->nid]->display_price_suffixes = array();
   }
 }
 
 /**
- * Load a specific altered variant of a product.
+ * Gets a specific altered variant of a product.
+ * 
+ * @param $nid
+ *   The nid of the product.  May also supply a complete, previously loaded product object.
+ * @param $data
+ *   Optional data to add to the product before invoking the alter hooks.
  */
-function uc_product_load_variant($nid, $data) {
-  $node = clone node_load($nid);
-  $node->data = $data;
-  _uc_product_calculate($node);
-  return $node;
-}
-
-/**
- * Calculate the sale and display prices for a product.
- */
-function _uc_product_calculate(&$node) {
-  $node->price = $node->sell_price;
-  $node->display_price_adjustment = 0;
-  $node->display_price_suffixes = array();
+function uc_product_load_variant($nid, $data = FALSE) {
+  $node = clone (is_object($nid) ? $nid : node_load($nid));
+  if (!empty($data)) {
+    $node->data = $data;
+  }
   drupal_alter('uc_product', $node);
+  return $node;
 }
 
 /**
@@ -665,10 +664,11 @@ function uc_product_delete(&$node) {
  * Implements hook_view().
  */
 function uc_product_view($node, $view_mode) {
+  $variant = uc_product_load_variant($node);
   $node->content['display_price'] = array(
     '#theme' => 'uc_product_price',
-    '#value' => $node->price + $node->display_price_adjustment,
-    'suffix' => array('#markup' => implode(' ', $node->display_price_suffixes)),
+    '#value' => $variant->price + $variant->display_price_adjustment,
+    'suffix' => array('#markup' => implode(' ', $variant->display_price_suffixes)),
     '#attributes' => array(
       'class' => array(
         'display-price',
@@ -677,13 +677,13 @@ function uc_product_view($node, $view_mode) {
   );
   $node->content['model'] = array(
     '#theme' => 'uc_product_model',
-    '#model' => $node->model,
+    '#model' => $variant->model,
     '#view_mode' => $view_mode,
   );
   $node->content['list_price'] = array(
     '#theme' => 'uc_product_price',
     '#title' => t('List price:'),
-    '#value' => $node->list_price,
+    '#value' => $variant->list_price,
     '#attributes' => array(
       'class' => array(
         'list-price',
@@ -693,7 +693,7 @@ function uc_product_view($node, $view_mode) {
   $node->content['cost'] = array(
     '#theme' => 'uc_product_price',
     '#title' => t('Cost:'),
-    '#value' => $node->cost,
+    '#value' => $variant->cost,
     '#attributes' => array(
       'class' => array(
         'cost',
@@ -704,7 +704,7 @@ function uc_product_view($node, $view_mode) {
   $node->content['sell_price'] = array(
     '#theme' => 'uc_product_price',
     '#title' => t('Price:'),
-    '#value' => $node->sell_price,
+    '#value' => $variant->sell_price,
     '#attributes' => array(
       'class' => array(
         'sell-price',
@@ -713,16 +713,16 @@ function uc_product_view($node, $view_mode) {
   );
   $node->content['weight'] = array(
     '#theme' => 'uc_product_weight',
-    '#amount' => $node->weight,
-    '#units' => $node->weight_units,
+    '#amount' => $variant->weight,
+    '#units' => $variant->weight_units,
     '#view_mode' => $view_mode,
   );
   $node->content['dimensions'] = array(
     '#theme' => 'uc_product_dimensions',
-    '#length' => $node->length,
-    '#width' => $node->width,
-    '#height' => $node->height,
-    '#units' => $node->length_units,
+    '#length' => $variant->length,
+    '#width' => $variant->width,
+    '#height' => $variant->height,
+    '#units' => $variant->length_units,
     '#view_mode' => $view_mode,
   );
   if (module_exists('uc_cart') && isset($node->nid)) {

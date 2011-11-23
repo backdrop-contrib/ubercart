@@ -501,7 +501,7 @@ function uc_attribute_uc_product_class($type, $op) {
  * Implements hook_uc_product_alter().
  */
 function uc_attribute_uc_product_alter(&$node) {
-  if (isset($node->data['attributes'])) {
+  if (isset($node->data['attributes']) && is_array($node->data['attributes'])) {
     $options = _uc_cart_product_get_options($node);
     foreach ($options as $option) {
       $node->cost += $option['cost'];
@@ -1252,7 +1252,7 @@ function _uc_attribute_alter_form($product) {
     foreach ($attribute->options as $option) {
       $display_price = '';
       if (in_array($attribute->aid, $priced_attributes)) {
-        $variant = uc_product_load_variant($product->nid, array('attributes' => array($attribute->aid => $option->oid)));
+        $variant = uc_product_load_variant($product, array('attributes' => array($attribute->aid => $option->oid)));
         switch (variable_get('uc_attribute_option_price_format', 'adjustment')) {
           case 'total':
             if (count($priced_attributes) == 1 && $attribute->display != 3) {
@@ -1260,7 +1260,8 @@ function _uc_attribute_alter_form($product) {
               break;
             }
           case 'adjustment':
-            $adjustment = ($variant->price + $variant->display_price_adjustment) - ($product->price + $product->display_price_adjustment);
+            $base = uc_product_load_variant($product);
+            $adjustment = ($variant->price + $variant->display_price_adjustment) - ($base->price + $base->display_price_adjustment);
             if ($adjustment != 0) {
               $display_price = $adjustment > 0 ? '+' : '-';
               $display_price .= uc_currency_format(abs($adjustment));
