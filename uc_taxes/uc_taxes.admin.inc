@@ -9,7 +9,7 @@
  * Displays a list of tax rates.
  */
 function uc_taxes_admin_settings() {
-  $header = array(t('Name'), t('Rate'), t('Taxed products'), t('Taxed product types'), t('Taxed line items'), t('Weight'), array('data' => t('Operations'), 'colspan' => 3));
+  $header = array(t('Name'), t('Rate'), t('Taxed products'), t('Taxed product types'), t('Taxed line items'), t('Weight'), array('data' => t('Operations'), 'colspan' => 4));
 
   $rows = array();
   foreach (uc_taxes_rate_load() as $rate_id => $rate) {
@@ -21,6 +21,7 @@ function uc_taxes_admin_settings() {
       implode(', ', $rate->taxed_line_items),
       $rate->weight,
       l(t('edit'), 'admin/store/settings/taxes/' . $rate_id . '/edit'),
+      l(t('conditions'), 'admin/store/settings/taxes/manage/uc_taxes_' . $rate_id),
       l(t('clone'), 'admin/store/settings/taxes/' . $rate_id . '/clone'),
       l(t('delete'), 'admin/store/settings/taxes/' . $rate_id . '/delete'),
     );
@@ -136,11 +137,6 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
     '#default_value' => $rate_id ? $rate->inclusion_text : '',
   );
 
-  $conditions = rules_config_load('uc_taxes_' . $rate_id);
-  if ($conditions) {
-    $conditions->form($form, $form_state);
-  }
-
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
     '#type' => 'submit',
@@ -179,7 +175,7 @@ function uc_taxes_form_submit($form, &$form_state) {
   }
 
   // Build the rate object based on the form values and save it.
-  $rate = array(
+  $rate = (object) array(
     'id' => $form_state['values']['id'],
     'name' => $form_state['values']['name'],
     'rate' => $form_state['values']['rate'],
@@ -190,22 +186,28 @@ function uc_taxes_form_submit($form, &$form_state) {
     'display_include' => $form_state['values']['display_include'],
     'inclusion_text' => $form_state['values']['inclusion_text'],
   );
-  uc_taxes_rate_save((object) $rate);
+  $rate = uc_taxes_rate_save($rate);
 
   // Ensure Rules picks up the new condition.
-  entity_flush_caches();
+  rules_clear_cache();
 
   // Update the name of the associated conditions.
-  $conditions = rules_config_load('uc_taxes_' . $rate['id']);
+  $conditions = rules_config_load('uc_taxes_' . $form_state['values']['id']);
   if ($conditions) {
-    $conditions->label = $rate['name'];
+    $conditions->label = $form_state['values']['name'];
     $conditions->save();
   }
 
-  // Display a message and redirect back to the overview.
-  drupal_set_message(t('Tax rate %name saved.', array('%name' => $form_state['values']['name'])));
-
-  $form_state['redirect'] = 'admin/store/settings/taxes';
+  // Display a message and redirect back to the overview,
+  // or the conditions page for new taxes.
+  if ($form_state['values']['id']) {
+    drupal_set_message(t('Tax rate %name saved.', array('%name' => $form_state['values']['name'])));
+    $form_state['redirect'] = 'admin/store/settings/taxes';
+  }
+  else {
+    drupal_set_message(t('Tax rate %name created.', array('%name' => $form_state['values']['name'])));
+    $form_state['redirect'] = 'admin/store/settings/taxes/manage/uc_taxes_'. $rate->id;
+  }
 }
 
 /**

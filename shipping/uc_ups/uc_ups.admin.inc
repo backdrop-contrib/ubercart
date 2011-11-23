@@ -88,17 +88,6 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#description' => t('Select the UPS services that are available to customers.'),
   );
 
-  $form['services']['service_conditions'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('UPS service conditions'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-  $conditions = rules_config_load('get_quote_from_ups');
-  if ($conditions) {
-    $conditions->form($form['services']['service_conditions'], $form_state);
-  }
-
   // Container for quote options
   $form['uc_ups_quote_options'] = array(
     '#type'          => 'fieldset',
