@@ -322,10 +322,20 @@ function uc_store_process_address_field($element, $form_state) {
     $value = array();
   }
 
-  $address = new UcAddress();
+  $countries = db_query("SELECT country_id, country_name FROM {uc_countries} WHERE version > :version", array(':version' => 0))->fetchAllKeyed();
+  foreach ($countries as $country_id => $country_name) {
+    $countries[$country_id] = t($country_name);
+  }
+  natcasesort($countries);
+
+  // Force the selected country to a valid one, so the zone dropdown matches.
+  if (isset($value[$prefix . 'country']) && !isset($countries[$value[$prefix . 'country']])) {
+    $value[$prefix . 'country'] = reset(array_keys($countries));
+  }
 
   // Iterating on the UcAddress object excludes non-public properties, which
   // is exactly what we want to do.
+  $address = new UcAddress();
   foreach ($address as $base_field => $field_value) {
     $field = $prefix . $base_field;
     if (!isset($value[$field])) {
@@ -334,12 +344,6 @@ function uc_store_process_address_field($element, $form_state) {
 
     switch ($base_field) {
       case 'country':
-        $countries = db_query("SELECT country_id, country_name FROM {uc_countries} WHERE version > :version", array(':version' => 0))->fetchAllKeyed();
-        foreach ($countries as $country_id => $country_name) {
-          $countries[$country_id] = t($country_name);
-        }
-        natcasesort($countries);
-
         $subelement = array(
           '#type' => 'select',
           '#options' => $countries,
