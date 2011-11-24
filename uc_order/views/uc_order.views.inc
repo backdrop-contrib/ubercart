@@ -258,12 +258,6 @@ function uc_order_views_data() {
         'handler' => 'uc_order_handler_field_order_fullname',
         'prefix' => $prefix,
       ),
-      'sort' => array(
-        'handler' => 'views_handler_sort',
-      ),
-      'filter' => array(
-        'handler' => 'views_handler_filter_string',
-      ),
     );
 
     $data[$prefix . '_countries']['table']['group'] = $group;
