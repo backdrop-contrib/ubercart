@@ -163,10 +163,6 @@ function uc_order_views_data() {
       'handler' => 'views_handler_filter_date',
     ),
   );
-  // Use the sleeker date_api views handler if the module is available
-  if (module_exists('date_api')) {
-    $data['uc_orders']['created']['filter']['handler'] = 'date_api_filter_handler';
-  }
 
   $data['uc_orders']['modified'] = array(
     'title' => t('Last modified'),
@@ -182,9 +178,11 @@ function uc_order_views_data() {
       'handler' => 'views_handler_filter_date',
     ),
   );
-  // Use the sleeker date_api views handler if the module is available
-  if (module_exists('date_api')) {
-    $data['uc_orders']['modified']['filter']['handler'] = 'date_api_filter_handler';
+
+  // Use the sleeker Date module views handler if available.
+  if (module_exists('date_views')) {
+    $data['uc_orders']['created']['filter']['handler'] = 'date_views_filter_handler_simple';
+    $data['uc_orders']['modified']['filter']['handler'] = 'date_views_filter_handler_simple';
   }
 
   $data['uc_orders']['actions'] = array(
