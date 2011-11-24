@@ -360,9 +360,20 @@ function uc_order_views_data() {
 
   // Ordered products.
   $data['uc_order_products']['table']['group'] = t('Ordered product');
+  $data['uc_order_products']['table']['base'] = array(
+    'field' => 'order_product_id',
+    'title' => t('Ordered products'),
+    'help' => t('Products that have been ordered in your Ubercart store.'),
+  );
 
   // Pull in node fields directly.
   $data['node']['table']['join']['uc_order_products'] = array(
+    'left_field' => 'nid',
+    'field' => 'nid',
+  );
+
+  // Pull in product fields directly.
+  $data['uc_products']['table']['join']['uc_order_products'] = array(
     'left_field' => 'nid',
     'field' => 'nid',
   );
