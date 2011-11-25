@@ -332,13 +332,16 @@ function _uc_file_download_transfer($file_user, $ip) {
   // Check if HTTP_RANGE is sent by browser (or download manager)
   $range = NULL;
   if (isset($_SERVER['HTTP_RANGE'])) {
-    list($size_unit, $range_orig) = explode('=', $_SERVER['HTTP_RANGE'], 2);
-
-    if ($size_unit == 'bytes') {
+    if (substr($_SERVER['HTTP_RANGE'], 0, 6) == 'bytes=')) {
       // Multiple ranges could be specified at the same time,
       // but for simplicity only serve the first range
       // See http://tools.ietf.org/id/draft-ietf-http-range-retrieval-00.txt
-      list($range, $extra_ranges) = explode(',', $range_orig, 2);
+      list($range, $extra_ranges) = explode(',', substr($_SERVER['HTTP_RANGE'], 6), 2);
+    }
+    else {
+      drupal_add_http_header('Status', '416 Requested Range Not Satisfiable');
+      drupal_add_http_header('Content-Range', 'bytes */' . $size);
+      exit;
     }
   }
 
