@@ -32,6 +32,8 @@ function uc_order_entity_property_info() {
           'type' => 'node',
           'label' => t('Node'),
           'description' => t('The node representing the product.'),
+          'getter callback' => 'uc_order_product_node_property_get',
+          'setter callback' => 'uc_order_product_node_property_set',
         ),
         'title' => array(
           'type' => 'text',
