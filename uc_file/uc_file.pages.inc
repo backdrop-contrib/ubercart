@@ -332,7 +332,7 @@ function _uc_file_download_transfer($file_user, $ip) {
   // Check if HTTP_RANGE is sent by browser (or download manager)
   $range = NULL;
   if (isset($_SERVER['HTTP_RANGE'])) {
-    if (substr($_SERVER['HTTP_RANGE'], 0, 6) == 'bytes=')) {
+    if (substr($_SERVER['HTTP_RANGE'], 0, 6) == 'bytes=') {
       // Multiple ranges could be specified at the same time,
       // but for simplicity only serve the first range
       // See http://tools.ietf.org/id/draft-ietf-http-range-retrieval-00.txt
