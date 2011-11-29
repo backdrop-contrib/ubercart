@@ -54,11 +54,6 @@ function uc_flatrate_admin_method_edit_form($form, &$form_state, $mid = 0) {
     '#required' => TRUE,
   );
 
-  $conditions = rules_config_load('get_quote_from_flatrate_' . $mid);
-  if ($conditions) {
-    $conditions->form($form, $form_state);
-  }
-
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
     '#type' => 'submit',
@@ -95,6 +90,7 @@ function uc_flatrate_admin_method_edit_form_submit($form, &$form_state) {
   if (isset($form_state['values']['mid'])) {
     drupal_write_record('uc_flatrate_methods', $form_state['values'], 'mid');
     drupal_set_message(t('Flat rate shipping method was updated.'));
+    $form_state['redirect'] = 'admin/store/settings/quotes/methods';
   }
   else {
     drupal_write_record('uc_flatrate_methods', $form_state['values']);
@@ -103,9 +99,8 @@ function uc_flatrate_admin_method_edit_form_submit($form, &$form_state) {
     entity_flush_caches();
 
     drupal_set_message(t('Created and enabled new flat rate shipping method.'));
+    $form_state['redirect'] = 'admin/store/settings/quotes/manage/get_quote_from_flatrate_' . $form_state['values']['mid'];
   }
-
-  $form_state['redirect'] = 'admin/store/settings/quotes/methods';
 }
 
 /******************************************************************************
