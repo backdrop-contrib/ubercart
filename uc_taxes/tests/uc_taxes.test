@@ -207,6 +207,8 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
       $this->assertText($line['title'], t('Found the tax title.'));
       $this->assertText(uc_currency_format($line['amount']), t('Tax has the same amount as before.'));
 
+      // Change tax rate and ensure order doesn't change.
+      $oldrate = $rate->rate;
       $rate->rate = 0.1;
       $rate = uc_taxes_rate_save($rate);
 
@@ -217,7 +219,7 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
       $this->assertText(t('Order changes saved.'));
       $this->assertFieldByName('line_items['. $line['line_item_id'] .'][li_id]', $line['line_item_id'], t('Found the same tax line item ID.'));
       $this->assertText($line['title'], t('Found the tax title.'));
-      $this->assertText(uc_currency_format($rate->rate * $this->product->sell_price), t('Tax has new amount.'));
+      $this->assertText(uc_currency_format($line['amount']), t('Tax has the same amount as before.'));
 
       uc_order_update_status($order_id, 'completed');
 
@@ -228,8 +230,10 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
         }
       }
 
-      $this->assertTrue(number_format($rate->rate * $this->product->sell_price, 2) == number_format($line['amount'], 2), t('Stored tax line item has the correct amount.'));
+      $this->assertTrue(number_format($oldrate * $this->product->sell_price, 2) == number_format($line['amount'], 2), t('Stored tax line item has the correct amount.'));
 
+      // Change order Status back to in_checkout and ensure tax-rate changes update the order.
+      uc_order_update_status($order_id, 'in_checkout');
       $rate->rate = 0.3;
       $rate = uc_taxes_rate_save($rate);
 
@@ -240,7 +244,7 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
       $this->assertText(t('Order changes saved.'));
       $this->assertFieldByName('line_items['. $line['line_item_id'] .'][li_id]', $line['line_item_id'], t('Found the same tax line item ID.'));
       $this->assertText($line['title'], t('Found the tax title.'));
-      $this->assertText(uc_currency_format($line['amount']), t('Tax has the same amount as before.'));
+      $this->assertText(uc_currency_format($rate->rate * $this->product->sell_price), t('Tax has new amount.'));
     }
     else {
       $this->fail(t('No order was created.'));

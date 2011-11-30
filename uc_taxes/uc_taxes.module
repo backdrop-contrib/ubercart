@@ -89,7 +89,6 @@ function uc_taxes_module_implements_alter(&$implementations, $hook) {
 function uc_taxes_form_uc_order_edit_form_alter(&$form, &$form_state) {
   $order = $form['#order'];
   $line_items = $order->line_items;
-
   foreach ($line_items as $item) {
     // Tax line items are stored in the database, but they can't be changed by
     // the user.
@@ -392,6 +391,52 @@ function uc_taxes_rate_save($rate) {
   return $rate;
 }
 
+
+/**
+ * List all the taxes that can apply to an order.  These depend on the order status.  For orders which
+ * are still in checkout, any tax can apply.  For orders out of checkout, only taxes originally saved
+ * as line items can apply.
+ *
+ * @param $order
+ *   The order
+ */
+function uc_taxes_filter_rates($order) {
+  $taxes = array();
+
+  // For orders no longer in checkout, only the saved tax rates can apply.
+  if (isset($order->order_status) && uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
+    if (isset($order->line_items)) {
+      foreach($order->line_items as $item) {
+        if ($item['type'] == 'tax') {
+          if (!empty($item['data']['tax'])) {
+            // Use the rate stored in the line-item.
+            $taxes[] = clone $item['data']['tax'];
+          }
+          else if ($tax = uc_taxes_rate_load($item['data']['tax_id'])) {
+            // For old orders that don't have all the tax info, all we can do is preserve the rate.
+            $tax = clone $tax;
+            if (!empty($item['data']['tax_rate'])) {
+              $tax->rate = $item['data']['tax_rate'];
+            }
+            $taxes[] = $tax;
+          }
+        }
+      }
+    }
+  }
+  // For orders still in checkout, any tax whose conditions are satisfied can apply.
+  else {
+    foreach  (uc_taxes_rate_load() as $rate) {
+      $tax = clone ($rate);
+      if (rules_invoke_component('uc_taxes_' . $tax->id, $order)) {
+        $taxes[] = $tax;
+      }
+    }
+  }
+
+  return $taxes;
+}
+
 /**
  * Loads a tax rate or all tax rates from the database.
  *
@@ -428,7 +473,7 @@ function uc_taxes_rate_load($rate_id = NULL) {
 
   // Return a rate as specified.
   if ($rate_id) {
-    return $rates[$rate_id];
+    return isset($rates[$rate_id]) ? $rates[$rate_id] : FALSE;
   }
   // Or return the whole shebang.
   else {
@@ -494,37 +539,14 @@ function uc_taxes_uc_calculate_tax($order) {
   }
 
   $order->taxes = array();
-
-  if (isset($order->order_status)) {
-    $state = uc_order_status_data($order->order_status, 'state');
-    $use_same_rates = in_array($state, array('payment_received', 'completed'));
-  }
-  else {
-    $use_same_rates = FALSE;
-  }
-
-  foreach (uc_taxes_rate_load() as $tax_rate) {
-    $tax = clone ($tax_rate);
-    if ($use_same_rates) {
-      foreach ((array)$order->line_items as $old_line) {
-        if ($old_line['type'] == 'tax' && $old_line['data']['tax_id'] == $tax->id) {
-          $tax->rate = $old_line['data']['tax_rate'];
-          break;
-        }
-      }
-    }
-
-    if (rules_invoke_component('uc_taxes_' . $tax->id, $order)) {
-      $line_item = uc_taxes_apply_tax($order, $tax);
-      if ($line_item) {
-        $order->taxes[$line_item->id] = $line_item;
-      }
+  foreach (uc_taxes_filter_rates($order) as $tax) {
+    if ($line_item = uc_taxes_apply_tax($order, $tax)) {
+      $order->taxes[$line_item->id] = $line_item;
     }
   }
 
   return $order->taxes;
 }
-
 
 /**
  * Calculates tax for a single product.
@@ -601,6 +623,7 @@ function uc_taxes_apply_tax($order, $tax) {
     $line_item->data = array(
       'tax_id' => $tax->id,
       'tax_rate' => $tax->rate,
+      'tax' => $tax,
       'taxable_amount' => $taxable_amount,
       'tax_jurisdiction' => $tax->name,
     );
