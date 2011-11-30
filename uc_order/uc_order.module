@@ -171,15 +171,7 @@ function uc_order_menu() {
     'access arguments' => array('create orders'),
     'file' => 'uc_order.admin.inc',
   );
-
-  $items['admin/store/orders/search'] = array(
-    'title' => 'Search orders',
-    'description' => 'Search existing orders.',
-    'page callback' => 'uc_order_usearch',
-    'access arguments' => array('view all orders'),
-    'weight' => 0,
-    'file' => 'uc_order.admin.inc',
-  );
+  // admin/store/orders/search is provided by Views.
   $items['admin/store/orders/address_book'] = array(
     'title' => 'Select address',
     'page callback' => 'uc_order_address_book',
@@ -671,7 +663,7 @@ function uc_order_views_api() {
  * Implements hook_form_FORM_ID_alter() for views_exposed_form().
  */
 function uc_order_form_views_exposed_form_alter(&$form, &$form_state) {
-  if ($form['#id'] == 'views-exposed-form-uc-orders-admin-page') {
+  if (substr($form['#id'], 0, 29) == 'views-exposed-form-uc-orders-') {
     $form['#attached']['js'][] = drupal_get_path('module', 'uc_order') . '/uc_order.js';
     $form['#attached']['js'][] = array(
       'data' => array(
@@ -683,6 +675,10 @@ function uc_order_form_views_exposed_form_alter(&$form, &$form_state) {
     );
 
     $form['#submit'][] = 'uc_order_form_views_exposed_form_submit';
+
+    if ($form['#id'] == 'views-exposed-form-uc-orders-search' && !module_exists('date_views')) {
+      drupal_set_message(t('Download the <a href="!url">Date module</a> and enable Date Views to allow searching orders by date.', array('!url' => 'http://drupal.org/project/date')), 'warning');
+    }
   }
 }
 
@@ -704,12 +700,6 @@ function uc_order_form_uc_store_settings_form_alter(&$form, &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Capitalize address on order screens'),
     '#default_value' => variable_get('uc_order_capitalize_addresses', TRUE),
-  );
-  $form['display']['uc_order_number_displayed'] = array(
-    '#type' => 'select',
-    '#title' => t('Number of orders on overview screen'),
-    '#options' => drupal_map_assoc(range(10, 100, 10)),
-    '#default_value' => variable_get('uc_order_number_displayed', 30),
   );
 }
 
@@ -912,187 +902,6 @@ function theme_uc_order_status_table($variables) {
   return theme('table', array('header' => $header, 'rows' => $rows));
 }
 
-/**
- * Form to input search parameters for orders.
- *
- * @see uc_order_search_form_submit()
- * @see theme_uc_order_search_fieldset()
- * @ingroup forms
- */
-function uc_order_search_form($form, &$form_state) {
-  $form['search'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Search options'),
-    '#collapsible' => TRUE,
-    '#collapsed' => arg(4) == 'results' ? TRUE : FALSE,
-    '#theme' => 'uc_order_search_fieldset',
-  );
-
-  $form['search']['desc'] = array(
-    '#markup' => '<div>' . t("Search for customers based on any of the following fields.  Use * as a wildcard to match any character.<br />For example, searching by last name for 's*' will return all customers whose last name starts with an s.<br />(<em>Leave a field empty to ignore it in the search.</em>)") . '</div>',
-  );
-
-  $form['search']['billing_first_name'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Billing first name'),
-    '#default_value' => arg(5) != '0' ? arg(5) : '',
-    '#size' => 24,
-    '#maxlength' => 32,
-  );
-
-  $form['search']['billing_last_name'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Billing last name'),
-    '#default_value' => arg(6) != '0' ? arg(6) : '',
-    '#size' => 24,
-    '#maxlength' => 32,
-  );
-
-  $form['search']['billing_company'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Billing company'),
-    '#default_value' => arg(7) != '0' ? arg(7) : '',
-    '#size' => 24,
-    '#maxlength' => 96,
-  );
-
-  $form['search']['shipping_first_name'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Shipping first name'),
-    '#default_value' => arg(8) != '0' ? arg(8) : '',
-    '#size' => 24,
-    '#maxlength' => 32,
-  );
-
-  $form['search']['shipping_last_name'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Shipping last name'),
-    '#default_value' => arg(9) != '0' ? arg(9) : '',
-    '#size' => 24,
-    '#maxlength' => 32,
-  );
-
-  $form['search']['shipping_company'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Shipping company'),
-    '#default_value' => arg(10) != '0' ? arg(10) : '',
-    '#size' => 24,
-    '#maxlength' => 96,
-  );
-
-  $form['search']['use_dates'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Search using date range.'),
-    '#description' => t('Specify dates to the right if checked.'),
-    '#default_value' => arg(11) != 0 ? 1 : 0,
-  );
-
-  $timestamp = arg(11) == 0 ? REQUEST_TIME : arg(11);
-  $form['search']['start_date'] = array(
-    '#type' => 'date',
-    '#title' => t('Start date'),
-    '#default_value' => array('year' => format_date($timestamp, 'custom', 'Y'), 'month' => format_date($timestamp, 'custom', 'n'), 'day' => format_date($timestamp, 'custom', 'j'))
-  );
-
-  $timestamp = arg(12) == 0 ? REQUEST_TIME : arg(12);
-  $form['search']['end_date'] = array(
-    '#type' => 'date',
-    '#title' => t('End date'),
-    '#default_value' => array('year' => format_date($timestamp, 'custom', 'Y'), 'month' => format_date($timestamp, 'custom', 'n'), 'day' => format_date($timestamp, 'custom', 'j')),
-  );
-
-  $form['search']['actions'] = array('#type' => 'actions');
-  $form['search']['actions']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Search'),
-  );
-
-  return $form;
-}
-
-/**
- * Returns HTML for the search fieldset on the uc_order_search_form().
- *
- * @see uc_order_search_form()
- * @ingroup themeable
- */
-function theme_uc_order_search_fieldset($variables) {
-  $form = $variables['form'];
-
-  $output = '<table><tbody style="border: 0em;"><tr><td colspan="4">';
-  $output .= drupal_render($form['desc']);
-
-  $output .= '</td></tr><tr><td>';
-  $output .= drupal_render($form['billing_first_name']);
-
-  $output .= '</td><td>';
-  $output .= drupal_render($form['billing_last_name']);
-
-  $output .= '</td><td>';
-  $output .= drupal_render($form['billing_company']);
-
-  $output .= '</td></tr><tr><td>';
-  $output .= drupal_render($form['shipping_first_name']);
-
-  $output .= '</td><td>';
-  $output .= drupal_render($form['shipping_last_name']);
-
-  $output .= '</td><td>';
-  $output .= drupal_render($form['shipping_company']);
-
-  $output .= '</td></tr><tr><td>';
-  $output .= drupal_render($form['use_dates']);
-
-  $output .= '</td><td>';
-  $output .= drupal_render($form['start_date']);
-
-  $output .= '</td><td>';
-  $output .= drupal_render($form['end_date']);
-
-  $output .= '</td></tr><tr><td colspan="3">';
-  $output .= drupal_render($form['submit']);
-
-  $output .= '</td></tr></tbody></table>';
-  $output .= drupal_render_children($form);
-
-  return $output;
-}
-
-/**
- * Form submission handler for uc_order_search_form().
- *
- * @see uc_order_search_form()
- */
-function uc_order_search_form_submit($form, &$form_state) {
-  $keys = array(
-    'billing_first_name',
-    'billing_last_name',
-    'billing_company',
-    'shipping_first_name',
-    'shipping_last_name',
-    'shipping_company',
-  );
-
-  foreach ($keys as $key) {
-    if (strlen(trim($form_state['values'][$key])) == 0) {
-      $args[] = '0';
-    }
-    else {
-      $args[] = strtolower(trim($form_state['values'][$key]));
-    }
-  }
-
-  if ($form_state['values']['use_dates']) {
-    $args[] = mktime(0, 0, 0, $form_state['values']['start_date']['month'], $form_state['values']['start_date']['day'], $form_state['values']['start_date']['year']);
-    $args[] = mktime(23, 59, 59, $form_state['values']['end_date']['month'], $form_state['values']['end_date']['day'], $form_state['values']['end_date']['year']);
-  }
-  else {
-    $args[] = '0';
-    $args[] = '0';
-  }
-
-  drupal_goto('admin/store/orders/search/results/' . implode('/', $args));
-}
 
 /*******************************************************************************
  * Module and Helper Functions
