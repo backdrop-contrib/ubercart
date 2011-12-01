@@ -116,7 +116,7 @@ function uc_order_line_item_add($order_id, $type, $title, $amount, $weight = NUL
   );
   drupal_write_record('uc_order_line_items', $line_item);
 
-  return TRUE;
+  return $line_item;
 }
 
 /**
