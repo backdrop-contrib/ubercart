@@ -1012,8 +1012,7 @@ function uc_cybersource_tax_test($order) {
  *   An order object with address and product information.
  *
  * @return
- *   An array of associative arrays representing tax information with the keys
- *   'id', 'name', and 'amount'.
+ *   An array of tax line item objects with the fields 'id', 'name', and 'amount', keyed by id.
  */
 function uc_cybersource_uc_calculate_tax($order) {
   // Kick out if the tax service is not enabled.
@@ -1161,7 +1160,7 @@ function uc_cybersource_uc_calculate_tax($order) {
     if ($reply->reasonCode == '100') {
       // Add a city tax if applicable.
       if (floatval($reply->taxReply->totalCityTaxAmount) > 0) {
-        $result[] = array(
+        $result['city'] = (object)array(
           'id' => 'city',
           'name' => t('@city city tax', array('@city' => floatval($reply->taxReply->city))),
           'amount' => floatval($reply->taxReply->totalCityTaxAmount),
@@ -1170,7 +1169,7 @@ function uc_cybersource_uc_calculate_tax($order) {
 
       // Add a county tax if applicable.
       if (floatval($reply->taxReply->totalCountyTaxAmount) > 0) {
-        $result[] = array(
+        $result['county'] = (object)array(
           'id' => 'county',
           'name' => t('County tax'),
           'amount' => floatval($reply->taxReply->totalCountryTaxAmount),
@@ -1179,7 +1178,7 @@ function uc_cybersource_uc_calculate_tax($order) {
 
       // Add a district tax if applicable.
       if (floatval($reply->taxReply->totalDistrictTaxAmount) > 0) {
-        $result[] = array(
+        $result['district'] = (object)array(
           'id' => 'district',
           'name' => t('District tax'),
           'amount' => floatval($reply->taxReply->totalDistrictTaxAmount),
@@ -1188,7 +1187,7 @@ function uc_cybersource_uc_calculate_tax($order) {
 
       // Add a state tax if applicable.
       if (floatval($reply->taxReply->totalStateTaxAmount) > 0) {
-        $result[] = array(
+        $result['state'] = (object)array(
           'id' => 'state',
           'name' => t('@state state tax', array('@state' => $reply->taxReply->state)),
           'amount' => floatval($reply->taxReply->totalStateTaxAmount),
@@ -1206,7 +1205,7 @@ function uc_cybersource_uc_calculate_tax($order) {
         watchdog('uc_cybersource', 'Tax calculation produced uneven results. Expected a total of @total, received the following: @dump', array('@total' => uc_currency_format($reply->taxReply->totalTaxAmount), '@dump' => '<pre>' . print_r($result, TRUE) . '</pre>'), WATCHDOG_ERROR);
 
         $result = array(
-          array(
+          'total' => (object)array(
             'id' => 'total',
             'name' => t('Tax'),
             'amount' => floatval($reply->taxReply->totalTaxAmount),
