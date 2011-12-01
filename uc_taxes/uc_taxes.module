@@ -163,7 +163,6 @@ function uc_taxes_node_load($nodes, $types) {
 function uc_taxes_uc_line_item() {
   $items['tax'] = array(
     'title' => t('Tax'),
-    'callback' => 'uc_line_item_tax',
     'weight' => 9,
     'stored' => TRUE,
     'default' => FALSE,
@@ -199,8 +198,12 @@ function uc_taxes_uc_order($op, $order, $arg2) {
   switch ($op) {
     case 'save':
       $changes = array();
-      $callback = _uc_line_item_data('tax', 'callback');
-      $line_items = $callback('load', $order);
+      $line_items = uc_taxes_calculate($order);
+      foreach ($line_items as $id => $tax) {
+        $line_items[$id] = _uc_taxes_to_line_item($tax);
+      }
+
+      // Loop through existing line items and update or delete as necessary.
       if (is_array($order->line_items)) {
         foreach ($order->line_items as $i => $line) {
           if ($line['type'] == 'tax') {
@@ -248,27 +251,6 @@ function uc_taxes_uc_order($op, $order, $arg2) {
  * Menu Callbacks                                                             *
  ******************************************************************************/
 
-/**
- * Handles the tax line item.
- */
-function uc_line_item_tax($op, $order) {
-  switch ($op) {
-    case 'load':
-      $lines = array();
-      $taxes = uc_taxes_calculate($order);
-      foreach ($taxes as $tax) {
-        $lines[] = array(
-          'id' => ($tax->summed ? 'tax' : 'tax_included'),
-          'title' => $tax->name,
-          'amount' => $tax->amount,
-          'weight' => variable_get('uc_li_tax_weight', 9) + $tax->weight / 10,
-          'data' => $tax->data,
-        );
-      }
-      return $lines;
-  }
-}
-
 function uc_line_item_tax_display($op, $order) {
   switch ($op) {
     case 'display':
@@ -280,17 +262,30 @@ function uc_line_item_tax_display($op, $order) {
             continue 2;
           }
         }
-
-        $lines[] = array(
-          'id' => ($tax->summed ? 'tax' : 'tax_included'),
-          'title' => $tax->name,
-          'amount' => $tax->amount,
-          'weight' => variable_get('uc_li_tax_weight', 9) + $tax->weight / 10,
-          'data' => $tax->data,
-        );
+        $lines[] = _uc_taxes_to_line_item($tax);
       }
       return $lines;
   }
+}
+
+/**
+ * Helper function to convert a tax object to the format expected by line item callbacks.
+ *
+ * @param $tax
+ *   A tax object as returned by hook_uc_taxes_calculate().
+ * @return
+ *   A line item array suitable for returning from line item callbacks.
+ */
+function _uc_taxes_to_line_item($tax) {
+  $line = array(
+    'id' => ($tax->summed ? 'tax' : 'tax_included'),
+    'title' => !empty($tax->name) ? $tax->name : $tax->id,
+    'amount' => $tax->amount,
+    'weight' => variable_get('uc_li_tax_weight', 9) + (!empty($tax->weight) ? $tax->weight / 10 : 0),
+    'data' => isset($tax->data) ? $tax->data : array(),
+  );
+  $line['data']['tax_id'] = $tax->id;
+  return $line;
 }
 
 /**
@@ -625,7 +620,6 @@ function uc_taxes_apply_tax($order, $tax) {
       'summed' => 1,
     );
     $line_item->data = array(
-      'tax_id' => $tax->id,
       'tax_rate' => $tax->rate,
       'tax' => $tax,
       'taxable_amount' => $taxable_amount,
