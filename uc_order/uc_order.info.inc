@@ -5,6 +5,9 @@
  * Entity Metadata hooks
  */
 
+/**
+ * Implements hook_entity_property_info().
+ */
 function uc_order_entity_property_info() {
   $address_info = uc_address_property_info();
 
