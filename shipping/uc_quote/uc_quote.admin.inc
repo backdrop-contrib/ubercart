@@ -229,7 +229,12 @@ function theme_uc_quote_method_settings($variables) {
     );
   }
 
-  $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-quote-methods')));
+  $output = theme('table', array(
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => array('id' => 'uc-quote-methods'),
+    'empty' => t('No shipping quotes have been configured yet.'),
+  ));
   $output .= drupal_render_children($form);
   return $output;
 }
