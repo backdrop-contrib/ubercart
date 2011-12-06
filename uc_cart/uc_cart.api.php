@@ -80,6 +80,9 @@ function hook_uc_add_to_cart_data($form_values) {
  * especially important for product kits, because it may be displayed as a
  * single unit in the cart even though it is represented as several items.
  *
+ * This hook is only called for the module that owns the cart item in
+ * question, as set in $item->module.
+ *
  * @param $item
  *   The item in the cart to display.
  *
@@ -93,8 +96,8 @@ function hook_uc_add_to_cart_data($form_values) {
  *     - #value: The module implementing this hook and the node represented by
  *       $item.
  *   - "remove"
- *     - #type: checkbox
- *     - #value: If selected, removes the $item from the cart.
+ *     - #type: submit
+ *     - #value: t('Remove'); when clicked, will remove $item from the cart.
  *   - "description"
  *     - #type: markup
  *     - #value: Themed markup (usually an unordered list) displaying extra information.
