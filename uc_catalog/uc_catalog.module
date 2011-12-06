@@ -63,6 +63,12 @@ function uc_catalog_menu() {
       'type' => MENU_LOCAL_ACTION,
     );
   }
+  $items['admin/store/settings/catalog/repair'] = array(
+    'title' => 'Repair catalog field',
+    'page callback' => 'uc_catalog_repair_field',
+    'access arguments' => array('administer catalog'),
+    'file' => 'uc_catalog.admin.inc',
+  );
   $items['admin/store/products/orphans'] = array(
     'title' => 'Find orphaned products',
     'description' => 'Find products that have not been categorized.',
@@ -95,17 +101,6 @@ function uc_catalog_permission() {
 function uc_catalog_init() {
   global $conf;
   $conf['i18n_variables'][] = 'uc_catalog_name';
-}
-
-/**
- * Implements hook_enable().
- */
-function uc_catalog_enable() {
-  foreach (uc_product_types() as $type) {
-    uc_catalog_add_node_type($type);
-  }
-
-  uc_catalog_add_image_field();
 }
 
 /**
@@ -408,6 +403,15 @@ function uc_catalog_views_api() {
  * listed in the catalog.
  */
 function uc_catalog_uc_store_status() {
+  $field = field_info_field('taxonomy_catalog');
+  if (!$field) {
+    return array(array(
+      'status' => 'error',
+      'title' => t('Catalog field'),
+      'desc' => t('The catalog taxonomy reference field is missing. <a href="!url">Click here to create it</a>.', array('!url' => url('admin/store/settings/catalog/repair'))),
+    ));
+  }
+
   $statuses = array();
   $cat_id = variable_get('uc_catalog_vid', 0);
   $catalog = taxonomy_vocabulary_load($cat_id);
@@ -419,7 +423,6 @@ function uc_catalog_uc_store_status() {
       );
 
       $product_types = uc_product_types();
-      $field = field_info_field('taxonomy_catalog');
       $types = array_intersect($product_types, $field['bundles']['node']);
       $excluded = 0;
       $result = db_query("SELECT COUNT(DISTINCT n.nid) FROM {node} AS n LEFT JOIN {taxonomy_index} AS ti ON n.nid = ti.nid LEFT JOIN {taxonomy_term_data} AS td ON ti.tid = td.tid WHERE n.type IN (:types) AND ti.tid IS NULL AND td.vid = :vid", array(':types' => $types, ':vid' => $catalog->vid));
@@ -458,22 +461,8 @@ function uc_catalog_uc_store_status() {
  * Adds product node types to the catalog vocabulary as they are created.
  */
 function uc_catalog_uc_product_class($type, $op) {
-  $vid = variable_get('uc_catalog_vid', 0);
-  switch ($op) {
-    case 'insert':
-      if ($vid) {
-        $instance = array(
-          'field_name' => 'taxonomy_catalog',
-          'entity_type' => 'node',
-          'bundle' => $type,
-          'settings' => array(
-            'vid' => $vid,
-          ),
-        );
-
-        field_create_instance($instance);
-      }
-    break;
+  if ($op == 'insert') {
+    uc_catalog_add_node_type($type);
   }
 }
 
@@ -671,29 +660,54 @@ function uc_catalog_path($term) {
 }
 
 /**
- * Adds a node type to the catalog taxonomy term.
+ * Adds a catalog taxonomy reference field to the specified node type.
  */
 function uc_catalog_add_node_type($type) {
-  if (!($vid = variable_get('uc_catalog_vid', 0))) {
-    return;
+  $vid = variable_get('uc_catalog_vid', 0);
+  if (!$vid) {
+    $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE name = :name", array(':name' => t('Catalog')))->fetchField();
+    if (!$vid) {
+      $vocabulary = new stdClass();
+      $vocabulary->name = variable_get('uc_catalog_name', t('Catalog'));
+      $vocabulary->description = '';
+      $vocabulary->hierarchy = 1;
+      $vocabulary->module = 'uc_catalog';
+      $vocabulary->machine_name = 'catalog';
+
+      taxonomy_vocabulary_save($vocabulary);
+      $vid = $vocabulary->vid;
+    }
+
+    variable_set('uc_catalog_vid', $vid);
+  }
+
+  $vocabulary = taxonomy_vocabulary_load($vid);
+  $field = field_info_field('taxonomy_catalog');
+  if (!$field) {
+    $field = array(
+      'field_name' => 'taxonomy_catalog',
+      'type' => 'taxonomy_term_reference',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'settings' => array(
+        'allowed_values' => array(
+          array(
+            'vocabulary' => $vocabulary->machine_name,
+            'parent' => 0,
+          ),
+        ),
+      ),
+    );
+
+    field_create_field($field);
   }
 
   $instance = field_info_instance('node', 'taxonomy_catalog', $type);
-
   if (!$instance) {
     $instance = array(
       'field_name' => 'taxonomy_catalog',
       'entity_type' => 'node',
       'bundle' => $type,
       'label' => variable_get('uc_catalog_name', t('Catalog')),
-      'settings' => array(
-        'allowed_values' => array(
-          array(
-            'vid' => $vid,
-            'parent' => '0',
-          ),
-        ),
-      ),
     );
 
     field_create_instance($instance);

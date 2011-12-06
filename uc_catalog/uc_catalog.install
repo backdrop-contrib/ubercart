@@ -6,51 +6,13 @@
  */
 
 /**
- * Implements hook_install().
- *
- * Creates a Catalog vocabulary or uses one by that name that may already exist.
+ * Implements hook_enable().
  */
-function uc_catalog_install() {
-  $t = get_t();
-  // Find possible Product Catalog vocabulary.
-  $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE name = :name", array(':name' => $t('Catalog')))->fetchField();
-
-  // If none, create one.
-  if (!$vid) {
-    $vocabulary = new stdClass();
-    $vocabulary->name = $t('Catalog');
-    $vocabulary->description = '';
-    $vocabulary->hierarchy = 1;
-    $vocabulary->module = 'uc_catalog';
-    $vocabulary->machine_name = 'catalog';
-
-    taxonomy_vocabulary_save($vocabulary);
-    $vid = $vocabulary->vid;
-
-    $field = field_info_field('taxonomy_' . $vocabulary->machine_name);
-    if (empty($field)) {
-      $field = array(
-        'field_name' => 'taxonomy_' . $vocabulary->machine_name,
-        'type' => 'taxonomy_term_reference',
-        'cardinality' => FIELD_CARDINALITY_UNLIMITED,
-        'settings' => array(
-          'allowed_values' => array(
-            array(
-              'vocabulary' => $vocabulary->machine_name,
-              'parent' => 0,
-            ),
-          ),
-        ),
-      );
-
-      field_create_field($field);
-    }
+function uc_catalog_enable() {
+  foreach (uc_product_types() as $type) {
+    uc_catalog_add_node_type($type);
   }
-
   uc_catalog_add_image_field();
-
-  variable_set('uc_catalog_vid', $vid);
-  variable_set('uc_catalog_name', $t('Catalog'));
 }
 
 /**
