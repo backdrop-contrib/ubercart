@@ -1743,10 +1743,11 @@ function template_preprocess_uc_order(&$variables) {
   $variables['shippable'] = uc_order_is_shippable($order);
 
   $variables['products'] = $order->products;
+  $display = entity_view('uc_order_product', $order->products);
   foreach ($variables['products'] as &$product) {
-    $product->total_price = uc_currency_format($product->price * $product->qty);
+    $product->total_price = render($display['uc_order_product'][$product->order_product_id]['total']);
     if ($product->qty > 1) {
-      $product->individual_price = t('(!price each)', array('!price' => uc_currency_format($product->price)));
+      $product->individual_price = t('(!price each)', array('!price' => uc_currency_format($display['uc_order_product'][$product->order_product_id]['price']['#price'])));
     }
     else {
       $product->individual_price = '';
