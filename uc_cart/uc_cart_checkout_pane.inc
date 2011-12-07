@@ -552,12 +552,14 @@ function theme_uc_cart_review_table($variables) {
  */
 function theme_uc_checkout_pane_cart_review($variables) {
   $rows = array();
+  $items = entity_view('uc_order_product', $variables['items']);
 
-  foreach ($variables['items'] as $item) {
+  foreach (element_children($items['uc_order_product']) as $key) {
+    $item = $items['uc_order_product'][$key];
     $rows[] = array(
-      array('data' => array('#theme' => 'uc_qty', '#price' => $item->qty), 'class' => array('qty')),
-      array('data' => check_plain($item->title) . uc_product_get_description($item), 'class' => array('products')),
-      array('data' => array('#theme' => 'uc_price', '#price' => $item->price * $item->qty), 'class' => array('price')),
+      array('data' => $item['qty'], 'class' => array('qty')),
+      array('data' => $item['product'], 'class' => array('products')),
+      array('data' => $item['total'], 'class' => array('price')),
     );
   }
 

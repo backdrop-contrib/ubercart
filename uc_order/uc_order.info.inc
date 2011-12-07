@@ -12,64 +12,6 @@ function uc_order_entity_property_info() {
   $address_info = uc_address_property_info();
 
   return array(
-    'uc_order_product' => array(
-      'properties' => array(
-        'order_product_id' => array(
-          'type' => 'integer',
-          'label' => t('Order product ID'),
-          'description' => t('The unique ID for the purchased product.'),
-        ),
-        'order_id' => array(
-          'type' => 'integer',
-          'label' => t('Order ID'),
-          'description' => t('The order ID that owns the product.'),
-          'required' => TRUE,
-        ),
-        'nid' => array(
-          'type' => 'integer',
-          'label' => t('Node ID'),
-          'description' => t('The unique ID of the node representing the product.'),
-          'clear' => array('node'),
-        ),
-        'node' => array(
-          'type' => 'node',
-          'label' => t('Node'),
-          'description' => t('The node representing the product.'),
-          'getter callback' => 'uc_order_product_node_property_get',
-          'setter callback' => 'uc_order_product_node_property_set',
-        ),
-        'title' => array(
-          'type' => 'text',
-          'label' => t('Title'),
-          'description' => t('The product title.'),
-        ),
-        'model' => array(
-          'type' => 'text',
-          'label' => t('Model/SKU'),
-          'description' => t('The model number of the product.'),
-        ),
-        'qty' => array(
-          'type' => 'integer',
-          'label' => t('Quantity'),
-          'description' => t('The number of the same product ordered.'),
-        ),
-        'cost' => array(
-          'type' => 'decimal',
-          'label' => t('Cost'),
-          'description' => t('The cost to the store for the product.'),
-        ),
-        'price' => array(
-          'type' => 'decimal',
-          'label' => t('Price'),
-          'description' => t('The price paid for the ordered product.'),
-        ),
-        'weight' => array(
-          'type' => 'decimal',
-          'label' => t('Weight'),
-          'description' => t('The physical weight of the product.'),
-        ),
-      ),
-    ),
     'uc_order' => array(
       'properties' => array(
         'order_id' => array(
@@ -170,4 +112,33 @@ function uc_order_entity_property_info() {
       ),
     ),
   );
+}
+
+/**
+ * Metadata controller class for uc_order_product entities.
+ */
+class UcOrderProductMetadataController extends EntityDefaultMetadataController {
+  public function entityPropertyInfo() {
+    $props = parent::entityPropertyInfo();
+    // Copy the descriptions from the schema. Drupal discards this information, so we have to
+    // call uc_order_schema() directly.
+    module_load_include('install', 'uc_order', 'uc_order');
+    $schema = uc_order_schema();
+    foreach ($schema['uc_order_products']['fields'] as $name => $info) {
+      if (is_array($props['uc_order_product']['properties'][$name]) && !empty($info['description'])) {
+        $props['uc_order_product']['properties'][$name]['description'] = $info['description'];
+      }
+    }
+
+    // Add the 'node' property.
+    $props['uc_order_product']['properties']['node'] = array(
+      'type' => 'node',
+      'label' => t('Node'),
+      'description' => t('The node representing the product.'),
+      'getter callback' => 'uc_order_product_node_property_get',
+      'setter callback' => 'uc_order_product_node_property_set',
+    );
+
+    return $props;
+  }
 }

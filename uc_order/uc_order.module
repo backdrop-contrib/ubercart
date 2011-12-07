@@ -539,6 +539,8 @@ function uc_order_entity_info() {
     'uc_order_product' => array(
       'label' => t('Order product'),
       'base table' => 'uc_order_products',
+      'controller class' => 'UcOrderProductController',
+      'metadata controller class' => 'UcOrderProductMetadataController',
       'entity keys' => array(
         'id' => 'order_product_id',
       ),
@@ -1164,25 +1166,70 @@ function uc_order_view_invoice($order, $print = FALSE) {
   return $build;
 }
 
+
+
+class UcOrderProductController extends EntityAPIController {
+  public function buildContent($product, $view_mode = 'full', $langcode = NULL, $content = array()) {
+    $content['qty'] = array(
+      '#theme' => 'uc_qty',
+      '#qty' => $product->qty,
+    );
+    $node = node_load($product->nid);
+    $title = node_access('view', $node) ? l($product->title, 'node/'. $node->nid) : check_plain($product->title);
+    $content['product'] = array(
+      '#markup' => $title . uc_product_get_description($product),
+    );
+    $content['model'] = array(
+      '#markup' => check_plain($product->model),
+      '#cell_attributes' => array('align' => 'center'),
+    );
+
+    if (user_access('administer products')) {
+      $content['cost'] = array(
+        '#theme' => 'uc_price',
+        '#price' => $product->cost,
+        '#cell_attributes' => array('align' => 'right'),
+      );
+    }
+    $content['price'] = array(
+      '#theme' => 'uc_price',
+      '#price' => $product->price,
+      '#suffixes' => array(),
+      '#cell_attributes' => array('align' => 'right'),
+    );
+    $content['total'] = array(
+      '#theme' => 'uc_price',
+      '#price' => $product->price * $product->qty,
+      '#suffixes' => array(),
+      '#cell_attributes' => array('align' => 'right'),
+    );
+    $content['#attributes'] = array('valign' => 'top');
+    return parent::buildContent($product, $view_mode, $langcode, $content);
+  }
+}
+
 /**
  * Controller class for uc_order entity.
  */
 class UcOrderController extends DrupalDefaultEntityController {
 
-  /**
-   *
-   */
   function attachLoad(&$orders, $revision_id = FALSE) {
     foreach ($orders as &$order) {
       $order->data = unserialize($order->data);
-
-      // !FIXME Refactor to use uc_order_product_load().
-      $result = db_query("SELECT * FROM {uc_order_products} WHERE order_id = :id ORDER BY order_product_id", array(':id' => $order->order_id));
-      $order->products = array();
-      foreach ($result as $product) {
-        $product->data = unserialize($product->data);
-        $product->order_uid = $order->uid;
-        $order->products[] = $product;
+      $efq = new EntityFieldQuery();
+      $result = $efq->entityCondition('entity_type', 'uc_order_product')
+        ->propertyCondition('order_id', $order->order_id)
+        ->propertyOrderBy('order_product_id', 'ASC')
+        ->execute();
+      if (!empty($result['uc_order_product'])) {
+        $order->products = entity_load('uc_order_product', array_keys($result['uc_order_product']), NULL, TRUE);
+        foreach ($order->products as $product) {
+          $product->order = $order;
+          $product->order_uid = $order->uid;
+        }
+      }
+      else {
+        $order->products = array();
       }
 
       uc_order_module_invoke('load', $order, NULL);

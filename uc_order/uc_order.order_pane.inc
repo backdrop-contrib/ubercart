@@ -367,34 +367,34 @@ function uc_order_add_product_form($form, &$form_state, $order, $node) {
 function uc_order_edit_products_form($form, &$form_state, $products) {
   if (($product_count = count($products)) > 0) {
     $form['products'] = tapir_get_table('uc_op_products_edit_table');
-    for ($i = 0; $i < $product_count; $i++) {
+    for ($i=0, $product = reset($products); $i < $product_count; $i++, $product = next($products)) {
       $form['products'][$i]['remove'] = array(
         '#type' => 'image_button',
         '#title' => t('Remove this product.'),
         '#src' => drupal_get_path('module', 'uc_store') . '/images/error.gif',
         '#button_type' => 'remove',
         '#submit' => array('uc_order_edit_products_remove', 'uc_order_edit_form_submit'),
-        '#return_value' => $products[$i]->order_product_id,
+        '#return_value' => $product->order_product_id,
       );
       $form['products'][$i]['order_product_id'] = array(
         '#type' => 'hidden',
-        '#value' => $products[$i]->order_product_id,
+        '#value' => $product->order_product_id,
       );
       $form['products'][$i]['nid'] = array(
         '#type' => 'hidden',
-        '#value' => $products[$i]->nid,
+        '#value' => $product->nid,
       );
       $form['products'][$i]['qty'] = array(
         '#type' => 'uc_quantity',
         '#title' => theme('uc_qty_label'),
         '#title_display' => 'invisible',
-        '#default_value' => $products[$i]->qty,
+        '#default_value' => $product->qty,
       );
       $form['products'][$i]['title'] = array(
         '#type' => 'textfield',
         '#title' => t('Title'),
         '#title_display' => 'invisible',
-        '#default_value' => $products[$i]->title,
+        '#default_value' => $product->title,
         '#size' => 30,
         '#maxlength' => 255,
       );
@@ -402,14 +402,14 @@ function uc_order_edit_products_form($form, &$form_state, $products) {
         '#type' => 'textfield',
         '#title' => t('SKU'),
         '#title_display' => 'invisible',
-        '#default_value' => $products[$i]->model,
+        '#default_value' => $product->model,
         '#size' => 6,
       );
       $form['products'][$i]['weight'] = array(
         '#type' => 'textfield',
         '#title' => t('Weight'),
         '#title_display' => 'invisible',
-        '#default_value' => $products[$i]->weight,
+        '#default_value' => $product->weight,
         '#size' => 3,
       );
       $units = array(
@@ -422,26 +422,26 @@ function uc_order_edit_products_form($form, &$form_state, $products) {
         '#type' => 'select',
         '#title' => t('Units'),
         '#title_display' => 'invisible',
-        '#default_value' => $products[$i]->weight_units,
+        '#default_value' => $product->weight_units,
         '#options' => $units,
       );
       $form['products'][$i]['cost'] = array(
         '#type' => 'uc_price',
         '#title' => t('Cost'),
         '#title_display' => 'invisible',
-        '#default_value' => $products[$i]->cost,
+        '#default_value' => $product->cost,
         '#size' => 5,
       );
       $form['products'][$i]['price'] = array(
         '#type' => 'uc_price',
         '#title' => t('Price'),
         '#title_display' => 'invisible',
-        '#default_value' => $products[$i]->price,
+        '#default_value' => $product->price,
         '#size' => 5,
       );
       $form['products'][$i]['data'] = array(
         '#type' => 'hidden',
-        '#value' => serialize($products[$i]->data),
+        '#value' => serialize($product->data),
       );
     }
   }
@@ -1147,8 +1147,9 @@ function uc_op_products_customer_table($order) {
     'weight' => 5,
   );
 
-  if (is_array($order->products)) {
-    $table['#rows'] = entity_view('uc_order_product', $order->products);
+  if (!empty($order->products)) {
+    $build = entity_view('uc_order_product', $order->products);
+    $table['#rows'] = $build['uc_order_product'];
   }
   else {
     $table['#rows'][]['product'] = array(
