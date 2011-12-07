@@ -134,7 +134,7 @@ function uc_taxes_entity_view_alter(&$build, $entity_type) {
       break;
 
     case 'uc_order_product':
-      list($amount, $suffixes) = uc_taxes_get_included_tax($build['#entity']);
+      list($amount, $suffixes) = uc_taxes_get_included_tax($build['#entity'], $build['#entity']->order);
       $build['price']['#price'] += $amount;
       $build['total']['#price'] += $amount * $build['#entity']->qty;
       if (!empty($suffixes)) {
@@ -395,8 +395,12 @@ function uc_taxes_rate_save($rate) {
 function uc_taxes_filter_rates($order) {
   $taxes = array();
 
+  // If no order, then just return all rates.
+  if (empty($order)) {
+    $taxes = uc_taxes_rate_load();
+  }
   // For orders no longer in checkout, only the saved tax rates can apply.
-  if (isset($order->order_status) && uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
+  elseif (isset($order->order_status) && uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
     if (isset($order->line_items)) {
       foreach ($order->line_items as $item) {
         if ($item['type'] == 'tax') {
@@ -649,10 +653,10 @@ function uc_taxes_apply_tax($order, $tax) {
  * @param $product
  *   The product whose included taxes are to be calculated.
  */
-function uc_taxes_get_included_tax($product) {
+function uc_taxes_get_included_tax($product, $order = NULL) {
   $amount = 0;
   $suffixes = array();
-  foreach (uc_taxes_rate_load() as $tax) {
+  foreach (uc_taxes_filter_rates($order) as $tax) {
     if ($tax->display_include) {
       $taxable = uc_taxes_apply_item_tax($product, $tax);
       if (!empty($taxable)) {
