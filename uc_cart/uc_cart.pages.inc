@@ -70,7 +70,7 @@ function uc_cart_checkout() {
     }
 
     if ($subtotal < $min) {
-      drupal_set_message(variable_get('uc_minimum_subtotal_text', t('The minimum order subtotal for checkout is @min.', array('@min' => uc_currency_format($min)))), 'error');
+      drupal_set_message(t('The minimum order subtotal for checkout is @min.', array('@min' => uc_currency_format($min))), 'error');
       drupal_goto('cart');
     }
   }
