@@ -80,6 +80,7 @@ function uc_catalog_views_default_views() {
     'image_style' => 'uc_product_list',
     'image_link' => 'content',
   );
+  $handler->display->display_options['fields']['entity_id']['delta_limit'] = '1';
   /* Field: Product: SKU */
   $handler->display->display_options['fields']['model']['id'] = 'model';
   $handler->display->display_options['fields']['model']['table'] = 'uc_products';
@@ -175,6 +176,7 @@ function uc_catalog_views_default_views() {
     'image_style' => 'uc_product_list',
     'image_link' => 'content',
   );
+  $handler->display->display_options['fields']['entity_id']['delta_limit'] = '1';
   /* Field: Product: Display price */
   $handler->display->display_options['fields']['display_price']['id'] = 'display_price';
   $handler->display->display_options['fields']['display_price']['table'] = 'uc_products';
@@ -255,6 +257,7 @@ function uc_catalog_views_default_views() {
     'image_style' => 'uc_category',
     'image_link' => '',
   );
+  $handler->display->display_options['fields']['entity_id']['delta_limit'] = '1';
   /* Field: Taxonomy: Term */
   $handler->display->display_options['fields']['name']['id'] = 'name';
   $handler->display->display_options['fields']['name']['table'] = 'taxonomy_term_data';
