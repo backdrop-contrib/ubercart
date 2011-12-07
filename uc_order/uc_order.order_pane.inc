@@ -1026,6 +1026,7 @@ function uc_order_view_update_form_submit($form, &$form_state) {
 
 /**
  * Builds the order view products table.
+ * !FIXME Refactor to use uc_order_product_view.
  */
 function uc_op_products_view_table($order) {
   $table = array(
@@ -1079,44 +1080,7 @@ function uc_op_products_view_table($order) {
   );
 
   if (is_array($order->products)) {
-    foreach ($order->products as $product) {
-      $data = array();
-      $data['qty'] = array(
-        '#theme' => 'uc_qty',
-        '#qty' => $product->qty,
-        '#cell_attributes' => array('class' => array('qty')),
-      );
-      $node = node_load($product->nid);
-      $title = node_access('view', $node) ? l($product->title, 'node/' . $node->nid) : check_plain($product->title);
-      $data['product'] = array(
-        '#markup' => $title . uc_product_get_description($product),
-        '#cell_attributes' => array('class' => array('product')),
-      );
-      $data['model'] = array(
-        '#markup' => check_plain($product->model),
-        '#cell_attributes' => array('class' => array('sku')),
-      );
-
-      if (user_access('administer products')) {
-        $data['cost'] = array(
-          '#theme' => 'uc_price',
-          '#price' => $product->cost,
-          '#cell_attributes' => array('class' => array('cost')),
-        );
-      }
-
-      $data['price'] = array(
-        '#theme' => 'uc_price',
-        '#price' => $product->price,
-        '#cell_attributes' => array('class' => array('price')),
-      );
-      $data['total'] = array(
-        '#theme' => 'uc_price',
-        '#price' => $product->price * $product->qty,
-        '#cell_attributes' => array('class' => array('total')),
-      );
-      $table['#rows'][] = $data;
-    }
+    $table['#rows'] = entity_view('uc_order_product', $order->products);
   }
   else {
     $table['#rows'][]['product'] = array(
@@ -1130,6 +1094,7 @@ function uc_op_products_view_table($order) {
 
 /**
  * Builds the order customer's view products table.
+ * !FIXME Refactor to use uc_order_product_view.
  */
 function uc_op_products_customer_table($order) {
   $table = array(
@@ -1183,44 +1148,7 @@ function uc_op_products_customer_table($order) {
   );
 
   if (is_array($order->products)) {
-    foreach ($order->products as $product) {
-      $data = array();
-      $data['qty'] = array(
-        '#theme' => 'uc_qty',
-        '#qty' => $product->qty,
-        '#cell_attributes' => array('class' => array('qty')),
-      );
-      $node = node_load($product->nid);
-      $title = node_access('view', $node) ? l($product->title, 'node/' . $node->nid) : check_plain($product->title);
-      $data['product'] = array(
-        '#markup' => $title . uc_product_get_description($product),
-        '#cell_attributes' => array('class' => array('product')),
-      );
-      $data['model'] = array(
-        '#markup' => check_plain($product->model),
-        '#cell_attributes' => array('class' => array('sku')),
-      );
-
-      if (user_access('administer products')) {
-        $data['cost'] = array(
-          '#theme' => 'uc_price',
-          '#price' => $product->cost,
-          '#cell_attributes' => array('class' => array('cost')),
-        );
-      }
-
-      $data['price'] = array(
-        '#theme' => 'uc_price',
-        '#price' => $product->price,
-        '#cell_attributes' => array('class' => array('price')),
-      );
-      $data['total'] = array(
-        '#theme' => 'uc_price',
-        '#price' => $product->price * $product->qty,
-        '#cell_attributes' => array('class' => array('total')),
-      );
-      $table['#rows'][] = $data;
-    }
+    $table['#rows'] = entity_view('uc_order_product', $order->products);
   }
   else {
     $table['#rows'][]['product'] = array(

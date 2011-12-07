@@ -311,10 +311,11 @@ function uc_cart_block_view($delta = '') {
       $total = 0;
 
       if ($product_count) {
-        foreach (uc_cart_get_contents() as $item) {
-          $display_item = module_invoke($item->module, 'uc_cart_display', $item);
+        $display_items = entity_view('uc_cart_item', uc_cart_get_contents());
+        foreach (element_children($display_items['uc_cart_item']) as $key) {
+          $display_item = $display_items['uc_cart_item'][$key];
 
-          if (!empty($display_item)) {
+          if (count(element_children($display_item))) {
             $items[] = array(
               'nid' => $display_item['nid']['#value'],
               'qty' => theme('uc_qty', array('qty' => $display_item['qty']['#default_value'])),
@@ -323,9 +324,9 @@ function uc_cart_block_view($delta = '') {
               'desc' => isset($display_item['description']['#markup']) ? $display_item['description']['#markup'] : FALSE,
             );
             $total += $display_item['#total'];
+            $item_count += $display_item['qty']['#default_value'];
           }
 
-          $item_count += $item->qty;
         }
       }
 
@@ -788,6 +789,7 @@ function theme_uc_empty_cart() {
   return '<p class="uc-cart-empty">' . t('There are no products in your shopping cart.') . '</p>';
 }
 
+
 /**
  * Displays a page allowing the customer to view the contents of his or her cart.
  *
@@ -811,19 +813,15 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
   );
 
   $i = 0;
-  foreach ($items as $item) {
-    $display_item = module_invoke($item->module, 'uc_cart_display', $item);
-    if (!empty($display_item)) {
+  $display_items = entity_view('uc_cart_item', $items);
+  foreach (element_children($display_items['uc_cart_item']) as $key) {
+    $display_item = $display_items['uc_cart_item'][$key];
+    if (count(element_children($display_item))) {
       $form['items'][$i] = $display_item;
       $form['items'][$i]['image'] = uc_product_get_picture($display_item['nid']['#value'], 'uc_cart');
 
       $description = $display_item['title']['#markup'] . $display_item['description']['#markup'];
       $form['items'][$i]['desc']['#markup'] = $description;
-
-      $form['items'][$i]['cart_item_id'] = array(
-        '#type' => 'hidden',
-        '#value' => $item->cart_item_id,
-      );
 
       if (isset($form['items'][$i]['remove'])) {
         // Backward compatibility with old checkbox method.
@@ -848,12 +846,11 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
         '#theme' => 'uc_price',
         '#price' => $display_item['#total'],
       );
-      if (!empty($display_item['#suffix'])) {
-        $form['items'][$i]['total']['#suffix'] = $display_item['#suffix'];
-        unset($form['items'][$i]['#suffix']);
+      if (!empty($display_item['#suffixes'])) {
+        $form['items'][$i]['total']['#suffixes'] = $display_item['#suffixes'];
       }
-      $i++;
     }
+    $i++;
   }
 
   $form['items'] = tapir_get_table('uc_cart_view_table', $form['items']);
@@ -1290,13 +1287,29 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
   }
 
   if (!isset($items[$cid])) {
-    $items[$cid] = array();
-    $result = db_query("SELECT * FROM {uc_cart_products} WHERE cart_id = :id ORDER BY cart_item_id ASC", array(':id' => $cid));
-
-    foreach ($result as $item) {
-      if ($item = uc_cart_get_item($item)) {
-        $items[$cid][] = $item;
+    // Find all cart items associated with this cart.
+    $efq = new EntityFieldQuery();
+    $result = $efq->entityCondition('entity_type', 'uc_cart_item')
+      ->propertyCondition('cart_id', $cid)
+      ->propertyOrderBy('cart_item_id', 'ASC')
+      ->execute();
+    if (!empty($result['uc_cart_item'])) {
+      $items[$cid] = entity_load('uc_cart_item', array_keys($result['uc_cart_item']), NULL, TRUE);
+      // Create a bare order and attach it to each item as context.
+      $order = new UcOrder();
+      $order->uid = $cid;
+      if ($account = user_load($cid)) {
+        $order->primary_email = $account->mail;
       }
+      $order->order_status = uc_order_state_default('in_checkout');
+      $order->created = REQUEST_TIME;
+      $order->modified = REQUEST_TIME;
+      foreach ($items[$cid] as $item) {
+        $item->order = $order;
+      }
+    }
+    else {
+      $items[$cid] = array();
     }
 
     // Allow other modules a chance to alter the fully loaded cart object.
@@ -1348,24 +1361,32 @@ function uc_cart_get_total_qty($cid = NULL) {
 }
 
 /**
- * Allows us to get one single line item in a cart.
- *
- * @param $item
- *   Either an item row from the database, or the cart item ID to fetch.
- *
- * @return
- *   Fully loaded cart item or NULL if item not found.
+ * Entity controller for cart items.
  */
-function uc_cart_get_item($item) {
-  if (!is_object($item)) {
-    $item = db_query("SELECT * FROM {uc_cart_products} WHERE cart_item_id = :id", array(':id' => $item))->fetchObject();
+class UcCartItemController extends EntityAPIController {
+
+  public function buildContent($item, $view_mode = 'full', $langcode = NULL, $content = array()) {
+    $content = array();
+    $content += module_invoke($item->module, 'uc_cart_display', $item);
+    if (!empty($content)) {
+      $content['cart_item_id'] = array(
+				'#type' => 'hidden',
+				'#value' => $item->cart_item_id,
+      );
+    }
+    return parent::buildContent($item, $view_mode, $langcode, $content);
   }
 
-  if ($item && $product = uc_product_load_variant($item->nid, unserialize($item->data))) {
-    $product->cart_item_id = $item->cart_item_id;
-    $product->qty = $item->qty;
-    $product->module = $product->data['module'];
-    return $product;
+  public function attachLoad(&$items, $revision_id = FALSE) {
+    foreach ($items as &$item) {
+      $product = uc_product_load_variant($item->nid, $item->data);
+      // Merge in fields from the product.
+      foreach ($product as $key => $value) {
+        $item->$key = $value;
+      }
+      $item->module = $item->data['module'];
+    }
+    parent::attachLoad($items, $revision_id);
   }
 }
 
@@ -1671,4 +1692,32 @@ function uc_cart_filter_checkout_panes($panes, $remove) {
   }
 
   return $panes;
+}
+
+
+
+/**
+ * Implements hook_entity_info().
+ */
+function uc_cart_entity_info() {
+  return array(
+    'uc_cart_item' => array(
+      'label' => t('Cart item'),
+      'base table' => 'uc_cart_products',
+      'controller class' => 'UcCartItemController',
+      'entity keys' => array(
+        'id' => 'cart_item_id',
+      ),
+      'bundles' => array(
+        'uc_cart_item' => array(
+          'label' => t('Cart item'),
+        ),
+      ),
+      // Entity API callbacks
+      // !TODO Implement these callbacks.
+      //'access callback' => 'uc_cart_item_access',
+      //'save callback'   => 'uc_cart_item_save',
+      //'delete callback' => 'uc_order_product_delete',
+    ),
+  );
 }

@@ -1229,6 +1229,9 @@ function _uc_cart_product_get_options($item) {
  * @see theme_uc_attribute_add_to_cart()
  */
 function _uc_attribute_alter_form($product) {
+  // Prevent infinite recursion because we call node_view() below to get the display prices.
+  $skip_flag = array('display_only' => TRUE);
+
   // If the product doesn't have attributes, return the form as it is.
   if (!isset($product->attributes)) {
     $product->attributes = uc_product_get_attributes($product->nid);
@@ -1252,16 +1255,16 @@ function _uc_attribute_alter_form($product) {
     foreach ($attribute->options as $option) {
       $display_price = '';
       if (in_array($attribute->aid, $priced_attributes)) {
-        $variant = uc_product_load_variant($product, array('attributes' => array($attribute->aid => $option->oid)));
+        $variant = node_view(uc_product_load_variant($product->nid, $skip_flag + array('attributes' => array($attribute->aid => $option->oid))));
         switch (variable_get('uc_attribute_option_price_format', 'adjustment')) {
           case 'total':
             if (count($priced_attributes) == 1 && $attribute->display != 3) {
-              $display_price = uc_currency_format($variant->price + $variant->display_price_adjustment);
+              $display_price = uc_currency_format($variant['display_price']['#value']);
               break;
             }
           case 'adjustment':
-            $base = uc_product_load_variant($product);
-            $adjustment = ($variant->price + $variant->display_price_adjustment) - ($base->price + $base->display_price_adjustment);
+            $base = node_view(uc_product_load_variant($product->nid, $skip_flag));
+            $adjustment = $variant['display_price']['#value'] - $base['display_price']['#value'];
             if ($adjustment != 0) {
               $display_price = $adjustment > 0 ? '+' : '-';
               $display_price .= uc_currency_format(abs($adjustment));

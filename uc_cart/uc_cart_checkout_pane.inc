@@ -489,9 +489,10 @@ function theme_uc_cart_review_table($variables) {
   );
 
   // Set up table rows.
-  foreach ($items as $item) {
-    $display_item = module_invoke($item->module, 'uc_cart_display', $item);
-    if (!empty($display_item)) {
+  $display_items = entity_view('uc_cart_item', $items);
+  foreach (element_children($display_items['uc_cart_item']) as $key) {
+    $display_item = $display_items['uc_cart_item'][$key];
+    if (count(element_children($display_item))) {
       $total = $display_item['#total'];
       $subtotal += $total;
       $description = $display_item['title']['#markup'];
@@ -499,7 +500,7 @@ function theme_uc_cart_review_table($variables) {
         $description .= $display_item['description']['#markup'];
       }
       $qty = $display_item['qty']['#default_value'];
-      $suffix = !empty($display_item['#suffix']) ? $display_item['#suffix'] : '';
+      $suffix = !empty($display_item['#suffixes']) ? implode(' ', $display_item['#suffixes']) : '';
 
       $rows[] = array(
         array('data' => array('#theme' => 'uc_qty', '#qty' => $qty), 'class' => array('qty')),

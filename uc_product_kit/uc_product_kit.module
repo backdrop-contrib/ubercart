@@ -381,18 +381,6 @@ function uc_product_kit_load($nodes) {
 
   // Add product data to kits.
   uc_product_load($nodes);
-
-  // Recalculate display price.
-  foreach ($nodes as &$node) {
-    if ($node->mutable != UC_PRODUCT_KIT_MUTABLE) {
-      $node->display_price_adjustment = 0;
-      $node->display_price_suffixes = array();
-      foreach ($node->products as $pid => &$product) {
-        $node->display_price_adjustment += $product->display_price_adjustment * $product->qty;
-        $node->display_price_suffixes += $product->display_price_suffixes;
-      }
-    }
-  }
 }
 
 /**
@@ -420,7 +408,7 @@ function uc_product_kit_theme() {
       'render element' => 'form',
     ),
     'uc_product_kit_add_to_cart' => array(
-      'variables' => array('node' => NULL, 'view_mode' => 'full'),
+      'variables' => array('form' => NULL, 'view_mode' => 'full'),
     ),
     'uc_product_kit_list_item' => array(
       'arguments' => array('product' => NULL),
@@ -678,11 +666,31 @@ function theme_uc_product_kit_items_form($variables) {
  * Implements hook_view().
  */
 function uc_product_kit_view($node, $view_mode) {
-  $variant = uc_product_load_variant($node);
+  // Give modules a chance to alter this product.  If it is a variant, this will have been done
+  // already by uc_product_load_variant(), so we check a flag to be sure not to alter twice.
+  $variant = empty($node->variant) ? uc_product_load_variant($node->nid) : $node;
+
+  // Calculate the display price.
+  $display_price = 0;
+  $suffixes = array();
+  if ($node->mutable != UC_PRODUCT_KIT_MUTABLE) {
+    // If this is a non-mutable kit, then sum the display price of each of the component products.
+    foreach ($variant->products as $product) {
+      $build = node_view($product);
+      $display_price += $build['display_price']['#value'] * $product->qty;
+      $suffixes += $build['display_price']['#suffixes'];
+    }
+  }
+  else {
+    // For mutable, just use the price.
+    $display_price = $variant->price;
+    $suffixes = array();
+  }
+
   $node->content['display_price'] = array(
     '#theme' => 'uc_product_price',
-    '#value' => $variant->price + $variant->display_price_adjustment,
-    'suffix' => array('#markup' => implode(' ', $variant->display_price_suffixes)),
+    '#value' => $display_price,
+    '#suffixes' => $suffixes,
     '#attributes' => array(
       'class' => array(
         'product-kit',
@@ -740,7 +748,7 @@ function uc_product_kit_view($node, $view_mode) {
     $node->content['products'] = array('#weight' => 6);
 
     $i = 0;
-    foreach ($variant->products as $product) {
+    foreach ($node->products as $product) {
       $node->content['products'][$product->nid]['qty'] = array(
         '#markup' => '<div class="product-qty">' . theme('uc_product_kit_list_item', array('product' => $product)) . '</div>',
       );
@@ -748,14 +756,23 @@ function uc_product_kit_view($node, $view_mode) {
     }
   }
 
-  if (module_exists('uc_cart')) {
+  if (module_exists('uc_cart') && empty($variant->data['display_only'])) {
+    if ($variant->nid) {
+      $form = drupal_get_form('uc_product_kit_add_to_cart_form_' . $variant->nid, $variant);
+    }
+    else {
+      $form = drupal_get_form('uc_product_kit_add_to_cart_form', $variant);
+    }
     $node->content['add_to_cart'] = array(
-      '#theme' => 'uc_product_kit_add_to_cart',
-      '#node' => $node,
-      '#view_mode' => $view_mode,
+			'#theme' => 'uc_product_kit_add_to_cart',
+			'#form' => $form,
+			'#view_mode' => $view_mode,
     );
   }
-
+  //else {
+  //  $node->content['add_to_cart'] = array();
+  //}
+  $node->content['#node'] = $variant;
   return $node;
 }
 
@@ -784,17 +801,9 @@ function theme_uc_product_kit_list_item($variables) {
  * @ingroup themeable
  */
 function theme_uc_product_kit_add_to_cart($variables) {
-  $node = $variables['node'];
+  $form = $variables['form'];
 
   $output = '<div class="add-to-cart" title="' . t('Click to add to cart.') . '">';
-
-  if ($node->nid) {
-    $form = drupal_get_form('uc_product_kit_add_to_cart_form_' . $node->nid, $node);
-  }
-  else {
-    $form = drupal_get_form('uc_product_kit_add_to_cart_form', $node);
-  }
-
   $output .= drupal_render($form);
   $output .= '</div>';
 
@@ -1031,20 +1040,20 @@ function uc_product_kit_uc_add_to_cart($nid, $qty, $kit_data) {
 /**
  * Implements hook_uc_product_alter().
  */
-function uc_product_kit_uc_product_alter(&$node) {
-  if (isset($node->data['kit_id'])) {
+function uc_product_kit_uc_product_alter(&$variant) {
+  if (isset($variant->data['kit_id'])) {
     // If this is a kit component load, we would cause infinite recursion trying
     // to node_load() the parent, but we already have the discount available.
-    if (isset($node->data['kit_discount'])) {
-      $discount = $node->data['kit_discount'];
+    if (isset($variant->data['kit_discount'])) {
+      $discount = $variant->data['kit_discount'];
     }
-    elseif (($kit = node_load($node->data['kit_id'])) && $kit->mutable != UC_PRODUCT_KIT_MUTABLE) {
-      $discount = $kit->products[$node->nid]->discount;
+    elseif (($kit = node_load($variant->data['kit_id'])) && $kit->mutable != UC_PRODUCT_KIT_MUTABLE) {
+      $discount = $kit->products[$variant->nid]->discount;
     }
     else {
       $discount = 0;
     }
-    $node->price += $discount;
+    $variant->price += $discount;
   }
 }
 
@@ -1093,6 +1102,7 @@ function uc_product_kit_uc_order_product_alter(&$product, $order) {
   // Don't save the base kit node, though.
   $product->skip_save = TRUE;
 }
+
 /**
  * Implements hook_uc_cart_display().
  *
@@ -1136,8 +1146,9 @@ function uc_product_kit_uc_cart_display($item) {
       );
       $element['description'] = array('#markup' => '');
       $element['#total'] = 0;
-      $element['#suffix'] = implode(' ', $kit->display_price_suffixes);
+      $element['#suffixes'] = array();
       $element['#extra'] = array();
+      $element['#entity'] = $kit; // Override the entity associated with this render-array to be the kit itself.
 
       $elements[$unique_id] = $element;
     }
@@ -1151,7 +1162,9 @@ function uc_product_kit_uc_cart_display($item) {
       );
     }
 
-    $elements[$unique_id]['#total'] += ($item->price + $item->display_price_adjustment) * $item->qty;
+    $build = node_view($item);
+    $elements[$unique_id]['#total'] += $build['display_price']['#value'] * $item->qty;
+    $elements[$unique_id]['#suffixes'] += $build['display_price']['#suffixes'];
     $elements[$unique_id]['data'][$item->nid] = $item;
     $products[$unique_id][] = $item->nid;
 
