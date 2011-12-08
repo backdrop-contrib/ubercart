@@ -39,8 +39,7 @@ function uc_catalog_menu() {
   $items = array();
 
   $items['catalog'] = array(
-    'title callback' => 'variable_get',
-    'title arguments' => array('uc_catalog_name', t('Catalog')),
+    'title' => 'Catalog',
     'page callback' => 'uc_catalog_browse',
     'access arguments' => array('view catalog'),
     'type' => MENU_SUGGESTED_ITEM,
@@ -93,14 +92,6 @@ function uc_catalog_permission() {
       'title' => t('View catalog'),
     ),
   );
-}
-
-/**
- * Implements hook_init().
- */
-function uc_catalog_init() {
-  global $conf;
-  $conf['i18n_variables'][] = 'uc_catalog_name';
 }
 
 /**
@@ -162,7 +153,7 @@ function uc_catalog_node_view($node, $view_mode) {
 
       $terms = $node->taxonomy_catalog[LANGUAGE_NONE];
       if (count($terms)) {
-        $crumbs[] = l(variable_get('uc_catalog_name', t('Catalog')), 'catalog');
+        $crumbs[] = l(t('Catalog'), 'catalog');
         $used_tids = array();
 
         foreach ($terms as $term) {
@@ -190,16 +181,6 @@ function uc_catalog_node_view($node, $view_mode) {
 function uc_catalog_taxonomy_vocabulary_delete($vocabulary) {
   if ($vocabulary->vid == variable_get('uc_catalog_vid', 0)) {
     variable_del('uc_catalog_vid');
-    variable_del('uc_catalog_name');
-  }
-}
-
-/**
- * Implements hook_taxonomy_vocabulary_update().
- */
-function uc_catalog_taxonomy_vocabulary_update($vocabulary) {
-  if ($vocabulary->vid == variable_get('uc_catalog_vid', 0)) {
-    variable_set('uc_catalog_name', check_plain($vocabulary->name));
   }
 }
 
@@ -260,7 +241,7 @@ function uc_catalog_link_alter(&$links, $node) {
  */
 function uc_catalog_block_info() {
   $blocks['catalog'] = array(
-    'info' => variable_get('uc_catalog_name', t('Catalog')),
+    'info' => t('Catalog'),
     'cache' => DRUPAL_CACHE_PER_ROLE | DRUPAL_CACHE_PER_PAGE,
   );
 
@@ -298,9 +279,7 @@ function uc_catalog_block_view($delta = '') {
       // Now, create a structured menu, separate from Drupal's menu.
       $content = theme('uc_catalog_block', array('menu_tree' => $menu_tree));
 
-      $subject = variable_get('uc_catalog_name', t('Catalog'));
-
-      $block = array('subject' => $subject, 'content' => $content);
+      $block = array('subject' => t('Catalog'), 'content' => $content);
     }
 
     return $block;
@@ -668,7 +647,7 @@ function uc_catalog_add_node_type($type) {
     $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE name = :name", array(':name' => t('Catalog')))->fetchField();
     if (!$vid) {
       $vocabulary = new stdClass();
-      $vocabulary->name = variable_get('uc_catalog_name', t('Catalog'));
+      $vocabulary->name = t('Catalog');
       $vocabulary->description = '';
       $vocabulary->hierarchy = 1;
       $vocabulary->module = 'uc_catalog';
@@ -707,7 +686,7 @@ function uc_catalog_add_node_type($type) {
       'field_name' => 'taxonomy_catalog',
       'entity_type' => 'node',
       'bundle' => $type,
-      'label' => variable_get('uc_catalog_name', t('Catalog')),
+      'label' => t('Catalog'),
     );
 
     field_create_instance($instance);
