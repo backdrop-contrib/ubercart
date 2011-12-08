@@ -802,3 +802,63 @@ function uc_country_update($country_id, $version) {
 
   drupal_goto('admin/store/settings/countries');
 }
+
+/**
+ * Implements hook_uc_store_status().
+ */
+function uc_store_uc_store_status() {
+  $messages = array();
+
+  // Check to see if there are any updated CIF files that need to be installed.
+  $countries = array();
+  $result = db_query("SELECT * FROM {uc_countries}");
+  foreach ($result as $country) {
+    $countries[t($country->country_name)] = $country;
+  }
+  uksort($countries, 'strnatcasecmp');
+  $files = _uc_country_import_list();
+
+  $updates = array();
+  if (is_array($countries)) {
+    foreach ($countries as $country) {
+      if ($country->version < $files[$country->country_id]['version'] && $country->version > 0) {
+        //$updates[] = l(t('update'), 'admin/store/settings/countries/' . $country->country_id . '/update/' . $files[$country->country_id]['version']);
+        $updates[] = $country->country_name;
+      }
+      unset($files[$country->country_id]);
+    }
+  }
+
+  if (count($updates)) {
+    $messages[] = array(
+      'status' => 'warning',
+      'title'  => t('Countries'),
+      'desc'   => t('Updates are available for the following installed countries:  %countries. You may update these countries on the !link page.', array('%countries' => implode(', ', $updates), '!link' => l('country settings', 'admin/store/settings/countries'))),
+    );
+  }
+  else {
+    $messages[] = array(
+      'status' => 'ok',
+      'title'  => t('Countries'),
+      'desc'   => t('Country definitions are up-to-date.'),
+    );
+  }
+
+  // Check to see if the store e-mail address has been set.
+  if (variable_get('uc_store_email', '') == '') {
+    $messages[] = array(
+      'status' => 'error',
+      'title'  => t('Store settings'),
+      'desc'   => t('Store e-mail address has not been set. Please enter it !link.', array('!link' => l('here', 'admin/store/settings/store'))),
+    );
+  }
+  else {
+    $messages[] = array(
+      'status' => 'ok',
+      'title'  => t('Store settings'),
+      'desc'   => t('Store e-mail address is set.'),
+    );
+  }
+
+  return $messages;
+}
