@@ -21,7 +21,7 @@ function uc_catalog_views_default_views() {
 
   /* Display: Defaults */
   $handler = $view->new_display('default', 'Defaults', 'default');
-  $handler->display->display_options['title'] = variable_get('uc_catalog_name', t('Catalog'));
+  $handler->display->display_options['title'] = t('Catalog');
   $handler->display->display_options['access']['type'] = 'none';
   $handler->display->display_options['cache']['type'] = 'none';
   $handler->display->display_options['query']['type'] = 'views_query';
