@@ -1135,6 +1135,7 @@ function uc_order_add_line_item_form($form, &$form_state, $order, $line_item_id)
     $form['amount'] = array(
       '#type' => 'uc_price',
       '#title' => t('Line Item Amount'),
+      '#allow_negative' => TRUE,
     );
   }
 

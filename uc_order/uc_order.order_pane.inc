@@ -767,6 +767,7 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
             '#title' => t('Amount'),
             '#default_value' => $item['amount'],
             '#size' => 6,
+            '#allow_negative' => TRUE,
           );
         }
         else {
