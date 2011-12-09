@@ -105,5 +105,16 @@ function hook_uc_payment_method() {
 }
 
 /**
+ * Alter payment methods.
+ *
+ * @param $methods
+ *   Payment methods passed by reference.
+ */
+function hook_uc_payment_method_alter(&$methods) {
+  // Change the title of the Check payment method.
+  $methods['check']['title'] = t('Cheque');
+}
+
+/**
  * @} End of "addtogroup hooks".
  */
