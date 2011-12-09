@@ -45,37 +45,37 @@ function hook_uc_invoice_templates() {
  *   item, and with the following members:
  *   - "title"
  *     - type: string
- *     - value: The title of the line item shown to the user in various interfaces.
- *         Use t().
+ *     - value: The title of the line item shown to the user in various
+ *       interfaces. Use t().
  *   - "callback"
  *     - type: string
  *     - value: Name of the line item's callback function, called for various
- *         operations.
+ *       operations.
  *   - "weight"
  *     - type: integer
  *     - value: Display order of the line item in lists; "lighter" items are
- *         displayed first.
+ *       displayed first.
  *   - "stored"
  *     - type: boolean
  *     - value: Whether or not the line item will be stored in the database.
- *         Should be TRUE for any line item that is modifiable from the order
- *         edit screen.
+ *       Should be TRUE for any line item that is modifiable from the order
+ *       edit screen.
  *   - "add_list"
  *     - type: boolean
  *     - value: Whether or not a line item should be included in the "Add a Line
- *         Item" select box on the order edit screen.
+ *       Item" select box on the order edit screen.
  *   - "calculated"
  *     - type: boolean
- *     - value: Whether or not the value of this line item should be added to the
- *         order total. (Ex: would be TRUE for a shipping charge line item but
- *         FALSE for the subtotal line item since the product prices are already
- *         taken into account.)
+ *     - value: Whether or not the value of this line item should be added to
+ *       the order total. (Ex: would be TRUE for a shipping charge line item but
+ *       FALSE for the subtotal line item since the product prices are already
+ *       taken into account.)
  *   - "display_only"
  *     - type: boolean
  *     - value: Whether or not this line item is simply a display of information
- *         but not calculated anywhere. (Ex: the total line item uses display to
- *         simply show the total of the order at the bottom of the list of line
- *         items.)
+ *       but not calculated anywhere. (Ex: the total line item uses display to
+ *       simply show the total of the order at the bottom of the list of line
+ *       items.)
  */
 function hook_uc_line_item() {
   $items[] = array(
@@ -126,11 +126,11 @@ function hook_uc_line_item_data_alter(&$items) {
  * Performs actions on orders.
  *
  * An order in Ubercart represents a single transaction. Orders are created
- * during the checkout process where they sit in the database with a status of In
- * Checkout. When a customer completes checkout, the order's status gets updated
- * to show that the sale has gone through. Once an order is created, and even
- * during its creation, it may be acted on by any module to connect extra
- * information to an order. Every time an action occurs to an order,
+ * during the checkout process where they sit in the database with a status of
+ * "In Checkout". When a customer completes checkout, the order's status gets
+ * updated to show that the sale has gone through. Once an order is created,
+ * and even during its creation, it may be acted on by any module to connect
+ * extra information to an order. Every time an action occurs to an order,
  * hook_uc_order() gets invoked to let your modules know what's happening and
  * make stuff happen.
  *
@@ -234,22 +234,23 @@ function hook_uc_order_actions($order) {
 /**
  * Registers callbacks for an order pane.
  *
- * This hook is used to add panes to the order viewing and administration screens.
- * The default panes include areas to display and edit addresses, products,
- * comments, etc. Developers should use this hook when they need to display or
- * modify any custom data pertaining to an order. For example, a store that uses
- * a custom checkout pane to find out a customer's desired delivery date would
- * then create a corresponding order pane to show the data on the order screens.
+ * This hook is used to add panes to the order viewing and administration
+ * screens. The default panes include areas to display and edit addresses,
+ * products, comments, etc. Developers should use this hook when they need to
+ * display or modify any custom data pertaining to an order. For example, a
+ * store that uses a custom checkout pane to find out a customer's desired
+ * delivery date would then create a corresponding order pane to show the data
+ * on the order screens.
  *
  * hook_uc_order_pane() works by defining new order panes and providing a little
  * bit of information about them. View the return value section below for
  * information about what parts of an order pane are defined by the hook.
  *
- * The real meat of an order pane is its callback function (which is specified in
- * the hook). The callback function handles what gets displayed on which screen
- * and what data can be manipulated. That is all somewhat out of the scope of
- * this API page, so you'll have to click here to read more about what a callback
- * function should contain.
+ * The real meat of an order pane is its callback function (which is specified
+ * in the hook). The callback function handles what gets displayed on which
+ * screen and what data can be manipulated. That is all somewhat out of the
+ * scope of this API page, so you'll have to click here to read more about what
+ * a callback function should contain.
  *
  * @return
  *   An array of order pane arrays, keyed by the internal ID of the pane, with
@@ -272,7 +273,8 @@ function hook_uc_order_actions($order) {
  *       "abs-left" to start a new line of panes.
  *   - weight:
  *     - type: integer
- *     - value: Default weight of the pane, defining its order on the checkout form.
+ *     - value: Default weight of the pane, defining its order on the checkout
+ *       form.
  *   - show:
  *     - type: array
  *     - value: The list of op values which will show the pane. "view", "edit",

@@ -56,7 +56,7 @@ function hook_uc_payment_entered($order, $method, $amount, $account, $data, $com
  *   - "settings"
  *     - type: string
  *     - value: The name of a function that returns an array of settings form
- *         elements for the gateway.
+ *       elements for the gateway.
  *   - Other keys are payment method IDs, with the value as the name of the
  *     gateway charge function.
  */
@@ -70,10 +70,11 @@ function hook_uc_payment_gateway() {
 }
 
 /**
- * Alter payment gateways.
+ * Alters payment gateways.
  *
  * @param $gateways
- *   Payment gateways passed by reference.
+ *   Array of payment gateways passed by reference.  Array is structured like
+ *   the return value of hook_uc_payment_gateway().
  */
 function hook_uc_payment_gateway_alter(&$gateways) {
   // Change the title of the test gateway.

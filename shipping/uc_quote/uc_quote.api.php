@@ -33,7 +33,8 @@
  *       order details (the shipping address). The return value is an array
  *       representing the rates quoted and errors returned (if any) for each
  *       option in the accessorials array.
- *     - file: (optional) The name of the file that contains the callback function.
+ *     - file: (optional) The name of the file that contains the callback
+ *       function.
  *     - accessorials: This array represents the different options the customer
  *       may choose for their shipment. The callback function should generate a
  *       quote for each option in accessorials and return them via an array.

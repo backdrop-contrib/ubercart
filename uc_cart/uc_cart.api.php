@@ -100,7 +100,8 @@ function hook_uc_add_to_cart_data($form_values) {
  *     - #value: t('Remove'); when clicked, will remove $item from the cart.
  *   - "description"
  *     - #type: markup
- *     - #value: Themed markup (usually an unordered list) displaying extra information.
+ *     - #value: Themed markup (usually an unordered list) displaying extra
+ *       information.
  *   - "title"
  *     - #type: markup
  *     - #value: The displayed title of the $item.
@@ -211,11 +212,12 @@ function hook_uc_cart_item($op, $item) {
  *     - value: The name of the cart pane displayed to the user.  Use t().
  *   - "enabled"
  *     - type: boolean
- *     - value: Whether the pane is enabled by default or not. (Defaults to TRUE.)
+ *     - value: Whether the pane is enabled by default or not.
+ *       (Defaults to TRUE.)
  *   - "weight"
  *     - type: integer
- *     - value: The weight of the pane to determine its display order. (Defaults
- *         to 0.)
+ *     - value: The weight of the pane to determine its display order.
+ *       (Defaults to 0.)
  *   - "body"
  *     - type: array
  *     - value: The body of the pane to be rendered on the cart view screen.
@@ -307,8 +309,8 @@ function hook_uc_checkout_complete($order, $account) {
  * panes for shipping and payment purposes as well.
  *
  * @return
- *   An array of checkout pane arrays, keyed by the internal ID of the pane, each
- *   with the following members:
+ *   An array of checkout pane arrays, keyed by the internal ID of the pane,
+ *   each with the following members:
  *   - title:
  *     - type: string
  *     - value: The name of the pane as it appears on the checkout form.
@@ -322,23 +324,24 @@ function hook_uc_checkout_complete($order, $account) {
  *       for more documentation and examples of checkout pane callbacks.
  *   - weight:
  *     - type: integer
- *     - value: Default weight of the pane, defining its order on the checkout form.
+ *     - value: Default weight of the pane, defining its order on the checkout
+ *       form.
  *   - enabled:
  *     - type: boolean
- *     - value: Optional. Whether or not the pane is enabled by default. Defaults
- *       to TRUE.
+ *     - value: Optional. Whether or not the pane is enabled by default.
+ *       Defaults to TRUE.
  *   - process:
  *     - type: boolean
- *     - value: Optional. Whether or not this pane needs to be processed when the
- *       checkout form is submitted. Defaults to TRUE.
+ *     - value: Optional. Whether or not this pane needs to be processed when
+ *       the checkout form is submitted. Defaults to TRUE.
  *   - collapsible:
  *     - type: boolean
  *     - value: Optional. Whether or not this pane is displayed as a collapsible
  *       fieldset. Defaults to TRUE.
  *   - shippable:
  *     - type: boolean
- *     - value: Optional. If TRUE, the pane is only shown if the cart is shippable.
- *       Defaults to NULL.
+ *     - value: Optional. If TRUE, the pane is only shown if the cart is
+ *       shippable. Defaults to NULL.
  */
 function hook_uc_checkout_pane() {
   $panes['cart'] = array(
@@ -356,8 +359,8 @@ function hook_uc_checkout_pane() {
  * Builds and proceses a pane defined by hook_uc_checkout_pane().
  *
  * @param string $op
- *   The operation the pane is performing. Possible values are "view", "process",
- *   "review", and "settings".
+ *   The operation the pane is performing. Possible values are "view",
+ *   "process", "review", and "settings".
  * @param UcOrder $order
  *   The order being viewed or edited.
  * @param array $form
@@ -371,7 +374,8 @@ function hook_uc_checkout_pane() {
  *     "contents" is a form array to collect the checkout data for the pane. The
  *     description provides help text for the pane as a whole.
  *   - process: A boolean indicating that checkout should continue. During this
- *     op, $order should be modified with the values in $form_state['values']['panes'][PANE_ID].
+ *     op, $order should be modified with the values in
+ *     $form_state['values']['panes'][PANE_ID].
  *   - review: An array containing review sections. A review section contains
  *     "title" and "data" keys which have HTML to be displayed on the checkout
  *     review page.
