@@ -26,7 +26,7 @@ function uc_order_pane_ship_to($op, $order, &$form = NULL, &$form_state = NULL) 
     case 'edit-form':
       $form['ship_to'] = array(
         '#type' => 'uc_address',
-        '#default_value' => isset($form_state['values']) ? $form_state['values'] : $order,
+        '#default_value' => $order,
         '#required' => FALSE,
         '#attributes' => array('class' => array('uc-store-address-field')),
         '#key_prefix' => 'delivery',
@@ -73,7 +73,7 @@ function uc_order_pane_bill_to($op, $order, &$form = NULL, &$form_state = NULL) 
     case 'edit-form':
       $form['bill_to'] = array(
         '#type' => 'uc_address',
-        '#default_value' => isset($form_state['values']) ? $form_state['values'] : $order,
+        '#default_value' => $order,
         '#required' => FALSE,
         '#attributes' => array('class' => array('uc-store-address-field')),
         '#key_prefix' => 'billing',
