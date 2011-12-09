@@ -129,14 +129,14 @@ function uc_store_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_country_import_form'),
     'access arguments' => array('administer store'),
-    'file' => 'uc_store.admin.inc',
+    'file' => 'uc_store.countries.inc',
   );
   $items['admin/store/settings/countries/import'] = array(
     'title' => 'Countries',
     'description' => 'Import and manage countries.',
     'access arguments' => array('administer store'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
-    'file' => 'uc_store.admin.inc',
+    'file' => 'uc_store.countries.inc',
   );
   $items['admin/store/settings/countries/fields'] = array(
     'title' => 'Address fields',
@@ -156,7 +156,7 @@ function uc_store_menu() {
     'access arguments' => array('administer store'),
     'type' => MENU_LOCAL_TASK,
     'weight' => 1,
-    'file' => 'uc_store.admin.inc',
+    'file' => 'uc_store.countries.inc',
   );
 
   $items['admin/store/settings/store'] = array(
@@ -176,7 +176,7 @@ function uc_store_menu() {
     'page arguments' => array(4),
     'access arguments' => array('administer store'),
     'type' => MENU_CALLBACK,
-    'file' => 'uc_store.admin.inc',
+    'file' => 'uc_store.countries.inc',
   );
   $items['admin/store/settings/countries/%/enable'] = array(
     'title' => 'Enable a country',
@@ -185,7 +185,7 @@ function uc_store_menu() {
     'page arguments' => array(4),
     'access arguments' => array('administer store'),
     'type' => MENU_CALLBACK,
-    'file' => 'uc_store.admin.inc',
+    'file' => 'uc_store.countries.inc',
   );
   $items['admin/store/settings/countries/%/remove'] = array(
     'title' => 'Remove a country',
@@ -193,7 +193,7 @@ function uc_store_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_country_remove_form', 4),
     'access arguments' => array('administer store'),
-    'file' => 'uc_store.admin.inc',
+    'file' => 'uc_store.countries.inc',
   );
   $items['admin/store/settings/countries/%/update/%'] = array(
     'title' => 'Update a country',
@@ -202,7 +202,7 @@ function uc_store_menu() {
     'page arguments' => array(4, 6),
     'access arguments' => array('administer store'),
     'type' => MENU_CALLBACK,
-    'file' => 'uc_store.admin.inc',
+    'file' => 'uc_store.countries.inc',
   );
 
   return $items;
@@ -909,6 +909,9 @@ function uc_store_get_icon($path, $small = FALSE, $class = 'uc-store-icon', $alt
  *   The decimal separator character. If FALSE is given, confusion will abound,
  *   because it will look 100 times bigger. The default, NULL, causes the
  *   variable 'uc_currency_dec' to be used, which defaults to '.'.
+ *
+ * @return
+ *   String containing price formatted with currency symbol and separators.
  */
 function uc_currency_format($value, $sign = NULL, $thou = NULL, $dec = NULL) {
   if ($value === NULL) {
@@ -958,6 +961,15 @@ function uc_currency_format($value, $sign = NULL, $thou = NULL, $dec = NULL) {
 
 /**
  * Formats a weight value for display.
+ *
+ * @param $value
+ *   Numerical weight value.
+ * @param $unit
+ *   Weight unit. One of 'lb', 'oz', 'kg', or 'g', or NULL to use store
+ *   default weight units.
+ *
+ * @return
+ *   String containing formattted weight, including weight units.
  */
 function uc_weight_format($value, $unit = NULL) {
   $vars = array('!value' => $value);
@@ -1001,6 +1013,15 @@ function uc_weight_conversion($from_units, $to_units = NULL) {
 
 /**
  * Formats a length value for display.
+ *
+ * @param $value
+ *   Numerical length value.
+ * @param $unit
+ *   Length unit. One of 'ft', 'in', 'cm', or 'mm', or NULL to use store
+ *   default length units.
+ *
+ * @return
+ *   String containing formattted length, including length units.
  */
 function uc_length_format($value, $unit = NULL) {
   $vars = array('!value' => $value);
@@ -1044,6 +1065,16 @@ function uc_length_conversion($from_units, $to_units = NULL) {
 
 /**
  * Formats a date value for display.
+ *
+ * @param $month
+ *   Numerical month value.
+ * @param $day
+ *   Numerical day value.
+ * @param $year
+ *   Numerical year value.
+ *
+ * @return
+ *   String containing formattted date, using the 'uc_store' date format.
  */
 function uc_date_format($month, $day, $year) {
   $time = strtotime($month . '/' . $day . '/' . $year);
@@ -1651,62 +1682,6 @@ function _uc_country_import_list() {
   }
 
   return $countries;
-}
-
-/**
- * Imports an Ubercart country file by filename.
- *
- * @param $file
- *   The filename of the country to import.
- *
- * @return
- *   TRUE or FALSE indicating whether or not the country was imported.
- */
-function uc_country_import($file) {
-  require_once(drupal_get_path('module', 'uc_store') . '/countries/' . $file);
-
-  $pieces = explode('_', substr($file, 0, strlen($file) - 4));
-
-  $country_id = $pieces[count($pieces) - 2];
-  $version = $pieces[count($pieces) - 1];
-  $country = substr($file, 0, strlen($file) - strlen($country_id) - strlen($version) - 6);
-
-  $func = $country . '_install';
-
-  if (function_exists($func)) {
-    $func();
-    return TRUE;
-  }
-
-  return FALSE;
-}
-
-/**
- * Includes the appropriate country file and return the base for hooks.
- */
-function _uc_country_import_include($country_id, $version) {
-  $dir = drupal_get_path('module', 'uc_store') . '/countries/';
-  $match = '_' . $country_id . '_' . $version . '.cif';
-  $matchlen = strlen($match);
-
-  $countries = array();
-  if (is_dir($dir)) {
-    if ($dh = opendir($dir)) {
-      while (($file = readdir($dh)) !== FALSE) {
-        switch (filetype($dir . $file)) {
-          case 'file':
-            if (substr($file, -$matchlen) == $match) {
-              require_once($dir . $file);
-              return substr($file, 0, strlen($file) - $matchlen);
-            }
-            break;
-        }
-      }
-      closedir($dh);
-    }
-  }
-
-  return FALSE;
 }
 
 /**
