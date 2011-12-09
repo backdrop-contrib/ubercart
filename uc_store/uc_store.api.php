@@ -117,7 +117,7 @@ function hook_uc_message() {
  * store administrator.
  *
  * @return
- *   An array of tore status items which are arrays with the following keys:
+ *   An array of store status items which are arrays with the following keys:
  *   - status: "ok", "warning", or "error" depending on the message.
  *   - title: The title of the status message or module that defines it.
  *   - desc: The description; can be any message, including links to pages and
