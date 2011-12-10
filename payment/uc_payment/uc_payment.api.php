@@ -109,7 +109,8 @@ function hook_uc_payment_method() {
  * Alter payment methods.
  *
  * @param $methods
- *   Payment methods passed by reference.
+ *   Array of payment methods passed by reference.  Array is structured like
+ *   the return value of hook_uc_payment_method().
  */
 function hook_uc_payment_method_alter(&$methods) {
   // Change the title of the Check payment method.

@@ -46,11 +46,11 @@
  *         '59' => array('rate' => 26.03, 'option_label' => t('UPS 2nd Day Air A.M.'))
  *       );
  *       @endcode
- *     - pkg_types: The list of package types that the shipping method can handle.
- *       This should be an associative array that can be used as the #options of
- *       a select form element. It is recommended that a function be written to
- *       output this array so the method doesn't need to be found just for the
- *       package types.
+ *     - pkg_types: The list of package types that the shipping method can
+ *       handle. This should be an associative array that can be used as the
+ *       #options of a select form element. It is recommended that a function
+ *       be written to output this array so the method doesn't need to be found
+ *       just for the package types.
  *   - ship: (optional) An associative array, in the same format as 'quote'.
  *   - enabled: (optional) Whether the method should be enabled by default.
  *     Defaults to FALSE.
