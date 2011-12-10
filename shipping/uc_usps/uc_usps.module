@@ -271,13 +271,21 @@ function uc_usps_quote($products, $details, $method) {
   // filled out the destination address, so check to see whether the address
   // has all needed fields. If not, abort.
   $destination = (object) $details;
-  if (empty($destination->zone)        ||
-      empty($destination->postal_code) ||
-      empty($destination->country)       ) {
+
+  // Country code is always needed.
+  if (empty($destination->country)) {
     // Skip this shipping method.
     return array();
   }
 
+  // Shipments to the US also need zone and postal_code.
+  if (($destination->country == 840) &&
+      (empty($destination->zone) || empty($destination->postal_code))) {
+    // Skip this shipping method.
+    return array();
+  }
+
+  // USPS Production server.
   $connection_url = 'http://production.shippingapis.com/ShippingAPI.dll';
 
   // Initialize $debug_data to prevent PHP notices here and in uc_quote.
