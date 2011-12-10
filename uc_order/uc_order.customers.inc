@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * @file
+ * Helper functions and forms for administering customers.
+ */
 
 /**
  * Displays customer administration page.
@@ -85,6 +89,9 @@ function uc_order_customers($message = NULL, $query = NULL, $page_length = 25) {
 
 /**
  * Assembles a query to list store customers.
+ *
+ * @param $page_length
+ *   Number of results to return per page.
  */
 function uc_order_customer_query($page_length = 25) {
   $address = variable_get('uc_customer_list_address', 'billing');
@@ -267,7 +274,7 @@ function uc_order_customer_search_form_submit($form, &$form_state) {
 /**
  * Displays a list of orders made by a customer.
  *
- * $param $uid
+ * @param $uid
  *   The user id of the customer.
  */
 function uc_order_customer_orders($uid) {
