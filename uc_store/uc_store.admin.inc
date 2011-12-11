@@ -441,7 +441,7 @@ function uc_store_settings_form($form, &$form_state) {
 }
 
 /**
- * Validate store e-mail address for uc_store_settings_form().
+ * Validates store e-mail address for uc_store_settings_form().
  *
  * @see uc_store_settings_form()
  */
