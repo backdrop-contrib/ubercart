@@ -166,6 +166,24 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
     parent::setUp($modules, $permissions);
   }
 
+  function loadTaxLine($order_id) {
+    $order = uc_order_load($order_id, TRUE);
+    foreach ($order->line_items as $line) {
+      if ($line['type'] == 'tax') {
+        return $line;
+      }
+    }
+    return FALSE;
+  }
+
+  function assertTaxLineCorrect($line, $rate, $when) {
+    $this->assertTrue($line, t('The tax line item was saved to the order ' . $when));
+    $this->assertTrue(number_format($rate * $this->product->sell_price, 2) == number_format($line['amount'], 2), t('Stored tax line item has the correct amount ' . $when));
+    $this->assertFieldByName('line_items['. $line['line_item_id'] .'][li_id]', $line['line_item_id'], t('Found the tax line item ID ' . $when));
+    $this->assertText($line['title'], t('Found the tax title ' . $when));
+    $this->assertText(uc_currency_format($line['amount']), t('Tax display has the correct amount ' . $when));
+  }
+
   function testTaxDisplay() {
     $this->drupalLogin($this->adminUser);
 
@@ -237,58 +255,44 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
         t('Order %order_id has been created', array('%order_id' => $order_id))
       );
 
-      $order = uc_order_load($order_id);
-      foreach ($order->line_items as $line) {
-        if ($line['type'] == 'tax') {
-          break;
-        }
-      }
-      $this->assertEqual($line['type'], 'tax', t('The tax line item was saved to the order.'));
-
       $this->drupalGet('admin/store/orders/' . $order_id . '/edit');
-      $this->assertFieldByName('line_items[' . $line['line_item_id'] . '][li_id]', $line['line_item_id'], t('Found the tax line item ID.'));
-      $this->assertText($line['title'], t('Found the tax title.'));
-      $this->assertText(uc_currency_format($line['amount']), t('Tax has the correct amount.'));
+      $this->assertTaxLineCorrect($this->loadTaxLine($order_id), $rate->rate, 'on initial order load');
 
       $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
       $this->assertText(t('Order changes saved.'));
-      $this->assertFieldByName('line_items[' . $line['line_item_id'] . '][li_id]', $line['line_item_id'], t('Found the same tax line item ID.'));
-      $this->assertText($line['title'], t('Found the tax title.'));
-      $this->assertText(uc_currency_format($line['amount']), t('Tax has the same amount as before.'));
+      $this->assertTaxLineCorrect($this->loadTaxLine($order_id), $rate->rate, 'after saving order');
 
       // Change tax rate and ensure order doesn't change.
       $oldrate = $rate->rate;
       $rate->rate = 0.1;
       $rate = uc_taxes_rate_save($rate);
 
+      // Save order because tax changes are only updated on save.
       $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
       $this->assertText(t('Order changes saved.'));
-      $this->assertFieldByName('line_items[' . $line['line_item_id'] . '][li_id]', $line['line_item_id'], t('Found the same tax line item ID.'));
-      $this->assertText($line['title'], t('Found the tax title.'));
-      $this->assertText(uc_currency_format($line['amount']), t('Tax has the same amount as before.'));
+      $this->assertTaxLineCorrect($this->loadTaxLine($order_id), $oldrate, 'after rate change');
 
-      uc_order_update_status($order_id, 'completed');
+      // Change taxable products and ensure order doesn't change.
+      $class = $this->createProductClass();
+      $rate->taxed_product_types = array($class->name);
+      uc_taxes_rate_save($rate);
+      entity_flush_caches();
+      $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
+      $this->assertText(t('Order changes saved.'));
+      $this->assertTaxLineCorrect($this->loadTaxLine($order_id), $oldrate, 'after applicable product change');
 
-      $order = uc_order_load($order_id);
-      foreach ($order->line_items as $line) {
-        if ($line['type'] == 'tax') {
-          break;
-        }
-      }
-      $this->assertEqual($line['type'], 'tax', t('The tax line item was saved to the order.'));
-
-      $this->assertTrue(number_format($oldrate * $this->product->sell_price, 2) == number_format($line['amount'], 2), t('Stored tax line item has the correct amount.'));
-
-      // Change order Status back to in_checkout and ensure tax-rate changes update the order.
+      // Change order Status back to in_checkout and ensure tax-rate changes now update the order.
       uc_order_update_status($order_id, 'in_checkout');
-      $rate->rate = 0.3;
-      $rate = uc_taxes_rate_save($rate);
-
       $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
       $this->assertText(t('Order changes saved.'));
-      $this->assertFieldByName('line_items[' . $line['line_item_id'] . '][li_id]', $line['line_item_id'], t('Found the same tax line item ID.'));
-      $this->assertText($line['title'], t('Found the tax title.'));
-      $this->assertText(uc_currency_format($rate->rate * $this->product->sell_price), t('Tax has new amount.'));
+      $this->assertFalse($this->loadTaxLine($order_id), t('The tax line was removed from the order when order status changed back to in_checkout.'));
+
+      // Restore taxable product and ensure new tax is added.
+      $rate->taxed_product_types = array('product');
+      uc_taxes_rate_save($rate);
+      $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
+      $this->assertText(t('Order changes saved.'));
+      $this->assertTaxLineCorrect($this->loadTaxLine($order_id), $rate->rate, 'when order status changed back to in_checkout');
     }
     else {
       $this->fail(t('No order was created.'));
