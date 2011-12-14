@@ -10,10 +10,10 @@ function taiwan_install() {
   db_insert('uc_countries')
     ->fields(array(
       'country_id' => 158,
-      'country_name' => 'Taiwan',
+      'country_name' => 'Taiwan, Province of China',
       'country_iso_code_2' => 'TW',
       'country_iso_code_3' => 'TWN',
-      'version' => 1,
+      'version' => 2,
     ))
     ->execute();
 
@@ -89,4 +89,17 @@ function taiwan_install() {
     "!city, !zone_code !postal_code\r\n".
     "!country_name_if"
   );
+}
+
+function taiwan_update($version) {
+  switch ($version) {
+    case 2:
+      // Correct ISO-3166-1 country name
+      db_update('uc_countries')
+        ->fields(array('country_name' => 'Taiwan, Province of China'))
+        ->condition('country_id', 158)
+        ->execute();
+
+      break;
+  }
 }

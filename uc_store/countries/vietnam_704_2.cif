@@ -6,10 +6,10 @@ function vietnam_install() {
   db_insert('uc_countries')
     ->fields(array(
       'country_id' => 704,
-      'country_name' => 'Vietnam',
+      'country_name' => 'Viet Nam',
       'country_iso_code_2' => 'VN',
       'country_iso_code_3' => 'VNM',
-      'version' => 1,
+      'version' => 2,
     ))
     ->execute();
 
@@ -30,7 +30,7 @@ function vietnam_install() {
     array(704, 'CB', 'Cao Bang'),
     array(704, 'DA', 'Da Nang'),
     array(704, 'DC', 'Dac Lac'),
-    array(704, 'DO', 'Dac Nong'),
+    array(704, 'DO', 'Dak Nong'),
     array(704, 'DB', 'Dien Bien'),
     array(704, 'DN', 'Dong Nai'),
     array(704, 'DT', 'Dong Thap'),
@@ -41,7 +41,7 @@ function vietnam_install() {
     array(704, 'HT', 'Ha Tinh'),
     array(704, 'HD', 'Hai Duong'),
     array(704, 'HP', 'Haiphong'),
-    array(704, 'HN', 'Hanoi'),
+    array(704, 'HN', 'Ha Noi'),
     array(704, 'HU', 'Hau Giang'),
     array(704, 'HC', 'Ho Chi Minh'),
     array(704, 'HO', 'Hoa Binh'),
@@ -96,4 +96,29 @@ function vietnam_install() {
     "!city, !zone_code !postal_code\r\n".
     "!country_name_if"
   );
+}
+
+function vietnam_update($version) {
+  switch ($version) {
+    case 2:
+      // Correct ISO-3166-1 country name
+      db_update('uc_countries')
+        ->fields(array('country_name' => 'Viet Nam'))
+        ->condition('country_id', 704)
+        ->execute();
+
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'Dak Nong'))
+        ->condition('zone_country_id', 704)
+        ->condition('zone_name', 'Dac Nong')
+        ->execute();
+
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'Ha Noi'))
+        ->condition('zone_country_id', 704)
+        ->condition('zone_name', 'Hanoi')
+        ->execute();
+
+      break;
+  }
 }
