@@ -226,10 +226,10 @@ function uc_paypal_ec_review() {
     }
 
     $country_id = db_query("SELECT country_id FROM {uc_countries} WHERE country_iso_code_2 = :code", array(':code' => $nvp_response['SHIPTOCOUNTRYCODE']))->fetchField();
-    $zone = $nvp_response['SHIPTOSTATE'];
     $zone_id = 0;
 
-    if (!empty($country_id) && !empty($zone)) {
+    if (!empty($country_id) && isset($nvp_response['SHIPTOSTATE'])) {
+      $zone = $nvp_response['SHIPTOSTATE'];
       $zone_id = db_query("SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :id AND (zone_code = :code OR zone_name = :name)", array(':id' => $country_id, ':code' => $zone, ':name' => $zone))->fetchField();
     }
 
