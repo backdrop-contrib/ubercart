@@ -46,13 +46,26 @@ function uc_payment_methods_form($form, &$form_state) {
         }
       }
 
+      $links = array();
       $null = NULL;
       $method_settings = $method['callback']('settings', $null, array(), $form_state);
       if (is_array($method_settings)) {
-        $form['pmtable'][$id]['settings'] = array(
-          '#markup' => l(t('settings'), 'admin/store/settings/payment/method/' . $id),
+        $links['settings'] = array(
+          'title' => t('settings'),
+          'href' => 'admin/store/settings/payment/method/' . $id,
         );
       }
+
+      $links['conditions'] = array(
+        'title' => t('conditions'),
+        'href' => 'admin/store/settings/payment/manage/uc_payment_method_' . $id,
+      );
+
+      $form['pmtable'][$id]['settings'] = array(
+        '#theme' => 'links',
+        '#links' => $links,
+        '#attributes' => array('class' => array('links', 'inline')),
+      );
     }
   }
   else {

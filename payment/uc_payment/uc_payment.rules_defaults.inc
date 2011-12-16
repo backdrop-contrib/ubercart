@@ -54,5 +54,15 @@ function uc_payment_default_rules_configuration() {
     ));
   $configs['uc_checkout_complete_paid'] = $rule;
 
+  $methods = _uc_payment_method_list();
+  foreach ($methods as $id => $method) {
+    $set = rules_and(array(
+      'order' => array('type' => 'uc_order', 'label' => t('Order')),
+    ));
+    $set->label = t('@method conditions', array('@method' => $method['name']));
+
+    $configs['uc_payment_method_' . $method['id']] = $set;
+  }
+
   return $configs;
 }
