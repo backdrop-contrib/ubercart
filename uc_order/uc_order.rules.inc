@@ -62,6 +62,17 @@ function uc_order_rules_event_info() {
     ),
   );
 
+  $events['uc_order_delete'] = array(
+    'label' => t('An order is being deleted'),
+    'group' => t('Order'),
+    'variables' => array(
+      'order' => array(
+        'type' => 'uc_order',
+        'label' => t('Order'),
+      ),
+    ),
+  );
+
   return $events;
 }
 
