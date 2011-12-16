@@ -275,6 +275,15 @@ function uc_quote_select_address($form, $form_state) {
 }
 
 /**
+ * Wrapper for the uc_store country-change ajax callback to update shipping quotes when the country changes.
+ */
+function uc_quote_country_change_wrapper(&$form, &$form_state){
+  $return = uc_quote_checkout_returned_rates($form, $form_state);
+  $return['#commands'][] = ajax_command_replace('#uc-store-address-delivery-zone-wrapper', drupal_render(uc_store_update_address_field_zones($form, $form_state)));
+  return $return;
+}
+
+/**
  *
  */
 function uc_quote_process_checkout_address($element, $form_state) {
@@ -289,6 +298,11 @@ function uc_quote_process_checkout_address($element, $form_state) {
 
   if (isset($element['delivery_postal_code'])) {
     $element['delivery_postal_code']['#ajax'] = $ajax;
+  }
+  // The following replaces "uc_store_process_address_field" from uc_store, with a wrapper that will
+  // update the available quotes when the country is changed.
+  if (isset($element['delivery_country'])) {
+    $element['delivery_country']['#ajax']['callback'] = 'uc_quote_country_change_wrapper';
   }
 
   return $element;
@@ -657,17 +671,24 @@ function uc_checkout_pane_quotes($op, &$order, $form = NULL, &$form_state = NULL
         '#weight' => 1,
       );
 
-      $contents['quotes'] += uc_quote_build_quote_form($order, !empty($form_state['quote_requested']));
+      $contents['quotes'] += $order->quote_form;
 
-      if (isset($contents['quotes']['quote_option']['#value'])) {
-        $default_option = $contents['quotes']['quote_option']['#value'];
-      }
-      elseif (isset($contents['quotes']['quote_option']['#default_value'])) {
-        $default_option = $contents['quotes']['quote_option']['#default_value'];
-      }
+      return array('description' => $description, 'contents' => $contents);
 
+    case 'prepare':
+    case 'process':
+      if (isset($form_state['values']['panes']['quotes']['quotes']['quote_option'])) {
+        $quote_option = explode('---', $form_state['values']['panes']['quotes']['quotes']['quote_option']);
+        $order->quote['method'] = $quote_option[0];
+        $order->quote['accessorials'] = $quote_option[1];
+        // Ensure that the form builder uses the default value to decide which radio button should be selected.
+        unset($form_state['input']['panes']['quotes']['quotes']['quote_option']);
+      }
+      $order->quote_form = uc_quote_build_quote_form($order, !empty($form_state['quote_requested']));
+
+      $default_option = _uc_quote_extract_default_option($order->quote_form);
       if (isset($default_option)) {
-        $order->quote['rate'] = $contents['quotes'][$default_option]['rate']['#value'];
+        $order->quote['rate'] = $order->quote_form[$default_option]['rate']['#value'];
 
         $quote_option = explode('---', $default_option);
         $order->quote['method'] = $quote_option[0];
@@ -694,71 +715,18 @@ function uc_checkout_pane_quotes($op, &$order, $form = NULL, &$form_state = NULL
         // Update line items.
         $order->line_items = uc_order_load_line_items($order);
       }
-
-      return array('description' => $description, 'contents' => $contents);
-
-    case 'process':
-      if (!isset($form_state['values']['panes']['quotes']['quotes']['quote_option'])) {
-        // Get first returned quote as a default value.
-        module_load_include('inc', 'uc_quote', 'uc_quote.pages');
-
-        $quotes = uc_quote_assemble_quotes($order);
-
-        $quote_options = array();
-        if ($quotes) {
-          foreach ($quotes as $method => $data) {
-            foreach ($data as $accessorial => $quote) {
-              $key = $method . '---' . $accessorial;
-              if (isset($quote['rate'])) {
-                $form_state['values']['panes']['quotes']['quotes']['quote_option'] = $key;
-                $form_state['values']['panes']['quotes']['quotes'][$key]['rate'] = $quote['rate'];
-
-                break 2;
-              }
-            }
-          }
-        }
+      // If there is no default option, then no valid quote was selected.
+      else {
+        unset($order->quote);
       }
 
-      if (!isset($form_state['values']['panes']['quotes']['quotes']['quote_option'])) {
-        if (variable_get('uc_quote_require_quote', TRUE)) {
-          form_set_error('panes][quotes][quotes][quote_option', t('You must select a shipping option before continuing.'));
-          return FALSE;
-        }
-        else {
-          return TRUE;
-        }
-      }
-
-      $quote_option = explode('---', $form_state['values']['panes']['quotes']['quotes']['quote_option']);
-      $order->quote['method'] = $quote_option[0];
-      $order->quote['accessorials'] = $quote_option[1];
-      $methods = uc_quote_methods();
-      $method = $methods[$quote_option[0]];
-
-      $label = $method['quote']['accessorials'][$quote_option[1]];
-
-      $quote_option = $form_state['values']['panes']['quotes']['quotes']['quote_option'];
-      $order->quote['rate'] = $form_state['values']['panes']['quotes']['quotes'][$quote_option]['rate'];
-
-      $result = db_query("SELECT line_item_id FROM {uc_order_line_items} WHERE order_id = :id AND type = :type", array(':id' => $order->order_id, ':type' => 'shipping'));
-      if ($lid = $result->fetchField()) {
-        uc_order_update_line_item($lid,
-          $label,
-          $order->quote['rate']
-        );
+      if (!isset($order->quote) && $op == 'process' && variable_get('uc_quote_require_quote', TRUE)) {
+        form_set_error('panes][quotes][quotes][quote_option', t('You must select a shipping option before continuing.'));
+        return FALSE;
       }
       else {
-        uc_order_line_item_add($order->order_id, 'shipping',
-          $label,
-          $order->quote['rate']
-        );
+        return TRUE;
       }
-
-      // Update line items.
-      $order->line_items = uc_order_load_line_items($order);
-
-      return TRUE;
 
     case 'review':
       $review = array();
@@ -931,7 +899,10 @@ function uc_quote_build_quote_form($order, $show_errors = TRUE) {
   $default = key($quote_options);
   if ($num_quotes > 1) {
     if (isset($order->quote['method']) && isset($order->quote['accessorials'])) {
-      $default = $order->quote['method'] . '---' . $order->quote['accessorials'];
+      $chosen = $order->quote['method'] . '---' . $order->quote['accessorials'];
+      if (isset($quote_options[$chosen])) {
+        $default = $chosen;
+      }
     }
 
     $return['quote_option'] = array(
@@ -966,6 +937,27 @@ function uc_quote_cart_returned_rates($form, $form_state) {
   $commands[] = ajax_command_prepend('#quote', theme('status_messages'));
 
   return array('#type' => 'ajax', '#commands' => $commands);
+}
+
+
+/**
+ * Gets the default (selected) quote option from the built form element.
+ *
+ * @param $quote_form
+ *   The quotes form-element.
+ * @return
+ *   The default quote option, or false if none exists.
+ */
+function _uc_quote_extract_default_option($quote_form) {
+  if (isset($quote_form['quote_option']['#value'])) {
+    return $quote_form['quote_option']['#value'];
+  }
+  elseif (isset($quote_form['quote_option']['#default_value'])) {
+    return $quote_form['quote_option']['#default_value'];
+  }
+  else {
+    return FALSE;
+  }
 }
 
 /**

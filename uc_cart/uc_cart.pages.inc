@@ -99,7 +99,7 @@ function uc_cart_checkout() {
 function uc_cart_checkout_form($form, &$form_state) {
   global $user;
 
-  if (isset($form_state['storage']['order'])) {
+  if ($processed = isset($form_state['storage']['order'])) {
     $order = $form_state['storage']['order'];
   }
   else {
@@ -152,9 +152,13 @@ function uc_cart_checkout_form($form, &$form_state) {
     $panes = uc_cart_filter_checkout_panes($panes, array('shippable' => TRUE));
   }
 
-  foreach ($panes as $id => $pane) {
-    if ($pane['enabled'] && isset($pane['callback']) && function_exists($pane['callback'])) {
-      $pane['callback']('prepare', $order, $form, $form_state);
+  // Invoke the 'prepare' op of enabled panes, but only if their 'process' ops have not been invoked
+  // on this request (i.e. when rebuilding after AJAX).
+  if (!$processed) {
+    foreach ($panes as $id => $pane) {
+      if ($pane['enabled'] && isset($pane['callback']) && function_exists($pane['callback'])) {
+        $pane['callback']('prepare', $order, $form, $form_state);
+      }
     }
   }
 
