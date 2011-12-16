@@ -103,7 +103,7 @@ function uc_order_views_data() {
     'title' => t('Payment method'),
     'help' => t('The method of payment.'),
     'field' => array(
-      'handler' => 'views_handler_field',
+      'handler' => 'uc_order_handler_field_payment_method',
       'click sortable' => TRUE,
     ),
     'sort' => array(
