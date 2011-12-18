@@ -113,7 +113,10 @@ function uc_cart_checkout_form($form, &$form_state) {
 
   // If there hasn't been activity on the checkout page for 20 minutes, clear
   // order details and prevent identity theft.
-  if (!$order || uc_order_status_data($order->order_status, 'state') != 'in_checkout' || $order->modified < REQUEST_TIME - 600 || ($user->uid > 0 && $user->uid != $order->uid)) {
+  if (!$order || uc_order_status_data($order->order_status, 'state') != 'in_checkout' || $order->modified < REQUEST_TIME - UC_CART_ORDER_TIMEOUT || ($user->uid > 0 && $user->uid != $order->uid)) {
+    if ($order && uc_order_status_data($order->order_status, 'state')  == 'in_checkout' && $order->modified < REQUEST_TIME - UC_CART_ORDER_TIMEOUT) {
+      uc_order_update_status($order->order_id, 'abandoned');
+    }
     $order = uc_order_new($user->uid);
     $_SESSION['cart_order'] = $order->order_id;
   }

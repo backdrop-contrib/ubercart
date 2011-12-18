@@ -11,6 +11,7 @@
  */
 
 require_once('uc_cart_checkout_pane.inc');
+define('UC_CART_ORDER_TIMEOUT', 600); // Time in seconds after which a cart order is deemed abandoned.
 
 /*******************************************************************************
  * Hook Functions (Drupal)
@@ -220,6 +221,13 @@ function uc_cart_cron() {
     if (strlen($row->cart_id) < 22) {
       uc_cart_empty($row->cart_id);
     }
+  }
+
+  // Update status of abandoned orders.
+  $result = db_query("SELECT order_id FROM {uc_orders} WHERE order_status = :status AND modified < :time",
+    array(':status' => 'in_checkout', ':time' => REQUEST_TIME - UC_CART_ORDER_TIMEOUT))->fetchCol();
+  foreach ($result as $order_id) {
+    uc_order_update_status($order_id, 'abandoned');
   }
 }
 
