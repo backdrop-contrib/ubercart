@@ -86,6 +86,8 @@ function uc_order_settings_form($form, &$form_state) {
  * Displays the order workflow form for order state and status customization.
  *
  * @see uc_order_workflow_form_submit()
+ * @see theme_uc_order_state_table();
+ * @see theme_uc_order_status_table();
  * @ingroup forms
  */
 function uc_order_workflow_form($form, &$form_state) {
@@ -222,6 +224,51 @@ function uc_order_workflow_form_submit($form, &$form_state) {
   }
 
   drupal_set_message(t('Order workflow information saved.'));
+}
+
+/**
+ * Themes the order state table in the order workflow settings.
+ *
+ * @see uc_order_workflow_form()
+ * @ingroup themeable
+ */
+function theme_uc_order_state_table($variables) {
+  $form = $variables['form'];
+
+  $header = array(t('State'), t('Default order status'));
+
+  foreach (element_children($form) as $state_id) {
+    $rows[] = array(
+      drupal_render($form[$state_id]['title']),
+      drupal_render($form[$state_id]['default']),
+    );
+  }
+
+  return theme('table', array('header' => $header, 'rows' => $rows));
+}
+
+/**
+ * Themes the order state table in the order workflow settings.
+ *
+ * @see uc_order_workflow_form()
+ * @ingroup themeable
+ */
+function theme_uc_order_status_table($variables) {
+  $form = $variables['form'];
+
+  $header = array(t('ID'), t('Title'), t('List position'), t('State'), t('Remove'));
+
+  foreach (element_children($form) as $state_id) {
+    $rows[] = array(
+      drupal_render($form[$state_id]['id']),
+      drupal_render($form[$state_id]['title']),
+      drupal_render($form[$state_id]['weight']),
+      drupal_render($form[$state_id]['state']),
+      array('data' => drupal_render($form[$state_id]['remove']), 'align' => 'center'),
+    );
+  }
+
+  return theme('table', array('header' => $header, 'rows' => $rows));
 }
 
 /**
