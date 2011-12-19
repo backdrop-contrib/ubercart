@@ -40,6 +40,11 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
         }
       }
 
+      if (!$options) {
+        drupal_set_message(t('Checkout cannot be completed without any payment methods enabled. Please contact an administrator to resolve the issue.'), 'error');
+        drupal_goto('cart');
+      }
+
       if (count($options)) {
         if (isset($form_state['values'])  &&
           isset($form_state['values']['panes']['payment']['payment_method']) &&
@@ -66,7 +71,6 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
         '#default_value' => $default,
         '#disabled' => count($options) == 1 ? TRUE : FALSE,
         '#required' => TRUE,
-        '#theme' => 'uc_payment_method_select',
         '#ajax' => array(
           'callback' => 'uc_payment_checkout_payment_details',
           'wrapper' => 'payment-details',
@@ -140,22 +144,4 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
  */
 function uc_payment_checkout_payment_details($form, $form_state) {
   return $form['panes']['payment']['details'];
-}
-
-/**
- * We need a theme function for the radios element in case another module alters
- * the default or available payment methods... we need the JS to grab the right
- * default payment details.
- *
- * @ingroup themeable
- */
-function theme_uc_payment_method_select($variables) {
-  $form = $variables['form'];
-
-  if (empty($form['#options'])) {
-    drupal_set_message(t('Checkout cannot be completed without any payment methods enabled. Please contact an administrator to resolve the issue.'), 'error');
-    return;
-  }
-
-  return drupal_render_children($form);
 }
