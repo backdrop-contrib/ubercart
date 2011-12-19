@@ -13,64 +13,58 @@
  */
 function uc_payment_methods_form($form, &$form_state) {
   $methods = _uc_payment_method_list();
-  if (!empty($methods)) {
-    $form['pmtable'] = array(
-      '#theme' => 'uc_payment_method_table',
+
+  $form['pmtable'] = array(
+    '#theme' => 'uc_payment_method_table',
+  );
+
+  foreach ($methods as $id => $method) {
+    $form['pmtable'][$id]['uc_payment_method_' . $id . '_checkout'] = array(
+      '#type' => 'checkbox',
+      '#title' => $method['name'],
+      '#default_value' => variable_get('uc_payment_method_' . $id . '_checkout', $method['checkout']),
+    );
+    $form['pmtable'][$id]['uc_payment_method_' . $id . '_weight'] = array(
+      '#type' => 'weight',
+      '#default_value' => variable_get('uc_payment_method_' . $id . '_weight', $method['weight']),
+      '#attributes' => array('class' => array('uc-payment-method-weight')),
     );
 
-    foreach ($methods as $id => $method) {
-      $form['pmtable'][$id]['uc_payment_method_' . $id . '_checkout'] = array(
-        '#type' => 'checkbox',
-        '#title' => $method['name'],
-        '#default_value' => variable_get('uc_payment_method_' . $id . '_checkout', $method['checkout']),
-      );
-      $form['pmtable'][$id]['uc_payment_method_' . $id . '_weight'] = array(
-        '#type' => 'weight',
-        '#default_value' => variable_get('uc_payment_method_' . $id . '_weight', $method['weight']),
-        '#attributes' => array('class' => array('uc-payment-method-weight')),
-      );
-
-      if (!empty($method['no_gateway'])) {
-        $form['pmtable'][$id]['uc_payment_' . $id . '_gateway'] = array(
-          '#markup' => '-',
-        );
-      }
-      else {
-        $gateways = _uc_payment_gateway_list($id, TRUE);
-        $options = array();
-        foreach ($gateways as $gateway_id => $gateway) {
-          $options[$gateway_id] = $gateway['title'];
-        }
-        if ($options) {
-          $form['pmtable'][$id]['uc_payment_method_' . $id . '_checkout']['#title'] .= ' (' . t('includes %gateways', array('%gateways' => implode(', ', $options))) . ')';
-        }
-      }
-
-      $links = array();
-      $null = NULL;
-      $method_settings = $method['callback']('settings', $null, array(), $form_state);
-      if (is_array($method_settings)) {
-        $links['settings'] = array(
-          'title' => t('settings'),
-          'href' => 'admin/store/settings/payment/method/' . $id,
-        );
-      }
-
-      $links['conditions'] = array(
-        'title' => t('conditions'),
-        'href' => 'admin/store/settings/payment/manage/uc_payment_method_' . $id,
-      );
-
-      $form['pmtable'][$id]['settings'] = array(
-        '#theme' => 'links',
-        '#links' => $links,
-        '#attributes' => array('class' => array('links', 'inline')),
+    if (!empty($method['no_gateway'])) {
+      $form['pmtable'][$id]['uc_payment_' . $id . '_gateway'] = array(
+        '#markup' => '-',
       );
     }
-  }
-  else {
-    $form['pmtable'] = array(
-      '#markup' => t('No payment methods are available.'),
+    else {
+      $gateways = _uc_payment_gateway_list($id, TRUE);
+      $options = array();
+      foreach ($gateways as $gateway_id => $gateway) {
+        $options[$gateway_id] = $gateway['title'];
+      }
+      if ($options) {
+        $form['pmtable'][$id]['uc_payment_method_' . $id . '_checkout']['#title'] .= ' (' . t('includes %gateways', array('%gateways' => implode(', ', $options))) . ')';
+      }
+    }
+
+    $links = array();
+    $null = NULL;
+    $method_settings = $method['callback']('settings', $null, array(), $form_state);
+    if (is_array($method_settings)) {
+      $links['settings'] = array(
+        'title' => t('settings'),
+        'href' => 'admin/store/settings/payment/method/' . $id,
+      );
+    }
+
+    $links['conditions'] = array(
+      'title' => t('conditions'),
+      'href' => 'admin/store/settings/payment/manage/uc_payment_method_' . $id,
+    );
+
+    $form['pmtable'][$id]['settings'] = array(
+      '#theme' => 'links',
+      '#links' => $links,
+      '#attributes' => array('class' => array('links', 'inline')),
     );
   }
 
@@ -103,7 +97,12 @@ function theme_uc_payment_method_table($variables) {
     );
   }
 
-  return theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-payment-methods')));
+  return theme('table', array(
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => array('id' => 'uc-payment-methods'),
+    'empty' => t('No payment methods are available.'),
+  ));
 }
 
 /**
