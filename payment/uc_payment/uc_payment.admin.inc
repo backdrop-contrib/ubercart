@@ -30,12 +30,7 @@ function uc_payment_methods_form($form, &$form_state) {
       '#attributes' => array('class' => array('uc-payment-method-weight')),
     );
 
-    if (!empty($method['no_gateway'])) {
-      $form['pmtable'][$id]['uc_payment_' . $id . '_gateway'] = array(
-        '#markup' => '-',
-      );
-    }
-    else {
+    if (empty($method['no_gateway'])) {
       $gateways = _uc_payment_gateway_list($id, TRUE);
       $options = array();
       foreach ($gateways as $gateway_id => $gateway) {
