@@ -106,6 +106,37 @@ class UbercartTestHelper extends DrupalWebTestCase {
   }
 
   /**
+   * Helper function to fill-in required fields on the checkout page.
+   *
+   * @param $edit
+   *   The form-values array to which to add required fields.
+   */
+  function populateCheckoutForm($edit = array()) {
+    foreach (array('billing', 'delivery') as $pane) {
+      $prefix = 'panes[' . $pane . '][' . $pane;
+      $key =  $prefix . '_country]';
+      $country = empty($edit[$key]) ? variable_get('uc_store_country', 840) : $edit[$key];
+      $zone_id = db_query('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand() LIMIT 1', array('country' => $country))->fetchField();
+      $edit += array(
+        $prefix . '_first_name]' => $this->randomName(10),
+        $prefix . '_last_name]' => $this->randomName(10),
+        $prefix . '_street1]' => $this->randomName(10),
+        $prefix . '_city]' => $this->randomName(10),
+        $prefix . '_zone]' => $zone_id,
+        $prefix . '_postal_code]' => mt_rand(10000, 99999),
+      );
+    }
+
+    // If the email address has not been set, and the user has not logged in,
+    // add a primary email address.
+    if (!isset($edit['panes[customer][primary_email]']) && !$this->loggedInUser) {
+      $edit['panes[customer][primary_email]'] = $this->randomName(8) . '@example.com';
+    }
+
+    return $edit;
+  }
+
+  /**
    * Executes the checkout process.
    */
   function checkout($edit = array()) {
@@ -115,29 +146,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
       t('Viewed cart page: Billing pane has been displayed.')
     );
 
-    // Build the panes.
-    $zone_id = db_query('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand() LIMIT 1', array('country' => variable_get('uc_store_country', 840)))->fetchField();
-    $edit += array(
-      'panes[delivery][delivery_first_name]' => $this->randomName(10),
-      'panes[delivery][delivery_last_name]' => $this->randomName(10),
-      'panes[delivery][delivery_street1]' => $this->randomName(10),
-      'panes[delivery][delivery_city]' => $this->randomName(10),
-      'panes[delivery][delivery_zone]' => $zone_id,
-      'panes[delivery][delivery_postal_code]' => mt_rand(10000, 99999),
-
-      'panes[billing][billing_first_name]' => $this->randomName(10),
-      'panes[billing][billing_last_name]' => $this->randomName(10),
-      'panes[billing][billing_street1]' => $this->randomName(10),
-      'panes[billing][billing_city]' => $this->randomName(10),
-      'panes[billing][billing_zone]' => $zone_id,
-      'panes[billing][billing_postal_code]' => mt_rand(10000, 99999),
-    );
-
-    // If the email address has not been set, and the user has not logged in,
-    // add a primary email address.
-    if (!isset($edit['panes[customer][primary_email]']) && !$this->loggedInUser) {
-      $edit['panes[customer][primary_email]'] = $this->randomName(8) . '@example.com';
-    }
+    $edit = $this->populateCheckoutForm($edit);
 
     // Submit the checkout page.
     $this->drupalPost('cart/checkout', $edit, t('Review order'));
