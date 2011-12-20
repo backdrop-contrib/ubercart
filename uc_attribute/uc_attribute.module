@@ -236,6 +236,9 @@ function uc_attribute_permission() {
  */
 function uc_attribute_theme() {
   return array(
+    'uc_attribute_option' => array(
+      'variables' => array('option' => '', 'price' => ''),
+    ),
     'uc_attribute_add_to_cart' => array(
       'render element' => 'form',
     ),
@@ -1263,26 +1266,28 @@ function _uc_attribute_alter_form($product) {
     // Build the attribute's options array.
     $options = array();
     foreach ($attribute->options as $option) {
+      $display_price = '';
       switch (variable_get('uc_attribute_option_price_format', 'adjustment')) {
         case 'total':
-          $display_price = in_array($attribute->aid, $priced_attributes) ? ', ' . uc_currency_format($product->sell_price + $option->price) : '';
+          if (in_array($attribute->aid, $priced_attributes)) {
+            $display_price = uc_currency_format($product->sell_price + $option->price);
+          }
           if (count($priced_attributes) == 1 && $attribute->display != 3) {
             break;
           }
         case 'adjustment':
-          $display_price = ($option->price != 0 ? ', ' . ($option->price > 0 ? '+' : '') . uc_currency_format($option->price) : '');
-          break;
-        case 'none':
-        default:
-          $display_price = '';
+          if ($option->price != 0) {
+            $display_price = $option->price > 0 ? '+' : '-';
+            $display_price .= uc_currency_format(abs($option->price));
+          }
           break;
       }
-      $options[$option->oid] = $option->name;
-      if ($attribute->display == 2) {
-        // Select options are check_plain()ed, but radio button labels are not.
-        $options[$option->oid] = check_plain($options[$option->oid]);
-      }
-      $options[$option->oid] .= $display_price;
+
+      // Select options are check_plain()ed, but radio button labels are not.
+      $options[$option->oid] = theme('uc_attribute_option', array(
+        'option' => $attribute->display == 2 ? check_plain($option->name) : $option->name,
+        'price' => $display_price,
+      ));
     }
 
     if (count($attribute->options) && $attribute->display > 0) {
@@ -1364,6 +1369,25 @@ function uc_attribute_priced_attributes($nid) {
   $aids = db_query("SELECT DISTINCT (pa.aid) FROM {uc_product_attributes} AS pa INNER JOIN {uc_attribute_options} AS ao ON ao.aid = pa.aid INNER JOIN {uc_product_options} AS po ON (po.oid = ao.oid AND po.nid = pa.nid) WHERE pa.nid = :nid AND po.price <> :price AND pa.display <> :display", array(':nid' => $nid, ':price' => 0, ':display' => 0))->fetchCol();
 
   return $aids;
+}
+
+/**
+ * Displays an attribute option with an optional total or adjustment price.
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - option: The option name.
+ *   - price: The price total or adjustment, if any.
+ *
+ * @see _uc_attribute_alter_form()
+ * @ingroup themeable
+ */
+function theme_uc_attribute_option($variables) {
+  $output = $variables['option'];
+  if ($variables['price']) {
+    $output .= ', ' . $variables['price'];
+  }
+  return $output;
 }
 
 /**
