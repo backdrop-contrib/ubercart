@@ -156,6 +156,160 @@ class UbercartTestHelper extends DrupalWebTestCase {
       $this->fail(t('No order was created.'));
     }
   }
+
+  /**
+   * Helper function to test for text in a drupal ajax response.
+   *
+   * @param $ajax
+   *   The ajax response to test.  Must be an array of ajax commands as returned by drupalPostAjax().
+   * @param $text
+   *   The text to search for.
+   * @param $message
+   *   The assertion message.
+   * @param $not_exists
+   *   TRUE to assert that the text is not present.  FALSE (the default) to assert that it is present.
+   * @param $plain
+   *   TRUE to check only the plain-text contents of the 'data' keys of each 'insert' command (i.e. what would
+   *   be inserted into the page).  FALSE to check the complete, json-encoded ajax response.
+   */
+  function assertAjaxHelper($ajax, $text, $message = FALSE, $not_exists = FALSE, $plain = TRUE) {
+    $content = '';
+    if ($plain) {
+      foreach($ajax as $command) {
+        if ($command['command'] == 'insert' && !empty($command['data']) && is_string($command['data'])) {
+          $content .= $command['data'];
+        }
+      }
+      $content = filter_xss($content, array());
+    }
+    else {
+      $content = drupal_json_encode($ajax);
+    }
+    if (!$message) {
+      $message = !$not_exists ? t('"@text" found in ajax response', array('@text' => $text)) : t('"@text" not found in ajax response', array('@text' => $text));
+    }
+    $this->assert($not_exists == (strpos($content, $text) === FALSE), $message);
+  }
+
+  /**
+   * Assert that the specified text is present in the plain text version of the html that would
+   * be inserted into the page if this ajax response were executed.
+   *
+   * @param $ajax
+   *   The ajax response to test.  Must be an array of ajax commands as returned by drupalPostAjax().
+   * @param $text
+   *   The text to search for.
+   * @param $message
+   *   The assertion message.
+   */
+  function assertAjaxText($ajax, $text, $message = FALSE) {
+    $this->assertAjaxHelper($ajax, $text, $message, FALSE, TRUE);
+  }
+
+  /**
+   * Assert that the specified text is not present in the plain text version of the html that would
+   * be inserted into the page if this ajax response were executed.
+   *
+   * @param $ajax
+   *   The ajax response to test.  Must be an array of ajax commands as returned by drupalPostAjax().
+   * @param $text
+   *   The text to search for.
+   * @param $message
+   *   The assertion message.
+   */
+  function assertNoAjaxText($ajax, $text, $message = FALSE) {
+    $this->assertAjaxHelper($ajax, $text, $message, TRUE, TRUE);
+  }
+
+  /**
+   * Assert that the specified text is present in the raw drupal ajax response.
+   *
+   * @param $ajax
+   *   The ajax response to test.  Must be an array of ajax commands as returned by drupalPostAjax().
+   * @param $text
+   *   The text to search for.
+   * @param $message
+   *   The assertion message.
+   */
+  function assertAjaxRaw($ajax, $text, $message = FALSE) {
+    $this>assertAjaxHelper($ajax, $text, $message, FALSE, FALSE);
+  }
+
+  /**
+   * Assert that the specified text is not present in the raw drupal ajax response.
+   *
+   * @param $ajax
+   *   The ajax response to test.  Must be an array of ajax commands as returned by drupalPostAjax().
+   * @param $text
+   *   The text to search for.
+   * @param $message
+   *   The assertion message.
+   */
+  function assertNoAjaxRaw($ajax, $text, $message = FALSE) {
+    $this>assertAjaxHelper($ajax, $text, $message, TRUE, FALSE);
+  }
+
+  /**
+   * Extends drupalPostAjax() to replace additional content on the page after an ajax submission.
+   *
+   * DrupalWebTestCase::drupalPostAjax() will only process ajax insertions which don't have a 'selector' attribute,
+   * because it's not easy to convert from a jQuery selector to an XPath.  However, ubercart uses many simple,
+   * id-based selectors, and these can be converted easily (eg: '#my-identifier' => '//*[@id="my-identifier"]').
+   * This helper method post-processes the command array returned by drupalPostAjax() to perform these insertions.
+   *
+   * @see DrupalWebTestCase::drupalPostAjax()
+   */
+  protected function ucPostAJAX($path, $edit, $triggering_element, $ajax_path = NULL, array $options = array(), array $headers = array(), $form_html_id = NULL, $ajax_settings = NULL) {
+    $commands = parent::drupalPostAJAX($path, $edit, $triggering_element, $ajax_path, $options, $headers, $form_html_id, $ajax_settings);
+    $dom = new DOMDocument();
+    @$dom->loadHTML($this->drupalGetContent());
+    foreach ($commands as $command) {
+      if ($command['command'] == 'insert' && isset($command['selector']) && preg_match('/^\#-?[_a-zA-Z]+[_a-zA-Z0-9-]*$/', $command['selector'])) {
+        $xpath = new DOMXPath($dom);
+        $wrapperNode = $xpath->query('//*[@id="' . substr($command['selector'], 1) . '"]')->item(0);
+        if ($wrapperNode) {
+          // ajax.js adds an enclosing DIV to work around a Safari bug.
+          $newDom = new DOMDocument();
+          $newDom->loadHTML('<div>' . $command['data'] . '</div>');
+          $newNode = $dom->importNode($newDom->documentElement->firstChild->firstChild, TRUE);
+          $method = isset($command['method']) ? $command['method'] : $ajax_settings['method'];
+          // The "method" is a jQuery DOM manipulation function. Emulate
+          // each one using PHP's DOMNode API.
+          switch ($method) {
+            case 'replaceWith':
+              $wrapperNode->parentNode->replaceChild($newNode, $wrapperNode);
+              break;
+            case 'append':
+              $wrapperNode->appendChild($newNode);
+              break;
+            case 'prepend':
+              // If no firstChild, insertBefore() falls back to
+              // appendChild().
+              $wrapperNode->insertBefore($newNode, $wrapperNode->firstChild);
+              break;
+            case 'before':
+              $wrapperNode->parentNode->insertBefore($newNode, $wrapperNode);
+              break;
+            case 'after':
+              // If no nextSibling, insertBefore() falls back to
+              // appendChild().
+              $wrapperNode->parentNode->insertBefore($newNode, $wrapperNode->nextSibling);
+              break;
+            case 'html':
+              foreach ($wrapperNode->childNodes as $childNode) {
+                $wrapperNode->removeChild($childNode);
+              }
+              $wrapperNode->appendChild($newNode);
+              break;
+          }
+        }
+      }
+    }
+    $content = $dom->saveHTML();
+    $this->drupalSetContent($content);
+    $this->verbose('Page content after ajax submission:<hr />' . $this->content);
+    return $commands;
+  }
 }
 
 /**
