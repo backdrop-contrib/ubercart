@@ -977,6 +977,12 @@ function uc_order_history($user) {
  * @ingroup forms
  */
 function uc_order_edit_form($form, &$form_state, $order) {
+  if (isset($form_state['order'])) {
+    $order = $form_state['order'];
+  }
+  else {
+    $form_state['order'] = $order;
+  }
   $form['#order'] = $order;
   $form['order_id'] = array('#type' => 'hidden', '#value' => $order->order_id);
   $form['order_uid'] = array('#type' => 'hidden', '#value' => $order->uid);
@@ -1028,6 +1034,23 @@ function uc_order_edit_form_validate($form, &$form_state) {
   }
 
   entity_form_field_validate('uc_order', $form, $form_state);
+
+  // Build list of changes to be applied.
+  $form_state['storage']['changes'] = array();
+  $form_state['storage']['perform'] = array();
+  $panes = _uc_order_pane_list();
+  foreach ($panes as $id => $pane) {
+    if (in_array('edit', $pane['show']) && variable_get('uc_order_pane_' . $id . '_show_edit', TRUE)) {
+      $func = $pane['callback'];
+      if (function_exists($func)) {
+        if (($changes = $func('edit-process', $order, $form, $form_state)) != NULL) {
+          foreach ($changes as $key => $value) {
+            $form_state['order']->$key = $value;
+          }
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -1041,24 +1064,21 @@ function uc_order_edit_form_submit($form, &$form_state) {
   $order = uc_order_load($form_state['values']['order_id']);
   $log = array();
 
+  foreach ($form_state['order'] as $key => $value) {
+    if (!isset($order->key) || $order->$key != $value) {
+      if (!is_array($value)) {
+        $log[$key] = array('old' => $order->$key, 'new' => $value);
+      }
+      $order->$key = $value;
+    }
+  }
+
   $panes = _uc_order_pane_list();
   foreach ($panes as $id => $pane) {
     if (in_array('edit', $pane['show']) && variable_get('uc_order_pane_' . $id . '_show_edit', TRUE)) {
       $func = $pane['callback'];
-      if (function_exists($func)) {
-        if (($changes = $func('edit-process', $order, $form, $form_state)) != NULL) {
-          foreach ($changes as $key => $value) {
-            if ($order->$key != $value) {
-              if (!is_array($value)) {
-                $log[$key] = array('old' => $order->$key, 'new' => $value);
-              }
-              $order->$key = $value;
-            }
-          }
-        }
-        if (($ops = $func('edit-ops', NULL)) != NULL) {
-          $perform[$func] = $ops;
-        }
+      if (function_exists($func) && ($ops = $func('edit-ops', NULL)) != NULL) {
+        $perform[$func] = $ops;
       }
     }
   }
@@ -1100,7 +1120,7 @@ function uc_order_edit_form_submit($form, &$form_state) {
 
   uc_order_save($order);
 
-  if (is_array($perform)) {
+  if (!empty($perform)) {
     foreach ($perform as $func => $ops) {
       if (in_array($form_state['triggering_element']['#value'], $ops)) {
         $func($form_state['triggering_element']['#value'], $order, $form, $form_state['values']);
