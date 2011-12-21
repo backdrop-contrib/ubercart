@@ -1267,20 +1267,20 @@ function _uc_attribute_alter_form($product) {
     $options = array();
     foreach ($attribute->options as $option) {
       $display_price = '';
-      switch (variable_get('uc_attribute_option_price_format', 'adjustment')) {
-        case 'total':
-          if (in_array($attribute->aid, $priced_attributes)) {
-            $display_price = uc_currency_format($product->sell_price + $option->price);
-          }
-          if (count($priced_attributes) == 1 && $attribute->display != 3) {
+      if (in_array($attribute->aid, $priced_attributes)) {
+        switch (variable_get('uc_attribute_option_price_format', 'adjustment')) {
+          case 'total':
+            if (count($priced_attributes) == 1 && $attribute->display != 3) {
+              $display_price = uc_currency_format($product->sell_price + $option->price);
+              break;
+            }
+          case 'adjustment':
+            if ($option->price != 0) {
+              $display_price = $option->price > 0 ? '+' : '-';
+              $display_price .= uc_currency_format(abs($option->price));
+            }
             break;
-          }
-        case 'adjustment':
-          if ($option->price != 0) {
-            $display_price = $option->price > 0 ? '+' : '-';
-            $display_price .= uc_currency_format(abs($option->price));
-          }
-          break;
+        }
       }
 
       // Select options are check_plain()ed, but radio button labels are not.
