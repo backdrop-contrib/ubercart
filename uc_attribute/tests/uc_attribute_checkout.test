@@ -36,16 +36,19 @@ class UbercartAttributeCheckoutTestCase extends UbercartTestHelper {
 
       // Add the product to the cart.
       if ($display == 3) {
-        $edit = array("attributes[$attribute->aid]" => array($option->oid));
+        $edit = array("attributes[$attribute->aid][$option->oid]" => $option->oid);
       }
       elseif (isset($option)) {
         $edit = array("attributes[$attribute->aid]" => $option->oid);
       }
       else {
-        $edit = array("attributes[$attribute->aid]" => self::randomName());
+	$option = new stdClass();
+	$option->name = self::randomName();
+        $edit = array("attributes[$attribute->aid]" => $option->name);
       }
 
       $this->drupalPost('node/'. $product->nid, $edit, t('Add to cart'));
+      $this->assertText("$attribute->name: $option->name", t('Option selected on cart item.'));
     }
   }
 
