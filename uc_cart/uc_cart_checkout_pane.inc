@@ -498,7 +498,7 @@ function theme_uc_cart_review_table($variables) {
       if (!empty($display_item['description']['#markup'])) {
         $description .= $display_item['description']['#markup'];
       }
-      $qty = t('@qty&times;', array('@qty' => $display_item['qty']['#default_value']));
+      $qty = theme('uc_qty', array('qty' => $display_item['qty']['#default_value']));
       $suffix = !empty($display_item['#suffix']) ? $display_item['#suffix'] : '';
 
       $rows[] = array(
@@ -554,7 +554,7 @@ function theme_uc_checkout_pane_cart_review($variables) {
   foreach ($variables['items'] as $item) {
     $desc = check_plain($item->title) . uc_product_get_description($item);
 
-    $output .= '<tr valign="top"><td>' . $item->qty . '&times;</td><td width="100%">' . $desc
+    $output .= '<tr valign="top"><td nowrap="nowrap">' . theme('uc_qty', array('qty' => $item->qty)) . '</td><td width="100%">' . $desc
               . '</td><td nowrap="nowrap">' . theme('uc_price', array('price' => $item->price * $item->qty)) . '</td></tr>';
   }
   $output .= '</table>';

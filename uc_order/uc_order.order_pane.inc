@@ -1122,7 +1122,8 @@ function uc_op_products_view_table($order) {
     foreach ($order->products as $product) {
       $data = array();
       $data['qty'] = array(
-        '#markup' => $product->qty . '&times;',
+        '#theme' => 'uc_qty',
+        '#qty' => $product->qty,
         '#cell_attributes' => array('align' => 'right'),
       );
       $node = node_load($product->nid);
@@ -1226,7 +1227,8 @@ function uc_op_products_customer_table($order) {
     foreach ($order->products as $product) {
       $data = array();
       $data['qty'] = array(
-        '#markup' => $product->qty . '&times;',
+        '#theme' => 'uc_qty',
+        '#qty' => $product->qty,
         '#cell_attributes' => array('align' => 'right'),
       );
       $node = node_load($product->nid);
