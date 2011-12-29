@@ -944,7 +944,7 @@ function uc_order_history($user) {
 
     $rows[] = array(
       array('data' => format_date($order->created, 'uc_store')),
-      array('data' => $link, 'nowrap' => 'nowrap'),
+      array('data' => $link),
       array('data' => check_plain($order->title)),
       array('data' => (!is_null($order->products) ? $order->products : 0), 'align' => 'center'),
       array('data' => array('#theme' => 'uc_price', '#price' => $order->order_total), 'align' => 'right'),

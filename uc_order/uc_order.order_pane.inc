@@ -819,7 +819,7 @@ function theme_uc_order_pane_line_items($variables) {
     $output .= '<tr><td class="li-title">'
       . drupal_render($form[$field]['li_id'])
       . drupal_render($form[$field]['title'])
-      . ':</td><td class="li-amount" nowrap>'
+      . ':</td><td class="li-amount">'
       . drupal_render($form[$field]['amount'])
       . '</td></tr>';
   }
@@ -868,21 +868,18 @@ function uc_order_pane_order_comments($op, $order, &$form = NULL, &$form_state =
 
     case 'customer':
       $comments = uc_order_comments_load($order->order_id);
-      $header = array(t('Date'), t('Status'), array('data' => t('Message'), 'width' => '100%'));
+      $header = array(t('Date'), t('Status'), t('Message'));
       $rows[] = array(
-        format_date($order->created, 'uc_store'),
-        array('data' => '-', 'align' => 'center'),
-        t('Order created.')
+        array('data' => format_date($order->created, 'uc_store'), 'class' => array('date')),
+        array('data' => '-', 'class' => array('status')),
+        array('data' => t('Order created.'), 'class' => array('message')),
       );
       if (count($comments) > 0) {
         foreach ($comments as $comment) {
           $rows[] = array(
-            'data' => array(
-              array('data' => format_date($comment->created, 'uc_store'), 'align' => 'center'),
-              array('data' => $comment->title, 'align' => 'center', 'nowrap' => 'nowrap'),
-              check_plain($comment->message),
-            ),
-            'valign' => 'top'
+            array('data' => format_date($comment->created, 'uc_store'), 'class' => array('date')),
+            array('data' => $comment->title, 'class' => array('status')),
+            array('data' => check_plain($comment->message), 'class' => array('message')),
           );
         }
       }
@@ -890,6 +887,7 @@ function uc_order_pane_order_comments($op, $order, &$form = NULL, &$form_state =
         '#theme' => 'table',
         '#header' => $header,
         '#rows' => $rows,
+        '#attributes' => array('class' => array('uc-order-comments')),
       );
 
       return $build;
@@ -1075,22 +1073,21 @@ function uc_op_products_view_table($order) {
   $table['#columns']['qty'] = array(
     'cell' => array(
       'data' => theme('uc_qty_label'),
-      'class' => array('text-right'),
+      'class' => array('qty'),
     ),
     'weight' => 0,
   );
   $table['#columns']['product'] = array(
     'cell' => array(
       'data' => t('Product'),
-      'class' => array('header-wide'),
+      'class' => array('product'),
     ),
     'weight' => 1,
   );
   $table['#columns']['model'] = array(
     'cell' => array(
       'data' => t('SKU'),
-      'class' => array('text-center'),
-      'nowrap' => 'nowrap',
+      'class' => array('sku'),
     ),
     'weight' => 2,
   );
@@ -1098,7 +1095,7 @@ function uc_op_products_view_table($order) {
     $table['#columns']['cost'] = array(
       'cell' => array(
         'data' => t('Cost'),
-        'class' => array('text-right'),
+        'class' => array('cost'),
       ),
       'weight' => 3,
     );
@@ -1106,14 +1103,14 @@ function uc_op_products_view_table($order) {
   $table['#columns']['price'] = array(
     'cell' => array(
       'data' => t('Price'),
-      'class' => array('text-right'),
+      'class' => array('price'),
     ),
     'weight' => 4,
   );
   $table['#columns']['total'] = array(
     'cell' => array(
       'data' => t('Total'),
-      'class' => array('text-right'),
+      'class' => array('total'),
     ),
     'weight' => 5,
   );
@@ -1124,37 +1121,37 @@ function uc_op_products_view_table($order) {
       $data['qty'] = array(
         '#theme' => 'uc_qty',
         '#qty' => $product->qty,
-        '#cell_attributes' => array('align' => 'right'),
+        '#cell_attributes' => array('class' => array('qty')),
       );
       $node = node_load($product->nid);
       $title = node_access('view', $node) ? l($product->title, 'node/'. $node->nid) : check_plain($product->title);
       $data['product'] = array(
         '#markup' => $title . uc_product_get_description($product),
+        '#cell_attributes' => array('class' => array('product')),
       );
       $data['model'] = array(
         '#markup' => check_plain($product->model),
-        '#cell_attributes' => array('align' => 'center'),
+        '#cell_attributes' => array('class' => array('sku')),
       );
 
       if (user_access('administer products')) {
         $data['cost'] = array(
           '#theme' => 'uc_price',
           '#price' => $product->cost,
-          '#cell_attributes' => array('align' => 'right'),
+          '#cell_attributes' => array('class' => array('cost')),
         );
       }
 
       $data['price'] = array(
         '#theme' => 'uc_price',
         '#price' => $product->price,
-        '#cell_attributes' => array('align' => 'right'),
+        '#cell_attributes' => array('class' => array('price')),
       );
       $data['total'] = array(
         '#theme' => 'uc_price',
         '#price' => $product->price * $product->qty,
-        '#cell_attributes' => array('align' => 'right'),
+        '#cell_attributes' => array('class' => array('total')),
       );
-      $data['#attributes'] = array('valign' => 'top');
       $table['#rows'][] = $data;
     }
   }
@@ -1180,22 +1177,21 @@ function uc_op_products_customer_table($order) {
   $table['#columns']['qty'] = array(
     'cell' => array(
       'data' => theme('uc_qty_label'),
-      'class' => array('text-right'),
+      'class' => array('qty'),
     ),
     'weight' => 0,
   );
   $table['#columns']['product'] = array(
     'cell' => array(
       'data' => t('Product'),
-      'class' => array('header-wide'),
+      'class' => array('product'),
     ),
     'weight' => 1,
   );
   $table['#columns']['model'] = array(
     'cell' => array(
       'data' => t('SKU'),
-      'class' => array('text-center'),
-      'nowrap' => 'nowrap',
+      'class' => array('sku'),
     ),
     'weight' => 2,
   );
@@ -1203,7 +1199,7 @@ function uc_op_products_customer_table($order) {
     $table['#columns']['cost'] = array(
       'cell' => array(
         'data' => t('Cost'),
-        'class' => array('text-right'),
+        'class' => array('cost'),
       ),
       'weight' => 3,
     );
@@ -1211,14 +1207,14 @@ function uc_op_products_customer_table($order) {
   $table['#columns']['price'] = array(
     'cell' => array(
       'data' => t('Price'),
-      'class' => array('text-right'),
+      'class' => array('price'),
     ),
     'weight' => 4,
   );
   $table['#columns']['total'] = array(
     'cell' => array(
       'data' => t('Total'),
-      'class' => array('text-right'),
+      'class' => array('total'),
     ),
     'weight' => 5,
   );
@@ -1229,37 +1225,37 @@ function uc_op_products_customer_table($order) {
       $data['qty'] = array(
         '#theme' => 'uc_qty',
         '#qty' => $product->qty,
-        '#cell_attributes' => array('align' => 'right'),
+        '#cell_attributes' => array('class' => array('qty')),
       );
       $node = node_load($product->nid);
       $title = node_access('view', $node) ? l($product->title, 'node/'. $node->nid) : check_plain($product->title);
       $data['product'] = array(
         '#markup' => $title . uc_product_get_description($product),
+        '#cell_attributes' => array('class' => array('product')),
       );
       $data['model'] = array(
         '#markup' => check_plain($product->model),
-        '#cell_attributes' => array('align' => 'center'),
+        '#cell_attributes' => array('class' => array('sku')),
       );
 
       if (user_access('administer products')) {
         $data['cost'] = array(
           '#theme' => 'uc_price',
           '#price' => $product->cost,
-          '#cell_attributes' => array('align' => 'right'),
+          '#cell_attributes' => array('class' => array('cost')),
         );
       }
 
       $data['price'] = array(
         '#theme' => 'uc_price',
         '#price' => $product->price,
-        '#cell_attributes' => array('align' => 'right'),
+        '#cell_attributes' => array('class' => array('price')),
       );
       $data['total'] = array(
         '#theme' => 'uc_price',
         '#price' => $product->price * $product->qty,
-        '#cell_attributes' => array('align' => 'right'),
+        '#cell_attributes' => array('class' => array('total')),
       );
-      $data['#attributes'] = array('valign' => 'top');
       $table['#rows'][] = $data;
     }
   }
