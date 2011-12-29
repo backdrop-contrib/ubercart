@@ -120,16 +120,16 @@ function uc_product_features($node, $fid = NULL, $pfid = NULL) {
   $features = uc_product_feature_load_multiple($node->nid);
   foreach ($features as $feature) {
     $operations = array(
-      l(t('edit'), 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid),
-      l(t('delete'), 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid . '/delete'),
+      'edit' => array('title' => t('edit'), 'href' => 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid),
+      'delete' => array('title' => t('delete'), 'href' => 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid . '/delete'),
     );
     $rows[] = array(
-      'data' => array(
-        array('data' => uc_product_feature_data($feature->fid, 'title'), 'nowrap' => 'nowrap'),
-        array('data' => $feature->description, 'width' => '100%'),
-        array('data' => implode(' ', $operations), 'nowrap' => 'nowrap'),
-      ),
-      'valign' => 'top',
+      array('data' => uc_product_feature_data($feature->fid, 'title')),
+      array('data' => $feature->description),
+      theme('links', array(
+        'links' => $operations,
+        'attributes' => array('class' => array('links', 'inline')),
+      )),
     );
   }
 
@@ -137,6 +137,7 @@ function uc_product_features($node, $fid = NULL, $pfid = NULL) {
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
+    '#attributes' => array('class' => array('uc-product-features')),
     '#empty' => t('No features found for this product.'),
   );
   $build['add_form'] = drupal_get_form('uc_product_feature_add_form', $node);
