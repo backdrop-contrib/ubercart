@@ -28,10 +28,8 @@ function hook_tapir_table_alter(&$table, $table_id) {
       $node = node_load($table['#parameters'][1][$key]);
 
       $table[$key]['designer'] = array(
-        '#value' => l($node->designer, 'collections/' . $node->designer_tid),
-        '#cell_attributes' => array(
-          'nowrap' => 'nowrap',
-        ),
+        '#markup' => l($node->designer, 'collections/' . $node->designer_tid),
+        '#cell_attributes' => array('class' => array('designer')),
       );
     }
   }
