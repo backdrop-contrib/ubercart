@@ -498,11 +498,11 @@ function theme_uc_cart_review_table($variables) {
       if (!empty($display_item['description']['#markup'])) {
         $description .= $display_item['description']['#markup'];
       }
-      $qty = theme('uc_qty', array('qty' => $display_item['qty']['#default_value']));
+      $qty = $display_item['qty']['#default_value'];
       $suffix = !empty($display_item['#suffix']) ? $display_item['#suffix'] : '';
 
       $rows[] = array(
-        array('data' => $qty, 'class' => array('qty')),
+        array('data' => array('#theme' => 'uc_qty', '#qty' => $qty), 'class' => array('qty')),
         array('data' => $description, 'class' => array('products')),
         array('data' => array('#theme' => 'uc_price', '#price' => $total, '#suffix' => $suffix), 'class' => array('price')),
       );
@@ -550,14 +550,15 @@ function theme_uc_cart_review_table($variables) {
  * @ingroup themeable
  */
 function theme_uc_checkout_pane_cart_review($variables) {
-  $output = '<table>';
+  $rows = array();
+
   foreach ($variables['items'] as $item) {
-    $desc = check_plain($item->title) . uc_product_get_description($item);
-
-    $output .= '<tr valign="top"><td nowrap="nowrap">' . theme('uc_qty', array('qty' => $item->qty)) . '</td><td width="100%">' . $desc
-              . '</td><td nowrap="nowrap">' . theme('uc_price', array('price' => $item->price * $item->qty)) . '</td></tr>';
+    $rows[] = array(
+      array('data' => array('#theme' => 'uc_qty', '#price' => $item->qty), 'class' => array('qty')),
+      array('data' => check_plain($item->title) . uc_product_get_description($item), 'class' => array('products')),
+      array('data' => array('#theme' => 'uc_price', '#price' => $item->price * $item->qty), 'class' => array('price')),
+    );
   }
-  $output .= '</table>';
 
-  return $output;
+  return theme('table', array('rows' => $rows, 'attributes' => array('class' => array('cart-review'))));;
 }

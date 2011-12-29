@@ -403,9 +403,10 @@ function theme_uc_cart_checkout_review($variables) {
           else {
             $border = '';
           }
-          $output .= '<tr valign="top"' . $border . '><td class="title-col" '
-                    . 'nowrap>' . $row['title'] . ':</td><td class="data-col">'
-                   . $row['data'] . '</td></tr>';
+          $output .= '<tr valign="top"' . $border . '>';
+          $output .= '<td class="title-col">' . $row['title'] . ':</td>';
+          $output .= '<td class="data-col">' . $row['data'] . '</td>';
+          $output .= '</tr>';
         }
         else {
           $output .= '<tr valign="top"><td colspan="2">' . $row . '</td></tr>';
