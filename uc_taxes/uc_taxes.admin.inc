@@ -188,9 +188,6 @@ function uc_taxes_form_submit($form, &$form_state) {
   );
   $rate = uc_taxes_rate_save($rate);
 
-  // Ensure Rules picks up the new condition.
-  rules_clear_cache();
-
   // Update the name of the associated conditions.
   $conditions = rules_config_load('uc_taxes_' . $form_state['values']['id']);
   if ($conditions) {
