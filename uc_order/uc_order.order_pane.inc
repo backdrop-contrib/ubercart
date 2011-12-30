@@ -372,9 +372,7 @@ function uc_order_edit_products_form($form, &$form_state, $products) {
         '#type' => 'image_button',
         '#title' => t('Remove this product.'),
         '#src' => drupal_get_path('module', 'uc_store') . '/images/error.gif',
-        '#attributes' => array(
-          'style' => 'padding-top: 1px; padding-left: .8em; padding-right: 2px; float: left; cursor: pointer;',
-        ),
+        '#button_type' => 'remove',
         '#submit' => array('uc_order_edit_products_remove', 'uc_order_edit_form_submit'),
         '#return_value' => $products[$i]->order_product_id,
       );
