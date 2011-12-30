@@ -79,9 +79,9 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
       );
       $pkg_form['weight'] = array(
         '#type'           => 'container',
+        '#attributes'     => array('class' => array('uc-inline-form', 'clearfix')),
         '#description'    => t('Weight of the package. Default value is sum of product weights in the package.'),
         '#weight'         => 15,
-        '#theme'          => 'uc_product_inline_form',
       );
       $pkg_form['weight']['weight'] = array(
         '#type'          => 'textfield',
@@ -105,9 +105,9 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
       );
       $pkg_form['dimensions'] = array(
         '#type'          => 'container',
+        '#attributes'    => array('class' => array('uc-inline-form', 'clearfix')),
         '#description'   => t('Physical dimensions of the package.'),
         '#weight'        => 20,
-        '#theme'         => 'uc_product_inline_form',
       );
       $pkg_form['dimensions']['length'] = array(
         '#type'          => 'textfield',

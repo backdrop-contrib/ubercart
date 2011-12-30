@@ -206,9 +206,6 @@ function uc_product_feature_access($node) {
  */
 function uc_product_theme() {
   return array(
-    'uc_product_inline_form' => array(
-      'render element' => 'form',
-    ),
     'uc_product_model' => array(
       'variables' => array('model' => '', 'view_mode' => 'full'),
     ),
@@ -344,7 +341,6 @@ function uc_product_edit_access($node) {
 /**
  * Implements hook_form().
  *
- * @see theme_uc_product_inline_form()
  * @ingroup forms
  */
 function uc_product_form($node, $form_state) {
@@ -385,8 +381,8 @@ function uc_product_form($node, $form_state) {
 
   $form['base']['prices'] = array(
     '#type' => 'container',
+    '#attributes' => array('class' => array('uc-inline-form', 'clearfix')),
     '#weight' => 5,
-    '#theme' => 'uc_product_inline_form',
   );
 
   $form['base']['prices']['list_price'] = array(
@@ -421,13 +417,13 @@ function uc_product_form($node, $form_state) {
 
   $form['base']['weight'] = array(
     '#type' => 'container',
+    '#attributes' => array('class' => array('uc-inline-form', 'clearfix')),
     '#states' => array(
       'invisible' => array(
         'input[name="shippable"]' => array('checked' => FALSE),
       ),
     ),
     '#weight' => 15,
-    '#theme' => 'uc_product_inline_form',
   );
   $form['base']['weight']['weight'] = array(
     '#type' => 'textfield',
@@ -451,13 +447,13 @@ function uc_product_form($node, $form_state) {
 
   $form['base']['dimensions'] = array(
     '#type' => 'container',
+    '#attributes' => array('class' => array('uc-inline-form', 'clearfix')),
     '#states' => array(
       'invisible' => array(
         'input[name="shippable"]' => array('checked' => FALSE),
       ),
     ),
     '#weight' => 20,
-    '#theme' => 'uc_product_inline_form',
   );
   $form['base']['dimensions']['dim_length'] = array(
     '#type' => 'textfield',
@@ -531,27 +527,6 @@ function uc_product_form($node, $form_state) {
   );
 
   return $form;
-}
-
-/**
- * Puts form fields on the same line.
- *
- * @param $variables
- *   An associative array containing:
- *   - form: A render element representing the form.
- *
- * @ingroup themeable
- */
-function theme_uc_product_inline_form($variables) {
-  $form = $variables['form'];
-
-  $output = '<table><tr>';
-  foreach (element_children($form) as $element) {
-    $output .= '<td>' . drupal_render($form[$element]) . '</td>';
-  }
-  $output .= '</tr></table>';
-
-  return $output;
 }
 
 /**

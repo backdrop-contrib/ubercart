@@ -741,7 +741,6 @@ function uc_shipping_shipment_view($order, $shipment) {
  *
  * @see uc_shipping_shipment_edit_validate()
  * @see uc_shipping_shipment_edit_submit()
- * @see theme_uc_shipping_package_dimensions()
  * @ingroup forms
  */
 function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
@@ -814,9 +813,9 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
     );
     $pkg_form['weight'] = array(
       '#type'        => 'container',
+      '#attributes'  => array('class' => array('uc-inline-form', 'clearfix')),
       '#description' => t('Weight of the package. Default value is sum of product weights in the package.'),
       '#weight'      => 15,
-      '#theme'       => 'uc_product_inline_form',
     );
     $pkg_form['weight']['weight'] = array(
       '#type'          => 'textfield',
@@ -840,11 +839,10 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
     );
     $pkg_form['dimensions'] = array(
       '#type'        => 'container',
+      '#attributes'  => array('class' => array('uc-inline-form', 'clearfix')),
       '#title'       => t('Dimensions'),
       '#description' => t('Physical dimensions of the packaged product.'),
       '#weight'      => 20,
-      //'#theme'       => 'uc_shipping_package_dimensions',
-      '#theme'       => 'uc_product_inline_form',
     );
     $pkg_form['dimensions']['length'] = array(
       '#type'          => 'textfield',

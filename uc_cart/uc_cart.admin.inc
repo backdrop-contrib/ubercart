@@ -97,14 +97,13 @@ function uc_cart_cart_settings_form($form, &$form_state) {
   $form['lifetime']['anonymous'] = array(
     '#type' => 'fieldset',
     '#title' => t('Anonymous users'),
+    '#attributes' => array('class' => array('uc-inline-form', 'clearfix')),
   );
   $form['lifetime']['anonymous']['uc_cart_anon_duration'] = array(
     '#type' => 'select',
     '#title' => t('Duration'),
     '#options' => drupal_map_assoc(range(1, 60)),
     '#default_value' => variable_get('uc_cart_anon_duration', '4'),
-    '#prefix' => '<div style="float: left; margin-right: 1em; padding-top: 0;">',
-    '#suffix' => '</div>',
   );
   $form['lifetime']['anonymous']['uc_cart_anon_unit'] = array(
     '#type' => 'select',
@@ -117,21 +116,18 @@ function uc_cart_cart_settings_form($form, &$form_state) {
       'years' => t('Year(s)'),
     ),
     '#default_value' => variable_get('uc_cart_anon_unit', 'hours'),
-    '#prefix' => '<div style="float: left; margin-right: 1em;">',
-    '#suffix' => '</div>',
   );
 
   $form['lifetime']['authenticated'] = array(
     '#type' => 'fieldset',
     '#title' => t('Authenticated users'),
+    '#attributes' => array('class' => array('uc-inline-form', 'clearfix')),
   );
   $form['lifetime']['authenticated']['uc_cart_auth_duration'] = array(
     '#type' => 'select',
     '#title' => t('Duration'),
     '#options' => drupal_map_assoc(range(1, 60)),
     '#default_value' => variable_get('uc_cart_auth_duration', '1'),
-    '#prefix' => '<div style="float: left; margin-right: 1em; padding-top: 0;">',
-    '#suffix' => '</div>',
   );
   $form['lifetime']['authenticated']['uc_cart_auth_unit'] = array(
     '#type' => 'select',
@@ -143,8 +139,6 @@ function uc_cart_cart_settings_form($form, &$form_state) {
       'years' => t('Year(s)'),
     ),
     '#default_value' => variable_get('uc_cart_auth_unit', 'years'),
-    '#prefix' => '<div style="float: left; margin-right: 1em;">',
-    '#suffix' => '</div>',
   );
 
   $form['continue_shopping'] = array(
