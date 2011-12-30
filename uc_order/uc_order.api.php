@@ -263,6 +263,9 @@ function hook_uc_order_actions($order) {
  *   - title:
  *     - type: string
  *     - value: The name of the pane as it appears on the order admin form.
+ *   - (optional) edit title:
+ *     - type: string
+ *     - value: An alternative title for the pane on the order edit form.
  *   - desc:
  *     - type: string
  *     - value: A short description of the pane for the admin pages.
@@ -308,7 +311,7 @@ function hook_uc_order_pane_alter(&$panes) {
  *
  * @param string $op
  *   The operation the pane is performing. Possible values are "view",
- *   "customer", "show-title", "edit-form", "edit-title", "edit-theme",
+ *   "customer", "edit-form", "edit-title", "edit-theme",
  *   "edit-process", "edit-ops", and any of the strings returned when $op
  *   is "edit-ops".
  * @param UcOrder $order
@@ -322,8 +325,6 @@ function hook_uc_order_pane_alter(&$panes) {
  *   Varies according to the value of $op:
  *   - view: A render array showing admin-visible order data.
  *   - customer: A render array showing customer-visible order data.
- *   - show-title: A boolean flag indicating that the title of the pane should
- *     be shown during the "view" and "customer" ops. Defaults to TRUE.
  *   - edit-form: $form with the pane grafted in.
  *   - edit-title: HTML to serve as the pane's title on the edit form.
  *   - edit-theme: The rendered portion of the $form that the pane added.

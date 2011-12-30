@@ -692,9 +692,6 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
 
       return $build;
 
-    case 'show-title':
-      return FALSE;
-
     case 'edit-form':
       $options = array();
       $items = _uc_line_item_list();
