@@ -255,40 +255,27 @@ function uc_google_checkout_terminal($order) {
       }
     }
   }
-  $balance = uc_payment_balance($order);
-
-  $build['details'] = array(
-    '#prefix' => '<table style="width: auto;"><tbody style="border-top: 0px;">',
-    '#suffix' => '</tbody></table>',
-  );
 
   $build['details']['order_total'] = array(
-    '#prefix' => '<tr>',
-    '#suffix' => '</tr>',
+    '#type' => 'item',
+    '#title' => t('Order total:'),
+    '#markup' => theme('uc_price', array('price' => $order->order_total)),
   );
-  $build['details']['order_total']['label'] = array('#markup' => '<strong>' . t('Order total:') . '</strong>');
-  $build['details']['order_total']['value'] = array('#theme' => 'uc_price', '#price' => $order->order_total);
-
   $build['details']['balance'] = array(
-    '#prefix' => '<tr>',
-    '#suffix' => '</tr>',
+    '#type' => 'item',
+    '#title' => t('Balance:'),
+    '#markup' => theme('uc_price', array('price' => uc_payment_balance($order))),
   );
-  $build['details']['balance']['label'] = array('#markup' => '<strong>' . t('Balance:') . '</strong>');
-  $build['details']['balance']['value'] = array('#theme' => 'uc_price', '#price' => $balance);
-
   $build['details']['gco_total'] = array(
-    '#prefix' => '<tr>',
-    '#suffix' => '</tr>',
+    '#type' => 'item',
+    '#title' => t('Google Checkout total:'),
+    '#markup' => theme('uc_price', array('price' => $order->gc_total)),
   );
-  $build['details']['gco_total']['label'] = array('#markup' => '<strong>' . t('Google Checkout total:') . '</strong>');
-  $build['details']['gco_total']['value'] = array('#theme' => 'uc_price', '#price' => $order->gc_total);
-
   $build['details']['gco_balance'] = array(
-    '#prefix' => '<tr>',
-    '#suffix' => '</tr>',
+    '#type' => 'item',
+    '#title' => t('Google Checkout balance:'),
+    '#markup' => theme('uc_price', array('price' => $gc_balance)),
   );
-  $build['details']['gco_balance']['label'] = array('#markup' => '<strong>' . t('Google Checkout balance:') . '</strong>');
-  $build['details']['gco_balance']['value'] = array('#theme' => 'uc_price', '#price' => $gc_balance);
 
   if (in_array($order->financial_state, array('REVIEWING', 'CHARGEABLE', 'CHARGED'))) {
     $build['form'] = drupal_get_form('uc_google_checkout_terminal_form', $order, $gc_balance);
