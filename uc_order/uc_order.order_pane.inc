@@ -1080,7 +1080,8 @@ function uc_op_products_view_table($order) {
   );
 
   if (is_array($order->products)) {
-    $table['#rows'] = entity_view('uc_order_product', $order->products);
+    $build = entity_view('uc_order_product', $order->products);
+    $table['#rows'] = $build['uc_order_product'];
   }
   else {
     $table['#rows'][]['product'] = array(
