@@ -914,7 +914,6 @@ function uc_order_pane_update($op, $order, &$form = NULL, &$form_state = NULL) {
 /**
  * Form to save order comments and update the order status.
  *
- * @see theme_uc_order_view_update_controls()
  * @see uc_order_view_update_form_submit()
  * @ingroup forms
  */
@@ -952,7 +951,8 @@ function uc_order_view_update_form($form, &$form_state, $order) {
   );
 
   $form['controls'] = array(
-    '#theme' => 'uc_order_view_update_controls',
+    '#type' => 'container',
+    '#attributes' => array('class' => array('uc-inline-form', 'clearfix')),
     '#weight' => 10,
   );
 
@@ -964,8 +964,6 @@ function uc_order_view_update_form($form, &$form_state, $order) {
     '#title' => t('Order status'),
     '#default_value' => $order->order_status,
     '#options' => $options,
-    '#attributes' => array('style' => 'display: inline;'),
-    '#weight' => -10,
   );
 
   $form['controls']['notify'] = array(
@@ -977,18 +975,9 @@ function uc_order_view_update_form($form, &$form_state, $order) {
   $form['controls']['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Update'),
-    '#weight' => 10,
   );
 
   return $form;
-}
-
-/**
- * @see uc_order_view_update_form()
- * @ingroup themeable
- */
-function theme_uc_order_view_update_controls($variables) {
-  return '<div class="update-controls">' . drupal_render_children($variables['form']) . '</div>';
 }
 
 /**
