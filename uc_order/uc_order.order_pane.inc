@@ -362,7 +362,6 @@ function uc_order_add_product_form($form, &$form_state, $order, $node) {
  *
  * @see uc_op_products_edit_table()
  * @see theme_uc_order_edit_products_form()
- * @see theme_uc_order_remove_product()
  */
 function uc_order_edit_products_form($form, &$form_state, $products) {
   if (($product_count = count($products)) > 0) {
@@ -454,30 +453,6 @@ function uc_order_edit_products_form($form, &$form_state, $products) {
   }
 
   return $form;
-}
-
-/**
- * @see uc_order_edit_products_form()
- * @ingroup themeable
- */
-function theme_uc_order_edit_products_form($variables) {
-  return drupal_render_children($variables['form']);
-}
-
-/**
- * Formats the button to remove products from an order.
- *
- * @see uc_op_products_edit_table()
- * @ingroup themeable
- */
-function theme_uc_order_remove_product($variables) {
-  $form = $variables['form'];
-
-  return '<img id="' . $form['#return_value'] . '" src="'
-    . $form['#src'] . '" style="padding-top: 1px; padding-left: .8em; '
-    . 'padding-right: 2px; float: left; cursor: pointer;" '
-    . 'alt="' . t('Remove this product.') . '" />'
-    . drupal_render_children($form);
 }
 
 /**
@@ -1259,8 +1234,6 @@ function uc_op_products_customer_table($order) {
 
 /**
  * TAPIr table for products pane on the order edit page.
- *
- * @see uc_order_edit_products_form()
  */
 function uc_op_products_edit_table() {
   $table = array(
