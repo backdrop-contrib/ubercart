@@ -736,7 +736,7 @@ function uc_order_uc_order_pane() {
   $panes['line_items'] = array(
     'callback' => 'uc_order_pane_line_items',
     'title' => t('Line items'),
-    'edit title' => '',
+    'display title' => '',
     'desc' => t("View and modify an order's line items."),
     'class' => 'abs-left',
     'weight' => 6,
@@ -1103,14 +1103,16 @@ function uc_order_view($order, $view_mode = 'full') {
     if (in_array($view_mode, $pane['show']) && variable_get('uc_order_pane_' . $pane['id'] . '_show_' . $view_mode, $pane['enabled'])) {
       $func = $pane['callback'];
       if (function_exists($func) && ($contents = $func($view_mode, $order)) != NULL) {
-        $title = array();
-
-        if ($func('show-title', NULL) !== FALSE) {
+        $title = isset($pane['display title']) ? $pane['display title'] : $pane['title'];
+        if ($title) {
           $title = array(
-            '#markup' => $pane['title'] . ': ' . $func('view-title', $order),
+            '#markup' => $pane['title'] . ':',
             '#prefix' => '<div class="order-pane-title">',
             '#suffix' => '</div>',
           );
+        }
+        else {
+          $title = array();
         }
 
         $order->content[$pane['id']] = array(

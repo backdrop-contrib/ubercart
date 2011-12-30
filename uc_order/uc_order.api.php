@@ -262,10 +262,10 @@ function hook_uc_order_actions($order) {
  *       for more documentation and examples of checkout pane callbacks.
  *   - title:
  *     - type: string
- *     - value: The name of the pane as it appears on the order admin form.
- *   - (optional) edit title:
+ *     - value: The name of the pane.
+ *   - (optional) display title:
  *     - type: string
- *     - value: An alternative title for the pane on the order edit form.
+ *     - value: The title of the pane as it will be displayed.
  *   - desc:
  *     - type: string
  *     - value: A short description of the pane for the admin pages.
