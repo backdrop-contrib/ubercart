@@ -311,7 +311,7 @@ function hook_uc_order_pane_alter(&$panes) {
  *
  * @param string $op
  *   The operation the pane is performing. Possible values are "view",
- *   "customer", "edit-form", "edit-title", "edit-theme" or "edit-process".
+ *   "customer", "edit-form", "edit-theme" or "edit-process".
  * @param UcOrder $order
  *   The order being viewed or edited.
  * @param array $form
@@ -324,7 +324,6 @@ function hook_uc_order_pane_alter(&$panes) {
  *   - view: A render array showing admin-visible order data.
  *   - customer: A render array showing customer-visible order data.
  *   - edit-form: $form with the pane grafted in.
- *   - edit-title: HTML to serve as the pane's title on the edit form.
  *   - edit-theme: The rendered portion of the $form that the pane added.
  *   - edit-process: An array of values to be modified on the order object,
  *     keyed by the object's property, or NULL to signify no change on the order

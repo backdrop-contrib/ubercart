@@ -1135,8 +1135,7 @@ function theme_uc_order_edit_form($variables) {
           $output .= '<div class="order-pane ' . $pane['class'] . '">';
           $title = isset($pane['edit title']) ? $pane['edit title'] : $pane['title'];
           if ($title) {
-            $output .= '<div class="order-pane-title">' . $title . ': '
-                     . $func('edit-title', $form['#order'], $form) . '</div>';
+            $output .= '<div class="order-pane-title">' . $title . ':' . '</div>';
           }
           $output .= $contents . '</div>';
         }
