@@ -1,7 +1,7 @@
 <?php
 /**
- * @file 
- * 
+ * @file
+ *
  * Contains the controller for uc_cart_item entities.
  */
 class UcCartItemController extends EntityAPIController {
@@ -11,8 +11,8 @@ class UcCartItemController extends EntityAPIController {
     $content += module_invoke($item->module, 'uc_cart_display', $item);
     if (!empty($content)) {
       $content['cart_item_id'] = array(
-				'#type' => 'hidden',
-				'#value' => $item->cart_item_id,
+        '#type' => 'hidden',
+        '#value' => $item->cart_item_id,
       );
     }
     return parent::buildContent($item, $view_mode, $langcode, $content);
