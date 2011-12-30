@@ -716,18 +716,20 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
       }
       usort($line_items, 'uc_weight_sort');
 
-      $form['add_line_item'] = array();
+      $form['add_line_item'] = array('#type' => 'container');
 
       $form['add_line_item']['li_type_select'] = array(
         '#type' => 'select',
-        '#title' => t('Select a type'),
+        '#title' => t('Add a line item'),
         '#options' => $options,
       );
-      $form['add_line_item']['actions'] = array('#type' => 'actions');
-      $form['add_line_item']['actions']['submit'] = array(
+      $form['add_line_item']['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Add line'),
-        '#attributes' => array('class' => array('save-button')),
+        '#submit' => array('uc_order_pane_line_items_add'),
+        '#ajax' => array(
+          'callback' => 'uc_order_pane_line_items_update',
+        ),
       );
       $form['li_delete_id'] = array(
         '#type' => 'hidden',
@@ -780,26 +782,13 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
       return $form;
 
     case 'edit-theme':
-      $form['add_line_item']['li_type_select']['#title'] = '';
-      $output = '<table class="full-width"><tr><td>';
-      $output .= '<table><tr><td colspan="2"><b>' . t('Add a line item')
-                . ': </b></td></tr><tr><td>' . drupal_render($form['add_line_item']['li_type_select'])
-                . ' </td><td>' . drupal_render($form['add_line_item']['actions'])
-                . '</td></tr></table>';
-      $output .= '</td><td>' . drupal_render($form['li_delete_id'])
-                . drupal_render($form['line_items']) . '</td></tr></table>';
-      return $output;
+      return drupal_render($form['add_line_item'])
+           . drupal_render($form['li_delete_id'])
+           . drupal_render($form['line_items']);
 
     case 'edit-process':
       uc_order_pane_line_items_submit($form, $form_state);
       return;
-
-    case 'edit-ops':
-      return array(t('Add line'));
-
-    case t('Add line'):
-      drupal_goto('admin/store/orders/' . $form_state['order_id']
-                 . '/add_line_item/' . $form_state['li_type_select']);
   }
 }
 
@@ -847,11 +836,24 @@ function uc_order_pane_line_items_submit($form, &$form_state) {
 /**
  *
  */
-function uc_order_edit_line_items_recalculate($form, &$form_state) {
-  $order = $form_state['build_info']['args'][0];
+function uc_order_pane_line_items_add($form, &$form_state) {
+  $order = &$form_state['order'];
+  $type = $form_state['values']['li_type_select'];
 
-  // Load line items again, since some may have been updated by the form.
+  uc_order_line_item_add($order->order_id, $type, _uc_line_item_data($type, 'title'), 0);
   $order->line_items = uc_order_load_line_items($order);
+
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * AJAX callback to render the line items.
+ */
+function uc_order_pane_line_items_update($form, &$form_state) {
+  $commands[] = ajax_command_replace('#order-line-items', drupal_render($form['line_items']));
+  $commands[] = ajax_command_prepend('#order-line-items', theme('status_messages'));
+
+  return array('#type' => 'ajax', '#commands' => $commands);
 }
 
 /**

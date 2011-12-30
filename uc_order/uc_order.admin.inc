@@ -1036,8 +1036,6 @@ function uc_order_edit_form_validate($form, &$form_state) {
   entity_form_field_validate('uc_order', $form, $form_state);
 
   // Build list of changes to be applied.
-  $form_state['storage']['changes'] = array();
-  $form_state['storage']['perform'] = array();
   $panes = _uc_order_pane_list();
   foreach ($panes as $id => $pane) {
     if (in_array('edit', $pane['show']) && variable_get('uc_order_pane_' . $id . '_show_edit', TRUE)) {
@@ -1070,16 +1068,6 @@ function uc_order_edit_form_submit($form, &$form_state) {
         $log[$key] = array('old' => $order->$key, 'new' => $value);
       }
       $order->$key = $value;
-    }
-  }
-
-  $panes = _uc_order_pane_list();
-  foreach ($panes as $id => $pane) {
-    if (in_array('edit', $pane['show']) && variable_get('uc_order_pane_' . $id . '_show_edit', TRUE)) {
-      $func = $pane['callback'];
-      if (function_exists($func) && ($ops = $func('edit-ops', NULL)) != NULL) {
-        $perform[$func] = $ops;
-      }
     }
   }
 
@@ -1119,14 +1107,6 @@ function uc_order_edit_form_submit($form, &$form_state) {
   field_attach_submit('uc_order', $order, $form, $form_state);
 
   uc_order_save($order);
-
-  if (!empty($perform)) {
-    foreach ($perform as $func => $ops) {
-      if (in_array($form_state['triggering_element']['#value'], $ops)) {
-        $func($form_state['triggering_element']['#value'], $order, $form, $form_state['values']);
-      }
-    }
-  }
 
   drupal_set_message(t('Order changes saved.'));
 }

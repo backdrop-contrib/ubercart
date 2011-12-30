@@ -311,9 +311,7 @@ function hook_uc_order_pane_alter(&$panes) {
  *
  * @param string $op
  *   The operation the pane is performing. Possible values are "view",
- *   "customer", "edit-form", "edit-title", "edit-theme",
- *   "edit-process", "edit-ops", and any of the strings returned when $op
- *   is "edit-ops".
+ *   "customer", "edit-form", "edit-title", "edit-theme" or "edit-process".
  * @param UcOrder $order
  *   The order being viewed or edited.
  * @param array $form
@@ -331,9 +329,6 @@ function hook_uc_order_pane_alter(&$panes) {
  *   - edit-process: An array of values to be modified on the order object,
  *     keyed by the object's property, or NULL to signify no change on the order
  *     object.
- *   - edit-ops: An array of possible $op values that this pane may use to do
- *     alternate processing on the edit form.
- *   - edit-ops values: No return value expected.
  */
 function uc_order_pane_callback($op, $order, &$form = NULL, &$form_state = NULL) {
   // uc_order_pane_admin_comments()
