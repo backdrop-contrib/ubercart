@@ -37,12 +37,10 @@ function uc_order_pane_ship_to($op, $order, &$form = NULL, &$form_state = NULL) 
       $output = '<div class="order-pane-icons">';
       $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
                 . '/images/address_book.gif" alt="' . t('Select from address book.') . '" '
-                . 'title="' . t('Select from address book.') . '" onclick="load_address_select(' . $form['order_uid']['#value'] . ', \'#delivery_address_select\', \'delivery\');" '
-                . 'style="position: relative; top: 2px; cursor: pointer;" />';
+                . 'title="' . t('Select from address book.') . '" onclick="load_address_select(' . $form['order_uid']['#value'] . ', \'#delivery_address_select\', \'delivery\');" />';
       $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
                  . '/images/copy.gif" alt="' . t('Copy billing information.') . '" title="'
-                 . t('Copy billing information.') . '" onclick="uc_order_copy_billing_to_shipping();" '
-                 . 'style="position: relative; top: 2px; cursor: pointer;" />';
+                 . t('Copy billing information.') . '" onclick="uc_order_copy_billing_to_shipping();" />';
       $output .= '</div>';
       $output .= '<div id="delivery_address_select"></div>';
       return $output . drupal_render($form['ship_to']);
@@ -83,12 +81,10 @@ function uc_order_pane_bill_to($op, $order, &$form = NULL, &$form_state = NULL) 
       $output = '<div class="order-pane-icons">';
       $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
                 . '/images/address_book.gif" alt="' . t('Select from address book.') . '" '
-                . 'title="' . t('Select from address book.') . '" onclick="load_address_select(' . $form['order_uid']['#value'] . ', \'#billing_address_select\', \'billing\');" '
-                . 'style="position: relative; top: 2px; cursor: pointer;" />';
+                . 'title="' . t('Select from address book.') . '" onclick="load_address_select(' . $form['order_uid']['#value'] . ', \'#billing_address_select\', \'billing\');" />';
       $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
                . '/images/copy.gif" alt="' . t('Copy shipping information.') . '" title="'
-               . t('Copy shipping information.') . '" onclick="uc_order_copy_shipping_to_billing();" '
-               . 'style="position: relative; top: 2px; cursor: pointer;" />';
+               . t('Copy shipping information.') . '" onclick="uc_order_copy_shipping_to_billing();" />';
       $output .= '</div>';
       $output .= '<div id="billing_address_select"></div>';
       return $output . drupal_render($form['bill_to']);
@@ -149,12 +145,10 @@ function uc_order_pane_customer($op, $order, &$form = NULL, &$form_state = NULL)
       $output = '<div class="order-pane-icons">';
       $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
                 . '/images/order_view.gif" alt="' . t('Search for an existing customer.') . '" '
-                . 'title="' . t('Search for an existing customer.') . '" onclick="load_customer_search();" '
-                . 'style="position: relative; top: 2px; cursor: pointer;" />';
+                . 'title="' . t('Search for an existing customer.') . '" onclick="load_customer_search();" />';
       $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
                 . '/images/menu_customers_small.gif" alt="' . t('Create a new customer.') . '" '
-                . 'title="' . t('Create a new customer.') . '" onclick="load_new_customer_form();" '
-                . 'style="position: relative; top: 2px; cursor: pointer;" />';
+                . 'title="' . t('Create a new customer.') . '" onclick="load_new_customer_form();" />';
       $output .= '</div>';
       $output .= '<div id="customer-select"></div><table class="order-edit-table">';
       foreach (element_children($form['customer']['text']) as $field) {
