@@ -194,7 +194,7 @@ class UbercartEncryption {
       if (!$alerted) {
         // Throw an error that makes sense so this stops getting reported.
         $this->errors[] = t('No encryption key was found.');
-        drupal_set_message(t('Ubercart cannot find a necessary encryption key.  Refer to the store admin <a href="!url">dashboard</a> to isolate which one.', array('!url' => url('admin/store'))), 'error');
+        drupal_set_message(t('Ubercart cannot find a necessary encryption key. Refer to the store admin <a href="@url">dashboard</a> to isolate which one.', array('@url' => url('admin/store'))), 'error');
 
         $alerted = TRUE;
       }

@@ -480,7 +480,7 @@ function uc_store_uc_store_status() {
     $messages[] = array(
       'status' => 'warning',
       'title'  => t('Countries'),
-      'desc'   => t('Updates are available for the following installed countries:  %countries. You may update these countries on the !link page.', array('%countries' => implode(', ', $updates), '!link' => l('country settings', 'admin/store/settings/countries'))),
+      'desc'   => t('Updates are available for the following installed countries: %countries. You may update these countries on the <a href="@url">country settings</a> page.', array('%countries' => implode(', ', $updates), '@url' => url('admin/store/settings/countries'))),
     );
   }
   else {
@@ -496,7 +496,7 @@ function uc_store_uc_store_status() {
     $messages[] = array(
       'status' => 'error',
       'title'  => t('Store settings'),
-      'desc'   => t('Store e-mail address has not been set. Please enter it !link.', array('!link' => l('here', 'admin/store/settings/store'))),
+      'desc'   => t('Store e-mail address has not been set. Please enter it <a href="@url">here</a>.', array('@url' => url('admin/store/settings/store'))),
     );
   }
   else {

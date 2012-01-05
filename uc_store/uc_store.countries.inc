@@ -158,7 +158,7 @@ function uc_country_formats_form($form, &$form_state) {
     foreach ($countries as $country) {
       $form['countries'][$country->country_id] = array(
         '#type' => 'fieldset',
-        '#title' => t($country->country_name),
+        '#title' => check_plain(t($country->country_name)),
         '#group' => 'country',
       );
       $form['countries'][$country->country_id]['address_format'] = array(
@@ -208,10 +208,10 @@ function uc_country_disable($country_id) {
         ))
         ->condition('country_id', $country_id)
         ->execute();
-      drupal_set_message(t('!country disabled.', array('!country' => t($country->country_name))));
+      drupal_set_message(t('@country disabled.', array('@country' => t($country->country_name))));
     }
     else {
-      drupal_set_message(t('!country is already disabled.', array('!country' => t($country->country_name))), 'error');
+      drupal_set_message(t('@country is already disabled.', array('@country' => t($country->country_name))), 'error');
     }
   }
   else {
@@ -308,7 +308,7 @@ function uc_country_remove_form_submit($form, &$form_state) {
     }
   }
 
-  drupal_set_message(t('!country removed.', array('!country' => t($country->country_name))));
+  drupal_set_message(t('@country removed.', array('@country' => t($country->country_name))));
   drupal_goto('admin/store/settings/countries');
 }
 

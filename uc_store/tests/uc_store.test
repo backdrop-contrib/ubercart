@@ -116,7 +116,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
       $prefix = 'panes[' . $pane . '][' . $pane;
       $key =  $prefix . '_country]';
       $country = empty($edit[$key]) ? variable_get('uc_store_country', 840) : $edit[$key];
-      $zone_id = db_query('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand() LIMIT 1', array('country' => $country))->fetchField();
+      $zone_id = db_query_range('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand()', 0, 1, array('country' => $country))->fetchField();
       $edit += array(
         $prefix . '_first_name]' => $this->randomName(10),
         $prefix . '_last_name]' => $this->randomName(10),
@@ -184,7 +184,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
   function assertAjaxHelper($ajax, $text, $message = FALSE, $not_exists = FALSE, $plain = TRUE) {
     $content = '';
     if ($plain) {
-      foreach($ajax as $command) {
+      foreach ($ajax as $command) {
         if ($command['command'] == 'insert' && !empty($command['data']) && is_string($command['data'])) {
           $content .= $command['data'];
         }
