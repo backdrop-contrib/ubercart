@@ -39,11 +39,12 @@ function uc_shipping_menu() {
     'file' => 'uc_shipping.admin.inc',
   );
   $items['admin/store/orders/%uc_order/packages/new'] = array(
-    'title' => 'New packages',
+    'title' => 'Create packages',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_shipping_new_package', 3),
     'access callback' => 'uc_shipping_order_access',
     'access arguments' => array(3),
+    'type' => MENU_LOCAL_ACTION,
     'file' => 'uc_shipping.admin.inc',
   );
   $items['admin/store/orders/%uc_order/packages/%uc_shipping_package/edit'] = array(
@@ -84,8 +85,9 @@ function uc_shipping_menu() {
     'title' => 'New shipment',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_shipping_new_shipment', 3),
-    'access callback' => 'uc_shipping_order_access',
+    'access callback' => 'uc_shipping_new_shipment_access',
     'access arguments' => array(3),
+    'type' => MENU_LOCAL_ACTION,
     'file' => 'uc_shipping.admin.inc',
   );
   $items['admin/store/orders/%uc_order/shipments/%uc_shipping_shipment'] = array(
@@ -162,6 +164,29 @@ function uc_shipping_shipment_page_title($shipment) {
  */
 function uc_shipping_order_access($order) {
   return user_access('fulfill orders') && uc_order_is_shippable($order);
+}
+
+/**
+ * Access callback for the new shipment page.
+ */
+function uc_shipping_new_shipment_access($order) {
+  return db_query("SELECT COUNT(*) FROM {uc_packages} WHERE order_id = :id AND sid IS NULL", array(':id' => $order->order_id))->fetchField();
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function uc_shipping_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  if ($root_path == 'admin/store/orders/%/shipments') {
+    $order = $router_item['page_arguments'][0];
+    $item = menu_get_item('admin/store/orders/' . $order->order_id . '/packages/new');
+    if ($item['access']) {
+      $data['actions']['output'][] = array(
+        '#theme' => 'menu_local_action',
+        '#link' => $item,
+      );
+    }
+  }
 }
 
 /**
