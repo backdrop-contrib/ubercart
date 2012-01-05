@@ -402,7 +402,7 @@ function uc_checkout_pane_callback($op, $order, $form = NULL, &$form_state = NUL
       return array('description' => $description, 'contents' => $contents);
 
     case 'process':
-      if (strlen($form_state['values']['panes']['comments']['comments']) > 0) {
+      if ($form_state['values']['panes']['comments']['comments']) {
         db_delete('uc_order_comments')
           ->condition('order_id', $order->order_id)
           ->execute();

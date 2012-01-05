@@ -38,7 +38,7 @@ function uc_cart_cart_settings_form($form, &$form_state) {
   foreach ($panes as $id => $pane) {
     $form['general']['panes'][$id]['uc_cap_' . $id . '_enabled'] = array(
       '#type' => 'checkbox',
-      '#title' => $pane['title'],
+      '#title' => check_plain($pane['title']),
       '#default_value' => $pane['enabled'],
     );
     $form['general']['panes'][$id]['uc_cap_' . $id . '_weight'] = array(
@@ -306,7 +306,7 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
   foreach ($panes as $id => $pane) {
     $form['checkout']['panes'][$id]['uc_pane_' . $id . '_enabled'] = array(
       '#type' => 'checkbox',
-      '#title' => $pane['title'],
+      '#title' => check_plain($pane['title']),
       '#default_value' => variable_get('uc_pane_' . $id . '_enabled', $pane['enabled']),
     );
     $form['checkout']['panes'][$id]['uc_pane_' . $id . '_weight'] = array(
@@ -321,7 +321,7 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     if (is_array($pane_settings)) {
       $form['pane_' . $id] = $pane_settings + array(
         '#type' => 'fieldset',
-        '#title' => t('!pane pane', array('!pane' => $pane['title'])),
+        '#title' => t('@pane pane', array('@pane' => $pane['title'])),
         '#group' => 'checkout-settings',
       );
     }

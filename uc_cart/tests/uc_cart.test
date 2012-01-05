@@ -282,7 +282,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     );
 
     // Build the panes.
-    $zone_id = db_query('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand() LIMIT 1', array('country' => variable_get('uc_store_country', 840)))->fetchField();
+    $zone_id = db_query_limit('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand()', 0, 1, array('country' => variable_get('uc_store_country', 840)))->fetchField();
     $oldname = $this->randomName(10);
     $edit = array(
       'panes[delivery][delivery_first_name]' => $oldname,
@@ -337,7 +337,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
       $edit['panes[delivery][delivery_first_name]'] = $newname;
       $this->drupalPost('cart/checkout', $edit, t('Review order'));
       $new_order_id = db_query("SELECT order_id FROM {uc_orders} WHERE delivery_first_name = :name", array(':name' => $newname))->fetchField();
-      $this->assertNotEqual($order_id, $new_order_id, 'New order was created after timeout.');   
+      $this->assertNotEqual($order_id, $new_order_id, 'New order was created after timeout.');
 
       // Verify that the status of old order is abandoned.
       $old_order = uc_order_load($order_id, TRUE);
@@ -507,7 +507,7 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     );
     $this->assertField(
       'uc_cart_breadcrumb_url',
-     t('Custom cart breadcrumb URL')
+      t('Custom cart breadcrumb URL')
     );
 
     $settings = array(

@@ -184,8 +184,8 @@ function uc_cart_checkout_form($form, &$form_state) {
         // Create the fieldset for the pane.
         $form['panes'][$id] = array(
           '#type' => 'fieldset',
-          '#title' => $pane['title'],
-          '#description' => !empty($return['description']) ? $return['description'] : NULL,
+          '#title' => check_plain($pane['title']),
+          '#description' => check_plain(!empty($return['description']) ? $return['description'] : ''),
           '#collapsible' => $pane['collapsible'] && variable_get('uc_use_next_buttons', FALSE),
           '#collapsed' => variable_get('uc_use_next_buttons', FALSE) ? $collapsed : FALSE,
           '#id' => $id . '-pane',
