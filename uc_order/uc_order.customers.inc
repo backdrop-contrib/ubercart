@@ -33,25 +33,21 @@ function uc_order_customers($message = NULL, $query = NULL, $page_length = 25) {
   $result = $query->execute();
 
   foreach ($result as $customer) {
-    $icons = l(uc_store_get_icon('admin/store/customers', TRUE),
-               'user/' . $customer->uid,
-               array('html' => TRUE, 'attributes' => array('title' => t('View user details.')))
-             )
-           . l(uc_store_get_icon('admin/store/orders', TRUE),
-               'admin/store/customers/orders/' . $customer->uid,
-               array('html' => TRUE, 'attributes' => array('title' => t("View customer's order.")))
-             );
+    $icons = l(uc_store_get_icon('admin/store/customers', TRUE), 'user/' . $customer->uid, array(
+      'html' => TRUE,
+      'attributes' => array('title' => t('View user details.')),
+    ));
+    $icons .= l(uc_store_get_icon('admin/store/orders', TRUE), 'admin/store/customers/orders/' . $customer->uid, array(
+      'html' => TRUE,
+      'attributes' => array('title' => t("View customer's order.")),
+    ));
     if ($address == 'delivery') {
-      $name = ucfirst($customer->delivery_last_name) . ', '
-            . ucfirst($customer->delivery_first_name);
-      $city = ucfirst($customer->delivery_city) . ', '
-            . uc_get_zone_code($customer->delivery_zone);
+      $name = drupal_ucfirst($customer->delivery_last_name) . ', ' . drupal_ucfirst($customer->delivery_first_name);
+      $city = drupal_ucfirst($customer->delivery_city) . ', ' . uc_get_zone_code($customer->delivery_zone);
     }
     else {
-      $name = ucfirst($customer->billing_last_name) . ', '
-            . ucfirst($customer->billing_first_name);
-      $city = ucfirst($customer->billing_city) . ', '
-            . uc_get_zone_code($customer->billing_zone);
+      $name = drupal_ucfirst($customer->billing_last_name) . ', ' . drupal_ucfirst($customer->billing_first_name);
+      $city = drupal_ucfirst($customer->billing_city) . ', ' . uc_get_zone_code($customer->billing_zone);
     }
     if ($name == ', ') {
       $name = db_query("SELECT name FROM {users} WHERE uid = :uid", array(':uid' => $customer->uid))->fetchField();
@@ -291,24 +287,16 @@ function uc_order_customer_orders($uid) {
   $rows = array();
   $totals = array('orders' => 0, 'items' => 0, 'total' => 0);
   foreach ($result as $order) {
-    $icons = l(uc_store_get_icon('file:order_view'),
-               'admin/store/orders/' . $order->order_id,
-               array('html' => TRUE, 'attributes' => array('title' => t("View order !order_id.", array('!order_id' => $order->order_id))))
-             )
-           . l(uc_store_get_icon('file:order_edit'),
-               'admin/store/orders/' . $order->order_id . '/edit',
-               array('html' => TRUE, 'attributes' =>
-                 array(
-                   'title' => t("Edit order !order_id.",
-                     array('!order_id' => $order->order_id)
-                   )
-                 )
-               )
-             );
-    $bname = ucfirst($order->billing_first_name) . ' '
-           . ucfirst($order->billing_last_name);
-    $sname = ucfirst($order->delivery_first_name) . ' '
-           . ucfirst($order->delivery_last_name);
+    $icons = l(uc_store_get_icon('file:order_view'), 'admin/store/orders/' . $order->order_id, array(
+      'html' => TRUE,
+      'attributes' => array('title' => t("View order !order_id.", array('!order_id' => $order->order_id))),
+    ));
+    $icons .= l(uc_store_get_icon('file:order_edit'), 'admin/store/orders/' . $order->order_id . '/edit', array(
+      'html' => TRUE,
+      'attributes' => array('title' => t("Edit order !order_id.", array('!order_id' => $order->order_id))),
+    ));
+    $bname = drupal_ucfirst($order->billing_first_name) . ' ' . drupal_ucfirst($order->billing_last_name);
+    $sname = drupal_ucfirst($order->delivery_first_name) . ' ' . drupal_ucfirst($order->delivery_last_name);
     $item_count = db_query("SELECT COUNT(*) FROM {uc_order_products} WHERE order_id = :order_id", array(':order_id' => $order->order_id))->fetchField();
 
     $totals['orders'] += 1;
@@ -334,12 +322,11 @@ function uc_order_customer_orders($uid) {
   $build = array();
 
   $build['description'] = array(
-    '#markup' => '<p>' . t('!totals_orders orders shown match that account with !totals_items items purchased and !totals_total spent:',
-       array(
-         '!totals_orders' => $totals['orders'],
-         '!totals_items' => $totals['items'],
-         '!totals_total' => uc_currency_format($totals['total']),
-       )) . '</p>',
+    '#markup' => '<p>' . t('!totals_orders orders shown match that account with !totals_items items purchased and !totals_total spent:', array(
+      '!totals_orders' => $totals['orders'],
+      '!totals_items' => $totals['items'],
+      '!totals_total' => uc_currency_format($totals['total']),
+    )) . '</p>',
     '#weight' => -5,
   );
   $build['orders'] = array(

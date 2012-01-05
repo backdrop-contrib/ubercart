@@ -43,7 +43,7 @@ function uc_order_settings_form($form, &$form_state) {
     foreach ($pane['show'] as $view) {
       $form['panes'][$view][$id]['uc_order_pane_' . $id . '_show_' . $view] = array(
         '#type' => 'checkbox',
-        '#title' => $pane['title'],
+        '#title' => check_plain($pane['title']),
         '#default_value' => variable_get('uc_order_pane_' . $id . '_show_' . $view, $pane['enabled']),
       );
       $form['panes'][$view][$id]['uc_order_pane_' . $id . '_enabled'] = &$form['panes'][$view][$id]['uc_order_pane_' . $id . '_show_' . $view];
@@ -73,7 +73,7 @@ function uc_order_settings_form($form, &$form_state) {
       '#pane_prefix' => 'uc_order_pane',
       '#draggable' => 'uc-order-pane-' . $view . '-weight',
       '#type' => 'fieldset',
-      '#title' => t('!screen screen', array('!screen' => $titles[$view])),
+      '#title' => t('@screen screen', array('@screen' => $titles[$view])),
       '#group' => 'order-settings',
     );
     $form['panes'][$view] = array_merge($fieldset, $form['panes'][$view]);
@@ -86,8 +86,8 @@ function uc_order_settings_form($form, &$form_state) {
  * Displays the order workflow form for order state and status customization.
  *
  * @see uc_order_workflow_form_submit()
- * @see theme_uc_order_state_table();
- * @see theme_uc_order_status_table();
+ * @see theme_uc_order_state_table()
+ * @see theme_uc_order_status_table()
  * @ingroup forms
  */
 function uc_order_workflow_form($form, &$form_state) {
@@ -1225,8 +1225,7 @@ function uc_order_add_line_item_form_submit($form, &$form_state) {
     $func('submit', $form_state['values']['order_id']);
   }
   else {
-    uc_order_line_item_add($form_state['values']['order_id'], $form_state['values']['line_item_id'],
-             $form_state['values']['title'], $form_state['values']['amount']);
+    uc_order_line_item_add($form_state['values']['order_id'], $form_state['values']['line_item_id'], $form_state['values']['title'], $form_state['values']['amount']);
     drupal_set_message(t('Line item added to order.'));
   }
 

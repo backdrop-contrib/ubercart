@@ -1076,7 +1076,7 @@ function uc_op_products_view_table($order) {
         '#cell_attributes' => array('class' => array('qty')),
       );
       $node = node_load($product->nid);
-      $title = node_access('view', $node) ? l($product->title, 'node/'. $node->nid) : check_plain($product->title);
+      $title = node_access('view', $node) ? l($product->title, 'node/' . $node->nid) : check_plain($product->title);
       $data['product'] = array(
         '#markup' => $title . uc_product_get_description($product),
         '#cell_attributes' => array('class' => array('product')),
@@ -1180,7 +1180,7 @@ function uc_op_products_customer_table($order) {
         '#cell_attributes' => array('class' => array('qty')),
       );
       $node = node_load($product->nid);
-      $title = node_access('view', $node) ? l($product->title, 'node/'. $node->nid) : check_plain($product->title);
+      $title = node_access('view', $node) ? l($product->title, 'node/' . $node->nid) : check_plain($product->title);
       $data['product'] = array(
         '#markup' => $title . uc_product_get_description($product),
         '#cell_attributes' => array('class' => array('product')),
