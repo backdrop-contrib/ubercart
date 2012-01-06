@@ -142,7 +142,7 @@ function uc_quote_method_settings($form, &$form_state) {
 
       $form['methods'][$id]['uc_quote_enabled'] = array(
         '#type' => 'checkbox',
-        '#title' => $method['title'],
+        '#title' => check_plain($method['title']),
         '#default_value' => $method['enabled'],
       );
       $form['methods'][$id]['description'] = array(
