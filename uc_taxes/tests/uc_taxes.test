@@ -155,7 +155,7 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
     $this->assertRaw(uc_currency_format($rate->rate * $this->product->sell_price), t('Correct tax amount displayed.'));
 
     // Build the panes.
-    $zone_id = db_query('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand() LIMIT 1', array('country' => variable_get('uc_store_country', 840)))->fetchField();
+    $zone_id = db_query_range('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand()', 0, 1, array('country' => variable_get('uc_store_country', 840)))->fetchField();
     $edit = array(
       'panes[delivery][delivery_first_name]' => $this->randomName(10),
       'panes[delivery][delivery_last_name]' => $this->randomName(10),
@@ -196,13 +196,13 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
       $this->assertEqual($line['type'], 'tax', t('The tax line item was saved to the order.'));
 
       $this->drupalGet('admin/store/orders/' . $order_id . '/edit');
-      $this->assertFieldByName('line_items['. $line['line_item_id'] .'][li_id]', $line['line_item_id'], t('Found the tax line item ID.'));
+      $this->assertFieldByName('line_items[' . $line['line_item_id'] . '][li_id]', $line['line_item_id'], t('Found the tax line item ID.'));
       $this->assertText($line['title'], t('Found the tax title.'));
       $this->assertText(uc_currency_format($line['amount']), t('Tax has the correct amount.'));
 
       $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
       $this->assertText(t('Order changes saved.'));
-      $this->assertFieldByName('line_items['. $line['line_item_id'] .'][li_id]', $line['line_item_id'], t('Found the same tax line item ID.'));
+      $this->assertFieldByName('line_items[' . $line['line_item_id'] . '][li_id]', $line['line_item_id'], t('Found the same tax line item ID.'));
       $this->assertText($line['title'], t('Found the tax title.'));
       $this->assertText(uc_currency_format($line['amount']), t('Tax has the same amount as before.'));
 
@@ -213,7 +213,7 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
 
       $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
       $this->assertText(t('Order changes saved.'));
-      $this->assertFieldByName('line_items['. $line['line_item_id'] .'][li_id]', $line['line_item_id'], t('Found the same tax line item ID.'));
+      $this->assertFieldByName('line_items[' . $line['line_item_id'] . '][li_id]', $line['line_item_id'], t('Found the same tax line item ID.'));
       $this->assertText($line['title'], t('Found the tax title.'));
       $this->assertText(uc_currency_format($line['amount']), t('Tax has the same amount as before.'));
 
@@ -236,7 +236,7 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
 
       $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
       $this->assertText(t('Order changes saved.'));
-      $this->assertFieldByName('line_items['. $line['line_item_id'] .'][li_id]', $line['line_item_id'], t('Found the same tax line item ID.'));
+      $this->assertFieldByName('line_items[' . $line['line_item_id'] . '][li_id]', $line['line_item_id'], t('Found the same tax line item ID.'));
       $this->assertText($line['title'], t('Found the tax title.'));
       $this->assertText(uc_currency_format($rate->rate * $this->product->sell_price), t('Tax has new amount.'));
     }

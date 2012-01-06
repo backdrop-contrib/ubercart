@@ -203,7 +203,7 @@ function uc_taxes_form_submit($form, &$form_state) {
   }
   else {
     drupal_set_message(t('Tax rate %name created.', array('%name' => $form_state['values']['name'])));
-    $form_state['redirect'] = 'admin/store/settings/taxes/manage/uc_taxes_'. $rate->id;
+    $form_state['redirect'] = 'admin/store/settings/taxes/manage/uc_taxes_' . $rate->id;
   }
 }
 

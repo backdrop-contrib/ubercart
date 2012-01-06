@@ -37,7 +37,7 @@ function uc_usps_country_map($code = NULL) {
     268 => 'Georgia, Republic of',
     826 => 'Great Britain and Northern Ireland',
      86 => 'Great Britain and Northern Ireland', // British Indian Ocean Territory
-    239 => 'Great Britain and Northern Ireland', // South Georgia and the 
+    239 => 'Great Britain and Northern Ireland', // South Georgia and the
                                                  // South Sandwich Islands
     364 => 'Iran',
     275 => 'Israel', // Palestinian Territory, Occupied

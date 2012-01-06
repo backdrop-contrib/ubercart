@@ -148,7 +148,7 @@ function uc_google_checkout_form_alter(&$form, &$form_state, $form_id) {
         '#type' => 'checkbox',
         '#title' => t('Product conforms to Google Checkout content policies.'),
         '#default_value' => isset($node->gc_salable) ? $node->gc_salable : TRUE,
-        '#description' => t('To be a Google Checkout approved merchant, your items must conform to the <a href="!url">Google Checkout content policies</a>.', array('!url' => $policy_url)),
+        '#description' => t('To be a Google Checkout approved merchant, your items must conform to the <a href="@url">Google Checkout content policies</a>.', array('@url' => $policy_url)),
         '#weight' => 40,
       );
     }
@@ -1198,8 +1198,7 @@ function uc_google_checkout_refund($order_id, $amount, $reason, $comment = '') {
 function uc_google_checkout_refund_order($refund) {
   $order_id = uc_google_checkout_get_order($refund->{'google-order-number'});
   if ($order_id) {
-    uc_payment_enter($order_id, 'google_checkout', -((string) $refund->{'latest-refund-amount'}),
-                     0, '', t('Refund received by Google Checkout'));
+    uc_payment_enter($order_id, 'google_checkout', -((string) $refund->{'latest-refund-amount'}), 0, '', t('Refund received by Google Checkout'));
     uc_order_comment_save($order_id, 0, t('Refund of %amount received by Google Checkout.', array('%amount' => uc_currency_format((string) $refund->{'latest-refund-amount'}))), 'admin', 'processing');
 
     return TRUE;

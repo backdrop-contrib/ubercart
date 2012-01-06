@@ -27,7 +27,7 @@ function uc_shipping_token_info() {
 }
 
 /**
- * Implements hook_tokens()
+ * Implements hook_tokens().
  */
 function uc_shipping_tokens($type, $tokens, $data = array(), $options = array()) {
   $replacements = array();
