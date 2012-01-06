@@ -178,7 +178,7 @@ function uc_credit_settings_form($form, &$form_state) {
   foreach ($gateways as $id => $gateway) {
     $form['gateways'][$id] = array(
       '#type' => 'fieldset',
-      '#title' => $gateway['title'],
+      '#title' => check_plain($gateway['title']),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
       '#group' => 'uc_credit',
