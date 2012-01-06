@@ -483,9 +483,7 @@ function uc_attribute_option_delete_confirm($form, &$form_state, $attribute, $op
   $form['aid'] = array('#type' => 'value', '#value' => $aid);
   $form['oid'] = array('#type' => 'value', '#value' => $oid);
 
-  $output = confirm_form($form, t('Are you sure you want to delete the option %name?', array('%name' => $option->name)),
-             'admin/store/products/attributes/' . $aid . '/options', '',
-             t('Delete'), t('Cancel'));
+  $output = confirm_form($form, t('Are you sure you want to delete the option %name?', array('%name' => $option->name)), 'admin/store/products/attributes/' . $aid . '/options', '', t('Delete'), t('Cancel'));
 
   return $output;
 }
@@ -1184,7 +1182,7 @@ function uc_object_options_form_submit($form, &$form_state) {
     }
   }
 
-  drupal_set_message(t('The !type options have been saved.', array('!type' => $form_state['values']['type'] == 'product' ? t('product') : t('product class'))));
+  drupal_set_message(t('The @type options have been saved.', array('@type' => $form_state['values']['type'] == 'product' ? t('product') : t('product class'))));
 
   if ($form_state['values']['type'] == 'product') {
     // Clear the page and block caches.

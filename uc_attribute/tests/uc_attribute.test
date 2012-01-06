@@ -40,7 +40,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     // Check the attribute integrity.
     foreach (self::attributeFieldsToTest() as $field) {
       if ($loaded_attribute->$field != $attribute->$field) {
-        $this->fail(t('Attribute integrity check failed.'), t('Ubercart'));
+        $this->fail(t('Attribute integrity check failed.'));
         break;
       }
     }
@@ -52,12 +52,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     uc_attribute_subject_save($attribute, 'product', $product->nid);
 
     // Confirm the database is correct.
-    $this->assertEqual(
-      $attribute->aid,
-      db_query("SELECT aid FROM {uc_product_attributes} WHERE nid = :nid", array(':nid' => $product->nid))->fetchField(),
-      t('Attribute was attached to a product properly.'),
-      t('Ubercart')
-    );
+    $this->assertEqual($attribute->aid, db_query("SELECT aid FROM {uc_product_attributes} WHERE nid = :nid", array(':nid' => $product->nid))->fetchField(), t('Attribute was attached to a product properly.'));
     $this->assertTrue(uc_attribute_subject_exists($attribute->aid, 'product', $product->nid));
 
     // Test retrieval.
@@ -66,7 +61,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     // Check the attribute integrity.
     foreach (self::attributeFieldsToTest('product') as $field) {
       if ($loaded_attribute->$field != $attribute->$field) {
-        $this->fail(t('Attribute integrity check failed.'), t('Ubercart'));
+        $this->fail(t('Attribute integrity check failed.'));
         break;
       }
     }
@@ -75,11 +70,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     uc_attribute_subject_delete($attribute->aid, 'product', $product->nid);
 
     // Confirm again.
-    $this->assertFalse(
-      db_query("SELECT aid FROM {uc_product_attributes} WHERE nid = :nid", array(':nid' => $product->nid))->fetchField(),
-      t('Attribute was detached from a product properly.'),
-      t('Ubercart')
-    );
+    $this->assertFalse(db_query("SELECT aid FROM {uc_product_attributes} WHERE nid = :nid", array(':nid' => $product->nid))->fetchField(), t('Attribute was detached from a product properly.'));
     $this->assertFalse(uc_attribute_subject_exists($attribute->aid, 'product', $product->nid));
 
     // Add a product class.
@@ -89,12 +80,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     uc_attribute_subject_save($attribute, 'class', $product_class->pcid);
 
     // Confirm the database is correct.
-    $this->assertEqual(
-      $attribute->aid,
-      db_query("SELECT aid FROM {uc_class_attributes} WHERE pcid = :pcid", array(':pcid' => $product_class->pcid))->fetchField(),
-      t('Attribute was attached to a product class properly.'),
-      t('Ubercart')
-    );
+    $this->assertEqual($attribute->aid, db_query("SELECT aid FROM {uc_class_attributes} WHERE pcid = :pcid", array(':pcid' => $product_class->pcid))->fetchField(), t('Attribute was attached to a product class properly.'));
     $this->assertTrue(uc_attribute_subject_exists($attribute->aid, 'class', $product_class->pcid));
 
     // Test retrieval.
@@ -103,7 +89,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     // Check the attribute integrity.
     foreach (self::attributeFieldsToTest('class') as $field) {
       if ($loaded_attribute->$field != $attribute->$field) {
-        $this->fail(t('Attribute integrity check failed.'), t('Ubercart'));
+        $this->fail(t('Attribute integrity check failed.'));
         break;
       }
     }
@@ -112,11 +98,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     uc_attribute_subject_delete($attribute->aid, 'class', $product_class->pcid);
 
     // Confirm again.
-    $this->assertFalse(
-      db_query("SELECT aid FROM {uc_class_attributes} WHERE pcid = :pcid", array(':pcid' => $product_class->pcid))->fetchField(),
-      t('Attribute was detached from a product class properly.'),
-      t('Ubercart')
-    );
+    $this->assertFalse(db_query("SELECT aid FROM {uc_class_attributes} WHERE pcid = :pcid", array(':pcid' => $product_class->pcid))->fetchField(), t('Attribute was detached from a product class properly.'));
     $this->assertFalse(uc_attribute_subject_exists($attribute->aid, 'class', $product_class->pcid));
 
     // Create a few more.
@@ -151,7 +133,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
       foreach ($options as $oid => $option) {
         foreach (self::attributeOptionFieldsToTest() as $field) {
           if ($option->$field != $attributes_with_options[$aid]->options[$oid]->$field) {
-            $this->fail(t('Option integrity check failed.'), t('Ubercart'));
+            $this->fail(t('Option integrity check failed.'));
             break;
           }
         }
@@ -165,14 +147,14 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     $loaded_attributes = uc_attribute_load_multiple($aids);
 
     // Make sure we only got the attributes we asked for. No more, no less.
-    $this->assertEqual(count($aids), count($loaded_attributes), t('Verifying attribute result.'), t('Ubercart'));
-    $this->assertEqual(count($aids), count(array_intersect_key($aids, $loaded_attributes)), t('Verifying attribute result.'), t('Ubercart'));
+    $this->assertEqual(count($aids), count($loaded_attributes), t('Verifying attribute result.'));
+    $this->assertEqual(count($aids), count(array_intersect_key($aids, $loaded_attributes)), t('Verifying attribute result.'));
 
     // Check the attributes' integrity.
     foreach ($loaded_attributes as $aid => $loaded_attribute) {
       foreach (self::attributeFieldsToTest() as $field) {
         if ($attributes[$aid]->$field != $loaded_attributes[$aid]->$field) {
-          $this->fail(t('Attribute integrity check failed.'), t('Ubercart'));
+          $this->fail(t('Attribute integrity check failed.'));
           break;
         }
       }
@@ -191,14 +173,14 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     $product_attributes = $loaded_attributes;
 
     // Make sure we only got the attributes we asked for. No more, no less.
-    $this->assertEqual(count($loaded_product_attributes), count($product_attributes), t('Verifying attribute result.'), t('Ubercart'));
-    $this->assertEqual(count($loaded_product_attributes), count(array_intersect_key($loaded_product_attributes, $product_attributes)), t('Verifying attribute result.'), t('Ubercart'));
+    $this->assertEqual(count($loaded_product_attributes), count($product_attributes), t('Verifying attribute result.'));
+    $this->assertEqual(count($loaded_product_attributes), count(array_intersect_key($loaded_product_attributes, $product_attributes)), t('Verifying attribute result.'));
 
     // Check the attributes' integrity.
     foreach ($loaded_product_attributes as $aid => $loaded_product_attribute) {
       foreach (self::attributeFieldsToTest('product') as $field) {
         if ($loaded_product_attributes[$aid]->$field != $product_attributes[$aid]->$field) {
-          $this->fail(t('Attribute integrity check failed.'), t('Ubercart'));
+          $this->fail(t('Attribute integrity check failed.'));
           break;
         }
       }
@@ -211,7 +193,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
 
         foreach (self::attributeOptionFieldsToTest() as $field) {
           if ($option->$field != $loaded_product_attributes[$aid]->options[$oid]->$field) {
-            $this->fail(t('Option integrity check failed.'), t('Ubercart'));
+            $this->fail(t('Option integrity check failed.'));
             break;
           }
         }
@@ -231,14 +213,14 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     $class_attributes = $loaded_attributes;
 
     // Make sure we only got the attributes we asked for. No more, no less.
-    $this->assertEqual(count($loaded_class_attributes), count($class_attributes), t('Verifying attribute result.'), t('Ubercart'));
-    $this->assertEqual(count($loaded_class_attributes), count(array_intersect_key($loaded_class_attributes, $class_attributes)), t('Verifying attribute result.'), t('Ubercart'));
+    $this->assertEqual(count($loaded_class_attributes), count($class_attributes), t('Verifying attribute result.'));
+    $this->assertEqual(count($loaded_class_attributes), count(array_intersect_key($loaded_class_attributes, $class_attributes)), t('Verifying attribute result.'));
 
     // Check the attributes' integrity.
     foreach ($loaded_class_attributes as $aid => $loaded_class_attribute) {
       foreach (self::attributeFieldsToTest('class') as $field) {
         if ($loaded_class_attributes[$aid]->$field != $class_attributes[$aid]->$field) {
-          $this->fail(t('Attribute integrity check failed.'), t('Ubercart'));
+          $this->fail(t('Attribute integrity check failed.'));
           break;
         }
       }
@@ -251,7 +233,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
 
         foreach (self::attributeOptionFieldsToTest() as $field) {
           if ($option->$field != $loaded_class_attributes[$aid]->options[$oid]->$field) {
-            $this->fail(t('Option integrity check failed.'), t('Ubercart'));
+            $this->fail(t('Option integrity check failed.'));
             break;
           }
         }
@@ -263,14 +245,14 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     $options = $attribute->options;
     uc_attribute_delete($attribute->aid);
 
-    $this->assertFalse(uc_attribute_load($attribute->aid), t('Attribute was deleted properly.'), t('Ubercart'));
+    $this->assertFalse(uc_attribute_load($attribute->aid), t('Attribute was deleted properly.'));
 
     // Sanity check!
-    $this->assertFalse(db_query("SELECT aid FROM {uc_attributes} WHERE aid = :aid", array(':aid' => $attribute->aid))->fetchField(), t('Attribute was seriously deleted properly!'), t('Ubercart'));
+    $this->assertFalse(db_query("SELECT aid FROM {uc_attributes} WHERE aid = :aid", array(':aid' => $attribute->aid))->fetchField(), t('Attribute was seriously deleted properly!'));
 
     // Test that options were deleted properly.
     foreach ($options as $option) {
-      $this->assertFalse(db_query("SELECT oid FROM {uc_attribute_options} WHERE oid = :oid", array(':oid' => $option->oid))->fetchField(), t('Make sure options are deleted properly.'), t('Ubercart'));
+      $this->assertFalse(db_query("SELECT oid FROM {uc_attribute_options} WHERE oid = :oid", array(':oid' => $option->oid))->fetchField(), t('Make sure options are deleted properly.'));
     }
 
     // Test the deletion applied to products too.
@@ -281,8 +263,8 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     $product_attributes = $loaded_attributes;
 
     // Make sure we only got the attributes we asked for. No more, no less.
-    $this->assertEqual(count($loaded_product_attributes), count($product_attributes), t('Verifying attribute result.'), t('Ubercart'));
-    $this->assertEqual(count($loaded_product_attributes), count(array_intersect_key($loaded_product_attributes, $product_attributes)), t('Verifying attribute result.'), t('Ubercart'));
+    $this->assertEqual(count($loaded_product_attributes), count($product_attributes), t('Verifying attribute result.'));
+    $this->assertEqual(count($loaded_product_attributes), count(array_intersect_key($loaded_product_attributes, $product_attributes)), t('Verifying attribute result.'));
 
     // Test the deletion applied to classes too.
     $loaded_class_attributes = uc_attribute_load_multiple(array(), 'class', $product_class->pcid);
@@ -292,8 +274,8 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     $class_attributes = $loaded_attributes;
 
     // Make sure we only got the attributes we asked for. No more, no less.
-    $this->assertEqual(count($loaded_class_attributes), count($class_attributes), t('Verifying attribute result.'), t('Ubercart'));
-    $this->assertEqual(count($loaded_class_attributes), count(array_intersect_key($loaded_class_attributes, $class_attributes)), t('Verifying attribute result.'), t('Ubercart'));
+    $this->assertEqual(count($loaded_class_attributes), count($class_attributes), t('Verifying attribute result.'));
+    $this->assertEqual(count($loaded_class_attributes), count(array_intersect_key($loaded_class_attributes, $class_attributes)), t('Verifying attribute result.'));
 
     // Add some adjustments.
     self::createProductAdjustment(array('combination' => 'a:1:{i:1;s:1:"1";}', 'nid' => 1));
@@ -308,19 +290,19 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
 
     // Test deletion by nid.
     uc_attribute_adjustments_delete(array('nid' => 1));
-    $this->assertEqual(6, db_query("SELECT COUNT(*) FROM {uc_product_adjustments}")->fetchField(), t('Ubercart'));
+    $this->assertEqual(6, db_query("SELECT COUNT(*) FROM {uc_product_adjustments}")->fetchField());
 
     // Test deletion by aid.
     uc_attribute_adjustments_delete(array('aid' => 2));
-    $this->assertEqual(5, db_query("SELECT COUNT(*) FROM {uc_product_adjustments}")->fetchField(), t('Ubercart'));
+    $this->assertEqual(5, db_query("SELECT COUNT(*) FROM {uc_product_adjustments}")->fetchField());
 
     // Test deletion by oid.
     uc_attribute_adjustments_delete(array('oid' => 2));
-    $this->assertEqual(3, db_query("SELECT COUNT(*) FROM {uc_product_adjustments}")->fetchField(), t('Ubercart'));
+    $this->assertEqual(3, db_query("SELECT COUNT(*) FROM {uc_product_adjustments}")->fetchField());
 
     // Test deletion by aid and oid.
     uc_attribute_adjustments_delete(array('aid' => 1, 'oid' => 3));
-    $this->assertEqual(2, db_query("SELECT COUNT(*) FROM {uc_product_adjustments}")->fetchField(), t('Ubercart'));
+    $this->assertEqual(2, db_query("SELECT COUNT(*) FROM {uc_product_adjustments}")->fetchField());
   }
 
   /**
@@ -329,7 +311,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
   public function testAttributeUIAddAttribute() {
     $this->drupalGet('admin/store/products/attributes/add');
 
-    $this->assertText(t('The name of the attribute used in administrative forms'), t('Attribute add form working.'), t('Ubercart'));
+    $this->assertText(t('The name of the attribute used in administrative forms'), t('Attribute add form working.'));
 
     $edit = (array) self::createAttribute(array(), FALSE);
 
@@ -338,32 +320,12 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     $this->assertText('No options for this attribute have been added yet.');
 
     $this->drupalGet('admin/store/products/attributes');
-    $this->assertRaw(
-      '<td class="active">' . $edit['name'] . '</td>',
-       t('Verify name field.'),
-       t('Ubercart')
-    );
-    $this->assertRaw(
-      '<td>' . $edit['label'] . '</td>',
-       t('Verify label field.'),
-       t('Ubercart')
-    );
-    $this->assertRaw(
-      '<td>' . ($edit['required'] ? t('Yes') : t('No')) . '</td>',
-       t('Verify required field.'),
-       t('Ubercart')
-    );
-    $this->assertRaw(
-      '<td align="center">' . $edit['ordering'] . '</td>',
-       t('Verify ordering field.'),
-       t('Ubercart')
-    );
+    $this->assertRaw('<td class="active">' . $edit['name'] . '</td>', t('Verify name field.'));
+    $this->assertRaw('<td>' . $edit['label'] . '</td>', t('Verify label field.'));
+    $this->assertRaw('<td>' . ($edit['required'] ? t('Yes') : t('No')) . '</td>', t('Verify required field.'));
+    $this->assertRaw('<td align="center">' . $edit['ordering'] . '</td>', t('Verify ordering field.'));
     $types = _uc_attribute_display_types();
-    $this->assertRaw(
-      '<td>' . $types[$edit['display']] . '</td>',
-       t('Verify ordering field.'),
-       t('Ubercart')
-    );
+    $this->assertRaw('<td>' . $types[$edit['display']] . '</td>', t('Verify ordering field.'));
 
     $aid = db_query("SELECT aid FROM {uc_attributes} WHERE name = :name", array(':name' => $edit['name']))->fetchField();
     $this->assertTrue($aid, t('Attribute was created.'));
@@ -379,7 +341,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
       }
     }
 
-    $this->assertTrue($fields_ok, t('Attribute created properly.'), t('Ubercart'));
+    $this->assertTrue($fields_ok, t('Attribute created properly.'));
   }
 
   /**
@@ -418,7 +380,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
       $this->drupalPost('admin/store/settings/products', $edit, t('Save configuration'));
 
       $this->drupalGet('node/' . $product->nid);
-      $this->assertRaw($raw[$type], t('Attribute option pricing is correct.'), t('Ubercart'));
+      $this->assertRaw($raw[$type], t('Attribute option pricing is correct.'));
     }
   }
 
@@ -429,7 +391,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     $attribute = self::createAttribute();
 
     $this->drupalGet('admin/store/products/attributes/' . $attribute->aid . '/edit');
-    $this->assertText(t('Edit attribute: @name', array('@name' => $attribute->name)), t('Attribute edit form working.'), t('Ubercart'));
+    $this->assertText(t('Edit attribute: @name', array('@name' => $attribute->name)), t('Attribute edit form working.'));
 
     $edit = (array) self::createAttribute(array(), FALSE);
     $this->drupalPost('admin/store/products/attributes/' . $attribute->aid . '/edit', $edit, t('Submit'));
@@ -446,7 +408,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
       }
     }
 
-    $this->assertTrue($fields_ok, t('Attribute edited properly.'), t('Ubercart'));
+    $this->assertTrue($fields_ok, t('Attribute edited properly.'));
   }
 
   /**
@@ -457,14 +419,14 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
 
     $this->drupalGet('admin/store/products/attributes/' . $attribute->aid . '/delete');
 
-    $this->assertText(t('Are you sure you want to delete the attribute @name?', array('@name' => $attribute->name)), t('Attribute delete form working.'), t('Ubercart'));
+    $this->assertText(t('Are you sure you want to delete the attribute @name?', array('@name' => $attribute->name)), t('Attribute delete form working.'));
 
     $edit = (array) self::createAttribute();
     unset($edit['aid']);
 
     $this->drupalPost('admin/store/products/attributes/' . $attribute->aid . '/delete', array(), t('Delete'));
 
-    $this->assertText(t('Product attribute deleted.'), t('Attribute deleted properly.'), t('Ubercart'));
+    $this->assertText(t('Product attribute deleted.'), t('Attribute deleted properly.'));
   }
 
   /**
@@ -478,7 +440,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
 
     $this->drupalGet('admin/store/products/attributes/' . $attribute->aid . '/options');
 
-    $this->assertText(t('Options for @name', array('@name' => $attribute->name)), t('Attribute options form working.'), t('Ubercart'));
+    $this->assertText(t('Options for @name', array('@name' => $attribute->name)), t('Attribute options form working.'));
   }
 
   /**
@@ -489,7 +451,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
 
     $this->drupalGet('admin/store/products/attributes/' . $attribute->aid . '/options/add');
 
-    $this->assertText(t('Options for @name', array('@name' => $attribute->name)), t('Attribute options add form working.'), t('Ubercart'));
+    $this->assertText(t('Options for @name', array('@name' => $attribute->name)), t('Attribute options add form working.'));
 
     $edit = (array) self::createAttributeOption(array('aid' => $attribute->aid), FALSE);
     unset($edit['aid']);
@@ -508,7 +470,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
       }
     }
 
-    $this->assertTrue($fields_ok, t('Attribute option added successfully by form.'), t('Ubercart'));
+    $this->assertTrue($fields_ok, t('Attribute option added successfully by form.'));
   }
 
   /**
@@ -522,7 +484,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
 
     $this->drupalGet('admin/store/products/attributes/' . $attribute->aid . '/options/' . $option->oid . '/edit');
 
-    $this->assertText(t('Edit option: @name', array('@name' => $option->name)), t('Attribute options edit form working.'), t('Ubercart'));
+    $this->assertText(t('Edit option: @name', array('@name' => $option->name)), t('Attribute options edit form working.'));
 
     $edit = (array) self::createAttributeOption(array('aid' => $attribute->aid), FALSE);
     unset($edit['aid']);
@@ -540,7 +502,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
       }
     }
 
-    $this->assertTrue($fields_ok, t('Attribute option edited successfully by form.'), t('Ubercart'));
+    $this->assertTrue($fields_ok, t('Attribute option edited successfully by form.'));
   }
 
   /**
@@ -554,13 +516,13 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
 
     $this->drupalGet('admin/store/products/attributes/' . $attribute->aid . '/options/' . $option->oid . '/delete');
 
-    $this->assertText(t('Are you sure you want to delete the option @name?', array('@name' => $option->name)), t('Attribute options delete form working.'), t('Ubercart'));
+    $this->assertText(t('Are you sure you want to delete the option @name?', array('@name' => $option->name)), t('Attribute options delete form working.'));
 
     $this->drupalPost('admin/store/products/attributes/' . $attribute->aid . '/options/' . $option->oid . '/delete', array(), t('Delete'));
 
     $option = uc_attribute_option_load($option->oid);
 
-    $this->assertFalse($option, t('Attribute option deleted successfully by form'), t('Ubercart'));
+    $this->assertFalse($option, t('Attribute option deleted successfully by form'));
   }
 
   /**
@@ -572,13 +534,13 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
 
     $this->drupalGet('admin/store/products/classes/' . $class->pcid . '/attributes');
 
-    $this->assertText(t('You must first add attributes to this class.'), t('Class attribute form working.'), t('Ubercart'));
+    $this->assertText(t('You must first add attributes to this class.'), t('Class attribute form working.'));
 
     uc_attribute_subject_save($attribute, 'class', $class->pcid);
 
     $this->drupalGet('admin/store/products/classes/' . $class->pcid . '/attributes');
 
-    $this->assertNoText(t('You must first add attributes to this class.'), t('Class attribute form working.'), t('Ubercart'));
+    $this->assertNoText(t('You must first add attributes to this class.'), t('Class attribute form working.'));
 
     $a = (array) self::createAttribute(array(), FALSE);
     unset($a['name'], $a['description']);
@@ -600,13 +562,13 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
       }
     }
 
-    $this->assertTrue($fields_ok, t('Class attribute edited successfully by form.'), t('Ubercart'));
+    $this->assertTrue($fields_ok, t('Class attribute edited successfully by form.'));
 
     $edit = array();
     $edit["attributes[{$attribute->aid}][remove]"] = TRUE;
     $this->drupalPost('admin/store/products/classes/' . $class->pcid . '/attributes', $edit, t('Save changes'));
 
-    $this->assertText(t('You must first add attributes to this class.'), t('Class attribute form working.'), t('Ubercart'));
+    $this->assertText(t('You must first add attributes to this class.'), t('Class attribute form working.'));
   }
 
   /**
@@ -618,13 +580,13 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
 
     $this->drupalGet('admin/store/products/classes/' . $class->pcid . '/attributes/add');
 
-    $this->assertRaw(t('@attribute </label>', array('@attribute' => $attribute->name)), t('Class attribute add form working.'), t('Ubercart'));
+    $this->assertRaw(t('@attribute </label>', array('@attribute' => $attribute->name)), t('Class attribute add form working.'));
 
     $edit['add_attributes[' . $attribute->aid . ']'] = 1;
 
     $this->drupalPost('admin/store/products/classes/' . $class->pcid . '/attributes/add', $edit, t('Add attributes'));
 
-    $this->assertNoText(t('You must first add attributes to this class.'), t('Class attribute form working.'), t('Ubercart'));
+    $this->assertNoText(t('You must first add attributes to this class.'), t('Class attribute form working.'));
   }
 
   /**
@@ -639,7 +601,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
 
     $this->drupalGet('admin/store/products/classes/' . $class->pcid . '/options');
 
-    $this->assertRaw(t('@option </label>', array('@option' => $option->name)), t('Class attribute option form working.'), t('Ubercart'));
+    $this->assertRaw(t('@option </label>', array('@option' => $option->name)), t('Class attribute option form working.'));
 
     $o = (array) self::createAttributeOption(array('aid' => $attribute->aid), FALSE);
     unset($o['name'], $o['aid']);
@@ -651,7 +613,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
     $edit["attributes[$attribute->aid][default]"] = $option->oid;
     $this->showVar($edit);
     $this->drupalPost('admin/store/products/classes/' . $class->pcid . '/options', $edit, t('Submit'));
-    $this->assertText('The product class options have been saved.', t('Class attribute option saved.'), t('Ubercart'));
+    $this->assertText('The product class options have been saved.', t('Class attribute option saved.'));
     $this->showVar($option);
 
     $option = uc_attribute_subject_option_load($option->oid, 'class', $class->pcid);
@@ -665,7 +627,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
         break;
       }
     }
-    $this->assertTrue($fields_ok, t('Class attribute option edited successfully by form.'), t('Ubercart'));
+    $this->assertTrue($fields_ok, t('Class attribute option edited successfully by form.'));
   }
 
   /**
@@ -675,11 +637,11 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
    */
   public static function createProductAdjustment($data) {
     $max_nid = db_select('node', 'n')
-                 ->fields('n', array('nid'))
-                 ->orderBy('nid', 'DESC')
-                 ->range(0, 1)
-                 ->execute()
-                 ->fetchField();
+      ->fields('n', array('nid'))
+      ->orderBy('nid', 'DESC')
+      ->range(0, 1)
+      ->execute()
+      ->fetchField();
     $adjustment = $data + array(
       'model' => self::randomName(8),
     );
@@ -759,11 +721,11 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
    */
   public static function createAttributeOption($data = array(), $save = TRUE) {
     $max_aid = db_select('uc_attributes', 'a')
-                 ->fields('a', array('aid'))
-                 ->orderBy('aid', 'DESC')
-                 ->range(0, 1)
-                 ->execute()
-                 ->fetchField();
+      ->fields('a', array('aid'))
+      ->orderBy('aid', 'DESC')
+      ->range(0, 1)
+      ->execute()
+      ->fetchField();
     $option = $data + array(
       'aid' => $max_aid,
       'name' => DrupalWebTestCase::randomName(8),
