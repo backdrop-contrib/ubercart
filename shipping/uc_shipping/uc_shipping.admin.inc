@@ -200,7 +200,11 @@ function theme_uc_shipping_new_package_fieldset($variables) {
     $rows[] = $row;
   }
 
-  $output .= theme('table', array('header' => $header, 'rows' => $rows));
+  $output .= theme('table', array(
+    'header' => $header,
+    'rows' => $rows,
+    'empty' => t('There are no products available for this type of package.'),
+  ));
   $output .= drupal_render_children($fieldset);
 
   return $output;
