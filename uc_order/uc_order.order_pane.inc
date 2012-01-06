@@ -346,6 +346,7 @@ function uc_order_add_product_form($form, &$form_state, $order, $node) {
       'callback' => 'uc_order_pane_products_ajax_callback',
       'wrapper' => 'product-controls',
     ),
+    '#limit_validation_errors' => array(),
   );
   $form['node'] = array(
     '#type' => 'value',
