@@ -21,7 +21,7 @@ function uc_payment_methods_form($form, &$form_state) {
   foreach ($methods as $id => $method) {
     $form['pmtable'][$id]['uc_payment_method_' . $id . '_checkout'] = array(
       '#type' => 'checkbox',
-      '#title' => $method['name'],
+      '#title' => check_plain($method['name']),
       '#default_value' => variable_get('uc_payment_method_' . $id . '_checkout', $method['checkout']),
     );
     $form['pmtable'][$id]['uc_payment_method_' . $id . '_weight'] = array(
@@ -121,9 +121,7 @@ function uc_payment_gateway_select() {
 
   $build['instructions'] = array('#markup' => t('Please choose a payment gateway to use for that payment.'));
 
-  $build['form'] = drupal_get_form('uc_payment_gateway_select_form', $options,
-               $_SESSION['uc_payment_method'], $_SESSION['uc_payment_order_id'],
-               $_SESSION['uc_payment_amount'], $_SESSION['uc_payment_data']);
+  $build['form'] = drupal_get_form('uc_payment_gateway_select_form', $options, $_SESSION['uc_payment_method'], $_SESSION['uc_payment_order_id'], $_SESSION['uc_payment_amount'], $_SESSION['uc_payment_data']);
 
   return $build;
 }
@@ -325,8 +323,7 @@ function uc_payment_by_order_form_submit($form, &$form_state) {
   global $user;
 
   $payment = $form_state['values']['payments']['new'];
-  uc_payment_enter($form_state['values']['order_id'], $payment['method'], $payment['amount'],
-                   $user->uid, '', $payment['comment']);
+  uc_payment_enter($form_state['values']['order_id'], $payment['method'], $payment['amount'], $user->uid, '', $payment['comment']);
 
   drupal_set_message(t('Payment entered.'));
 }

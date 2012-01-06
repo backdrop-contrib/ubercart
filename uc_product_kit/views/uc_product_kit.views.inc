@@ -1,6 +1,12 @@
 <?php
+
 /**
- * Implements hook_views_data()
+ * @file
+ * Views hooks for Ubercart product kits.
+ */
+
+/**
+ * Implements hook_views_data().
  */
 function uc_product_kit_views_data() {
   $data['uc_product_kits']['table']['group'] = t('Product kit');

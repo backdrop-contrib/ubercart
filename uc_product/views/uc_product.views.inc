@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Views 2 hooks and callback registries.
+ * Views hooks for Ubercart products.
  */
 
 /**
