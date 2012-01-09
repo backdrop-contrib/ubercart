@@ -53,8 +53,9 @@ class UcAddress {
    *   (United States of America) if it is not set.
    */
   public function __construct($country = NULL) {
-    // Default to United States - why?
-    $this->country = isset($country) ? $country : variable_get('uc_store_country', 840);
+    if (!$this->country) {
+      $this->country = isset($country) ? $country : variable_get('uc_store_country', 840);
+    }
   }
 
   /**
