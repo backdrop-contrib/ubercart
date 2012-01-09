@@ -11,6 +11,40 @@
  */
 
 /**
+ * Alter a product's data before it is viewed.
+ *
+ * @param $node
+ *   The product node to be altered.
+ */
+function hook_uc_product_alter(&$node) {
+  if (isset($node->data['attributes']) && is_array($node->data['attributes'])) {
+    $options = _uc_cart_product_get_options($node);
+    foreach ($options as $option) {
+      $node->cost += $option['cost'];
+      $node->price += $option['price'];
+      $node->weight += $option['weight'];
+    }
+
+    $combination = array();
+    foreach ($node->data['attributes'] as $aid => $value) {
+      if (is_numeric($value)) {
+        $attribute = uc_attribute_load($aid, $node->nid, 'product');
+        if ($attribute && ($attribute->display == 1 || $attribute->display == 2)) {
+          $combination[$aid] = $value;
+        }
+      }
+    }
+    ksort($combination);
+
+    $model = db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = :nid AND combination LIKE :combo", array(':nid' => $node->nid, ':combo' => serialize($combination)))->fetchField();
+
+    if (!empty($model)) {
+      $node->model = $model;
+    }
+  }
+}
+
+/**
  * Performs actions on product classes.
  *
  * @param $type
