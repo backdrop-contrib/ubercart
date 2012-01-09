@@ -284,30 +284,15 @@ function uc_attribute_form_uc_product_settings_form_alter(&$form, &$form_state) 
 }
 
 /**
- * Implements hook_form_alter().
+ * Implements hook_module_implements_alter().
+ *
+ * Ensures that attribute form changes are made after (e.g.) product kits.
  */
-function uc_attribute_form_alter(&$form, &$form_state, $form_id) {
-  if (strpos($form_id, 'add_product_form')) {
-    $node =& $form['node']['#value'];
-    // If the node has a product list, add attributes to them
-    if (isset($form['sub_products']) && count(element_children($form['sub_products']))) {
-      foreach (element_children($form['sub_products']) as $key) {
-        $form['sub_products'][$key]['attributes'] = _uc_attribute_alter_form(node_load($key));
-        if (is_array($form['sub_products'][$key]['attributes'])) {
-          $form['sub_products'][$key]['attributes']['#tree'] = TRUE;
-          $form['sub_products'][$key]['#type'] = 'fieldset';
-        }
-      }
-    }
-    // If not, add attributes to the node.
-    else {
-      $form['attributes'] = _uc_attribute_alter_form($node);
-
-      if (is_array($form['attributes'])) {
-        $form['attributes']['#tree'] = TRUE;
-        $form['attributes']['#weight'] = -1;
-      }
-    }
+function uc_attribute_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'uc_form_alter') {
+    $group = $implementations['uc_attribute'];
+    unset($implementations['uc_attribute']);
+    $implementations['uc_attribute'] = $group;
   }
 }
 
@@ -320,15 +305,21 @@ function uc_attribute_form_alter(&$form, &$form_state, $form_id) {
  * manually.
  */
 function uc_attribute_uc_form_alter(&$form, &$form_state, $form_id) {
-  if (strpos($form_id, 'add_to_cart_form') || strpos($form_id, 'add_product_form')) {
+  if (strpos($form_id, 'add_to_cart_form') || $form_id == 'uc_order_add_product_form') {
     $node =& $form['node']['#value'];
     // If the node has a product list, add attributes to them
-    if (isset($form['products']) && count(element_children($form['products']))) {
-      foreach (element_children($form['products']) as $key) {
-        $form['products'][$key]['attributes'] = _uc_attribute_alter_form(node_load($key));
-        if (is_array($form['products'][$key]['attributes'])) {
-          $form['products'][$key]['attributes']['#tree'] = TRUE;
-          $form['products'][$key]['#type'] = 'fieldset';
+    if (isset($form['products']) || isset($form['sub_products'])) {
+      if (isset($form['products'])) {
+        $element = &$form['products'];
+      }
+      else {
+        $element = &$form['sub_products'];
+      }
+      foreach (element_children($element) as $key) {
+        $element[$key]['attributes'] = _uc_attribute_alter_form(node_load($key));
+        if (is_array($element[$key]['attributes'])) {
+          $element[$key]['attributes']['#tree'] = TRUE;
+          $element[$key]['#type'] = 'fieldset';
         }
       }
     }
