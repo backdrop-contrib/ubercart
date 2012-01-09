@@ -691,13 +691,10 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
       $form['add_line_item']['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Add line'),
-        '#submit' => array('uc_order_pane_line_items_add'),
+        '#submit' => array('uc_order_pane_line_items_submit', 'uc_order_pane_line_items_add'),
         '#ajax' => array(
           'callback' => 'uc_order_pane_line_items_update',
         ),
-      );
-      $form['li_delete_id'] = array(
-        '#type' => 'hidden',
       );
       $form['line_items'] = array(
         '#tree' => TRUE,
@@ -712,19 +709,23 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
           '#value' => $item['line_item_id'],
         );
         if (isset($item['type']) && _uc_line_item_data($item['type'], 'stored') == TRUE) {
+          $form['line_items'][$item['line_item_id']]['remove'] = array(
+            '#type' => 'image_button',
+            '#title' => t('Remove line item.'),
+            '#src' => drupal_get_path('module', 'uc_store') . '/images/error.gif',
+            '#button_type' => 'remove',
+            '#submit' => array('uc_order_pane_line_items_submit', 'uc_order_pane_line_items_remove'),
+            '#ajax' => array(
+              'callback' => 'uc_order_pane_line_items_update',
+            ),
+            '#return_value' => $item['line_item_id'],
+          );
           $form['line_items'][$item['line_item_id']]['title'] = array(
             '#type' => 'textfield',
             '#title' => t('Title'),
             '#default_value' => $item['title'],
             '#size' => 40,
             '#maxlength' => 128,
-            '#prefix' => '<img id="li-' . $item['line_item_id'] . '" src="'
-                       . base_path() . drupal_get_path('module', 'uc_store')
-                        . '/images/error.gif" alt="' . t('Remove line item.')
-                        . '" title="' . t('Remove line item.') . '" style="'
-                        . 'cursor: pointer; position: relative; top: 3px;" '
-                        . 'onclick="confirm_line_item_delete(\''
-                       . addslashes(t('Remove this line item?')) . '\', this.id);" />',
           );
           $form['line_items'][$item['line_item_id']]['amount'] = array(
             '#type' => 'uc_price',
@@ -748,7 +749,6 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
 
     case 'edit-theme':
       return drupal_render($form['add_line_item'])
-           . drupal_render($form['li_delete_id'])
            . drupal_render($form['line_items']);
 
     case 'edit-process':
@@ -769,6 +769,7 @@ function theme_uc_order_pane_line_items($variables) {
     $form[$field]['amount']['#title'] = '';
     $output .= '<tr><td class="li-title">'
       . drupal_render($form[$field]['li_id'])
+      . drupal_render($form[$field]['remove'])
       . drupal_render($form[$field]['title'])
       . ':</td><td class="li-amount">'
       . drupal_render($form[$field]['amount'])
@@ -792,20 +793,29 @@ function uc_order_pane_line_items_submit($form, &$form_state) {
       }
     }
   }
-  if (intval($values['li_delete_id']) > 0) {
-    uc_order_delete_line_item($values['li_delete_id']);
-    drupal_set_message(t('Line item removed.'));
-  }
 }
 
 /**
- *
+ * Order pane submit callback: Add a line item to an order.
  */
 function uc_order_pane_line_items_add($form, &$form_state) {
   $order = &$form_state['order'];
   $type = $form_state['values']['li_type_select'];
 
   uc_order_line_item_add($order->order_id, $type, _uc_line_item_data($type, 'title'), 0);
+  $order->line_items = uc_order_load_line_items($order);
+
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * Order pane submit callback: Remove a line item from an order.
+ */
+function uc_order_pane_line_items_remove($form, &$form_state) {
+  $order = &$form_state['order'];
+  $line_item_id = intval($form_state['triggering_element']['#return_value']);
+
+  uc_order_delete_line_item($line_item_id);
   $order->line_items = uc_order_load_line_items($order);
 
   $form_state['rebuild'] = TRUE;
