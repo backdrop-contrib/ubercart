@@ -76,33 +76,27 @@ function uc_2checkout_uc_payment_method() {
 function uc_payment_method_2checkout($op, &$order, $form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'cart-details':
-      if (variable_get('uc_2checkout_check', FALSE)) {
-        if ($_SESSION['pay_method'] == 'CK') {
-          $sel = 'CK';
-        }
-        else {
-          $sel = 'CC';
-        }
-        unset($_SESSION['pay_method']);
+      $build = array();
 
-        $build = array(
+      if (variable_get('uc_2checkout_check', FALSE)) {
+        $build['pay_method'] = array(
           '#type' => 'select',
           '#title' => t('Select your payment type:'),
-          '#name' => 'pay_method',
-          '#id' => 'edit-pay-method',
-          '#attributes' => array('class' => array('form-select')),
-          '#default_value' => $sel,
+          '#default_value' => $_SESSION['pay_method'] == 'CK' ? 'CK' : 'CC',
           '#options' => array(
             'CC' => t('Credit card'),
             'CK' => t('Online check'),
           ),
         );
+        unset($_SESSION['pay_method']);
       }
 
       return $build;
 
     case 'cart-process':
-      $_SESSION['pay_method'] = $form_state['values']['panes']['payment']['details']['pay_method'];
+      if (isset($form_state['values']['panes']['payment']['details']['pay_method'])) {
+        $_SESSION['pay_method'] = $form_state['values']['panes']['payment']['details']['pay_method'];
+      }
       return;
 
     case 'settings':
@@ -206,7 +200,7 @@ function uc_2checkout_form($form, &$form_state, $order) {
     $i++;
     $data['c_prod_' . $i] = $product->model . ',' . $product->qty;
     $data['c_name_' . $i] = $product->title;
-    $data['c_description_' . $i] = $desc;
+    $data['c_description_' . $i] = '';
     $data['c_price_' . $i] = uc_currency_format($product->price, FALSE, FALSE, '.');
   }
 
