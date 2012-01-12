@@ -99,33 +99,48 @@ function uc_cart_checkout() {
     }
   }
 
-  // Prepare the order.
-  if (!isset($order)) {
-    // Create a new order if necessary.
-    $order = uc_order_new($user->uid);
-    $_SESSION['cart_order'] = $order->order_id;
-    $order->products = uc_cart_get_contents();
-    unset($_SESSION['uc_cart_order_rebuild']);
-    unset($_SESSION['do_checkout']);
-  }
-  elseif (!empty($_SESSION['uc_cart_order_rebuild'])) {
-    // If the cart has changed, then update the cart order products.
-    db_delete('uc_order_products')
-      ->condition('order_id', $order->order_id)
-      ->execute();
-    uc_order_delete_line_item($order->order_id, TRUE);
-    $order->products = uc_cart_get_contents();
-    unset($_SESSION['uc_cart_order_rebuild']);
-    unset($_SESSION['do_checkout']);
+  if (isset($_POST['form_id']) && $_POST['form_id'] == 'uc_cart_checkout_form') {
+    // If this is a form submission, make sure that the cart order is still valid.
+    if (!isset($order)) {
+      drupal_set_message(t('Your session has expired or is no longer valid.  Please review your order and try again.'));
+      drupal_goto('cart');
+    }
+    elseif (!empty($_SESSION['uc_cart_order_rebuild'])) {
+      drupal_set_message(t('Your shopping cart contents have changed. Please review your order and try again.'));
+      drupal_goto('cart');
+    }
   }
   else {
-    // Otherwise, add missing node fields to the order product.
-    debug('amplified order ' .  $order->order_id);
-    foreach ($order->products as &$product) {
-      $node = node_load($product->nid);
-      foreach ($node as $key => $value) {
-        if (!isset($product->$key)) {
-          $product->$key = $value;
+    // Prepare the cart order.
+    $rebuild = FALSE;
+    if (!isset($order)) {
+      // Create a new order if necessary.
+      $order = uc_order_new($user->uid);
+      $_SESSION['cart_order'] = $order->order_id;
+      $rebuild = TRUE;
+    }
+    elseif (!empty($_SESSION['uc_cart_order_rebuild'])) {
+      // Or, if the cart has changed, then remove old products and line items.
+      db_delete('uc_order_products')
+        ->condition('order_id', $order->order_id)
+        ->execute();
+      uc_order_delete_line_item($order->order_id, TRUE);
+      $rebuild = TRUE;
+    }
+
+    if ($rebuild) {
+      // Copy the cart contents to the cart order.
+      $order->products = uc_cart_get_contents();
+      unset($_SESSION['uc_cart_order_rebuild']);
+    }
+    else {
+      // Otherwise, add missing node fields to the cart order's products.
+      foreach ($order->products as &$product) {
+        $node = node_load($product->nid);
+        foreach ($node as $key => $value) {
+          if (!isset($product->$key)) {
+            $product->$key = $value;
+          }
         }
       }
     }
@@ -282,12 +297,6 @@ function theme_uc_cart_checkout_form($variables) {
  */
 function uc_cart_checkout_form_validate($form, &$form_state) {
   global $user;
-
-  if (empty($_SESSION['do_checkout'])) {
-    drupal_set_message(t('Your checkout session is no longer valid.  Please review your order and try again.'));
-    $form_state['checkout_valid'] = FALSE;
-    return;
-  }
 
   $order = $form_state['storage']['order'];
 
