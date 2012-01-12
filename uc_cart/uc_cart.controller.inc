@@ -8,7 +8,7 @@ class UcCartItemController extends EntityAPIController {
 
   public function buildContent($item, $view_mode = 'full', $langcode = NULL, $content = array()) {
     $content = array();
-    $content += module_invoke($item->module, 'uc_cart_display', $item);
+    $content += module_invoke($item->data['module'], 'uc_cart_display', $item);
     if (!empty($content)) {
       $content['cart_item_id'] = array(
         '#type' => 'hidden',
