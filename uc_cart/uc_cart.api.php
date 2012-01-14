@@ -146,54 +146,6 @@ function hook_uc_cart_display($item) {
 }
 
 /**
- * Adds extra data about an item in the cart.
- *
- * Products that are added to a customer's cart are referred as items until the
- * sale is completed. Just think of a grocery store having a bunch of products
- * on the shelves but putting a sign over the express lane saying "15 Items or
- * Less." hook_uc_cart_item() is in charge of acting on items at various times
- * like when they are being added to a cart, saved, loaded, and checked out.
- *
- * Here's the rationale for this hook: Products may change on a live site during
- * a price increase or change to attribute adjustments. If a user has previously
- * added an item to their cart, when they go to checkout or view their cart
- * screen we want the latest pricing and model numbers to show. So, the
- * essential product information is stored in the cart, but when the items in
- * a cart are loaded, modules are given a chance to adjust the data against
- * the latest settings.
- *
- * @param $op
- *   The action that is occurring. Possible values:
- *   - load: Passed for each item when a cart is being loaded in the function
- *     uc_cart_get_contents(). This gives modules the chance to tweak
- *     information for items when the cart is being loaded prior to being
- *     added to an order. No return value is expected.
- *   - view: Passed for each item when it is about to be displayed on the
- *     cart page. Modifications made affect only displayed information and are
- *     not used in any calculations.
- *   - can_ship: Passed when a cart is being scanned for items that are not
- *     shippable items. Ubercart will bypass cart and checkout operations
- *     specifically related to tangible products if nothing in the cart is
- *     shippable. hook_uc_cart_item() functions that check for this op are
- *     expected to return TRUE or FALSE based on whether a product is
- *     shippable or not.
- *   - remove: Passed when an item is removed from the cart.
- *   - checkout: Passed for each item when the cart is being emptied for
- *     checkout.
- *
- * @return
- *   No return value for load or view. TRUE or FALSE for can_ship.
- */
-function hook_uc_cart_item($op, $item) {
-  switch ($op) {
-    case 'load':
-      $term = array_shift(taxonomy_node_get_terms_by_vocabulary($item->nid, variable_get('uc_manufacturer_vid', 0)));
-      $item->manufacturer = $term->name;
-      break;
-  }
-}
-
-/**
  * Registers callbacks for a cart pane.
  *
  * The default cart view page displays a table of the cart contents and a few
