@@ -66,7 +66,7 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#title' => t('Server mode'),
     '#description' => t('Use the Testing server while developing and configuring your site. Switch to the Production server only after you have demonstrated that transactions on the Testing server are working and you are ready to go live.'),
     '#options' => array('https://wwwcie.ups.com/ups.app/xml/' => t('Testing'),
-      'https://www.ups.com/ups.app/xml/' => t('Production'),
+      'https://onlinetools.ups.com/ups.app/xml/' => t('Production'),
     ),
     '#default_value' => variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/'),
   );
