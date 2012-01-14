@@ -1067,24 +1067,12 @@ function uc_product_kit_uc_order_product_alter(&$product, $order) {
 
   // Have to save each individual product if this is a kit.
   foreach ($product->products as $kit_product) {
-    $kit_product->price = $kit_product->sell_price;
-    $kit_product->qty *= $product->qty;
-
-    // Load all the attributes/discounts/etc as if we were adding it to the
-    // cart.
-    $kit_product->data = module_invoke_all('uc_add_to_cart_data', $_POST['product_controls']['sub_products'][$kit_product->nid]);
-    $kit_product->data['kit_id'] = $product->nid;
-    $kit_product->data['shippable'] = $product->shippable;
-
-    // Run the product through the alter mill.
-    foreach (module_implements('uc_cart_item') as $module) {
-      $function = $module . '_uc_cart_item';
-      if (function_exists($function)) {
-        // $product must be passed by reference.
-        $function('load', $kit_product);
-      }
-    }
-
+    $qty = $kit_product->qty * $product->qty;
+    $data = isset($kit_product->data) ? $kit_product->data : array();
+    $data += module_invoke_all('uc_add_to_cart_data', $_POST['product_controls']['sub_products'][$kit_product->nid]);
+    $data['shippable'] = $product->shippable;
+    $kit_product = uc_product_load_variant($kit_product->nid, $data);
+    $kit_product->qty = $qty;
     drupal_alter('uc_order_product', $kit_product, $order);
 
     // Save the individual item to the order.
@@ -1099,7 +1087,7 @@ function uc_product_kit_uc_order_product_alter(&$product, $order) {
  * Implements hook_uc_cart_display().
  *
  * Displays either the kit as a whole, or each individual product based on the
- * store configuration. Each product in the cart that was added by
+ *       store configuration. Each product in the cart that was added by
  * uc_product_kit was also given a unique kit id in order to help prevent
  * collisions. The side effect is that identical product kits are listed
  * separately if added separately. The customer may still change the quantity

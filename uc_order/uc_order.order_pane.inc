@@ -541,18 +541,9 @@ function uc_order_edit_products_add($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
   $order = $form_state['build_info']['args'][0];
 
-  $product = node_load(intval($form_state['values']['product_controls']['nid']));
+  $data = module_invoke_all('uc_add_to_cart_data', $form_state['values']['product_controls']);
+  $product = uc_product_load_variant(intval($form_state['values']['product_controls']['nid']), $data);
   $product->qty = isset($form_state['values']['product_controls']['qty']) ? $form_state['values']['product_controls']['qty'] : $product->default_qty;
-  $product->price = $product->sell_price;
-  $product->data = module_invoke_all('uc_add_to_cart_data', $form_state['values']['product_controls']);
-
-  foreach (module_implements('uc_cart_item') as $module) {
-    $function = $module . '_uc_cart_item';
-    if (function_exists($function)) {
-      // $product must be passed by reference.
-      $function('load', $product);
-    }
-  }
 
   drupal_alter('uc_order_product', $product, $order);
   uc_order_product_save($order->order_id, $product);
