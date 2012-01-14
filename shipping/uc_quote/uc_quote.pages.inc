@@ -102,7 +102,7 @@ function uc_quote_action_get_quote($order, $method) {
     // methods won't mess up the products in their methods.
     $products = array();
     foreach ($order->products as $key => $item) {
-      if (uc_cart_product_is_shippable($item)) {
+      if (uc_order_product_is_shippable($item)) {
         $products[$key] = clone $item;
       }
     }

@@ -1592,41 +1592,9 @@ function uc_cart_is_shippable($cart_id = NULL) {
   $items = uc_cart_get_contents($cart_id);
 
   foreach ($items as $item) {
-    if (uc_cart_product_is_shippable($item)) {
+    if (uc_order_product_is_shippable($item)) {
       return TRUE;
     }
-  }
-
-  return FALSE;
-}
-
-/**
- * Determines whether a product is shippable or not.
- */
-function uc_cart_product_is_shippable($product) {
-  // Return FALSE if the product form specifies this as not shippable.
-  if ($product->data['shippable'] == FALSE) {
-    return FALSE;
-  }
-
-  $result = array();
-
-  // See if any other modules have a say in the matter...
-  foreach (module_implements('uc_cart_item') as $module) {
-    $func = $module . '_uc_cart_item';
-    if (function_exists($func)) {
-      // $product must be passed by reference.
-      $return = $func('can_ship', $product);
-
-      if (!is_null($return)) {
-        $result[] = $return;
-      }
-    }
-  }
-
-  // Return TRUE by default.
-  if (empty($result) || in_array(TRUE, $result)) {
-    return TRUE;
   }
 
   return FALSE;

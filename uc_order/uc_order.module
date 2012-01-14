@@ -1569,6 +1569,26 @@ function uc_order_get_product_count($order) {
 }
 
 /**
+ * Determines whether a product is shippable or not.
+ */
+function uc_order_product_is_shippable($product) {
+  // Return FALSE if the product form specifies this as not shippable.
+  if (isset($product->data['shippable']) && $product->data['shippable'] === FALSE) {
+    return FALSE;
+  }
+
+  // See if any other modules have a say in the matter...
+  $result = module_invoke_all('uc_order_product_can_ship', $product);
+
+  // Return TRUE by default.
+  if (empty($result) || in_array(TRUE, $result)) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+/**
  * Determines if an order is shippable.
  *
  * An order can be shipped if any of its products can be shipped.
@@ -1579,33 +1599,12 @@ function uc_order_is_shippable($order) {
   }
 
   foreach ($order->products as $product) {
-    // Return FALSE if the product form specifies this as not shippable.
-    if (empty($product->data['shippable'])) {
-      $results[] = FALSE;
-      continue;
+    if (uc_order_product_is_shippable($product)) {
+      return TRUE;
     }
-
-    // See if any other modules have a say in the matter...
-    foreach (module_implements('uc_cart_item') as $module) {
-      $function = $module . '_uc_cart_item';
-      if (function_exists($function)) {
-        // $product must be passed by reference to hook_uc_cart_item.
-        $can_ship = $function('can_ship', $product);
-        if (!is_null($can_ship)) {
-          $result[] = $can_ship;
-        }
-      }
-    }
-
-    // Return TRUE by default.
-    if (empty($result) || in_array(TRUE, $result)) {
-      $results[] = TRUE;
-      continue;
-    }
-    $results[] = FALSE;
   }
 
-  return in_array(TRUE, $results);
+  return FALSE;
 }
 
 /**
