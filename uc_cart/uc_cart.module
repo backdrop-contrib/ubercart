@@ -1165,7 +1165,7 @@ function uc_cart_complete_sale($order, $login = FALSE) {
   $output = filter_xss_admin(implode(' ', $messages));
 
   // Empty that cart...
-  uc_cart_empty(uc_cart_get_id(FALSE), 'checkout');
+  uc_cart_empty(uc_cart_get_id(FALSE));
 
   return array(
     '#theme' => 'uc_cart_complete_sale',
@@ -1281,34 +1281,36 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
     return array();
   }
 
-  if ($action == 'rebuild') {
+  if ($action == 'rebuild' || $action == 'empty') {
     unset($items[$cid]);
   }
 
   if (!isset($items[$cid])) {
     // Find all cart items associated with this cart.
-    $efq = new EntityFieldQuery();
-    $result = $efq->entityCondition('entity_type', 'uc_cart_item')
-      ->propertyCondition('cart_id', $cid)
-      ->propertyOrderBy('cart_item_id', 'ASC')
-      ->execute();
-    if (!empty($result['uc_cart_item'])) {
-      $items[$cid] = entity_load('uc_cart_item', array_keys($result['uc_cart_item']), NULL, TRUE);
-      // Create a bare order and attach it to each item as context.
-      $order = new UcOrder();
-      $order->uid = $cid;
-      if ($account = user_load($cid)) {
-        $order->primary_email = $account->mail;
+    if ($action != 'empty') {
+      $efq = new EntityFieldQuery();
+      $result = $efq->entityCondition('entity_type', 'uc_cart_item')
+        ->propertyCondition('cart_id', $cid)
+        ->propertyOrderBy('cart_item_id', 'ASC')
+        ->execute();
+      if (!empty($result['uc_cart_item'])) {
+        $items[$cid] = entity_load('uc_cart_item', array_keys($result['uc_cart_item']), NULL, TRUE);
+        // Create a bare order and attach it to each item as context.
+        $order = new UcOrder();
+        $order->uid = $cid;
+        if ($account = user_load($cid)) {
+          $order->primary_email = $account->mail;
+        }
+        $order->order_status = uc_order_state_default('in_checkout');
+        $order->created = REQUEST_TIME;
+        $order->modified = REQUEST_TIME;
+        foreach ($items[$cid] as $item) {
+          $item->order = $order;
+        }
       }
-      $order->order_status = uc_order_state_default('in_checkout');
-      $order->created = REQUEST_TIME;
-      $order->modified = REQUEST_TIME;
-      foreach ($items[$cid] as $item) {
-        $item->order = $order;
+      else {
+        $items[$cid] = array();
       }
-    }
-    else {
-      $items[$cid] = array();
     }
 
     // Allow other modules a chance to alter the fully loaded cart object.
@@ -1319,7 +1321,7 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
     // To guard against unsetting the session ID in the middle of an
     // uc_cart_add_item() call, we only do this on rebuild
     // See issue 858816 for details.
-    if ($action == 'rebuild' && empty($items[$cid]) && isset($_SESSION['uc_cart_id']) && $_SESSION['uc_cart_id'] == $cid) {
+    if (($action == 'empty' || $action == 'rebuild') && empty($items[$cid]) && isset($_SESSION['uc_cart_id']) && $_SESSION['uc_cart_id'] == $cid) {
       unset($_SESSION['uc_cart_id']);
     }
   }
@@ -1487,34 +1489,24 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
  *   The cart ID of the item to remove.
  * @param $data
  *   The data array for the item to remove.
- * @param $op
- *   The $op parameter to pass to hook_uc_cart_item(). Default is 'remove'.
  */
-function uc_cart_remove_item($nid, $cid = NULL, $data = array(), $op = 'remove') {
+function uc_cart_remove_item($nid, $cid = NULL, $data = array()) {
   if (empty($nid)) {
     return;
   }
 
   $cart_id = !(is_null($cid) || empty($cid)) ? $cid : uc_cart_get_id();
 
-  // Invoke hook_uc_cart_item() with $op = 'remove' in enabled modules.
-  $result = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c ON n.nid = c.nid WHERE c.cart_id = :cart_id AND c.nid = :nid AND c.data = :data", array(':cart_id' => $cart_id, ':nid' => $nid, ':data' => serialize($data)));
-  if ($item = $result->fetchObject()) {
-    $item->data = unserialize($item->data);
-    foreach (module_implements('uc_cart_item') as $module) {
-      $func = $module . '_uc_cart_item';
-      if (function_exists($func)) {
-        // $item must be passed by reference.
-        $func($op, $item);
-      }
-    }
-  }
-
-  db_delete('uc_cart_products')
-    ->condition('cart_id', $cart_id)
-    ->condition('nid', $nid)
-    ->condition('data', serialize($data))
+  $efq = new EntityFieldQuery();
+  $result = $efq->entityCondition('entity_type', 'uc_cart_item')
+    ->propertyCondition('cart_id', $cart_id)
+    ->propertyCondition('nid', $nid)
+    ->propertyCondition('data', serialize($data))
     ->execute();
+
+  if (!empty($result['uc_cart_item'])) {
+    entity_delete_multiple('uc_cart_item', array_keys($result['uc_cart_item']));
+  }
 }
 
 /**
@@ -1536,27 +1528,23 @@ function uc_cart_update_item_object($cart) {
  *
  * @param $cart_id
  *   The ID of the cart.
- * @param $op
- *   The $op parameter to pass to hook_uc_cart_item(). Default is 'remove'.
  */
-function uc_cart_empty($cart_id, $op = 'remove') {
+function uc_cart_empty($cart_id) {
   if (is_null($cart_id) || empty($cart_id)) {
     return;
   }
 
-  // Empty cart one item at a time.  This will ensure the cart_item hook is fired with $op set to 'remove' for each item.
-  $items = uc_cart_get_contents($cart_id);
-  foreach ($items as $item) {
-    uc_cart_remove_item($item->nid, $cart_id, $item->data, $op);
-  }
-
-  // Probably don't need this query, but it will ensure anything not removed with the above loop is removed here.
-  db_delete('uc_cart_products')
-    ->condition('cart_id', $cart_id)
+  $efq = new EntityFieldQuery();
+  $result = $efq->entityCondition('entity_type', 'uc_cart_item')
+    ->propertyCondition('cart_id', $cart_id)
     ->execute();
 
+  if (!empty($result['uc_cart_item'])) {
+    entity_delete_multiple('uc_cart_item', array_keys($result['uc_cart_item']));
+  }
+
   // Remove cached cart.
-  uc_cart_get_contents($cart_id, 'rebuild');
+  uc_cart_get_contents($cart_id, 'empty');
 }
 
 /**
