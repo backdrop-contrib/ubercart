@@ -28,8 +28,8 @@ class UcAddress {
   /** City name. */
   public $city = '';
 
-  /** State, provence, or region name. */
-  public $zone = '';
+  /** State, provence, or region id. */
+  public $zone = 0;
 
   /** ISO 3166-1 3-digit numeric country code. */
   public $country = 0;
