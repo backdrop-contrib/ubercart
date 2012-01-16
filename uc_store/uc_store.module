@@ -1321,8 +1321,6 @@ function uc_zone_get_by_id($id) {
  *   - 'description': The description for the field (defaults to none).
  *   - 'display': The values to display, either 'name' (default) or 'code'.
  *   - 'required': TRUE if the field is required (defaults to FALSE).
- *   - 'ajax': If set, this should be the Form API reference to this element,
- *     so it can be updated using Ajax when the country is changed.
  *
  * @return
  *   A Form API select element.
@@ -1332,7 +1330,6 @@ function uc_zone_select($title = '', $default = NULL, $country_id = NULL, $optio
     'description' => NULL,
     'display' => 'name',
     'required' => FALSE,
-    'ajax' => '',
   );
 
   if (empty($country_id)) {
@@ -1360,10 +1357,6 @@ function uc_zone_select($title = '', $default = NULL, $country_id = NULL, $optio
     '#disabled' => isset($zones[-1]),
   );
 
-  if ($options['ajax']) {
-    $select['#prefix'] = '<div id="ajax-' . str_replace('][', '-', $options['ajax']) . '">';
-    $select['#suffix'] = '</div>';
-  }
   return $select;
 }
 
@@ -1389,92 +1382,6 @@ function uc_zone_option_list() {
  */
 function uc_country_get_by_id($id) {
   return db_query("SELECT country_name FROM {uc_countries} WHERE country_id = :id", array(':id' => $id))->fetchField();
-}
-
-/**
- * Creates a country select box for a form.
- *
- * @param $title
- *   The label for the field.
- * @param $default
- *   The default country ID, or NULL to use the store default country.
- * @param array $options
- *   An associative array of additional options, with the following elements:
- *   - 'description': The description for the field (defaults to none).
- *   - 'display': The values to display, either 'name' (default), 'code2' for
- *     the 2-character ISO code, or 'code3' for the 3-character ISO code.
- *   - 'required': TRUE if the field is required (defaults to FALSE).
- *   - 'ajax': If set, changing the country will update this related element
- *     with a list of zones for this country.
- *
- * @return
- *   A Form API select element.
- */
-function uc_country_select($title, $default = NULL, $options = array()) {
-  $options += array(
-    'description' => NULL,
-    'display' => 'name',
-    'required' => FALSE,
-    'ajax' => '',
-  );
-
-  if ($options['display'] == 'code2') {
-    $order_by = 'country_iso_code_2';
-  }
-  elseif ($options['display'] == 'code3') {
-    $order_by = 'country_iso_code_3';
-  }
-  else {
-    $order_by = 'country_name';
-  }
-
-  $result = db_query('SELECT * FROM {uc_countries} WHERE version > :version ORDER BY :field', array(':version' => 0, ':field' => $order_by));
-
-  $countries = array();
-  foreach ($result as $country) {
-    $countries[$country->country_id] = ($order_by == 'country_name') ? t($country->$order_by) : $country->$order_by;
-  }
-  if (empty($countries)) {
-    $countries[] = t('No countries found.');
-  }
-  natcasesort($countries);
-
-  if (!$default || !isset($countries[$default])) {
-    $default = uc_store_default_country();
-  }
-
-  $select = array(
-    '#type' => 'select',
-    '#title' => $title,
-    '#description' => $options['description'],
-    '#options' => $countries,
-    '#default_value' => $default,
-    '#required' => $options['required'],
-  );
-
-  if ($options['ajax']) {
-    $select['#ajax'] = array(
-      'callback' => 'uc_country_ajax_zone',
-      'wrapper' => 'ajax-' . str_replace('][', '-', $options['ajax']),
-      'progress' => array(
-        'type' => 'throbber',
-      ),
-    );
-  }
-
-  return $select;
-}
-
-/**
- * Ajax callback to updates the zone select box when the country is changed.
- */
-function uc_country_ajax_zone($form, &$form_state) {
-  $keys = explode('-', substr($form_state['triggering_element']['#ajax']['wrapper'], 5));
-  while ($keys) {
-    $form = $form[array_shift($keys)];
-  }
-
-  return $form;
 }
 
 /**
