@@ -288,8 +288,7 @@ function uc_reports_products() {
 }
 
 /**
- * Gets the SKUs on a product, first from the product itself, then from the
- * adjustments table, finally pulling any SKUs out of previous orders.
+ * Gets the SKUs on a product, including adjustments and past orders.
  *
  * @param $nid
  *   The product's node ID.

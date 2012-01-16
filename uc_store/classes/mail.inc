@@ -52,7 +52,7 @@ class UbercartMailSystem implements MailSystemInterface {
       preg_replace('@\r?\n@', $line_endings, $message['body']),
       // For headers, PHP's API suggests that we use CRLF normally,
       // but some MTAs incorrectly replace LF with CRLF. See #234403.
-      join("\n", $mimeheaders)
+      implode("\n", $mimeheaders)
     );
   }
 }

@@ -7,9 +7,6 @@
  * and tracking numbers.
  */
 
-/******************************************************************************
- * Drupal hooks                                                               *
- ******************************************************************************/
 
 /**
  * Implements hook_help().
@@ -243,8 +240,7 @@ function uc_shipping_theme() {
 }
 
 /**
- * Preprocess function to make token values available as variables in the
- * packing slip template.
+ * Preprocess function to make tokens available in the packing slip template.
  *
  * @see uc-packing-slip.tpl.php
  */
@@ -293,10 +289,6 @@ function template_preprocess_uc_packing_slip_page(&$variables) {
   $variables['language']->dir     = $language->direction ? 'rtl' : 'ltr';
 }
 
-/******************************************************************************
- * Ubercart hooks                                                             *
- ******************************************************************************/
-
 /**
  * Implements hook_uc_order_pane().
  */
@@ -318,7 +310,6 @@ function uc_shipping_uc_order_pane() {
  */
 function uc_shipping_uc_order_actions($order) {
   $actions = array();
-  $module_path = base_path() . drupal_get_path('module', 'uc_shipping');
   if (user_access('fulfill orders')) {
     $result = db_query("SELECT COUNT(nid) FROM {uc_order_products} WHERE order_id = :id AND data LIKE :data", array(':id' => $order->order_id, ':data' => '%s:9:\"shippable\";s:1:\"1\";%'));
     if ($result->fetchField()) {
@@ -326,7 +317,7 @@ function uc_shipping_uc_order_actions($order) {
       $actions[] = array(
         'name' => t('Package'),
         'url' => 'admin/store/orders/' . $order->order_id . '/packages',
-        'icon' => '<img src="' . $module_path . '/images/package.gif" alt="' . $title . '" />',
+        'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_shipping') . '/images/package.gif', 'alt' => $title)),
         'title' => $title,
       );
       $result = db_query("SELECT COUNT(package_id) FROM {uc_packages} WHERE order_id = :id", array(':id' => $order->order_id));
@@ -335,7 +326,7 @@ function uc_shipping_uc_order_actions($order) {
         $actions[] = array(
           'name' => t('Ship'),
           'url' => 'admin/store/orders/' . $order->order_id . '/shipments',
-          'icon' => '<img src="' . $module_path . '/images/ship.gif" alt="' . $title . '" />',
+          'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_shipping') . '/images/ship.gif', 'alt' => $title)),
           'title' => $title,
         );
       }
@@ -343,10 +334,6 @@ function uc_shipping_uc_order_actions($order) {
   }
   return $actions;
 }
-
-/******************************************************************************
- * Menu callbacks                                                             *
- ******************************************************************************/
 
 /**
  * Displays the details of a package.
@@ -402,10 +389,6 @@ function uc_shipping_package_view($package) {
 
   return $build;
 }
-
-/******************************************************************************
- * Module and helper functions                                                *
- ******************************************************************************/
 
 /**
  * Loads a package and its products.

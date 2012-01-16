@@ -41,9 +41,9 @@
  *       @code
  *       return array(
  *         '03' => array('rate' => 15.75,  'option_label' => t('UPS Ground'),
- *                       'error' => 'Additional handling charge automatically applied.'),
+ *                       'error' => 'Additional handling charge applied.'),
  *         '14' => array('error' => 'Invalid package type.'),
- *         '59' => array('rate' => 26.03, 'option_label' => t('UPS 2nd Day Air A.M.'))
+ *         '59' => array('rate' => 26.03, 'option_label' => t('UPS 2nd Day'))
  *       );
  *       @endcode
  *     - pkg_types: The list of package types that the shipping method can
@@ -116,7 +116,7 @@ function hook_uc_shipping_type() {
   $types = array();
   $types['small_package'] = array(
     'id' => 'small_package',
-    'title' => t('Small Packages'),
+    'title' => t('Small package'),
     'weight' => $weight['small_package'],
   );
 

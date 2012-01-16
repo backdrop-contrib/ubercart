@@ -9,9 +9,6 @@
  * their specific information so that a shipment may be quoted and requested.
  */
 
-/******************************************************************************
- * Drupal Hooks                                                               *
- ******************************************************************************/
 
 /**
  * Implements hook_permission().
@@ -44,6 +41,7 @@ function uc_quote_menu() {
   );
   $items['admin/store/settings/quotes/settings'] = array(
     'title' => 'Settings',
+    'description' => 'Configure shipping quote options.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_quote_admin_settings'),
     'access arguments' => array('configure quotes'),
@@ -275,7 +273,7 @@ function uc_quote_select_address($form, $form_state) {
 }
 
 /**
- * Wrapper for the uc_store country-change ajax callback to update shipping quotes when the country changes.
+ * Ajax callback: Update shipping quotes when the delivery country changes.
  */
 function uc_quote_country_change_wrapper(&$form, &$form_state) {
   $return = uc_quote_checkout_returned_rates($form, $form_state);
@@ -307,10 +305,6 @@ function uc_quote_process_checkout_address($element, $form_state) {
 
   return $element;
 }
-
-/******************************************************************************
- * Ubercart Hooks                                                             *
- ******************************************************************************/
 
 /**
  * Implements hook_uc_cart_pane().
@@ -433,10 +427,6 @@ function uc_quote_uc_shipping_type() {
   return $types;
 }
 
-/******************************************************************************
- * Module Functions                                                           *
- ******************************************************************************/
-
 /**
  * Stores the shipping type of products and manufacturers.
  *
@@ -491,8 +481,7 @@ function uc_quote_get_shipping_type($id_type, $id) {
 }
 
 /**
- * Gets a product's shipping type, defaulting to the store's if it
- * doesn't exist.
+ * Gets a product's shipping type, or the store's default if none is set.
  *
  * @param $product
  *   The product object.

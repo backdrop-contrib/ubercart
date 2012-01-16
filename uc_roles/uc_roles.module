@@ -10,9 +10,6 @@
  * expire/need to be renewed/etc.
  */
 
-/******************************************************************************
- * Hook Functions (Drupal)                                                    *
- ******************************************************************************/
 
 /**
  * Implements hook_help().
@@ -205,7 +202,7 @@ function uc_roles_form_user_profile_form_alter(&$form, &$form_state) {
 
   $form['uc_roles']['expirations'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Pending Expirations'),
+    '#title' => t('Pending expirations'),
     '#collapsible' => FALSE,
     '#weight' => 0,
     '#theme' => 'uc_roles_user_expiration',
@@ -292,8 +289,7 @@ function theme_uc_roles_user_new($variables) {
 }
 
 /**
- * Themes the role expiration table within the roles dialog on the
- * account edit page.
+ * Themes the role expiration table on the account edit page.
  *
  * @param $variables
  *   An associative array containing:
@@ -306,8 +302,8 @@ function theme_uc_roles_user_expiration($variables) {
 
   $header = array(
     array('data' => t('Make permanent')),
-    array('data' => t('Role'     )),
-    array('data' => t('Expiration'  )),
+    array('data' => t('Role')),
+    array('data' => t('Expiration')),
     array('data' => t('Add/remove time')),
   );
 
@@ -493,10 +489,6 @@ function uc_roles_user_view($account, $view_mode) {
   $account->content['uc_roles'] = $item + $form;
 }
 
-/******************************************************************************
- * Ubercart Hooks                                                             *
- ******************************************************************************/
-
 /**
  * Implements hook_uc_order_product_can_ship().
  */
@@ -577,12 +569,8 @@ function uc_roles_uc_message() {
   return $messages;
 }
 
-/******************************************************************************
- * Callback Functions, Forms, and Tables                                      *
- ******************************************************************************/
-
 /**
- * Form builder for hook_uc_product_feature.
+ * Form builder for hook_uc_product_feature().
  *
  * @see uc_roles_feature_form_validate()
  * @see uc_roles_feature_form_submit()
@@ -1045,10 +1033,6 @@ function uc_roles_feature_settings($form, &$form_state) {
   return $form;
 }
 
-/******************************************************************************
- * Module and Helper Functions                                                *
- ******************************************************************************/
-
 /**
  * Gets role name.
  *
@@ -1092,10 +1076,6 @@ function _uc_roles_get_choices($exclude = array()) {
 
   return $output;
 }
-
-/******************************************************************************
- * Actions                                                                    *
- ******************************************************************************/
 
 /**
  * Deletes all data associated with a given product feature.
@@ -1395,18 +1375,19 @@ function _uc_roles_product_get_expiration($role_product, $quantity, $time) {
 }
 
 /**
- * Returns an expiration time stamp given a certain amount of time
- * from a starting point (defaults to current time).
+ * Returns an expiration time stamp given a period of time.
  *
  * @param $duration
  *   The amount of time until expiration.
  * @param $granularity
  *   A string representing the granularity's name (e.g. "day", "month", etc.).
  * @param $start_time
- *   The starting date for when the role will last.
+ *   (optional) The starting date for when the role will last. Defaults to
+ *   the current time.
  *
  * @return
- *   A UNIX timestamp representing the second that expiration takes place.
+ *   A UNIX timestamp representing the second that expiration takes place,
+ *   or NULL if the expiration should never occur.
  */
 function _uc_roles_get_expiration($duration, $granularity, $start_time = NULL) {
   // Never expires?

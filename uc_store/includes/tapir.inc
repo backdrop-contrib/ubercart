@@ -138,26 +138,3 @@ function theme_tapir_table($variables) {
 
   return theme('table', $options) . drupal_render_children($element);
 }
-
-/**
- * Builds an ORDER BY clause for a table's SELECT query based on the table's
- * columns.
- *
- * @param $columns
- *   The column array from a TAPIr table array.
- *
- * @return
- *   The result of a tablesort_sql() call on the header info for this table.
- */
-function tapirsort_sql($columns) {
-  $header = array();
-
-  // Loop through the columns array...
-  foreach ($columns as $column) {
-    // And build a header array based on column information.
-    $header[] = $column['cell'];
-  }
-
-  // Return the result of a tablesort on our header.
-  return tablesort_sql($header);
-}

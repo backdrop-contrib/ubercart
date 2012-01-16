@@ -6,10 +6,6 @@
  */
 
 
-/******************************************************************************
- * Token hooks                                                                *
- ******************************************************************************/
-
 /**
  * Implements hook_token_info().
  */
@@ -17,7 +13,7 @@ function uc_shipping_token_info() {
   $tokens = array();
 
   $tokens['tracking-number'] = array(
-    'name' => t('Shipment Tracking Number(s)'),
+    'name' => t('Shipment tracking number(s)'),
     'description' => t('Tracking number(s) (if applicable) for product shipments.'),
   );
 

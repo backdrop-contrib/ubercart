@@ -39,8 +39,8 @@ function uc_shipping_order_packages($order) {
         theme('image_style', array(
           'style_name' => 'uc_thumbnail',
           'path' => $package->label_image->uri,
-          'alt' => t('Shipping Label'),
-          'title' => t('Shipping Label'),
+          'alt' => t('Shipping label'),
+          'title' => t('Shipping label'),
         )),
         'admin/store/orders/' . $order->order_id . '/shipments/labels/' . $method . '/' . $package->label_image->uri,
         array('html' => TRUE)
@@ -689,7 +689,7 @@ function uc_shipping_shipment_view($order, $shipment) {
   }
 
   if ($shipment->tracking_number) {
-    $rows[] = array(t('Tracking Number:'), check_plain($shipment->tracking_number));
+    $rows[] = array(t('Tracking number:'), check_plain($shipment->tracking_number));
   }
 
   $methods = module_invoke_all('uc_shipping_method');
@@ -974,7 +974,7 @@ function uc_shipping_shipment_edit_validate($form, &$form_state) {
   foreach ($form_state['values']['packages'] as $key => $package) {
     foreach (array('length', 'width', 'height') as $property) {
       if (!empty($package['dimensions'][$property]) && (!is_numeric($package['dimensions'][$property]) || $package['dimensions'][$property] < 0)) {
-        form_set_error('packages][' . $key . '][dimensions][' . $property, t('@property must be a positive number. No commas and only one decimal point.', array('@property' => ucfirst($property))));
+        form_set_error('packages][' . $key . '][dimensions][' . $property, t('@property must be a positive number. No commas and only one decimal point.', array('@property' => drupal_ucfirst($property))));
       }
     }
   }

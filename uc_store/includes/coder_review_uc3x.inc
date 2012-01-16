@@ -2,7 +2,7 @@
 
 /**
  * @file
- * This include file implements coder functionality for Ubercart 6.x -> 7.x upgrades.
+ * Implements Coder Upgrade functionality for Ubercart 6.x -> 7.x upgrades.
  */
 
 /**
