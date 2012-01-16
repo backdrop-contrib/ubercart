@@ -69,7 +69,20 @@ function uc_order_views_data() {
       'base' => 'users',
       'field' => 'uid',
       'handler' => 'views_handler_relationship',
-      'label' => t('order user'),
+      'label' => t('customer'),
+    ),
+  );
+
+  // Expose the uid as a relationship to users.
+  $data['users']['uc_orders'] = array(
+    'title' => t('Orders'),
+    'help' => t('Relate a user to the orders they have placed. This relationship will create one record for each order placed by the user.'),
+    'relationship' => array(
+      'base' => 'uc_orders',
+      'base field' => 'uid',
+      'relationship field' => 'uid',
+      'handler' => 'views_handler_relationship',
+      'label' => t('orders'),
     ),
   );
 
