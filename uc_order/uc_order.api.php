@@ -335,7 +335,7 @@ function hook_uc_order_pane_alter(&$panes) {
 function uc_order_pane_callback($op, $order, &$form = NULL, &$form_state = NULL) {
   global $user;
 
-s  switch ($op) {
+  switch ($op) {
     case 'view':
       $comments = uc_order_comments_load($order->order_id, TRUE);
       return tapir_get_table('uc_op_admin_comments_view_table', $comments);
