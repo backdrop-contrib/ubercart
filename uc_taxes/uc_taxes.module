@@ -7,9 +7,6 @@
  * Allows tax rules to be set up and applied to orders.
  */
 
-/******************************************************************************
- * Drupal Hooks                                                               *
- ******************************************************************************/
 
 /**
  * Implements hook_permission().
@@ -145,10 +142,6 @@ function uc_taxes_entity_view_alter(&$build, $entity_type) {
   }
 }
 
-/*******************************************************************************
- * Ubercart Hooks
- ******************************************************************************/
-
 /**
  * Implements hook_uc_line_item().
  */
@@ -239,10 +232,9 @@ function uc_taxes_uc_order($op, $order, $arg2) {
   }
 }
 
-/******************************************************************************
- * Menu Callbacks                                                             *
- ******************************************************************************/
-
+/**
+ * Tax line item callback.
+ */
 function uc_line_item_tax_display($op, $order) {
   switch ($op) {
     case 'display':
@@ -261,7 +253,7 @@ function uc_line_item_tax_display($op, $order) {
 }
 
 /**
- * Helper function to convert a tax object to the format expected by line item callbacks.
+ * Converts a tax object to the format expected by line item callbacks.
  *
  * @param $tax
  *   A tax object as returned by hook_uc_taxes_calculate().
@@ -326,11 +318,6 @@ function uc_line_item_tax_subtotal($op, $order) {
   }
 }
 
-
-/******************************************************************************
- * Module and Helper Functions
- ******************************************************************************/
-
 /**
  * Saves a tax rate to the database.
  *
@@ -385,12 +372,14 @@ function uc_taxes_rate_save($rate) {
 
 
 /**
- * List all the taxes that can apply to an order.  These depend on the order status.  For orders which
- * are still in checkout, any tax can apply.  For orders out of checkout, only taxes originally saved
- * as line items can apply.
+ * List all the taxes that can apply to an order.
+ *
+ * The taxes depend on the order status. For orders which are still in
+ * checkout, any tax can apply. For orders out of checkout, only taxes
+ * originally saved as line items can apply.
  *
  * @param $order
- *   The order
+ *   The order that taxes are being calculated for.
  */
 function uc_taxes_filter_rates($order) {
   $taxes = array();
@@ -649,7 +638,8 @@ function uc_taxes_apply_tax($order, $tax) {
 }
 
 /**
- * Calculates the taxes that should be included in the display price of a product.
+ * Calculates the taxes that should be included in a product's display price.
+ *
  * @param $product
  *   The product whose included taxes are to be calculated.
  */

@@ -104,10 +104,6 @@ function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
   }
 }
 
-/******************************************************************************
- * Menu Callbacks                                                             *
- ******************************************************************************/
-
 /**
  * Confirms deletion of a weight-based shipping method.
  *
