@@ -99,6 +99,7 @@ function uc_cart_checkout() {
     }
   }
 
+  // Determine whether the form is being submitted or built for the first time.
   if (isset($_POST['form_id']) && $_POST['form_id'] == 'uc_cart_checkout_form') {
     // If this is a form submission, make sure that the cart order is still valid.
     if (!isset($order)) {
@@ -169,7 +170,7 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
   }
   else {
     $form_state['storage']['order'] = $order;
-    $_SESSION['do_checkout'] = TRUE;
+    $form_state['storage']['base_path'] = implode('/', array_slice(arg(), 0, -1));
   }
 
   $form['#attributes']['class'][] = 'uc-cart-checkout-form';
@@ -270,7 +271,7 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
     '#value' => t('Review order'),
   );
 
-  unset($_SESSION['do_review']);
+  unset($_SESSION['uc_checkout'][$order->order_id]);
 
   return $form;
 }
@@ -329,11 +330,11 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
  */
 function uc_cart_checkout_form_submit($form, &$form_state) {
   if ($form_state['checkout_valid'] === FALSE) {
-    $url = 'cart/checkout';
+    $url = $form_state['storage']['base_path'] . '/checkout';
   }
   else {
-    $url = 'cart/checkout/review';
-    $_SESSION['do_review'] = TRUE;
+    $url = $form_state['storage']['base_path'] . '/checkout/review';
+    $_SESSION['uc_checkout'][$form_state['storage']['order']->order_id]['do_review'] = TRUE;
   }
 
   unset($form_state['checkout_valid']);
@@ -347,12 +348,14 @@ function uc_cart_checkout_form_submit($form, &$form_state) {
  * @see uc_cart_checkout_form()
  */
 function uc_cart_checkout_form_cancel($form, &$form_state) {
-  if (isset($_SESSION['cart_order']) && intval($_SESSION['cart_order']) > 0) {
+  $order = $form_state['storage']['order'];
+  if (isset($_SESSION['cart_order']) && $_SESSION['cart_order'] == $order->order_id) {
     uc_order_comment_save($_SESSION['cart_order'], 0, t('Customer canceled this order from the checkout form.'));
     unset($_SESSION['cart_order']);
   }
 
-  $form_state['redirect'] = 'cart';
+  unset($_SESSION['uc_checkout'][$order->order_id]);
+  $form_state['redirect'] = $form_state['storage']['base_path'];
 }
 
 /**
@@ -363,14 +366,14 @@ function uc_cart_checkout_form_cancel($form, &$form_state) {
 function uc_cart_checkout_review() {
   drupal_add_js(drupal_get_path('module', 'uc_cart') . '/uc_cart.js');
 
-  if (empty($_SESSION['do_review'])) {
+  if (empty($_SESSION['cart_order']) || empty($_SESSION['uc_checkout'][$_SESSION['cart_order']]['do_review'])) {
     drupal_goto('cart/checkout');
   }
 
   $order = uc_order_load($_SESSION['cart_order']);
 
   if ($order === FALSE || uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
-    unset($_SESSION['cart_order']);
+    unset($_SESSION['uc_checkout'][$order->order_id]['do_review']);
     drupal_goto('cart/checkout');
   }
 
@@ -470,7 +473,11 @@ function theme_uc_cart_checkout_review($variables) {
  * @ingroup forms
  */
 function uc_cart_checkout_review_form($form, &$form_state, $order) {
-  $form_state['uc_order'] = $order;
+
+  if (!isset($form_state['uc_order'])) {
+    $form_state['uc_order'] = $order;
+    $form_state['storage']['base_path'] = implode('/', array_slice(arg(), 0, -2));
+  }
 
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['back'] = array(
@@ -492,8 +499,7 @@ function uc_cart_checkout_review_form($form, &$form_state, $order) {
  * @see uc_cart_checkout_review_form()
  */
 function uc_cart_checkout_review_form_back($form, &$form_state) {
-  unset($_SESSION['do_review']);
-  $form_state['redirect'] = 'cart/checkout';
+  $form_state['redirect'] = $form_state['storage']['base_path'] . '/checkout';
 }
 
 /**
@@ -504,7 +510,7 @@ function uc_cart_checkout_review_form_back($form, &$form_state) {
 function uc_cart_checkout_review_form_submit($form, &$form_state) {
   // Invoke hook_uc_order($op = 'submit') to test to make sure the order can
   // be completed... used for auto payment in uc_credit.module.
-  $order = uc_order_load($_SESSION['cart_order']);
+  $order = $form_state['uc_order'];
   $error = FALSE;
 
   // Invoke it on a per-module basis instead of all at once.
@@ -531,12 +537,12 @@ function uc_cart_checkout_review_form_submit($form, &$form_state) {
   }
 
   if ($error) {
-    $form_state['redirect'] = 'cart/checkout/review';
+    $form_state['redirect'] = $form_state['storage']['base_path'] . '/checkout/review';
   }
   else {
-    unset($_SESSION['do_review']);
-    $_SESSION['do_complete'] = TRUE;
-    $form_state['redirect'] = 'cart/checkout/complete';
+    unset($_SESSION['uc_checkout'][$order->order_id]['do_review']);
+    $_SESSION['uc_checkout'][$order->order_id]['do_complete'] = TRUE;
+    $form_state['redirect'] = $form_state['storage']['base_path'] . '/checkout/complete';
   }
 }
 
@@ -544,7 +550,7 @@ function uc_cart_checkout_review_form_submit($form, &$form_state) {
  * Completes the sale and finishes checkout.
  */
 function uc_cart_checkout_complete() {
-  if (!isset($_SESSION['do_complete']) || !$_SESSION['do_complete']) {
+  if (empty($_SESSION['cart_order']) || empty($_SESSION['uc_checkout'][$_SESSION['cart_order']]['do_complete'])) {
     drupal_goto('cart');
   }
 
@@ -558,7 +564,7 @@ function uc_cart_checkout_complete() {
   }
 
   $build = uc_cart_complete_sale($order, variable_get('uc_new_customer_login', FALSE));
-  unset($_SESSION['do_complete'], $_SESSION['cart_order']);
+  unset($_SESSION['uc_checkout'][$order->order_id], $_SESSION['cart_order']);
 
   // Add a comment to let sales team know this came in through the site.
   uc_order_comment_save($order->order_id, 0, t('Order created through website.'), 'admin');
