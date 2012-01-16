@@ -6,7 +6,7 @@
  */
 
 /**
- *
+ * Field handler: displays credit card data.
  */
 class uc_order_handler_field_order_cc_data extends views_handler_field {
 

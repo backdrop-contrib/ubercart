@@ -68,7 +68,6 @@ function uc_catalog_pathauto_bulkupdate(&$context) {
     $count = _uc_catalog_pathauto_alias($category, 'bulkupdate') + $count;
   }
 
-  //pathauto_taxonomy_term_update_alias_multiple($tids, 'bulkupdate');
   $context['sandbox']['count'] += count($tids);
   $context['sandbox']['current'] = max($tids);
   $context['message'] = t('Updated alias for term @tid.', array('@tid' => end($tids)));

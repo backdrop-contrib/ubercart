@@ -6,8 +6,7 @@
  */
 
 /**
- * Field handler to provide simple renderer that allows linking to
- * the order administration page.
+ * Field handler: simple renderer that links to the order administration page.
  */
 class uc_order_handler_field_order_id extends views_handler_field {
 

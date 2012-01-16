@@ -6,7 +6,7 @@
  */
 
 /**
- *
+ * Field handler: display the total cost of an order.
  */
 class uc_order_handler_field_order_cost extends uc_order_handler_field_money_amount {
 
@@ -24,7 +24,7 @@ class uc_order_handler_field_order_cost extends uc_order_handler_field_money_amo
   function query() {
     $this->ensure_my_table();
     $this->add_additional_fields();
-    //do nothing else with the query, we'll be retrieving the information from the db
+    // Do nothing else with the query, we'll be retrieving the information directly.
   }
 
   /**

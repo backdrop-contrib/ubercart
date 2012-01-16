@@ -299,8 +299,7 @@ function _uc_file_download_validate($file_download, &$user, $ip) {
 }
 
 /**
- * Sends the file's binary data to a user via HTTP and updates the
- * uc_file_users table.
+ * Sends the file's binary data to a user via HTTP and updates the database.
  *
  * @param $file_user
  *   The file_user object from the uc_file_users.

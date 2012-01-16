@@ -514,7 +514,7 @@ function uc_order_pane_products_close($form, &$form_state) {
 }
 
 /**
- * Populates the product add/edit div on the order edit screen.
+ * Form submit callback: add a blank line product to an order.
  */
 function uc_order_edit_products_add_blank($form, &$form_state) {
   $form_state['refresh_products'] = TRUE;
@@ -533,7 +533,7 @@ function uc_order_edit_products_add_blank($form, &$form_state) {
 }
 
 /**
- *
+ * Form submit callback: add a product to an order.
  */
 function uc_order_edit_products_add($form, &$form_state) {
   $form_state['products_action'] = 'products_select';
@@ -561,7 +561,7 @@ function uc_order_edit_products_add($form, &$form_state) {
 }
 
 /**
- *
+ * Form submit callback: remove a product from an order.
  */
 function uc_order_edit_products_remove($form, &$form_state) {
   $form_state['refresh_products'] = TRUE;
@@ -772,7 +772,7 @@ function theme_uc_order_pane_line_items($variables) {
 }
 
 /**
- *
+ * Form submit callback: Update line items titles and amounts in an order.
  */
 function uc_order_pane_line_items_submit($form, &$form_state) {
   $values = $form_state['values'];
@@ -863,6 +863,8 @@ function uc_order_pane_order_comments($op, $order, &$form = NULL, &$form_state =
  * Handles the "Admin Comments" order pane.
  */
 function uc_order_pane_admin_comments($op, $order, &$form = NULL, &$form_state = NULL) {
+  global $user;
+
   switch ($op) {
     case 'view':
       $comments = uc_order_comments_load($order->order_id, TRUE);
@@ -895,8 +897,7 @@ function uc_order_pane_admin_comments($op, $order, &$form = NULL, &$form_state =
       return $output;
 
     case 'edit-process':
-      if (!is_null($form_state['values']['admin_comment']) && strlen(trim($form_state['values']['admin_comment'])) > 0) {
-        global $user;
+      if (!empty($form_state['values']['admin_comment'])) {
         uc_order_comment_save($form_state['values']['order_id'], $user->uid, $form_state['values']['admin_comment']);
       }
       return;
@@ -990,17 +991,17 @@ function uc_order_view_update_form($form, &$form_state, $order) {
 function uc_order_view_update_form_submit($form, &$form_state) {
   global $user;
 
-  if (!is_null($form_state['values']['order_comment']) && strlen(trim($form_state['values']['order_comment'])) > 0) {
+  if (!empty($form_state['values']['order_comment'])) {
     uc_order_comment_save($form_state['values']['order_id'], $user->uid, $form_state['values']['order_comment'], 'order', $form_state['values']['status'], $form_state['values']['notify']);
   }
 
-  if (!is_null($form_state['values']['admin_comment']) && strlen(trim($form_state['values']['admin_comment'])) > 0) {
+  if (!empty($form_state['values']['admin_comment'])) {
     uc_order_comment_save($form_state['values']['order_id'], $user->uid, $form_state['values']['admin_comment']);
   }
 
   if ($form_state['values']['status'] != $form_state['values']['current_status']) {
     if (uc_order_update_status($form_state['values']['order_id'], $form_state['values']['status'])) {
-      if (is_null($form_state['values']['order_comment']) || strlen($form_state['values']['order_comment']) == 0) {
+      if (empty($form_state['values']['order_comment'])) {
         uc_order_comment_save($form_state['values']['order_id'], $user->uid, '-', 'order', $form_state['values']['status'], $form_state['values']['notify']);
       }
     }
@@ -1017,6 +1018,7 @@ function uc_order_view_update_form_submit($form, &$form_state) {
 
 /**
  * Builds the order view products table.
+ *
  * !FIXME Refactor to use uc_order_product_view.
  */
 function uc_op_products_view_table($order) {
@@ -1086,6 +1088,7 @@ function uc_op_products_view_table($order) {
 
 /**
  * Builds the order customer's view products table.
+ *
  * !FIXME Refactor to use uc_order_product_view.
  */
 function uc_op_products_customer_table($order) {
@@ -1240,10 +1243,9 @@ function uc_op_order_comments_view_table($comments) {
         '#markup' => theme('uc_uid', array('uid' => $comment->uid)),
         '#cell_attributes' => array('align' => 'center'),
       );
+      $icon = $comment->notified ? 'true-icon.gif' : 'false-icon.gif';
       $data['notified'] = array(
-        '#markup' => (($comment->notified == 1)
-          ? '<img src="' . base_path() . drupal_get_path('module', 'uc_order') . '/images/true-icon.gif" />'
-          : '<img src="' . base_path() . drupal_get_path('module', 'uc_order') . '/images/false-icon.gif" />'),
+        '#markup' => theme('image', array('path' => drupal_get_path('module', 'uc_order') . '/images/' . $icon)),
         '#cell_attributes' => array('align' => 'center'),
       );
       $data['status'] = array(

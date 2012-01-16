@@ -475,17 +475,17 @@ function uc_order_create_form($form, &$form_state) {
         $options[$user->uid] = $name . '(' . $user->mail . ')';
       }
 
-      $more = '';
+      $max = FALSE;
       if (count($options) == $limit) {
         array_pop($options);
-        $more = t('More than !limit results found. Refine your search to find other customers.', array('!limit' => $limit - 1));
+        $max = TRUE;
       }
 
       if (!empty($options)) {
         $form['customer']['uid'] += array(
           '#type' => 'radios',
           '#title' => t('Select customer'),
-          '#description' => $more,
+          '#description' => $max ? t('More than !limit results found. Refine your search to find other customers.', array('!limit' => $limit - 1)) : '',
           '#options' => $options,
           '#default_value' => reset(array_keys($options)),
         );
@@ -612,8 +612,7 @@ function uc_order_create_form_create_submit($form, &$form_state) {
 }
 
 /**
- * Creates a new order for the specified customer, and redirects to the
- * order edit page.
+ * Creates a new order for the specified customer, ready for editing.
  */
 function uc_order_create_for_user($account) {
   global $user;
@@ -1173,7 +1172,7 @@ function uc_order_add_line_item_form($form, &$form_state, $order, $line_item_id)
   if (!function_exists($func) || ($form = $func('form', $order->order_id)) == NULL) {
     $form['title'] = array(
       '#type' => 'textfield',
-      '#title' => t('Line Item Title'),
+      '#title' => t('Line item title'),
       '#description' => t('Display title of the line item.'),
       '#size' => 32,
       '#maxlength' => 128,
@@ -1181,7 +1180,7 @@ function uc_order_add_line_item_form($form, &$form_state, $order, $line_item_id)
     );
     $form['amount'] = array(
       '#type' => 'uc_price',
-      '#title' => t('Line Item Amount'),
+      '#title' => t('Line item amount'),
       '#allow_negative' => TRUE,
     );
   }

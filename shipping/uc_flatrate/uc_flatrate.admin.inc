@@ -103,10 +103,6 @@ function uc_flatrate_admin_method_edit_form_submit($form, &$form_state) {
   }
 }
 
-/******************************************************************************
- * Menu Callbacks                                                             *
- ******************************************************************************/
-
 /**
  * Confirms deletion of a flat rate shipping method.
  *

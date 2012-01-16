@@ -306,10 +306,6 @@ function uc_order_rules_action_info() {
   return $actions;
 }
 
-/******************************************************************************
- * Condition Callbacks and Forms                                              *
- ******************************************************************************/
-
 /**
  * Checks the current order state.
  */
@@ -493,10 +489,6 @@ function uc_order_condition_weight_units_options() {
 function uc_order_condition_is_shippable($order, $settings) {
   return uc_order_is_shippable($order);
 }
-
-/******************************************************************************
- * Action Callbacks and Forms                                                 *
- ******************************************************************************/
 
 /**
  * Updates an order's status.

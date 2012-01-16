@@ -31,26 +31,26 @@ function uc_google_checkout_settings($form, &$form_state) {
 
   $form['authentication']['sandbox'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Test Environment settings'),
+    '#title' => t('Test environment settings'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
   $form['authentication']['sandbox']['uc_google_checkout_mode'] = array(
     '#type' => 'radios',
-    '#title' => t('Test Mode'),
+    '#title' => t('Test mode'),
     '#default_value' => variable_get('uc_google_checkout_mode', 'checkout'),
     '#options' => array('sandbox' => t('On'), 'checkout' => t('Off')),
   );
   $form['authentication']['sandbox']['uc_google_checkout_test_merchant_id'] = array(
     '#type' => 'textfield',
-    '#title' => t('Test Merchant ID'),
-    '#description' => t('Only needed for test mode. Click <a href="http://code.google.com/apis/checkout/developer/index.html#integration_overview" target="_blank">here</a> for more info.'),
+    '#title' => t('Test merchant ID'),
+    '#description' => t('Only needed for test mode. Click <a href="@url" target="_blank">here</a> for more info.', array('@url' => 'http://code.google.com/apis/checkout/developer/index.html#integration_overview')),
     '#default_value' => variable_get('uc_google_checkout_test_merchant_id', ''),
     '#required' => FALSE,
   );
   $form['authentication']['sandbox']['uc_google_checkout_test_merchant_key'] = array(
     '#type' => 'textfield',
-    '#title' => t('Test Merchant Key'),
+    '#title' => t('Test merchant key'),
     '#default_value' => variable_get('uc_google_checkout_test_merchant_key', ''),
     '#required' => FALSE,
   );

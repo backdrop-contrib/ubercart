@@ -131,12 +131,12 @@ function hook_uc_file_action($op, $args) {
       if ($args['action'] == 'uc_image_watermark_add_mark') {
         $form['watermark_text'] = array(
           '#type' => 'textfield',
-          '#title' => t('Watermark Text'),
+          '#title' => t('Watermark text'),
         );
         $form['actions'] = array('#type' => 'actions');
         $form['actions']['submit_watermark'] = array(
           '#type' => 'submit',
-          '#value' => t('Add Watermark'),
+          '#value' => t('Add watermark'),
         );
       }
     return $form;

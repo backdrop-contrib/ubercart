@@ -14,15 +14,11 @@
  */
 
 /**
- * The max amount of files shown on any page that displays files
- * in a table/pager.
+ * The maximum amount of rows shown in tables of file downloads.
  */
 define('UC_FILE_PAGER_SIZE', 50);
-define('UC_FILE_LIMIT_SENTINEL', -1);
 
-/******************************************************************************
- * Hook Functions (Drupal)                                                    *
- ******************************************************************************/
+define('UC_FILE_LIMIT_SENTINEL', -1);
 
 /**
  * Implements hook_form_FORM_ID_alter() for uc_product_feature_settings_form().
@@ -382,8 +378,7 @@ function uc_file_user_view($account, $view_mode) {
 }
 
 /**
- * Attaches jQuery behaviors for each of the rows on the file download
- * modification table.
+ * Attaches jQuery behaviors to the file download modification table.
  */
 function _uc_file_download_table_behavior($id, $fid) {
 
@@ -477,11 +472,6 @@ function theme_uc_file_hook_user_file_downloads($variables) {
 
   return $output;
 }
-
-
-/******************************************************************************
- * Ubercart Hooks                                                             *
- ******************************************************************************/
 
 /**
  * Implements hook_uc_add_to_cart().
@@ -599,23 +589,19 @@ function uc_file_uc_store_status() {
   if (!is_dir(variable_get('uc_file_base_dir', NULL))) {
     $message[] = array(
       'status' => 'warning',
-      'title' => t('File Downloads'),
+      'title' => t('File downloads'),
       'desc' => t('The file downloads directory is not valid or set. Set a valid directory in the <a href="!url">product settings</a> under the file download settings tab.', array('!url' => url('admin/store/settings/products'))),
     );
   }
   else {
     $message[] = array(
       'status' => 'ok',
-      'title' => t('File Downloads'),
+      'title' => t('File downloads'),
       'desc' => t('The file downloads directory has been set and is working.'),
     );
   }
   return $message;
 }
-
-/******************************************************************************
- * Callback Functions, Forms, and Tables                                      *
- ******************************************************************************/
 
 /**
  * Product feature delete function.
@@ -635,7 +621,7 @@ function uc_file_feature_delete($feature) {
  */
 function uc_file_feature_form($form, &$form_state, $node, $feature) {
   if (!is_dir(variable_get('uc_file_base_dir', NULL))) {
-    drupal_set_message(t('A file directory needs to be configured in <a href="!url">product settings</a> under the file download settings tab before a file can be selected.', array('!url' => url('admin/store/settings/products'))), 'error');
+    drupal_set_message(t('A file directory needs to be configured in <a href="@url">product settings</a> under the file download settings tab before a file can be selected.', array('@url' => url('admin/store/settings/products'))), 'error');
 
     unset($form['buttons']);
     return $form;
@@ -644,8 +630,8 @@ function uc_file_feature_form($form, &$form_state, $node, $feature) {
   if (!db_query("SELECT COUNT(*) FROM {uc_files}")->fetchField()) {
     $form['file']['file_message'] = array(
       '#markup' => t(
-        'You must add files at the <a href="!url">Ubercart file download administration page</a> in order to attach them to a model.',
-        array('!url' => url('admin/store/products/files', array('query' => array('destination' => 'node/' . $node->nid . '/edit/features/file/add'))))
+        'You must add files at the <a href="@url">Ubercart file download administration page</a> in order to attach them to a model.',
+        array('@url' => url('admin/store/products/files', array('query' => array('destination' => 'node/' . $node->nid . '/edit/features/file/add'))))
       ),
     );
 
@@ -1036,10 +1022,6 @@ function uc_file_feature_settings_submit($form, &$form_state) {
   }
 }
 
-/******************************************************************************
- * Module and Helper Functions                                                *
- ******************************************************************************/
-
 /**
  * Accumulates numeric limits (as of now, download and address).
  *
@@ -1151,9 +1133,9 @@ function _uc_file_autocomplete_filename() {
  * $file_limits['time_polarity'] is either '+' or '-', indicating whether to
  * add or subtract the amount of time. $file_limits['time_granularity'] is a
  * unit of time like 'day', 'week', or 'never'.  $file_limits['time_quantity']
- * is an amount of the previously mentioned unit...
- * e.g. $file_limits = array('time_polarity => '+', 'time_granularity' => 'day', 'time_quantity' => 4);
- * would read "4 days in the future."
+ * is an amount of the previously mentioned unit... e.g.
+ * $file_limits = array('time_polarity => '+', 'time_granularity' => 'day',
+ * 'time_quantity' => 4); would read "4 days in the future."
  *
  * @param $file_limits
  *   A keyed array containing the fields time_polarity, time_quantity,
@@ -1383,24 +1365,22 @@ function _uc_file_get_dir_file_ids($fids, $recursive = FALSE) {
   }
 
   foreach ($fids as $fid) {
-
     // Get everything inside and below the given directory, or if it's file,
     // just the file. We'll handle recursion later.
     if (!($base = uc_file_get_by_id($fid))) {
       continue;
     }
 
-   $base_name = $base->filename . (is_dir(uc_file_qualify_file($base->filename)) ? '%' : '');
-   $files = db_query("SELECT * FROM {uc_files} WHERE filename LIKE :name", array(':name' => $base_name));
+    $base_name = $base->filename . (is_dir(uc_file_qualify_file($base->filename)) ? '%' : '');
+    $files = db_query("SELECT * FROM {uc_files} WHERE filename LIKE :name", array(':name' => $base_name));
 
     // PHP str_replace() can't replace only n matches, so we use regex. First
     // we escape our file slashes, though.
     // ...using str_replace()
-   $base_name = str_replace("\\", "\\\\", $base_name);
-   $base_name = str_replace("/", "\/", $base_name);
+    $base_name = str_replace("\\", "\\\\", $base_name);
+    $base_name = str_replace("/", "\/", $base_name);
 
-   foreach ($files as $file) {
-
+    foreach ($files as $file) {
       // Make the file path relative to the given directory.
       $filename_change = preg_replace('/' . $base_name . '/', '', $file->filename, 1);
 
@@ -1667,8 +1647,7 @@ function &uc_file_get_by_uid($uid, $fid) {
 }
 
 /**
- * Adds a file (or files) to a user's list of downloadable files,
- * accumulating limits.
+ * Adds file(s) to a user's list of downloadable files, accumulating limits.
  *
  * First the function sees if the given file ID is a file or a directory,
  * if it's a directory, it gathers all the files under it recursively.

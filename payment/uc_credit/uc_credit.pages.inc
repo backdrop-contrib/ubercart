@@ -10,10 +10,14 @@
  */
 function uc_credit_cvv_info() {
   $output = '<b>' . t('What is the CVV?') . '</b><p>' . t('CVV stands for Card Verification Value. This number is used as a security feature to protect you from credit card fraud.  Finding the number on your card is a very simple process.  Just follow the directions below.') . '</p>';
-  $cc_types = array('visa', 'mastercard', 'discover');
-  foreach ($cc_types as $type) {
-    if (variable_get('uc_credit_' . $type, TRUE)) {
-      $valid_types[] = ucfirst($type);
+  $cc_types = array(
+    'visa' => t('Visa'),
+    'mastercard' => t('MasterCard'),
+    'discover' => t('Discover')
+  );
+  foreach ($cc_types as $id => $type) {
+    if (variable_get('uc_credit_' . $id, TRUE)) {
+      $valid_types[] = $type;
     }
   }
   if (count($valid_types) > 0) {

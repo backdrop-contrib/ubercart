@@ -11,9 +11,6 @@
  * not listed in it.
  */
 
-/******************************************************************************
- * Drupal Hooks                                                               *
- ******************************************************************************/
 
 /**
  * Implements hook_help().
@@ -55,6 +52,7 @@ function uc_catalog_menu() {
   if (module_exists('views_ui')) {
     $items['admin/store/settings/catalog/edit'] = array(
       'title' => 'Edit catalog display',
+      'description' => 'Configure the catalog display in Views.',
       'page callback' => 'drupal_goto',
       'page arguments' => array('admin/structure/views/view/uc_catalog/edit'),
       'access callback' => 'user_access',
@@ -64,6 +62,7 @@ function uc_catalog_menu() {
   }
   $items['admin/store/settings/catalog/repair'] = array(
     'title' => 'Repair catalog field',
+    'description' => 'Ensures the catalog taxonomy field is attached to product content types.',
     'page callback' => 'uc_catalog_repair_field',
     'access arguments' => array('administer catalog'),
     'file' => 'uc_catalog.admin.inc',
@@ -357,10 +356,6 @@ function uc_catalog_preprocess_block(&$variables) {
   }
 }
 
-/******************************************************************************
- * Module Hooks                                                             *
- ******************************************************************************/
-
 /**
  * Implements hooks_views_api().
  */
@@ -370,10 +365,6 @@ function uc_catalog_views_api() {
     'path' => drupal_get_path('module', 'uc_catalog') . '/views',
   );
 }
-
-/******************************************************************************
- * Ubercart Hooks                                                             *
- ******************************************************************************/
 
 /**
  * Implements hook_uc_store_status().
@@ -445,10 +436,6 @@ function uc_catalog_uc_product_class($type, $op) {
   }
 }
 
-/******************************************************************************
- * Menu Callbacks                                                             *
- ******************************************************************************/
-
 /**
  * Shows the catalog page of the given category.
  */
@@ -471,13 +458,8 @@ function uc_catalog_browse($tid = 0) {
   return $build;
 }
 
-/******************************************************************************
- * Module Functions                                                           *
- ******************************************************************************/
-
 /**
- * Emulates Drupal's menu system, but based solely on the structure of
- * "Product Catalog".
+ * Emulates Drupal's menu system, but based around the catalog taxonomy.
  *
  * @param $branch
  *   A treeNode object. Determines if the URL points to itself, or possibly one

@@ -80,7 +80,7 @@ function hook_uc_invoice_templates() {
 function hook_uc_line_item() {
   $items[] = array(
     'id' => 'generic',
-    'title' => t('Empty Line'),
+    'title' => t('Empty line'),
     'weight' => 2,
     'default' => FALSE,
     'stored' => TRUE,
@@ -127,7 +127,7 @@ function hook_uc_line_item_data_alter(&$items) {
  *
  * An order in Ubercart represents a single transaction. Orders are created
  * during the checkout process where they sit in the database with a status of
- * "In Checkout". When a customer completes checkout, the order's status gets
+ * "In checkout". When a customer completes checkout, the order's status gets
  * updated to show that the sale has gone through. Once an order is created,
  * and even during its creation, it may be acted on by any module to connect
  * extra information to an order. Every time an action occurs to an order,
@@ -161,7 +161,10 @@ function hook_uc_line_item_data_alter(&$items) {
  *     To prevent an order from passing through, you must return an array
  *     resembling the following one with the failure message:
  *     @code
- *       return array(array('pass' => FALSE, 'message' => t('We were unable to process your credit card.')));
+ *       return array(array(
+ *         'pass' => FALSE,
+ *         'message' => t('We were unable to process your credit card.'),
+ *       ));
  *     @endcode
  *   - can_update: Called before an order's status is changed to make sure the
  *     order can be updated. $order is the order object with the old order
@@ -205,7 +208,6 @@ function hook_uc_order($op, $order, $arg2) {
  */
 function hook_uc_order_actions($order) {
   $actions = array();
-  $module_path = base_path() . drupal_get_path('module', 'uc_shipping');
   if (user_access('fulfill orders')) {
     $result = db_query("SELECT COUNT(nid) FROM {uc_order_products} WHERE order_id = :id AND data LIKE :data", array(':id' => $order->order_id, ':data' => '%s:9:\"shippable\";s:1:\"1\";%'));
     if ($result->fetchField()) {
@@ -213,7 +215,7 @@ function hook_uc_order_actions($order) {
       $actions[] = array(
         'name' => t('Package'),
         'url' => 'admin/store/orders/' . $order->order_id . '/packages',
-        'icon' => '<img src="' . $module_path . '/images/package.gif" alt="' . $title . '" />',
+        'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_shipping') . '/images/package.gif')),
         'title' => $title,
       );
       $result = db_query("SELECT COUNT(package_id) FROM {uc_packages} WHERE order_id = :id", array(':id' => $order->order_id));
@@ -222,7 +224,7 @@ function hook_uc_order_actions($order) {
         $actions[] = array(
           'name' => t('Ship'),
           'url' => 'admin/store/orders/' . $order->order_id . '/shipments',
-          'icon' => '<img src="' . $module_path . '/images/ship.gif" alt="' . $title . '" />',
+          'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_shipping') . '/images/ship.gif')),
           'title' => $title,
         );
       }
@@ -257,9 +259,7 @@ function hook_uc_order_actions($order) {
  *   the following members:
  *   - callback:
  *     - type: string
- *     - value: The name of the callback function for this pane.  View
- *       @link http://www.ubercart.org/docs/developer/245/checkout this page @endlink
- *       for more documentation and examples of checkout pane callbacks.
+ *     - value: The name of the callback function for this pane.
  *   - title:
  *     - type: string
  *     - value: The name of the pane.
@@ -282,6 +282,9 @@ function hook_uc_order_actions($order) {
  *     - type: array
  *     - value: The list of op values which will show the pane. "view", "edit",
  *       "invoice", and "customer" are possible values.
+ *
+ * @see uc_order_pane_callback()
+ * @see http://www.ubercart.org/docs/developer/245/checkout
  */
 function hook_uc_order_pane() {
   $panes['admin_comments'] = array(
@@ -309,14 +312,14 @@ function hook_uc_order_pane_alter(&$panes) {
 /**
  * Builds and processes an order pane defined by hook_uc_order_pane().
  *
- * @param string $op
+ * @param $op
  *   The operation the pane is performing. Possible values are "view",
  *   "customer", "edit-form", "edit-theme" or "edit-process".
- * @param UcOrder $order
+ * @param $order
  *   The order being viewed or edited.
- * @param array $form
+ * @param $form
  *   The order's edit form. NULL for non-edit ops.
- * @param array &$form_state
+ * @param &$form_state
  *   The form state array of the edit form. NULL for non-edit ops.
  *
  * @return
@@ -330,8 +333,9 @@ function hook_uc_order_pane_alter(&$panes) {
  *     object.
  */
 function uc_order_pane_callback($op, $order, &$form = NULL, &$form_state = NULL) {
-  // uc_order_pane_admin_comments()
-  switch ($op) {
+  global $user;
+
+s  switch ($op) {
     case 'view':
       $comments = uc_order_comments_load($order->order_id, TRUE);
       return tapir_get_table('uc_op_admin_comments_view_table', $comments);
@@ -363,8 +367,7 @@ function uc_order_pane_callback($op, $order, &$form = NULL, &$form_state = NULL)
       return $output;
 
     case 'edit-process':
-      if (!is_null($order['admin_comment']) && strlen(trim($order['admin_comment'])) > 0) {
-        global $user;
+      if (!empty($order['admin_comment'])) {
         uc_order_comment_save($order['order_id'], $user->uid, $order['admin_comment']);
       }
       return;
@@ -384,9 +387,7 @@ function uc_order_pane_callback($op, $order, &$form = NULL, &$form_state = NULL)
  *   $product object by reference and alter it directly.
  */
 function hook_uc_order_product_alter(&$product, $order) {
-  drupal_set_message('hook_uc_order_product_alter(&$product, $order):');
-  drupal_set_message('&$product: <pre>' . print_r($product, TRUE) . '</pre>');
-  drupal_set_message('$order: <pre>' . print_r($order, TRUE) . '</pre>');
+  $product->model = 'SKU';
 }
 
 /**

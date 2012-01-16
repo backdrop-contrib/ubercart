@@ -22,7 +22,7 @@ class uc_order_handler_field_order_actions extends views_handler_field {
    *
    */
   function query() {
-    //do nada, this isn't a real db field, just one we're rendering
+    // Do nothing.
   }
 
 }
