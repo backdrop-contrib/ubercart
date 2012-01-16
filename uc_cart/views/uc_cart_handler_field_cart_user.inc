@@ -6,8 +6,7 @@
  */
 
 /**
- * Field handler to provide simple renderer that allows linking to a user
- * from a cart id.
+ * Field handler: allows linking to a user from a cart id.
  */
 class uc_cart_handler_field_cart_user extends views_handler_field {
 

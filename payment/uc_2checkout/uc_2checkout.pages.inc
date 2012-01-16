@@ -19,14 +19,19 @@ function uc_2checkout_complete($cart_id = 0) {
 
   $key = $_POST['key'];
   $valid = md5(variable_get('uc_2checkout_secret_word', 'tango') . $_POST['sid'] . $_POST['merchant_order_id'] . $_POST['total']);
-  if (strtolower($key) != strtolower($valid)) {
+  if (drupal_strtolower($key) != drupal_strtolower($valid)) {
     uc_order_comment_save($order->order_id, 0, t('Attempted unverified 2Checkout completion for this order.'), 'admin');
     return MENU_ACCESS_DENIED;
   }
 
   if ($_POST['demo'] == 'Y' xor variable_get('uc_2checkout_demo', TRUE)) {
-    watchdog('uc_2checkout', 'The 2checkout payment for order <a href="!order_url">@order_id</a> demo flag was set to %flag, but the module is set to %mode mode.',
-      array('!order_url' => url('admin/store/orders/' . $order->order_id), '@order_id' => $order->order_id, '%flag' => $_POST['demo'] == 'Y' ? 'Y' : 'N', '%mode' => variable_get('uc_2checkout_demo', TRUE) ? 'Y' : 'N'), WATCHDOG_ERROR);
+    watchdog('uc_2checkout', 'The 2checkout payment for order <a href="@order_url">@order_id</a> demo flag was set to %flag, but the module is set to %mode mode.', array(
+      '@order_url' => url('admin/store/orders/' . $order->order_id),
+      '@order_id' => $order->order_id,
+      '%flag' => $_POST['demo'] == 'Y' ? 'Y' : 'N',
+      '%mode' => variable_get('uc_2checkout_demo', TRUE) ? 'Y' : 'N',
+    ), WATCHDOG_ERROR);
+
     if (!variable_get('uc_2checkout_demo', TRUE)) {
       return MENU_ACCESS_DENIED;
     }
@@ -51,7 +56,7 @@ function uc_2checkout_complete($cart_id = 0) {
   // Save changes to order without it's completion.
   uc_order_save($order);
 
-  if (strtolower($_POST['email']) !== strtolower($order->primary_email)) {
+  if (drupal_strtolower($_POST['email']) !== drupal_strtolower($order->primary_email)) {
     uc_order_comment_save($order->order_id, 0, t('Customer used a different e-mail address during payment: !email', array('!email' => check_plain($_POST['email']))), 'admin');
   }
 

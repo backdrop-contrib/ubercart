@@ -6,8 +6,7 @@
  */
 
 /**
- * Preprocesses a Cart Link and confirm with the user if a destructive action
- * is included.
+ * Preprocesses a Cart Link, confirming with the user for destructive actions.
  *
  * @param $cart_actions
  *   A Cart Link URL is structured like "/cart/add/$cart_actions".

@@ -1191,8 +1191,7 @@ function uc_object_options_form_submit($form, &$form_state) {
 }
 
 /**
- * Form builder to associate option combinations with mutations of a
- * product's model number.
+ * Form builder: associate option combinations with a product variant's SKU.
  *
  * @see uc_product_adjustments_form_submit()
  * @ingroup forms

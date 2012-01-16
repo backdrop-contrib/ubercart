@@ -271,9 +271,7 @@ function hook_uc_checkout_complete($order, $account) {
  *     - value: A short description of the pane for the admin pages.
  *   - callback:
  *     - type: string
- *     - value: The name of the callback function for this pane.  View
- *       @link http://www.ubercart.org/docs/developer/245/checkout this page @endlink
- *       for more documentation and examples of checkout pane callbacks.
+ *     - value: The name of the callback function for this pane.
  *   - weight:
  *     - type: integer
  *     - value: Default weight of the pane, defining its order on the checkout
@@ -294,11 +292,13 @@ function hook_uc_checkout_complete($order, $account) {
  *     - type: boolean
  *     - value: Optional. If TRUE, the pane is only shown if the cart is
  *       shippable. Defaults to NULL.
+ *
+ * @see http://www.ubercart.org/docs/developer/245/checkout
  */
 function hook_uc_checkout_pane() {
   $panes['cart'] = array(
     'callback' => 'uc_checkout_pane_cart',
-    'title' => t('Cart Contents'),
+    'title' => t('Cart contents'),
     'desc' => t("Display the contents of a customer's shopping cart."),
     'weight' => 1,
     'process' => FALSE,
@@ -310,14 +310,14 @@ function hook_uc_checkout_pane() {
 /**
  * Builds and proceses a pane defined by hook_uc_checkout_pane().
  *
- * @param string $op
+ * @param $op
  *   The operation the pane is performing. Possible values are "view",
  *   "process", "review", and "settings".
- * @param UcOrder $order
+ * @param $order
  *   The order being viewed or edited.
- * @param array $form
+ * @param $form
  *   The order's edit form. NULL for non-edit ops.
- * @param array &$form_state
+ * @param &$form_state
  *   The form state array of the edit form. NULL for non-edit ops.
  *
  * @return

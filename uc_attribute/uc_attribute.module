@@ -8,13 +8,9 @@
  *
  * Many manufacturers provide options to their products. This module provides
  * a way for store administrators to consolidate these options into one product
- * instead of listing each combination separately. This is accomplished through
- * the use of Drupal's hook system.
+ * instead of listing each combination separately.
  */
 
-/******************************************************************************
- * Drupal Hooks                                                               *
- ******************************************************************************/
 
 /**
  * Implements hook_help().
@@ -57,6 +53,7 @@ function uc_attribute_menu() {
   );
   $items['admin/store/products/attributes/add'] = array(
     'title' => 'Add an attribute',
+    'description' => 'Add a product attribute.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_attribute_form'),
     'access arguments' => array('administer attributes'),
@@ -65,12 +62,15 @@ function uc_attribute_menu() {
   );
   $items['admin/store/products/attributes/%uc_attribute/edit'] = array(
     'title' => 'Edit attribute',
+    'description' => 'Edit a product attribute.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_attribute_form', 4),
     'access arguments' => array('administer attributes'),
     'file' => 'uc_attribute.admin.inc',
   );
   $items['admin/store/products/attributes/%uc_attribute/delete'] = array(
+    'title' => 'Delete attribute',
+    'description' => 'Delete a product attribute.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_attribute_delete_confirm', 4),
     'access arguments' => array('administer attributes'),
@@ -78,6 +78,7 @@ function uc_attribute_menu() {
   );
   $items['admin/store/products/attributes/%uc_attribute/options'] = array(
     'title' => 'Options',
+    'description' => "Edit a product attribute's options.",
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_attribute_options_form', 4),
     'access arguments' => array('administer attributes'),
@@ -85,6 +86,7 @@ function uc_attribute_menu() {
   );
   $items['admin/store/products/attributes/%uc_attribute/options/add'] = array(
     'title' => 'Add an option',
+    'description' => 'Add a product attribute option.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_attribute_option_form', 4, NULL),
     'access arguments' => array('administer attributes'),
@@ -93,6 +95,7 @@ function uc_attribute_menu() {
   );
   $items['admin/store/products/attributes/%uc_attribute/options/%uc_attribute_option/edit'] = array(
     'title' => 'Edit option',
+    'description' => 'Edit a product attribute option.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_attribute_option_form', 4, 6),
     'access arguments' => array('administer attributes'),
@@ -100,6 +103,7 @@ function uc_attribute_menu() {
   );
   $items['admin/store/products/attributes/%uc_attribute/options/%uc_attribute_option/delete'] = array(
     'title' => 'Delete option',
+    'description' => 'Delete a product attribute option.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_attribute_option_delete_confirm', 4, 6),
     'access arguments' => array('administer attributes'),
@@ -109,6 +113,7 @@ function uc_attribute_menu() {
   // Menu items for default product class attributes and options.
   $items['admin/store/products/classes/%uc_product_class/attributes'] = array(
     'title' => 'Attributes',
+    'description' => 'Administer product class attributes.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_object_attributes_form', 4, 'class'),
     'access callback' => 'uc_attribute_product_class_access',
@@ -118,6 +123,7 @@ function uc_attribute_menu() {
   );
   $items['admin/store/products/classes/%uc_product_class/options'] = array(
     'title' => 'Options',
+    'description' => 'Administer product class options.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_object_options_form', 4, 'class'),
     'access callback' => 'uc_attribute_product_class_access',
@@ -129,6 +135,7 @@ function uc_attribute_menu() {
   // Insert subitems into the edit node page for product types.
   $items['node/%node/edit/attributes'] = array(
     'title' => 'Attributes',
+    'description' => 'Edit product attributes.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_object_attributes_form', 1, 'product', 'overview'),
     'access callback' => 'uc_attribute_product_access',
@@ -139,6 +146,7 @@ function uc_attribute_menu() {
   );
   $items['node/%node/edit/attributes/add'] = array(
     'title' => 'Add an attribute',
+    'description' => 'Add an attribute to this product.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_object_attributes_form', 1, 'product', 'add'),
     'access callback' => 'uc_attribute_product_access',
@@ -149,6 +157,7 @@ function uc_attribute_menu() {
   );
   $items['node/%node/edit/options'] = array(
     'title' => 'Options',
+    'description' => 'Administer product attribute options.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_object_options_form', 1, 'product'),
     'access callback' => 'uc_attribute_product_option_access',
@@ -159,6 +168,7 @@ function uc_attribute_menu() {
   );
   $items['node/%node/edit/adjustments'] = array(
     'title' => 'Adjustments',
+    'description' => 'Administer SKU adjustments for different variants of this product.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_product_adjustments_form', 1),
     'access callback' => 'uc_attribute_product_option_access',
@@ -436,10 +446,6 @@ function uc_attribute_node_update_index($node) {
   return $output;
 }
 
-/******************************************************************************
- * Ubercart Hooks                                                             *
- ******************************************************************************/
-
 /**
  * Implements hook_uc_product_models().
  */
@@ -572,10 +578,6 @@ function uc_attribute_uc_product_description($product) {
 
   return $description;
 }
-
-/******************************************************************************
- * Module Functions                                                           *
- ******************************************************************************/
 
 /**
  * Loads attribute objects from the database.
@@ -726,8 +728,7 @@ function uc_attribute_load($aid, $id = NULL, $type = '') {
 }
 
 /**
- * Fetches an array of attribute objects from the database that belong to a
- * product.
+ * Fetches an array of attribute objects that belong to a product.
  *
  * @param $nid
  *   Product whose attributes to load.
@@ -883,8 +884,7 @@ function uc_attribute_subject_save(&$attribute, $type, $id, $save_options = FALS
 }
 
 /**
- * Deletes all the options associated with this product/class attribute, and
- * then the attribute itself.
+ * Deletes an attribute and all options associated with it.
  *
  * @param $aid
  *   The base attribute ID.
@@ -1111,8 +1111,7 @@ function uc_attribute_subject_option_exists($oid, $type, $id) {
 }
 
 /**
- * Returns a list of db helpers to abstract the queries between
- * products/classes.
+ * Returns a list of names to abstract queries between products and classes.
  *
  * @param $type
  *   Is this a product or a class?

@@ -6,10 +6,6 @@
  * make the cart related entity, conditions, events, and actions work.
  */
 
-/******************************************************************************
- * Rules Hooks                                                                *
- ******************************************************************************/
-
 /**
  * Implements hook_rules_event_info().
  */
