@@ -110,8 +110,7 @@ function uc_payment_method_settings_form($form, &$form_state, $method_id) {
 }
 
 /**
- * Selects a payment gateway to process a payment when multiple gateways
- * exist for a given payment method.
+ * Selects a specific gateway when multiple gateways are available.
  */
 function uc_payment_gateway_select() {
   $gateways = _uc_payment_gateway_list($_SESSION['uc_payment_method'], TRUE);
@@ -127,6 +126,8 @@ function uc_payment_gateway_select() {
 }
 
 /**
+ * Form builder: Selects a specific payment gateway.
+ *
  * @see uc_payment_gateway_select_form_submit()
  * @ingroup forms
  */

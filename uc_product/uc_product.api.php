@@ -11,7 +11,7 @@
  */
 
 /**
- * Make alterations to a specific product node variant, based on the contents of its data array.
+ * Make alterations to a specific variant of a product node.
  *
  * @param $node
  *   The product node to be altered.

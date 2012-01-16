@@ -72,7 +72,7 @@ function hook_ucga_item_alter(&$item, $product, $trans, $order) {
 }
 
 /**
- * Allows modules to alter the transaction passed to the e-commerce tracking code.
+ * Allows modules to alter the transaction data passed to Google Analytics.
  *
  * The UC Google Analytics module constructs function calls that work through
  * the Google Analytics JS API to report order information for e-commerce

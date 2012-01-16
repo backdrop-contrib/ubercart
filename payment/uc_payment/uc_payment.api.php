@@ -62,7 +62,7 @@ function hook_uc_payment_entered($order, $method, $amount, $account, $data, $com
  */
 function hook_uc_payment_gateway() {
   $gateways['test_gateway'] = array(
-    'title' => t('Test Gateway'),
+    'title' => t('Test gateway'),
     'description' => t('Process credit card payments through the Test Gateway.'),
     'credit' => 'test_gateway_charge',
   );
@@ -96,7 +96,7 @@ function hook_uc_payment_gateway_alter(&$gateways) {
 function hook_uc_payment_method() {
   $methods['check'] = array(
     'name' => t('Check'),
-    'title' => t('Check or Money Order'),
+    'title' => t('Check or money order'),
     'desc' => t('Pay by mailing a check or money order.'),
     'callback' => 'uc_payment_method_check',
     'weight' => 1,
