@@ -72,7 +72,7 @@ function uc_reports_help($path, $arg) {
     }
     if ($include_statuses) {
       $statuses = array();
-      foreach (variable_get('uc_reports_reported_statuses', array('completed')) as $status) {
+      foreach (uc_reports_order_statuses() as $status) {
         $statuses[] = db_query("SELECT title FROM {uc_order_statuses} WHERE order_status_id = :id", array(':id' => $status))->fetchField();
       }
       $order_statuses = t('<b>Order statuses used:</b> @statuses', array('@statuses' => implode(', ', array_filter($statuses))));
@@ -133,6 +133,7 @@ function uc_reports_menu() {
     'access arguments' => array('view reports'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
+    'file' => 'uc_reports.admin.inc',
   );
   $items['admin/store/reports/sales/year'] = array(
     'title' => 'Sales per year',
@@ -153,10 +154,11 @@ function uc_reports_menu() {
     'file' => 'uc_reports.admin.inc',
   );
   $items['admin/store/reports/getcsv/%/%'] = array(
-    'page callback' => '_uc_reports_get_csv',
+    'page callback' => 'uc_reports_get_csv',
     'page arguments' => array(4, 5),
     'access arguments' => array('view reports'),
     'type' => MENU_CALLBACK,
+    'file' => 'uc_reports.admin.inc',
   );
 
   return $items;
@@ -216,151 +218,10 @@ function uc_reports_form_uc_store_settings_form_alter(&$form, &$form_state) {
 }
 
 /**
- * Stores a CSV file for a report in Drupal's cache to be retrieved later.
- *
- * @param $report_id
- *   A unique string that identifies the report of the CSV file.
- * @param $rows
- *   The rows (table header included) that make CSV file.
- *
- * @return
- *   An array containing the values need to build URL that return the CSV file
- *   of the report and the CSV data itself.
- */
-function uc_reports_store_csv($report_id, $rows) {
-  global $user;
-  $csv_output = '';
-  $user_id = (empty($user->uid)) ? session_id() : $user->uid;
-  foreach ($rows as $row) {
-    foreach ($row as $index => $column) {
-      $row[$index] = '"' . str_replace('"', '""', $column) . '"';
-    }
-    $csv_output .= implode(',', $row) . "\n";
-  }
-  cache_set('uc_reports_' . $report_id . '_' . $user_id, $csv_output, 'cache', REQUEST_TIME + 86400);
-  return array('user' => $user_id, 'report' => $report_id, 'csv' => $csv_output);
-}
-
-/**
- * Retrieves a cached CSV report & send its data.
- *
- * @param $report_id
- *   A unique string that identifies the specific report CSV to retrieve.
- * @param $user_id
- *   The user id to who's retrieving the report:
- *   - uid: Equals uid for authenticated users.
- *   - sid: Equals session_id for anonymous users.
- */
-function _uc_reports_get_csv($report_id, $user_id) {
-  global $user;
-  $user_check = (empty($user->uid)) ? session_id() : $user->uid;
-  $csv_data = cache_get('uc_reports_' . $report_id . '_' . $user_id, 'cache');
-
-  if (!$csv_data || $user_id != $user_check) {
-    drupal_set_message(t("The CSV data could not be retrieved. It's possible the data might have expired. Refresh the report page and try to retrieve the CSV file again."), 'error');
-    drupal_not_found();
-    exit();
-  }
-  else {
-    ob_end_clean();
-    $http_headers = array(
-      'Pragma' => 'private',
-      'Expires' => '0',
-      'Cache-Control' => 'private, must-revalidate',
-      'Content-Transfer-Encoding' => 'binary',
-      'Content-Length' => strlen($csv_data->data),
-      'Content-Disposition' => 'attachment; filename="' . $report_id . '.csv"',
-      'Content-Type' => 'text/csv'
-    );
-    foreach ($http_headers as $header => $value) {
-      $value = preg_replace('/\r?\n(?!\t| )/', '', $value);
-      drupal_add_http_header($header, $value);
-    }
-
-    print $csv_data->data;
-    exit();
-  }
-}
-
-/**
- * Returns sales that occurred in a given time period.
- *
- * @param $time
- *   A UNIX time stamp representing the time in which to get sales data.
- * @param $interval
- *   The amount of time over which to count sales (e.g. [1] day, month, year).
- *
- * @return
- *   An associative array containing information about sales:
- *   - date: A string representing the day counting was started.
- *   - income: The total revenue that occurred during the time period.
- *   - total: The total number of orders completed during the time period.
- *   - average: The average revenue produced for each order.
- */
-function _uc_reports_get_sales($start, $interval = 'day') {
-  // Add one to the granularity chosen, and use it to calc the new time.
-  $end = strtotime('+1 ' . $interval, $start) - 1;
-
-  // Set up the default SQL for getting orders with the proper status
-  // within this period.
-  $order_statuses = _uc_reports_order_statuses();
-
-  // Get the total value of the orders.
-  $output = array('income' => 0);
-  $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN (:statuses) AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $start, ':end' => $end));
-  while ($order = $orders->fetchObject()) {
-    $output['income'] += $order->order_total;
-  }
-
-  // Get the total amount of orders.
-  $count = db_query("SELECT COUNT(o.order_total) FROM {uc_orders} as o WHERE o.order_status IN (:statuses) AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $start, ':end' => $end))->fetchField();
-  $output['total'] = $count;
-
-  // Average for this period.
-  $output['average'] = ($count != 0) ? round($output['income'] / $count, 2) : 0;
-
-  return $output;
-}
-
-/**
  * Returns a SQL friendly array of order statuses for orders used in reports.
  */
-function _uc_reports_order_statuses() {
+function uc_reports_order_statuses() {
   $statuses = variable_get('uc_reports_reported_statuses', array('completed'));
 
   return $statuses;
-}
-
-/**
- * Returns a list of timespans for subreports over that report's time span.
- *
- * To be used with a given time span for a report and specified interval for
- * subreports.
- *
- * @param $start
- *   A UNIX time stamp representing the time to start the report.
- * @param $end
- *   A UNIX time stamp representing the time to end the report.
- * @param $interval
- *   Text representing the time span of the subreport (e.g. 'day', 'week').
- *
- * @return
- *   An array of keyed arrays with the following values:
- *   - start: The starting point of the sub report.
- *   - end: The ending point of the sub report.
- */
-function _uc_reports_subreport_intervals($start, $report_end, $interval) {
-  $subreports = array();
-
-  while ($start < $report_end) {
-    $end = strtotime('+1 ' . $interval, $start) - 1;
-    $subreports[] = array(
-      'start' => $start,
-      'end' => min($end, $report_end),
-    );
-
-    $start = $end + 1;
-  }
-
-  return $subreports;
 }

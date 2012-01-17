@@ -111,6 +111,7 @@ function uc_stock_report() {
     $csv_rows[] = array($stock->sku, $stock->title, $stock->stock, $stock->threshold);
   }
 
+  module_load_include('inc', 'uc_reports', 'uc_reports.admin');
   $csv_data = uc_reports_store_csv('uc_stock', $csv_rows);
 
   $build['form'] = drupal_get_form('uc_stock_report_form');

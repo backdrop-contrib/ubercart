@@ -14,7 +14,7 @@ function uc_reports_customers() {
   $last_name = ($address_preference == 'billing') ? 'billing_last_name' : 'delivery_last_name';
   $page = (isset($_GET['page'])) ? intval($_GET['page']) : 0;
   $page_size = (isset($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
-  $order_statuses = _uc_reports_order_statuses();
+  $order_statuses = uc_reports_order_statuses();
   $rows = array();
   $csv_rows = array();
 
@@ -123,7 +123,7 @@ function uc_reports_products() {
 
   $page = (isset($_GET['page'])) ? intval($_GET['page']) : 0;
   $page_size = (isset($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
-  $order_statuses = _uc_reports_order_statuses();
+  $order_statuses = uc_reports_order_statuses();
   $row_cell = $page * variable_get('uc_reports_table_size', 30) + 1;
   $rows = array();
   $csv_rows = array();
@@ -210,7 +210,7 @@ function uc_reports_products() {
 
     if (module_exists('uc_attribute')) {
       // Get the SKUs from this product.
-      $models = _uc_reports_product_get_skus($product['nid']);
+      $models = uc_reports_product_get_skus($product['nid']);
       // Add the product breakdown rows
       foreach ($models as $model) {
         $sold = db_query("SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid", array(':statuses' => $order_statuses, ':model' => $model, ':nid' => $product['nid']))->fetchField();
@@ -296,7 +296,7 @@ function uc_reports_products() {
  * @return
  *   A unique sorted array of all skus.
  */
-function _uc_reports_product_get_skus($nid) {
+function uc_reports_product_get_skus($nid) {
   // Product SKU.
   $models = array(db_query("SELECT model FROM {uc_products} WHERE nid = :nid", array(':nid' => $nid))->fetchField());
   // Adjustment SKUs.
@@ -339,7 +339,7 @@ function uc_reports_products_custom() {
     $args = array(
       'start_date' => mktime(0, 0, 0, date('n'), 1, date('Y') - 1),
       'end_date' => REQUEST_TIME,
-      'status' => _uc_reports_order_statuses(),
+      'status' => uc_reports_order_statuses(),
     );
   }
   else {
@@ -407,7 +407,7 @@ function uc_reports_products_custom() {
     if (module_exists('uc_attribute')) {
       $breakdown_product = $breakdown_sold = $breakdown_revenue = $breakdown_gross = '';
 
-      foreach (_uc_reports_product_get_skus($product['nid']) as $model) {  // was $models
+      foreach (uc_reports_product_get_skus($product['nid']) as $model) {  // was $models
         $sold = db_query("SELECT SUM(qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid AND o.created >= :start AND o.created <= :end", array(':statuses' => $args['status'], ':start' => $args['start_date'], ':end' => $args['end_date'], ':model' => $model, ':nid' => $product['nid']))->fetchField();
         $sold = empty($sold) ? 0 : $sold;
         $revenue = db_query("SELECT SUM(p.price * p.qty) FROM {uc_order_products} AS p LEFT JOIN {uc_orders} AS o ON p.order_id = o.order_id WHERE o.order_status IN (:statuses) AND p.model = :model AND p.nid = :nid AND o.created >= :start AND o.created <= :end", array(':statuses' => $args['status'], ':start' => $args['start_date'], ':end' => $args['end_date'], ':model' => $model, ':nid' => $product['nid']))->fetchField();
@@ -715,7 +715,7 @@ function theme_uc_reports_product_table($variables) {
  * Displays the sales summary report.
  */
 function uc_reports_sales_summary() {
-  $order_statuses = _uc_reports_order_statuses();
+  $order_statuses = uc_reports_order_statuses();
 
   $date_day_of_month = date('n');
   $month_start = mktime(0, 0, 0, $date_day_of_month, 1);
@@ -727,7 +727,7 @@ function uc_reports_sales_summary() {
   $header = array(t('Sales data'), t('Number of orders'), t('Total revenue'), t('Average order'));
 
   // Calculate and add today's sales summary to the report table.
-  $today = _uc_reports_get_sales($today_start);
+  $today = uc_reports_get_sales($today_start);
 
   $rows[] = array(
     l(t('Today, !date', array('!date' => format_date($today_start, 'uc_store'))), 'admin/store/orders/search/results/0/0/0/0/0/0/' . $today_start . '/' . $today_end),
@@ -737,7 +737,7 @@ function uc_reports_sales_summary() {
   );
 
   // Calculate and add yesterday's sales summary to the report table.
-  $yesterday = _uc_reports_get_sales($today_start - 86400);
+  $yesterday = uc_reports_get_sales($today_start - 86400);
 
   $rows[] = array(
     l(t('Yesterday, !date', array('!date' => format_date($today_start - 86400, 'uc_store'))), 'admin/store/orders/search/results/0/0/0/0/0/0/' . ($today_start - 86400) . '/' . ($today_end - 86400)),
@@ -747,7 +747,7 @@ function uc_reports_sales_summary() {
   );
 
   // Get the sales report for the month.
-  $month = _uc_reports_get_sales($month_start, 'month');
+  $month = uc_reports_get_sales($month_start, 'month');
   $month_title = format_date($month_start, 'custom', 'M Y');
 
   // Add the month-to-date details to the report table.
@@ -858,7 +858,7 @@ function uc_reports_sales_summary() {
  * Displays the yearly sales report form and table.
  */
 function uc_reports_sales_year() {
-  $order_statuses = _uc_reports_order_statuses();
+  $order_statuses = uc_reports_order_statuses();
 
   // Get the year for the report from the URL.
   if (intval(arg(5)) == 0) {
@@ -881,7 +881,7 @@ function uc_reports_sales_year() {
     $month_end = mktime(23, 59, 59, $i + 1, 0, $year);
 
     // Get the sales report for the month.
-    $month_sales = _uc_reports_get_sales($month_start, 'month');
+    $month_sales = uc_reports_get_sales($month_start, 'month');
 
     // Calculate the average order total for the month.
     if ($month_sales['total'] != 0) {
@@ -913,7 +913,7 @@ function uc_reports_sales_year() {
   $year_end = mktime(23, 59, 59, 1, 0, $year + 1);
 
   // Get the sales report for the year.
-  $year_sales = _uc_reports_get_sales($year_start, 'year');
+  $year_sales = uc_reports_get_sales($year_start, 'year');
 
   // Calculate the average order total for the year.
   if ($year_sales['total'] != 0) {
@@ -1009,7 +1009,7 @@ function uc_reports_sales_custom() {
       'start_date' => mktime(0, 0, 0, date('n'), 1, date('Y') - 1),
       'end_date' => REQUEST_TIME,
       'length' => 'month',
-      'status' => _uc_reports_order_statuses(),
+      'status' => uc_reports_order_statuses(),
       'detail' => FALSE,
     );
   }
@@ -1030,7 +1030,7 @@ function uc_reports_sales_custom() {
   $csv_rows = array(array(t('Date'), t('Number of orders'), t('Products sold'), t('Total revenue')));
 
   // Grab the subreports based on the date range and the report breakdown.
-  $subreports = _uc_reports_subreport_intervals($args['start_date'], $args['end_date'], $args['length']);
+  $subreports = uc_reports_subreport_intervals($args['start_date'], $args['end_date'], $args['length']);
 
   // Loop through the subreports and build the report table.
   foreach ($subreports as $subreport) {
@@ -1191,7 +1191,7 @@ function uc_reports_sales_custom_form($form, &$form_state, $values, $statuses) {
   }
 
   if ($statuses === FALSE) {
-    $statuses = variable_get('uc_reports_reported_statuses', array('completed'));
+    $statuses = uc_reports_order_statuses();
   }
 
   $form['search']['status'] = array(
@@ -1249,4 +1249,145 @@ function uc_reports_sales_custom_form_submit($form, &$form_state) {
   );
 
   $form_state['redirect'] = 'admin/store/reports/sales/custom/' . implode('/', $args);
+}
+
+/**
+ * Stores a CSV file for a report in Drupal's cache to be retrieved later.
+ *
+ * @param $report_id
+ *   A unique string that identifies the report of the CSV file.
+ * @param $rows
+ *   The rows (table header included) that make CSV file.
+ *
+ * @return
+ *   An array containing the values need to build URL that return the CSV file
+ *   of the report and the CSV data itself.
+ */
+function uc_reports_store_csv($report_id, $rows) {
+  global $user;
+  $csv_output = '';
+  $user_id = (empty($user->uid)) ? session_id() : $user->uid;
+  foreach ($rows as $row) {
+    foreach ($row as $index => $column) {
+      $row[$index] = '"' . str_replace('"', '""', $column) . '"';
+    }
+    $csv_output .= implode(',', $row) . "\n";
+  }
+  cache_set('uc_reports_' . $report_id . '_' . $user_id, $csv_output, 'cache', REQUEST_TIME + 86400);
+  return array('user' => $user_id, 'report' => $report_id, 'csv' => $csv_output);
+}
+
+/**
+ * Retrieves a cached CSV report & send its data.
+ *
+ * @param $report_id
+ *   A unique string that identifies the specific report CSV to retrieve.
+ * @param $user_id
+ *   The user id to who's retrieving the report:
+ *   - uid: Equals uid for authenticated users.
+ *   - sid: Equals session_id for anonymous users.
+ */
+function uc_reports_get_csv($report_id, $user_id) {
+  global $user;
+  $user_check = (empty($user->uid)) ? session_id() : $user->uid;
+  $csv_data = cache_get('uc_reports_' . $report_id . '_' . $user_id, 'cache');
+
+  if (!$csv_data || $user_id != $user_check) {
+    drupal_set_message(t("The CSV data could not be retrieved. It's possible the data might have expired. Refresh the report page and try to retrieve the CSV file again."), 'error');
+    drupal_not_found();
+    exit();
+  }
+  else {
+    ob_end_clean();
+    $http_headers = array(
+      'Pragma' => 'private',
+      'Expires' => '0',
+      'Cache-Control' => 'private, must-revalidate',
+      'Content-Transfer-Encoding' => 'binary',
+      'Content-Length' => strlen($csv_data->data),
+      'Content-Disposition' => 'attachment; filename="' . $report_id . '.csv"',
+      'Content-Type' => 'text/csv'
+    );
+    foreach ($http_headers as $header => $value) {
+      $value = preg_replace('/\r?\n(?!\t| )/', '', $value);
+      drupal_add_http_header($header, $value);
+    }
+
+    print $csv_data->data;
+    exit();
+  }
+}
+
+/**
+ * Returns sales that occurred in a given time period.
+ *
+ * @param $time
+ *   A UNIX timestamp representing the time in which to get sales data.
+ * @param $interval
+ *   The amount of time over which to count sales (e.g. [1] day, month, year).
+ *
+ * @return
+ *   An associative array containing information about sales:
+ *   - date: A string representing the day counting was started.
+ *   - income: The total revenue that occurred during the time period.
+ *   - total: The total number of orders completed during the time period.
+ *   - average: The average revenue produced for each order.
+ */
+function uc_reports_get_sales($start, $interval = 'day') {
+  // Add one to the granularity chosen, and use it to calc the new time.
+  $end = strtotime('+1 ' . $interval, $start) - 1;
+
+  // Set up the default SQL for getting orders with the proper status
+  // within this period.
+  $order_statuses = uc_reports_order_statuses();
+
+  // Get the total value of the orders.
+  $output = array('income' => 0);
+  $orders = db_query("SELECT o.order_total FROM {uc_orders} as o WHERE o.order_status IN (:statuses) AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $start, ':end' => $end));
+  while ($order = $orders->fetchObject()) {
+    $output['income'] += $order->order_total;
+  }
+
+  // Get the total amount of orders.
+  $count = db_query("SELECT COUNT(o.order_total) FROM {uc_orders} as o WHERE o.order_status IN (:statuses) AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $start, ':end' => $end))->fetchField();
+  $output['total'] = $count;
+
+  // Average for this period.
+  $output['average'] = ($count != 0) ? round($output['income'] / $count, 2) : 0;
+
+  return $output;
+}
+
+/**
+ * Returns a list of timespans for subreports over that report's time span.
+ *
+ * To be used with a given time span for a report and specified interval for
+ * subreports.
+ *
+ * @param $start
+ *   A UNIX timestamp representing the time to start the report.
+ * @param $end
+ *   A UNIX timestamp representing the time to end the report.
+ * @param $interval
+ *   Text representing the time span of the subreport (e.g. 'day', 'week').
+ *
+ * @return
+ *   An array of keyed arrays with the following values:
+ *   - start: The starting point of the sub report.
+ *   - end: The ending point of the sub report.
+ */
+function uc_reports_subreport_intervals($start, $report_end, $interval) {
+  $subreports = array();
+
+  while ($start < $report_end) {
+    $end = strtotime('+1 ' . $interval, $start) - 1;
+    $subreports[] = array(
+      'start' => $start,
+      'end' => min($end, $report_end),
+    );
+
+    $start = $end + 1;
+  }
+
+  return $subreports;
 }
