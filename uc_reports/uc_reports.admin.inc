@@ -473,7 +473,18 @@ function uc_reports_products_custom() {
   );
   $build['links']['export_csv'] = array(
     '#markup' => l(t('Export to CSV file.'), 'admin/store/reports/getcsv/' . $csv_data['report'] . '/' . $csv_data['user']),
+    '#suffix' => '&nbsp;&nbsp;&nbsp;',
   );
+  if (isset($_GET['nopage'])) {
+    $build['links']['toggle_pager'] = array(
+      '#markup' => l(t('Show paged records'), 'admin/store/reports/products/custom'),
+    );
+  }
+  else {
+    $build['links']['toggle_pager'] = array(
+      '#markup' => l(t('Show all records'), 'admin/store/reports/products/custom', array('query' => array('nopage' => '1'))),
+    );
+  }
 
   $build['instructions'] = array('#markup' => '<small>*' . t('Make sure %setting_name is set to %state in the <a href="!url">access log settings page</a> to enable views column.', array('%setting_name' => 'count content views', '%state' => 'enabled', '!url' => url('admin/config/system/statistics', array('query' => array('destination' => 'admin/store/reports/products/custom'))))) . '</small>');
 
