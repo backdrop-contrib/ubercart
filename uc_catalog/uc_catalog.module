@@ -143,15 +143,14 @@ function uc_catalog_theme() {
 function uc_catalog_node_view($node, $view_mode) {
   static $parents = array();
 
-  if (uc_product_is_product($node->type) && isset($node->taxonomy_catalog[LANGUAGE_NONE])) {
+  if (uc_product_is_product($node->type) && isset($node->taxonomy_catalog)) {
     if ($view_mode == 'full' && variable_get('uc_catalog_breadcrumb', TRUE)) {
       $crumbs = array();
       if (variable_get('site_frontpage', 'node') != 'catalog') {
         $crumbs[] = l(t('Home'), '');
       }
 
-      $terms = $node->taxonomy_catalog[LANGUAGE_NONE];
-      if (count($terms)) {
+      if ($terms = field_get_items('node', $node, 'taxonomy_catalog')) {
         $crumbs[] = l(t('Catalog'), 'catalog');
         $used_tids = array();
 
@@ -507,8 +506,8 @@ function _uc_catalog_navigation($branch) {
   if (!isset($terms)) {
     $node = menu_get_object('node', 1);
     $terms = array();
-    if ($node && isset($node->taxonomy_catalog[$node->language])) {
-      foreach ($node->taxonomy_catalog[$node->language] as $term) {
+    if ($node && $field_data = field_get_items('node', $node, 'taxonomy_catalog')) {
+      foreach ($field_data as $term) {
         $terms[$term['tid']] = $term['tid'];
       }
     }
