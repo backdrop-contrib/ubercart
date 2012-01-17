@@ -134,16 +134,9 @@ function uc_cart_checkout() {
       $order->products = uc_cart_get_contents();
       unset($_SESSION['uc_cart_order_rebuild']);
     }
-    else {
-      // Otherwise, add missing node fields to the cart order's products.
-      foreach ($order->products as &$product) {
-        $node = node_load($product->nid);
-        foreach ($node as $key => $value) {
-          if (!isset($product->$key)) {
-            $product->$key = $value;
-          }
-        }
-      }
+    elseif (!uc_order_product_revive($order->products)) {
+      drupal_set_message(t('Some of the products in this order are no longer available.'), 'error');
+      drupal_goto('cart');
     }
   }
 
@@ -380,6 +373,10 @@ function uc_cart_checkout_review() {
   if ($order === FALSE || uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
     unset($_SESSION['uc_checkout'][$order->order_id]['do_review']);
     drupal_goto('cart/checkout');
+  }
+  elseif(!uc_order_product_revive($order->products)) {
+    drupal_set_message(t('Some of the products in this order are no longer available.'), 'error');
+    drupal_goto('cart');
   }
 
   $panes = _uc_checkout_pane_list();

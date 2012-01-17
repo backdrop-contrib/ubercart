@@ -514,6 +514,14 @@ function uc_order_entity_info() {
           'label' => t('Order product'),
         ),
       ),
+      'view modes' => array(
+        'full' => array(
+          'label' => t('Normal view'),
+        ),
+        'cart' => array(
+          'label' => t('Cart view'),
+        ),
+      ),
       // Entity API callbacks
       'access callback' => 'uc_order_order_product_access',
       'save callback'   => 'uc_order_product_entity_save',
@@ -1028,6 +1036,51 @@ function uc_order_product_delete($order_product_id) {
   db_delete('uc_order_products')
     ->condition('order_product_id', $order_product_id)
     ->execute();
+}
+
+/**
+ * Merge fields from their associated nodes into a set of order products.
+ *
+ * @param $products
+ *   An array of order_products.
+ * @param $published
+ *   TRUE to load only published nodes, FALSE to load all nodes.
+ *
+ * @return
+ *   TRUE if the merge was successful for all products in the set.  Otherwise FALSE (i.e. if the associated
+ *   product node no longer exists).
+ */
+function uc_order_product_revive($products, $published = TRUE) {
+  // Allow invocation for a single product.
+  if (!is_array($products)) {
+    $products = array($products);
+  }
+
+  // Load the nodes associated with each order product.
+  $nids = array();
+  foreach ($products as $product) {
+    $nids[] = $product->nid;
+  }
+  $nodes = node_load_multiple($nids);
+
+  // Merge in fields from any nodes that still exist (but don't override order product fields that are already set).
+  $return = TRUE;
+  foreach ($products as &$product) {
+    if (!empty($nodes[$product->nid]) && (!$published || $nodes[$product->nid]->status == NODE_PUBLISHED)) {
+      foreach ($nodes[$product->nid] as $key => $value) {
+        if (!isset($product->$key)) {
+          $product->$key = $value;
+        }
+      }
+      // Order products are always variants.
+      $product->variant = TRUE;
+    }
+    else {
+      $return = FALSE;
+    }
+  }
+
+  return $return;
 }
 
 /**
