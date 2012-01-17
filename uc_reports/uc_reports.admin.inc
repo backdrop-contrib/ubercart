@@ -140,7 +140,10 @@ function uc_reports_products() {
     }
   }
 
-  $query = db_select('node', 'n', array('fetch' => PDO::FETCH_ASSOC));
+  $query = db_select('node', 'n', array('fetch' => PDO::FETCH_ASSOC))
+    ->extend('PagerDefault')
+    ->extend('TableSort')
+    ->limit($page_size);
 
   $query->addField('n', 'nid');
   $query->addField('n', 'title');
@@ -162,10 +165,7 @@ function uc_reports_products() {
     $csv_rows[0][] = t('Views');
   }
 
-  $query->extend('PagerDefault')
-    ->extend('TableSort')
-    ->orderByHeader($header)
-    ->limit($page_size);
+  $query->orderByHeader($header);
 
   if ($views_column) {
     $query->leftJoin('node_counter', 'nc', 'n.nid = nc.nid');
@@ -350,7 +350,9 @@ function uc_reports_products_custom() {
     );
   }
 
-  $query = db_select('node', 'n', array('fetch' => PDO::FETCH_ASSOC))->extend('PagerDefault')->extend('TableSort')
+  $query = db_select('node', 'n', array('fetch' => PDO::FETCH_ASSOC))
+    ->extend('PagerDefault')
+    ->extend('TableSort')
     ->limit($page_size)
     ->fields('n', array(
       'nid',
