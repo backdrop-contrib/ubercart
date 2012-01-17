@@ -195,12 +195,17 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
 
   // Invoke the 'prepare' op of enabled panes, but only if their 'process' ops have not been invoked
   // on this request (i.e. when rebuilding after AJAX).
-  if (!$processed) {
-    foreach ($panes as $id => $pane) {
-      if ($pane['enabled'] && isset($pane['callback']) && function_exists($pane['callback'])) {
-        $pane['callback']('prepare', $order, $form, $form_state);
-      }
+  foreach ($panes as $id => $pane) {
+    if ($pane['enabled'] && empty($form_state['storage']['panes'][$id]['prepared']) && isset($pane['callback']) && function_exists($pane['callback'])) {
+      $pane['callback']('prepare', $order, $form, $form_state);
+      $form_state['storage']['panes'][$id]['prepared'] = TRUE;
+      $processed = FALSE; // Make sure we save the updated order.
     }
+  }
+
+  // Load the line items and save the order.  We do this after the 'prepare' callbacks of
+  // enabled panes have been invoked, because these may have altered the order.
+  if (!$processed) {
     $order->line_items = uc_order_load_line_items($order);
     uc_order_save($order);
   }
