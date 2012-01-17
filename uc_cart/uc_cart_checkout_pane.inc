@@ -24,7 +24,8 @@ function uc_checkout_pane_cart($op, $order, $form = NULL, &$form_state = NULL) {
       return array('contents' => $contents, 'next-button' => FALSE);
 
     case 'review':
-      $review[] = theme('uc_checkout_pane_cart_review', array('items' => $order->products));
+      //$review[] = theme('uc_checkout_pane_cart_review', array('items' => $order->products));
+      $review[] = theme('uc_cart_review_table', array('items' => $order->products, 'show_subtotal' => FALSE));
       return $review;
   }
 }
