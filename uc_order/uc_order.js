@@ -6,13 +6,19 @@
 var customer_select = '';
 
 /**
- * Adds the double click behavior to the order table at admin/store/orders.
+ * Adds double click behavior to the order and customer admin tables.
  */
 Drupal.behaviors.ucOrderClick = {
   attach: function(context, settings) {
-    jQuery('.view-uc-orders tbody tr', context).dblclick(
+    jQuery('.view-uc-orders tbody tr, .view-uc-customers tbody tr', context).dblclick(
       function() {
         window.location = jQuery(this).find('.views-field-order-id a').attr('href');
+      }
+    );
+
+    jQuery('.uc-cust-orders-table tbody tr', context).dblclick(
+      function() {
+        window.location = settings.basePath + '?q=admin/store/orders/' + this.id.substring(6);
       }
     );
   }
