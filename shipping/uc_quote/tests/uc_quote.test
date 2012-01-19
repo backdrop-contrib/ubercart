@@ -123,6 +123,14 @@ class UbercartQuoteTestCase extends UbercartTestHelper {
     return $this->drupalPostAjax(NULL, array(), $option);
   }
 
+  public function testNoQuote() {
+    $product = $this->createProduct(array('shippable' => FALSE));
+    $quote = $this->createQuote();
+    $this->drupalPost('node/' . $product->nid, array(), t('Add to cart'));
+    $this->drupalPost('cart', array('items[0][qty]' => 1), t('Checkout'));
+    $this->assertNoText('Calculate shipping cost', 'Shipping pane is not present with no shippable item.');
+  }
+
   /**
    * Tests basic flatrate shipping quote functionality.
    */
