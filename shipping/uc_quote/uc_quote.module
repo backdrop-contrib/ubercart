@@ -261,7 +261,7 @@ function uc_quote_form_uc_cart_checkout_form_alter(&$form, &$form_state) {
 }
 
 /**
- * Ajax callback: Update quotes when a saved address is selected.
+ * Ajax callback: Updates quotes when a saved address is selected.
  */
 function uc_quote_select_address($form, $form_state) {
   $return = uc_quote_checkout_returned_rates($form, $form_state);
@@ -273,7 +273,7 @@ function uc_quote_select_address($form, $form_state) {
 }
 
 /**
- * Ajax callback: Update shipping quotes when the delivery country changes.
+ * Ajax callback: Updates shipping quotes when the delivery country changes.
  */
 function uc_quote_country_change_wrapper(&$form, &$form_state) {
   $return = uc_quote_checkout_returned_rates($form, $form_state);
@@ -282,7 +282,7 @@ function uc_quote_country_change_wrapper(&$form, &$form_state) {
 }
 
 /**
- * Process callback: Add Ajax functionality to delivery address fields.
+ * Process callback: Adds Ajax functionality to delivery address fields.
  */
 function uc_quote_process_checkout_address($element, $form_state) {
   $ajax = array(
@@ -459,7 +459,7 @@ function uc_quote_set_shipping_type($id_type, $id, $shipping_type) {
 }
 
 /**
- * Retrieves a product's shipping type from the database.
+ * Retrieves shipping type information from the database.
  *
  * @param $id_type
  *   Type can be 'product' or 'manufacturer'.
@@ -481,13 +481,14 @@ function uc_quote_get_shipping_type($id_type, $id) {
 }
 
 /**
- * Gets a product's shipping type, or the store's default if none is set.
+ * Gets a product's shipping type.
  *
  * @param $product
- *   The product object.
+ *   A product object.
  *
  * @return
- *   The shipping type.
+ *   The product's shipping type, or the store's default shipping type if
+ *   the product's is not set.
  */
 function uc_product_get_shipping_type($product) {
   $shipping_type = variable_get('uc_store_shipping_type', 'small_package');
@@ -501,14 +502,12 @@ function uc_product_get_shipping_type($product) {
 /**
  * Gets a product's default shipping address.
  *
- * Loads the default shipping address of a product, or the store's if
- * the product shipping address is not set.
- *
  * @param $nid
  *   A product node id.
  *
  * @return
- *   An address object.
+ *   An address object containing the product's default shipping address, or
+ *   the store's shipping address if the product's is not set.
  */
 function uc_quote_get_default_shipping_address($nid) {
   $address = db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid = :nid", array(':nid' => $nid))->fetchObject('UcAddress');
@@ -800,7 +799,7 @@ function uc_quote_order_pane_quotes_submit($form, &$form_state) {
 }
 
 /**
- * Ajax callback: Manually apply a shipping quote to an order.
+ * Ajax callback: Manually applies a shipping quote to an order.
  */
 function uc_quote_apply_quote_to_order($form, &$form_state) {
   if (isset($form_state['values']['quotes']['quote_option'])) {
@@ -934,8 +933,9 @@ function uc_quote_cart_returned_rates($form, $form_state) {
  *
  * @param $quote_form
  *   The quotes form-element.
+
  * @return
- *   The default quote option, or false if none exists.
+ *   The default quote option, or FALSE if none exists.
  */
 function _uc_quote_extract_default_option($quote_form) {
   if (isset($quote_form['quote_option']['#value'])) {
