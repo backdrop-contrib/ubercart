@@ -119,24 +119,25 @@ function uc_taxes_entity_view_alter(&$build, $entity_type) {
       break;
 
     case 'uc_cart_item':
-      if (!empty($build['#total'])) {
-        list($amount, $suffixes) = uc_taxes_get_included_tax($build['#entity']);
-        if (!empty($amount)) {
-          $build['#total'] += $amount * $build['qty']['#default_value'];
-        }
-        if (!empty($suffixes)) {
-          $build['#suffixes'] += $suffixes;
+    case 'uc_order_product':
+      list($amount, $suffixes) = uc_taxes_get_included_tax($build['#entity'], isset($build['#entity']->order) ? $build['#entity']->order : NULL);
+      if ($build['#view_mode'] == 'cart') {
+        if (!empty($build['#total'])) {
+          if (!empty($amount)) {
+            $build['#total'] += $amount * $build['qty']['#default_value'];
+          }
+          if (!empty($suffixes)) {
+            $build['#suffixes'] += $suffixes;
+          }
         }
       }
-      break;
-
-    case 'uc_order_product':
-      list($amount, $suffixes) = uc_taxes_get_included_tax($build['#entity'], $build['#entity']->order);
-      $build['price']['#price'] += $amount;
-      $build['total']['#price'] += $amount * $build['#entity']->qty;
-      if (!empty($suffixes)) {
-        $build['price']['#suffixes'] += $suffixes;
-        $build['total']['#suffixes'] += $suffixes;
+      else {
+        $build['price']['#price'] += $amount;
+        $build['total']['#price'] += $amount * $build['#entity']->qty;
+        if (!empty($suffixes)) {
+          $build['price']['#suffixes'] += $suffixes;
+          $build['total']['#suffixes'] += $suffixes;
+        }
       }
       break;
   }

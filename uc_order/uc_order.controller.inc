@@ -64,42 +64,54 @@ class UcOrderController extends DrupalDefaultEntityController {
  */
 class UcOrderProductController extends EntityAPIController {
   public function buildContent($product, $view_mode = 'full', $langcode = NULL, $content = array()) {
-    $content['qty'] = array(
-      '#theme' => 'uc_qty',
-      '#qty' => $product->qty,
-      '#cell_attributes' => array('class' => array('qty')),
-    );
-    $node = node_load($product->nid);
-    $title = node_access('view', $node) ? l($product->title, 'node/' . $node->nid) : check_plain($product->title);
-    $content['product'] = array(
-      '#markup' => $title . uc_product_get_description($product),
-      '#cell_attributes' => array('class' => array('product')),
-    );
-    $content['model'] = array(
-      '#markup' => check_plain($product->model),
-      '#cell_attributes' => array('class' => array('sku')),
-    );
+    switch ($view_mode) {
+      case 'cart':
+        $content = array();
+        $content += module_invoke($product->data['module'], 'uc_cart_display', $product);
+        if (!empty($content)) {
+          $content['cart_item_id'] = array(
+            '#type' => 'hidden',
+            '#value' => isset($product->cart_item_id) ? $product->cart_item_id : 0,
+          );
+        }
+        break;
 
-    if (user_access('administer products')) {
-      $content['cost'] = array(
-        '#theme' => 'uc_price',
-        '#price' => $product->cost,
-        '#cell_attributes' => array('class' => array('cost')),
-      );
+      default:
+        $content['qty'] = array(
+          '#theme' => 'uc_qty',
+          '#qty' => $product->qty,
+          '#cell_attributes' => array('class' => array('qty')),
+        );
+        $node = node_load($product->nid);
+        $title = node_access('view', $node) ? l($product->title, 'node/' . $node->nid) : check_plain($product->title);
+        $content['product'] = array(
+          '#markup' => $title . uc_product_get_description($product),
+          '#cell_attributes' => array('class' => array('product')),
+        );
+        $content['model'] = array(
+          '#markup' => check_plain($product->model),
+          '#cell_attributes' => array('class' => array('sku')),
+        );
+        if (user_access('administer products')) {
+          $content['cost'] = array(
+            '#theme' => 'uc_price',
+            '#price' => $product->cost,
+            '#cell_attributes' => array('class' => array('cost')),
+          );
+        }
+        $content['price'] = array(
+          '#theme' => 'uc_price',
+          '#price' => $product->price,
+          '#suffixes' => array(),
+          '#cell_attributes' => array('class' => array('price')),
+        );
+        $content['total'] = array(
+          '#theme' => 'uc_price',
+          '#price' => $product->price * $product->qty,
+          '#suffixes' => array(),
+          '#cell_attributes' => array('class' => array('total')),
+        );
     }
-    $content['price'] = array(
-      '#theme' => 'uc_price',
-      '#price' => $product->price,
-      '#suffixes' => array(),
-      '#cell_attributes' => array('class' => array('price')),
-    );
-    $content['total'] = array(
-      '#theme' => 'uc_price',
-      '#price' => $product->price * $product->qty,
-      '#suffixes' => array(),
-      '#cell_attributes' => array('class' => array('total')),
-    );
-
     return parent::buildContent($product, $view_mode, $langcode, $content);
   }
 }

@@ -312,7 +312,7 @@ function uc_cart_block_view($delta = '') {
       $total = 0;
 
       if ($product_count) {
-        $display_items = entity_view('uc_cart_item', uc_cart_get_contents());
+        $display_items = entity_view('uc_cart_item', uc_cart_get_contents(), 'cart');
         foreach (element_children($display_items['uc_cart_item']) as $key) {
           $display_item = $display_items['uc_cart_item'][$key];
 
@@ -805,7 +805,7 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
   );
 
   $i = 0;
-  $display_items = entity_view('uc_cart_item', $items);
+  $display_items = entity_view('uc_cart_item', $items, 'cart');
   foreach (element_children($display_items['uc_cart_item']) as $key) {
     $display_item = $display_items['uc_cart_item'][$key];
     if (count(element_children($display_item))) {
@@ -902,8 +902,12 @@ function uc_cart_view_form_submit($form, &$form_state) {
     drupal_set_message(t('<strong>!product-title</strong> removed from your shopping cart.', array('!product-title' => $form['items'][$item]['title']['#markup'])));
   }
 
-  // Update the items in the shopping cart based on the form values.
-  uc_cart_update_item_object((object)$form_state['values']);
+  // Update the items in the shopping cart based on the form values, but only if a qty has changed.
+  foreach($form['items'] as $key => $item) {
+    if (isset($item['qty']['#default_value']) && $item['qty']['#default_value'] != $form_state['values']['items'][$key]['qty']) {
+      uc_cart_update_item_object((object)$form_state['values']);
+    }
+  }
 
   if ($form_state['triggering_element']['#name'] == 'update-cart') {
     drupal_set_message(t('Your cart has been updated.'));
@@ -1271,6 +1275,9 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
 
   if ($action == 'rebuild' || $action == 'empty') {
     unset($items[$cid]);
+    // Mark the current cart order (if any) as needing to be rebuilt.  We only do this if the cart is being
+    // explicitly rebuilt (i.e. after an item is added, removed or altered).
+    $_SESSION['uc_cart_order_rebuild'] = TRUE;
   }
 
   if (!isset($items[$cid])) {
