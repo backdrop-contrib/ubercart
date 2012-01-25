@@ -316,6 +316,14 @@ function uc_order_product_select_form_validate($form, &$form_state) {
  * @ingroup forms
  */
 function uc_order_add_product_form($form, &$form_state, $order, $node) {
+  $data = array();
+  if (isset($form_state['values']['product_controls']['qty'])) {
+    $data += module_invoke_all('uc_add_to_cart_data', $form_state['values']['product_controls']);
+  }
+  if (!empty($node->data) && is_array($node->data)) {
+    $data += $node->data;
+  }
+  $node = uc_product_load_variant(intval($form_state['values']['product_controls']['nid']), $data);
   $form['title'] = array(
     '#markup' => '<h3>' . check_plain($node->title) . '</h3>',
   );

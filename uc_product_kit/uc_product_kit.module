@@ -642,6 +642,13 @@ function uc_product_kit_view($node, $view_mode) {
   // flag to be sure not to alter twice.
   $variant = empty($node->variant) ? uc_product_load_variant($node->nid) : $node;
 
+  if (module_exists('uc_cart') && empty($variant->data['display_only'])) {
+    $add_to_cart_form = drupal_get_form('uc_product_kit_add_to_cart_form_' . $variant->nid, clone $variant);
+    if (variable_get('uc_product_update_node_view', FALSE)) {
+      $variant = $add_to_cart_form['node']['#value'];
+    }
+  }
+
   // Calculate the display price.
   $display_price = 0;
   $suffixes = array();
@@ -729,11 +736,11 @@ function uc_product_kit_view($node, $view_mode) {
     }
   }
 
-  if (module_exists('uc_cart') && isset($variant->nid) && empty($variant->data['display_only'])) {
+  if (isset($add_to_cart_form)) {
     $node->content['add_to_cart'] = array(
       '#theme' => 'uc_product_kit_add_to_cart',
       '#view_mode' => $view_mode,
-      '#form' => drupal_get_form('uc_product_kit_add_to_cart_form_' . $variant->nid, $variant),
+      '#form' => $add_to_cart_form,
     );
   }
 
@@ -782,12 +789,23 @@ function uc_product_kit_add_to_cart_form($form, &$form_state, $node) {
 
   $form['node'] = array(
     '#type' => 'value',
-    '#value' => $node,
+    '#value' => isset($form_state['storage']['variant']) ? $form_state['storage']['variant'] : $node,
   );
 
   uc_form_alter($form, $form_state, __FUNCTION__);
 
   return $form;
+}
+
+function uc_product_kit_add_to_cart_form_validate($form, &$form_state) {
+  uc_product_add_to_cart_form_validate($form, $form_state);
+  foreach ($form_state['storage']['variant']->products as &$product) {
+    $data = module_invoke_all('uc_add_to_cart_data', $form_state['values']['products'][$product->nid]);
+    $data += $product->data;
+    $qty = $product->qty;
+    $product = uc_product_load_variant($product->nid, $data);
+    $product->qty = $qty;
+  }
 }
 
 /**

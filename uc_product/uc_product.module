@@ -709,6 +709,40 @@ function uc_product_delete(&$node) {
 }
 
 /**
+ * Returns a list of ajax commands which can be used to replace portions of a product view
+ * based on user input to the add-to-cart form.
+ *
+ * If a module adds an input field to the add-to-cart form which affects some aspect of a product
+ * (e.g. display price or weight), it should attach an #ajax callback to that form element, and use
+ * this function in the callback to build updated content for the affected fields based on user input.
+ *
+ * @param $form_state
+ *   The current form state.  This must contain a 'variant' entry in the 'storage' array which represents
+ *   the product as configured by user input data. In most cases, this is provided automatically by
+ *   uc_product_add_to_cart_form_validate().
+ *
+ * @param $keys
+ *   An array of keys in the built product content which should be replaced (e.g. 'display_price').
+ *
+ * @return
+ *   An array of ajax commands to replace each of the display fields with it's updated value.
+ */
+function uc_product_view_ajax_commands($form_state, $keys) {
+  $commands = array();
+  if (variable_get('uc_product_update_node_view', FALSE) && !empty($form_state['storage']['variant'])) {
+    $node_div = '#node-' . $form_state['storage']['variant']->nid;
+    $build = node_view($form_state['storage']['variant']);
+    foreach ($keys as $key) {
+      if (isset($build[$key])) {
+        $id = $node_div . ' .' . str_replace('_', '-', $key);
+        $commands[] = ajax_command_replace($id, drupal_render($build[$key]));
+      }
+    }
+  }
+  return $commands;
+}
+
+/**
  * Implements hook_view().
  */
 function uc_product_view($node, $view_mode) {
@@ -716,6 +750,15 @@ function uc_product_view($node, $view_mode) {
   // have been done already by uc_product_load_variant(), so we check a flag to
   // be sure not to alter twice -- cf. entity_prepare_view().
   $variant = empty($node->variant) ? _uc_product_get_variant($node) : $node;
+
+  // Build the add_to_cart form, and use the updated variant based on data provided by the form
+  // (e.g. attribute default options).
+  if (module_exists('uc_cart') && empty($variant->data['display_only'])) {
+    $add_to_cart_form = drupal_get_form('uc_product_add_to_cart_form_' . $variant->nid, $variant);
+    if (variable_get('uc_product_update_node_view', FALSE)) {
+      $variant = $add_to_cart_form['node']['#value'];
+    }
+  }
 
   $node->content['display_price'] = array(
     '#theme' => 'uc_product_price',
@@ -778,11 +821,11 @@ function uc_product_view($node, $view_mode) {
     '#view_mode' => $view_mode,
   );
 
-  if (module_exists('uc_cart') && isset($variant->nid) && empty($variant->data['display_only'])) {
+  if (isset($add_to_cart_form)) {
     $node->content['add_to_cart'] = array(
       '#theme' => 'uc_product_add_to_cart',
       '#view_mode' => $view_mode,
-      '#form' => drupal_get_form('uc_product_add_to_cart_form_' . $variant->nid, $variant),
+      '#form' => $add_to_cart_form,
     );
   }
 
@@ -1205,12 +1248,19 @@ function uc_product_add_to_cart_form($form, &$form_state, $node) {
 
   $form['node'] = array(
     '#type' => 'value',
-    '#value' => $node,
+    '#value' => isset($form_state['storage']['variant']) ? $form_state['storage']['variant'] : $node,
   );
 
   uc_form_alter($form, $form_state, __FUNCTION__);
 
   return $form;
+}
+
+/**
+ * Form validation handler for uc_product_add_to_cart_form().
+ */
+function uc_product_add_to_cart_form_validate($form, &$form_state) {
+  $form_state['storage']['variant'] = uc_product_load_variant($form_state['values']['nid'], module_invoke_all('uc_add_to_cart_data', $form_state['values']));
 }
 
 /**

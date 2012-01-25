@@ -291,7 +291,7 @@ function uc_attribute_form_uc_product_settings_form_alter(&$form, &$form_state) 
       'adjustment' => t('Display price adjustment'),
       'total' => t('Display total price'),
     ),
-    '#description' => t('Determines how price variations are displayed to the customer. Prices may be displayed directly next to each attribute option in the attribute selection form either as a total price for the product with that option or as an adjustment (+ or -) showing how that option affects the product base price. However, the total price will not be displayed if a product has more than one attribute that can affect the price.'),
+    '#description' => t('Determines how price variations are displayed to the customer. Prices may be displayed directly next to each attribute option in the attribute selection form either as a total price for the product with that option or as an adjustment (+ or -) showing how that option affects the product base price. Note that the price will always be displayed as an adjustment for attributes that can have multiple options (using checkboxes).'),
   );
 }
 
@@ -318,7 +318,9 @@ function uc_attribute_module_implements_alter(&$implementations, $hook) {
  */
 function uc_attribute_uc_form_alter(&$form, &$form_state, $form_id) {
   if (strpos($form_id, 'add_to_cart_form') || $form_id == 'uc_order_add_product_form') {
+    $use_ajax = strpos($form_id, 'add_to_cart_form') && variable_get('uc_product_update_node_view', FALSE);
     $node =& $form['node']['#value'];
+    $id = $form_id . '-' . $node->nid . '-attributes';
     // If the node has a product list, add attributes to them.
     if (isset($form['products']) || isset($form['sub_products'])) {
       if (isset($form['products'])) {
@@ -328,7 +330,8 @@ function uc_attribute_uc_form_alter(&$form, &$form_state, $form_id) {
         $element = &$form['sub_products'];
       }
       foreach (element_children($element) as $key) {
-        $element[$key]['attributes'] = _uc_attribute_alter_form(node_load($key));
+        $element[$key]['attributes'] = _uc_attribute_alter_form($id . '-' . $key, $node->products[$key], $use_ajax);
+
         if (is_array($element[$key]['attributes'])) {
           $element[$key]['attributes']['#tree'] = TRUE;
           $element[$key]['#type'] = 'fieldset';
@@ -337,7 +340,7 @@ function uc_attribute_uc_form_alter(&$form, &$form_state, $form_id) {
     }
     // If not, add attributes to the node.
     else {
-      $form['attributes'] = _uc_attribute_alter_form($node);
+      $form['attributes'] = _uc_attribute_alter_form($id, $node, $use_ajax);
 
       if (is_array($form['attributes'])) {
         $form['attributes']['#tree'] = TRUE;
@@ -1228,30 +1231,82 @@ function _uc_cart_product_get_options($item) {
 }
 
 /**
+ * Ajax callback for attribute selection form elements.
+ */
+function uc_attribute_option_ajax($form, $form_state) {
+  $parents = $form_state['triggering_element']['#array_parents'];
+  $wrapper = '#' . $form_state['triggering_element']['#ajax']['wrapper'];
+  while ($key = array_pop($parents)) {
+    if ($key == 'attributes') {
+      array_push($parents, $key);
+      $element = drupal_array_get_nested_value($form, $parents);
+      $commands[] = ajax_command_replace($wrapper, drupal_render($element));
+      break;
+    }
+  }
+  if (strpos($form['#form_id'], 'add_to_cart_form') !== FALSE) {
+    $commands = array_merge($commands, uc_product_view_ajax_commands($form_state, array('display_price', 'weight', 'cost')));
+  }
+  $commands[] = ajax_command_prepend($wrapper, theme('status_messages'));
+  return array('#type' => 'ajax', '#commands' => $commands);
+}
+
+/**
  * Helper function for uc_attribute_form_alter().
+ * @param $id
+ *   The unique id to use to wrap these form elements.
+ * @param &$product
+ *   The product node for which the attribute form elements are to be attached.
+ * @param $use_ajax
+ *   TRUE to add ajax to the form.  Note that ajax may be added even if this is FALSE,
+ *   if there are multiple attributes and one or more of them is set to display total price.
  *
  * @see theme_uc_attribute_add_to_cart()
+ * @see uc_attribute_option_ajax()
  */
-function _uc_attribute_alter_form($product) {
-  // Prevent infinite recursion because we call node_view() below to get the
-  // display prices.
-  $skip_flag = array('display_only' => TRUE);
-
+function _uc_attribute_alter_form($id, &$product, $use_ajax) {
   // If the product doesn't have attributes, return the form as it is.
-  if (!isset($product->attributes)) {
-    $product->attributes = uc_product_get_attributes($product->nid);
-  }
-  if (!is_array($product->attributes) || empty($product->attributes)) {
+  if (empty($product->attributes) || !is_array($product->attributes)) {
     return NULL;
   }
 
   $nid = $product->nid;
-
-  // Load all product attributes for the given nid.
-  $priced_attributes = uc_attribute_priced_attributes($nid);
   $attributes = $product->attributes;
+  $priced_attributes = uc_attribute_priced_attributes($nid);
 
-  $form_attributes = array();
+  // If the form is being built for the first time, populate attributes with their default values.
+  if (!isset($product->data['attributes'])) {
+    $values = array();
+    foreach($priced_attributes as $aid) {
+      if (!$attributes[$aid]->required && ($attributes[$aid]->display == 1 || $attributes[$aid]->display == 2)) {
+        $values[$aid] = $attributes[$aid]->default_option;
+      }
+    }
+    if (!empty($values)) {
+      $data = $product->data;
+      $data['attributes'] = $values;
+      if (isset($product->qty)) {
+        // Preserve the quantity (for product-kit sub-products).
+        $qty = $product->qty;
+      }
+      $product = uc_product_load_variant($product->nid, $data);
+      if (isset($qty)) {
+        $product->qty = $qty;
+      }
+    }
+  }
+
+  if (empty($product->data) || !is_array($product->data)) {
+    $product->data = array();
+  }
+
+  // Initialize the form element.
+  $form_attributes = array(
+    '#theme' => 'uc_attribute_add_to_cart',
+    '#id' => $id,
+  );
+
+  $price_format = variable_get('uc_attribute_option_price_format', 'adjustment');
 
   // Loop through each product attribute and generate its form element.
   foreach ($attributes as $attribute) {
@@ -1260,16 +1315,42 @@ function _uc_attribute_alter_form($product) {
     foreach ($attribute->options as $option) {
       $display_price = '';
       if (in_array($attribute->aid, $priced_attributes)) {
-        $variant = node_view(uc_product_load_variant($product->nid, $skip_flag + array('attributes' => array($attribute->aid => $option->oid))), 'teaser');
-        switch (variable_get('uc_attribute_option_price_format', 'adjustment')) {
+        $data = array('display_only' => TRUE) + $product->data;
+        if (empty($data['attributes'])) {
+          $data['attributes'] = array();
+        }
+        switch ($price_format) {
           case 'total':
-            if (count($priced_attributes) == 1 && $attribute->display != 3) {
+            // Only display total price for non-checkbox options.
+            // !TODO Fix attribute option total price display for product kits.
+            if ($attribute->display != 3 && !isset($product->data['kit_id'])) {
+              $use_ajax = $use_ajax || (count($priced_attributes) > 1);
+              $data['attributes'] = array($attribute->aid => $option->oid) + $data['attributes'];
+              $variant = node_view(uc_product_load_variant($product->nid, $data), 'teaser');
               $display_price = uc_currency_format($variant['display_price']['#value']);
               break;
             }
           case 'adjustment':
-            $base = node_view(uc_product_load_variant($product->nid, $skip_flag), 'teaser');
-            $adjustment = $variant['display_price']['#value'] - $base['display_price']['#value'];
+            if ($attribute->display == 3 || !$use_ajax) {
+              // For checkboxes, or if the node totals are not being updated,
+              // we compare this attribute against base price.
+              if (empty($base)) { // only build the base once.
+                unset($data['attributes']);
+                $base = node_view(uc_product_load_variant($product->nid, $data), 'teaser');
+              }
+              $data['attributes'] = array($attribute->aid => $option->oid);
+              $variant = node_view(uc_product_load_variant($product->nid, $data), 'teaser');
+              $adjustment = $variant['display_price']['#value'] - $base['display_price']['#value'];
+            }
+            else {
+              // Otherwise we compare against current total price.
+              if (empty($selected)) {
+                $selected = node_view(uc_product_load_variant($product->nid, $data), 'teaser');
+              }
+              $data['attributes'] = array($attribute->aid => $option->oid) + $data['attributes'];
+              $variant = node_view(uc_product_load_variant($product->nid, $data), 'teaser');
+              $adjustment = $variant['display_price']['#value'] - $selected['display_price']['#value'];
+            }
             if ($adjustment != 0) {
               $display_price = $adjustment > 0 ? '+' : '-';
               $display_price .= uc_currency_format(abs($adjustment));
@@ -1310,6 +1391,12 @@ function _uc_attribute_alter_form($product) {
         '#default_value' => $attribute->default_option,
         '#options' => $options,
       );
+      if ($use_ajax) {
+        $form_attributes[$attribute->aid]['#ajax'] = array(
+          'callback' => 'uc_attribute_option_ajax',
+          'wrapper' => $id,
+        );
+      }
     }
     elseif ($attribute->display > 0) {
       $form_attributes[$attribute->aid] = array(
@@ -1334,9 +1421,8 @@ function _uc_attribute_alter_form($product) {
 
     $form_attributes[$attribute->aid]['#description'] = filter_xss($attribute->description);
     $form_attributes[$attribute->aid]['#required'] = $attribute->required;
-
-    $form_attributes['#theme'] = 'uc_attribute_add_to_cart';
   }
+
   return $form_attributes;
 }
 

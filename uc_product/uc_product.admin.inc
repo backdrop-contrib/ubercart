@@ -84,6 +84,12 @@ function uc_product_settings_form($form, &$form_state) {
       '#title' => t('Display an optional quantity field in the <em>Add to Cart</em> form.'),
       '#default_value' => variable_get('uc_product_add_to_cart_qty', FALSE),
     );
+    $form['product']['uc_product_update_node_view'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Update product display based on customer selections'),
+      '#default_value' => variable_get('uc_product_update_node_view', FALSE),
+			'#description' => t('Check this box to dynamically update the display of product information such as display-price or weight based on customer input on the add-to-cart form (e.g. selecting a particular attribute option).'),
+    );
   }
 
   foreach (module_invoke_all('uc_product_feature') as $feature) {
