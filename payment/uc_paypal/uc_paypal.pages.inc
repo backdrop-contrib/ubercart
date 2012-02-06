@@ -436,8 +436,7 @@ function uc_paypal_complete($order) {
   }
 
   // This lets us know it's a legitimate access of the complete page.
-  $_SESSION['do_complete'] = TRUE;
-
+  $_SESSION['uc_checkout'][$_SESSION['cart_order']]['do_complete'] = TRUE;
   drupal_goto('cart/checkout/complete');
 }
 
