@@ -680,8 +680,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
   foreach ($response->ShipmentResults->PackageResults as $package_results) {
     $package =& current($shipment->packages);
     $package->tracking_number = (string) $package_results->TrackingNumber;
-    //$label_image = (string) $package_results->LabelImage->GraphicImage;
-    $label_image =  '';
+    $label_image = (string) $package_results->LabelImage->GraphicImage;
     // Save the label
     $directory = 'public://ups_labels';
     if (file_prepare_directory($directory, FILE_CREATE_DIRECTORY)) {
