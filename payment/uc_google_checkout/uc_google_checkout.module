@@ -106,7 +106,11 @@ function uc_google_checkout_init() {
   global $user;
   $users = variable_get('uc_google_checkout_order_users', array());
   if (isset($users[$user->uid])) {
-    unset($_SESSION['cart_order'], $_SESSION['do_complete'], $users[$user->uid]);
+    unset($users[$user->uid]);
+    if (isset($_SESSION['cart_order'])) {
+      unset($_SESSION['uc_checkout'][$_SESSION['cart_order']]['do_complete']);
+      unset($_SESSION['cart_order']);
+    }
     variable_set('uc_google_checkout_order_users', $users);
   }
 

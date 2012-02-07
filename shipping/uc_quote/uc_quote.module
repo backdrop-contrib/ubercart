@@ -665,13 +665,23 @@ function uc_checkout_pane_quotes($op, &$order, $form = NULL, &$form_state = NULL
 
     case 'prepare':
     case 'process':
-      if (isset($form_state['values']['panes']['quotes']['quotes']['quote_option'])) {
+      // If a quote was explicitly selected, add it to the order.
+      if (isset($form['panes']['quotes']['quotes']['quote_option']['#value']) && isset($form['panes']['quotes']['quotes']['quote_option']['#default_value']) 
+          && $form['panes']['quotes']['quotes']['quote_option']['#value'] !== $form['panes']['quotes']['quotes']['quote_option']['#default_value']) { 
         $quote_option = explode('---', $form_state['values']['panes']['quotes']['quotes']['quote_option']);
         $order->quote['method'] = $quote_option[0];
         $order->quote['accessorials'] = $quote_option[1];
-        // Ensure that the form builder uses the default value to decide which radio button should be selected.
-        unset($form_state['input']['panes']['quotes']['quotes']['quote_option']);
+        $order->data['uc_quote_selected'] = TRUE;
       }
+
+      // If the current quote was never explicitly selected, discard it and use the default.
+      if (empty($order->data['uc_quote_selected'])) {
+        unset($order->quote);
+      }
+
+      // Ensure that the form builder uses the default value to decide which radio button should be selected.
+      unset($form_state['input']['panes']['quotes']['quotes']['quote_option']);
+
       $order->quote_form = uc_quote_build_quote_form($order, !empty($form_state['quote_requested']));
 
       $default_option = _uc_quote_extract_default_option($order->quote_form);

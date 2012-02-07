@@ -282,7 +282,7 @@ function uc_roles_action_user_email($account, $role_expiration, $from, $addresse
   // Token replacements for the subject and body
   $settings['replacements'] = array(
     'user' => $account,
-    'uc_roles' => $role_expiration,
+    'uc_role' => $role_expiration,
   );
 
   // Replace tokens and parse recipients.
