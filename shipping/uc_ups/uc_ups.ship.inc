@@ -753,12 +753,12 @@ function uc_ups_request_pickup($digest, $order_id = 0, $packages = array()) {
  * @ingroup themeable
  */
 function theme_uc_ups_label_image() {
-  $args = explode('/', $_GET['q'], 7);
-  if (count($args) != 7) {
+  $args = explode('/', $_GET['q'], 8);
+  if (count($args) != 8) {
     return MENU_NOT_FOUND;
   }
 
-  $image_path = file_stream_wrapper_uri_normalize($args[6]);
+  $image_path = file_create_url(file_stream_wrapper_uri_normalize($args[7]));
 
   $output = <<<EOLABEL
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 3.2//EN">
