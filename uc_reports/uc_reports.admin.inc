@@ -730,9 +730,10 @@ function theme_uc_reports_product_table($variables) {
 function uc_reports_sales_summary() {
   $order_statuses = uc_reports_order_statuses();
 
-  $date_day_of_month = date('n');
-  $month_start = mktime(0, 0, 0, $date_day_of_month, 1);
-  $month_end = mktime(0, 0, 0, $date_day_of_month + 1, 1) - 1;
+  $date_day_of_month = date('j');
+  $date_month = date('n');
+  $month_start = mktime(0, 0, 0, $date_month, 1);
+  $month_end = mktime(0, 0, 0, $date_month + 1, 1) - 1;
   $today_start = mktime(0, 0, 0);
   $today_end = mktime(23, 59, 59);
 
