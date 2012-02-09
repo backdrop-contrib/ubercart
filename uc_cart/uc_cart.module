@@ -1290,15 +1290,9 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
         ->execute();
       if (!empty($result['uc_cart_item'])) {
         $items[$cid] = entity_load('uc_cart_item', array_keys($result['uc_cart_item']), NULL, TRUE);
+
         // Create a bare order and attach it to each item as context.
-        $order = new UcOrder();
-        $order->uid = $cid;
-        if ($account = user_load($cid)) {
-          $order->primary_email = $account->mail;
-        }
-        $order->order_status = uc_order_state_default('in_checkout');
-        $order->created = REQUEST_TIME;
-        $order->modified = REQUEST_TIME;
+        $order = new UcOrder($cid);
         foreach ($items[$cid] as $item) {
           $item->order = $order;
         }
