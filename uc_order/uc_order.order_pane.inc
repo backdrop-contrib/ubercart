@@ -1072,7 +1072,7 @@ function uc_op_products_view_table($order) {
     'weight' => 5,
   );
 
-  if (is_array($order->products)) {
+  if (!empty($order->products)) {
     $build = entity_view('uc_order_product', $order->products);
     $table['#rows'] = $build['uc_order_product'];
   }
