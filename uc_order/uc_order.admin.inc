@@ -1062,7 +1062,7 @@ function uc_order_edit_form_submit($form, &$form_state) {
   $log = array();
 
   foreach ($form_state['order'] as $key => $value) {
-    if (!isset($order->$key) || $order->$key != $value) {
+    if (!isset($order->$key) || $order->$key !== $value) {
       if (!is_array($value)) {
         $log[$key] = array('old' => $order->$key, 'new' => $value);
       }
