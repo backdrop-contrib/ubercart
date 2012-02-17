@@ -206,7 +206,13 @@ function uc_product_kit_update(&$node) {
   $obj->ordering = $node->ordering;
   $obj->shippable = FALSE;
 
-  $override_discounts = isset($node->kit_total) && is_numeric($node->kit_total);
+  if (!isset($node->kit_total) && isset($node->synchronized) && isset($node->sell_price)) {
+    $override_discounts = !$node->synchronized;
+    $node->kit_total = $node->sell_price;
+  }
+  else {
+    $override_discounts = isset($node->kit_total) && is_numeric($node->kit_total);
+  }
   $product_count = count($node->products);
 
   // Get the price of all the products without any discounts. This number is
@@ -261,14 +267,19 @@ function uc_product_kit_update(&$node) {
       $discount = (float) $node->items[$nid]['discount'];
     }
     else {
-      $discount = 0;
+      $discount = $node->products[$nid]->discount;
     }
 
-    if (!isset($node->items[$nid]['qty']) || $node->items[$nid]['qty'] === '') {
-      $node->items[$nid]['qty'] = 1;
-    }
+    if (isset($node->items)) {
+      if (!isset($node->items[$nid]['qty']) || $node->items[$nid]['qty'] === '') {
+        $node->items[$nid]['qty'] = 1;
+      }
 
-    $product->qty = $node->items[$nid]['qty'];
+      $product->qty = $node->items[$nid]['qty'];
+    }
+    else {
+      $product->qty = $node->products[$nid]->qty;
+    }
     // Discounts are always saved, but they are only applied if the kit can't
     // be changed by the customer.
     if ($node->mutable != UC_PRODUCT_KIT_MUTABLE) {
@@ -413,21 +424,23 @@ function uc_product_kit_theme() {
 
 /**
  * Implements hook_node_update().
+ *
+ * Ensure product kit discounts are updated if their
+ * component nodes are updated or deleted.
  */
 function uc_product_kit_node_update($node) {
   $result = db_query("SELECT DISTINCT nid FROM {uc_product_kits} WHERE product_id = :nid", array(':nid' => $node->nid));
   while ($nid = $result->fetchField()) {
     $kit = node_load($nid, NULL, TRUE);
-    $form_state = array(
-      'values' => array('nid' => $nid),
-      'submit_handlers' => array('node_form_submit'),
-    );
-    drupal_form_submit('product_kit_node_form', $form_state, $kit);
+    node_save($kit);
   }
 }
 
 /**
  * Implements hook_node_delete().
+ *
+ * Ensure product kit discounts are updated if their component nodes are
+ * deleted.
  */
 function uc_product_kit_node_delete($node) {
   $empty = array();
@@ -440,11 +453,7 @@ function uc_product_kit_node_delete($node) {
       $empty[] = $kit->nid;
     }
     else {
-      $form_state = array(
-        'values' => array('nid' => $kit->nid),
-        'submit_handlers' => array('node_form_submit'),
-      );
-      drupal_form_submit('product_kit_node_form', $form_state, $kit);
+      node_save($kit);
     }
   }
 
