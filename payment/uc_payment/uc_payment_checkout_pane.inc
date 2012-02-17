@@ -13,8 +13,6 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
     case 'view':
       $contents['#attached']['css'][] = drupal_get_path('module', 'uc_payment') . '/uc_payment.css';
 
-      $order->line_items = uc_order_load_line_items_display($order);
-
       if (variable_get('uc_payment_show_order_total_preview', TRUE)) {
         $contents['line_items'] = array(
           '#theme' => 'uc_payment_totals',
