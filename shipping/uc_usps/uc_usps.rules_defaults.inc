@@ -9,6 +9,10 @@
  * Implements hook_default_rules_configuration_alter().
  */
 function uc_usps_default_rules_configuration_alter(&$configs) {
+  if (!isset($configs['get_quote_from_usps'])) {
+    return;
+  }
+
   // Domestic areas include U.S., American Samoa, Guam, Puerto Rico, and the Virgin Islands
   $countries = array(
     16 => t('American Samoa'),
