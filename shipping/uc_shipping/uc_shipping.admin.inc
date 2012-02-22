@@ -64,11 +64,15 @@ function uc_shipping_order_packages($order) {
     $rows[] = $row;
   }
 
+  if (empty($rows)) {
+    drupal_set_message(t("This order's products have not been organized into packages."));
+    drupal_goto('admin/store/orders/' . $order->order_id . '/packages/new');
+  }
+
   $build['packages'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
-    '#empty' => t("This order's products have not been organized into packages."),
   );
 
   return $build;
@@ -508,11 +512,21 @@ function uc_shipping_order_shipments($order) {
     $rows[] = $row;
   }
 
+  if (empty($rows)) {
+    if (!db_query("SELECT COUNT(*) FROM {uc_packages} WHERE order_id = :id", array(':id' => $order->order_id))->fetchField()) {
+      drupal_set_message(t("This order's products have not been organized into packages."));
+      drupal_goto('admin/store/orders/' . $order->order_id . '/packages/new');
+    }
+    else {
+      drupal_set_message(t('No shipments have been made for this order.'));
+      drupal_goto('admin/store/orders/' . $order->order_id . '/shipments/new');
+    }
+  }
+
   $build['shipments'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
-    '#empty' => t('No shipments have been made for this order.'),
   );
 
   return $build;
