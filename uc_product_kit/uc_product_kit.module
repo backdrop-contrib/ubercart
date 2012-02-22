@@ -412,12 +412,15 @@ function uc_product_kit_theme() {
   return array(
     'uc_product_kit_items_form' => array(
       'render element' => 'form',
+      'file' => 'uc_product_kit.theme.inc',
     ),
     'uc_product_kit_add_to_cart' => array(
       'variables' => array('form' => NULL, 'view_mode' => 'full'),
+      'file' => 'uc_product_kit.theme.inc',
     ),
     'uc_product_kit_list_item' => array(
       'arguments' => array('product' => NULL),
+      'file' => 'uc_product_kit.theme.inc',
     ),
   );
 }
@@ -425,8 +428,8 @@ function uc_product_kit_theme() {
 /**
  * Implements hook_node_update().
  *
- * Ensure product kit discounts are updated if their
- * component nodes are updated or deleted.
+ * Ensures product kit discounts are updated if their component nodes are
+ * updated or deleted.
  */
 function uc_product_kit_node_update($node) {
   $result = db_query("SELECT DISTINCT nid FROM {uc_product_kits} WHERE product_id = :nid", array(':nid' => $node->nid));
@@ -439,7 +442,7 @@ function uc_product_kit_node_update($node) {
 /**
  * Implements hook_node_delete().
  *
- * Ensure product kit discounts are updated if their component nodes are
+ * Ensures product kit discounts are updated if their component nodes are
  * deleted.
  */
 function uc_product_kit_node_delete($node) {
@@ -628,57 +631,20 @@ function uc_product_kit_form(&$node, $form_state) {
 }
 
 /**
- * Renders the list of kit components on the product kit edit form.
- *
- * @ingroup themeable
- */
-function theme_uc_product_kit_items_form($variables) {
-  $form = &$variables['form'];
-
-  $header = array(t('Product'), t('Quantity'), t('List position'), t('Discount'));
-  $rows = array();
-
-  foreach (element_children($form) as $item) {
-    $row = array(
-      drupal_render($form[$item]['link']),
-      drupal_render($form[$item]['qty']),
-      drupal_render($form[$item]['ordering']),
-      drupal_render($form[$item]['discount']),
-    );
-    $rows[] = array(
-      'data' => $row,
-      'class' => array('draggable'),
-    );
-  }
-
-  if (empty($rows)) {
-    return '';
-  }
-
-  drupal_add_tabledrag('uc-product-kit-item-table', 'order', 'sibling', 'uc-product-kit-item-ordering');
-
-  $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-product-kit-item-table')));
-
-  if (!empty($form['#description'])) {
-    $output .= '<div class="description">' . $form['#description'] . "</div>\n";
-  }
-
-  return $output;
-}
-
-/**
  * Implements hook_view().
  */
 function uc_product_kit_view($node, $view_mode) {
-  // Give modules a chance to alter this product.  If it is a variant, this will have been done
-  // already by uc_product_load_variant(), so we check a flag to be sure not to alter twice.
+  // Give modules a chance to alter this product.  If it is a variant, this
+  // will have been done already by uc_product_load_variant(), so we check a
+  // flag to be sure not to alter twice.
   $variant = empty($node->variant) ? uc_product_load_variant($node->nid) : $node;
 
   // Calculate the display price.
   $display_price = 0;
   $suffixes = array();
   if ($node->mutable != UC_PRODUCT_KIT_MUTABLE) {
-    // If this is a non-mutable kit, then sum the display price of each of the component products.
+    // If this is a non-mutable kit, then sum the display price of each of the
+    // component products.
     foreach ($variant->products as $product) {
       $build = node_view($product);
       $display_price += $build['display_price']['#value'] * $product->qty;
@@ -771,40 +737,6 @@ function uc_product_kit_view($node, $view_mode) {
   $node->content['#node'] = $variant;
 
   return $node;
-}
-
-/**
- * Renders a product kit component.
- *
- * @ingroup themeable
- */
-function theme_uc_product_kit_list_item($variables) {
-  $product = $variables['product'];
-
-  $node = node_load($product->nid);
-  if (node_access('view', $node)) {
-    $title = l($product->title, 'node/' . $product->nid);
-  }
-  else {
-    $title = check_plain($product->title);
-  }
-
-  return theme('uc_qty', array('qty' => $product->qty)) . ' ' . $title;
-}
-
-/**
- * Wraps the "Add to Cart" form in a <div>.
- *
- * @ingroup themeable
- */
-function theme_uc_product_kit_add_to_cart($variables) {
-  $form = $variables['form'];
-
-  $output = '<div class="add-to-cart" title="' . t('Click to add to cart.') . '">';
-  $output .= drupal_render($form);
-  $output .= '</div>';
-
-  return $output;
 }
 
 /**
@@ -1129,7 +1061,8 @@ function uc_product_kit_uc_cart_display($item) {
       $element['#total'] = 0;
       $element['#suffixes'] = array();
       $element['#extra'] = array();
-      $element['#entity'] = $kit; // Override the entity associated with this render-array to be the kit itself.
+      $element['#entity'] = $kit; // Override the entity associated with this
+                                  // render-array to be the kit itself.
 
       $elements[$unique_id] = $element;
     }
