@@ -48,7 +48,8 @@ function uc_cybersource_menu() {
  */
 function uc_cybersource_page_alter(&$page) {
   $block = block_load('system', 'main');
-  // Add to the review page hidden form fields with data to post to CyberSource HOP.
+  // Add to the review page hidden form fields with data to post to
+  // CyberSource HOP.
   if (isset($page[$block->region]['system_main']['#theme']) && $page[$block->region]['system_main']['#theme'] == 'uc_cart_checkout_review' && ($order_id = intval($_SESSION['cart_order'])) > 0) {
     $order = uc_order_load($order_id);
 
@@ -138,7 +139,7 @@ function uc_cybersource_hop_post() {
     return;
   }
 
-  // Assign posted variables to local variables
+  // Assign posted variables to local variables.
   $decision = check_plain($_POST['decision']);
   $reason_code = check_plain($_POST['reasonCode']);
   $reason = _parse_cs_reason_code($reason_code);
@@ -197,7 +198,8 @@ function uc_cybersource_hop_post() {
 function uc_cybersource_hop_include() {
   $hop_paths[0] = 'sites/all/libraries/uc_cybersource/HOP.php';
   $hop_paths[1] = drupal_get_path('module', 'uc_cybersource') . '/HOP.php';
-  // Loop through possible paths, include and return TRUE when HOP.php is located.
+  // Loop through possible paths, include and return TRUE when HOP.php is
+  // located.
   foreach ($hop_paths as $key => $path) {
     if (file_exists($path)) {
       require_once($path);
@@ -730,7 +732,7 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
     $url = 'https://ics2ws.ic3.com/commerce/1.x/transactionProcessor/CyberSourceTransaction_1.38.wsdl';
   }
 
-  // Variable currency... not used atm.
+  // Variable currency... not used at the moment.
   $currency = variable_get('uc_cybersource_currency', 'usd');
 
   $billing_country = uc_get_country_data(array('country_id' => $order->billing_country));
@@ -821,7 +823,7 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
     $billTo->customerID = $order->uid;
     $request->billTo = $billTo;
 
-    // Add the credit card details if needed
+    // Add the credit card details if needed.
     if (in_array($data['txn_type'], array(UC_CREDIT_AUTH_ONLY, UC_CREDIT_AUTH_CAPTURE))) {
       $card = new stdClass();
       $card->accountNumber = $order->payment_details['cc_number'];
@@ -1046,7 +1048,7 @@ function uc_cybersource_uc_calculate_tax($order) {
     $url = 'https://ics2ws.ic3.com/commerce/1.x/transactionProcessor/CyberSourceTransaction_1.38.wsdl';
   }
 
-  // Variable currency... not used atm.
+  // Variable currency... not used at the moment.
   $currency = variable_get('uc_cybersource_currency', 'usd');
 
   $billing_country = uc_get_country_data(array('country_id' => $order->billing_country));

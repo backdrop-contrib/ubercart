@@ -50,12 +50,12 @@ function uc_ups_menu() {
 function uc_ups_cron() {
   $cutoff = REQUEST_TIME - variable_get('uc_ups_label_lifetime', 0);
   if ($cutoff == REQUEST_TIME) {
-    // Label lifetime is set to 0, meaning never delete
+    // Label lifetime is set to 0, meaning never delete.
     return;
   }
 
   // Loop over label files in public://ups_labels and test
-  // creation date against 'uc_ups_label_lifetime'
+  // creation date against 'uc_ups_label_lifetime'.
   $files = file_scan_directory('public://ups_labels', '/^label-/');
   foreach ($files as $file) {
     if ($cutoff > filectime($file->uri)) {
@@ -398,7 +398,7 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
   foreach ($packages as $package) {
 
     // Determine length conversion factor and weight conversion factor
-    // for this shipment
+    // for this shipment.
     $length_factor = uc_length_conversion($package->length_units, variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in')));
     switch ($ups_units) {
       case 'in':
@@ -409,10 +409,10 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
         break;
     }
 
-    // Loop over quantity of packages in this shipment
+    // Loop over quantity of packages in this shipment.
     $qty = $package->qty;
     for ($i = 0; $i < $qty; $i++) {
-      // Build XML for this package
+      // Build XML for this package.
       $package_type = array('code' => $package->pkg_type, 'description' => $pkg_types[$package->pkg_type]);
       $package_schema .= "<Package>";
       $package_schema .=   "<PackagingType>";
@@ -600,7 +600,7 @@ function uc_ups_quote($products, $details, $method) {
       }
 
       // Grab some product properties directly from the (cached) product
-      // data.  They are not normally available here because the $product
+      // data. They are not normally available here because the $product
       // object is being read out of the $order object rather than from
       // the database, and the $order object only carries around a limited
       // number of product properties.
@@ -737,14 +737,15 @@ function uc_ups_quote($products, $details, $method) {
           }
         }
       }
-      // if NegotiatedRates exist, quote based on those, otherwise, use TotalCharges
+      // If NegotiatedRates exist, quote based on those, otherwise, use
+      // TotalCharges.
       if (isset($response->RatedShipment)) {
         $charge = $response->RatedShipment->TotalCharges;
         if (isset($response->RatedShipment->NegotiatedRates)) {
           $charge = $response->RatedShipment->NegotiatedRates->NetSummaryCharges->GrandTotal;
         }
         if (!isset($charge->CurrencyCode) || (string)$charge->CurrencyCode == variable_get('uc_currency_code', "USD")) {
-          // Markup rate before customer sees it
+          // Markup rate before customer sees it.
           if (!isset($quotes[$ups_service]['rate'])) {
             $quotes[$ups_service]['rate'] = 0;
           }
@@ -771,14 +772,14 @@ function uc_ups_quote($products, $details, $method) {
   if (isset($debug_data)) {
     foreach ($debug_data as $key => $data) {
       if (isset($quotes[$key])) {
-        // This is debug data for successful quotes
+        // This is debug data for successful quotes.
         $quotes[$key]['debug'] = $debug_data[$key]['debug'];
         if (isset($debug_data[$key]['error'])) {
           $quotes[$key]['error'] = $debug_data[$key]['error'];
         }
       }
       else {
-        // This is debug data for quotes that returned error responses from UPS
+        // This is debug data for quotes that returned error responses from UPS.
         $quotes[$key] = $debug_data[$key];
       }
     }
@@ -952,7 +953,7 @@ function uc_ups_weight_markup($weight) {
  */
 function _uc_ups_service_list() {
   return array(
-    // Domestic services
+    // Domestic services.
     '03' => t('UPS Ground'),
     '01' => t('UPS Next Day Air'),
     '13' => t('UPS Next Day Air Saver'),
@@ -960,13 +961,13 @@ function _uc_ups_service_list() {
     '02' => t('UPS 2nd Day Air'),
     '59' => t('UPS 2nd Day Air A.M.'),
     '12' => t('UPS 3 Day Select'),
-    // International services
+    // International services.
     '11' => t('UPS Standard'),
     '07' => t('UPS Worldwide Express'),
     '08' => t('UPS Worldwide Expedited'),
     '54' => t('UPS Worldwide Express Plus'),
     '65' => t('UPS Worldwide Saver'),
-    // Poland to Poland shipments only
+    // Poland to Poland shipments only.
     //'82' => t('UPS Today Standard'),
     //'83' => t('UPS Today Dedicated Courrier'),
     //'84' => t('UPS Today Intercity'),
@@ -980,7 +981,7 @@ function _uc_ups_service_list() {
  */
 function _uc_ups_pkg_types() {
   return array(
-    // Customer Supplied Page is first so it will be the default
+    // Customer Supplied Page is first so it will be the default.
     '02' => t('Customer Supplied Package'),
     '01' => t('UPS Letter'),
     '03' => t('Tube'),

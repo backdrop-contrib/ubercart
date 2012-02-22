@@ -331,7 +331,7 @@ function uc_file_user_form_submit($form, &$form_state) {
           continue;
         }
 
-        // Renew. (Explicit overwrite)
+        // Renew. (Explicit overwrite.)
         uc_file_user_renew($fid, $account, NULL, $download_modification, TRUE);
       }
     }
@@ -350,7 +350,7 @@ function uc_file_user_form_submit($form, &$form_state) {
         'time_granularity' => variable_get('uc_file_download_limit_duration_granularity', 'never'),
       ), REQUEST_TIME);
 
-      // Renew. (Explicit overwrite)
+      // Renew. (Explicit overwrite.)
       uc_file_user_renew($fid, $account, NULL, $download_modification, TRUE);
     }
   }
@@ -363,7 +363,7 @@ function uc_file_user_view($account, $view_mode) {
   global $user;
 
   // If user has files and permission to view them, put a link
-  // on the user's profile
+  // on the user's profile.
   $existing_download = db_query("SELECT fid FROM {uc_file_users} WHERE uid = :uid", array(':uid' => $account->uid))->fetchField();
   if (!$existing_download || (!user_access('view all downloads') && $user->uid != $account->uid)) {
     return;
@@ -412,7 +412,7 @@ function uc_file_uc_add_to_cart($nid, $qty, $data) {
 
   global $user;
 
-  // Get all the files on this product
+  // Get all the files on this product.
   $product_features = db_query("SELECT * FROM {uc_product_features} AS upf " .
     "INNER JOIN {uc_file_products} AS ufp ON upf.pfid = ufp.pfid " .
     "INNER JOIN {uc_files} AS uf ON ufp.fid = uf.fid " .
@@ -432,14 +432,14 @@ function uc_file_uc_add_to_cart($nid, $qty, $data) {
       $old_limits = $file_user;
 
       // Get the limits from the product feature.
-      // (Or global if it says pass through)
+      // (Or global if it says pass through.)
       $file_modification = array(
         'download_limit' => uc_file_get_download_limit($product_feature),
         'address_limit'  => uc_file_get_address_limit($product_feature),
         'expiration'     => _uc_file_expiration_date(uc_file_get_time_limit($product_feature), max($file_user['expiration'], REQUEST_TIME)),
       );
 
-      // Calculate the new limits
+      // Calculate the new limits.
       _uc_file_accumulate_limits($file_user, $file_modification, FALSE);
 
       // Don't allow the product to be purchased if it won't increase the
@@ -472,7 +472,7 @@ function uc_file_uc_add_to_cart($nid, $qty, $data) {
  * Implements hook_uc_order_product_can_ship().
  */
 function uc_file_uc_order_product_can_ship($item) {
-  // Check if this model is shippable as well as a file (;/)
+  // Check if this model is shippable as well as a file.
   $files = db_query("SELECT shippable, model FROM {uc_file_products} as fp INNER JOIN {uc_product_features} as pf ON pf.pfid = fp.pfid WHERE nid = :nid", array(':nid' => $item->nid));
   foreach ($files as $file) {
 
@@ -805,7 +805,7 @@ function uc_file_feature_form_submit($form, &$form_state) {
 
   $file_product['pfid'] = $data['pfid'];
 
-  // Insert or update uc_file_product table
+  // Insert or update uc_file_product table.
   $key = array();
   if ($fpid = _uc_file_get_fpid($file_product['pfid'])) {
     $key = 'fpid';
@@ -1039,7 +1039,7 @@ function _uc_file_accumulate_limits(&$file_user, $file_limits, $force_overwrite)
 function _uc_file_autocomplete_filename() {
   $matches = array();
 
-  // Catch "/" characters that drupal autocomplete doesn't escape
+  // Catch "/" characters that drupal autocomplete doesn't escape.
   $url = explode('_autocomplete_file/', request_uri());
   $string = $url[1];
 
@@ -1156,7 +1156,7 @@ function _uc_file_gather_files() {
 
   foreach ($files as $file) {
 
-    // Cut the base directory from the path
+    // Cut the base directory out of the path.
     $filename = str_replace($dir, '', $file->uri);
     $file_dir = dirname($filename);
     $fid = NULL;
@@ -1298,9 +1298,8 @@ function _uc_file_get_dir_file_ids($fids, $recursive = FALSE) {
     $base_name = $base->filename . (is_dir(uc_file_qualify_file($base->filename)) ? '%' : '');
     $files = db_query("SELECT * FROM {uc_files} WHERE filename LIKE :name", array(':name' => $base_name));
 
-    // PHP str_replace() can't replace only n matches, so we use regex. First
-    // we escape our file slashes, though.
-    // ...using str_replace()
+    // PHP str_replace() can't replace only N matches, so we use regex. First
+    // we escape our file slashes, though, ... using str_replace().
     $base_name = str_replace("\\", "\\\\", $base_name);
     $base_name = str_replace("/", "\/", $base_name);
 
@@ -1389,7 +1388,7 @@ function _uc_file_sort_fids($fids) {
     $highest = 0;
     foreach ($dir_fids as $dir_fid => $filename) {
 
-      // Find the most slashes. (furthest down)
+      // Find the most slashes. (Furthest down.)
       if (substr_count($filename, '/') > $highest) {
         $highest = substr_count($filename, '/');
         $highest_fid = $dir_fid;
@@ -1640,7 +1639,7 @@ function uc_file_user_renew($fid, $user, $pfid, $file_limits, $force_overwrite) 
     $file_user['address_limit'] = $file_user['address_limit'] ? $file_user['address_limit'] : 0;
     $file_user['expiration'] = $file_user['expiration'] ? $file_user['expiration'] : 0;
 
-    // Calculate hash
+    // Calculate hash.
     $file_user['file_key'] = isset($file_user['file_key']) && $file_user['file_key'] ? $file_user['file_key'] : drupal_get_token(serialize($file_user));
 
     // Write and queue the file_user object.

@@ -302,11 +302,11 @@ function uc_usps_quote($products, $details, $method) {
     $orig->email = uc_store_email();
 
     if (strpos($method['id'], 'intl') && ($destination->country != 840)) {
-      // Build XML for international rate request
+      // Build XML for international rate request.
       $request = uc_usps_intl_rate_request($ship_packages, $orig, $destination);
     }
     elseif ($destination->country == 840) {
-      // Build XML for domestic rate request
+      // Build XML for domestic rate request.
       $request = uc_usps_rate_request($ship_packages, $orig, $destination);
     }
 
@@ -326,21 +326,21 @@ function uc_usps_quote($products, $details, $method) {
     $rate_type = variable_get('uc_usps_online_rates', FALSE);
     $response = new SimpleXMLElement($result->data);
 
-    // Map double-encoded HTML markup in service names to Unicode characters
+    // Map double-encoded HTML markup in service names to Unicode characters.
     $service_markup = array(
       '&lt;sup&gt;&amp;reg;&lt;/sup&gt;'   => '®',
       '&lt;sup&gt;&amp;trade;&lt;/sup&gt;' => '™',
       '**'                                 => '',
     );
-    // Use this map to fix USPS service names
+    // Use this map to fix USPS service names.
     if (strpos($method['id'], 'intl')) {
-      // Find and replace markup in International service names
+      // Find and replace markup in International service names.
       foreach ($response->xpath('//Service') as $service) {
         $service->SvcDescription = str_replace(array_keys($service_markup), $service_markup, $service->SvcDescription);
       }
     }
     else {
-      // Find and replace markup in Domestic service names
+      // Find and replace markup in Domestic service names.
       foreach ($response->xpath('//Postage') as $postage) {
         $postage->MailService = str_replace(array_keys($service_markup), $service_markup, $postage->MailService);
       }
@@ -357,7 +357,7 @@ function uc_usps_quote($products, $details, $method) {
             foreach ($package->Service as $service) {
               $id = (string)$service['ID'];
               $services[$id]['label'] = t('U.S.P.S. @service', array('@service' => (string)$service->SvcDescription));
-              // Markup rate before customer sees it
+              // Markup rate before customer sees it.
               if (!isset($services[$id]['rate'])) {
                 $services[$id]['rate'] = 0;
               }
@@ -382,10 +382,10 @@ function uc_usps_quote($products, $details, $method) {
                 $services[$classid]['rate'] = 0;
               }
               $services[$classid]['label'] = t('U.S.P.S. @service', array('@service' => (string)$postage->MailService));
-              // Markup rate before customer sees it
+              // Markup rate before customer sees it.
               // Rates are stored differently if ONLINE $rate_type is requested.
               // First Class doesn't have online rates, so if CommercialRate
-              // is missing use Rate instead
+              // is missing use Rate instead.
               if ($rate_type && !empty($postage->CommercialRate)) {
                 $services[$classid]['rate'] += uc_usps_rate_markup((string)$postage->CommercialRate);
               }
@@ -462,7 +462,7 @@ function uc_usps_rate_request($packages, $origin, $destination) {
         '<ReturnLocations>TRUE</ReturnLocations>' .
         '<ShipDate Option="EMSH">' . format_date(time(), 'custom', 'd-M-Y', 'America/New_York') . '</ShipDate>';
 
-        // Check if we need to add any special services to this package
+        // Check if we need to add any special services to this package.
         if (variable_get('uc_usps_insurance', FALSE)            ||
            variable_get('uc_usps_delivery_confirmation', FALSE) ||
            variable_get('uc_usps_signature_confirmation', FALSE)  ) {
@@ -482,7 +482,7 @@ function uc_usps_rate_request($packages, $origin, $destination) {
           $request .= '</SpecialServices>';
         }
 
-        // Close off Package tag
+        // Close off Package tag.
         $request .= '</Package>';
 
       $package_id++;
@@ -533,12 +533,12 @@ function uc_usps_intl_rate_request($packages, $origin, $destination) {
         '<Girth>' . '</Girth>' .
         '<OriginZip>' . substr(trim($origin->postal_code), 0, 5) . '</OriginZip>';
 
-        // Check if we need to add any special services to this package
+        // Check if we need to add any special services to this package.
         if (variable_get('uc_usps_insurance', FALSE)) {
           $request .= '<ExtraServices><ExtraService>1</ExtraService></ExtraServices>';
         }
 
-        // Close off Package tag
+        // Close off Package tag.
         $request .= '</Package>';
 
       $package_id++;
@@ -626,8 +626,8 @@ function _uc_usps_package_products($products, &$addresses) {
   $last_key = 0;
   $packages = array();
   if (variable_get('uc_usps_all_in_one', TRUE) && count($products) > 1) {
-    // "All in one" packaging strategy
-    // Only need to do this if more than one product line item in order
+    // "All in one" packaging strategy.
+    // Only need to do this if more than one product line item in order.
     $packages[$last_key] = array(0 => _uc_usps_new_package());
     foreach ($products as $product) {
       if ($product->nid) {
@@ -656,7 +656,7 @@ function _uc_usps_package_products($products, &$addresses) {
       }
 
       // Grab some product properties directly from the (cached) product
-      // data.  They are not normally available here because the $product
+      // data. They are not normally available here because the $product
       // object is being read out of the $order object rather than from
       // the database, and the $order object only carries around a limited
       // number of product properties.
@@ -686,7 +686,7 @@ function _uc_usps_package_products($products, &$addresses) {
   }
   else {
     // !variable_get('uc_usps_all_in_one', TRUE) || count($products) = 1
-    // "Each in own" packaging strategy, or only one product line item in order
+    // "Each in own" packaging strategy, or only one product line item in order.
     foreach ($products as $product) {
       if ($product->nid) {
         $address = uc_quote_get_default_shipping_address($product->nid);
@@ -715,10 +715,10 @@ function _uc_usps_package_products($products, &$addresses) {
         $weight = $product->weight * $product->pkg_qty;
         switch ($product->weight_units) {
           case 'g':
-            // Convert to kg and fall through
+            // Convert to kg and fall through.
             $weight = $weight * G_TO_KG;
           case 'kg':
-            // Convert to lb and fall through
+            // Convert to lb and fall through.
             $weight = $weight * KG_TO_LB;
           case 'lb':
             $package->pounds = floor($weight);
@@ -731,7 +731,7 @@ function _uc_usps_package_products($products, &$addresses) {
         }
 
         // Grab some product properties directly from the (cached) product
-        // data.  They are not normally available here because the $product
+        // data. They are not normally available here because the $product
         // object is being read out of the $order object rather than from
         // the database, and the $order object only carries around a limited
         // number of product properties.
@@ -783,10 +783,10 @@ function _uc_usps_package_products($products, &$addresses) {
         $weight = $product->weight * $remaining_qty;
         switch ($product->weight_units) {
           case 'g':
-            // Convert to kg and fall through
+            // Convert to kg and fall through.
             $weight = $weight * G_TO_KG;
           case 'kg':
-            // Convert to lb and fall through
+            // Convert to lb and fall through.
             $weight = $weight * KG_TO_LB;
           case 'lb':
             $package->pounds = floor($weight);

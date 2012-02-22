@@ -338,7 +338,7 @@ function uc_product_forms($form_id, $args) {
  * Menu access callback for 'node/%node/edit/product'.
  */
 function uc_product_edit_access($node) {
-  // Re-inherit access callback for 'node/%node/edit'
+  // Re-inherit access callback for 'node/%node/edit'.
   return uc_product_is_product($node) && node_access('update', $node);
 }
 
@@ -706,9 +706,9 @@ function uc_product_delete(&$node) {
  * Implements hook_view().
  */
 function uc_product_view($node, $view_mode) {
-  // Give modules a chance to alter this product.  If it is a variant, this will have been
-  // done already by uc_product_load_variant(), so we check a flag to be sure not to
-  // alter twice -- cf. entity_prepare_view().
+  // Give modules a chance to alter this product.  If it is a variant, this will
+  // have been done already by uc_product_load_variant(), so we check a flag to
+  // be sure not to alter twice -- cf. entity_prepare_view().
   $variant = empty($node->variant) ? _uc_product_get_variant($node) : $node;
 
   $node->content['display_price'] = array(
@@ -822,7 +822,7 @@ function uc_product_preprocess_html(&$variables) {
  */
 function uc_product_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'search_form' && arg(0) == 'admin' && arg(1) == 'store' && arg(2) == 'products' && user_access('use advanced search')) {
-    // Keyword boxes:
+    // Keyword boxes.
     $form['advanced'] = array(
       '#type' => 'fieldset',
       '#title' => t('Advanced search'),
@@ -853,7 +853,7 @@ function uc_product_form_alter(&$form, &$form_state, $form_id) {
       '#maxlength' => 255,
     );
 
-    // Taxonomy box:
+    // Taxonomy box.
     if ($taxonomy = module_invoke('taxonomy', 'form_all', 1)) {
       $form['advanced']['category'] = array(
         '#type' => 'select',
@@ -866,7 +866,7 @@ function uc_product_form_alter(&$form, &$form_state, $form_id) {
       );
     }
 
-    // Node types:
+    // Node types.
     $form['advanced']['type'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Only of the type(s)'),
@@ -931,7 +931,7 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
     ),
   );
 
-  // shippable
+  // Shippable.
   $form['uc_product']['uc_product_shippable'] = array(
     '#type' => 'checkbox',
     '#title' => t('Product and its derivatives are shippable.'),
@@ -941,7 +941,7 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
     '#weight' => -5,
   );
 
-  // image field
+  // Image field.
   $instances = field_info_instances('node', $type->type);
 
   $options = array('' => t('None'));
@@ -1376,7 +1376,7 @@ function uc_product_get_models($nid, $add_blank = TRUE) {
 
   // Now we map the SKUs to the keys, for form handling, etc.
   $models = drupal_map_assoc($models);
-  // Sort the SKUs
+  // Sort the SKUs.
   asort($models);
 
   // And finally, we prepend 'Any' so it's the first option.
@@ -1450,21 +1450,21 @@ function uc_product_get_picture($nid, $style = 'uc_product') {
 function uc_product_get_image_widget() {
   static $got_widget = FALSE, $image_widget = array();
 
-  // Get the current image widget. (if any)
+  // Get the current image widget, if any.
   if (!$got_widget) {
-    // Invoke hook to find widgets
+    // Invoke hook to find widgets.
     $image_widgets = uc_store_get_image_widgets();
 
-    // Find widget preference, if any
+    // Find widget preference, if any.
     $widget_name = variable_get('uc_product_image_widget', NULL);
 
     if ($widget_name != NULL) {
-      // Widget to use has been set in admin menu
+      // Widget to use has been set in admin menu.
       $image_widget = $image_widgets[$widget_name];
     }
     else {
-      // Widget to use has not been chosen, so default to
-      // first element of array, if any
+      // Widget to use has not been chosen, so default to first element of
+      // array, if any.
       $keys = array_keys($image_widgets);
       if ($keys) {
         $image_widget = $image_widgets[$keys[0]];
@@ -1496,10 +1496,10 @@ function uc_product_get_image_widget() {
  *   HTML rendered product description.
  */
 function uc_product_get_description($product) {
-  // Run through implementations of hook_uc_product_description()
+  // Run through implementations of hook_uc_product_description().
   $description = module_invoke_all('uc_product_description', $product);
 
-  // Now allow alterations via hook_uc_product_description_alter()
+  // Now allow alterations via hook_uc_product_description_alter().
   drupal_alter('uc_product_description', $description, $product);
 
   return drupal_render($description);

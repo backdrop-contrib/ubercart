@@ -296,7 +296,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
         WATCHDOG_WARNING,
         l(t('view order'), 'admin/store/orders/' . $order_id)
       );
-      // fall through
+      // Fall through.
     case 'Success':
       $message = t('<b>@type</b><br /><b>Success: </b>@amount @currency', array('@type' => $types[$data['txn_type']], '@amount' => uc_currency_format($nvp_response['AMT'], FALSE), '@currency' => $nvp_response['CURRENCYCODE']));
       if ($data['txn_type'] != UC_CREDIT_PRIOR_AUTH_CAPTURE) {
@@ -337,7 +337,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
 
       break;
     case 'FailureWithWarning':
-      // fall through
+      // Fall through.
     case 'Failure':
       $message = t('<b>@type failed.</b>', array('@type' => $types[$data['txn_type']])) . _uc_paypal_build_error_messages($nvp_response);
       $result = array(
@@ -512,7 +512,8 @@ function uc_payment_method_paypal_ec($op, &$order) {
         '#description' => t('The e-mail address you use for the PayPal account you want to receive payments.'),
         '#default_value' => variable_get('uc_paypal_wps_email', ''),
       );
-      // The DoDirectPayment API call allows fewer currencies than PayPal in general.
+      // The DoDirectPayment API call allows fewer currencies than PayPal
+      // in general.
       $form['uc_paypal_wpp_currency'] = array(
         '#type' => 'select',
         '#title' => t('Currency code'),
@@ -846,35 +847,35 @@ function uc_paypal_wps_form($form, &$form_state, $order) {
   }
 
   $data = array(
-    // PayPal command variable
+    // PayPal command variable.
     'cmd' => '_cart',
 
-    // Set the correct codepage
+    // Set the correct codepage.
     'charset' => 'utf-8',
 
-    // IPN control notify URL
+    // IPN control notify URL.
     'notify_url' => url('uc_paypal/ipn/' . $order->order_id, array('absolute' => TRUE)),
 
-    // Display information
+    // Display information.
     'cancel_return' => url('uc_paypal/wps/cancel', array('absolute' => TRUE)),
     'no_note' => 1,
     'no_shipping' => variable_get('uc_paypal_wps_no_shipping', 1),
     'return' => url('uc_paypal/wps/complete/' . $order->order_id, array('absolute' => TRUE)),
     'rm' => 2,
 
-    // Transaction information
+    // Transaction information.
     'currency_code' => variable_get('uc_paypal_wps_currency', 'USD'),
     'handling_cart' => uc_currency_format($shipping, FALSE, FALSE, '.'),
     'invoice' => $order->order_id . '-' . uc_cart_get_id(),
     'tax_cart' => uc_currency_format($tax, FALSE, FALSE, '.'),
 
-    // Shopping cart specific variables
+    // Shopping cart specific variables.
     'business' => trim(variable_get('uc_paypal_wps_email', '')),
     'upload' => 1,
 
     'lc' => variable_get('uc_paypal_wps_language', 'US'),
 
-    // Prepopulating forms/address overriding
+    // Prepopulating forms/address overriding.
     'address1' => substr($order->{$address . '_street1'}, 0, 100),
     'address2' => substr($order->{$address . '_street2'}, 0, 100),
     'city' => substr($order->{$address . '_city'}, 0, 40),
@@ -899,7 +900,7 @@ function uc_paypal_wps_form($form, &$form_state, $order) {
   }
 
   if (variable_get('uc_paypal_wps_submit_method', 'single') == 'itemized') {
-    // List individual items
+    // List individual items.
     $i = 0;
     foreach ($order->products as $item) {
       $i++;
@@ -919,7 +920,8 @@ function uc_paypal_wps_form($form, &$form_state, $order) {
       }
     }
 
-    // Apply discounts (negative amount line items). For example, this handles line items created by uc_coupon.
+    // Apply discounts (negative amount line items). For example, this handles
+    // line items created by uc_coupon.
     $discount = 0;
 
     foreach ($order->line_items as $item) {
@@ -934,7 +936,7 @@ function uc_paypal_wps_form($form, &$form_state, $order) {
     }
   }
   else {
-    // List the whole cart as a single item to account for fees/discounts
+    // List the whole cart as a single item to account for fees/discounts.
     $data['amount_1'] = uc_currency_format($order->order_total - $shipping - $tax, FALSE, FALSE, '.');
     $data['item_name_1'] = t('Order @order_id at !store', array('@order_id' => $order->order_id, '!store' => uc_store_name()));
     $data['on0_1'] = t('Product count');
@@ -962,8 +964,8 @@ function uc_paypal_wps_form($form, &$form_state, $order) {
  * Sends a request to PayPal and returns a response array.
  */
 function uc_paypal_api_request($request, $server) {
-  // We use $request += to add API credentials so that
-  // if a key already exists, it will not be overridden
+  // We use $request += to add API credentials so that if a key already exists,
+  // it will not be overridden.
   $request += array(
     'USER' => variable_get('uc_paypal_api_username', ''),
     'PWD' => variable_get('uc_paypal_api_password', ''),

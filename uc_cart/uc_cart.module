@@ -581,7 +581,7 @@ function uc_cart_login_update($uid) {
       uc_cart_add_item($item->nid, $item->qty, $item->data, $uid, FALSE, FALSE, FALSE);
     }
 
-    // Unset the anonymous cart ID, it's no longer needed
+    // Unset the anonymous cart ID, it's no longer needed.
     unset($_SESSION['uc_cart_id']);
   }
 }
@@ -706,7 +706,8 @@ function uc_cart_view_form_submit($form, &$form_state) {
     drupal_set_message(t('<strong>!product-title</strong> removed from your shopping cart.', array('!product-title' => $form['items'][$item]['title']['#markup'])));
   }
 
-  // Update the items in the shopping cart based on the form values, but only if a qty has changed.
+  // Update the items in the shopping cart based on the form values, but only
+  // if a qty has changed.
   foreach($form['items'] as $key => $item) {
     if (isset($item['qty']['#default_value']) && $item['qty']['#default_value'] != $form_state['values']['items'][$key]['qty']) {
       uc_cart_update_item_object((object)$form_state['values']);
@@ -852,7 +853,7 @@ function uc_cart_complete_sale($order, $login = FALSE) {
       ->condition('order_id', $order->order_id)
       ->execute();
 
-    // Move an order's status from "In checkout" to "Pending"
+    // Move an order's status from "In checkout" to "Pending".
     $status = db_query("SELECT order_status FROM {uc_orders} WHERE order_id = :order_id", array(':order_id' => $order->order_id))->fetchField();
     if (uc_order_status_data($status, 'state') == 'in_checkout') {
       $status = uc_order_state_default('post_checkout');
@@ -996,8 +997,9 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
 
   if ($action == 'rebuild' || $action == 'empty') {
     unset($items[$cid]);
-    // Mark the current cart order (if any) as needing to be rebuilt.  We only do this if the cart is being
-    // explicitly rebuilt (i.e. after an item is added, removed or altered).
+    // Mark the current cart order (if any) as needing to be rebuilt.  We only
+    // do this if the cart is being explicitly rebuilt (i.e. after an item is
+    // added, removed or altered).
     $_SESSION['uc_cart_order_rebuild'] = TRUE;
   }
 
@@ -1030,9 +1032,8 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
     drupal_alter('uc_cart', $items[$cid]);
 
     // When there are no longer any items in the cart, the anonymous cart ID is
-    // no longer required.
-    // To guard against unsetting the session ID in the middle of an
-    // uc_cart_add_item() call, we only do this on rebuild
+    // no longer required. To guard against unsetting the session ID in the
+    // middle of an uc_cart_add_item() call, we only do this on rebuild.
     // See issue 858816 for details.
     if (($action == 'empty' || $action == 'rebuild') && empty($items[$cid]) && isset($_SESSION['uc_cart_id']) && $_SESSION['uc_cart_id'] == $cid) {
       unset($_SESSION['uc_cart_id']);
