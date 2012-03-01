@@ -384,13 +384,13 @@ function uc_order_create_form($form, &$form_state) {
     '#options' => array(
       'search' => t('Search for an existing customer.'),
       'create' => t('Create a new customer account.'),
-      'none' => t('No customer account required.'),
+      'none'   => t('No customer account required.'),
     ),
     '#required' => TRUE,
     '#default_value' => 'search',
     '#ajax' => array(
       'callback' => 'uc_order_create_form_customer',
-      'wrapper' => 'uc-order-customer',
+      'wrapper'  => 'uc-order-customer',
       'progress' => array('type' => 'throbber'),
     ),
   );
@@ -398,30 +398,45 @@ function uc_order_create_form($form, &$form_state) {
   $form['customer'] = array(
     '#prefix' => '<div id="uc-order-customer">',
     '#suffix' => '</div>',
-    '#tree' => TRUE,
+    '#tree'   => TRUE,
   );
 
-  if (!isset($form_state['values']['customer_type']) || $form_state['values']['customer_type'] == 'search') {
+  // Create form elements needed for customer search.
+  // Shown only when the 'Search for an existing customer.' radio is selected.
+  if (!isset($form_state['values']['customer_type']) ||
+      $form_state['values']['customer_type'] == 'search') {
+
+    // Container for customer search fields. 
     $form['customer'] += array(
       '#type' => 'fieldset',
       '#title' => t('Customer search'),
-      '#description' => t('Enter full or partial names or email addresses.'),
+      '#description' => t('Enter full or partial information in one or more of the following fields, then press the "Search" button. Search results will match all the provided information'),
     );
+    // Customer first name.
     $form['customer']['first_name'] = array(
       '#type' => 'textfield',
       '#title' => t('First name'),
       '#size' => 24,
       '#maxlength' => 32,
     );
+    // Customer last name.
     $form['customer']['last_name'] = array(
       '#type' => 'textfield',
       '#title' => t('Last name'),
       '#size' => 24,
       '#maxlength' => 32,
     );
+    // Customer e-mail address.
     $form['customer']['email'] = array(
       '#type' => 'textfield',
       '#title' => t('E-mail'),
+      '#size' => 24,
+      '#maxlength' => 96,
+    );
+    // Customer username.
+    $form['customer']['username'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Username'),
       '#size' => 24,
       '#maxlength' => 96,
     );
@@ -439,10 +454,11 @@ function uc_order_create_form($form, &$form_state) {
       '#suffix' => '</div>',
     );
 
+    // Search for existing customer by e-mail address.
     if (isset($form_state['values']['customer']['email'])) {
       $query = db_select('users', 'u')->distinct();
       $query->leftJoin('uc_orders', 'o', 'u.uid = o.uid');
-      $query->fields('u', array('uid', 'mail'))
+      $query->fields('u', array('uid', 'name', 'mail'))
         ->fields('o', array('billing_first_name', 'billing_last_name'))
         ->condition('u.uid', 0, '>')
         ->condition(db_or()
@@ -461,6 +477,7 @@ function uc_order_create_form($form, &$form_state) {
           ->condition('o.primary_email', db_like(trim($form_state['values']['customer']['email'])) . '%', 'LIKE')
           ->condition('u.mail', db_like(trim($form_state['values']['customer']['email'])) . '%', 'LIKE')
         )
+        ->condition('u.name', db_like(trim($form_state['values']['customer']['username'])) . '%', 'LIKE')
         ->orderBy('o.created', 'DESC')
         ->range(0, $limit = 11);
 
@@ -472,7 +489,8 @@ function uc_order_create_form($form, &$form_state) {
         if (!empty($user->billing_first_name) && !empty($user->billing_last_name)) {
           $name = $user->billing_first_name . ' ' . $user->billing_last_name . ' ';
         }
-        $options[$user->uid] = $name . '(' . $user->mail . ')';
+        // Options formated as "First Last <email@example.com> (username)".
+        $options[$user->uid] = $name . '&lt;' . $user->mail . '&gt;' . ' (' . $user->name . ')';
       }
 
       $max = FALSE;
@@ -482,6 +500,7 @@ function uc_order_create_form($form, &$form_state) {
       }
 
       if (!empty($options)) {
+        // Display search results.
         $form['customer']['uid'] += array(
           '#type' => 'radios',
           '#title' => t('Select customer'),
@@ -491,26 +510,32 @@ function uc_order_create_form($form, &$form_state) {
         );
       }
       else {
+        // No search results found.
         $form['customer']['uid'] += array(
           '#markup' => '<p>' . t('Search returned no results.') . '</p>',
         );
       }
     }
   }
+  // Create form elements needed for new customer creation.
+  // Shown only when the 'Create a new customer account.' radio is selected.
   elseif ($form_state['values']['customer_type'] == 'create') {
+    // Container for new customer information.
     $form['customer'] += array(
-      '#type' => 'fieldset',
+      '#type'  => 'fieldset',
       '#title' => t('New customer details'),
     );
+    // Customer e-mail address.
     $form['customer']['email'] = array(
       '#type' => 'textfield',
-      '#title' => t('E-mail'),
+      '#title' => t('Customer e-mail address'),
       '#size' => 24,
       '#maxlength' => 96,
     );
+    // Option to notify customer.
     $form['customer']['sendmail'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('E-mail customer account details.'),
+      '#type'  => 'checkbox',
+      '#title' => t('E-mail account details to customer.'),
     );
   }
 
@@ -559,7 +584,7 @@ function uc_order_create_form_create_validate($form, &$form_state) {
         form_set_error('customer][mail', t('Invalid e-mail address.'));
       }
 
-      $uid = db_query("SELECT uid FROM {users} WHERE mail LIKE :mail", array(':mail' => $email))->fetchField();
+      $uid = db_query('SELECT uid FROM {users} WHERE mail LIKE :mail', array(':mail' => $email))->fetchField();
       if ($uid) {
         form_set_error('customer][mail', t('An account already exists for that e-mail.'));
       }
@@ -973,6 +998,7 @@ function uc_order_history($user) {
  * @see uc_order_edit_form_validate()
  * @see uc_order_edit_form_submit()
  * @see theme_uc_order_edit_form()
+ * @see uc_order_edit_form_delete()
  * @ingroup forms
  */
 function uc_order_edit_form($form, &$form_state, $order) {
@@ -1149,6 +1175,8 @@ function theme_uc_order_edit_form($variables) {
 }
 
 /**
+ * Handles order delete button action.
+ *
  * @see uc_order_edit_form()
  */
 function uc_order_edit_form_delete($form, &$form_state) {
@@ -1211,6 +1239,8 @@ function uc_order_add_line_item_form_validate($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_order_add_line_item_form().
+ *
  * @see uc_order_add_line_item_form()
  */
 function uc_order_add_line_item_form_submit($form, &$form_state) {
@@ -1265,6 +1295,8 @@ function uc_order_mail_invoice_form_validate($form, &$form_state) {
 }
 
 /**
+ * Form submission handler for uc_order_mail_invoice_form().
+ *
  * @see uc_order_mail_invoice_form()
  */
 function uc_order_mail_invoice_form_submit($form, &$form_state) {
@@ -1336,6 +1368,8 @@ function uc_order_delete_confirm_form($form, &$form_state, $order) {
 }
 
 /**
+ * Form submission handler for uc_order_delete_confirm_form().
+ *
  * @see uc_order_delete_confirm_form()
  */
 function uc_order_delete_confirm_form_submit($form, &$form_state) {
