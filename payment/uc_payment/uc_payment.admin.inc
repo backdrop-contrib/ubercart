@@ -243,7 +243,12 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
   if (user_access('manual payments')) {
     $form['payments']['new']['#attributes'] = array('valign' => 'top');
     $form['payments']['new']['received'] = array(
-      '#markup' => '-',
+      '#type' => 'date',
+      '#default_value' => array(
+        'month' => format_date(REQUEST_TIME, 'custom', 'n'),
+        'day' => format_date(REQUEST_TIME, 'custom', 'j'),
+        'year' => format_date(REQUEST_TIME, 'custom', 'Y'),
+      ),
     );
     $form['payments']['new']['user'] = array(
       '#markup' => '-',
@@ -325,7 +330,16 @@ function uc_payment_by_order_form_submit($form, &$form_state) {
   global $user;
 
   $payment = $form_state['values']['payments']['new'];
-  uc_payment_enter($form_state['values']['order_id'], $payment['method'], $payment['amount'], $user->uid, '', $payment['comment']);
+  $received = strtotime($payment['received']['year'] . '-' . $payment['received']['month'] . '-' . $payment['received']['day'] . ' 00:00:00');
+
+  // If the value entered is today, use the exact timestamp instead
+  $startofday = mktime(0, 0, 0);
+
+  if ($received == $startofday) {
+    $received = REQUEST_TIME;
+  }
+
+  uc_payment_enter($form_state['values']['order_id'], $payment['method'], $payment['amount'], $user->uid, '', $payment['comment'], $received);
 
   drupal_set_message(t('Payment entered.'));
 }
