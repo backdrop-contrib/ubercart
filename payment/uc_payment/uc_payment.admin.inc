@@ -79,6 +79,7 @@ function theme_uc_payment_method_table($variables) {
 
   $header = array(t('Payment method'), t('List position'), t('Operations'));
 
+  $rows = array();
   foreach (element_children($form) as $method) {
     $row = array(
       drupal_render($form[$method]['uc_payment_method_' . $method . '_checkout']),
@@ -96,7 +97,7 @@ function theme_uc_payment_method_table($variables) {
     'header' => $header,
     'rows' => $rows,
     'attributes' => array('id' => 'uc-payment-methods'),
-    'empty' => t('No payment methods are available.'),
+    'empty' => t('No payment methods are available. Modules providing payment methods must first be enabled on the !modules administration page under the "Ubercart - payment" fieldset.', array('!modules' => l(t('Modules'), 'admin/modules'))),
   ));
 }
 
