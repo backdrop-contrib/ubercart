@@ -629,11 +629,6 @@ function uc_order_action_email($order, $from, $addresses, $subject, $message, $f
     }
   }
 
-  if (empty($recipients)) {
-    watchdog('uc_order', 'Attempted to send an order e-mail with no recipient.', array(), WATCHDOG_ERROR);
-    return;
-  }
-
   foreach ($recipients as $email) {
     $sent = drupal_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, $from);
 
@@ -695,11 +690,6 @@ function uc_order_action_email_invoice($order, $from, $addresses, $subject, $tem
   }
 
   $settings['message'] = theme('uc_order', array('order' => $order, 'op' => $settings['view'], 'template' => $settings['template']));
-
-  if (empty($recipients)) {
-    watchdog('uc_order', 'Attempted to e-mail an invoice with no recipient.', array(), WATCHDOG_ERROR);
-    return;
-  }
 
   foreach ($recipients as $email) {
     $sent = drupal_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, $from);
