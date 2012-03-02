@@ -85,17 +85,26 @@ function uc_cart_checkout() {
   }
 
   // Load an order from the session, if available.
-  if (isset($_SESSION['cart_order']) && $order = uc_order_load($_SESSION['cart_order'])) {
-    // Don't use an existing order if it has changed status or owner, or if
-    // there has been no activity for 10 minutes (to prevent identity theft).
-    if (uc_order_status_data($order->order_status, 'state') != 'in_checkout' ||
-        ($user->uid > 0 && $user->uid != $order->uid) ||
-        $order->modified < REQUEST_TIME - 600) {
-      if (uc_order_status_data($order->order_status, 'state') == 'in_checkout' && $order->modified < REQUEST_TIME - 600) {
-        // Mark expired orders as abandoned.
-        uc_order_update_status($order->order_id, 'abandoned');
+  if (isset($_SESSION['cart_order'])) {
+    $order = uc_order_load($_SESSION['cart_order']);
+    if ($order) {
+      // Don't use an existing order if it has changed status or owner, or if
+      // there has been no activity for 10 minutes (to prevent identity theft).
+      if (uc_order_status_data($order->order_status, 'state') != 'in_checkout' ||
+          ($user->uid > 0 && $user->uid != $order->uid) ||
+          $order->modified < REQUEST_TIME - 600) {
+        if (uc_order_status_data($order->order_status, 'state') == 'in_checkout' && $order->modified < REQUEST_TIME - 600) {
+          // Mark expired orders as abandoned.
+          uc_order_update_status($order->order_id, 'abandoned');
+        }
+        unset($order);
       }
-      unset($order);
+    }
+    else {
+      // Ghost session.
+      unset($_SESSION['cart_order']);
+      drupal_set_message(t('Your session has expired or is no longer valid.  Please review your order and try again.'));
+      drupal_goto('cart');
     }
   }
 
