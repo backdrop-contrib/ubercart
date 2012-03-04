@@ -96,6 +96,41 @@ function uc_order_rules_condition_info() {
       ),
     ),
   );
+
+  $conditions['uc_order_condition_delivery_country'] = array(
+    'label' => t("Check an order's shipping country"),
+    'group' => t('Order'),
+    'parameter' => array(
+      'order' => array(
+        'type' => 'uc_order',
+        'label' => t('Order'),
+      ),
+      'countries' => array(
+        'type' => 'list<integer>',
+        'label' => t('Countries'),
+        'options list' => 'uc_country_option_list',
+        'restriction' => 'input',
+      ),
+    ),
+  );
+
+  $conditions['uc_order_condition_billing_country'] = array(
+    'label' => t("Check an order's billing country"),
+    'group' => t('Order'),
+    'parameter' => array(
+      'order' => array(
+        'type' => 'uc_order',
+        'label' => t('Order'),
+      ),
+      'countries' => array(
+        'type' => 'list<integer>',
+        'label' => t('Countries'),
+        'options list' => 'uc_country_option_list',
+        'restriction' => 'input',
+      ),
+    ),
+  );
+
   $conditions['uc_order_condition_has_products'] = array(
     'label' => t("Check an order's products"),
     'group' => t('Order: Product'),
@@ -327,6 +362,20 @@ function uc_order_condition_order_state_options() {
   }
 
   return $options;
+}
+
+/**
+ * Checks that the order has one of the selected delivery countries.
+ */
+function uc_order_condition_delivery_country($order, $countries) {
+  return in_array($order->delivery_country, $countries);
+}
+
+/**
+ * Checks that the order has one of the selected billing countries.
+ */
+function uc_order_condition_billing_country($order, $countries) {
+  return in_array($order->billing_country, $countries);
 }
 
 /**
@@ -580,11 +629,6 @@ function uc_order_action_email($order, $from, $addresses, $subject, $message, $f
     }
   }
 
-  if (empty($recipients)) {
-    watchdog('uc_order', 'Attempted to send an order e-mail with no recipient.', array(), WATCHDOG_ERROR);
-    return;
-  }
-
   foreach ($recipients as $email) {
     $sent = drupal_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, $from);
 
@@ -646,11 +690,6 @@ function uc_order_action_email_invoice($order, $from, $addresses, $subject, $tem
   }
 
   $settings['message'] = theme('uc_order', array('order' => $order, 'op' => $settings['view'], 'template' => $settings['template']));
-
-  if (empty($recipients)) {
-    watchdog('uc_order', 'Attempted to e-mail an invoice with no recipient.', array(), WATCHDOG_ERROR);
-    return;
-  }
 
   foreach ($recipients as $email) {
     $sent = drupal_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, $from);
