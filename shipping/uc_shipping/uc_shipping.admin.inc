@@ -888,19 +888,29 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
     '#collapsible' => TRUE,
   );
 
-  // Determine shipping option chosen by the customer
-  $method  = $order->quote['method'];
-  $methods = module_invoke_all('uc_shipping_method');
-  if (isset($methods[$method])) {
-    $services = $methods[$method]['quote']['accessorials'];
-    $method   = $services[$order->quote['accessorials']];
+  // Determine shipping option chosen by the customer.
+  $message = '';
+  if (isset($order->quote['method'])) {
+    // Order has a quote attached.
+    $method  = $order->quote['method'];
+    $methods = module_invoke_all('uc_shipping_method');
+    if (isset($methods[$method])) {
+      // Quote is from a currently-active shipping method.
+      $services = $methods[$method]['quote']['accessorials'];
+      $method   = $services[$order->quote['accessorials']];
+    }
+    $message = t('Customer selected "@method" as the shipping method and paid @rate', array('@method' => $method, '@rate' => uc_currency_format($order->quote['rate'])));
+  }
+  else {
+    // No quotes for this order.
+    $message = t('There are no shipping quotes attached to this order. Customer was not charged for shipping.');
   }
 
-  // Inform user of customer's shipping choice
+  // Inform administrator of customer's shipping choice.
   $form['shipment']['shipping_choice'] = array(
     '#type'   => 'markup',
     '#prefix' => '<div>',
-    '#markup' => t('Customer selected "@method" as the shipping method and paid @rate', array('@method' => $method, '@rate' => uc_currency_format($order->quote['rate']))),
+    '#markup' => $message,
     '#suffix' => '</div>',
   );
 
