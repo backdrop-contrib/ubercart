@@ -406,7 +406,7 @@ function uc_order_create_form($form, &$form_state) {
   if (!isset($form_state['values']['customer_type']) ||
       $form_state['values']['customer_type'] == 'search') {
 
-    // Container for customer search fields. 
+    // Container for customer search fields.
     $form['customer'] += array(
       '#type' => 'fieldset',
       '#title' => t('Customer search'),
