@@ -111,7 +111,7 @@ function uc_shipping_new_package($form, &$form_state, $order) {
                         ucwords(str_replace('_', ' ', $shipping_type)),
       '#collapsible' => TRUE,
       '#collapsed'   => FALSE,
-      '#weight'      => $shipping_type_weights[$shipping_type],
+      '#weight'      => isset($shipping_type_weights[$shipping_type]) ? $shipping_type_weights[$shipping_type] : 0,
     );
 
     foreach ($products as $product) {
