@@ -26,7 +26,7 @@ function uc_product_classes_features_export($data, &$export, $module_name = '') 
   }
 
   // Create a pipe for the CCK fields and variables to be exported.
-  $pipe = array('node' => $data);
+  $pipe = node_features_export($data, $export, $module_name);
 
   // If strongarm is available, export the shippable and image settings.
   if (module_exists('strongarm')) {
