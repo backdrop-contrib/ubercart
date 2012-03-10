@@ -155,8 +155,8 @@ function uc_cybersource_hop_post() {
   switch ($decision) {
     case 'ACCEPT':
       watchdog('uc_cybersource_hop', 'CyberSource verified successful payment.');
-      $duplicate = db_query("SELECT COUNT(*) FROM {uc_payment_cybersource_hop_post} WHERE order_id = :order_id AND decision = :decision", array(':order_id' => $order_id, ':decision' => 'ACCEPT'))->fetchField();
-        if ($duplicate > 0) {
+      $duplicate = (bool) db_query_range('SELECT 1 FROM {uc_payment_cybersource_hop_post} WHERE order_id = :order_id AND decision = :decision', 0, 1, array(':order_id' => $order_id, ':decision' => 'ACCEPT'))->fetchField();
+      if ($duplicate) {
         watchdog('uc_cybersource_hop', 'CS HOP transaction for order @order-id has been processed before.', array('@order_id' => $order_id), WATCHDOG_NOTICE);
         return;
       }

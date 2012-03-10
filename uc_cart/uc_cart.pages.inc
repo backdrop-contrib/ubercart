@@ -382,7 +382,7 @@ function uc_cart_checkout_review() {
     unset($_SESSION['uc_checkout'][$order->order_id]['do_review']);
     drupal_goto('cart/checkout');
   }
-  elseif(!uc_order_product_revive($order->products)) {
+  elseif (!uc_order_product_revive($order->products)) {
     drupal_set_message(t('Some of the products in this order are no longer available.'), 'error');
     drupal_goto('cart');
   }

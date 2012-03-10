@@ -89,8 +89,8 @@ function uc_paypal_ipn() {
   if (strcmp($response->data, 'VERIFIED') == 0) {
     watchdog('uc_paypal', 'IPN transaction verified.');
 
-    $duplicate = db_query("SELECT COUNT(*) FROM {uc_payment_paypal_ipn} WHERE txn_id = :id AND status <> :status", array(':id' => $txn_id, ':status' => 'Pending'))->fetchField();
-    if ($duplicate > 0) {
+    $duplicate = (bool) db_query_range('SELECT 1 FROM {uc_payment_paypal_ipn} WHERE txn_id = :id AND status <> :status', 0, 1, array(':id' => $txn_id, ':status' => 'Pending'))->fetchField();
+    if ($duplicate) {
       if ($order->payment_method != 'credit') {
         watchdog('uc_paypal', 'IPN transaction ID has been processed before.', array(), WATCHDOG_NOTICE);
       }
