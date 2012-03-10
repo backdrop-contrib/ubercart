@@ -12,8 +12,8 @@ function uc_reports_customers() {
   $address_preference = variable_get('uc_customer_list_address', 'billing');
   $first_name = ($address_preference == 'billing') ? 'billing_first_name' : 'delivery_first_name';
   $last_name = ($address_preference == 'billing') ? 'billing_last_name' : 'delivery_last_name';
-  $page = (isset($_GET['page'])) ? intval($_GET['page']) : 0;
-  $page_size = (isset($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
+  $page = isset($_GET['page']) ? intval($_GET['page']) : 0;
+  $page_size = isset($_GET['nopage']) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
   $order_statuses = uc_reports_order_statuses();
   $rows = array();
   $csv_rows = array();
@@ -66,8 +66,8 @@ function uc_reports_customers() {
     $customer_number = ($page * variable_get('uc_reports_table_size', 30)) + (count($rows) + 1);
     $customer_order_name = (!empty($customer[$last_name]) || !empty($customer[$first_name])) ? $customer[$last_name] . ', ' . $customer[$first_name] : $customer['name'];
     $customer_name = $customer['name'];
-    $orders = (!empty($customer['orders']) ? $customer['orders'] : 0);
-    $products = (!empty($customer['products']) ? $customer['products'] : 0);
+    $orders = !empty($customer['orders']) ? $customer['orders'] : 0;
+    $products = !empty($customer['products']) ? $customer['products'] : 0;
     $total_revenue = uc_currency_format($customer['total']);
     $average_revenue = uc_currency_format($customer['average']);
     $rows[] = array(
@@ -121,7 +121,7 @@ function uc_reports_customers() {
 function uc_reports_products() {
   $views_column = module_exists('statistics') && variable_get('statistics_count_content_views', FALSE);
 
-  $page = (isset($_GET['page'])) ? intval($_GET['page']) : 0;
+  $page = isset($_GET['page']) ? intval($_GET['page']) : 0;
   $page_size = isset($_GET['nopage']) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
   $order_statuses = uc_reports_order_statuses();
   $row_cell = $page * variable_get('uc_reports_table_size', 30) + 1;
@@ -178,13 +178,13 @@ function uc_reports_products() {
 
   $products = $query->execute();
   foreach ($products as $product) {
-    $product_cell = l($product['title'], 'node/' . ($product['nid']));
+    $product_cell = l($product['title'], 'node/' . $product['nid']);
     $product_csv = $product['title'];
-    $sold_cell = (empty($product['sold'])) ? 0 : $product['sold'];
+    $sold_cell = empty($product['sold']) ? 0 : $product['sold'];
     $sold_csv = $sold_cell;
-    $revenue_csv = (empty($product['revenue'])) ? 0 : $product['revenue'];
+    $revenue_csv = empty($product['revenue']) ? 0 : $product['revenue'];
     $revenue_cell = uc_currency_format($revenue_csv);
-    $gross_csv = (empty($product['gross'])) ? 0 : $product['gross'];
+    $gross_csv = empty($product['gross']) ? 0 : $product['gross'];
     $gross_cell = uc_currency_format($gross_csv);
 
     $row = array(
@@ -390,13 +390,13 @@ function uc_reports_products_custom() {
   $products = $query->execute();
   foreach ($products as $product) {
     $row_cell = ($page * variable_get('uc_reports_table_size', 30)) + count($rows) + 1;
-    $product_cell = l($product['title'], 'node/' . ($product['nid']));
+    $product_cell = l($product['title'], 'node/' . $product['nid']);
     $product_csv = $product['title'];
-    $sold_cell = (empty($product['sold'])) ? 0 : $product['sold'];
+    $sold_cell = empty($product['sold']) ? 0 : $product['sold'];
     $sold_csv = $sold_cell;
-    $revenue_csv = (empty($product['revenue'])) ? 0 : $product['revenue'];
+    $revenue_csv = empty($product['revenue']) ? 0 : $product['revenue'];
     $revenue_cell = uc_currency_format($revenue_csv);
-    $gross_csv = (empty($product['gross'])) ? 0 : $product['gross'];
+    $gross_csv = empty($product['gross']) ? 0 : $product['gross'];
     $gross_cell = uc_currency_format($gross_csv);
 
     if (module_exists('uc_attribute')) {
@@ -431,7 +431,7 @@ function uc_reports_products_custom() {
       $gross_cell = '<strong>' . $gross_cell . '</strong>' . $breakdown_gross;
     }
     if ($views_column) {
-      $views = (empty($product['totalcount'])) ? 0 : $product['totalcount'];
+      $views = empty($product['totalcount']) ? 0 : $product['totalcount'];
       $rows[] = array(
         array('data' => $row_cell),
         array('data' => $product_cell),
@@ -1280,7 +1280,7 @@ function uc_reports_sales_custom_form_submit($form, &$form_state) {
 function uc_reports_store_csv($report_id, $rows) {
   global $user;
   $csv_output = '';
-  $user_id = (empty($user->uid)) ? session_id() : $user->uid;
+  $user_id = empty($user->uid) ? session_id() : $user->uid;
   foreach ($rows as $row) {
     foreach ($row as $index => $column) {
       $row[$index] = '"' . str_replace('"', '""', $column) . '"';
@@ -1303,7 +1303,7 @@ function uc_reports_store_csv($report_id, $rows) {
  */
 function uc_reports_get_csv($report_id, $user_id) {
   global $user;
-  $user_check = (empty($user->uid)) ? session_id() : $user->uid;
+  $user_check = empty($user->uid) ? session_id() : $user->uid;
   $csv_data = cache_get('uc_reports_' . $report_id . '_' . $user_id, 'cache');
 
   if (!$csv_data || $user_id != $user_check) {
