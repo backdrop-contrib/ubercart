@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Provide default Views configurations for uc_order.module.
+ * Provides default Views configurations for uc_order.module.
  */
 
 /**

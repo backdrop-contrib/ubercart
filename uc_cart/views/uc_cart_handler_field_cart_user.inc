@@ -7,6 +7,9 @@
 
 /**
  * Field handler: allows linking to a user from a cart id.
+ *
+ * TODO: Should we subclass views_handler_field_user rather than
+ * views_handler_field?
  */
 class uc_cart_handler_field_cart_user extends views_handler_field {
 
@@ -21,7 +24,7 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
   }
 
   /**
-   *
+   * Overrides views_handler::option_definition().
    */
   function option_definition() {
     $options = parent::option_definition();
@@ -32,6 +35,8 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
   }
 
   /**
+   * Overrides views_handler::options_form().
+   *
    * Provides link to node option.
    */
   function options_form(&$form, &$form_state) {
@@ -74,7 +79,7 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
   }
 
   /**
-   *
+   * Overrides views_handler_field::render().
    */
   function render($values) {
     $result = db_query('SELECT name FROM {users} u WHERE u.uid = :uid', array(':uid' => $values->{$this->field_alias}))->fetchField();

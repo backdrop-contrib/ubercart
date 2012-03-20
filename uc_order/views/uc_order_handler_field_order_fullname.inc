@@ -2,16 +2,16 @@
 
 /**
  * @file
- * Views handler: Full name field handler (first and last)
+ * Views handler: Full name field handler (first and last).
  */
 
 /**
- * Return the full name
+ * Returns the customer's full name.
  */
 class uc_order_handler_field_order_fullname extends views_handler_field {
 
   /**
-   *
+   * Overrides views_handler::option_definition().
    */
   function option_definition() {
     $options = parent::option_definition();
@@ -20,7 +20,7 @@ class uc_order_handler_field_order_fullname extends views_handler_field {
   }
 
   /**
-   *
+   * Overrides views_handler::options_form().
    */
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
@@ -38,7 +38,7 @@ class uc_order_handler_field_order_fullname extends views_handler_field {
   }
 
   /**
-   *
+   * Overrides views_handler_field::query().
    */
   function query() {
     $this->ensure_my_table();
@@ -46,7 +46,7 @@ class uc_order_handler_field_order_fullname extends views_handler_field {
   }
 
   /**
-   *
+   * Overrides views_handler_field::render().
    */
   function render($values) {
     $prefix = $this->definition['prefix'];

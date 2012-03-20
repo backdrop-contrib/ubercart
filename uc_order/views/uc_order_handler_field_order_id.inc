@@ -21,7 +21,7 @@ class uc_order_handler_field_order_id extends views_handler_field {
   }
 
   /**
-   *
+   * Overrides views_handler::option_definition().
    */
   function option_definition() {
     $options = parent::option_definition();
@@ -30,6 +30,8 @@ class uc_order_handler_field_order_id extends views_handler_field {
   }
 
   /**
+   * Overrides views_handler::options_form().
+   *
    * Provides link to order administration page.
    */
   function options_form(&$form, &$form_state) {
@@ -43,7 +45,7 @@ class uc_order_handler_field_order_id extends views_handler_field {
   }
 
   /**
-   * Render whatever the data is as a link to the order.
+   * Renders whatever the data is as a link to the order.
    *
    * Data should be made XSS safe prior to calling this function.
    */
@@ -60,7 +62,7 @@ class uc_order_handler_field_order_id extends views_handler_field {
   }
 
   /**
-   *
+   * Overrides views_handler_field::render().
    */
   function render($values) {
     return $this->render_link(check_plain($values->{$this->field_alias}), $values);

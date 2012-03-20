@@ -199,7 +199,7 @@ function uc_product_views_data() {
 /**
  * Implements hook_views_tables_alter().
  *
- * Conditionally add editablefields support.
+ * Conditionally adds editablefields support.
  */
 function uc_product_views_tables_alter(&$tables) {
   if (module_exists('editablefields')) {

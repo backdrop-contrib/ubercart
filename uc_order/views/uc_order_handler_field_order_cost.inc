@@ -2,16 +2,16 @@
 
 /**
  * @file
- * Ordel total cost field handler
+ * Order total cost field handler.
  */
 
 /**
- * Field handler: display the total cost of an order.
+ * Field handler: displays the total cost of an order.
  */
 class uc_order_handler_field_order_cost extends uc_order_handler_field_money_amount {
 
   /**
-   *
+   * Constructor.
    */
   function construct() {
     parent::construct();
@@ -19,7 +19,7 @@ class uc_order_handler_field_order_cost extends uc_order_handler_field_money_amo
   }
 
   /**
-   *
+   * Overrides views_handler_field::query().
    */
   function query() {
     $this->ensure_my_table();
@@ -28,7 +28,7 @@ class uc_order_handler_field_order_cost extends uc_order_handler_field_money_amo
   }
 
   /**
-   *
+   * Overrides views_handler_field::render().
    */
   function render($values) {
     $this->field_alias = 'order_cost';
