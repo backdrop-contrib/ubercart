@@ -114,14 +114,26 @@ function uc_payment_method_settings_form($form, &$form_state, $method_id) {
  * Selects a specific gateway when multiple gateways are available.
  */
 function uc_payment_gateway_select() {
+
+  // Find the available gateways.
   $gateways = _uc_payment_gateway_list($_SESSION['uc_payment_method'], TRUE);
   foreach ($gateways as $id => $gateway) {
     $options[$id] = $gateway['title'];
   }
 
-  $build['instructions'] = array('#markup' => t('Please choose a payment gateway to use for that payment.'));
+  // Construct form for selection of a gateway.
+  $build['instructions'] = array(
+    '#markup' => t('Please choose a payment gateway to use for that payment.'),
+  );
 
-  $build['form'] = drupal_get_form('uc_payment_gateway_select_form', $options, $_SESSION['uc_payment_method'], $_SESSION['uc_payment_order_id'], $_SESSION['uc_payment_amount'], $_SESSION['uc_payment_data']);
+  $build['form'] = drupal_get_form(
+    'uc_payment_gateway_select_form',
+    $options,
+    $_SESSION['uc_payment_method'],
+    $_SESSION['uc_payment_order_id'],
+    $_SESSION['uc_payment_amount'],
+    $_SESSION['uc_payment_data']
+  );
 
   return $build;
 }
