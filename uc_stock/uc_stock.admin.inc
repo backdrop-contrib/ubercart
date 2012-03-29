@@ -309,6 +309,7 @@ function theme_uc_stock_edit_form($variables) {
     array('data' => t('Stock')),
     array('data' => t('Threshold')),
   );
+  $rows = array();
 
   foreach (element_children($form['stock']) as $id) {
     $rows[] = array(
