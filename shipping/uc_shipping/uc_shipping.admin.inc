@@ -30,6 +30,13 @@ function uc_shipping_order_packages($order) {
     $row[] = isset($package->sid) ? l($package->sid, 'admin/store/orders/' . $order->order_id . '/shipments/' . $package->sid . '/view') : '';
     $row[] = isset($package->tracking_number) ? check_plain($package->tracking_number) : '';
 
+    if ($package->label_image && $image = file_load($package->label_image)) {
+      $package->label_image = $image;
+    }
+    else {
+      unset($package->label_image);
+    }
+
     if ($package->sid && $package->label_image) {
       $method = db_query("SELECT shipping_method FROM {uc_shipments} WHERE sid = :sid", array(':sid' => $package->sid))->fetchField();
     }
