@@ -821,69 +821,6 @@ function uc_product_preprocess_html(&$variables) {
  * @see uc_product_save_continue_submit()
  */
 function uc_product_form_alter(&$form, &$form_state, $form_id) {
-  if ($form_id == 'search_form' && arg(0) == 'admin' && arg(1) == 'store' && arg(2) == 'products' && user_access('use advanced search')) {
-    // Keyword boxes.
-    $form['advanced'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Advanced search'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-      '#attributes' => array('class' => array('search-advanced')),
-    );
-    $form['advanced']['keywords'] = array(
-      '#prefix' => '<div class="criterion">',
-      '#suffix' => '</div>',
-    );
-    $form['advanced']['keywords']['or'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Containing any of the words'),
-      '#size' => 30,
-      '#maxlength' => 255,
-    );
-    $form['advanced']['keywords']['phrase'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Containing the phrase'),
-      '#size' => 30,
-      '#maxlength' => 255,
-    );
-    $form['advanced']['keywords']['negative'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Containing none of the words'),
-      '#size' => 30,
-      '#maxlength' => 255,
-    );
-
-    // Taxonomy box.
-    if ($taxonomy = module_invoke('taxonomy', 'form_all', 1)) {
-      $form['advanced']['category'] = array(
-        '#type' => 'select',
-        '#title' => t('Only in the category(s)'),
-        '#prefix' => '<div class="criterion">',
-        '#size' => 10,
-        '#suffix' => '</div>',
-        '#options' => $taxonomy,
-        '#multiple' => TRUE,
-      );
-    }
-
-    // Node types.
-    $form['advanced']['type'] = array(
-      '#type' => 'checkboxes',
-      '#title' => t('Only of the type(s)'),
-      '#prefix' => '<div class="criterion">',
-      '#suffix' => '</div>',
-      '#options' => uc_product_type_names(),
-    );
-    $form['advanced']['submit'] = array(
-      '#type' => 'submit',
-      '#value' => t('Advanced search'),
-      '#prefix' => '<div class="action clear-block">',
-      '#suffix' => '</div>',
-    );
-
-    $form['#validate'][] = 'node_search_validate';
-  }
-
   // Add a button to product node forms to continue editing after saving.
   if (uc_product_is_product_form($form)) {
     $form['actions']['save_continue'] = array(
