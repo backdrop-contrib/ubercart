@@ -156,7 +156,7 @@ function uc_google_checkout_taxes_settings($form, &$form_state) {
     '#type' => 'checkbox',
     '#disabled' => TRUE,
   );
-  $form['taxes']['new']['zone'] = uc_zone_select('');
+  $form['taxes']['new']['zone'] = uc_zone_select('', NULL, 840);
   $form['taxes']['new']['rate'] = array(
     '#type' => 'textfield',
     '#default_value' => '',
