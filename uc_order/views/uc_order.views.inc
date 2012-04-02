@@ -586,3 +586,17 @@ function uc_order_views_data() {
 
   return $data;
 }
+
+/**
+ * Implements hook_views_plugins().
+ */
+function uc_order_views_plugins() {
+  return array(
+    'argument validator' => array(
+      'user_or_permission' => array(
+        'title' => t('Current user or user has permission'),
+        'handler' => 'uc_order_plugin_argument_validate_user_perm',
+      ),
+    ),
+  );
+}

@@ -179,16 +179,7 @@ function uc_order_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'uc_order.admin.inc',
   );
-  $items['user/%user/orders'] = array(
-    'title' => 'Orders',
-    'description' => 'View your order history.',
-    'page callback' => 'uc_order_history',
-    'page arguments' => array(1),
-    'access callback' => 'uc_order_can_view_order',
-    'access arguments' => array(1),
-    'type' => MENU_LOCAL_TASK,
-    'file' => 'uc_order.admin.inc',
-  );
+  // user/%/orders is provided by Views.
   $items['user/%user/orders/%uc_order'] = array(
     'title callback' => 'uc_order_page_title',
     'title arguments' => array(3),
@@ -1949,6 +1940,8 @@ function uc_order_status_options_list() {
  *   Valid actions for an order; returned according to the $icon_html parameter.
  */
 function uc_order_actions($order, $icon_html = FALSE) {
+  global $user;
+
   $state = uc_order_status_data($order->order_status, 'state');
   $order_id = array('@order_id' => $order->order_id);
   $actions = array();
@@ -1969,6 +1962,25 @@ function uc_order_actions($order, $icon_html = FALSE) {
       'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/print.gif', 'alt' => $alt)),
       'title' => $alt,
     );
+  }
+  elseif (user_access('view own orders') && $order->uid == $user->uid) {
+    $alt = t('View order @order_id.', $order_id);
+    $actions[] = array(
+      'name' => t('View'),
+      'url' => 'user/' . $user->uid . '/orders/' . $order->order_id,
+      'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/order_view.gif', 'alt' => $alt)),
+      'title' => $alt,
+    );
+
+    if (variable_get('uc_cust_view_order_invoices', TRUE)) {
+      $alt = t('Print order @order_id.', $order_id);
+      $actions[] = array(
+        'name' => t('Print'),
+        'url' => 'user/' . $user->uid . '/orders/' . $order->order_id . '/print',
+        'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/print.gif', 'alt' => $alt)),
+        'title' => $alt,
+      );
+    }
   }
 
   if (user_access('edit orders')) {
@@ -1999,7 +2011,13 @@ function uc_order_actions($order, $icon_html = FALSE) {
   if ($icon_html) {
     $output = '';
     foreach ($actions as $action) {
-      $output .= l($action['icon'], $action['url'], array('attributes' => array('title' => $action['title']), 'html' => TRUE));
+      $output .= l($action['icon'], $action['url'], array(
+        'attributes' => array(
+          'class' => 'uc-order-action',
+          'title' => $action['title'],
+        ),
+        'html' => TRUE,
+      ));
     }
     return $output;
   }

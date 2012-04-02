@@ -911,6 +911,8 @@ function uc_order_select_customer_form($form, &$form_state, $options = NULL) {
 /**
  * Returns the sortable table listing of a customer's orders.
  *
+ * This function is deprecated; this listing is now provided by Views.
+ *
  * @param $uid
  *   The user ID whose orders you wish to list.
  */

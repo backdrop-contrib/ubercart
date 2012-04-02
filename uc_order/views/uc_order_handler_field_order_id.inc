@@ -16,7 +16,8 @@ class uc_order_handler_field_order_id extends views_handler_field {
   function init(&$view, &$data) {
     parent::init($view, $data);
     if (!empty($this->options['link_to_order'])) {
-      $this->additional_fields['order_id'] = 'order_id';
+      $this->additional_fields['order_id'] = array('table' => 'uc_orders', 'field' => 'order_id');
+      $this->additional_fields['uid'] = array('table' => 'uc_orders', 'field' => 'uid');
     }
   }
 
@@ -37,7 +38,7 @@ class uc_order_handler_field_order_id extends views_handler_field {
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
     $form['link_to_order'] = array(
-      '#title' => t('Link this field to order administration'),
+      '#title' => t('Link this field to the order view page'),
       '#description' => t('This will override any other link you have set.'),
       '#type' => 'checkbox',
       '#default_value' => !empty($this->options['link_to_order']),
@@ -50,13 +51,23 @@ class uc_order_handler_field_order_id extends views_handler_field {
    * Data should be made XSS safe prior to calling this function.
    */
   function render_link($data, $values) {
-    if (!empty($this->options['link_to_order']) &&
-        user_access('view all orders') &&
-        $values->{$this->aliases['order_id']} &&
-        $data !== NULL &&
-        $data !== '') {
-      $this->options['alter']['make_link'] = TRUE;
-      $this->options['alter']['path'] = "admin/store/orders/" . $values->{$this->aliases['order_id']};
+    if (!empty($this->options['link_to_order'])) {
+      $this->options['alter']['make_link'] = FALSE;
+
+      if (user_access('view all orders')) {
+        $path = 'admin/store/orders/' . $this->get_value($values, 'order_id');
+      }
+      elseif (user_access('view own orders') && $this->get_value($values, 'uid') == $GLOBALS['user']->uid) {
+        $path = 'user/' . $GLOBALS['user']->uid . '/orders/' . $this->get_value($values, 'order_id');
+      }
+      else {
+        $path = FALSE;
+      }
+
+      if ($path && $data !== NULL && $data !== '') {
+        $this->options['alter']['make_link'] = TRUE;
+        $this->options['alter']['path'] = $path;
+      }
     }
     return $data;
   }
