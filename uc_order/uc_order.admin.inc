@@ -6,6 +6,20 @@
  */
 
 /**
+ * Redirects to the customers listing page.
+ */
+function uc_order_customers() {
+  drupal_goto('admin/store/customers/view');
+}
+
+/**
+ * Redirects to the orders listing page.
+ */
+function uc_order_orders() {
+  drupal_goto('admin/store/orders/view');
+}
+
+/**
  * Generates the settings form for orders.
  *
  * @ingroup forms
