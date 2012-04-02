@@ -15,12 +15,6 @@ Drupal.behaviors.ucOrderClick = {
         window.location = jQuery(this).find('.views-field-order-id a').attr('href');
       }
     );
-
-    jQuery('.uc-cust-orders-table tbody tr', context).dblclick(
-      function() {
-        window.location = settings.basePath + '?q=admin/store/orders/' + this.id.substring(6);
-      }
-    );
   }
 }
 
