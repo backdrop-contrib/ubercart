@@ -352,6 +352,43 @@ function uc_order_views_default_views() {
   $handler->display->display_options['menu']['description'] = 'Search existing orders.';
   $handler->display->display_options['menu']['weight'] = '0';
   $handler->display->display_options['menu']['name'] = 'management';
+
+  /* Display: By customer */
+  $handler = $view->new_display('page', 'By customer', 'by_customer');
+  $handler->display->display_options['defaults']['arguments'] = FALSE;
+  /* Contextual filter: User: Uid */
+  $handler->display->display_options['arguments']['uid']['id'] = 'uid';
+  $handler->display->display_options['arguments']['uid']['table'] = 'users';
+  $handler->display->display_options['arguments']['uid']['field'] = 'uid';
+  $handler->display->display_options['arguments']['uid']['default_action'] = 'not found';
+  $handler->display->display_options['arguments']['uid']['title_enable'] = 1;
+  $handler->display->display_options['arguments']['uid']['title'] = 'Customer orders: %1';
+  $handler->display->display_options['arguments']['uid']['default_argument_type'] = 'fixed';
+  $handler->display->display_options['arguments']['uid']['default_argument_skip_url'] = 0;
+  $handler->display->display_options['arguments']['uid']['summary']['number_of_records'] = '0';
+  $handler->display->display_options['arguments']['uid']['summary']['format'] = 'default_summary';
+  $handler->display->display_options['arguments']['uid']['summary_options']['items_per_page'] = '25';
+  $handler->display->display_options['arguments']['uid']['specify_validation'] = 1;
+  $handler->display->display_options['arguments']['uid']['validate']['type'] = 'user';
+  $handler->display->display_options['arguments']['uid']['validate_options']['restrict_roles'] = 0;
+  $handler->display->display_options['arguments']['uid']['break_phrase'] = 0;
+  $handler->display->display_options['arguments']['uid']['not'] = 0;
+  $handler->display->display_options['defaults']['filters'] = FALSE;
+  /* Filter criterion: Order: Order status */
+  $handler->display->display_options['filters']['order_status']['id'] = 'order_status';
+  $handler->display->display_options['filters']['order_status']['table'] = 'uc_orders';
+  $handler->display->display_options['filters']['order_status']['field'] = 'order_status';
+  $handler->display->display_options['filters']['order_status']['value'] = array(
+    '_active' => '_active',
+  );
+  $handler->display->display_options['filters']['order_status']['group'] = 0;
+  $handler->display->display_options['filters']['order_status']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['order_status']['expose']['operator_id'] = 'order_status_op';
+  $handler->display->display_options['filters']['order_status']['expose']['label'] = 'View by status';
+  $handler->display->display_options['filters']['order_status']['expose']['operator'] = 'order_status_op';
+  $handler->display->display_options['filters']['order_status']['expose']['identifier'] = 'order_status';
+  $handler->display->display_options['filters']['order_status']['expose']['reduce'] = 0;
+  $handler->display->display_options['path'] = 'admin/store/customers/orders';
   $views[$view->name] = $view;
 
   $view = new view;
