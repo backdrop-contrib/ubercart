@@ -92,27 +92,28 @@ class UbercartCreditCardTestCase extends UbercartTestHelper {
     );
 
     // Create key directory, make it readable and writeable.
-    // Putting this under sites/default/files because SimpleTest needs to be
+    // Putting this under the public file path because SimpleTest needs to be
     // able to create the directory - this is NOT where you'd put the key file
     // on a live site.  On a live site, it should be outside the web root.
-    drupal_mkdir('sites/default/files/simpletest.keys', 0755);
+    $path = variable_get('file_public_path', '') . '/simpletest.keys';
+    file_prepare_directory($path, FILE_CREATE_DIRECTORY);
 
     $this->drupalPost(
       'admin/store/settings/payment/method/credit',
       array(
-        'uc_credit_encryption_path' => 'sites/default/files/simpletest.keys',
+        'uc_credit_encryption_path' => $path,
       ),
       t('Save configuration')
     );
 
     $this->assertFieldByName(
       'uc_credit_encryption_path',
-      'sites/default/files/simpletest.keys',
+      $path,
       t('Key file path has been set.')
     );
 
     $this->assertTrue(
-      file_exists('sites/default/files/simpletest.keys/' . UC_CREDIT_KEYFILE_NAME),
+      file_exists($path . '/' . UC_CREDIT_KEYFILE_NAME),
       t('Key has been generated and stored.')
     );
     $this->pass('Key = ' . uc_credit_encryption_key());
@@ -144,8 +145,9 @@ class UbercartCreditCardTestCase extends UbercartTestHelper {
    */
   public function tearDown() {
     // Cleanup keys directory after test.
-    drupal_unlink('sites/default/files/simpletest.keys/' . UC_CREDIT_KEYFILE_NAME);
-    drupal_rmdir('sites/default/files/simpletest.keys');
+    $path = variable_get('file_public_path', '') . '/simpletest.keys';
+    drupal_unlink($path . '/' . UC_CREDIT_KEYFILE_NAME);
+    drupal_rmdir($path);
     parent::tearDown();
   }
 
@@ -185,7 +187,8 @@ class UbercartCreditCardTestCase extends UbercartTestHelper {
     // where key file is not readable or doesn't contain a valid key
 
     // Create key directory, make it readable and writeable.
-    drupal_mkdir('sites/default/files/testkey', 0755);
+    $path = variable_get('file_public_path', '') . '/testkey';
+    file_prepare_directory($path, FILE_CREATE_DIRECTORY);
 
     // Try to submit settings form without a key file path.
     // Save current variable, reset to its value when first installed.
@@ -237,14 +240,14 @@ class UbercartCreditCardTestCase extends UbercartTestHelper {
     // and trailing /
     $this->drupalPost(
       'admin/store/settings/payment/method/credit',
-      array('uc_credit_encryption_path' => '  sites/default/files/testkey/ '),
+      array('uc_credit_encryption_path' => '  ' . $path . '/ '),
       t('Save configuration')
     );
     // See that the directory has been properly re-written to remove
     // whitespace and trailing /
     $this->assertFieldByName(
       'uc_credit_encryption_path',
-      'sites/default/files/testkey',
+      $path,
       t('Key file path has been set.')
     );
     $this->assertText('Credit card encryption key file generated.');
@@ -252,19 +255,19 @@ class UbercartCreditCardTestCase extends UbercartTestHelper {
     // Check that warning about needing key file goes away.
     $this->assertNoText(t('Credit card security settings must be configured in the security settings tab.'));
     // Remove key file.
-    drupal_unlink('sites/default/files/testkey/' . UC_CREDIT_KEYFILE_NAME);
+    drupal_unlink($path . '/' . UC_CREDIT_KEYFILE_NAME);
 
     // Finally, specify good directory
     $this->drupalPost(
       'admin/store/settings/payment/method/credit',
-      array('uc_credit_encryption_path' => 'sites/default/files/testkey'),
+      array('uc_credit_encryption_path' => $path),
       t('Save configuration')
     );
     $this->assertText('Credit card encryption key file generated.');
 
     // Test contents - must contain 32-character hexadecimal string.
     $this->assertTrue(
-      file_exists('sites/default/files/simpletest.keys/' . UC_CREDIT_KEYFILE_NAME),
+      file_exists($path . '/' . UC_CREDIT_KEYFILE_NAME),
       t('Key has been generated and stored.')
     );
     $this->assertTrue(
@@ -273,8 +276,8 @@ class UbercartCreditCardTestCase extends UbercartTestHelper {
     );
 
     // Cleanup keys directory after test.
-    drupal_unlink('sites/default/files/testkey/' . UC_CREDIT_KEYFILE_NAME);
-    drupal_rmdir('sites/default/files/testkey');
+    drupal_unlink($path . '/' . UC_CREDIT_KEYFILE_NAME);
+    drupal_rmdir($path);
   }
 
   /**
