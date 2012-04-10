@@ -49,7 +49,7 @@ function uc_credit_settings_form($form, &$form_state) {
     '#type' => 'radios',
     '#title' => t('Default gateway'),
     '#options' => $options,
-    '#default_value' => variable_get('uc_payment_credit_gateway', 'none'),
+    '#default_value' => uc_credit_default_gateway(),
   );
   $form['cc_basic']['uc_credit_validate_numbers'] = array(
     '#type' => 'checkbox',
