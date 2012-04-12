@@ -1,0 +1,52 @@
+<?php
+
+/**
+ * @file
+ * Ubercart payment related tests
+ */
+
+class UbercartPaymentPaneTestCase extends UbercartTestHelper {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Payment checkout pane',
+      'description' => 'Ensures that the payment pane functions properly during checkout.',
+      'group' => 'Ubercart',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('uc_payment', 'uc_payment_pack'));
+    $this->drupalLogin($this->adminUser);
+    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+  }
+
+  public function testPaymentMethodOptions() {
+    // No payment methods.
+    variable_set('uc_payment_method_check_checkout', FALSE);
+    $this->drupalGet('cart/checkout');
+    $this->assertText('Checkout cannot be completed without any payment methods enabled. Please contact an administrator to resolve the issue.');
+
+    // Single payment method.
+    variable_set('uc_payment_method_check_checkout', TRUE);
+    $this->drupalGet('cart/checkout');
+    $this->assertNoText('Select a payment method from the following options.');
+    $this->assertFieldByXPath("//input[@name='panes[payment][payment_method]' and @disabled='disabled']");
+
+    // Multiple payment methods.
+    variable_set('uc_payment_method_other_checkout', TRUE);
+    $this->drupalGet('cart/checkout');
+    $this->assertText('Select a payment method from the following options.');
+    $this->assertNoFieldByXPath("//input[@name='panes[payment][payment_method]' and @disabled='disabled']");
+  }
+
+  public function testOrderTotalPreview() {
+    variable_set('uc_payment_show_order_total_preview', TRUE);
+    $this->drupalGet('cart/checkout');
+    $this->assertText('Order total:');
+
+    variable_set('uc_payment_show_order_total_preview', FALSE);
+    $this->drupalGet('cart/checkout');
+    $this->assertNoText('Order total:');
+  }
+}
