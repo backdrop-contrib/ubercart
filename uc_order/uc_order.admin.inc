@@ -424,7 +424,7 @@ function uc_order_create_form($form, &$form_state) {
     $form['customer'] += array(
       '#type' => 'fieldset',
       '#title' => t('Customer search'),
-      '#description' => t('Enter full or partial information in one or more of the following fields, then press the "Search" button. Search results will match all the provided information'),
+      '#description' => t('Enter full or partial information in one or more of the following fields, then press the "Search" button. Search results will match all the provided information.'),
     );
     // Customer first name.
     $form['customer']['first_name'] = array(
