@@ -23,11 +23,14 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
         );
       }
 
-      $methods = _uc_payment_method_list();
-      $options = array();
-      $default = NULL;
+      // Ensure that the form builder uses #default_value to determine which
+      // button should be selected after an ajax submission. This is
+      // necessary because the previously selected value may have become
+      // unavailable, which would result in an invalid selection.
+      unset($form_state['input']['panes']['payment']['payment_method']);
 
-      foreach ($methods as $id => $method) {
+      $options = array();
+      foreach (_uc_payment_method_list() as $id => $method) {
         $set = rules_config_load('uc_payment_method_' . $method['id']);
         if ($set && !$set->execute($order)) {
           continue;
@@ -38,27 +41,17 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
         }
       }
 
+      $description = '';
       if (!$options) {
-        drupal_set_message(t('Checkout cannot be completed without any payment methods enabled. Please contact an administrator to resolve the issue.'), 'error');
-        drupal_goto('cart');
+        $description = t('Checkout cannot be completed without any payment methods enabled. Please contact an administrator to resolve the issue.');
+        $options[''] = t('No payment methods available');
       }
-
-      if (count($options)) {
-        if (isset($form_state['values'])  &&
-          isset($form_state['values']['panes']['payment']['payment_method']) &&
-          in_array($form_state['values']['panes']['payment']['payment_method'], array_keys($options))) {
-          $default = $form_state['values']['panes']['payment']['payment_method'];
-        }
-        else {
-          $default = (count($options) == 1 || empty($order->payment_method)) ? key($options) : $order->payment_method;
-        }
-      }
-
-      if (count($options) > 1) {
+      elseif (count($options) > 1) {
         $description = t('Select a payment method from the following options.');
       }
-      else {
-        $description = '';
+
+      if (!isset($options[$order->payment_method])) {
+        $order->payment_method = key($options);
       }
 
       $contents['payment_method'] = array(
@@ -66,8 +59,8 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
         '#title' => t('Payment method'),
         '#title_display' => 'invisible',
         '#options' => $options,
-        '#default_value' => $default,
-        '#disabled' => count($options) == 1 ? TRUE : FALSE,
+        '#default_value' => $order->payment_method,
+        '#disabled' => count($options) == 1,
         '#required' => TRUE,
         '#ajax' => array(
           'callback' => 'uc_payment_checkout_payment_details',
@@ -79,25 +72,24 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
       );
 
       $contents['details'] = array(
-        '#prefix' => '<div id="payment-details" class="clearfix payment-details-' . $default . '">',
+        '#prefix' => '<div id="payment-details" class="clearfix payment-details-' . $order->payment_method . '">',
+        '#markup' => t('Continue with checkout to complete payment.'),
         '#suffix' => '</div>',
       );
 
-      $details = FALSE;
-      $func = _uc_payment_method_data($default, 'callback');
-      if (function_exists($func)) {
-        $details = $func('cart-details', $order, $form, $form_state);
-      }
-      if (is_array($details) && !empty($details)) {
+      $func = _uc_payment_method_data($order->payment_method, 'callback');
+      if (function_exists($func) && $details = $func('cart-details', $order, $form, $form_state)) {
+        unset($contents['details']['#markup']);
         $contents['details'] += $details;
-      }
-      else {
-        $contents['details']['#markup'] = t('Continue with checkout to complete payment.');
       }
 
       return array('description' => $description, 'contents' => $contents);
 
     case 'process':
+      if (empty($form_state['values']['panes']['payment']['payment_method'])) {
+        form_set_error('panes][payment][payment_method', t('You cannot check out without selecting a payment method.'));
+        return FALSE;
+      }
       $order->payment_method = $form_state['values']['panes']['payment']['payment_method'];
       $func = _uc_payment_method_data($order->payment_method, 'callback');
       if (function_exists($func)) {
