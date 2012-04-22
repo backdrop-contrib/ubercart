@@ -199,15 +199,22 @@ function uc_payment_gateway_select_form_submit($form, &$form_state) {
  *
  * @see uc_payment_by_order_form_validate()
  * @see uc_payment_by_order_form_submit()
- * @see theme_uc_payment_by_order_form()
  * @ingroup forms
  */
 function uc_payment_by_order_form($form, &$form_state, $order) {
+  $form['#attached']['css'][] = drupal_get_path('module', 'uc_payment') . '/uc_payment.css';
+
   $total = $order->order_total;
   $payments = uc_payment_load_payments($order->order_id);
 
-  $form['order_total'] = array('#theme' => 'uc_price', '#price' => $total);
+  $form['order_total'] = array(
+    '#type' => 'item',
+    '#title' => t('Order total'),
+    '#theme' => 'uc_price',
+    '#price' => $total,
+  );
   $form['payments'] = tapir_get_table('uc_payments_table');
+  $form['payments']['#weight'] = 10;
 
   if ($payments !== FALSE) {
     foreach ($payments as $payment) {
@@ -246,7 +253,12 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
     }
   }
 
-  $form['balance'] = array('#theme' => 'uc_price', '#price' => $total);
+  $form['balance'] = array(
+    '#type' => 'item',
+    '#title' => t('Current balance'),
+    '#theme' => 'uc_price',
+    '#price' => $total,
+  );
   $form['order_id'] = array(
     '#type' => 'hidden',
     '#value' => $order->order_id,
@@ -299,24 +311,6 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
   }
 
   return $form;
-}
-
-/**
- * Themes uc_payment_by_order_form().
- *
- * @see uc_payment_by_order_form()
- * @ingroup themeable
- */
-function theme_uc_payment_by_order_form($variables) {
-  $form = $variables['form'];
-
-  $output = '<p><strong>' . t('Order total:') . '</strong> ' . drupal_render($form['order_total'])
-           . '<br /><strong>' . t('Current balance:') . '</strong> '
-          . drupal_render($form['balance']) . '</p>';
-  $output .= '<p>' . drupal_render($form['payments']) . '</p>'
-           . '<p>' . drupal_render($form['form_id'])
-           . drupal_render($form['form_token']) . '</p>';
-  return $output;
 }
 
 /**
