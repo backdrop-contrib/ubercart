@@ -104,13 +104,40 @@ function uc_order_views_default_views() {
   $handler->display->display_options['fields']['order_id']['hide_empty'] = 0;
   $handler->display->display_options['fields']['order_id']['empty_zero'] = 0;
   $handler->display->display_options['fields']['order_id']['link_to_order'] = 1;
+  /* Field: User: Uid */
+  $handler->display->display_options['fields']['uid']['id'] = 'uid';
+  $handler->display->display_options['fields']['uid']['table'] = 'users';
+  $handler->display->display_options['fields']['uid']['field'] = 'uid';
+  $handler->display->display_options['fields']['uid']['label'] = '';
+  $handler->display->display_options['fields']['uid']['exclude'] = TRUE;
+  $handler->display->display_options['fields']['uid']['alter']['alter_text'] = 0;
+  $handler->display->display_options['fields']['uid']['alter']['text'] = '[billing_full_name]';
+  $handler->display->display_options['fields']['uid']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['uid']['alter']['path'] = '[uid]';
+  $handler->display->display_options['fields']['uid']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['uid']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['uid']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['uid']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['uid']['alter']['nl2br'] = 0;
+  $handler->display->display_options['fields']['uid']['alter']['word_boundary'] = 1;
+  $handler->display->display_options['fields']['uid']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['uid']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['uid']['alter']['trim'] = 0;
+  $handler->display->display_options['fields']['uid']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['uid']['element_label_colon'] = FALSE;
+  $handler->display->display_options['fields']['uid']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['uid']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['uid']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['uid']['hide_alter_empty'] = 1;
+  $handler->display->display_options['fields']['uid']['link_to_user'] = 0;
   /* Field: Order: Billing address: Full name */
   $handler->display->display_options['fields']['billing_full_name']['id'] = 'billing_full_name';
   $handler->display->display_options['fields']['billing_full_name']['table'] = 'uc_orders';
   $handler->display->display_options['fields']['billing_full_name']['field'] = 'billing_full_name';
   $handler->display->display_options['fields']['billing_full_name']['label'] = 'Customer';
   $handler->display->display_options['fields']['billing_full_name']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['billing_full_name']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['billing_full_name']['alter']['make_link'] = 1;
+  $handler->display->display_options['fields']['billing_full_name']['alter']['path'] = 'user/[uid]';
   $handler->display->display_options['fields']['billing_full_name']['alter']['absolute'] = 0;
   $handler->display->display_options['fields']['billing_full_name']['alter']['external'] = 0;
   $handler->display->display_options['fields']['billing_full_name']['alter']['replace_spaces'] = 0;
@@ -125,7 +152,7 @@ function uc_order_views_default_views() {
   $handler->display->display_options['fields']['billing_full_name']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['billing_full_name']['hide_empty'] = 0;
   $handler->display->display_options['fields']['billing_full_name']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['billing_full_name']['hide_alter_empty'] = 0;
+  $handler->display->display_options['fields']['billing_full_name']['hide_alter_empty'] = 1;
   /* Field: Order: Order total */
   $handler->display->display_options['fields']['order_total']['id'] = 'order_total';
   $handler->display->display_options['fields']['order_total']['table'] = 'uc_orders';
