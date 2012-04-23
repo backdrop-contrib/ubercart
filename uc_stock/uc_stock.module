@@ -270,7 +270,7 @@ function uc_stock_views_api() {
 }
 
 /**
- * Adjusts a product's stock.
+ * Decrement a product's stock.
  *
  * @param $product
  *   The product whose stock is being adjusted.
@@ -303,4 +303,12 @@ function uc_stock_adjust_product_stock($product, $key, $order) {
 
   // Save a comment about the stock level.
   uc_order_comment_save($order->order_id, 0, t('The stock level for %model_name has been !action to !qty.', array('%model_name' => $product->model, '!qty' => $stock->stock, '!action' => (-$product->qty <= 0) ? t('decreased') : t('increased') )));
+}
+
+/**
+ * Increment a product's stock.
+ */
+function uc_stock_increment_product_stock($product, $key, $order) {
+  $product->qty = -$product->qty;
+  return uc_stock_adjust_product_stock($product, $key, $order);
 }
