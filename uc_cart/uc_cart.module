@@ -877,7 +877,7 @@ function uc_cart_complete_sale($order, $login = FALSE) {
   }
 
   $variables['!new_username'] = isset($order->data['new_user']['name']) ? $order->data['new_user']['name'] : '';
-  $variables['!new_password'] = isset($order->data['new_user']['pass']) ? $order->data['new_user']['pass'] : '';
+  $variables['!new_password'] = isset($order->password) ? $order->password : t('Your password');
   $messages = array(
     'uc_msg_order_submit' => uc_get_message('completion_message'),
     'uc_msg_order_' . $type => uc_get_message('completion_' . $type),
@@ -924,9 +924,8 @@ function uc_cart_complete_sale_account($order) {
     return;
   }
 
-  // Create a new user.
-  $fields = isset($order->data['new_user']) ? $order->data['new_user'] : array();
-  $fields += array(
+  // Set up a new user.
+  $fields = array(
     'name' => uc_store_email_to_username($order->primary_email),
     'mail' => $order->primary_email,
     'init' => $order->primary_email,
@@ -934,20 +933,32 @@ function uc_cart_complete_sale_account($order) {
     'roles' => array(),
     'status' => variable_get('uc_new_customer_status_active', TRUE) ? 1 : 0,
   );
+
+  // Override the username, if specified.
+  if (isset($order->data['new_user']['name'])) {
+    $fields['name'] = $order->data['new_user']['name'];
+  }
+
+  // Create the account.
   $account = user_save('', $fields);
+
+  // Override the password, if specified.
+  if (isset($order->data['new_user']['hash'])) {
+    db_query("UPDATE {users} SET pass = :hash WHERE uid = :uid", array(':hash' => $order->data['new_user']['hash'], ':uid' => $account->uid));
+    $account->password = t('Your password');
+  }
+  else {
+    $account->password = $fields['pass'];
+    $order->password = $fields['pass'];
+  }
 
   // Send the customer their account details if enabled.
   if (variable_get('uc_new_customer_email', TRUE)) {
-    // Manually set the password so it appears in the e-mail.
-    $account->password = $fields['pass'];
     drupal_mail('user', 'register_no_approval_required', $order->primary_email, uc_store_mail_recipient_language($order->primary_email), array('account' => $account), uc_store_email_from());
   }
 
   $order->uid = $account->uid;
-  $order->data['new_user'] = array(
-    'name' => $fields['name'],
-    'pass' => $fields['pass'],
-  );
+  $order->data['new_user']['name'] = $fields['name'];
   $order->data['complete_sale'] =  'new_user';
 }
 

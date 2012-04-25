@@ -844,3 +844,22 @@ function uc_order_update_7007() {
     ->condition('modified', REQUEST_TIME - 600, '<')
     ->execute();
 }
+
+/**
+ * Delete unwanted sensitive data.
+ */
+function uc_order_update_7300() {
+  $result = db_query("SELECT order_id, data FROM {uc_orders} WHERE data LIKE '%s:4:\"pass\"%'");
+  while ($row = $result->fetchObject()) {
+    $data = unserialize($row->data);
+    if (isset($data['new_user']['pass'])) {
+      unset($data['new_user']['pass']);
+      db_update('uc_orders')
+        ->fields(array('data' => serialize($data)))
+        ->condition('order_id', $row->order_id)
+        ->execute();
+    }
+  }
+
+  variable_del('uc_order_cron_last');
+}

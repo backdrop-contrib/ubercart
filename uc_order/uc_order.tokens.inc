@@ -149,9 +149,7 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'new-password':
-          if (isset($order->data['new_user']['pass'])) {
-            $replacements[$original] = $sanitize ? check_plain($order->data['new_user']['pass']) : $order->data['new_user']['pass'];
-          }
+          $replacements[$original] = isset($order->password) ? $order->password : t('Your password');
           break;
 
         case 'order-number':

@@ -92,11 +92,11 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
   }
 
   function testCheckout() {
-    // Allow customer to specify username and password, and log in new users after checkout.
+    // Allow customer to specify username and password, but don't log in after checkout.
     $settings = array(
       'uc_cart_new_account_name' => TRUE,
       'uc_cart_new_account_password' => TRUE,
-      'uc_new_customer_login' => TRUE
+      'uc_new_customer_login' => FALSE,
     );
     $this->drupalLogin($this->adminUser);
     $this->drupalPost('admin/store/settings/checkout', $settings, t('Save configuration'));
@@ -104,7 +104,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
 
     $new_user = new stdClass();
     $new_user->name = $this->randomName(20);
-    $new_user->pass_raw = $this->randomString(20);
+    $new_user->pass_raw = $this->randomName(20);
 
     // Test as anonymous user.
     $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
@@ -114,15 +114,21 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
       'panes[customer][new_account][pass_confirm]' => $new_user->pass_raw,
     ));
     $this->assertRaw('Your order is complete!');
-    $this->assertRaw('you are already logged in');
-
-    // Confirm login.
-    $this->drupalGet('<front>');
-    $this->assertText('My account', 'User is logged in.');
+    $this->assertText($new_user->name, 'Username is shown on screen.');
+    $this->assertNoText($new_user->pass_raw, 'Password is not shown on screen.');
 
     // Check that cart is now empty.
     $this->drupalGet('cart');
     $this->assertText('There are no products in your shopping cart.');
+
+    // New account email is last but one.
+    $mail = array_pop(array_slice($this->drupalGetMails(), -2, 1));
+    $this->assertTrue(strpos($mail['body'], $new_user->name) !== FALSE, 'Mail body contains username.');
+
+    // Invoice email is last.
+    $mail = array_pop(array_slice($this->drupalGetMails(), -1, 1));
+    $this->assertTrue(strpos($mail['body'], $new_user->name) !== FALSE, 'Invoice body contains username.');
+    $this->assertFalse(strpos($mail['body'], $new_user->pass_raw) !== FALSE, 'Mail body does not contain password.');
 
     // Check that the password works.
     $this->drupalLogout();
@@ -139,7 +145,6 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
     $this->checkout();
     $this->assertRaw('Your order is complete!');
-    $this->assertRaw('you are already logged in');
 
     // New account email is last but one.
     $mail = array_pop(array_slice($this->drupalGetMails(), -2, 1));
@@ -149,13 +154,15 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertTrue(!empty($new_user->name), 'New username is not empty.');
     $this->assertTrue(!empty($new_user->pass_raw), 'New password is not empty.');
     $this->assertTrue(strpos($mail['body'], $new_user->name) !== FALSE, 'Mail body contains username.');
-    // In D7, new account emails do not contain the password.
-    //$this->assertTrue(strpos($mail['body'], $new_user->pass_raw) !== FALSE, 'Mail body contains password.');
 
     // Invoice email is last.
     $mail = array_pop(array_slice($this->drupalGetMails(), -1, 1));
     $this->assertTrue(strpos($mail['body'], $new_user->name) !== FALSE, 'Invoice body contains username.');
     $this->assertTrue(strpos($mail['body'], $new_user->pass_raw) !== FALSE, 'Invoice body contains password.');
+
+    // We can check the password now we know it.
+    $this->assertText($new_user->name, 'Username is shown on screen.');
+    $this->assertText($new_user->pass_raw, 'Password is shown on screen.');
 
     // Check that the password works.
     $this->drupalLogout();
@@ -167,6 +174,30 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->checkout(array('panes[customer][primary_email]' => $this->customer->mail));
     $this->assertRaw('Your order is complete!');
     $this->assertRaw('order has been attached to the account we found');
+  }
+
+  function testCheckoutLogin() {
+    // Log in after checkout.
+    $settings = array(
+      'uc_new_customer_login' => TRUE,
+    );
+    $this->drupalLogin($this->adminUser);
+    $this->drupalPost('admin/store/settings/checkout', $settings, t('Save configuration'));
+    $this->drupalLogout();
+
+    // Test checkout.
+    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $this->checkout();
+    $this->assertRaw('Your order is complete!');
+    $this->assertRaw('you are already logged in');
+
+    // Confirm login.
+    $this->drupalGet('<front>');
+    $this->assertText('My account', 'User is logged in.');
+
+    // Check that cart is now empty.
+    $this->drupalGet('cart');
+    $this->assertText('There are no products in your shopping cart.');
   }
 
   function testCheckoutComplete() {
