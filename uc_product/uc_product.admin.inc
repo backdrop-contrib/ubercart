@@ -18,9 +18,9 @@ function uc_product_class_default() {
       $ops[] = l(t('delete'), 'admin/store/products/classes/' . $class->pcid . '/delete');
     }
     $rows[] = array(
-      $class->pcid,
-      $class->name,
-      $class->description,
+      check_plain($class->pcid),
+      check_plain($class->name),
+      filter_xss_admin($class->description),
       implode(' ', $ops),
     );
   }
