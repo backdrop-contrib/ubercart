@@ -2169,3 +2169,73 @@ function uc_order_date_views_fields($field) {
       return $values;
   }
 }
+
+/**
+ * Implements hook_action_info().
+ */
+function uc_order_action_info() {
+  return array(
+    'uc_order_action_set_status' => array(
+      'label' => t('Set order status'),
+      'type' => 'uc_order',
+      'configurable' => TRUE,
+    ),
+    'uc_order_action_print' => array(
+      'label' => t('Print invoice'),
+      'type' => 'uc_order',
+      'aggregate' => TRUE,
+      'configurable' => FALSE,
+    ),
+  );
+}
+
+/**
+ * Action implementation: sets the status of an order.
+ */
+function uc_order_action_set_status($order, $context = array()) {
+  uc_order_update_status($order->order_id, $context['status']);
+}
+
+/**
+ * Action form: selects the order status to be used.
+ */
+function uc_order_action_set_status_form($context) {
+  $form['status'] = array(
+    '#type' => 'select',
+    '#title' => t('Order status'),
+    '#default_value' => @$context['status'],
+    '#options' => uc_order_status_options_list(),
+  );
+
+  return $form;
+}
+
+/**
+ * Submit callback: selects the order status to be used.
+ */
+function uc_order_action_set_status_submit($form, $form_state) {
+  return array('status' => $form_state['values']['status']);
+}
+
+/**
+ * Action implementation: prints multiple invoices.
+ */
+function uc_order_action_print($orders, $context = array()) {
+  $output = '';
+
+  foreach ($orders as $order) {
+    $output .= '<div style="page-break-after: always;">';
+    $output .= theme('uc_order', array(
+      'order' => $order,
+      'op' => 'print',
+      'template' => variable_get('uc_cust_order_invoice_template', 'customer'),
+    ));
+    $output .= '</div>';
+  }
+
+  print '<html><head><title>Invoice</title></head>';
+  print '<body onload="print();">';
+  print $output;
+  print '</body></html>';
+  exit;
+}
