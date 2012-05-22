@@ -15,6 +15,35 @@ class UbercartOrderTestCase extends UbercartTestHelper {
     );
   }
 
+  public function testOrderAPI() {
+    // Test defaults.
+    $order = uc_order_new();
+    $this->assertEqual($order->uid, 0, 'New order is anonymous.');
+    $this->assertEqual($order->order_status, 'in_checkout', 'New order is in checkout.');
+
+    $order = uc_order_new($this->customer->uid, 'completed');
+    $this->assertEqual($order->uid, $this->customer->uid, 'New order has correct uid.');
+    $this->assertEqual($order->order_status, 'completed', 'New order is marked completed.');
+  }
+
+  public function testOrderEntity() {
+    $order = entity_create('uc_order', array());
+    $this->assertEqual($order->uid, 0, 'New order is anonymous.');
+    $this->assertEqual($order->order_status, 'in_checkout', 'New order is in checkout.');
+
+    $name = $this->randomName();
+    $order = entity_create('uc_order', array(
+      'uid' => $this->customer->uid,
+      'order_status' => 'completed',
+      'billing_first_name' => $name,
+      'billing_last_name' => $name,
+    ));
+    $this->assertEqual($order->uid, $this->customer->uid, 'New order has correct uid.');
+    $this->assertEqual($order->order_status, 'completed', 'New order is marked completed.');
+    $this->assertEqual($order->billing_first_name, $name, 'New order has correct name.');
+    $this->assertEqual($order->billing_last_name, $name, 'New order has correct name.');
+  }
+
   public function testOrderCreation() {
     $this->drupalLogin($this->adminUser);
 

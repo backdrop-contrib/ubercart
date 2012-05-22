@@ -474,7 +474,7 @@ function uc_order_entity_info() {
       'uri callback' => 'uc_order_uri',
       // Entity API callbacks.
       'access callback'   => 'uc_order_order_entity_access',
-      'creation callback' => 'uc_order_new',
+      'creation callback' => 'uc_order_create',
       'save callback'     => 'uc_order_save',
       'delete callback'   => 'uc_order_delete',
     ),
@@ -836,12 +836,34 @@ function uc_order_order_entity_access($op, $order = NULL, $account = NULL) {
 }
 
 /**
- * Entity API "creation callback" for uc_order entity.
+ * Generates and saves a new order.
  *
- * Generates a new order for user $uid.
+ * @param $uid
+ *   The user ID to assign the order to.
+ * @param $state
+ *   The initial state of the order.
  */
 function uc_order_new($uid = 0, $state = 'in_checkout') {
   $order = new UcOrder($uid, $state);
+
+  drupal_write_record('uc_orders', $order);
+
+  uc_order_module_invoke('new', $order, NULL);
+
+  return $order;
+}
+
+/**
+ * Entity API "creation callback" for uc_order entity.
+ *
+ * @param $values
+ *   A set of default values for the order.
+ */
+function uc_order_create($values, $entity_type) {
+  $order = new UcOrder();
+  foreach ($values as $key => $value) {
+    $order->$key = $value;
+  }
 
   drupal_write_record('uc_orders', $order);
 
