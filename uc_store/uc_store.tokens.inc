@@ -132,7 +132,7 @@ function uc_store_tokens($type, $tokens, $data = array(), $options = array()) {
 
     // Handle chaining for tokens that have 'type' defined in hook_token_info()
     if ($link_tokens = token_find_with_prefix($tokens, 'help-url')) {
-      $replacements += token_generate('url', $link_tokens, array('path' => $variable_get('uc_store_help_page', '')), $options);
+      $replacements += token_generate('url', $link_tokens, array('path' => variable_get('uc_store_help_page', '')), $options);
     }
   }
 
