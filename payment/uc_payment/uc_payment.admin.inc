@@ -218,7 +218,6 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
 
   if ($payments !== FALSE) {
     foreach ($payments as $payment) {
-      $form['payments'][$payment->receipt_id]['#attributes'] = array('valign' => 'top');
       $form['payments'][$payment->receipt_id]['received'] = array(
         '#markup' => format_date($payment->received, 'custom', variable_get('date_format_uc_store', 'm/d/Y') . '<b\r />H:i:s'),
       );
@@ -265,7 +264,6 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
   );
 
   if (user_access('manual payments')) {
-    $form['payments']['new']['#attributes'] = array('valign' => 'top');
     $form['payments']['new']['received'] = array(
       '#type' => 'date',
       '#default_value' => array(
