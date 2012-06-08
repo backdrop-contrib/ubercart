@@ -455,18 +455,18 @@ function theme_uc_cart_checkout_review($variables) {
           else {
             $border = '';
           }
-          $output .= '<tr valign="top"' . $border . '>';
+          $output .= '<tr' . $border . '>';
           $output .= '<td class="title-col">' . $row['title'] . ':</td>';
           $output .= '<td class="data-col">' . $row['data'] . '</td>';
           $output .= '</tr>';
         }
         else {
-          $output .= '<tr valign="top"><td colspan="2">' . $row . '</td></tr>';
+          $output .= '<tr><td colspan="2">' . $row . '</td></tr>';
         }
       }
     }
     else {
-      $output .= '<tr valign="top"><td colspan="2">' . $data . '</td></tr>';
+      $output .= '<tr><td colspan="2">' . $data . '</td></tr>';
     }
   }
 
