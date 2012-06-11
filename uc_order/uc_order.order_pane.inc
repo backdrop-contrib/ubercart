@@ -1208,27 +1208,27 @@ function uc_op_products_edit_table() {
 function uc_op_order_comments_view_table($comments) {
   $table = array(
     '#type' => 'tapir_table',
-    '#attributes' => array('class' => array('order-pane-table')),
+    '#attributes' => array('class' => array('order-pane-table uc-order-comments')),
   );
 
   $table['#columns']['date'] = array(
-    'cell' => array('data' => t('Date'), 'class' => array('text-center')),
+    'cell' => array('data' => t('Date'), 'class' => array('date')),
     'weight' => 0,
   );
   $table['#columns']['user'] = array(
-    'cell' => t('User'),
+    'cell' => array('data' => t('User'), 'class' => array('user')),
     'weight' => 1,
   );
   $table['#columns']['notified'] = array(
-    'cell' => t('Notified'),
+    'cell' => array('data' => t('Notified'), 'class' => array('notified')),
     'weight' => 2,
   );
   $table['#columns']['status'] = array(
-    'cell' => array('data' => t('Status'), 'class' => array('text-center')),
+    'cell' => array('data' => t('Status'), 'class' => array('status')),
     'weight' => 3,
   );
   $table['#columns']['comment'] = array(
-    'cell' => array('data' => t('Comment'), 'width' => '80%'),
+    'cell' => array('data' => t('Comment'), 'class' => array('message')),
     'weight' => 4,
   );
 
@@ -1237,23 +1237,24 @@ function uc_op_order_comments_view_table($comments) {
       $data = array();
       $data['date'] = array(
         '#markup' => format_date($comment->created, 'short'),
-        '#cell_attributes' => array('align' => 'center'),
+        '#cell_attributes' => array('class' => 'date'),
       );
       $data['user'] = array(
         '#markup' => theme('uc_uid', array('uid' => $comment->uid)),
-        '#cell_attributes' => array('align' => 'center'),
+        '#cell_attributes' => array('class' => 'user'),
       );
       $icon = $comment->notified ? 'true-icon.gif' : 'false-icon.gif';
       $data['notified'] = array(
         '#markup' => theme('image', array('path' => drupal_get_path('module', 'uc_order') . '/images/' . $icon)),
-        '#cell_attributes' => array('align' => 'center'),
+        '#cell_attributes' => array('class' => 'notified'),
       );
       $data['status'] = array(
         '#markup' => $comment->title,
-        '#cell_attributes' => array('align' => 'center'),
+        '#cell_attributes' => array('class' => 'status'),
       );
       $data['comment'] = array(
         '#markup' => check_plain($comment->message),
+        '#cell_attributes' => array('class' => 'message'),
       );
       $table['#rows'][] = $data;
     }
@@ -1275,19 +1276,19 @@ function uc_op_order_comments_view_table($comments) {
 function uc_op_admin_comments_view_table($comments) {
   $table = array(
     '#type' => 'tapir_table',
-    '#attributes' => array('class' => array('order-pane-table')),
+    '#attributes' => array('class' => array('order-pane-table uc-order-comments')),
   );
 
   $table['#columns']['date'] = array(
-    'cell' => array('data' => t('Date'), 'class' => array('text-center')),
+    'cell' => array('data' => t('Date'), 'class' => array('date')),
     'weight' => 0,
   );
   $table['#columns']['user'] = array(
-    'cell' => array('data' => t('User'), 'class' => array('text-center')),
+    'cell' => array('data' => t('User'), 'class' => array('user')),
     'weight' => 1,
   );
   $table['#columns']['comment'] = array(
-    'cell' => array('data' => t('Comment'), 'width' => '80%'),
+    'cell' => array('data' => t('Comment'), 'class' => array('message')),
     'weight' => 2,
   );
 
@@ -1296,15 +1297,15 @@ function uc_op_admin_comments_view_table($comments) {
       $data = array();
       $data['date'] = array(
         '#markup' => format_date($comment->created, 'short'),
-        '#cell_attributes' => array('align' => 'center', 'valign' => 'top'),
+        '#cell_attributes' => array('class' => 'date'),
       );
       $data['user'] = array(
         '#markup' => theme('uc_uid', array('uid' => $comment->uid)),
-        '#cell_attributes' => array('align' => 'center', 'valign' => 'top'),
+        '#cell_attributes' => array('class' => 'user'),
       );
       $data['comment'] = array(
         '#markup' => filter_xss_admin($comment->message),
-        '#cell_attributes' => array('valign' => 'top'),
+        '#cell_attributes' => array('class' => 'message'),
       );
       $table['#rows'][] = $data;
     }
