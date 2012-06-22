@@ -70,8 +70,6 @@ function uc_store_token_info() {
  * Implements hook_tokens().
  */
 function uc_store_tokens($type, $tokens, $data = array(), $options = array()) {
-  global $base_url;
-
   $replacements = array();
 
   if ($type == 'site') {
@@ -101,7 +99,7 @@ function uc_store_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'link':
-          $replacements[$original] = l(uc_store_name(), $base_url);
+          $replacements[$original] = l(uc_store_name(), '<front>', array('absolute' => TRUE));
           break;
 
         case 'owner':
