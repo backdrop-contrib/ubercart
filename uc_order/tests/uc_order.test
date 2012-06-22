@@ -24,6 +24,11 @@ class UbercartOrderTestCase extends UbercartTestHelper {
     $order = uc_order_new($this->customer->uid, 'completed');
     $this->assertEqual($order->uid, $this->customer->uid, 'New order has correct uid.');
     $this->assertEqual($order->order_status, 'completed', 'New order is marked completed.');
+
+    // Test deletion.
+    uc_order_delete($order->order_id);
+    $deleted_order = uc_order_load($order->order_id, TRUE);
+    $this->assertFalse($deleted_order, 'Order was successfully deleted');
   }
 
   public function testOrderEntity() {
@@ -42,6 +47,11 @@ class UbercartOrderTestCase extends UbercartTestHelper {
     $this->assertEqual($order->order_status, 'completed', 'New order is marked completed.');
     $this->assertEqual($order->billing_first_name, $name, 'New order has correct name.');
     $this->assertEqual($order->billing_last_name, $name, 'New order has correct name.');
+
+    // Test deletion.
+    entity_delete('uc_order', $order->order_id);
+    $deleted_order = entity_load('uc_order', array($order->order_id), array(), TRUE);
+    $this->assertFalse($deleted_order, 'Order was successfully deleted');
   }
 
   public function testOrderCreation() {
