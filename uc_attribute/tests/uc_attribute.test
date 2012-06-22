@@ -631,23 +631,145 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
   }
 
   /**
+   * Tests the "product attributes" page.
+   */
+  public function testAttributeUIProductAttributes() {
+    $product = $this->createProduct();
+    $attribute = self::createAttribute(array('display' => 1));
+    $option = self::createAttributeOption(array('aid' => $attribute->aid));
+
+    $this->drupalGet('node/' . $product->nid . '/edit/attributes');
+    $this->assertText('You must first add attributes to this product.');
+
+    $this->clickLink('Add an attribute');
+    $this->assertText($attribute->name);
+
+    $this->drupalPost(NULL, array('add_attributes[' . $attribute->aid. ']' => 1), t('Add attributes'));
+    $this->assertText('1 attribute has been added.');
+    $this->assertText($attribute->name, 'Attribute name found');
+    $this->assertFieldByName('attributes[' . $attribute->aid . '][label]', $attribute->label, 'Attribute label found');
+    $this->assertText($option->name, 'Default option name found');
+    $this->assertText(uc_currency_format($option->price), 'Default option price found');
+    $this->assertFieldByName('attributes[' . $attribute->aid . '][display]', $attribute->display, 'Attribute display setting found');
+
+    $this->drupalGet('node/' . $product->nid . '/edit/attributes/add');
+    $this->assertNoText($attribute->name);
+    $this->assertText('No attributes left to add.');
+
+    $edit = array('attributes[' . $attribute->aid. '][remove]' => 1);
+    $this->drupalPost('node/' . $product->nid . '/edit/attributes', $edit, t('Save changes'));
+    $this->assertText('You must first add attributes to this product.');
+  }
+
+  /**
+   * Tests the "product options" page.
+   */
+  public function testAttributeUIProductOptions() {
+    $product = $this->createProduct();
+    $attribute = self::createAttribute(array('display' => 1));
+    for ($i = 0; $i < 3; $i++) {
+      $option = self::createAttributeOption(array('aid' => $attribute->aid));
+      $attribute->options[$option->oid] = $option;
+    }
+    uc_attribute_subject_save($attribute, 'product', $product->nid, TRUE);
+
+    $this->drupalGet('node/' . $product->nid . '/edit/options');
+    $this->assertText($attribute->name, 'Attribute name found');
+    foreach ($attribute->options as $option) {
+      $this->assertText($option->name, 'Option name found');
+      $this->assertFieldByName('attributes[' . $attribute->aid . '][options][' . $option->oid . '][cost]', $option->cost, 'Option cost field found');
+      $this->assertFieldByName('attributes[' . $attribute->aid . '][options][' . $option->oid . '][price]', $option->price, 'Option price field found');
+      $this->assertFieldByName('attributes[' . $attribute->aid . '][options][' . $option->oid . '][weight]', $option->weight, 'Option weight field found');
+    }
+  }
+
+  /**
+   * Tests the "product adjustments" page.
+   */
+  public function testAttributeUIProductAdjustments() {
+    $product = $this->createProduct();
+    $attribute = self::createAttribute(array('display' => 1));
+    for ($i = 0; $i < 3; $i++) {
+      $option = self::createAttributeOption(array('aid' => $attribute->aid));
+      $adjustment = self::createProductAdjustment(array('combination' => serialize(array($attribute->aid => $option->oid)), 'nid' => $product->nid));
+      $option->model = $adjustment->model;
+      $attribute->options[$option->oid] = $option;
+    }
+    uc_attribute_subject_save($attribute, 'product', $product->nid, TRUE);
+
+    $this->drupalGet('node/' . $product->nid . '/edit/adjustments');
+    $this->assertText('Default product SKU: ' . $product->model, 'Default product SKU found');
+    $this->assertRaw('<th>' . $attribute->name . '</th>', 'Attribute name found');
+    foreach ($attribute->options as $option) {
+      $this->assertRaw('<td>' . $option->name . '</td>', 'Option name found');
+      $this->assertRaw($option->model, 'Option SKU found');
+    }
+  }
+
+  /**
+   * Tests attributes applied to a product.
+   */
+  public function testProductAttribute() {
+    $product = $this->createProduct();
+    $attribute = self::createAttribute(array('display' => 1));
+    for ($i = 0; $i < 3; $i++) {
+      $option = self::createAttributeOption(array('aid' => $attribute->aid));
+      $adjustment = self::createProductAdjustment(array('combination' => serialize(array($attribute->aid => $option->oid)), 'nid' => $product->nid));
+      $option->model = $adjustment->model;
+      $attribute->options[$option->oid] = $option;
+    }
+    uc_attribute_subject_save($attribute, 'product', $product->nid, TRUE);
+
+    // Product node display.
+    $this->drupalGet('node/' . $product->nid);
+    $this->assertText($attribute->label, 'Attribute label found for product');
+    $this->assertText($attribute->description, 'Attribute description found for product');
+    foreach ($attribute->options as $option) {
+      $this->assertText($option->name, 'Option name found for product');
+      $this->assertText(uc_currency_format($option->price), 'Option price adjustment found for product');
+    }
+
+    // Cart display.
+    $price = uc_currency_format($product->sell_price + $option->price);
+    $edit = array('attributes[' . $attribute->aid . ']' => $option->oid);
+    $this->drupalPost(NULL, $edit, 'Add to cart');
+    $this->assertText($attribute->label . ': ' . $option->name, 'Attribute and selected option found in cart');
+    $this->assertText($price, 'Adjusted price found in cart');
+
+    // Checkout display.
+    $this->drupalPost(NULL, array(), 'Checkout');
+    $this->assertText($attribute->label . ': ' . $option->name, 'Attribute and selected option found at checkout');
+    $this->assertText($price, 'Adjusted price found at checkout');
+    $this->checkout();
+
+    // Admin order display.
+    $cost = uc_currency_format($product->cost + $option->cost);
+    $this->drupalGet('admin/store/orders/1');
+    $this->assertText($attribute->label . ': ' . $option->name, 'Attribute and selected option found in admin order display');
+    $this->assertText($option->model, 'Adjusted SKU found in admin order display');
+    $this->assertText($cost, 'Adjusted cost found in admin order display');
+    $this->assertText($price, 'Adjusted price found in admin order display');
+
+    // Invoice display.
+    $this->drupalGet('admin/store/orders/1/invoice');
+    $this->assertText($attribute->label . ': ' . $option->name, 'Attribute and selected option found on invoice');
+    $this->assertText('SKU: ' . $option->model, 'Adjusted SKU found on invoice');
+    $this->assertText($price, 'Adjusted price found on invoice');
+  }
+
+  /**
    * Creates a product adjustment SKU.
    *
    * @param $data
    */
   public static function createProductAdjustment($data) {
-    $max_nid = db_select('node', 'n')
-      ->fields('n', array('nid'))
-      ->orderBy('nid', 'DESC')
-      ->range(0, 1)
-      ->execute()
-      ->fetchField();
     $adjustment = $data + array(
       'model' => self::randomName(8),
     );
     db_insert('uc_product_adjustments')
       ->fields($adjustment)
       ->execute();
+    return (object) $adjustment;
   }
 
   /**
