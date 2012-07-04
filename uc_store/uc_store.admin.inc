@@ -405,7 +405,7 @@ function uc_store_settings_form($form, &$form_state) {
     $form['length']['uc_length_format_' . $unit] = array(
       '#type' => 'textfield',
       '#title' => t('@unit format string', array('@unit' => $name)),
-      '#default_value' => variable_get('uc_store_length_format_' . $unit, '!value ' . $unit),
+      '#default_value' => variable_get('uc_length_format_' . $unit, '!value ' . $unit),
     );
   }
 
