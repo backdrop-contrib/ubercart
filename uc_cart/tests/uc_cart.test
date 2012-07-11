@@ -504,6 +504,16 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
       $url_pass,
       t('Add to cart redirect takes user to the correct URL.')
     );
+
+    $this->drupalPost(
+      'admin/store/settings/cart',
+      array('uc_add_item_redirect' => '<none>'),
+      t('Save configuration')
+    );
+
+    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'), array('query' => array('test' => 'querystring')));
+    $url = url('node/' . $this->product->nid, array('absolute' => TRUE, 'query' => array('test' => 'querystring')));
+    $this->assertTrue($this->getUrl() == $url, 'Add to cart no-redirect works with a query string.');
   }
 
   function testMinimumSubtotal() {
