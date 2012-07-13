@@ -134,6 +134,77 @@ function uc_product_views_data() {
     ),
   );
 
+  $data['uc_products']['length'] = array(
+    'title' => t('Length'),
+    'help' => t('The physical length.'),
+    'field' => array(
+      'additional fields' => array(
+        'field' => 'length_units',
+      ),
+      'handler' => 'uc_product_handler_field_length',
+      'click sortable' => TRUE,
+      'float' => TRUE,
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_float',
+    ),
+  );
+
+  $data['uc_products']['width'] = array(
+    'title' => t('Width'),
+    'help' => t('The physical width.'),
+    'field' => array(
+      'additional fields' => array(
+        'field' => 'length_units',
+      ),
+      'handler' => 'uc_product_handler_field_length',
+      'click sortable' => TRUE,
+      'float' => TRUE,
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_float',
+    ),
+  );
+  $data['uc_products']['height'] = array(
+    'title' => t('Height'),
+    'help' => t('The physical height.'),
+    'field' => array(
+      'additional fields' => array(
+        'field' => 'length_units',
+      ),
+      'handler' => 'uc_product_handler_field_length',
+      'click sortable' => TRUE,
+      'float' => TRUE,
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_float',
+    ),
+  );
+
+  $data['uc_products']['pkg_qty'] = array(
+    'title' => t('Package quantity'),
+    'help' => t('The number of items that fit in the largest package.'),
+    'field' => array(
+      'handler' => 'views_handler_field_numeric',
+      'click sortable' => TRUE,
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_numeric',
+    ),
+  );
+
   $data['uc_products']['ordering'] = array(
     'title' => t('List position'),
     'help' => t('The default sort criteria in the catalog.'),
