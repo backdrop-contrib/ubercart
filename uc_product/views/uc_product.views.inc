@@ -217,6 +217,21 @@ function uc_product_views_data() {
     ),
   );
 
+  $data['uc_products']['shippable'] = array(
+    'title' => t('Shippable'),
+    'help' => t('Is the product shippable?'),
+    'field' => array(
+      'handler' => 'views_handler_field_boolean',
+      'click sortable' => TRUE,
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_boolean_operator',
+    ),
+  );
+
   $data['uc_products']['is_product'] = array(
     'title' => t('Is a product'),
     'help' => t('Check for the fields provided by the Ubercart product module.'),
