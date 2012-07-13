@@ -2215,7 +2215,11 @@ function uc_order_action_info() {
  * Action implementation: sets the status of an order.
  */
 function uc_order_action_set_status($order, $context = array()) {
-  uc_order_update_status($order->order_id, $context['status']);
+  $update = uc_order_update_status($order->order_id, $context['status']);
+
+  if ($update && $context['notify']) {
+    rules_invoke_event('uc_order_status_email_update', $order);
+  }
 }
 
 /**
@@ -2228,7 +2232,11 @@ function uc_order_action_set_status_form($context) {
     '#default_value' => @$context['status'],
     '#options' => uc_order_status_options_list(),
   );
-
+  $form['notify'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Send e-mail notification on update.'),
+    '#default_value' => @$context['notify'],
+  );
   return $form;
 }
 
@@ -2236,7 +2244,10 @@ function uc_order_action_set_status_form($context) {
  * Submit callback: selects the order status to be used.
  */
 function uc_order_action_set_status_submit($form, $form_state) {
-  return array('status' => $form_state['values']['status']);
+  return array(
+    'status' => $form_state['values']['status'],
+    'notify' => $form_state['values']['notify'],
+  );
 }
 
 /**
