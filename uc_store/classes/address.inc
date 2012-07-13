@@ -172,4 +172,22 @@ class UcAddress {
     return $address;
   }
 
+  /**
+   * PHP magic method to use in relation with var_export().
+   *
+   * Created for strongarm compatibility.
+   *
+   * @param array $data
+   *   Data to import
+   */
+  public static function __set_state($data) {
+    $obj = new self;
+
+    foreach ($data as $key => $val) {
+      $obj->$key = $val;
+    }
+
+    return $obj;
+  }
+
 }
