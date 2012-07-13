@@ -1285,22 +1285,21 @@ function uc_cart_cart_pane_list($items) {
     }
 
     // Set defaults.
-    $panes[$id] = $pane + array(
+    $pane += array(
       'id' => $id,
       'enabled' => TRUE,
       'weight' => 0,
       'body' => array(),
     );
+
+    $pane['enabled'] = variable_get('uc_cap_' . $id . '_enabled', $pane['enabled']);
+    $pane['weight'] = variable_get('uc_cap_' . $id . '_weight', $pane['weight']);
+
+    $panes[$id] = $pane;
   }
 
   // Allow other modules to alter the defaults.
   drupal_alter('uc_cart_pane', $panes, $items);
-
-  // Use admin-specified enabled and weight values.
-  foreach ($panes as $id => &$pane) {
-    $pane['enabled'] = variable_get('uc_cap_' . $id . '_enabled', $pane['enabled']);
-    $pane['weight'] = variable_get('uc_cap_' . $id . '_weight', $pane['weight']);
-  }
 
   uasort($panes, 'uc_weight_sort');
 
