@@ -825,7 +825,6 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
       '#title'         => t('Weight'),
       '#default_value' => isset($package->weight) ? $package->weight : 0,
       '#size'          => 10,
-      '#maxlength'     => 15,
     );
     $pkg_form['weight']['units'] = array(
       '#type'          => 'select',
