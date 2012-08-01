@@ -146,4 +146,27 @@ class UbercartProductTestCase extends UbercartTestHelper {
       'uc_product',
       t('The new content type has been taken over by uc_product.'));
   }
+
+  public function testProductQuantity() {
+    variable_set('uc_product_add_to_cart_qty', TRUE);
+
+    // Check zero quantity message.
+    $this->drupalPost('node/' . $this->product->nid, array('qty' => '0'), 'Add to cart');
+    $this->assertText('The quantity cannot be zero.');
+
+    // Check invalid quantity messages.
+    $this->drupalPost('node/' . $this->product->nid, array('qty' => 'x'), 'Add to cart');
+    $this->assertText('The quantity must be a number.');
+
+    $this->drupalPost('node/' . $this->product->nid, array('qty' => '1a'), 'Add to cart');
+    $this->assertText('The quantity must be a number.');
+
+    // Check cart add message.
+    $this->drupalPost('node/' . $this->product->nid, array('qty' => '1'), 'Add to cart');
+    $this->assertText($this->product->title . ' added to your shopping cart.');
+
+    // Check cart update message.
+    $this->drupalPost('node/' . $this->product->nid, array('qty' => '1'), 'Add to cart');
+    $this->assertText('Your item(s) have been updated.');
+  }
 }
