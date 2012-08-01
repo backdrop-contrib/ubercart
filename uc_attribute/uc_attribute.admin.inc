@@ -1278,7 +1278,7 @@ function uc_product_adjustments_form($form, &$form_state, $node) {
       $row_title = substr($row_title, 0, strlen($row_title) - 2);
       $default_model = $model;
       foreach ($old_vals as $ov) {
-        if (!count(array_diff_assoc(unserialize($ov->combination), $comb_array))) {
+        if ($ov->combination == serialize($comb_array)) {
           $default_model = $ov->model;
           break;
         }
