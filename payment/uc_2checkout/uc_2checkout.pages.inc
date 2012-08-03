@@ -18,7 +18,8 @@ function uc_2checkout_complete($cart_id = 0) {
   }
 
   $key = $_POST['key'];
-  $valid = md5(variable_get('uc_2checkout_secret_word', 'tango') . $_POST['sid'] . $_POST['merchant_order_id'] . $_POST['total']);
+  $order_number = variable_get('uc_2checkout_demo', TRUE) ? 1 : $_POST['order_number'];
+  $valid = md5(variable_get('uc_2checkout_secret_word', 'tango') . $_POST['sid'] . $order_number . $_POST['total']);
   if (drupal_strtolower($key) != drupal_strtolower($valid)) {
     uc_order_comment_save($order->order_id, 0, t('Attempted unverified 2Checkout completion for this order.'), 'admin');
     return MENU_ACCESS_DENIED;
