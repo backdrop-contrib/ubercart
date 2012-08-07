@@ -220,7 +220,7 @@ function uc_product_theme() {
       'file' => 'uc_product.theme.inc',
     ),
     'uc_product_weight' => array(
-      'variables' => array('amount' => 0, 'units' => NULL, 'view_mode' => 'full'),
+      'variables' => array('amount' => 0, 'units' => NULL, 'view_mode' => 'full', 'attributes' => array()),
       'file' => 'uc_product.theme.inc',
     ),
     'uc_product_dimensions' => array(
@@ -731,11 +731,11 @@ function uc_product_delete(&$node) {
 function uc_product_view_ajax_commands($form_state, $keys) {
   $commands = array();
   if (variable_get('uc_product_update_node_view', FALSE) && !empty($form_state['storage']['variant'])) {
-    $node_div = '#node-' . $form_state['storage']['variant']->nid;
+    $node_div = '.uc-product-' . $form_state['storage']['variant']->nid;
     $build = node_view($form_state['storage']['variant']);
     foreach ($keys as $key) {
       if (isset($build[$key])) {
-        $id = $node_div . ' .' . str_replace('_', '-', $key);
+        $id = $node_div . '.' . str_replace('_', '-', $key);
         $commands[] = ajax_command_replace($id, drupal_render($build[$key]));
       }
     }
@@ -768,6 +768,7 @@ function uc_product_view($node, $view_mode) {
     '#attributes' => array(
       'class' => array(
         'display-price',
+        'uc-product-' . $node->nid,
       ),
     ),
   );
@@ -793,6 +794,7 @@ function uc_product_view($node, $view_mode) {
     '#attributes' => array(
       'class' => array(
         'cost',
+        'uc-product-' . $node->nid,
       ),
     ),
     '#access' => user_access('administer products'),
@@ -812,6 +814,11 @@ function uc_product_view($node, $view_mode) {
     '#amount' => $variant->weight,
     '#units' => $variant->weight_units,
     '#view_mode' => $view_mode,
+    '#attributes' => array(
+      'class' => array(
+        'uc-product-' . $node->nid,
+      ),
+    ),
   );
   $node->content['dimensions'] = array(
     '#theme' => 'uc_product_dimensions',

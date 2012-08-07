@@ -111,10 +111,13 @@ function theme_uc_product_price($variables) {
 function theme_uc_product_weight($variables) {
   $amount = $variables['amount'];
   $units = $variables['units'];
+  $attributes = $variables['attributes'];
+  $attributes['class'][] = "product-info";
+  $attributes['class'][] = "weight";
 
   $output = '';
   if ($amount) {
-    $output = '<div class="product-info weight">';
+    $output = '<div ' . drupal_attributes($attributes) . '>';
     $output .= t('Weight: !weight', array('!weight' => uc_weight_format($amount, $units)));
     $output .= '</div>';
   }
