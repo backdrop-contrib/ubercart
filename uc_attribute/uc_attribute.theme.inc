@@ -37,7 +37,7 @@ function theme_uc_attribute_option($variables) {
 function theme_uc_attribute_add_to_cart($variables) {
   $form = $variables['form'];
 
-  $output = '<div class="attributes">';
+  $output = '<div id="' . $form['#id'] . '" class="attributes">';
   $stripes = array('even' => 'odd', 'odd' => 'even');
   $parity = 'even';
   foreach (element_children($form) as $aid) {
