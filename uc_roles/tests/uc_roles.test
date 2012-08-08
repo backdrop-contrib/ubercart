@@ -29,7 +29,13 @@ class UbercartRolesTestCase extends UbercartTestHelper {
     $rid = $this->drupalCreateRole(array('access content'));
     $this->drupalLogin($this->adminUser);
     $this->drupalPost('node/' . $this->product->nid . '/edit/features', array('feature' => 'role'), t('Add'));
-    $this->drupalPost(NULL, array('uc_roles_role' => $rid), t('Save feature'));
+    $edit = array(
+      'uc_roles_role' => $rid,
+      'end_override' => TRUE,
+      'uc_roles_expire_relative_duration' => 1,
+      'uc_roles_expire_relative_granularity' => 'day',
+    );
+    $this->drupalPost(NULL, $edit, t('Save feature'));
 
     // Check out with the test product.
     $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
@@ -42,5 +48,12 @@ class UbercartRolesTestCase extends UbercartTestHelper {
 
     // Test that the email is correct.
     $mail = $this->findMail('/Ubercart: ' . preg_quote($account->roles[$rid]) . ' role granted/');
+
+    // Delete the user.
+    user_delete($order->uid);
+
+    // Run cron to ensure deleted users are handled correctly.
+    $this->drupalLogout();
+    $this->cronRun();
   }
 }

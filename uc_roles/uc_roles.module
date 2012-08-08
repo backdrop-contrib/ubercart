@@ -35,14 +35,9 @@ function uc_roles_cron() {
   foreach ($result as $expiration) {
     $account = user_load($expiration->uid);
 
-    // User has to contain roles to manage.
-    if (!is_array($account->roles) || !count($account->roles)) {
-      continue;
-    }
-
-    // Cleanup if this role was deleted off the user already.
-    if (!in_array($expiration->rid, array_keys($account->roles))) {
-      uc_roles_delete($account, $expiration->rid);
+    // Cleanup if user or role was deleted already.
+    if (!$account || !in_array($expiration->rid, array_keys($account->roles))) {
+      uc_roles_delete($expiration, $expiration->rid, TRUE);
     }
 
     // Role expired.
