@@ -15,12 +15,18 @@ class UbercartPaymentPaneTestCase extends UbercartTestHelper {
     );
   }
 
+  /**
+   * Overrides DrupalWebTestCase::setUp().
+   */
   public function setUp() {
     parent::setUp(array('uc_payment', 'uc_payment_pack'));
     $this->drupalLogin($this->adminUser);
     $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
   }
 
+  /**
+   * Verifies checkout page presents all enabled payment methods.
+   */
   public function testPaymentMethodOptions() {
     // No payment methods.
     variable_set('uc_payment_method_check_checkout', FALSE);
@@ -40,6 +46,9 @@ class UbercartPaymentPaneTestCase extends UbercartTestHelper {
     $this->assertNoFieldByXPath("//input[@name='panes[payment][payment_method]' and @disabled='disabled']");
   }
 
+  /**
+   * Tests operation of uc_payment_show_order_total_preview variable.
+   */
   public function testOrderTotalPreview() {
     variable_set('uc_payment_show_order_total_preview', TRUE);
     $this->drupalGet('cart/checkout');
