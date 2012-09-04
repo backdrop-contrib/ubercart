@@ -1023,6 +1023,7 @@ function uc_shipping_shipment_edit_submit($form, &$form_state) {
     $shipment->sid = $form_state['values']['sid'];
   }
   $shipment->origin = (object) $form_state['values']['pickup_address'];
+  $shipment->destination = new stdClass();
   foreach ($form_state['values'] as $key => $value) {
     if (substr($key, 0, 9) == 'delivery_') {
       $field = substr($key, 9);
