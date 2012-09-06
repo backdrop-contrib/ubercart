@@ -22,23 +22,6 @@ function theme_uc_product_model($variables) {
 }
 
 /**
- * Formats a product's body.
- *
- * @param $variables
- *   An associative array containing:
- *   - body: Body text of the product node.
- *
- * @ingroup themeable
- */
-function theme_uc_product_body($variables) {
-  $output = '<div class="product-body">';
-  $output .= $variables['body'];
-  $output .='</div>';
-
-  return $output;
-}
-
-/**
  * Wraps the "Add to Cart" form in a <div>.
  *
  * @param $variables
