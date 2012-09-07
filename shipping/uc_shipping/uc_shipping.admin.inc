@@ -37,11 +37,8 @@ function uc_shipping_order_packages($order) {
       unset($package->label_image);
     }
 
-    if ($package->sid && $package->label_image) {
+    if (isset($package->sid) && isset($package->label_image)) {
       $method = db_query("SELECT shipping_method FROM {uc_shipments} WHERE sid = :sid", array(':sid' => $package->sid))->fetchField();
-    }
-
-    if (isset($package->label_image)) {
       $row[] = l(
         theme('image_style', array(
           'style_name' => 'uc_thumbnail',
