@@ -219,14 +219,17 @@ function uc_taxes_clone($rate_id) {
   $rate->name = t('Copy of !name', array('!name' => $rate->name));
   $rate->id = NULL;
 
-  // Save the new rate.
-  $rate = uc_taxes_rate_save($rate);
+  // Save the new rate without clearing the Rules cache.
+  $rate = uc_taxes_rate_save($rate, FALSE);
 
   // Clone the associated conditions as well.
   if ($conditions = rules_config_load('uc_taxes_' . $rate_id)) {
-    unset($conditions->id);
+    $conditions->id = NULL;
+    $conditions->name = '';
     $conditions->save('uc_taxes_' . $rate->id);
   }
+
+  entity_flush_caches();
 
   // Display a message and redirect back to the overview.
   drupal_set_message(t('Tax rate %name cloned.', array('%name' => $name)));

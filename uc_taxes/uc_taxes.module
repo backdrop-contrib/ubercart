@@ -325,11 +325,13 @@ function uc_line_item_tax_subtotal($op, $order) {
  *
  * @param $rate
  *   The tax rate object to be saved.
+ * @param $reset
+ *   If TRUE, resets the Rules cache after saving. Defaults to TRUE.
  *
  * @return
  *   The saved tax rate object including the rate ID for new rates.
  */
-function uc_taxes_rate_save($rate) {
+function uc_taxes_rate_save($rate, $reset = TRUE) {
   // Save it as a new rate if no ID is specified.
   if (!$rate->id) {
     drupal_write_record('uc_taxes', $rate);
@@ -366,8 +368,10 @@ function uc_taxes_rate_save($rate) {
   $p_insert->execute();
   $l_insert->execute();
 
-  // Ensure Rules picks up the new condition.
-  entity_flush_caches();
+  if ($reset) {
+    // Ensure Rules picks up the new condition.
+    entity_flush_caches();
+  }
 
   return $rate;
 }
