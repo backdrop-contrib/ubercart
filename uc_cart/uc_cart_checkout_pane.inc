@@ -226,6 +226,7 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
         $contents['copy_address'] = array(
           '#type' => 'checkbox',
           '#title' => $copy,
+          '#default_value' => variable_get('uc_cart_default_same_address', FALSE),
           '#ajax' => array(
             'callback' => 'uc_checkout_pane_address_render',
             'wrapper' => $pane . '-address-pane',
@@ -260,10 +261,16 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
         '#type' => 'uc_address',
         '#default_value' => $order,
         '#key_prefix' => $pane,
-        '#hidden' => !empty($form_state['values']['panes'][$pane]['copy_address']),
         '#prefix' => '<div id="' . $pane . '-address-pane">',
         '#suffix' => '</div>',
       );
+
+      if (isset($form_state['values']['panes'][$pane]['copy_address'])) {
+        $contents['address']['#hidden'] = !empty($form_state['values']['panes'][$pane]['copy_address']);
+      }
+      elseif (isset($contents['copy_address'])) {
+        $contents['address']['#hidden'] = variable_get('uc_cart_default_same_address', FALSE);
+      }
 
       if (isset($form_state['triggering_element'])) {
         $element = &$form_state['triggering_element'];
