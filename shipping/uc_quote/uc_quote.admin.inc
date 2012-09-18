@@ -174,7 +174,10 @@ function uc_quote_method_settings($form, &$form_state) {
     $shipping_methods = module_invoke_all('uc_shipping_method');
     $method_types = array();
     foreach ($shipping_methods as $method) {
-      $method_types[$method['quote']['type']][] = $method['title'];
+      // Get shipping method types from shipping methods that provide quotes
+      if (isset($method['quote'])) {
+        $method_types[$method['quote']['type']][] = $method['title'];
+      }
     }
     if (isset($method_types['order']) && is_array($method_types['order'])) {
       $count = count($method_types['order']);

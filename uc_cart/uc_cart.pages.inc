@@ -92,8 +92,8 @@ function uc_cart_checkout() {
       // there has been no activity for 10 minutes (to prevent identity theft).
       if (uc_order_status_data($order->order_status, 'state') != 'in_checkout' ||
           ($user->uid > 0 && $user->uid != $order->uid) ||
-          $order->modified < REQUEST_TIME - 600) {
-        if (uc_order_status_data($order->order_status, 'state') == 'in_checkout' && $order->modified < REQUEST_TIME - 600) {
+          $order->modified < REQUEST_TIME - UC_CART_ORDER_TIMEOUT) {
+        if (uc_order_status_data($order->order_status, 'state') == 'in_checkout' && $order->modified < REQUEST_TIME - UC_CART_ORDER_TIMEOUT) {
           // Mark expired orders as abandoned.
           uc_order_update_status($order->order_id, 'abandoned');
         }

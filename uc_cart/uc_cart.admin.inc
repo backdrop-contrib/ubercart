@@ -327,6 +327,11 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     }
   }
 
+  $form['checkout']['uc_cart_default_same_address'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use the same address for billing and delivery by default.'),
+    '#default_value' => variable_get('uc_cart_default_same_address', FALSE),
+  );
   $form['checkout']['uc_cart_delivery_not_shippable'] = array(
     '#type' => 'checkbox',
     '#title' => t('Hide delivery information when carts have no shippable items.'),
