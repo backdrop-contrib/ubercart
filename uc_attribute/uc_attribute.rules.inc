@@ -17,7 +17,7 @@ function uc_attribute_rules_condition_info() {
     'group' => t('Order: Product'),
     'base' => 'uc_attribute_condition_ordered_product_option',
     'parameter' => array(
-      'product' => array('type' => 'uc_order_product', 'label' => t('Product')),
+      'order' => array('type' => 'uc_order', 'label' => t('Order')),
       'option' => array('type' => 'integer', 'label' => t('Attribute option'), 'options list' => 'uc_attribute_condition_ordered_product_options_list'),
     ),
   );
@@ -30,10 +30,9 @@ function uc_attribute_rules_condition_info() {
  *
  * @see uc_attribute_condition_ordered_product_option_form()
  */
-function uc_attribute_condition_ordered_product_option($order) {
-  $result = FALSE;
-
-  $match = unserialize($settings['attribute_option']);
+function uc_attribute_condition_ordered_product_option($order, $oid) {
+  $option = uc_attribute_option_load($oid);
+  $attribute = uc_attribute_load($option->aid);
 
   foreach ($order->products as $product) {
     if (!isset($product->data['attributes'])) {
@@ -45,29 +44,16 @@ function uc_attribute_condition_ordered_product_option($order) {
     // Once the order is made, the attribute data is changed to just the names.
     // If we can't find it by ID, check the names.
     if (is_int(key($attributes))) {
-      if (in_array($settings['attribute_option'], $attributes)) {
-        $result = TRUE;
-        break;
+      if (isset($attributes[$oid])) {
+        return TRUE;
       }
     }
-    else {
-      // Load the attribute data once, only if we need it.
-      if (!isset($option)) {
-        if ($option = uc_attribute_option_load($settings['attribute_option'])) {
-          $attribute = uc_attribute_load($option->aid);
-        }
-      }
-
-      if ($attribute) {
-        if (isset($attributes[$attribute->name]) && $attributes[$attribute->name] == $option->name) {
-          $result = TRUE;
-          break;
-        }
-      }
+    elseif (isset($attributes[$attribute->name][$oid])) {
+      return TRUE;
     }
   }
 
-  return $result;
+  return FALSE;
 }
 
 /**
