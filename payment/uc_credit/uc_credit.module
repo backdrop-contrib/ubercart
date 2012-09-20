@@ -906,26 +906,14 @@ function _uc_credit_valid_card_issue($issue) {
  *   FALSE if no encryption key is found.
  */
 function uc_credit_encryption_key() {
-  static $key;
+  static $key = FALSE;
 
-  if (!empty($key)) {
-    return $key;
-  }
-
-  $key_dir = variable_get('uc_credit_encryption_path', '');
-  if (is_dir($key_dir)) {
-    $key_file = $key_dir . '/' . UC_CREDIT_KEYFILE_NAME;
-    if (file_exists($key_file)) {
-      if (!$file = @fopen($key_file, 'r')) {
-        return FALSE;
-      }
-
-      $key = fread($file, filesize($key_file));
-      fclose($file);
+  if (empty($key)) {
+    $key_file = variable_get('uc_credit_encryption_path', '') . '/' . UC_CREDIT_KEYFILE_NAME;
+    $contents = @file_get_contents($key_file);
+    if (strlen($contents) == 32) {
+      $key = $contents;
     }
-  }
-  else {
-    return FALSE;
   }
 
   return $key;
