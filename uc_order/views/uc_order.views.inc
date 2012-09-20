@@ -416,6 +416,52 @@ function uc_order_views_data() {
     ),
   );
 
+  // Expose nodes to ordered products as a relationship.
+  $data['uc_order_products']['nid'] = array(
+    'title' => t('Nid'),
+    'help' => t('The nid of the ordered product. If you need more fields than the nid: Node relationship'),
+    'relationship' => array(
+      'title' => t('Node'),
+      'help' => t('Relate product to node.'),
+      'handler' => 'views_handler_relationship',
+      'base' => 'node',
+      'field' => 'nid',
+      'label' => t('node'),
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_numeric',
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument_node_nid',
+    ),
+    'field' => array(
+      'handler' => 'views_handler_field_node',
+    ),
+  );
+
+  // Expose orders to ordered products as a relationship.
+  $data['uc_order_products']['order_id'] = array(
+    'title' => t('Order ID'),
+    'help' => t('The order ID of the ordered product. If you need more fields than the order ID: Order relationship'),
+    'relationship' => array(
+      'title' => t('Order'),
+      'help' => t('Relate product to order.'),
+      'handler' => 'views_handler_relationship',
+      'base' => 'uc_orders',
+      'field' => 'order_id',
+      'label' => t('order'),
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_numeric',
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument_numeric',
+    ),
+    'field' => array(
+      'handler' => 'uc_order_handler_field_order_id',
+    ),
+  );
+
   $data['uc_order_products']['model'] = array(
     'title' => t('SKU'),
     'help' => t('The product model/SKU.'),
