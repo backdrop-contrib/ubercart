@@ -88,7 +88,7 @@ function uc_product_settings_form($form, &$form_state) {
       '#type' => 'checkbox',
       '#title' => t('Update product display based on customer selections'),
       '#default_value' => variable_get('uc_product_update_node_view', FALSE),
-			'#description' => t('Check this box to dynamically update the display of product information such as display-price or weight based on customer input on the add-to-cart form (e.g. selecting a particular attribute option).'),
+      '#description' => t('Check this box to dynamically update the display of product information such as display-price or weight based on customer input on the add-to-cart form (e.g. selecting a particular attribute option).'),
     );
   }
 
