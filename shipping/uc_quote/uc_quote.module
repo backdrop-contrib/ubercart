@@ -751,12 +751,30 @@ function uc_order_pane_quotes($op, $order, &$form = NULL, &$form_state = NULL) {
       );
 
       if (!empty($form_state['quote_requested'])) {
+        // Rebuild form products, from uc_order_edit_form_submit()
+        $order->products = array();
+        if (isset($form_state['values']['products']) && is_array($form_state['values']['products'])) {
+          foreach ($form_state['values']['products'] as $product) {
+            $product['data'] = unserialize($product['data']);
+            $product = (object)$product;
+            $order->products[] = $product;
+          }
+        }
+
         $form['quotes']['quotes'] += uc_quote_build_quote_form($order);
 
         $form['quotes']['quotes']['add_quote'] = array(
           '#type' => 'submit',
           '#value' => t('Apply to order'),
           '#submit' => array('uc_quote_apply_quote_to_order'),
+          '#ajax' => array(
+            'callback' => 'uc_quote_order_update_rates',
+            'effect' => 'fade',
+            'progress' => array(
+              'type' => 'throbber',
+              'message' => t('Applying quotes...'),
+            ),
+          ),
         );
       }
 
@@ -782,7 +800,7 @@ function uc_quote_order_pane_quotes_submit($form, &$form_state) {
  */
 function uc_quote_apply_quote_to_order($form, &$form_state) {
   if (isset($form_state['values']['quotes']['quote_option'])) {
-    if ($order = $form_state['build_info']['args'][0]) {
+    if ($order = $form_state['order']) {
       $quote_option = explode('---', $form_state['values']['quotes']['quote_option']);
       $order->quote['method'] = $quote_option[0];
       $order->quote['accessorials'] = $quote_option[1];
@@ -800,6 +818,11 @@ function uc_quote_apply_quote_to_order($form, &$form_state) {
           $label,
           $order->quote['rate']
         );
+        $form_state['uc_quote'] = array(
+          'lid' => $lid,
+          'title' => $label,
+          'amount' => $order->quote['rate'],
+        );
       }
       else {
         uc_order_line_item_add($order->order_id, 'shipping',
@@ -808,8 +831,15 @@ function uc_quote_apply_quote_to_order($form, &$form_state) {
         );
       }
 
+      // Save selected shipping
+      uc_quote_uc_order('save', $order, '');
+
       // Update line items.
       $order->line_items = uc_order_load_line_items($order);
+      $form_state['order'] = $order;
+
+      $form_state['rebuild'] = TRUE;
+      $form_state['quote_requested'] = FALSE;
     }
   }
 }
@@ -947,6 +977,25 @@ function uc_quote_checkout_returned_rates($form, $form_state) {
  * AJAX callback for calculated shipping rates.
  */
 function uc_quote_order_returned_rates($form, $form_state) {
+  $commands[] = ajax_command_replace('#quote', drupal_render($form['quotes']['quotes']));
+  $commands[] = ajax_command_prepend('#quote', theme('status_messages'));
+
+  return array('#type' => 'ajax', '#commands' => $commands);
+}
+
+/**
+* AJAX callback for applying shipping rates.
+*/
+function uc_quote_order_update_rates($form, $form_state) {
+  // Update shipping line item.
+  if (isset($form_state['uc_quote'])) {
+    $lid = $form_state['uc_quote']['lid'];
+    $form['line_items'][$lid]['title']['#value'] = $form_state['uc_quote']['title'];
+    $form['line_items'][$lid]['amount']['#value'] = $form_state['uc_quote']['amount'];
+  }
+  $commands[] = ajax_command_replace('#order-line-items', drupal_render($form['line_items']));
+
+  // Reset shipping form.
   $commands[] = ajax_command_replace('#quote', drupal_render($form['quotes']['quotes']));
   $commands[] = ajax_command_prepend('#quote', theme('status_messages'));
 
