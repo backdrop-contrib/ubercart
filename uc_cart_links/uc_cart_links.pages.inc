@@ -156,7 +156,7 @@ function uc_cart_links_process($cart_actions) {
       case 'e':
       case 'E':
         if (variable_get('uc_cart_links_empty', TRUE)) {
-          uc_cart_empty(uc_cart_get_id());
+          uc_cart_empty();
         }
         break;
 
