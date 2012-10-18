@@ -748,12 +748,16 @@ function uc_product_view($node, $view_mode) {
   // be sure not to alter twice -- cf. entity_prepare_view().
   $variant = empty($node->variant) ? _uc_product_get_variant($node) : $node;
 
-  // Build the 'add to cart' form, and use the updated variant based on data
-  // provided by the form (e.g. attribute default options).
-  if (module_exists('uc_cart') && $variant->nid && empty($variant->data['display_only'])) {
-    $add_to_cart_form = drupal_get_form('uc_product_add_to_cart_form_' . $variant->nid, $variant);
-    if (variable_get('uc_product_update_node_view', FALSE)) {
-      $variant = $add_to_cart_form['node']['#value'];
+  // Skip the add to cart form if the node has not been prepared for viewing,
+  // for example when previewing a new comment with this node embedded in it.
+  if (!empty($node->entity_view_prepared)) {
+    // Build the 'add to cart' form, and use the updated variant based on data
+    // provided by the form (e.g. attribute default options).
+    if (module_exists('uc_cart') && $variant->nid && empty($variant->data['display_only'])) {
+      $add_to_cart_form = drupal_get_form('uc_product_add_to_cart_form_' . $variant->nid, $variant);
+      if (variable_get('uc_product_update_node_view', FALSE)) {
+        $variant = $add_to_cart_form['node']['#value'];
+      }
     }
   }
 
