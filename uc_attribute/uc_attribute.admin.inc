@@ -623,7 +623,7 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
   elseif ($view == 'add') {
     // Get list of attributes not already assigned to this node or class.
     $unused_attributes = array();
-    $result = db_query("SELECT a.aid, a.name, a.label FROM {uc_attributes} AS a LEFT JOIN {uc_attribute_options} AS ao ON a.aid = ao.aid GROUP BY a.aid, a.name, a.label ORDER BY a.name");
+    $result = db_query("SELECT a.aid, a.name, a.label FROM {uc_attributes} a LEFT JOIN {uc_attribute_options} ao ON a.aid = ao.aid GROUP BY a.aid, a.name, a.label ORDER BY a.name");
     foreach ($result as $attribute) {
       if (!in_array($attribute->aid, $used_aids)) {
         $unused_attributes[$attribute->aid] = $attribute->name;
@@ -1206,7 +1206,7 @@ function uc_product_adjustments_form($form, &$form_state, $node) {
   $query_from = " FROM";
   $query_where = " WHERE";
   $query_order = " ORDER BY";
-  $result = db_query("SELECT pa.nid, pa.aid, pa.ordering, pa.display, a.name, a.ordering, ao.aid, COUNT(po.oid) FROM {uc_product_attributes} AS pa LEFT JOIN {uc_attributes} AS a ON pa.aid = a.aid LEFT JOIN {uc_attribute_options} AS ao ON a.aid = ao.aid LEFT JOIN {uc_product_options} AS po ON ao.oid = po.oid AND po.nid = :po_nid WHERE pa.nid = :pa_nid AND pa.display <> :pa_display GROUP BY ao.aid, pa.aid, pa.display, a.name, pa.ordering, a.ordering, pa.nid HAVING count(po.oid) > 0 ORDER BY pa.ordering, a.ordering", array(':po_nid' => $nid, ':pa_nid' => $nid, ':pa_display' => 3));
+  $result = db_query("SELECT pa.nid, pa.aid, pa.ordering, pa.display, a.name, a.ordering, ao.aid, COUNT(po.oid) FROM {uc_product_attributes} pa LEFT JOIN {uc_attributes} a ON pa.aid = a.aid LEFT JOIN {uc_attribute_options} ao ON a.aid = ao.aid LEFT JOIN {uc_product_options} po ON ao.oid = po.oid AND po.nid = :po_nid WHERE pa.nid = :pa_nid AND pa.display <> :pa_display GROUP BY ao.aid, pa.aid, pa.display, a.name, pa.ordering, a.ordering, pa.nid HAVING count(po.oid) > 0 ORDER BY pa.ordering, a.ordering", array(':po_nid' => $nid, ':pa_nid' => $nid, ':pa_display' => 3));
   $i = 1;
   $attribute_names = '';
   $full_attributes = array();

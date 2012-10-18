@@ -63,7 +63,7 @@ function uc_attribute_condition_ordered_product_option($order, $oid) {
  */
 function uc_attribute_condition_ordered_product_options_list() {
   $options = array();
-  $result = db_query("SELECT a.aid, a.name AS attr_name, a.ordering, o.oid, o.name AS opt_name, o.ordering FROM {uc_attributes} AS a JOIN {uc_attribute_options} AS o ON a.aid = o.aid ORDER BY a.ordering, o.ordering");
+  $result = db_query("SELECT a.aid, a.name AS attr_name, a.ordering, o.oid, o.name AS opt_name, o.ordering FROM {uc_attributes} a JOIN {uc_attribute_options} o ON a.aid = o.aid ORDER BY a.ordering, o.ordering");
   foreach ($result as $option) {
     $options[$option->attr_name][$option->oid] = $option->opt_name;
   }

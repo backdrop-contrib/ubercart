@@ -276,9 +276,9 @@ function uc_file_action_order_renew($order) {
 
   // Scan products for models matching downloads.
   foreach ($order->products as $product) {
-    $files = db_query("SELECT * FROM {uc_file_products} AS fp " .
-      "INNER JOIN {uc_product_features} AS pf ON pf.pfid = fp.pfid " .
-      "INNER JOIN {uc_files} as f ON f.fid = fp.fid " .
+    $files = db_query("SELECT * FROM {uc_file_products} fp " .
+      "INNER JOIN {uc_product_features} pf ON pf.pfid = fp.pfid " .
+      "INNER JOIN {uc_files} f ON f.fid = fp.fid " .
       "WHERE nid = :nid", array(':nid' => $product->nid));
 
     foreach ($files as $file) {

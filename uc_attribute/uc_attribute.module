@@ -1154,7 +1154,7 @@ function uc_attribute_type_info($type) {
 function uc_product_get_attributes($nid) {
   $attributes = array();
 
-  $result = db_query("SELECT upa.aid FROM {uc_product_attributes} AS upa LEFT JOIN {uc_attributes} AS ua ON upa.aid = ua.aid WHERE upa.nid = :nid ORDER BY upa.ordering, ua.name", array(':nid' => $nid));
+  $result = db_query("SELECT upa.aid FROM {uc_product_attributes} upa LEFT JOIN {uc_attributes} ua ON upa.aid = ua.aid WHERE upa.nid = :nid ORDER BY upa.ordering, ua.name", array(':nid' => $nid));
   foreach ($result as $attribute) {
     $attributes[$attribute->aid] = uc_attribute_load($attribute->aid, $nid, 'product');
   }
@@ -1168,7 +1168,7 @@ function uc_product_get_attributes($nid) {
 function uc_class_get_attributes($pcid) {
   $attributes = array();
 
-  $result = db_query("SELECT uca.aid FROM {uc_class_attributes} AS uca LEFT JOIN {uc_attributes} AS ua ON uca.aid = ua.aid WHERE uca.pcid = :type ORDER BY uca.ordering, ua.name", array(':type' => $pcid));
+  $result = db_query("SELECT uca.aid FROM {uc_class_attributes} uca LEFT JOIN {uc_attributes} ua ON uca.aid = ua.aid WHERE uca.pcid = :type ORDER BY uca.ordering, ua.name", array(':type' => $pcid));
   foreach ($result as $attribute) {
     $attributes[$attribute->aid] = uc_attribute_load($attribute->aid, $pcid, 'class');
   }
@@ -1450,7 +1450,7 @@ function _uc_attribute_display_types() {
  *   Array of attribute ids that have price affecting options.
  */
 function uc_attribute_priced_attributes($nid) {
-  $aids = db_query("SELECT DISTINCT (pa.aid) FROM {uc_product_attributes} AS pa INNER JOIN {uc_attribute_options} AS ao ON ao.aid = pa.aid INNER JOIN {uc_product_options} AS po ON (po.oid = ao.oid AND po.nid = pa.nid) WHERE pa.nid = :nid AND po.price <> :price AND pa.display <> :display", array(':nid' => $nid, ':price' => 0, ':display' => 0))->fetchCol();
+  $aids = db_query("SELECT DISTINCT (pa.aid) FROM {uc_product_attributes} pa INNER JOIN {uc_attribute_options} ao ON ao.aid = pa.aid INNER JOIN {uc_product_options} po ON (po.oid = ao.oid AND po.nid = pa.nid) WHERE pa.nid = :nid AND po.price <> :price AND pa.display <> :display", array(':nid' => $nid, ':price' => 0, ':display' => 0))->fetchCol();
 
   return $aids;
 }

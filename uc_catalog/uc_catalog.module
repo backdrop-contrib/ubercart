@@ -222,7 +222,7 @@ function uc_catalog_taxonomy_term_delete($term) {
  */
 function uc_catalog_link_alter(&$links, $node) {
   // Link back to the catalog and not the taxonomy term page.
-  foreach ($links AS $module => $link) {
+  foreach ($links as $module => $link) {
     if (strstr($module, 'taxonomy_term')) {
       $tid = explode('_', $module);
       $tid = $tid[2];
@@ -375,7 +375,7 @@ function uc_catalog_uc_store_status() {
       $product_types = uc_product_types();
       $types = array_intersect($product_types, $field['bundles']['node']);
       $excluded = 0;
-      $result = db_query("SELECT COUNT(DISTINCT n.nid) FROM {node} AS n LEFT JOIN {taxonomy_index} AS ti ON n.nid = ti.nid LEFT JOIN {taxonomy_term_data} AS td ON ti.tid = td.tid WHERE n.type IN (:types) AND ti.tid IS NULL AND td.vid = :vid", array(':types' => $types, ':vid' => $catalog->vid));
+      $result = db_query("SELECT COUNT(DISTINCT n.nid) FROM {node} n LEFT JOIN {taxonomy_index} ti ON n.nid = ti.nid LEFT JOIN {taxonomy_term_data} td ON ti.tid = td.tid WHERE n.type IN (:types) AND ti.tid IS NULL AND td.vid = :vid", array(':types' => $types, ':vid' => $catalog->vid));
       if ($excluded = $result->fetchField()) {
         $description = format_plural($excluded, 'There is 1 product not listed in the catalog.', 'There are @count products not listed in the catalog.')
           . t('Products are listed by assigning a category from the <a href="!cat_url">Product Catalog</a> vocabulary to them.', array('!cat_url' => url('admin/structure/taxonomy/' . $catalog->machine_name)));

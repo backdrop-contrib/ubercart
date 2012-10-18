@@ -153,7 +153,7 @@ function uc_file_user_form($form, &$form_state, $account) {
   $form['file']['download']['file_download']['#tree'] = TRUE;
 
   $downloadable_files = array();
-  $file_downloads = db_query("SELECT * FROM {uc_file_users} AS ufu INNER JOIN {uc_files} AS uf ON ufu.fid = uf.fid WHERE ufu.uid = :uid ORDER BY uf.filename ASC", array(':uid' => $account->uid));
+  $file_downloads = db_query("SELECT * FROM {uc_file_users} ufu INNER JOIN {uc_files} uf ON ufu.fid = uf.fid WHERE ufu.uid = :uid ORDER BY uf.filename ASC", array(':uid' => $account->uid));
   $behavior = 0;
   foreach ($file_downloads as $file_download) {
 
@@ -413,9 +413,9 @@ function uc_file_uc_add_to_cart($nid, $qty, $data) {
   global $user;
 
   // Get all the files on this product.
-  $product_features = db_query("SELECT * FROM {uc_product_features} AS upf " .
-    "INNER JOIN {uc_file_products} AS ufp ON upf.pfid = ufp.pfid " .
-    "INNER JOIN {uc_files} AS uf ON ufp.fid = uf.fid " .
+  $product_features = db_query("SELECT * FROM {uc_product_features} upf " .
+    "INNER JOIN {uc_file_products} ufp ON upf.pfid = ufp.pfid " .
+    "INNER JOIN {uc_files} uf ON ufp.fid = uf.fid " .
     "WHERE upf.nid = :nid", array(':nid' => $nid));
 
   foreach ($product_features as $product_feature) {
@@ -473,7 +473,7 @@ function uc_file_uc_add_to_cart($nid, $qty, $data) {
  */
 function uc_file_uc_order_product_can_ship($item) {
   // Check if this model is shippable as well as a file.
-  $files = db_query("SELECT shippable, model FROM {uc_file_products} as fp INNER JOIN {uc_product_features} as pf ON pf.pfid = fp.pfid WHERE nid = :nid", array(':nid' => $item->nid));
+  $files = db_query("SELECT shippable, model FROM {uc_file_products} fp INNER JOIN {uc_product_features} pf ON pf.pfid = fp.pfid WHERE nid = :nid", array(':nid' => $item->nid));
   foreach ($files as $file) {
 
     // If the model is 'any' then return.
@@ -571,7 +571,7 @@ function uc_file_feature_form($form, &$form_state, $node, $feature) {
 
   // Use the feature's values to fill the form, if they exist.
   if (!empty($feature)) {
-    $file_product        = db_query("SELECT * FROM {uc_file_products} as p LEFT JOIN {uc_files} as f ON p.fid = f.fid WHERE pfid = :pfid", array(':pfid' => $feature['pfid']))->fetchObject();
+    $file_product        = db_query("SELECT * FROM {uc_file_products} p LEFT JOIN {uc_files} f ON p.fid = f.fid WHERE pfid = :pfid", array(':pfid' => $feature['pfid']))->fetchObject();
 
     $default_feature     = $feature['pfid'];
 

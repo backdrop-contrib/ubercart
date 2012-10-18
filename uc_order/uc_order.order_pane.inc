@@ -479,8 +479,8 @@ function uc_order_pane_products_select($form, &$form_state) {
       ':model' => $search,
     );
 
-    $result = db_query("SELECT n.nid, n.title FROM {node} AS n LEFT JOIN "
-      . "{uc_products} AS p ON n.nid = p.nid WHERE n.type IN "
+    $result = db_query("SELECT n.nid, n.title FROM {node} n LEFT JOIN "
+      . "{uc_products} p ON n.nid = p.nid WHERE n.type IN "
       . "(:types) AND (n.title LIKE :title OR p.model LIKE :model)"
       . " ORDER BY n.title", $search_args);
   }
