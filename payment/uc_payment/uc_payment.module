@@ -427,6 +427,9 @@ function uc_payment_process_payment($method, $order_id, $amount, $data = NULL, $
  *   (optional) The comment to enter in the payment log.
  * @param $received
  *   (optional) The timestamp at which the payment was received.
+ *
+ * @return
+ *   A unique ID identifying the payment.
  */
 function uc_payment_enter($order_id, $method, $amount, $uid = 0, $data = NULL, $comment = '', $received = REQUEST_TIME) {
   $method_name = _uc_payment_method_data($method, 'review');
@@ -443,7 +446,7 @@ function uc_payment_enter($order_id, $method, $amount, $uid = 0, $data = NULL, $
   $log_message = t('@method payment for @amount entered.', array('@method' => $method_name, '@amount' => uc_currency_format($amount)));
   uc_order_log_changes($order_id, array($log_message));
 
-  db_insert('uc_payment_receipts')
+  $receipt_id = db_insert('uc_payment_receipts')
     ->fields(array(
       'order_id' => $order_id,
       'method' => $method_name,
@@ -463,6 +466,8 @@ function uc_payment_enter($order_id, $method, $amount, $uid = 0, $data = NULL, $
 
   module_invoke_all('uc_payment_entered', $order, $method, $amount, $account, $data, $comment);
   rules_invoke_event('uc_payment_entered', $order, $account);
+
+  return $receipt_id;
 }
 
 /**
