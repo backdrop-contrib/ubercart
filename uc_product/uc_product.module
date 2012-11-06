@@ -303,13 +303,16 @@ function uc_product_node_info($reset = FALSE) {
  * Ensure product class names and descriptions are synchronised if the
  * content type is updated.
  */
-function uc_product_node_type_update($type) {
+function uc_product_node_type_update($info) {
+  $existing_type = !empty($info->old_type) ? $info->old_type : $info->type;
+
   db_update('uc_product_classes')
     ->fields(array(
-      'name' => $type->name,
-      'description' => $type->description,
+      'pcid' => $info->type,
+      'name' => $info->name,
+      'description' => $info->description,
     ))
-    ->condition('pcid', $type->type)
+    ->condition('pcid', $existing_type)
     ->execute();
 }
 
