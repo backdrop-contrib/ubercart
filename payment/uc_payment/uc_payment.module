@@ -236,6 +236,67 @@ function uc_payment_uc_order_state() {
 }
 
 /**
+ * Implements hook_uc_payment_method().
+ */
+function uc_payment_uc_payment_method() {
+  $methods['free_order'] = array(
+    'name' => t('Free order'),
+    'title' => t('No payment required'),
+    'desc' => t('Allow customers with !zero order totals to checkout without paying.', array('!zero' => uc_currency_format(0))),
+    'callback' => 'uc_payment_method_free_order',
+    'checkout' => TRUE,
+    'no_gateway' => TRUE,
+    'weight' => 0,
+  );
+
+  return $methods;
+}
+
+/**
+ * Implements hook_uc_payment_method_checkout_alter().
+ */
+function uc_payment_uc_payment_method_checkout_alter(&$methods, $order) {
+  if (isset($methods['free_order'])) {
+    if ($order->order_total < 0.01) {
+      // Unset all other payment methods if this is a free order.
+      foreach (array_keys($methods) as $key) {
+        if ($key != 'free_order') {
+          unset($methods[$key]);
+        }
+      }
+    }
+    else {
+      // Disallow this payment method if the order is not free.
+      unset($methods['free_order']);
+    }
+  }
+}
+
+/**
+ * Payment method callback for free orders.
+ *
+ * @see uc_payment_uc_payment_method()
+ */
+function uc_payment_method_free_order($op, &$order) {
+  switch ($op) {
+    case 'cart-details':
+      return array(
+        '#markup' => t('Continue with checkout to complete your order.'),
+      );
+
+    case 'order-submit':
+      if ($order->order_total >= 0.01) {
+        return array(array(
+          'pass' => FALSE,
+          'message' => t('We cannot process your order without payment.'),
+        ));
+      }
+
+      uc_payment_enter($order->order_id, 'free_order', 0, 0, NULL, t('Checkout completed for a free order.'));
+  }
+}
+
+/**
  * Returns a formatted list of line items for an order total preview.
  *
  * @param $return

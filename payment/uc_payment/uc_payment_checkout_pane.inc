@@ -41,6 +41,8 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
         }
       }
 
+      drupal_alter('uc_payment_method_checkout', $options, $order);
+
       $description = '';
       if (!$options) {
         $description = t('Checkout cannot be completed without any payment methods enabled. Please contact an administrator to resolve the issue.');

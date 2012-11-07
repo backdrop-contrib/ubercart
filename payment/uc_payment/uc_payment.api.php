@@ -223,5 +223,21 @@ function hook_uc_payment_method_alter(&$methods) {
 }
 
 /**
+ * Alter payment methods available at checkout.
+ *
+ * @param $methods
+ *   Array of payment methods passed by reference. Keys are payment method IDs,
+ *   strings are payment method titles.
+ * @param $order
+ *   The order that is being checked out.
+ */
+function hook_uc_payment_method_checkout_alter(&$methods, $order) {
+  // Remove the Check payment method for orders under $100.
+  if ($order->order_total < 100) {
+    unset($methods['check']);
+  }
+}
+
+/**
  * @} End of "addtogroup hooks".
  */
