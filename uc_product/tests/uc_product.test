@@ -19,7 +19,7 @@ class UbercartProductTestCase extends UbercartTestHelper {
    * Overrides DrupalWebTestCase::setUp().
    */
   public function setUp() {
-    parent::setUp();
+    parent::setUp(array(), array('administer content types'));
     $this->drupalLogin($this->adminUser);
   }
 
@@ -121,6 +121,15 @@ class UbercartProductTestCase extends UbercartTestHelper {
       'uc_product',
       t('The new content type has been created in the database.')
     );
+
+    // Change the machine name of an existing class.
+    $new_type = strtolower($this->randomName(12));
+    $edit = array(
+      'type' => $new_type,
+    );
+    $this->drupalPost('admin/structure/types/manage/' . $type, $edit, 'Save content type');
+    $this->assertText('Machine name: ' . $new_type, 'Updated machine name found.');
+    $this->assertNoText('Machine name: ' . $type, 'Old machine name not found.');
 
     // Make an existing node type a product class.
     $type = $this->drupalCreateContentType();
