@@ -1058,6 +1058,9 @@ function uc_order_edit_form($form, &$form_state, $order) {
 
   field_attach_form('uc_order', $order, $form, $form_state);
 
+  form_load_include($form_state, 'inc', 'uc_store', 'includes/uc_ajax_attach');
+  $form['#process'][] = 'uc_ajax_process_form';
+
   return $form;
 }
 

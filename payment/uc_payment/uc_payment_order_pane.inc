@@ -122,7 +122,7 @@ function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) 
  * AJAX callback to render the payment method pane.
  */
 function uc_payment_order_pane_ajax_callback($form, &$form_state) {
-  $commands[] = ajax_command_replace('#payment-details', drupal_render($form['payment']['payment_details']));
+  $commands[] = ajax_command_replace('#payment-details', trim(drupal_render($form['payment']['payment_details'])));
   $commands[] = ajax_command_prepend('#payment-details', theme('status_messages'));
   return array('#type' => 'ajax', '#commands' => $commands);
 }

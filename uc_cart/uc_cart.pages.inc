@@ -158,8 +158,9 @@ function uc_cart_checkout() {
  * @param $order
  *   The order that is being checked out.
  *
+ * @see uc_cart_checkout_form_process()
  * @see uc_cart_checkout_form_validate()
- * @see uc_cart_checkout_form_review()
+ * @see uc_cart_checkout_form_submit()
  * @see uc_cart_checkout_review()
  * @see theme_uc_cart_checkout_form()
  * @ingroup forms
@@ -278,6 +279,9 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
     '#type' => 'submit',
     '#value' => t('Review order'),
   );
+
+  form_load_include($form_state, 'inc', 'uc_store', 'includes/uc_ajax_attach');
+  $form['#process'][] = 'uc_ajax_process_form';
 
   unset($_SESSION['uc_checkout'][$order->order_id]);
 

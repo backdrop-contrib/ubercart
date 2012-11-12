@@ -591,13 +591,13 @@ function uc_order_edit_products_remove($form, &$form_state) {
  * AJAX callback to render the order product controls.
  */
 function uc_order_pane_products_ajax_callback($form, &$form_state) {
-  $commands[] = ajax_command_replace('#product-controls', drupal_render($form['product_controls']));
-  $commands[] = ajax_command_prepend('#product-controls', theme('status_messages'));
+  $commands[] = ajax_command_replace('#product-controls', trim(drupal_render($form['product_controls'])));
+  $commands[] = ajax_command_prepend('#product-controls', trim(theme('status_messages')));
 
   if (isset($form_state['refresh_products']) && $form_state['refresh_products']) {
-    $commands[] = ajax_command_replace('#order-edit-products', drupal_render($form['products']));
-    $commands[] = ajax_command_replace('#order-line-items', drupal_render($form['line_items']));
-    $commands[] = ajax_command_prepend('#order-edit-products', theme('status_messages'));
+    $commands[] = ajax_command_replace('#order-edit-products', trim(drupal_render($form['products'])));
+    $commands[] = ajax_command_replace('#order-line-items', trim(drupal_render($form['line_items'])));
+    $commands[] = ajax_command_prepend('#order-edit-products', trim(theme('status_messages')));
   }
 
   return array('#type' => 'ajax', '#commands' => $commands);
@@ -824,7 +824,7 @@ function uc_order_pane_line_items_remove($form, &$form_state) {
  * AJAX callback to render the line items.
  */
 function uc_order_pane_line_items_update($form, &$form_state) {
-  $commands[] = ajax_command_replace('#order-line-items', drupal_render($form['line_items']));
+  $commands[] = ajax_command_replace('#order-line-items', trim(drupal_render($form['line_items'])));
   $commands[] = ajax_command_prepend('#order-line-items', theme('status_messages'));
 
   return array('#type' => 'ajax', '#commands' => $commands);
