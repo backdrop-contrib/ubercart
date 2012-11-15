@@ -25,6 +25,9 @@ class UbercartProductKitTestCase extends UbercartTestHelper {
   public function testProductKitNodeForm() {
     $this->drupalLogin($this->adminUser);
 
+    // Allow the default quantity to be set.
+    variable_set('uc_product_add_to_cart_qty', TRUE);
+
     // Create some test products.
     $products = array();
     for ($i = 0; $i < 3; $i++) {
@@ -47,6 +50,7 @@ class UbercartProductKitTestCase extends UbercartTestHelper {
         $products[1]->nid,
         $products[2]->nid,
       ),
+      'default_qty' => mt_rand(2, 100),
     );
     $this->drupalPost('node/add/product-kit', $edit, 'Save');
     $this->assertText(t('Product kit @title has been created.', array('@title' => $edit['title'])));
@@ -56,6 +60,7 @@ class UbercartProductKitTestCase extends UbercartTestHelper {
     $this->assertText('1 × ' . $products[2]->title, 'Product 3 title found.');
     $total = $products[0]->sell_price + $products[1]->sell_price + $products[2]->sell_price;
     $this->assertText(uc_currency_format($total), 'Product kit total found.');
+    $this->assertFieldByName('qty', $edit['default_qty']);
   }
 
   public function testProductKitDiscounts() {
@@ -75,6 +80,7 @@ class UbercartProductKitTestCase extends UbercartTestHelper {
         $products[2]->nid,
       ),
       'mutable' => UC_PRODUCT_KIT_UNMUTABLE_NO_LIST,
+      'default_qty' => 1,
       'ordering' => 0,
     ));
 
@@ -143,6 +149,7 @@ class UbercartProductKitTestCase extends UbercartTestHelper {
         $products[1]->nid,
         $products[2]->nid,
       ),
+      'default_qty' => 1,
       'ordering' => 0,
     );
 
