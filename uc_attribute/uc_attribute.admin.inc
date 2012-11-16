@@ -1202,11 +1202,25 @@ function uc_product_adjustments_form($form, &$form_state, $node) {
 
   // Populate table and such.
   $model = $node->model;
-  $query_select = "SELECT DISTINCT";
-  $query_from = " FROM";
-  $query_where = " WHERE";
-  $query_order = " ORDER BY";
-  $result = db_query("SELECT pa.nid, pa.aid, pa.ordering, pa.display, a.name, a.ordering, ao.aid, COUNT(po.oid) FROM {uc_product_attributes} pa LEFT JOIN {uc_attributes} a ON pa.aid = a.aid LEFT JOIN {uc_attribute_options} ao ON a.aid = ao.aid LEFT JOIN {uc_product_options} po ON ao.oid = po.oid AND po.nid = :po_nid WHERE pa.nid = :pa_nid AND pa.display <> :pa_display GROUP BY ao.aid, pa.aid, pa.display, a.name, pa.ordering, a.ordering, pa.nid HAVING count(po.oid) > 0 ORDER BY pa.ordering, a.ordering", array(':po_nid' => $nid, ':pa_nid' => $nid, ':pa_display' => 3));
+  $query = db_select('uc_product_attributes', 'pa');
+  $query->leftJoin('uc_attributes', 'a', 'pa.aid = a.aid');
+  $query->leftJoin('uc_attribute_options', 'ao', 'a.aid = ao.aid');
+  $query->leftJoin('uc_product_options', 'po', 'ao.oid = po.oid AND po.nid = :po_nid', array(':po_nid' => $nid));
+  $result = $query->fields('pa', array('nid', 'aid', 'ordering', 'display'))
+    ->fields('a', array('name', 'ordering', 'aid'))
+    ->fields('ao', array('aid'))
+    ->condition('pa.nid', $nid)
+    ->having('COUNT(po.oid) > 0')
+    ->groupBy('ao.aid')
+    ->groupBy('pa.aid')
+    ->groupBy('pa.display')
+    ->groupBy('a.name')
+    ->groupBy('pa.ordering')
+    ->groupBy('a.ordering')
+    ->groupBy('pa.nid')
+    ->addTag('uc_product_adjustments_form')
+    ->execute();
+
   $i = 1;
   $attribute_names = '';
   $full_attributes = array();
