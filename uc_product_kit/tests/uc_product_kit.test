@@ -169,6 +169,13 @@ class UbercartProductKitTestCase extends UbercartTestHelper {
     $this->assertNoText($products[1]->title, 'Product 2 title not shown.');
     $this->assertNoText($products[2]->title, 'Product 3 title not shown.');
 
+    $total = $products[0]->sell_price + $products[1]->sell_price + $products[2]->sell_price;
+    $this->assertText('Subtotal: ' . uc_currency_format($total), 'Product kit total found.');
+
+    $qty = mt_rand(2, 10);
+    $this->drupalPost(NULL, array('items[2][qty]' => $qty), 'Update cart');
+    $this->assertText('Subtotal: ' . uc_currency_format($total * $qty), 'Updated product kit total found.');
+
     $this->drupalPost(NULL, array(), 'Remove');
     $this->assertText('There are no products in your shopping cart.');
 
@@ -188,6 +195,13 @@ class UbercartProductKitTestCase extends UbercartTestHelper {
     $this->assertText($products[1]->title, 'Product 2 title shown.');
     $this->assertText($products[2]->title, 'Product 3 title shown.');
 
+    $total = $products[0]->sell_price + $products[1]->sell_price + $products[2]->sell_price;
+    $this->assertText('Subtotal: ' . uc_currency_format($total), 'Product kit total found.');
+
+    $qty = mt_rand(2, 10);
+    $this->drupalPost(NULL, array('items[2][qty]' => $qty), 'Update cart');
+    $this->assertText('Subtotal: ' . uc_currency_format($total * $qty), 'Updated product kit total found.');
+
     $this->drupalPost(NULL, array(), 'Remove');
     $this->assertText('There are no products in your shopping cart.');
 
@@ -206,6 +220,21 @@ class UbercartProductKitTestCase extends UbercartTestHelper {
     $this->assertText($products[0]->title, 'Product 1 title shown.');
     $this->assertText($products[1]->title, 'Product 2 title shown.');
     $this->assertText($products[2]->title, 'Product 3 title shown.');
+
+    $total = $products[0]->sell_price + $products[1]->sell_price + $products[2]->sell_price;
+    $this->assertText('Subtotal: ' . uc_currency_format($total), 'Product kit total found.');
+
+    $qty = array(mt_rand(2, 10), mt_rand(2, 10), mt_rand(2, 10));
+    $edit = array(
+      'items[0][qty]' => $qty[0],
+      'items[1][qty]' => $qty[1],
+      'items[2][qty]' => $qty[2],
+    );
+    $this->drupalPost(NULL, $edit, 'Update cart');
+    $total = $products[0]->sell_price * $qty[0];
+    $total += $products[1]->sell_price * $qty[1];
+    $total += $products[2]->sell_price * $qty[2];
+    $this->assertText('Subtotal: ' . uc_currency_format($total), 'Updated product kit total found.');
 
     $this->drupalPost(NULL, array(), 'Remove');
     $this->drupalPost(NULL, array(), 'Remove');
