@@ -567,6 +567,25 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     $this->assertText('Enter your billing address and information here.');
   }
 
+  function testEmptyCart() {
+    // Test that the feature is not enabled by default.
+    $this->drupalPost('node/' . $this->product->nid, array(), 'Add to cart');
+    $this->assertNoRaw('Empty cart');
+
+    // Test the admin settings itself.
+    $this->drupalLogin($this->adminUser);
+    $this->drupalGet('admin/store/settings/cart');
+    $this->assertField('uc_cart_empty_button', 'Empty cart button checkbox found.');
+    $this->drupalPost(NULL, array('uc_cart_empty_button' => TRUE), 'Save configuration');
+
+    // Test the feature itself.
+    $this->drupalGet('cart');
+    $this->drupalPost(NULL, array(), 'Empty cart');
+    $this->assertText('Are you sure you want to empty your shopping cart? ');
+    $this->drupalPost(NULL, array(), 'Confirm');
+    $this->assertText('There are no products in your shopping cart.');
+  }
+
   function testContinueShopping() {
     // Continue shopping link should take you back to the product page.
     $this->drupalPost(

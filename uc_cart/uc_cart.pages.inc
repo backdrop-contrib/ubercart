@@ -48,6 +48,21 @@ function uc_cart_view() {
 }
 
 /**
+ * Confirm that the customer wants to empty their cart.
+ */
+function uc_cart_empty_confirm($form, &$form_state) {
+  return confirm_form($form, t('Are you sure you want to empty your shopping cart?'), 'cart');
+}
+
+/**
+ * Submission handler to empty the cart after confirmations.
+ */
+function uc_cart_empty_confirm_submit($form, &$form_state) {
+  uc_cart_empty();
+  $form_state['redirect'] = 'cart';
+}
+
+/**
  * Displays the cart checkout page built of checkout panes from enabled modules.
  */
 function uc_cart_checkout() {
