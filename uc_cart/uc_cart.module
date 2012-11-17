@@ -64,6 +64,15 @@ function uc_cart_menu() {
     'access arguments' => array('access content'),
     'file' => 'uc_cart.pages.inc',
   );
+  $items['cart/empty'] = array(
+    'title' => 'Empty cart',
+    'description' => 'Confirm that the cart should be emptied.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_cart_empty_confirm'),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    'file' => 'uc_cart.pages.inc',
+  );
   $items['cart/checkout'] = array(
     'title' => 'Checkout',
     'description' => 'Purchase the items in your shopping cart.',
@@ -667,6 +676,15 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
     }
   }
 
+  // Add the empty cart button if enabled.
+  if (variable_get('uc_cart_empty_button', FALSE)) {
+    $form['actions']['empty'] = array(
+      '#type' => 'submit',
+      '#value' => t('Empty cart'),
+      '#submit' => array('uc_cart_view_form_empty'),
+    );
+  }
+
   // Add the control buttons for updating and proceeding to checkout.
   $form['actions']['update'] = array(
     '#type' => 'submit',
@@ -720,6 +738,15 @@ function uc_cart_view_form_submit($form, &$form_state) {
  */
 function uc_cart_view_form_continue_shopping($form, &$form_state) {
   $form_state['redirect'] = uc_cart_continue_shopping_url();
+}
+
+/**
+ * Empty cart redirect for uc_cart_view_form().
+ *
+ * @see uc_cart_view_form()
+ */
+function uc_cart_view_form_empty($form, &$form_state) {
+  $form_state['redirect'] = 'cart/empty';
 }
 
 /**
