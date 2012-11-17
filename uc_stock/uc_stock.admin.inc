@@ -41,7 +41,7 @@ function uc_stock_settings_form($form, &$form_state) {
 
   if (module_exists('token')) {
     $form['token_tree'] = array(
-      '#markup' => theme('token_tree', array('token_types' => array('uc_order', 'site', 'store'))),
+      '#markup' => theme('token_tree', array('token_types' => array('uc_order', 'site', 'store', 'uc_stock'))),
     );
   }
 
