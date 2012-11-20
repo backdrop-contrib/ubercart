@@ -2005,15 +2005,20 @@ function uc_order_actions($order, $icon_html = FALSE) {
   if (count($extra)) {
     $actions = array_merge($actions, $extra);
   }
+  drupal_alter('uc_order_actions', $actions, $order);
 
   if ($icon_html) {
     $output = '';
     foreach ($actions as $action) {
+      $action['classes'][] = 'uc-order-action';
+      if (empty($action['attributes'])) {
+        $action['attributes'] = array();
+      }
+      $action['attributes']['title'] = $action['title'];
+      $action['attributes']['class'] = implode(' ', $action['classes']);
+
       $output .= l($action['icon'], $action['url'], array(
-        'attributes' => array(
-          'class' => 'uc-order-action',
-          'title' => $action['title'],
-        ),
+        'attributes' => $action['attributes'],
         'html' => TRUE,
       ));
     }
