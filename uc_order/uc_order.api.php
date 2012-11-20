@@ -234,6 +234,20 @@ function hook_uc_order_actions($order) {
 }
 
 /**
+ * Allows the local task icons for orders to be altered.
+ *
+ * @param &$actions
+ *   A set of actions as defined in hook_uc_order_actions().
+ * @param $order
+ *   An order object.
+ */
+function hook_uc_order_actions_alter(&$actions, $order) {
+  foreach ($actions as &$action) {
+    $action['classes'][] = 'custom-action-class';
+  }
+}
+
+/**
  * Registers callbacks for an order pane.
  *
  * This hook is used to add panes to the order viewing and administration
