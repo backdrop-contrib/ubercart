@@ -1172,7 +1172,7 @@ function theme_uc_order_edit_form($variables) {
     if (in_array('edit', $pane['show']) && variable_get('uc_order_pane_' . $id . '_show_edit', TRUE)) {
       $func = $pane['callback'];
       if (function_exists($func) && ($contents = $func('edit-theme', $form['#order'], $form)) != NULL) {
-        $output .= '<div class="order-pane ' . $pane['class'] . '">';
+        $output .= '<div class="order-pane ' . $pane['class'] . '" id="order-pane-' . $id . '">';
         $title = isset($pane['display title']) ? $pane['display title'] : $pane['title'];
         if ($title) {
           $output .= '<div class="order-pane-title">' . $title . ':' . '</div>';
