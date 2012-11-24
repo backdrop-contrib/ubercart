@@ -9,12 +9,6 @@
  * Pulls the get_quote_from_* triggers and assembles their returned data.
  */
 function uc_quote_assemble_quotes($order) {
-  global $user;
-
-  if (!$order->uid || !($account = user_load($order->uid))) {
-    $account = $user;
-  }
-
   $products = $order->products;
   foreach ($products as $id => $product) {
     $node = (array) node_load($product->nid);
