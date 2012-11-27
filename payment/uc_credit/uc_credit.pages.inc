@@ -9,7 +9,10 @@
  * Prints the contents of the CVV information popup window.
  */
 function uc_credit_cvv_info() {
-  $output = '<b>' . t('What is the CVV?') . '</b><p>' . t('CVV stands for Card Verification Value. This number is used as a security feature to protect you from credit card fraud.  Finding the number on your card is a very simple process.  Just follow the directions below.') . '</p>';
+  $output = "<!DOCTYPE html>\n";
+  $output .= '<html><head><meta charset="utf-8" /></head><body>';
+
+  $output .= '<b>' . t('What is the CVV?') . '</b><p>' . t('CVV stands for Card Verification Value. This number is used as a security feature to protect you from credit card fraud.  Finding the number on your card is a very simple process.  Just follow the directions below.') . '</p>';
   $cc_types = array(
     'visa' => t('Visa'),
     'mastercard' => t('MasterCard'),
@@ -40,8 +43,9 @@ function uc_credit_cvv_info() {
     $output .= '</p>';
   }
 
-  $output .= '<p><div align="right"><input type="button" onclick="self.close();" '
-            . 'value="' . t('Close this window') . '" /></div></p>';
+  $output .= '<p align="right"><input type="button" onclick="self.close();" value="' . t('Close this window') . '" /></p>';
+
+  $output .= '</body></html>';
 
   print $output;
   exit();
