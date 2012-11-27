@@ -290,10 +290,12 @@ function uc_order_rules_action_info() {
       'subject' => array(
         'type' => 'text',
         'label' => t('Subject'),
+        'translatable' => TRUE,
       ),
       'message' => array(
         'type' => 'text',
         'label' => t('Message'),
+        'translatable' => TRUE,
       ),
       'format' => array(
         'type' => 'text',
@@ -322,6 +324,7 @@ function uc_order_rules_action_info() {
       'subject' => array(
         'type' => 'text',
         'label' => t('Subject'),
+        'translatable' => TRUE,
       ),
       'template' => array(
         'type' => 'text',
