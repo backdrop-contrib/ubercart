@@ -580,7 +580,7 @@ function uc_cybersource_charge($order_id, $amount, $data) {
       }
 
       $request['ccAuthService_run'] = 'true';
-      if (variable_get('uc_cybersource_transaction_type', 'sale') == 'sale') {
+      if (variable_get('uc_cybersource_hop_transaction_type', 'sale') == 'sale') {
         $request['ccCaptureService_run'] = 'true';
       }
       $request['merchantReferenceCode'] = $order_id;
@@ -640,7 +640,7 @@ function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country)
   $request['orderPage_signaturePublic'] = $pub_digest;
   $request['orderPage_version'] = '4';
   $request['orderPage_serialNumber'] = $serialNumber;
-  $request['orderPage_transactionType'] = variable_get('uc_cybersource_transaction_type', 'sale');
+  $request['orderPage_transactionType'] = variable_get('uc_cybersource_hop_transaction_type', 'sale');
 
   $data = '';
   while (list($key, $value) = each($request)) {
@@ -677,7 +677,7 @@ function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country)
     }
 
     // Create the order and payment ledger comments.
-    $o_comment = t('<b>Credit card !type:</b> !amount<br /><b>Decision: @decision</b><br /><b>Reason:</b> !reason', array('!type' => variable_get('uc_cybersource_transaction_type', 'sale'), '!amount' => uc_currency_format($nvp['orderAmount']), '@decision' => $nvp['decision'], '!reason' => _uc_cybersource_parse_reason_code($nvp['reasonCode'])));
+    $o_comment = t('<b>Credit card !type:</b> !amount<br /><b>Decision: @decision</b><br /><b>Reason:</b> !reason', array('!type' => variable_get('uc_cybersource_hop_transaction_type', 'sale'), '!amount' => uc_currency_format($nvp['orderAmount']), '@decision' => $nvp['decision'], '!reason' => _uc_cybersource_parse_reason_code($nvp['reasonCode'])));
     $p_comment = t('!id<br />!decision, Reason: !reason', array('!id' => $nvp['orderPage_serialNumber'], '!decision' => $nvp['decision'], '!reason' => $nvp['reasonCode']));
     if (!empty($nvp['ccAuthReply_avsCode'])) {
       $o_comment .= t('<br /><b>AVS:</b> !avs', array('!avs' => _uc_cybersource_parse_avs_code($nvp['ccAuthReply_avsCode'])));
@@ -1246,7 +1246,7 @@ function uc_cybersource_uc_calculate_tax($order) {
    *   }
    *
    *   $request['ccAuthService_run'] = 'true';
-   *   if (variable_get('uc_cybersource_transaction_type', 'sale') == 'sale') {
+   *   if (variable_get('uc_cybersource_hop_transaction_type', 'sale') == 'sale') {
    *     $request['ccCaptureService_run'] = 'true';
    *   }
    *   $request['merchantReferenceCode'] = $order_id;
