@@ -17,7 +17,6 @@
 <body>
   <div align="right" style="margin-bottom: 1em; margin-right: 1em;">
     <input type="button" value="<?php print t('Print invoice'); ?>" onclick="window.print();" />
-    <input type="button" value="<?php print t('Close window'); ?>" onclick="window.close();" />
   </div>
 
   <?php print $content; ?>
