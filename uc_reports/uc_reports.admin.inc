@@ -300,10 +300,10 @@ function uc_reports_product_get_skus($nid) {
   // Product SKU.
   $models = array(db_query("SELECT model FROM {uc_products} WHERE nid = :nid", array(':nid' => $nid))->fetchField());
   // Adjustment SKUs.
-  $models += db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $nid))->fetchCol();
+  $models = array_merge($models, db_query("SELECT model FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $nid))->fetchCol());
 
   // SKUs from orders.
-  $models += db_query("SELECT DISTINCT model FROM {uc_order_products} WHERE nid = :nid", array(':nid' => $nid))->fetchCol();
+  $models = array_merge($models, db_query("SELECT DISTINCT model FROM {uc_order_products} WHERE nid = :nid", array(':nid' => $nid))->fetchCol());
 
   // Unique, sorted.
   $models = array_unique($models);
