@@ -441,7 +441,7 @@ function uc_attribute_option_form($form, &$form_state, $attribute, $option = NUL
 function uc_attribute_option_form_validate($form, &$form_state) {
   $pattern = '/^-?\d*(\.\d*)?$/';
   $price_error = t('This must be in a valid number format. No commas and only one decimal point.');
-  if (!is_numeric($form_state['values']['weight']['#value']) && !preg_match($pattern, $form_state['values']['weight']['#value'])) {
+  if (!is_numeric($form_state['values']['weight']) && !preg_match($pattern, $form_state['values']['weight'])) {
     form_set_error('weight', $price_error);
   }
 }
