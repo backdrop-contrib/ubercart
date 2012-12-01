@@ -13,9 +13,20 @@
 
 <head>
   <title><?php print $head_title; ?></title>
+  <style type="text/css">
+    .buttons {
+      text-align: right;
+      margin: 0 1em 1em 0;
+    }
+  </style>
+  <style type="text/css" media="print">
+    .buttons {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <div align="right" style="margin-bottom: 1em; margin-right: 1em;">
+  <div class="buttons">
     <input type="button" value="<?php print t('Print invoice'); ?>" onclick="window.print();" />
   </div>
 
