@@ -59,6 +59,8 @@ function uc_order_token_info() {
     'name' => t('Email'),
     'description' => t('The primary e-mail address of the order.'),
   );
+  // Duplicate [uc_order:email] as [uc_order:mail] as VBO validates tokens ending in :mail.
+  $tokens['mail'] = $tokens['email'];
   $tokens['shipping-method'] = array(
     'name' => t('Shipping method'),
     'description' => t('The title of the first shipping line item.'),
@@ -204,6 +206,7 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'email':
+        case 'mail':
           $replacements[$original] = $sanitize ? check_plain($order->primary_email) : $order->primary_email;
           break;
 
