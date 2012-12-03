@@ -37,13 +37,6 @@ function uc_payment_menu() {
   );
   $items += rules_ui()->config_menu('admin/store/settings/payment');
 
-  $items['admin/store/orders/%uc_order/payments/select/%'] = array(
-    'title' => 'Select payment gateway',
-    'page callback' => 'uc_payment_gateway_select',
-    'access arguments' => array('view all orders'),
-    'type' => MENU_CALLBACK,
-    'file' => 'uc_payment.admin.inc',
-  );
   $items['admin/store/orders/%uc_order/payments'] = array(
     'title' => 'Payments',
     'description' => 'Show payments made against an order.',
@@ -418,14 +411,8 @@ function uc_payment_process_payment($method, $order_id, $amount, $data = NULL, $
     $gateway = $gateways[$selected];
   }
   else {
-    // Otherwise store the info that was passed to us in the session and
-    // redirect to a form where we can choose a payment gateway.
-    $_SESSION['uc_payment_method'] = $method;
-    $_SESSION['uc_payment_order_id'] = $order_id;
-    $_SESSION['uc_payment_amount'] = $amount;
-    $_SESSION['uc_payment_data'] = serialize($data);
-
-    drupal_goto('admin/store/orders/' . $order_id . '/payments/select/' . $method);
+    // No gateway available.
+    $gateway = array($method => '');
   }
 
   // Check to see if the function exists and process the payment.
