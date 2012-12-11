@@ -471,6 +471,33 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     }
   }
 
+  function testCustomerInformationCheckoutPane() {
+    // Log in as a customer and add an item to the cart.
+    $this->drupalLogin($this->customer);
+    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $this->drupalPost('cart', array(), 'Checkout');
+
+    // Test the customer information pane.
+    $mail = $this->customer->mail;
+    $this->assertText('Customer information');
+    $this->assertText('Order information will be sent to your account e-mail listed below.');
+    $this->assertText('E-mail address: ' . $mail);
+
+    // Use the 'edit' link to change the email address on the account.
+    $new_mail = $this->randomName() . '@example.com';
+    $this->clickLink('edit');
+    $data = array(
+      'current_pass' => $this->customer->pass_raw,
+      'mail' => $new_mail,
+    );
+    $this->drupalPost(NULL, $data, 'Save');
+
+    // Test the updated email address.
+    $this->assertText('Order information will be sent to your account e-mail listed below.');
+    $this->assertNoText('E-mail address: ' . $mail);
+    $this->assertText('E-mail address: ' . $new_mail);
+  }
+
 }
 
 /**
