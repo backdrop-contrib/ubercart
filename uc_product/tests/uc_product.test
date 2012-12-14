@@ -178,4 +178,22 @@ class UbercartProductTestCase extends UbercartTestHelper {
     $this->drupalPost('node/' . $this->product->nid, array('qty' => '1'), 'Add to cart');
     $this->assertText('Your item(s) have been updated.');
   }
+
+  public function testViewsListing() {
+    // Enable the 'frontpage' view.
+    $views_status = variable_get('views_defaults', array());
+    $views_status['frontpage'] = FALSE; // false is enabled
+    variable_set('views_defaults', $views_status);
+    views_invalidate_cache();
+    menu_rebuild();
+
+    // Create a product on the front page.
+    $product = $this->createProduct(array('promote' => TRUE));
+
+    // Test the front page view.
+    $this->drupalGet('frontpage');
+    $this->assertText($product->title);
+    $this->assertText(uc_currency_format($product->sell_price));
+    $this->assertFieldByName('op', 'Add to cart');
+  }
 }
