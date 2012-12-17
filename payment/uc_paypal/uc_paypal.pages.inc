@@ -384,14 +384,10 @@ function uc_paypal_ec_submit() {
 
   drupal_add_css(drupal_get_path('module', 'uc_cart') . '/uc_cart.css');
 
-  $items = uc_cart_get_contents();
-
   $build['review'] = array(
     '#theme' => 'uc_cart_review_table',
-    '#items' => $items,
+    '#items' => $order->products,
     '#show_subtotal' => FALSE,
-    '#prefix' => '<div>',
-    '#suffix' => '</div>',
   );
 
   $build['line_items'] = uc_order_pane_line_items('customer', $order);
