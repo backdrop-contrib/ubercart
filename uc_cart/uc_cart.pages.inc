@@ -164,6 +164,10 @@ function uc_cart_checkout() {
     }
   }
 
+  // Trigger the "Customer starts checkout" hook and event.
+  module_invoke_all('uc_cart_checkout_start', $order);
+  rules_invoke_event('uc_cart_checkout_start', $order);
+
   return drupal_get_form('uc_cart_checkout_form', $order);
 }
 

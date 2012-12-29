@@ -244,6 +244,23 @@ function hook_uc_checkout_complete($order, $account) {
 }
 
 /**
+ * Takes action immediately before bringing up the checkout page.
+ *
+ * Use drupal_goto() in the hook implementation to abort checkout and
+ * enforce restrictions on the order.
+ *
+ * @param $order
+ *   The order object to check out.
+ */
+function hook_uc_cart_checkout_start($order) {
+  $account = user_load($order->uid);
+  if (is_array($account->roles) && in_array('administrator', $account->roles)) {
+    drupal_set_message(t('Administrators may not purchase products.', 'error'));
+    drupal_goto('cart');
+  }
+}
+
+/**
  * Registers callbacks for a checkout pane.
  *
  * The checkout screen for Ubercart is a compilation of enabled checkout panes.

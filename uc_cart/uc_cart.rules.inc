@@ -21,5 +21,16 @@ function uc_cart_rules_event_info() {
     ),
   );
 
+  $events['uc_cart_checkout_start'] = array(
+    'label' => t('Customer starts checkout'),
+    'group' => t('Cart'),
+    'variables' => array(
+      'order' => array(
+        'type' => 'uc_order',
+        'label' => t('Order'),
+      ),
+    ),
+  );
+
   return $events;
 }
