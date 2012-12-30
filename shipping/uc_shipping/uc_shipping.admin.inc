@@ -883,6 +883,13 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
     $form['packages'][$id] = $pkg_form;
   }
 
+  if (!empty($shipment->d_street1)) {
+    foreach ($shipment as $field => $value) {
+      if (substr($field, 0, 2) == 'd_') {
+        $order->{'delivery_' . substr($field, 2)} = $value;
+      }
+    }
+  }
   $form = uc_shipping_address_form($form, $form_state, $addresses, $order);
 
   $form['shipment'] = array(
