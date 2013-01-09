@@ -248,7 +248,7 @@ function _uc_file_download_validate($file_download, &$user, $ip) {
   }
 
   // Must be a valid file.
-  if (!$file_download || !is_file($file_download->full_path)) {
+  if (!$file_download || !is_readable($file_download->full_path)) {
     cache_set('uc_file_' . $ip, $requests, 'cache', REQUEST_TIME + 86400);
     if ($requests == UC_FILE_REQUEST_LIMIT) {
       // $message_user has already been passed through check_plain()
