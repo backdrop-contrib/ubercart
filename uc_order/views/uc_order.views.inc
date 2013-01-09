@@ -511,6 +511,23 @@ function uc_order_views_data() {
     ),
   );
 
+  $data['uc_order_products']['total_price'] = array(
+    'title' => t('Total price'),
+    'help' => t('The price paid for all the products (price * quantity).'),
+    'real field' => 'price',
+    'field' => array(
+      'handler' => 'uc_order_handler_field_money_total',
+      'click sortable' => TRUE,
+      'float' => TRUE,
+    ),
+    'sort' => array(
+      'handler' => 'uc_order_handler_sort_total',
+    ),
+    'filter' => array(
+      'handler' => 'uc_order_handler_filter_total',
+    ),
+  );
+
   $data['uc_order_products']['cost'] = array(
     'title' => t('Cost'),
     'help' => t('The cost to the store for one product.'),
@@ -527,6 +544,23 @@ function uc_order_views_data() {
     ),
   );
 
+  $data['uc_order_products']['total_cost'] = array(
+    'title' => t('Total cost'),
+    'help' => t('The cost to the store for all the products (cost * quantity).'),
+    'real field' => 'cost',
+    'field' => array(
+      'handler' => 'uc_order_handler_field_money_total',
+      'click sortable' => TRUE,
+      'float' => TRUE,
+    ),
+    'sort' => array(
+      'handler' => 'uc_order_handler_sort_total',
+    ),
+    'filter' => array(
+      'handler' => 'uc_order_handler_filter_total',
+    ),
+  );
+
   $data['uc_order_products']['weight'] = array(
     'title' => t('Weight'),
     'help' => t('The physical weight of one product.'),
@@ -537,6 +571,21 @@ function uc_order_views_data() {
         ),
       ),
       'handler' => 'uc_product_handler_field_weight',
+      'float' => TRUE,
+    ),
+  );
+
+  $data['uc_order_products']['total_weight'] = array(
+    'title' => t('Total weight'),
+    'help' => t('The physical weight of all the products (weight * quantity).'),
+    'real field' => 'weight',
+    'field' => array(
+      'additional fields' => array(
+        'weight_units' => array(
+          'field' => 'weight_units',
+        ),
+      ),
+      'handler' => 'uc_order_handler_field_weight_total',
       'float' => TRUE,
     ),
   );
