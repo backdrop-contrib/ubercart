@@ -148,7 +148,8 @@ function uc_order_rules_condition_info() {
       ),
       'required' => array(
         'type' => 'boolean',
-        'label' => t('Require selected products'),
+        'label' => t('Require all selected products'),
+        'description' => t('Select to require that order must contain all selected products.  Otherwise, order must contain at least one of the selected products.'),
       ),
       'forbidden' => array(
         'type' => 'boolean',
@@ -223,6 +224,33 @@ function uc_order_rules_condition_info() {
       'order' => array(
         'type' => 'uc_order',
         'label' => t('Order'),
+      ),
+    ),
+  );
+
+  $conditions['uc_order_condition_has_product_class'] = array(
+    'label' => t("Check an order's product classes"),
+    'group' => t('Order: Product'),
+    'base' => 'uc_order_condition_has_product_class',
+    'parameter' => array(
+      'order' => array(
+        'type' => 'uc_order',
+        'label' => t('Order'),
+      ),
+      'product_classes' => array(
+        'type' => 'list<text>',
+        'label' => t('Product Classes'),
+        'options list' => 'uc_order_condition_has_product_class_classes_options',
+        'restriction' => 'input',
+      ),
+      'required' => array(
+        'type' => 'boolean',
+        'label' => t('Require all selected product classes'),
+        'description' => t('Select to require that order must contain all selected product classes.  Otherwise, order must contain at least one of the selected product classes.'),
+      ),
+      'forbidden' => array(
+        'type' => 'boolean',
+        'label' => t('Forbid other product classes'),
       ),
     ),
   );
@@ -382,6 +410,77 @@ function uc_order_condition_billing_country($order, $countries) {
 }
 
 /**
+ * Checks that the order has the selected combination of product classes.
+ *
+ * @param object $order
+ *   The order to check.
+ * @param array $product_classes
+ *   An array of strings containing the product classes (node content
+ *   types) to check against.
+ * @param boolean $required
+ *   TRUE to require all product classes be present in the order.  FALSE
+ *   to require at least one be present.
+ * @param boolean $forbidden
+ *   TRUE to require that only the listed product classes be present.  FALSE
+ *   to allow products with other classes.
+ *
+ * @return boolean
+ *   Whether the order meets the specified conditions.
+ */
+function uc_order_condition_has_product_class($order, $product_classes, $required, $forbidden) {
+  $order_product_classes = array();
+  foreach ($order->products as $product) {
+    if (!empty($product->type)) {
+      // If present, use the product type from {uc_order_products}.data.type.
+      $order_product_classes[] = $product->type;
+    }
+    else {
+      // Otherwise, use the node type.  If the node can't be loaded, ignore
+      // this product.
+      $node = node_load($product->nid);
+      if (!empty($node)) {
+        $order_product_classes[] = $node->type;
+      }
+    }
+  }
+  $required_product_classes = array_intersect($product_classes, $order_product_classes);
+  if ($required) {
+    $required_check = ($required_product_classes == $product_classes);
+  }
+  else {
+    $required_check = (bool) count($required_product_classes);
+  }
+  if ($forbidden) {
+    $forbidden_product_classes = array_diff($order_product_classes, $product_classes);
+    $forbidden_check = (bool) count($forbidden_product_classes);
+  }
+  else {
+    $forbidden_check = FALSE;
+  }
+
+  return $required_check && !$forbidden_check;
+}
+
+/**
+ * Options callback.
+ *
+ * @return array
+ *   Associative array of all Ubercart product classes indexed by class ID.
+ *
+ * @see uc_order_condition_has_product_class()
+ */
+function uc_order_condition_has_product_class_classes_options() {
+  $options = array();
+
+  $result = db_query('SELECT * FROM {uc_product_classes}');
+  foreach ($result as $class) {
+    $options += array($class->pcid => $class->name);
+  }
+
+  return $options;
+}
+
+/**
  * Checks that the order has the selected combination of products.
  */
 function uc_order_condition_has_products($order, $products, $required, $forbidden) {
@@ -413,7 +512,7 @@ function uc_order_condition_has_products($order, $products, $required, $forbidde
  */
 function uc_order_condition_has_products_options() {
   $options = array();
-  $result = db_query("SELECT nid FROM {uc_products}");
+  $result = db_query('SELECT nid FROM {uc_products}');
   foreach ($result as $row) {
     $options += uc_product_get_models($row->nid, FALSE);
   }
@@ -468,7 +567,7 @@ function uc_order_condition_count_products($order, $products, $count, $op) {
  */
 function uc_order_condition_products_options() {
   $options = array('all' => t('- All products -'));
-  $options += db_query("SELECT nid, model FROM {uc_products} ORDER BY model")->fetchAllKeyed();
+  $options += db_query('SELECT nid, model FROM {uc_products} ORDER BY model')->fetchAllKeyed();
 
   return $options;
 }
