@@ -446,6 +446,15 @@ function _uc_authorizenet_charge($order, $amount, $data) {
     $description[] = $product->qty . 'x ' . $product->model;
   }
 
+  $billing_address = $order->billing_street1;
+  if ($order->billing_street2) {
+    $billing_address .= ', ' . $order->billing_street2;
+  }
+  $delivery_address = $order->delivery_street1;
+  if ($order->delivery_street2) {
+    $delivery_address .= ', ' . $order->delivery_street2;
+  }
+
   $billing_country = uc_get_country_data(array('country_id' => $order->billing_country));
   $delivery_country = uc_get_country_data(array('country_id' => $order->delivery_country));
 
@@ -478,7 +487,7 @@ function _uc_authorizenet_charge($order, $amount, $data) {
     'x_first_name' => substr($order->billing_first_name, 0, 50),
     'x_last_name' => substr($order->billing_last_name, 0, 50),
     'x_company' => substr($order->billing_company, 0, 50),
-    'x_address' => substr($order->billing_street1, 0, 60),
+    'x_address' => substr($billing_address, 0, 60),
     'x_city' => substr($order->billing_city, 0, 40),
     'x_state' => substr(uc_get_zone_code($order->billing_zone), 0, 40),
     'x_zip' => substr($order->billing_postal_code, 0, 20),
@@ -493,7 +502,7 @@ function _uc_authorizenet_charge($order, $amount, $data) {
     'x_ship_to_first_name' => substr($order->delivery_first_name, 0, 50),
     'x_ship_to_last_name' => substr($order->delivery_last_name, 0, 50),
     'x_ship_to_company' => substr($order->delivery_company, 0, 50),
-    'x_ship_to_address' => substr($order->delivery_street1, 0, 60),
+    'x_ship_to_address' => substr($delivery_address, 0, 60),
     'x_ship_to_city' => substr($order->delivery_city, 0, 40),
     'x_ship_to_state' => substr(uc_get_zone_code($order->delivery_zone), 0, 40),
     'x_ship_to_zip' => substr($order->delivery_postal_code, 0, 20),
