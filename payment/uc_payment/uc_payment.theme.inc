@@ -18,7 +18,8 @@ function theme_uc_payment_totals($variables) {
 
   foreach ($line_items as $line) {
     if (!empty($line['title'])) {
-      $output .= '<tr><td class="title">' . filter_xss($line['title']) . ':</td>'
+      $attributes = drupal_attributes(array('class' => array('line-item-' . $line['type'])));
+      $output .= '<tr' . $attributes . '><td class="title">' . filter_xss($line['title']) . ':</td>'
         . '<td class="price">' . theme('uc_price', array('price' => $line['amount'])) . '</td></tr>';
     }
   }
