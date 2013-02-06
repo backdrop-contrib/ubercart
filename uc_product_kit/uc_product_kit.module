@@ -1146,21 +1146,15 @@ function uc_product_kit_uc_cart_display($item) {
 function uc_product_kit_uc_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
   if (!$nid) return NULL;
   $cid = !(is_null($cid) || empty($cid)) ? $cid : uc_cart_get_id();
-  if ($qty < 1) {
-    foreach ($data as $p_nid => $product) {
-      uc_cart_remove_item($p_nid, $cid, $product->data);
-    }
+
+  if (isset($data['kit_id'])) {
+    // Product was listed individually.
+    uc_product_uc_update_cart_item($nid, $data, $qty, $cid);
   }
   else {
-    if (isset($data['kit_id'])) {
-      // Product was listed individually.
-      uc_product_uc_update_cart_item($nid, $data, $qty, $cid);
-    }
-    else {
-      $kit = node_load($nid);
-      foreach ($data as $p_nid => $product) {
-        uc_product_uc_update_cart_item($p_nid, $product->data, $qty * $kit->products[$p_nid]->qty, $cid);
-      }
+    $kit = node_load($nid);
+    foreach ($data as $p_nid => $product) {
+      uc_product_uc_update_cart_item($p_nid, $product->data, $qty * $kit->products[$p_nid]->qty, $cid);
     }
   }
 }

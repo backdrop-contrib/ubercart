@@ -146,6 +146,46 @@ function hook_uc_cart_display($item) {
 }
 
 /**
+ * Act on a cart item before it is about to be created or updated.
+ *
+ * @param $entity
+ *   The cart item entity object.
+ */
+function hook_uc_cart_item_presave($entity) {
+  $entity->changed = REQUEST_TIME;
+}
+
+/**
+ * Act on cart item entities when inserted.
+ *
+ * @param $entity
+ *   The cart item entity object.
+ */
+function hook_uc_cart_item_insert($entity) {
+  drupal_set_message(t('An item was added to your cart'));
+}
+
+/**
+ * Act on cart item entities when updated.
+ *
+ * @param $entity
+ *   The cart item entity object.
+ */
+function hook_uc_cart_item_update($entity) {
+  drupal_set_message(t('An item was updated in your cart'));
+}
+
+/**
+ * Act on cart item entities when deleted.
+ *
+ * @param $entity
+ *   The cart item entity object.
+ */
+function hook_uc_cart_item_delete($entity) {
+  drupal_set_message(t('An item was deleted from your cart'));
+}
+
+/**
  * Registers callbacks for a cart pane.
  *
  * The default cart view page displays a table of the cart contents and a few

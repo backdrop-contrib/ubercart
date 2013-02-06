@@ -17,4 +17,21 @@ class UcCartItemController extends UcOrderProductController {
     }
     parent::attachLoad($items, $revision_id);
   }
+
+ /**
+   * Saves a cart item entity.
+   *
+   * Cart items are deleted if saved with a quantity of zero.
+   */
+  public function save($item, DatabaseTransaction $transaction = NULL) {
+    if ($item->qty < 1) {
+      if (isset($item->cart_item_id)) {
+        parent::delete(array($item->cart_item_id), $transaction);
+      }
+    }
+    else {
+      $item->changed = REQUEST_TIME;
+      parent::save($item, $transaction);
+    }
+  }
 }

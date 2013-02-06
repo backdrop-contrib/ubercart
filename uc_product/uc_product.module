@@ -1103,19 +1103,20 @@ function uc_product_uc_cart_display($item) {
 function uc_product_uc_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
   if (!$nid) return NULL;
   $cid = !(is_null($cid) || empty($cid)) ? $cid : uc_cart_get_id();
-  if ($qty < 1) {
-    uc_cart_remove_item($nid, $cid, $data);
-  }
-  else {
-    db_update('uc_cart_products')
-      ->fields(array(
-        'qty' => $qty,
-        'changed' => REQUEST_TIME,
-      ))
-      ->condition('nid', $nid)
-      ->condition('cart_id', $cid)
-      ->condition('data', serialize($data))
-      ->execute();
+
+  $efq = new EntityFieldQuery();
+  $result = $efq->entityCondition('entity_type', 'uc_cart_item')
+    ->propertyCondition('cart_id', $cid)
+    ->propertyCondition('nid', $nid)
+    ->propertyCondition('data', serialize($data))
+    ->execute();
+
+  if (!empty($result['uc_cart_item'])) {
+    $item_entity = entity_load_single('uc_cart_item', current(array_keys($result['uc_cart_item'])));
+    if ($item_entity->qty != $qty) {
+      $item_entity->qty = $qty;
+      entity_save('uc_cart_item', $item_entity);
+    }
   }
 }
 

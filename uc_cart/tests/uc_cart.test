@@ -114,6 +114,8 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
   }
 
   function testCart() {
+    module_enable(array('uc_cart_entity_test'));
+
     // Test the empty cart.
     $this->drupalGet('cart');
     $this->assertText('There are no products in your shopping cart.');
@@ -121,6 +123,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     // Add an item to the cart.
     $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
     $this->assertText($this->product->title . ' added to your shopping cart.');
+    $this->assertText('hook_uc_cart_item_insert fired');
 
     // Test the cart page.
     $this->drupalGet('cart');
@@ -130,6 +133,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     // Add the item again.
     $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
     $this->assertText('Your item(s) have been updated.');
+    $this->assertText('hook_uc_cart_item_update fired');
 
     // Test the cart page again.
     $this->drupalGet('cart');
@@ -140,18 +144,20 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->drupalPost('cart', array('items[0][qty]' => $qty), t('Update cart'));
     $this->assertText('Your cart has been updated.');
     $this->assertFieldByName('items[0][qty]', $qty, t('The product quantity was updated.'));
+    $this->assertText('hook_uc_cart_item_update fired');
 
     // Update the quantity to zero.
     $this->drupalPost('cart', array('items[0][qty]' => 0), t('Update cart'));
     $this->assertText('Your cart has been updated.');
     $this->assertText('There are no products in your shopping cart.');
+    $this->assertText('hook_uc_cart_item_delete fired');
 
     // Test the remove item button.
     $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
     $this->drupalPost('cart', array(), t('Remove'));
     $this->assertText($this->product->title . ' removed from your shopping cart.');
     $this->assertText('There are no products in your shopping cart.');
-    $this->drupalLogout();
+    $this->assertText('hook_uc_cart_item_delete fired');
   }
 
   function testCartMerge() {

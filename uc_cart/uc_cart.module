@@ -250,9 +250,14 @@ function uc_cart_cron() {
  */
 function uc_cart_node_delete($node) {
   if (uc_product_is_product($node->type)) {
-    db_delete('uc_cart_products')
-      ->condition('nid', $node->nid)
+    $efq = new EntityFieldQuery();
+    $result = $efq->entityCondition('entity_type', 'uc_cart_item')
+      ->propertyCondition('nid', $node->nid)
       ->execute();
+
+    if (!empty($result['uc_cart_item'])) {
+      entity_delete_multiple('uc_cart_item', array_keys($result['uc_cart_item']));
+    }
   }
 }
 
@@ -575,9 +580,7 @@ function uc_cart_login_update($uid) {
   // If there are items in the anonymous cart, consolidate them.
   if ($items = uc_cart_get_contents($_SESSION['uc_cart_id'])) {
     // Remove the anonymous cart items.
-    db_delete('uc_cart_products')
-      ->condition('cart_id', $_SESSION['uc_cart_id'])
-      ->execute();
+    uc_cart_empty($_SESSION['uc_cart_id']);
 
     // Merge the anonymous items into the user cart.
     foreach ($items as $key => $item) {
@@ -1120,14 +1123,10 @@ function uc_cart_get_total_qty($cid = NULL) {
  *   unknown_type
  */
 function uc_cart_update_item($item) {
-  db_update('uc_cart_products')
-    ->fields(array(
-      'qty' => $item->qty,
-      'changed' => REQUEST_TIME,
-      'data' => serialize($item->data),
-    ))
-    ->condition('cart_item_id', $item->cart_item_id)
-    ->execute();
+  $item_entity = entity_load_single('uc_cart_item', $item->cart_item_id);
+  $item_entity->qty = $item->qty;
+  $item_entity->data = $item->data;
+  entity_save('uc_cart_item', $item_entity);
 }
 
 /**
@@ -1182,19 +1181,22 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
     }
   }
 
-  $item = db_query("SELECT * FROM {uc_cart_products} WHERE cart_id = :cart_id AND nid = :nid AND data = :data", array(':cart_id' => $cid, ':nid' => $node->nid, ':data' => serialize($data)))->fetchObject();
+  $efq = new EntityFieldQuery();
+  $result = $efq->entityCondition('entity_type', 'uc_cart_item')
+    ->propertyCondition('cart_id', $cid)
+    ->propertyCondition('nid', $node->nid)
+    ->propertyCondition('data', serialize($data))
+    ->execute();
 
   // If the item isn't in the cart yet, add it.
-  if (is_null($item) || $item === FALSE) {
-    db_insert('uc_cart_products')
-      ->fields(array(
-        'cart_id' => $cid,
-        'nid' => $node->nid,
-        'qty' => $qty,
-        'changed' => REQUEST_TIME,
-        'data' => serialize($data),
-      ))
-      ->execute();
+  if (empty($result['uc_cart_item'])) {
+    $item_entity = entity_create('uc_cart_item', array(
+      'cart_id' => $cid,
+      'nid' => $node->nid,
+      'qty' => $qty,
+      'data' => $data,
+    ));
+    entity_save('uc_cart_item', $item_entity);
     if ($msg) {
       drupal_set_message(t('<strong>@product-title</strong> added to <a href="!url">your shopping cart</a>.', array('@product-title' => $node->title, '!url' => url('cart'))));
     }
@@ -1204,7 +1206,8 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
     if ($msg) {
       drupal_set_message(t('Your item(s) have been updated.'));
     }
-    $qty += $item->qty;
+    $item_entity = entity_load_single('uc_cart_item', current(array_keys($result['uc_cart_item'])));
+    $qty += $item_entity->qty;
     module_invoke($data['module'], 'uc_update_cart_item', $node->nid, $data, min($qty, 999999), $cid);
   }
 
