@@ -216,20 +216,16 @@ function uc_catalog_taxonomy_term_delete($term) {
 }
 
 /**
- * Implements hook_link_alter().
+ * Implements hook_preprocess_link().
  *
  * Rewrites taxonomy term links to point to the catalog.
  */
-function uc_catalog_link_alter(&$links, $node) {
+function uc_catalog_preprocess_link(&$vars) {
   // Link back to the catalog and not the taxonomy term page.
-  foreach ($links as $module => $link) {
-    if (strstr($module, 'taxonomy_term')) {
-      $tid = explode('_', $module);
-      $tid = $tid[2];
-      $term = taxonomy_term_load($tid);
-      if ($term->vid == variable_get('uc_catalog_vid', 0)) {
-        $links[$module]['href'] = uc_catalog_path($term);
-      }
+  if (isset($vars['options']['entity_type']) && $vars['options']['entity_type'] == 'taxonomy_term') {
+    $term = $vars['options']['entity'];
+    if ($term->vid == variable_get('uc_catalog_vid', 0)) {
+      $vars['path'] = uc_catalog_path($term);
     }
   }
 }
