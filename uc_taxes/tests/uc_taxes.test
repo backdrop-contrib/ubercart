@@ -6,14 +6,14 @@
  */
 
 /**
- * Tests the inclusive taxes functionality.
+ * Tests the tax functionality.
  */
-class UbercartInclusiveTaxesTestCase extends UbercartTestHelper {
+class UbercartTaxesTestCase extends UbercartTestHelper {
 
   public static function getInfo() {
     return array(
-      'name' => 'Inclusive taxes',
-      'description' => 'Ensures that inclusive taxes are calculated and displayed correctly.',
+      'name' => 'Taxes',
+      'description' => 'Ensures that taxes are calculated, stored and displayed correctly.',
       'group' => 'Ubercart',
     );
   }
@@ -23,11 +23,11 @@ class UbercartInclusiveTaxesTestCase extends UbercartTestHelper {
    */
   function setUp() {
     $modules = array('uc_product_kit', 'uc_attribute', 'uc_cart', 'uc_payment', 'uc_payment_pack', 'uc_taxes');
-    $permissions = array('administer rules', 'configure taxes');
+    $permissions = array('bypass node access', 'administer content types', 'administer rules', 'configure taxes');
     parent::setUp($modules, $permissions);
   }
 
-  function testProductKitAttributes() {
+  function testInclusiveTaxes() {
     $this->drupalLogin($this->adminUser);
 
     // Create a 20% inclusive tax rate.
@@ -148,29 +148,6 @@ class UbercartInclusiveTaxesTestCase extends UbercartTestHelper {
     $this->drupalGet('admin/store/orders/' . $order_id . '/invoice');
     $this->assertText('$16.80' . $rate->inclusion_text, 'Tax inclusive price appears on the printable invoice.');
   }
-}
-
-/**
- * Tests stored tax data.
- */
-class UbercartStoredTaxesTestCase extends UbercartTestHelper {
-
-  public static function getInfo() {
-    return array(
-      'name' => 'Stored tax data',
-      'description' => 'Ensures that historical tax data is stored correctly, and that the proper amount is displayed.',
-      'group' => 'Ubercart',
-    );
-  }
-
-  /**
-   * Overrides DrupalWebTestCase::setUp().
-   */
-  function setUp() {
-    $modules = array('uc_cart', 'uc_payment', 'uc_payment_pack', 'uc_taxes');
-    $permissions = array('administer rules', 'configure taxes');
-    parent::setUp($modules, $permissions);
-  }
 
   function loadTaxLine($order_id) {
     $order = uc_order_load($order_id, TRUE);
@@ -190,7 +167,7 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
     $this->assertText(uc_currency_format($line['amount']), t('Tax display has the correct amount ' . $when));
   }
 
-  function testTaxDisplay() {
+  function testStoredTaxDisplay() {
     $this->drupalLogin($this->adminUser);
 
     // Enable a payment method for the payment preview checkout pane.
@@ -302,6 +279,53 @@ class UbercartStoredTaxesTestCase extends UbercartTestHelper {
     else {
       $this->fail(t('No order was created.'));
     }
+  }
+
+  function testTaxProductClassUpdate() {
+    $this->drupalLogin($this->adminUser);
+
+    // Create a new product class.
+    $type = strtolower($this->randomName(12));
+    $edit = array(
+      'pcid' => $type,
+      'name' => $type,
+      'description' => $this->randomName(32),
+    );
+    $this->drupalPost('admin/store/products/classes', $edit, t('Save'));
+    node_types_rebuild();
+
+    // Create a tax rate.
+    $tax = $this->randomName(8);
+    $rate = (object) array(
+      'id' => 0, // TODO: should not have to set this
+      'name' => $tax,
+      'rate' => rand(1, 20) / 10,
+      'taxed_product_types' => array($type),
+      'taxed_line_items' => array(),
+      'weight' => 0,
+      'shippable' => 0,
+    );
+    uc_taxes_rate_save($rate);
+
+    // Check that the tax rate shows up at checkout.
+    $product = $this->createProduct(array('type' => $type));
+    $this->drupalPost('node/' . $product->nid, array(), t('Add to cart'));
+    $this->drupalGet('cart/checkout');
+    $this->assertText($tax, 'Tax line item displayed.');
+
+    // Change the machine name of the product class.
+    $new_type = strtolower($this->randomName(12));
+    $edit = array(
+      'name' => $new_type,
+      'type' => $new_type,
+    );
+    $this->drupalPost('admin/structure/types/manage/' . $type, $edit, t('Save content type'));
+
+    // Check that the tax rate still shows up at checkout.
+    $this->drupalPost('cart', array(), t('Remove'));
+    $this->drupalPost('node/' . $product->nid, array(), t('Add to cart'));
+    $this->drupalGet('cart/checkout');
+    $this->assertText($tax, 'Tax line item displayed.');
   }
 
 }
