@@ -235,6 +235,22 @@ function uc_taxes_uc_order($op, $order, $arg2) {
 }
 
 /**
+ * Implements hook_node_type_update().
+ *
+ * Ensure taxed product type are synchronised if the content type is updated.
+ */
+function uc_taxes_node_type_update($info) {
+  $existing_type = !empty($info->old_type) ? $info->old_type : $info->type;
+
+  db_update('uc_taxed_product_types')
+    ->fields(array(
+      'type' => $info->type,
+    ))
+    ->condition('type', $existing_type)
+    ->execute();
+}
+
+/**
  * Tax line item callback.
  */
 function uc_line_item_tax_display($op, $order) {
