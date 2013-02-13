@@ -10,8 +10,6 @@
 class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_validate_user {
   function option_definition() {
     $options = parent::option_definition();
-    unset($options['restrict_roles']);
-    unset($options['roles']);
 
     $options['perm'] = array('default' => 'view all orders');
 
@@ -20,8 +18,9 @@ class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_
 
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
-    unset($form['restrict_roles']);
-    unset($form['roles']);
+
+    $form['restrict_roles']['#access'] = FALSE;
+    $form['roles']['#access'] = FALSE;
 
     $perms = array();
     $module_info = system_get_info('module');
