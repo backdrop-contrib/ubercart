@@ -308,9 +308,9 @@ function _uc_file_download_validate($file_download, &$user, $ip) {
  */
 function _uc_file_download_transfer($file_user, $ip) {
 
-  // Check if any hook_file_transfer_alter calls alter the download.
-  foreach (module_implements('file_transfer_alter') as $module) {
-    $name = $module . '_file_transfer_alter';
+  // Check if any hook_uc_file_transfer_alter() calls alter the download.
+  foreach (module_implements('uc_file_transfer_alter') as $module) {
+    $name = $module . '_uc_file_transfer_alter';
     $file_user->full_path = $name($file_user, $ip, $file_user->fid, $file_user->full_path);
   }
 
