@@ -147,7 +147,7 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
 
   $form = uc_shipping_address_form($form, $form_state, $addresses, $order);
 
-  foreach (array('delivery_email', 'delivery_last_name', 'delivery_street1', 'delivery_city', 'delivery_zone', 'delivery_country', 'delivery_postal_code') as $field) {
+  foreach (array('delivery_email', 'delivery_last_name', 'delivery_street1', 'delivery_city', 'delivery_country', 'delivery_postal_code') as $field) {
     $form['destination'][$field]['#required'] = TRUE;
   }
 
