@@ -195,7 +195,7 @@ function uc_order_menu() {
     'page callback' => 'uc_order_view_invoice',
     'page arguments' => array(3),
     'access callback' => 'uc_order_can_view_order',
-    'access arguments' => array(1, 3),
+    'access arguments' => array(1, 3, TRUE),
   );
   $items['user/%user/orders/%uc_order/print'] = array(
     'title' => 'Print invoice',
@@ -203,7 +203,7 @@ function uc_order_menu() {
     'page callback' => 'uc_order_view_invoice',
     'page arguments' => array(3, TRUE),
     'access callback' => 'uc_order_can_view_order',
-    'access arguments' => array(1, 3),
+    'access arguments' => array(1, 3, TRUE),
   );
 
   $items['admin/store/orders/%uc_order'] = array(
@@ -407,6 +407,9 @@ function uc_order_permission() {
     'view own orders' => array(
       'title' => t('View own orders'),
     ),
+    'view own invoices' => array(
+      'title' => t('View own invoices'),
+    ),
     'view all orders' => array(
       'title' => t('View all orders'),
     ),
@@ -428,14 +431,24 @@ function uc_order_permission() {
 /**
  * Access callback for user/%user/orders*.
  */
-function uc_order_can_view_order($order_user, $order = NULL) {
+function uc_order_can_view_order($account, $order, $view_invoice = FALSE) {
   global $user;
 
-  $access = user_access('view all orders') || ($user->uid && user_access('view own orders') && $user->uid == $order_user->uid);
+  // Users with 'view all orders' are straightforward.
+  $access = user_access('view all orders');
 
-  if (!is_null($order)) {
-    $access = $access && $order_user->uid == $order->uid;
+  // If the user is the current user and is not anonymous, also allow the "own" permissions.
+  if ($user->uid && $user->uid == $account->uid) {
+    if ($view_invoice) {
+      $access = $access || user_access('view own invoices');
+    }
+    else {
+      $access = $access || user_access('view own orders');
+    }
   }
+
+  // The order must also be owned by the user specified in the URL.
+  $access = $access && $account->uid == $order->uid;
 
   return $access;
 }
@@ -1128,7 +1141,7 @@ function uc_order_view($order, $view_mode = 'full') {
     }
   }
 
-  if ($view_mode == 'customer' && variable_get('uc_cust_view_order_invoices', TRUE)) {
+  if ($view_mode == 'customer' && user_access('view own invoices')) {
     $link = theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/print.gif'));
     $link .= ' ' . t('Click to open a window with a printable invoice.');
     $order->content['print_button'] = array(
@@ -1976,7 +1989,7 @@ function uc_order_actions($order, $icon_html = FALSE) {
       'title' => $alt,
     );
 
-    if (variable_get('uc_cust_view_order_invoices', TRUE)) {
+    if (user_access('view own invoices')) {
       $alt = t('Print order @order_id.', $order_id);
       $actions[] = array(
         'name' => t('Print'),

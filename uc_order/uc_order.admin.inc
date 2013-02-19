@@ -35,12 +35,6 @@ function uc_order_settings_form($form, &$form_state) {
     '#group' => 'order-settings',
     '#weight' => -1,
   );
-  $form['invoice']['uc_cust_view_order_invoices'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Allow customers to view order invoices from their order history.'),
-    '#description' => t('Enabling this feature allows pop-up invoices to be opened when a particular order is being viewed.'),
-    '#default_value' => variable_get('uc_cust_view_order_invoices', TRUE),
-  );
   $form['invoice']['uc_cust_order_invoice_template'] = array(
     '#type' => 'select',
     '#title' => t('On-site invoice template'),
