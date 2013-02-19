@@ -122,7 +122,6 @@ function uc_paypal_ipn() {
         $comment = t('PayPal transaction ID: @txn_id', array('@txn_id' => $txn_id));
         uc_payment_enter($order_id, 'paypal_wps', $payment_amount, $order->uid, NULL, $comment);
         uc_cart_complete_sale($order);
-        uc_order_comment_save($order_id, 0, t('Payment of @amount @currency submitted through PayPal.', array('@amount' => uc_currency_format($payment_amount, FALSE), '@currency' => $payment_currency)), 'order', 'payment_received');
         uc_order_comment_save($order_id, 0, t('PayPal IPN reported a payment of @amount @currency.', array('@amount' => uc_currency_format($payment_amount, FALSE), '@currency' => $payment_currency)));
         break;
 
