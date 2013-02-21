@@ -391,12 +391,6 @@ function uc_order_views_data() {
     'field' => 'nid',
   );
 
-  // Pull in product fields directly.
-  $data['uc_products']['table']['join']['uc_order_products'] = array(
-    'left_field' => 'nid',
-    'field' => 'nid',
-  );
-
   // Pull in order fields directly.
   $data['uc_orders']['table']['join']['uc_order_products'] = array(
     'left_field' => 'order_id',
