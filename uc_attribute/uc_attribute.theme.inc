@@ -52,4 +52,3 @@ function theme_uc_attribute_add_to_cart($variables) {
 
   return $output;
 }
-
