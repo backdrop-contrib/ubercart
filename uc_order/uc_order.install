@@ -901,7 +901,16 @@ function uc_order_update_7300() {
  */
 function uc_order_update_7301() {
   if (variable_get('uc_cust_view_order_invoices', TRUE)) {
-    user_role_grant_permissions(DRUPAL_AUTHENTICATED_RID, array('view own invoices'));
+    // user_role_grant_permissions() is not allowed during upgrades from D6.
+    db_merge('role_permission')
+      ->key(array(
+        'rid' => DRUPAL_AUTHENTICATED_RID,
+        'permission' => 'view own invoices',
+      ))
+      ->fields(array(
+        'module' => 'uc_order',
+      ))
+      ->execute();
   }
   variable_del('uc_cust_view_order_invoices');
 }
