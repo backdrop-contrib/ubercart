@@ -257,22 +257,6 @@ function uc_google_checkout_node_revision_delete($node) {
  ******************************************************************************/
 
 /**
- * Implements hook_uc_order_pane().
- */
-function uc_google_checkout_uc_order_pane() {
-  $panes['email_allowed'] = array(
-    'callback' => 'uc_google_checkout_pane_email_allowed',
-    'title' => t('Marketing preferences'),
-    'desc' => t("Display the customer's preferences about mass-marketing."),
-    'class' => 'pos-left',
-    'weight' => 4,
-    'show' => array('view', 'customer'),
-  );
-
-  return $panes;
-}
-
-/**
  * Implements hook_uc_line_item().
  */
 function uc_google_checkout_uc_line_item() {
@@ -744,28 +728,6 @@ function uc_google_checkout_send_request($api, $request) {
 }
 
 /**
- * Indicates whether the customer accepts marketing emails.
- *
- * Order pane callback.
- */
-function uc_google_checkout_pane_email_allowed($op, $order) {
-  switch ($op) {
-    case 'customer':
-    case 'view':
-      if ($order->payment_method == 'google_checkout') {
-        if (isset($order->data['email_allowed']) && $order->data['email_allowed']) {
-          $build = array('#markup' => t('Customer will accept marketing emails.'));
-        }
-        else {
-          $build = array('#markup' => t('Customer does not want marketing emails.'));
-        }
-
-        return $build;
-      }
-  }
-}
-
-/**
  * Adds setting callbacks to the payment settings section.
  */
 function uc_payment_method_google_checkout($op, &$order) {
@@ -831,19 +793,6 @@ function uc_google_checkout_new_order($new_order) {
 
     if (!$order->primary_email) {
       $order->primary_email = (string) $billing_address->email;
-    }
-
-    if ($new_order->{'buyer-marketing-preferences'}->{'email-allowed'} == 'true') {
-      $order->data['email_allowed'] = TRUE;
-      if (module_exists('simplenews')) {
-        simplenews_subscribe_user($order->primary_email, variable_get('uc_google_checkout_simplenews_tid', 0), TRUE);
-      }
-    }
-    else {
-      $order->data['email_allowed'] = FALSE;
-      if (module_exists('simplenews')) {
-        simplenews_unsubscribe_user($order->primary_email, variable_get('uc_google_checkout_simplenews_tid', 0), FALSE);
-      }
     }
 
     $order->payment_method = 'google_checkout';
