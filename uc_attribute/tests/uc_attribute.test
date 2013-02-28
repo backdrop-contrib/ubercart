@@ -711,7 +711,7 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
    */
   public function testProductAttribute() {
     $product = $this->createProduct();
-    $attribute = self::createAttribute(array('display' => 1));
+    $attribute = self::createAttribute(array('display' => 2, 'required' => TRUE));
     for ($i = 0; $i < 3; $i++) {
       $option = self::createAttributeOption(array('aid' => $attribute->aid));
       $adjustment = self::createProductAdjustment(array('combination' => serialize(array($attribute->aid => $option->oid)), 'nid' => $product->nid));
@@ -728,6 +728,10 @@ class UbercartAttributeTestCase extends UbercartTestHelper {
       $this->assertText($option->name, 'Option name found for product');
       $this->assertText(uc_currency_format($option->price), 'Option price adjustment found for product');
     }
+
+    // Test required attribute.
+    $this->drupalPost(NULL, array(), 'Add to cart');
+    $this->assertText($attribute->label . ' field is required', 'Required attribute message found.');
 
     // Cart display.
     $price = uc_currency_format($product->sell_price + $option->price);
