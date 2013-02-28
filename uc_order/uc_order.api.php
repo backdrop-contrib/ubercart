@@ -389,7 +389,7 @@ function uc_order_pane_callback($op, $order, &$form = NULL, &$form_state = NULL)
 }
 
 /**
- * Allows modules to alter ordered products when they're loaded with an order.
+ * Allows modules to alter order products when they're loaded with an order.
  *
  * @param &$product
  *   The product object as found in the $order object.
@@ -405,12 +405,89 @@ function hook_uc_order_product_alter(&$product, $order) {
 }
 
 /**
- * Responds to order product deletion.
+ * Acts on order products being loaded from the database.
+ *
+ * This hook is invoked during order product loading, which is handled by
+ * entity_load(), via the EntityCRUDController.
+ *
+ * @param array $order_products
+ *   An array of order product entities being loaded, keyed by id.
+ *
+ * @see hook_entity_load()
  */
-function hook_uc_order_product_delete($order_product_id) {
-  // Put back the stock.
-  $product = db_query("SELECT model, qty FROM {uc_order_products} WHERE order_product_id = :id", array(':id' => $order_product_id))->fetchObject();
-  uc_stock_adjust($product->model, $product->qty);
+function hook_uc_order_product_load(array $order_products) {
+  $result = db_query('SELECT pid, foo FROM {mytable} WHERE pid IN(:ids)', array(':ids' => array_keys($entities)));
+  foreach ($result as $record) {
+    $entities[$record->pid]->foo = $record->foo;
+  }
+}
+
+/**
+ * Responds when an order product is inserted.
+ *
+ * This hook is invoked after the order product is inserted into the database.
+ *
+ * @param object $order_product
+ *   The order product that is being inserted.
+ *
+ * @see hook_entity_insert()
+ */
+function hook_uc_order_product_insert(object $order_product) {
+  db_insert('mytable')
+    ->fields(array(
+      'id' => entity_id('uc_order_product', $order_product),
+      'extra' => print_r($order_product, TRUE),
+    ))
+    ->execute();
+}
+
+/**
+ * Acts on an order product being inserted or updated.
+ *
+ * This hook is invoked before the order product is saved to the database.
+ *
+ * @param object $order_product
+ *   The order product that is being inserted or updated.
+ *
+ * @see hook_entity_presave()
+ */
+function hook_uc_order_product_presave(object $order_product) {
+  $order_product->name = 'foo';
+}
+
+/**
+ * Responds to an order product being updated.
+ *
+ * This hook is invoked after the order product has been updated in the database.
+ *
+ * @param object $order_product
+ *   The order product that is being updated.
+ *
+ * @see hook_entity_update()
+ */
+function hook_uc_order_product_update(object $order_product) {
+  db_update('mytable')
+    ->fields(array('extra' => print_r($order_product, TRUE)))
+    ->condition('opid', entity_id('uc_order_product', $order_product))
+    ->execute();
+}
+
+/**
+ * Responds after order product deletion.
+ *
+ * This hook is invoked after the order product has been removed from the
+ * database.
+ *
+ * @param object $order_product
+ *   The order product that is being deleted.
+ *
+ * @see hook_entity_delete()
+ * @see hook_uc_order_edit_form_product_remove()
+ */
+function hook_uc_order_product_delete(object $order_product) {
+  db_delete('mytable')
+    ->condition('opid', entity_id('uc_order_product', $order_product))
+    ->execute();
 }
 
 /**

@@ -490,26 +490,16 @@ function theme_uc_cart_review_table($variables) {
   );
 
   // Set up table rows.
-  $display_items = entity_view('uc_order_product', $items, 'cart');
+  $display_items = uc_order_product_view_multiple($items);
   if (!empty($display_items['uc_order_product'])) {
     foreach (element_children($display_items['uc_order_product']) as $key) {
       $display_item = $display_items['uc_order_product'][$key];
-      if (count(element_children($display_item))) {
-        $total = $display_item['#total'];
-        $subtotal += $total;
-        $description = $display_item['title']['#markup'];
-        if (!empty($display_item['description']['#markup'])) {
-          $description .= $display_item['description']['#markup'];
-        }
-        $qty = $display_item['qty']['#default_value'];
-        $suffix = !empty($display_item['#suffixes']) ? implode(' ', $display_item['#suffixes']) : '';
-
-        $rows[] = array(
-          array('data' => array('#theme' => 'uc_qty', '#qty' => $qty), 'class' => array('qty')),
-          array('data' => $description, 'class' => array('products')),
-          array('data' => array('#theme' => 'uc_price', '#price' => $total, '#suffix' => $suffix), 'class' => array('price')),
-        );
-      }
+      $subtotal += $display_item['total']['#price'];
+      $rows[] = array(
+        array('data' => $display_item['qty'], 'class' => array('qty')),
+        array('data' => $display_item['product'], 'class' => array('products')),
+        array('data' => $display_item['total'], 'class' => array('price')),
+      );
     }
   }
 
@@ -555,7 +545,7 @@ function theme_uc_cart_review_table($variables) {
  */
 function theme_uc_checkout_pane_cart_review($variables) {
   $rows = array();
-  $items = entity_view('uc_order_product', $variables['items']);
+  $items = uc_order_product_view_multiple($variables['items']);
 
   foreach (element_children($items['uc_order_product']) as $key) {
     $item = $items['uc_order_product'][$key];

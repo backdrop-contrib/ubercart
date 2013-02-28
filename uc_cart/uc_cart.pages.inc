@@ -146,9 +146,14 @@ function uc_cart_checkout() {
     }
     elseif (!empty($_SESSION['uc_cart_order_rebuild'])) {
       // Or, if the cart has changed, then remove old products and line items.
-      db_delete('uc_order_products')
-        ->condition('order_id', $order->order_id)
+      $efq = new EntityFieldQuery();
+      $result = $efq->entityCondition('entity_type', 'uc_order_product')
+        ->propertyCondition('order_id', $order->order_id)
         ->execute();
+      if (!empty($result['uc_order_product'])) {
+        $product_ids = array_keys($result['uc_order_product']);
+        uc_order_product_delete_multiple($product_ids);
+      }
       uc_order_delete_line_item($order->order_id, TRUE);
       $rebuild = TRUE;
     }

@@ -378,6 +378,17 @@ function uc_order_views_data() {
   }
 
   // Ordered products.
+  // Get the standard EntityAPI Views data table.
+  $data['uc_order_products'] =  entity_views_table_definition('uc_order_product');
+  // Remove undesirable fields
+  foreach(array('data') as $bad_field) {
+    if (isset($data['uc_order_products'][$bad_field])) {
+      unset($data['uc_order_products'][$bad_field]);
+    }
+  }
+  // Fix incomplete fields
+  $data['uc_order_products']['weight_units']['title'] = t('Weight units');
+
   $data['uc_order_products']['table']['group'] = t('Ordered product');
   $data['uc_order_products']['table']['base'] = array(
     'field' => 'order_product_id',

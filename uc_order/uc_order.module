@@ -84,6 +84,18 @@ class UcOrder {
 }
 
 /**
+ * Implements hook_help().
+ */
+function uc_order_help($path, $arg) {
+  switch ($path) {
+    case 'admin/store/settings/orders/products/fields':
+      return '<p>' . t('Attach fields to order product entities.  These entities represent the product line items that appear in orders.  Fields attached here are not visible in the current version of Ubercart, but they are available in Views.  A ')
+        . l(t('Computed Field'), 'http://drupal.org/project/computed_field')
+        . t(' is useful for attaching custom data to each product as it is ordered.') . '</p>';
+  }
+}
+
+/**
  * Implements hook_menu().
  */
 function uc_order_menu() {
@@ -285,6 +297,17 @@ function uc_order_menu() {
   );
 
   return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function uc_order_menu_alter(&$items) {
+  // Adjust the Field UI tabs on admin/store/settings/orders.
+  $items['admin/store/settings/orders/products/fields']['title'] = 'Ordered product fields';
+  $items['admin/store/settings/orders/products/fields']['weight'] = 3;
+  // Disable field display settings for ordered products, as we don't use this anywhere (yet).
+  $items['admin/store/settings/orders/products/display']['access callback'] = FALSE;
 }
 
 /**
@@ -496,6 +519,8 @@ function uc_order_entity_info() {
       'base table' => 'uc_order_products',
       'controller class' => 'UcOrderProductController',
       'metadata controller class' => 'UcOrderProductMetadataController',
+      'fieldable' => TRUE,
+      'module' => 'uc_order',
       'entity keys' => array(
         'id' => 'order_product_id',
         'label' => t('Order product'),
@@ -503,6 +528,10 @@ function uc_order_entity_info() {
       'bundles' => array(
         'uc_order_product' => array(
           'label' => t('Order product'),
+          'admin' => array(
+            'path' => 'admin/store/settings/orders/products',
+            'access arguments' => array('administer store'),
+          ),
         ),
       ),
       'view modes' => array(
@@ -515,8 +544,6 @@ function uc_order_entity_info() {
       ),
       // Entity API callbacks.
       'access callback'   => 'uc_order_order_product_access',
-      'save callback'     => 'uc_order_product_entity_save',
-      'deletion callback' => 'uc_order_product_delete',
     ),
   );
 }
@@ -956,9 +983,14 @@ function uc_order_delete($order_id) {
     db_delete('uc_orders')
       ->condition('order_id', $order_id)
       ->execute();
-    db_delete('uc_order_products')
-      ->condition('order_id', $order_id)
+    $efq = new EntityFieldQuery();
+    $result = $efq->entityCondition('entity_type', 'uc_order_product')
+      ->propertyCondition('order_id', $order->order_id)
       ->execute();
+    if (!empty($result['uc_order_product'])) {
+      $product_ids = array_keys($result['uc_order_product']);
+      uc_order_product_delete_multiple($product_ids);
+    }
     db_delete('uc_order_comments')
       ->condition('order_id', $order_id)
       ->execute();
@@ -1000,31 +1032,11 @@ function uc_order_order_product_access($op, $product = NULL, $account = NULL) {
 }
 
 /**
- * Entity API "save callback" for uc_order_product entity.
- *
- * Saves a product to an order.
+ * Save a product to an order.
  */
 function uc_order_product_save($order_id, $product) {
-  // Product kits, particularly, shouldn't actually be added to an order,
-  // but instead they cause other products to be added.
-  if (isset($product->skip_save) && $product->skip_save == TRUE) {
-    return;
-  }
-
-  // Update if there is an order_product_id, insert if there isn't.
-  $key = empty($product->order_product_id) ? array() : 'order_product_id';
-  // @TODO order_id should be in the object by this point.
   $product->order_id = $order_id;
-  if (empty($product->weight_units)) {
-    if (empty($product->nid)) {
-      $product->weight_units = variable_get('uc_weight_unit', 'lb');
-    }
-    else {
-      $units = db_query("SELECT weight_units FROM {node} n JOIN {uc_products} p ON n.vid = p.vid WHERE n.nid = :nid", array(':nid' => $product->nid))->fetchField();
-      $product->weight_units = empty($units) ? variable_get('uc_weight_unit', 'lb') : $units;
-    }
-  }
-  return drupal_write_record('uc_order_products', $product, $key);
+  return entity_save('uc_order_product', $product);
 }
 
 /**
@@ -1037,20 +1049,90 @@ function uc_order_product_entity_save($product) {
 }
 
 /**
- * Entity API "deletion callback" for uc_order_product entity.
+ * Remove a single product line from an order.
  *
- * Removes a product from an order.
+ * @param integer $order_product_id
+ *   Ordered product ID of product to remove.
  */
 function uc_order_product_delete($order_product_id) {
-  // Allow other modules to take action before the product is removed
-  // from the order.  If the hook is involved after the item is deleted
-  // from {uc_order_products} then $order_product_id will be pointing to
-  // the deleted row, and will be useless.
-  module_invoke_all('uc_order_product_delete', $order_product_id);
+  return uc_order_product_delete_multiple(array($order_product_id));
+}
 
-  db_delete('uc_order_products')
-    ->condition('order_product_id', $order_product_id)
-    ->execute();
+/**
+ * Remove multiple product lines from an order.
+ *
+ * @param array $order_product_ids
+ *   List of ordered product IDs of products to remove.
+ */
+function uc_order_product_delete_multiple($order_product_ids) {
+  return entity_delete_multiple('uc_order_product', $order_product_ids);
+}
+
+/**
+ * Load a single ordered product entity.
+ *
+ * @param integer $opid
+ *   The ID of the ordered product entity.
+ * @param boolean $reset
+ *   Whether to reset the internal cache for ordered product IDs. Defaults to
+ *   FALSE.
+ *
+ * @return object
+ *   The ordered product entity matching $opid.
+ */
+function uc_order_product_load($opid, $reset = FALSE) {
+  $products = uc_order_product_load_multiple(array($opid), $reset);
+  return reset($products);
+}
+
+/**
+ * Load multiple ordered product entities.
+ *
+ * @param array $opids
+ *   Array of ordered product IDs of products to load.  Default is the empty
+ *   array, which loads all ordered products.
+ * @param boolean $reset
+ *   Whether to reset the internal cache for ordered product IDs. Defaults to
+ *   FALSE.
+ *
+ * @return array
+ *   An array of ordered product entities matching $opids, indexed by
+ *   ID.
+ */
+function uc_order_product_load_multiple($opids = array(), $reset = FALSE) {
+  return entity_load('uc_order_product', $opids, array(), $reset);
+}
+
+/**
+ * Generate an array for rendering the multiple order products.
+ *
+ * Order products being viewed are generally expected to be fully-loaded entity
+ * objects, thus have their name or id key set. However, it is possible to
+ * view a single entity without any id, e.g. for generating a preview during
+ * creation.
+ *
+ * @param array $order_products
+ *   The array of order product to render.
+ * @param $view_mode
+ *    A view mode as used by this entity type, e.g. 'full', 'teaser'...
+ * @param $langcode
+ *   (optional) A language code to use for rendering. Defaults to the global
+ *   content language of the current request.
+ * @param $page
+ *   (optional) If set will control if the entity is rendered: if TRUE
+ *   the entity will be rendered without its title, so that it can be embeded
+ *   in another context. If FALSE the entity will be displayed with its title
+ *   in a mode suitable for lists.
+ *   If unset, the page mode will be enabled if the current path is the URI
+ *   of the entity, as returned by entity_uri().
+ *
+ * @return
+ *   The renderable array, keyed by the entity type and by entity identifiers,
+ *   for which the entity name is used if existing - see entity_id(). If there
+ *   is no information on how to view an entity, FALSE is returned.
+ */
+function uc_order_product_view_multiple($order_products, $view_mode = 'full', $langcode = NULL, $page = NULL) {
+  return entity_view('uc_order_product', $order_products, $view_mode, $langcode, $page);
 }
 
 /**
@@ -1665,7 +1747,7 @@ function template_preprocess_uc_order(&$variables) {
   $variables['shippable'] = uc_order_is_shippable($order);
 
   $variables['products'] = $order->products;
-  $display = entity_view('uc_order_product', $order->products);
+  $display = uc_order_product_view_multiple($order->products);
   foreach ($variables['products'] as &$product) {
     $product->total_price = render($display['uc_order_product'][$product->order_product_id]['total']);
     if ($product->qty > 1) {
