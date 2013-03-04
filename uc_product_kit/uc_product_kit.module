@@ -279,9 +279,11 @@ function uc_product_kit_update(&$node) {
       }
 
       $product->qty = $node->items[$nid]['qty'];
+      $product->ordering = isset($node->items[$nid]['ordering']) ? $node->items[$nid]['ordering'] : 0;
     }
     else {
       $product->qty = $node->products[$nid]->qty;
+      $product->ordering = $node->products[$nid]->ordering;
     }
     // Discounts are always saved, but they are only applied if the kit can't
     // be changed by the customer.
@@ -306,7 +308,7 @@ function uc_product_kit_update(&$node) {
         'mutable' => $node->mutable,
         'qty' => $product->qty,
         'discount' => $discount,
-        'ordering' => isset($node->items[$nid]['ordering']) ? $node->items[$nid]['ordering'] : 0,
+        'ordering' => $product->ordering,
         'synchronized' => $override_discounts ? 0 : 1,
       ))
       ->execute();
