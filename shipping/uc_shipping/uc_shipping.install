@@ -226,6 +226,9 @@ function uc_shipping_schema() {
         'columns' => array('order_id' => 'order_id'),
       ),
     ),
+    'indexes' => array(
+      'order_id' => array('order_id'),
+     ),
   );
 
   $schema['uc_packages'] = array(
@@ -264,7 +267,7 @@ function uc_shipping_schema() {
         'not null' => FALSE,
       ),
       'width' => array(
-        'description' => 'The pacakge width.',
+        'description' => 'The package width.',
         'type' => 'float',
         'not null' => FALSE,
       ),
@@ -288,7 +291,7 @@ function uc_shipping_schema() {
         'default' => 0.0,
       ),
       'sid' => array(
-        'description' => 'The {uc_shimpents}.sid, if the package has been shipped.',
+        'description' => 'The {uc_shipments}.sid, if the package has been shipped.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => FALSE,
@@ -325,6 +328,10 @@ function uc_shipping_schema() {
         'columns' => array('label_image' => 'fid'),
       ),
     ),
+    'indexes' => array(
+      'order_id' => array('order_id'),
+      'sid' => array('sid'),
+    ),
   );
 
   $schema['uc_packaged_products'] = array(
@@ -356,6 +363,9 @@ function uc_shipping_schema() {
     'foreign keys' => array(
       'package_id' => array('uc_packages' => 'package_id'),
       'order_product_id' => array('uc_order_products' => 'order_product_id'),
+    ),
+    'indexes' => array(
+      'order_product_id' => array('order_product_id'),
     ),
   );
 
@@ -460,5 +470,28 @@ function uc_shipping_update_7001() {
       'not null' => TRUE,
       'default' => 0,
     ));
+  }
+}
+
+/**
+ * Add indexes to package and shipment tables.
+ */
+function uc_shipping_update_7300() {
+  // Alter {uc_shipments} table.
+  if (!db_index_exists('uc_shipments', 'order_id')) {
+    db_add_index('uc_shipments', 'order_id', array('order_id'));
+  }
+
+  // Alter {uc_packages} table.
+  if (!db_index_exists('uc_packages', 'order_id')) {
+    db_add_index('uc_packages', 'order_id', array('order_id'));
+  }
+  if (!db_index_exists('uc_packages', 'sid')) {
+    db_add_index('uc_packages', 'sid', array('sid'));
+  }
+
+  // Alter {uc_packaged_products} table.
+  if (!db_index_exists('uc_packaged_products', 'order_product_id')) {
+    db_add_index('uc_packaged_products', 'order_product_id', array('order_product_id'));
   }
 }
