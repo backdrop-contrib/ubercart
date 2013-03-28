@@ -64,5 +64,26 @@ function uc_cart_variable_info($options) {
     'group' => 'uc_cart_checkout',
     'default' => uc_get_message('continue_shopping'),
   );
+  $variables['uc_cart_new_account_details'] = array(
+    'type' => 'text',
+    'title' => t('New account details help message', array(), $options),
+    'description' => t('Enter the help message displayed in the new account details fieldset when shown.', array(), $options),
+    'group' => 'uc_cart_checkout',
+    'default' => t('<b>Optional.</b> New customers may supply custom account details.<br />We will create these for you if no values are entered.', array(), $options),
+  );
+  $variables['uc_checkout_instructions'] = array(
+    'type' => 'text',
+    'title' => t('Checkout instructions', array(), $options),
+    'description' => t('Provide instructions for customers at the top of the checkout screen.', array(), $options),
+    'group' => 'uc_cart_checkout',
+    'default' => '',
+  );
+  $variables['uc_checkout_review_instructions'] = array(
+    'type' => 'text',
+    'title' => t('Checkout review instructions', array(), $options),
+    'description' => t('Provide instructions for customers at the top of the checkout review screen.', array(), $options),
+    'group' => 'uc_cart_checkout',
+    'default' => t("Your order is almost complete. Please review the details below and click 'Submit order' if all the information is correct.  You may use the 'Back' button to make changes to your order if necessary.", array(), $options),
+  );
   return $variables;
 }
