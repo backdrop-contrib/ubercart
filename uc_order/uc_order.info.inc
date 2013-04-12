@@ -31,7 +31,7 @@ function uc_order_entity_property_info() {
         'customer' => array(
           'type' => 'user',
           'label' => t('Customer'),
-          'destription' => t('The user who placed the order.'),
+          'description' => t('The user who placed the order.'),
           'getter callback' => 'uc_order_uc_order_get_properties',
           'setter callback' => 'uc_order_uc_order_set_properties',
           'setter permission' => 'edit orders',
