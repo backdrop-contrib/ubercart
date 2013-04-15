@@ -15,6 +15,7 @@ function uc_roles_rules_data_info() {
   $entities['uc_roles_expiration'] = array(
     'label' => t('Ubercart role expiration'),
     'wrap' => TRUE,
+    'token type' => 'uc_role',
     'property info' => array(
       'reid' => array(
         'type' => 'integer',
