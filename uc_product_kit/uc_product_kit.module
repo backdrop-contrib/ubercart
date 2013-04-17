@@ -343,6 +343,14 @@ function uc_product_kit_update(&$node) {
       ))
       ->execute();
   }
+
+  // When a kit is updated, remove matching kits from the cart, as there is no
+  // simple way to handle product addition or removal at this point.
+  if (module_exists('uc_cart')) {
+    db_delete('uc_cart_products')
+      ->condition('data', '%' . db_like('s:6:"kit_id";s:' . strlen($node->nid) . ':"' . $node->nid . '";') . '%', 'LIKE')
+      ->execute();
+  }
 }
 
 /**
