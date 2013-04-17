@@ -9,6 +9,27 @@
  * Implements hook_default_rules_configuration().
  */
 function uc_cart_default_rules_configuration() {
+  // Setup an example rule for limiting product quantities.
+  $rule = rules_reaction_rule();
+  $rule->label = t('Maximum product quantity');
+  $rule->active = FALSE;
+  $rule->event('uc_cart_item_presave')
+    ->condition('data_is', array(
+      'data:select' => 'uc-cart-item:qty',
+      'op' => '>',
+      'value' => '10',
+    ))
+    ->action('data_set', array(
+      'data:select' => 'uc-cart-item:qty',
+      'value' => '10',
+    ))
+    ->action('drupal_message', array(
+      'message' => 'You are only allowed to order a maximum of 10 of [uc-cart-item:node:title].',
+      'type' => 'warning',
+    ));
+
+  $configs['uc_cart_maximum_product_qty'] = $rule;
+
   // Setup a default configuration for customer checkout notifications.
   $rule = rules_reaction_rule();
   $rule->label = t('E-mail customer checkout notification');

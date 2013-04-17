@@ -189,6 +189,21 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertEqual(uc_cart_get_total_qty(), 0, 'There are no items in the cart.');
   }
 
+  function testMaximumQuantityRule() {
+    // Enable the example maximum quantity rule.
+    $rule = rules_config_load('uc_cart_maximum_product_qty');
+    $rule->active = TRUE;
+    $rule->save();
+
+    // Try to add more items than allowed to the cart.
+    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $this->drupalPost('cart', array('items[0][qty]' => 11), t('Update cart'));
+
+    // Test the restriction was applied.
+    $this->assertText('You are only allowed to order a maximum of 10 of ' . $this->product->title . '.');
+    $this->assertFieldByName('items[0][qty]', 10);
+  }
+
   function testCheckout() {
     // Allow customer to specify username and password, but don't log in after checkout.
     $settings = array(
