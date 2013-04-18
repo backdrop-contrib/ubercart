@@ -223,7 +223,9 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'shipping-address':
-          $replacements[$original] = uc_order_address($order, 'delivery');
+          $address = uc_order_address($order, 'delivery');
+          $address = str_replace(array('<br />', '<BR />'), "<br />\n", $address);
+          $replacements[$original] = $address;
           break;
 
         case 'shipping-phone':
@@ -231,7 +233,9 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'billing-address':
-          $replacements[$original] = uc_order_address($order, 'billing');
+          $address = uc_order_address($order, 'billing');
+          $address = str_replace(array('<br />', '<BR />'), "<br />\n", $address);
+          $replacements[$original] = $address;
           break;
 
         case 'billing-phone':
