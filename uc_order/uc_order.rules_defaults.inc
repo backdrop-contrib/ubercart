@@ -17,8 +17,8 @@ function uc_order_default_rules_configuration() {
     ->action('uc_order_email', array(
       'order:select' => 'order',
       'from' => uc_store_email_from(),
-      'addresses' => '[uc_order:email]',
-      'subject' => t('Order #[uc_order:order-number] Update'),
+      'addresses' => '[order:email]',
+      'subject' => t('Order #[order:order-number] Update'),
       'message' => uc_get_message('order_update_email'),
       'format' => filter_default_format(),
     ));
