@@ -25,16 +25,6 @@ function uc_order_orders() {
  * @ingroup forms
  */
 function uc_order_settings_form($form, &$form_state) {
-
-  // Put fieldsets into vertical tabs
-  $form['order-settings'] = array('#type' => 'vertical_tabs');
-
-  $form['invoice'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Invoice settings'),
-    '#group' => 'order-settings',
-    '#weight' => -1,
-  );
   $form['invoice']['uc_cust_order_invoice_template'] = array(
     '#type' => 'select',
     '#title' => t('On-site invoice template'),
@@ -44,47 +34,6 @@ function uc_order_settings_form($form, &$form_state) {
   );
   if (module_exists('uc_cart')) {
     $form['invoice']['uc_cust_order_invoice_template']['#description'] .= '<br />' . t('This is separate from the template used to e-mail invoices to customers which is configured through <a href="!url">Rules</a>.', array('!url' => url('admin/store/settings/checkout/rules')));
-  }
-
-  $panes = _uc_order_pane_list();
-  foreach ($panes as $id => $pane) {
-    foreach ($pane['show'] as $view) {
-      $form['panes'][$view][$id]['uc_order_pane_' . $id . '_show_' . $view] = array(
-        '#type' => 'checkbox',
-        '#title' => check_plain($pane['title']),
-        '#default_value' => variable_get('uc_order_pane_' . $id . '_show_' . $view, $pane['enabled']),
-      );
-      $form['panes'][$view][$id]['uc_order_pane_' . $id . '_enabled'] = &$form['panes'][$view][$id]['uc_order_pane_' . $id . '_show_' . $view];
-      $form['panes'][$view][$id]['uc_order_pane_' . $id . '_weight_' . $view] = array(
-        '#type' => 'weight',
-        '#default_value' => variable_get('uc_order_pane_' . $id . '_weight_' . $view, $pane['weight']),
-        '#attributes' => array('class' => array('uc-order-pane-' . $view . '-weight')),
-      );
-      $form['panes'][$view][$id]['uc_order_pane_' . $id . '_weight'] = &$form['panes'][$view][$id]['uc_order_pane_' . $id . '_weight_' . $view];
-      $form['panes'][$view][$id]['weight'] = variable_get('uc_order_pane_' . $id . '_weight_' . $view, $pane['weight']);
-    }
-  }
-
-  $titles = _uc_order_get_screen_titles();
-  foreach ($form['panes'] as $view => $data) {
-
-    if (!is_array($form['panes'][$view])) {
-      continue;
-    }
-
-    uasort($form['panes'][$view], 'uc_weight_sort');
-    foreach ($data as $pane => $info) {
-      unset($form['panes'][$view][$pane]['weight']);
-    }
-    $fieldset = array(
-      '#theme' => 'uc_pane_sort_table',
-      '#pane_prefix' => 'uc_order_pane',
-      '#draggable' => 'uc-order-pane-' . $view . '-weight',
-      '#type' => 'fieldset',
-      '#title' => t('@screen screen', array('@screen' => $titles[$view])),
-      '#group' => 'order-settings',
-    );
-    $form['panes'][$view] = array_merge($fieldset, $form['panes'][$view]);
   }
 
   return system_settings_form($form);
@@ -1027,7 +976,7 @@ function uc_order_edit_form($form, &$form_state, $order) {
 
   $panes = _uc_order_pane_list('edit');
   foreach ($panes as $id => $pane) {
-    if (in_array('edit', $pane['show']) && variable_get('uc_order_pane_' . $id . '_show_edit', $pane['enabled'])) {
+    if (in_array('edit', $pane['show'])) {
       $func = $pane['callback'];
       if (function_exists($func)) {
         $func('edit-form', $order, $form, $form_state);
@@ -1076,7 +1025,7 @@ function uc_order_edit_form_validate($form, &$form_state) {
   // Build list of changes to be applied.
   $panes = _uc_order_pane_list();
   foreach ($panes as $id => $pane) {
-    if (in_array('edit', $pane['show']) && variable_get('uc_order_pane_' . $id . '_show_edit', TRUE)) {
+    if (in_array('edit', $pane['show'])) {
       $func = $pane['callback'];
       if (function_exists($func)) {
         if (($changes = $func('edit-process', $order, $form, $form_state)) != NULL) {
@@ -1163,7 +1112,7 @@ function theme_uc_order_edit_form($variables) {
 
   $panes = _uc_order_pane_list();
   foreach ($panes as $id => $pane) {
-    if (in_array('edit', $pane['show']) && variable_get('uc_order_pane_' . $id . '_show_edit', TRUE)) {
+    if (in_array('edit', $pane['show'])) {
       $func = $pane['callback'];
       if (function_exists($func) && ($contents = $func('edit-theme', $form['#order'], $form)) != NULL) {
         $output .= '<div class="order-pane ' . $pane['class'] . '" id="order-pane-' . $id . '">';

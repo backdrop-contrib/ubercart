@@ -685,7 +685,7 @@ function uc_order_uc_order_pane() {
     'desc' => t("Manage the order's shipping address and contact information."),
     'class' => 'pos-left',
     'weight' => 1,
-    'show' => array('view', 'edit', 'invoice', 'customer'),
+    'show' => array('view', 'edit', 'customer'),
   );
   $panes['bill_to'] = array(
     'callback' => 'uc_order_pane_bill_to',
@@ -693,7 +693,7 @@ function uc_order_uc_order_pane() {
     'desc' => t("Manage the order's billing address and contact information."),
     'class' => 'pos-left',
     'weight' => 2,
-    'show' => array('view', 'edit', 'invoice', 'customer'),
+    'show' => array('view', 'edit', 'customer'),
   );
   $panes['customer'] = array(
     'callback' => 'uc_order_pane_customer',
@@ -709,7 +709,7 @@ function uc_order_uc_order_pane() {
     'desc' => t('Manage the products an order contains.'),
     'class' => 'abs-left',
     'weight' => 5,
-    'show' => array('view', 'edit', 'invoice', 'customer'),
+    'show' => array('view', 'edit', 'customer'),
   );
   $panes['line_items'] = array(
     'callback' => 'uc_order_pane_line_items',
@@ -718,7 +718,7 @@ function uc_order_uc_order_pane() {
     'desc' => t("View and modify an order's line items."),
     'class' => 'abs-left',
     'weight' => 6,
-    'show' => array('view', 'edit', 'invoice', 'customer'),
+    'show' => array('view', 'edit', 'customer'),
   );
   $panes['order_comments'] = array(
     'callback' => 'uc_order_pane_order_comments',
@@ -726,7 +726,7 @@ function uc_order_uc_order_pane() {
     'desc' => t('View the order comments, used for communicating with customers.'),
     'class' => 'abs-left',
     'weight' => 8,
-    'show' => array('view', 'invoice', 'customer'),
+    'show' => array('view', 'customer'),
   );
   $panes['admin_comments'] = array(
     'callback' => 'uc_order_pane_admin_comments',
@@ -1197,7 +1197,7 @@ function uc_order_view($order, $view_mode = 'full') {
 
   $panes = _uc_order_pane_list($view_mode);
   foreach ($panes as $pane) {
-    if (in_array($view_mode, $pane['show']) && variable_get('uc_order_pane_' . $pane['id'] . '_show_' . $view_mode, $pane['enabled'])) {
+    if (in_array($view_mode, $pane['show'])) {
       $func = $pane['callback'];
       if (function_exists($func) && ($contents = $func($view_mode, $order)) != NULL) {
         $title = isset($pane['display title']) ? $pane['display title'] : $pane['title'];
@@ -1705,20 +1705,6 @@ function uc_order_is_shippable($order) {
   }
 
   return FALSE;
-}
-
-/**
- * Helper function for order page local tasks.
- */
-function _uc_order_get_screen_titles() {
-  $titles = array(
-    'view' => t('View'),
-    'edit' => t('Edit'),
-    'invoice' => t('Invoice'),
-    'customer' => t('Customer'),
-  );
-
-  return $titles;
 }
 
 /**

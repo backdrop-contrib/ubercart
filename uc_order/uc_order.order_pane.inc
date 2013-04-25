@@ -1354,9 +1354,6 @@ function _uc_order_pane_list($view = 'view') {
       'weight' => 0,
     );
 
-    $pane['enabled'] = variable_get('uc_order_pane_' . $id . '_enabled', $pane['enabled']);
-    $pane['weight'] = variable_get('uc_order_pane_' . $id . '_weight_' . $view, $pane['weight']);
-
     $panes[$id] = $pane;
   }
 
