@@ -120,12 +120,12 @@ function uc_paypal_install() {
     ->insertFields(array(
       'order_status_id' => 'paypal_pending',
       'title' => $t('PayPal pending'),
-      'state' => 'payment_received',
+      'state' => 'post_checkout',
       'weight' => 7,
       'locked' => 1,
     ))
     ->updateFields(array(
-      'state' => 'payment_received',
+      'state' => 'post_checkout',
       'locked' => 1,
     ))
     ->execute();
@@ -181,5 +181,17 @@ function uc_paypal_update_7001() {
       'state' => 'payment_received',
       'locked' => 1,
     ))
+    ->execute();
+}
+
+/**
+ * Fix incorrect order state configuration.
+ */
+function uc_paypal_update_7300() {
+  db_update('uc_order_statuses')
+    ->fields(array(
+      'state' => 'post_checkout',
+    ))
+    ->condition('order_status_id', 'paypal_pending')
     ->execute();
 }
