@@ -32,7 +32,7 @@ class uc_order_handler_field_order_cost extends uc_order_handler_field_money_amo
    */
   function render($values) {
     $this->field_alias = 'order_cost';
-    $cost = db_query("SELECT SUM(cost) FROM {uc_order_products} WHERE order_id = :oid", array(':oid' => $values->{$this->aliases['order_id']}))->fetchField();
+    $cost = db_query("SELECT SUM(cost * qty) FROM {uc_order_products} WHERE order_id = :oid", array(':oid' => $values->{$this->aliases['order_id']}))->fetchField();
     $values->{$this->field_alias} = $cost;
     return parent::render($values);
   }
