@@ -72,7 +72,7 @@ function uc_cart_links_process($cart_actions) {
       // Set the ID of the Cart Link.
       case 'i':
       case 'I':
-        $id = drupal_substr($action, 1);
+        $id = drupal_substr($action, 1, 32);
         break;
 
       // Add a product to the cart.
