@@ -118,6 +118,11 @@ function uc_order_token_info() {
     'type' => 'date',
   );
 
+  $tokens['products'] = array(
+    'name' => t('Products'),
+    'description' => t('A list of products in the order.'),
+  );
+
   return array(
     'types' => array('uc_order' => $types),
     'tokens' => array('uc_order' => $tokens),
@@ -290,6 +295,17 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
 
         case 'modified':
           $replacements[$original] = format_date($order->modified, 'short');
+          break;
+
+        case 'products':
+          $products = array();
+          foreach ($order->products as $product) {
+            $products[] = theme('uc_qty', array('qty' => $product->qty)) . ' ' . $product->title;
+          }
+          if ($sanitize) {
+            $products = array_map('check_plain', $products);
+          }
+          $replacements[$original] = implode("<br />\n", $products);
           break;
       }
     }
