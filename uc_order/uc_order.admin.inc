@@ -419,10 +419,6 @@ function uc_order_create_form($form, &$form_state) {
         ->fields('o', array('billing_first_name', 'billing_last_name'))
         ->condition('u.uid', 0, '>')
         ->condition(db_or()
-          ->isNull('o.order_status')
-          ->condition('o.order_status', uc_order_status_list('general', TRUE), 'IN')
-        )
-        ->condition(db_or()
           ->isNull('o.billing_first_name')
           ->condition('o.billing_first_name', db_like(trim($form_state['values']['customer']['first_name'])) . '%', 'LIKE')
         )
@@ -670,10 +666,6 @@ function uc_order_select_customer($email = NULL) {
     $query->fields('u', array('uid', 'mail'))
       ->fields('o', array('billing_first_name', 'billing_last_name'))
       ->condition('u.uid', 0, '>')
-      ->condition(db_or()
-        ->isNull('o.order_status')
-        ->condition('o.order_status', uc_order_status_list('general', TRUE), 'IN')
-      )
       ->orderBy('o.billing_last_name');
 
     if ($first_name && $first_name !== '%') {
