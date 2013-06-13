@@ -93,16 +93,6 @@ function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NUL
           );
           $contents['new_account'] = array_merge($array, $contents['new_account']);
         }
-
-        /**
-         * This code adds profile fields required for registration to the
-         * customer checkout pane.  However, I don't have the time to fool with
-         * validation/submission stuff, so I'm postponing this feature. -RS
-        $null = NULL;
-        $extra = _user_forms($null, NULL, NULL, 'register');
-        if (!empty($extra)) {
-          $contents = array_merge($contents, $extra);
-        }*/
       }
 
       return array('description' => $description, 'contents' => $contents);
