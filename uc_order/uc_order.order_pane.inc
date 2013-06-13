@@ -11,6 +11,27 @@
  */
 
 /**
+ * Handles the "Print button" order pane.
+ */
+function uc_order_pane_print_button($op, $order, &$form = NULL, &$form_state = NULL) {
+  switch ($op) {
+    case 'customer':
+      if (user_access('view own invoices')) {
+        $link = t('Click to open a window with a printable invoice.');
+        $build = array(
+          '#markup' => l($link, 'user/' . $order->uid . '/orders/' . $order->order_id . '/print', array(
+            'html' => TRUE,
+            'attributes' => array(
+              'onclick' => "window.open(this.href, '" . t('Invoice') . "', 'toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=1,width=600,height=480,left=50,top=50'); return false;",
+            ),
+          )),
+        );
+        return $build;
+      }
+  }
+}
+
+/**
  * Handles the "Ship to" order pane.
  */
 function uc_order_pane_ship_to($op, $order, &$form = NULL, &$form_state = NULL) {

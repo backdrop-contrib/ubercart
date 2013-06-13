@@ -679,6 +679,15 @@ function uc_order_form_uc_store_settings_form_alter(&$form, &$form_state) {
  * Implements hook_uc_order_pane().
  */
 function uc_order_uc_order_pane() {
+  $panes['print_button'] = array(
+    'callback' => 'uc_order_pane_print_button',
+    'title' => t('Print button'),
+    'display title' => '',
+    'desc' => t("Button to open a printable invoice."),
+    'class' => 'abs-left',
+    'weight' => -10,
+    'show' => array('customer'),
+  );
   $panes['ship_to'] = array(
     'callback' => 'uc_order_pane_ship_to',
     'title' => t('Ship to'),
@@ -1221,22 +1230,6 @@ function uc_order_view($order, $view_mode = 'full') {
         $order->content[$pane['id']]['pane'] = $contents;
       }
     }
-  }
-
-  if ($view_mode == 'customer' && user_access('view own invoices')) {
-    $link = theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/print.gif'));
-    $link .= ' ' . t('Click to open a window with a printable invoice.');
-    $order->content['print_button'] = array(
-      '#markup' => l($link, 'user/' . $order->uid . '/orders/' . $order->order_id . '/print', array(
-        'html' => TRUE,
-        'attributes' => array(
-          'onclick' => "window.open(this.href, '" . t('Invoice') . "', 'toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=1,width=600,height=480,left=50,top=50'); return false;",
-        ),
-      )),
-      '#prefix' => '<div class="order-pane">',
-      '#suffix' => '</div>',
-      '#weight' => -10,
-    );
   }
 
   return $order->content;
