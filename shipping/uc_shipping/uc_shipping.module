@@ -817,3 +817,66 @@ function uc_shipping_date_views_fields($field) {
       return $values;
   }
 }
+
+/**
+ * Implements hook_uc_order().
+ *
+ * Prevent users from deleting orders with a shipment or package that has
+ * a tracking number, unless the user has administrative privileges or the
+ * "Unconditionally delete orders" permission.
+ *
+ * Delete packages and shipments attached to orders being deleted.
+ */
+function uc_shipping_uc_order($op, $order, $arg2) {
+  switch ($op) {
+    case 'can_delete':
+      // Find and check the shipments for tracking numbers.
+      // {uc_shipments}.tracking_number is NOT NULL.
+      $shipment_count = db_select('uc_shipments')
+        ->condition('order_id', $order->order_id)
+        ->condition('tracking_number', '', '<>')
+        ->countQuery()
+        ->execute()
+        ->fetchField();
+      if ($shipment_count > 0) {
+        return FALSE;
+      }
+
+      // Find and check the packages.
+      $package_count = db_select('uc_packages')
+        ->condition('order_id', $order->order_id)
+        ->isNotNull('tracking_number')
+        ->condition('tracking_number', '', '<>')
+        ->countQuery()
+        ->execute()
+        ->fetchField();
+      if ($package_count > 0) {
+        return FALSE;
+      }
+
+      return TRUE;
+      break;
+
+    case 'delete':
+      // Find and delete the shipments.
+      $shipment_ids = db_select('uc_shipments')
+        ->fields(NULL, array('sid'))
+        ->condition('order_id', $order->order_id)
+        ->execute()
+        ->fetchCol();
+      foreach ($shipment_ids as $sid) {
+        uc_shipping_shipment_delete($sid);
+      }
+
+      // Find and delete the packages.
+      $package_ids = db_select('uc_packages')
+        ->fields(NULL, array('package_id'))
+        ->condition('order_id', $order->order_id)
+        ->execute()
+        ->fetchCol();
+      foreach ($package_ids as $pid) {
+        uc_shipping_package_delete($pid);
+      }
+      break;
+  }
+}

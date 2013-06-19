@@ -495,3 +495,26 @@ function uc_shipping_update_7300() {
     db_add_index('uc_packaged_products', 'order_product_id', array('order_product_id'));
   }
 }
+
+/**
+ * Remove orphaned package and shipment records.
+ */
+function uc_shipping_update_7301() {
+  $subquery = db_select('uc_orders', 'o')
+    ->fields('o', array('order_id'));
+
+  db_delete('uc_shipments')
+    ->condition('order_id', $subquery, 'NOT IN')
+    ->execute();
+
+  db_delete('uc_packages')
+    ->condition('order_id', $subquery, 'NOT IN')
+    ->execute();
+
+  $subquery = db_select('uc_packages', 'p')
+    ->fields('p', array('package_id'));
+
+  db_delete('uc_packaged_products')
+    ->condition('package_id', $subquery, 'NOT IN')
+    ->execute();
+}
