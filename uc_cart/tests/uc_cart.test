@@ -293,6 +293,39 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertRaw('order has been attached to the account we found');
   }
 
+  function testCheckoutNewUsername() {
+    // Configure the checkout for this test.
+    $this->drupalLogin($this->adminUser);
+    $settings = array(
+      // Allow customer to specify username.
+      'uc_cart_new_account_name' => TRUE,
+      // Disable address panes.
+      'uc_pane_delivery_enabled' => FALSE,
+      'uc_pane_billing_enabled' => FALSE,
+    );
+    $this->drupalPost('admin/store/settings/checkout/panes', $settings, t('Save configuration'));
+    $this->drupalLogout();
+
+    // Test with an account that already exists.
+    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $edit = array(
+      'panes[customer][primary_email]' => $this->randomName(8) . '@example.com',
+      'panes[customer][new_account][name]' => $this->adminUser->name,
+    );
+    $this->drupalPost('cart/checkout', $edit, 'Review order');
+    $this->assertText('The username ' . $this->adminUser->name . ' is already taken.');
+
+    // Let the account be automatically created instead.
+    $edit = array(
+      'panes[customer][primary_email]' => $this->randomName(8) . '@example.com',
+      'panes[customer][new_account][name]' => '',
+    );
+    $this->drupalPost('cart/checkout', $edit, 'Review order');
+    $this->drupalPost(NULL, array(), 'Submit order');
+    $this->assertText('Your order is complete!');
+    $this->assertText('A new account has been created');
+  }
+
   function testCheckoutLogin() {
     // Log in after checkout.
     $settings = array(

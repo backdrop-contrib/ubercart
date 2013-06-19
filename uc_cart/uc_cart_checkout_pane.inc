@@ -133,10 +133,12 @@ function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NUL
             if (!empty($message)) {
               form_set_error('panes][customer][new_account][name', $message);
             }
-            if (db_query("SELECT uid FROM {users} WHERE name LIKE :name", array(':name' => $pane['new_account']['name']))->fetchField()) {
+            elseif (db_query("SELECT uid FROM {users} WHERE name LIKE :name", array(':name' => $pane['new_account']['name']))->fetchField()) {
               form_set_error('panes][customer][new_account][name', t('The username %name is already taken. Please enter a different name or leave the field blank for your username to be your e-mail address.', array('%name' => $pane['new_account']['name'])));
             }
-            $order->data['new_user']['name'] = $pane['new_account']['name'];
+            else {
+              $order->data['new_user']['name'] = $pane['new_account']['name'];
+            }
           }
           // Validate the password.
           if (variable_get('uc_cart_new_account_password', FALSE)) {
