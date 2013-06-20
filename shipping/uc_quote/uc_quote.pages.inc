@@ -41,7 +41,7 @@ function uc_quote_assemble_quotes($order) {
   }
   $methods = uc_quote_methods();
   foreach ($methods as $id => $method) {
-    if ($method['quote']['type'] != 'order' && $method['quote']['type'] != $shipping_type) {
+    if (!isset($method['quote']) || ($method['quote']['type'] != 'order' && $method['quote']['type'] != $shipping_type)) {
       unset($methods[$id]);
     }
   }
