@@ -70,7 +70,7 @@ class uc_product_handler_field_price extends views_handler_field_numeric {
         return '';
       }
 
-      return uc_currency_format($value);
+      return theme('uc_price', array('price' => $value));
     }
   }
 }
