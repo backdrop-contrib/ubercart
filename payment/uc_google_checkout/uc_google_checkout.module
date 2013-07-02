@@ -700,30 +700,6 @@ function uc_google_checkout_send_request($api, $request) {
     return NULL;
   }
 
-  /**
-   * Ugly hack to work around PHP bug, details here:
-   *   http://bugs.php.net/bug.php?id=23220
-   * We strip out errors that look something like:
-   *  warning: fread() [function.fread]: SSL fatal protocol error in...
-   * Copied from http://drupal.org/node/70915.
-   */
-  $messages = drupal_set_message();
-  $errors = isset($messages['error']) ? $messages['error'] : array();
-  foreach ($errors as $i => $error) {
-    if (strpos($error, 'SSL: fatal protocol error in')) {
-      unset($_SESSION['messages']['error'][$i]);
-    }
-  }
-  if (empty($_SESSION['messages']['error'])) {
-    unset($_SESSION['messages']['error']);
-  }
-
-  db_delete('watchdog')
-    ->condition('type', 'php')
-    ->condition('variables', '%SSL: fatal protocol error%', 'LIKE')
-    ->execute();
-  // End of ugly hack.
-
   return $response;
 }
 

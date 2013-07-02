@@ -785,33 +785,6 @@ function uc_ups_quote($products, $details, $method) {
     }
   }
 
-  /**
-   * Ugly hack to work around PHP bug, details here:
-   *   http://bugs.php.net/bug.php?id=23220
-   * We strip out errors that look something like:
-   *  warning: fread() [function.fread]: SSL fatal protocol error in...
-   * Copied from http://drupal.org/node/70915 and then improved by Lyle.
-   */
-  $messages = drupal_set_message();
-  if (isset($messages['error'])) {
-    $errors = $messages['error'];
-    $total = count($errors);
-    for ($i = 0; $i < $total; $i++) {
-      if (strpos($errors[$i], 'SSL: fatal protocol error in')) {
-        unset($_SESSION['messages']['error'][$i]);
-      }
-    }
-    if (empty($_SESSION['messages']['error'])) {
-      unset($_SESSION['messages']['error']);
-    }
-  }
-
-  db_delete('watchdog')
-    ->condition('type', 'php')
-    ->condition('variables', '%SSL: fatal protocol error%', 'LIKE')
-    ->execute();
-  // End of ugly hack.
-
   return $quotes;
 }
 
