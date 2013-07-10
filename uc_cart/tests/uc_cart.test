@@ -326,6 +326,27 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertText('A new account has been created');
   }
 
+  function testCheckoutBlockedUser() {
+    // Block user after checkout.
+    $settings = array(
+      'uc_new_customer_status_active' => FALSE,
+    );
+    $this->drupalLogin($this->adminUser);
+    $this->drupalPost('admin/store/settings/checkout', $settings, t('Save configuration'));
+    $this->drupalLogout();
+
+    // Test as anonymous user.
+    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $this->checkout();
+    $this->assertRaw('Your order is complete!');
+
+    // Test new account email.
+    $mail = $this->drupalGetMails(array('id' => 'user_register_pending_approval'));
+    $this->assertTrue(!empty($mail), 'Blocked user email found.');
+    $mail = $this->drupalGetMails(array('id' => 'user_register_no_approval_required'));
+    $this->assertTrue(empty($mail), 'No unblocked user email found.');
+  }
+
   function testCheckoutLogin() {
     // Log in after checkout.
     $settings = array(
