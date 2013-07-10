@@ -27,11 +27,11 @@ function uc_quote_rules_condition_info() {
  */
 function uc_quote_condition_order_shipping_method($order, $method) {
   // Check the easy way first.
-  if (is_array($order->quote)) {
+  if (!empty($order->quote)) {
     return $order->quote['method'] == $method;
   }
   // Otherwise, look harder.
-  if (is_array($order->line_items)) {
+  if (!empty($order->line_items)) {
     $methods = module_invoke_all('uc_shipping_method');
     $accessorials = $methods[$method]['quote']['accessorials'];
 
