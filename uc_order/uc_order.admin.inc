@@ -963,7 +963,7 @@ function uc_order_edit_form($form, &$form_state, $order) {
   $form['order_id'] = array('#type' => 'hidden', '#value' => $order->order_id);
   $form['order_uid'] = array('#type' => 'hidden', '#value' => $order->uid);
 
-  $modified = isset($form_state['values']['order_modified']) ? $form_state['values']['order_modified'] : REQUEST_TIME;
+  $modified = isset($form_state['values']['order_modified']) ? $form_state['values']['order_modified'] : $order->modified;
   $form['order_modified'] = array('#type' => 'hidden', '#value' => $modified);
 
   $panes = _uc_order_pane_list('edit');
@@ -1008,7 +1008,7 @@ function uc_order_edit_form($form, &$form_state, $order) {
  */
 function uc_order_edit_form_validate($form, &$form_state) {
   $order = uc_order_load($form_state['values']['order_id']);
-  if ($form_state['values']['order_modified'] < $order->modified) {
+  if ($form_state['values']['order_modified'] != $order->modified) {
     form_set_error('order_modified', t('This order has been modified by another user, changes cannot be saved.'));
   }
 
