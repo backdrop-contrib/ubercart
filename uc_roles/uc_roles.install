@@ -183,7 +183,9 @@ function uc_roles_schema() {
  * Implements hook_update_last_removed().
  */
 function uc_roles_update_last_removed() {
-  return 6004;
+  // 7.x-3.0-beta2 and earlier were installed with schema version 0,
+  // which causes update.php to fail.
+  return drupal_get_installed_schema_version('uc_roles') == 0 ? 0 : 6004;
 }
 
 /**
@@ -196,4 +198,13 @@ function uc_roles_uninstall() {
   db_delete('variable')
     ->condition('name', 'uc_roles_%', 'LIKE')
     ->execute();
+}
+
+/**
+ * Remove unused variables.
+ */
+function uc_roles_update_7300() {
+  variable_del('uc_roles_default_expiration_header');
+  variable_del('uc_roles_default_expiration_message');
+  variable_del('uc_roles_default_expiration_title');
 }

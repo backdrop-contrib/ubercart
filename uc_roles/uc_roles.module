@@ -99,16 +99,6 @@ function uc_roles_menu() {
 }
 
 /**
- * Implements hook_init().
- */
-function uc_roles_init() {
-  global $conf;
-  $conf['i18n_variables'][] = 'uc_roles_default_expiration_header';
-  $conf['i18n_variables'][] = 'uc_roles_default_expiration_message';
-  $conf['i18n_variables'][] = 'uc_roles_default_expiration_title';
-}
-
-/**
  * Implements hook_permission().
  */
 function uc_roles_permission() {
@@ -378,11 +368,10 @@ function uc_roles_user_view($account, $view_mode) {
 
   $expirations = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid", array(':uid' => $account->uid));
   foreach ($expirations as $expiration) {
-    $substitution = array('!role_name' => check_plain(_uc_roles_get_name($expiration->rid)), '!date' => format_date($expiration->expiration, 'short'));
     $form[$expiration->rid] = array(
       '#type' => 'user_profile_item',
-      '#title' => strtr(variable_get('uc_roles_default_expiration_title', uc_get_message('uc_roles_user_expiration_title')), $substitution),
-      '#markup' => strtr(variable_get('uc_roles_default_expiration_message', uc_get_message('uc_roles_user_expiration_message')), $substitution),
+      '#title' => check_plain(_uc_roles_get_name($expiration->rid)),
+      '#markup' => t('This role will expire on !date', array('!date' => format_date($expiration->expiration, 'short'))),
     );
   }
 
@@ -394,7 +383,7 @@ function uc_roles_user_view($account, $view_mode) {
   $item = array(
     '#type' => 'user_profile_category',
     '#weight' => '-1',
-    '#title' => variable_get('uc_roles_default_expiration_header', uc_get_message('uc_roles_user_expiration_header')),
+    '#title' => t('Expiring roles'),
   );
 
   $account->content['uc_roles'] = $item + $form;
@@ -473,9 +462,6 @@ function uc_roles_uc_message() {
   $messages['uc_roles_renew_message'] = t("[order:first-name] [order:last-name], \n\nThanks to your order, [order:link], at [store:name] you have renewed the role, [expiration:name]. It is now set to expire on [expiration:expiration:short].\n\nThanks again, \n\n[store:name]\n[site:slogan]");
   $messages['uc_roles_reminder_subject'] = t('[store:name]: [expiration:name] role expiration notice');
   $messages['uc_roles_reminder_message'] = t("This message is to remind you that the role, [expiration:name], you acquired by making a purchase at our store will expire at [expiration:expiration:short]. You may visit [store:link] to renew this role before it expires.\n\nThanks again, \n\n[store:name]\n[site:slogan]");
-  $messages['uc_roles_user_expiration_header'] = t("Expiring roles");
-  $messages['uc_roles_user_expiration_title'] = t("!role_name");
-  $messages['uc_roles_user_expiration_message'] = t("This role will expire on !date");
 
   return $messages;
 }
@@ -913,33 +899,11 @@ function uc_roles_feature_settings($form, &$form_state) {
     '#prefix' => '<div class="expiration">',
     '#suffix' => '</div>',
   );
-  $form['uc_roles_expiration_display'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Expiration display'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-  $form['uc_roles_expiration_display']['uc_roles_default_show_expiration'] = array(
+  $form['uc_roles_default_show_expiration'] = array(
     '#type' => 'checkbox',
     '#title' => t('Show expirations on user page'),
     '#default_value' => variable_get('uc_roles_default_show_expiration', TRUE),
     '#description' => t('If users have any role expirations they will be displayed on their account page.'),
-  );
-  $form['uc_roles_expiration_display']['uc_roles_default_expiration_header'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Header'),
-    '#default_value' => variable_get('uc_roles_default_expiration_header', uc_get_message('uc_roles_user_expiration_header')),
-  );
-  $form['uc_roles_expiration_display']['uc_roles_default_expiration_title'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Title'),
-    '#default_value' => variable_get('uc_roles_default_expiration_title', uc_get_message('uc_roles_user_expiration_title')),
-  );
-  $form['uc_roles_expiration_display']['uc_roles_default_expiration_message'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Message'),
-    '#default_value' => variable_get('uc_roles_default_expiration_message', uc_get_message('uc_roles_user_expiration_message')),
-    '#description' => t('The message, with its accompanying title, and the header displayed above all role expirations. In the <strong>Title</strong> & <strong>Message</strong> fields "!role_name" and "!date" will translate to the corresponding Drupal role name and role expiration date.'),
   );
   return $form;
 }
