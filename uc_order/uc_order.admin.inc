@@ -1188,7 +1188,7 @@ function uc_order_add_line_item_form($form, &$form_state, $order, $line_item_id)
 function uc_order_add_line_item_form_validate($form, &$form_state) {
   $func = _uc_line_item_data($form_state['values']['line_item_id'], 'callback');
   if (function_exists($func) && ($form = $func('form', $form_state['values']['order_id'])) != NULL) {
-    $func('validate', $form_state['values']['order_id']);
+    $func('validate', $form, $form_state);
   }
 }
 
@@ -1200,7 +1200,7 @@ function uc_order_add_line_item_form_validate($form, &$form_state) {
 function uc_order_add_line_item_form_submit($form, &$form_state) {
   $func = _uc_line_item_data($form_state['values']['line_item_id'], 'callback');
   if (function_exists($func) && ($form = $func('form', $form_state['values']['order_id'])) != NULL) {
-    $func('submit', $form_state['values']['order_id']);
+    $func('submit', $form, $form_state);
   }
   else {
     uc_order_line_item_add($form_state['values']['order_id'], $form_state['values']['line_item_id'], $form_state['values']['title'], $form_state['values']['amount']);
