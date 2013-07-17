@@ -176,12 +176,6 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#size' => 32,
     '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q='),
   );
-  $form['continue_shopping']['uc_continue_shopping_text'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Custom <em>continue shopping</em> text'),
-    '#description' => t('Enter replacement text for the <em>continue shopping</em> element.'),
-    '#default_value' => variable_get('uc_continue_shopping_text', ''),
-  );
 
   $form['breadcrumb'] = array(
     '#type' => 'fieldset',
