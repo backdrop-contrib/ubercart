@@ -42,8 +42,8 @@ function uc_reports_customers() {
     ->condition('u.uid', 0, '>')
     ->groupBy('u.uid');
   $query->addExpression("(SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} o WHERE o.uid = u.uid AND o.order_status IN (:statuses))", 'orders', array(':statuses' => $order_statuses));
-  $query->addExpression("(SELECT SUM(qty) FROM {uc_order_products} ps LEFT JOIN {uc_orders} os ON ps.order_id = os.order_id WHERE os.order_status IN (:statuses) AND os.uid = u.uid)", 'products', array(':statuses' => $order_statuses));
-  $query->addExpression("(SELECT SUM(ot.order_total) FROM {uc_orders} ot WHERE ot.uid = u.uid AND ot.order_status IN (:statuses))", 'total', array(':statuses' => $order_statuses));
+  $query->addExpression("(SELECT SUM(qty) FROM {uc_order_products} ps LEFT JOIN {uc_orders} os ON ps.order_id = os.order_id WHERE os.order_status IN (:statuses2) AND os.uid = u.uid)", 'products', array(':statuses2' => $order_statuses));
+  $query->addExpression("(SELECT SUM(ot.order_total) FROM {uc_orders} ot WHERE ot.uid = u.uid AND ot.order_status IN (:statuses3))", 'total', array(':statuses3' => $order_statuses));
   $query->addExpression("ROUND((SELECT SUM(ot.order_total) FROM {uc_orders} ot WHERE ot.uid = u.uid AND ot.order_status IN (:sum_statuses))/(SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} o WHERE o.uid = u.uid AND o.order_status IN (:count_statuses)), 2)", 'average', array(':sum_statuses' => $order_statuses, ':count_statuses' => $order_statuses));
 
   $count_query = db_select('users', 'u');
@@ -148,8 +148,8 @@ function uc_reports_products() {
   $query->addField('n', 'nid');
   $query->addField('n', 'title');
   $query->addExpression("(SELECT SUM(uop.qty) FROM {uc_order_products} uop LEFT JOIN {uc_orders} uo ON uop.order_id = uo.order_id WHERE uo.order_status IN (:statuses) AND uop.nid = n.nid)", 'sold', array(':statuses' => $order_statuses));
-  $query->addExpression("(SELECT (SUM(uop.price * uop.qty) - SUM(uop.cost * uop.qty)) FROM {uc_order_products} uop LEFT JOIN {uc_orders} uo ON uop.order_id = uo.order_id WHERE uo.order_status IN (:statuses) AND uop.nid = n.nid)", 'gross', array(':statuses' => $order_statuses));
-  $query->addExpression("(SELECT (SUM(uop.price * uop.qty)) FROM {uc_order_products} uop LEFT JOIN {uc_orders} uo ON uop.order_id = uo.order_id WHERE uo.order_status IN (:statuses) AND uop.nid = n.nid)", 'revenue', array(':statuses' => $order_statuses));
+  $query->addExpression("(SELECT (SUM(uop.price * uop.qty) - SUM(uop.cost * uop.qty)) FROM {uc_order_products} uop LEFT JOIN {uc_orders} uo ON uop.order_id = uo.order_id WHERE uo.order_status IN (:statuses2) AND uop.nid = n.nid)", 'gross', array(':statuses2' => $order_statuses));
+  $query->addExpression("(SELECT (SUM(uop.price * uop.qty)) FROM {uc_order_products} uop LEFT JOIN {uc_orders} uo ON uop.order_id = uo.order_id WHERE uo.order_status IN (:statuses3) AND uop.nid = n.nid)", 'revenue', array(':statuses3' => $order_statuses));
 
   $header = array(
     array('data' => t('#')),
