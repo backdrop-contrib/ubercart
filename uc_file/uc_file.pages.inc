@@ -218,10 +218,12 @@ function _uc_file_download($fid) {
   // Some error state came back, so report it.
   else {
     drupal_set_message($error_messages[$status] . $admin_message, 'error');
+
+    // Kick 'em to the curb. >:)
+    _uc_file_download_redirect($user->uid);
   }
 
-  // Kick 'em to the curb. >:)
-  _uc_file_download_redirect($user->uid);
+  drupal_exit();
 }
 
 /**
