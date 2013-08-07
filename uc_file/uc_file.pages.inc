@@ -200,7 +200,12 @@ function _uc_file_download($fid) {
   );
 
   $ip = ip_address();
-  $file_download = uc_file_get_by_uid($user->uid, $fid);
+  if (user_access('view all downloads')) {
+    $file_download = uc_file_get_by_id($fid);
+  }
+  else {
+    $file_download = uc_file_get_by_uid($user->uid, $fid);
+  }
 
   if (isset($file_download->filename)) {
     $file_download->full_path = uc_file_qualify_file($file_download->filename);
@@ -210,7 +215,10 @@ function _uc_file_download($fid) {
   }
 
   // If it's ok, we push the file to the user.
-  $status = _uc_file_download_validate($file_download, $user, $ip);
+  $status = UC_FILE_ERROR_OK;
+  if (!user_access('view all downloads')) {
+    $status = _uc_file_download_validate($file_download, $user, $ip);
+  }
   if ($status == UC_FILE_ERROR_OK) {
     _uc_file_download_transfer($file_download, $ip);
   }
