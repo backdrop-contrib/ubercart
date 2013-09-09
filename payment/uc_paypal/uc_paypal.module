@@ -580,6 +580,18 @@ function uc_payment_method_paypal_ec($op, &$order) {
         '#title' => t('Enable the comment text box on the Review payment page.'),
         '#default_value' => variable_get('uc_paypal_ec_review_comment', TRUE),
       );
+      $form['ec']['uc_pg_paypal_wpp_cc_txn_type'] = array(
+        '#type' => 'radios',
+        '#title' => t('Payment action'),
+        '#description' => t('"Complete sale" will authorize and capture the funds at the time the payment is processed.<br>"Authorization" will only reserve funds on the card to be captured later through your PayPal account.'),
+        '#options' => array(
+          // The keys here are constants defined in uc_credit,
+          // but uc_credit is not a dependency.
+          'auth_capture' => t('Complete sale'),
+          'authorize' => t('Authorization'),
+       ),
+        '#default_value' => variable_get('uc_pg_paypal_wpp_cc_txn_type', 'auth_capture'),
+      );
       return $form;
   }
 }
@@ -618,7 +630,7 @@ function uc_paypal_ec_checkout($form, &$form_state) {
     'CANCELURL' => url('uc_paypal/wps/cancel', array('absolute' => TRUE)),
     'AMT' => uc_currency_format($order->order_total, FALSE, FALSE, '.'),
     'CURRENCYCODE' => variable_get('uc_paypal_wpp_currency', 'USD'),
-    'PAYMENTACTION' => variable_get('uc_paypal_wpp_payment_action', 'Sale'),
+    'PAYMENTACTION' => variable_get('uc_pg_paypal_wpp_cc_txn_type', 'auth_capture') == 'authorize' ? 'Authorization' : 'Sale',
     'DESC' => substr($desc, 0, 127),
     'INVNUM' => $order->order_id . '-' . REQUEST_TIME,
     'REQCONFIRMSHIPPING' => variable_get('uc_paypal_ec_rqconfirmed_addr', 0),
@@ -699,7 +711,7 @@ function uc_paypal_ec_form_submit($form, &$form_state) {
     'CANCELURL' => url('uc_paypal/wps/cancel', array('absolute' => TRUE)),
     'AMT' => uc_currency_format($subtotal, FALSE, FALSE, '.'),
     'CURRENCYCODE' => variable_get('uc_paypal_wpp_currency', 'USD'),
-    'PAYMENTACTION' => variable_get('uc_paypal_wpp_payment_action', 'Sale'),
+    'PAYMENTACTION' => variable_get('uc_pg_paypal_wpp_cc_txn_type', 'auth_capture') == 'authorize' ? 'Authorization' : 'Sale',
     'DESC' => substr($desc, 0, 127),
     'INVNUM' => $order->order_id . '-' . REQUEST_TIME,
     'REQCONFIRMSHIPPING' => variable_get('uc_paypal_ec_rqconfirmed_addr', 0),
@@ -766,7 +778,7 @@ function uc_paypal_ec_submit_form_submit($form, &$form_state) {
   $nvp_request = array(
     'METHOD' => 'DoExpressCheckoutPayment',
     'TOKEN' => $_SESSION['TOKEN'],
-    'PAYMENTACTION' => variable_get('uc_paypal_wpp_payment_action', 'Sale'),
+    'PAYMENTACTION' => variable_get('uc_pg_paypal_wpp_cc_txn_type', 'auth_capture') == 'authorize' ? 'Authorization' : 'Sale',
     'PAYERID' => $_SESSION['PAYERID'],
     'AMT' => uc_currency_format($order->order_total, FALSE, FALSE, '.'),
     'DESC' => substr($desc, 0, 127),
