@@ -54,6 +54,32 @@ class UbercartOrderTestCase extends UbercartTestHelper {
     $this->assertFalse($deleted_order, 'Order was successfully deleted');
   }
 
+  public function testEntityHooks() {
+    module_enable(array('entity_crud_hook_test'));
+
+    $_SESSION['entity_crud_hook_test'] = array();
+    $order = uc_order_new();
+
+    $this->assertHookMessage('entity_crud_hook_test_entity_presave called for type uc_order');
+    $this->assertHookMessage('entity_crud_hook_test_entity_insert called for type uc_order');
+
+    $_SESSION['entity_crud_hook_test'] = array();
+    $order = uc_order_load($order->order_id);
+
+    $this->assertHookMessage('entity_crud_hook_test_entity_load called for type uc_order');
+
+    $_SESSION['entity_crud_hook_test'] = array();
+    uc_order_save($order);
+
+    $this->assertHookMessage('entity_crud_hook_test_entity_presave called for type uc_order');
+    $this->assertHookMessage('entity_crud_hook_test_entity_update called for type uc_order');
+
+    $_SESSION['entity_crud_hook_test'] = array();
+    uc_order_delete($order->order_id);
+
+    $this->assertHookMessage('entity_crud_hook_test_entity_delete called for type uc_order');
+  }
+
   public function testOrderCreation() {
     $this->drupalLogin($this->adminUser);
 
@@ -154,5 +180,12 @@ class UbercartOrderTestCase extends UbercartTestHelper {
     $this->assertEqual($order->billing_country, $db_order->billing_country);
 
     return $order;
+  }
+
+  protected function assertHookMessage($text, $message = NULL, $group = 'Other') {
+    if (!isset($message)) {
+      $message = $text;
+    }
+    return $this->assertTrue(array_search($text, $_SESSION['entity_crud_hook_test']) !== FALSE, $message, $group);
   }
 }

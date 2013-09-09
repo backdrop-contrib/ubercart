@@ -895,9 +895,12 @@ function uc_order_order_entity_access($op, $order = NULL, $account = NULL) {
 function uc_order_new($uid = 0, $state = 'in_checkout') {
   $order = new UcOrder($uid, $state);
 
+  module_invoke_all('entity_presave', $order, 'uc_order');
+
   drupal_write_record('uc_orders', $order);
 
   uc_order_module_invoke('new', $order, NULL);
+  module_invoke_all('entity_insert', $order, 'uc_order');
 
   return $order;
 }
@@ -914,9 +917,12 @@ function uc_order_create($values, $entity_type) {
     $order->$key = $value;
   }
 
+  module_invoke_all('entity_presave', $order, 'uc_order');
+
   drupal_write_record('uc_orders', $order);
 
   uc_order_module_invoke('new', $order, NULL);
+  module_invoke_all('entity_insert', $order, 'uc_order');
 
   return $order;
 }
@@ -948,6 +954,7 @@ function uc_order_save($order) {
     $order->modified = REQUEST_TIME;
 
     uc_order_module_invoke('presave', $order, NULL);
+    module_invoke_all('entity_presave', $order, 'uc_order');
 
     drupal_write_record('uc_orders', $order, 'order_id');
 
@@ -961,6 +968,7 @@ function uc_order_save($order) {
     field_attach_update('uc_order', $order);
 
     uc_order_module_invoke('save', $order, NULL);
+    module_invoke_all('entity_update', $order, 'uc_order');
     $order->order_total = uc_order_get_total($order);
   }
   catch (Exception $e) {
@@ -987,6 +995,7 @@ function uc_order_delete($order_id) {
   if ($order !== FALSE) {
     rules_invoke_event('uc_order_delete', $order);
     uc_order_module_invoke('delete', $order, NULL);
+    module_invoke_all('entity_delete', $order, 'uc_order');
 
     // Delete data from the appropriate Ubercart order tables.
     db_delete('uc_orders')
