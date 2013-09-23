@@ -902,7 +902,7 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
           'weight',
           'ordering',
         ))
-        ->addExpression('po.ordering IS NULL', 'null_order');
+        ->addExpression('CASE WHEN po.ordering IS NULL THEN 1 ELSE 0 END', 'null_order');
 
       $query->condition('aid', $attribute->aid)
         ->orderBy('null_order')
