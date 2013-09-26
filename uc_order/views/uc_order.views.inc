@@ -663,13 +663,16 @@ function uc_order_views_data() {
     $data['uc_order_line_items_' . $line_item_id]['table']['join']['uc_order_products'] = $data['uc_order_line_items_' . $line_item_id]['table']['join']['uc_orders'];
     $data['uc_order_line_items_' . $line_item_id]['table']['join']['uc_order_products']['left_table'] = 'uc_orders';
 
-    $data['uc_order_line_items_' . $line_item_id]['table']['group'] = t('Ubercart order line item');
+    $data['uc_order_line_items_' . $line_item_id]['table']['group'] = t('Order: Line item');
     $data['uc_order_line_items_' . $line_item_id]['title'] = array(
       'title' => t('!line_item_desc title', array('!line_item_desc' => $line_item_desc)),
       'help' => t('!line_item_desc order line item', array('!line_item_desc' => $line_item_desc)),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
+      ),
+      'filter' => array(
+        'handler' => 'views_handler_filter_string',
       ),
     );
 
@@ -680,6 +683,9 @@ function uc_order_views_data() {
         'handler' => 'uc_order_handler_field_money_amount',
         'click sortable' => TRUE,
         'float' => TRUE,
+      ),
+      'filter' => array(
+        'handler' => 'views_handler_filter_numeric',
       ),
     );
   }
