@@ -53,6 +53,8 @@ function uc_product_views_default_views() {
       'separator' => '',
     ),
     'display_price' => array(
+      'sortable' => 1,
+      'default_sort_order' => 'desc',
       'align' => '',
       'separator' => '',
     ),

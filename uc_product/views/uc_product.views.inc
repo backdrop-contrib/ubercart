@@ -112,6 +112,7 @@ function uc_product_views_data() {
     'field' => array(
       'handler' => 'uc_product_handler_field_display_price',
       'real field' => 'nid',
+      'click sortable' => TRUE,
     ),
   );
 

@@ -30,4 +30,12 @@ class uc_product_handler_field_display_price extends uc_product_handler_field_pr
     $node = node_view(node_load($nid), 'teaser');
     return $node['display_price']['#value'];
   }
+
+  /**
+   * Overrides views_handler_field::click_sort().
+   */
+  function click_sort($order) {
+    $params = $this->options['group_type'] != 'group' ? array('function' => $this->options['group_type']) : array();
+    $this->query->add_orderby(NULL, NULL, $order, 'sell_price', $params);
+  }
 }
