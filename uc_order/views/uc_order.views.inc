@@ -377,6 +377,19 @@ function uc_order_views_data() {
     );
   }
 
+  $data['uc_orders']['total_weight'] = array(
+    'title' => t('Total weight'),
+    'help' => t('The physical weight of all the products (weight * quantity) in the order.'),
+    'real field' => 'weight',
+    'field' => array(
+      'handler' => 'uc_order_handler_field_order_weight_total',
+      'additional fields' => array(
+        'order_id' => 'order_id',
+      ),
+      'float' => TRUE,
+    ),
+  );
+
   // Ordered products.
   // Get the standard EntityAPI Views data table.
   $data['uc_order_products'] =  entity_views_table_definition('uc_order_product');
