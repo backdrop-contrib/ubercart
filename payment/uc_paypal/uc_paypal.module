@@ -238,10 +238,13 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
       $delivery_country = array(0 => array('country_iso_code_2' => 'US'));
     }
 
+    // Paypal doesn't accept IPv6 addresses.
+    $ip_address = ltrim(ip_address(), '::ffff:');
+
     $nvp_request = array(
       'METHOD' => 'DoDirectPayment',
       'PAYMENTACTION' => $data['txn_type'] == UC_CREDIT_AUTH_ONLY ? 'Authorization' : 'Sale',
-      'IPADDRESS' => ip_address(),
+      'IPADDRESS' => $ip_address,
       'AMT' => uc_currency_format($amount, FALSE, FALSE, '.'),
       'CREDITCARDTYPE' => $cc_type,
       'ACCT' =>  $order->payment_details['cc_number'],
