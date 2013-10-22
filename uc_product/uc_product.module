@@ -541,10 +541,6 @@ function uc_product_insert($node) {
     $node->height = $node->dim_height;
   }
 
-  if (!isset($node->unique_hash)) {
-    $node->unique_hash = md5($node->vid . $node->nid . $node->model . $node->list_price . $node->cost . $node->sell_price . $node->weight . $node->weight_units . $node->length . $node->width . $node->height . $node->length_units . $node->pkg_qty . $node->default_qty . $node->shippable . REQUEST_TIME);
-  }
-
   drupal_write_record('uc_products', $node);
 }
 
@@ -579,7 +575,7 @@ function uc_product_load($nodes) {
     $vids[$node->nid] = $node->vid;
   }
 
-  $result = db_query('SELECT nid, model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, unique_hash, ordering, shippable FROM {uc_products} WHERE vid IN (:vids)', array(':vids' => $vids));
+  $result = db_query('SELECT nid, model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, ordering, shippable FROM {uc_products} WHERE vid IN (:vids)', array(':vids' => $vids));
   foreach ($result as $node) {
     foreach ($node as $field => $value) {
       $nodes[$node->nid]->$field = $value;
@@ -1124,16 +1120,14 @@ function uc_product_uc_product_class($pcid, $op) {
         ))
         ->condition('type', $pcid)
         ->execute();
-      $result = db_query("SELECT n.vid, n.nid, p.unique_hash FROM {node} n LEFT JOIN {uc_products} p ON n.vid = p.vid WHERE n.type = :pcid", array(':pcid' => $pcid));
+      $result = db_query("SELECT n.vid, n.nid FROM {node} n LEFT JOIN {uc_products} p ON n.vid = p.vid WHERE n.type = :pcid AND p.vid IS NULL", array(':pcid' => $pcid));
       foreach ($result as $node) {
-        if (!$node->unique_hash) {
-          $node->weight_units = variable_get('uc_weight_unit', 'lb');
-          $node->length_units = variable_get('uc_length_unit', 'in');
-          $node->pkg_qty = 1;
-          $node->default_qty = 1;
-          $node->shippable = 1;
-          uc_product_insert($node);
-        }
+        $node->weight_units = variable_get('uc_weight_unit', 'lb');
+        $node->length_units = variable_get('uc_length_unit', 'in');
+        $node->pkg_qty = 1;
+        $node->default_qty = 1;
+        $node->shippable = 1;
+        uc_product_insert($node);
       }
     break;
   }

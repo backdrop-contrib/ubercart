@@ -138,6 +138,7 @@ class UbercartProductTestCase extends UbercartTestHelper {
       'name' => $type->name,
       'description' => $type->description,
     );
+    $node = $this->drupalCreateNode(array('type' => $type->type));
 
     $this->drupalPost(
       'admin/store/products/classes',
@@ -154,6 +155,9 @@ class UbercartProductTestCase extends UbercartTestHelper {
       $base,
       'uc_product',
       t('The new content type has been taken over by uc_product.'));
+
+    $this->drupalPost('node/' . $node->nid, array('qty' => '1'), 'Add to cart');
+    $this->assertText($node->title . ' added to your shopping cart.');
   }
 
   public function testProductQuantity() {
