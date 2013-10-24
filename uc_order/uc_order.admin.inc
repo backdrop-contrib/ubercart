@@ -205,7 +205,7 @@ function theme_uc_order_state_table($variables) {
 }
 
 /**
- * Themes the order state table in the order workflow settings.
+ * Themes the order status table in the order workflow settings.
  *
  * @see uc_order_workflow_form()
  * @ingroup themeable
