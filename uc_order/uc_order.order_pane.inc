@@ -492,22 +492,22 @@ function uc_order_pane_products_select($form, &$form_state) {
   $types = uc_product_types();
   $options = array();
 
+  $query = db_select('node', 'n')
+    ->fields('n', array('nid', 'title'))
+    ->condition('n.type', $types, 'IN')
+    ->orderBy('n.title')
+    ->addTag('node_access');
+
   if (!empty($form_state['values']['product_controls']['product_search'])) {
     $search = strtolower(str_replace('*', '%', $form_state['values']['product_controls']['product_search']));
-    $search_args = array(
-      ':types' => $types,
-      ':title' => $search,
-      ':model' => $search,
-    );
+    $query->leftJoin('uc_products', 'p', 'n.nid = p.nid');
+    $query->condition(db_or()
+            ->condition('n.title', $search, 'LIKE')
+            ->condition('p.model', $search, 'LIKE')
+          );
+  }
 
-    $result = db_query("SELECT n.nid, n.title FROM {node} n LEFT JOIN "
-      . "{uc_products} p ON n.nid = p.nid WHERE n.type IN "
-      . "(:types) AND (n.title LIKE :title OR p.model LIKE :model)"
-      . " ORDER BY n.title", $search_args);
-  }
-  else {
-    $result = db_query("SELECT nid, title FROM {node} WHERE type IN (:types) ORDER BY title", array(':types' => $types));
-  }
+  $result = $query->execute();
   foreach ($result as $row) {
     $options[$row->nid] = $row->title;
   }
