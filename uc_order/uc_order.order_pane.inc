@@ -627,6 +627,10 @@ function uc_order_pane_products_ajax_callback($form, &$form_state) {
     $commands[] = ajax_command_prepend('#order-edit-products', trim(theme('status_messages')));
   }
 
+  // Remove the field so we only refresh the admin comments item-list.
+  unset($form['admin_comment_field']);
+  $commands[] = ajax_command_replace('#order-pane-admin_comments .item-list', uc_order_pane_admin_comments('edit-theme', $form['#order'], $form, $form_state));
+
   return array('#type' => 'ajax', '#commands' => $commands);
 }
 
