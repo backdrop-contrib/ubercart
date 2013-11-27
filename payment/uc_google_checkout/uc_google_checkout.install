@@ -6,6 +6,40 @@
  */
 
 /**
+ * Implements hook_uninstall().
+ */
+function uc_google_checkout_uninstall() {
+  db_update('uc_order_statuses')
+    ->fields(array(
+      'locked' => 0,
+    ))
+    ->condition(db_or()
+      ->condition('order_status_id', 'in_google_checkout')
+      ->condition('order_status_id', 'chargeable')
+    )
+    ->execute();
+
+  db_delete('variable')
+    ->condition('name', 'uc_google_checkout_%', 'LIKE')
+    ->execute();
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function uc_google_checkout_requirements($phase) {
+  $t = get_t();
+
+  $requirements['uc_google_checkout'] = array(
+    'title' => $t('Google Checkout'),
+    'description' => $t('Google Checkout is no longer in operation. This module cannot be installed, only uninstalled. If you already have it installed, you must uninstall it. Follow the instructions in the module\'s <a href="@readme">README.txt</a>', array('@readme' => '/' . drupal_get_path('module', 'uc_google_checkout') . '/README.txt')),
+    'severity' => REQUIREMENT_ERROR,
+  );
+
+  return $requirements;
+}
+
+/**
  * Implements hook_schema().
  */
 function uc_google_checkout_schema() {
@@ -129,115 +163,4 @@ function uc_google_checkout_schema() {
   );
 
   return $schema;
-}
-
-/**
- * Implements hook_install().
- */
-function uc_google_checkout_install() {
-  $t = get_t();
-
-  db_merge('uc_order_statuses')
-    ->key(array('order_status_id' => 'in_google_checkout'))
-    ->insertFields(array(
-      'order_status_id' => 'in_google_checkout',
-      'title' => $t('In Google Checkout'),
-      'state' => 'in_checkout',
-      'weight' => -7,
-      'locked' => 1,
-    ))
-    ->updateFields(array(
-      'state' => 'in_checkout',
-      'locked' => 1,
-    ))
-    ->execute();
-
-  db_merge('uc_order_statuses')
-    ->key(array('order_status_id' => 'chargeable'))
-    ->insertFields(array(
-      'order_status_id' => 'chargeable',
-      'title' => $t('Chargeable'),
-      'state' => 'post_checkout',
-      'weight' => 2,
-      'locked' => 1,
-    ))
-    ->updateFields(array(
-      'state' => 'post_checkout',
-      'locked' => 1,
-    ))
-    ->execute();
-}
-
-/**
- * Implements hook_uninstall().
- */
-function uc_google_checkout_uninstall() {
-  db_update('uc_order_statuses')
-    ->fields(array(
-      'locked' => 0,
-    ))
-    ->condition(db_or()
-      ->condition('order_status_id', 'in_google_checkout')
-      ->condition('order_status_id', 'chargeable')
-    )
-    ->execute();
-
-  db_delete('variable')
-    ->condition('name', 'uc_google_checkout_%', 'LIKE')
-    ->execute();
-}
-
-/**
- * Implements hook_update_last_removed().
- */
-function uc_google_checkout_update_last_removed() {
-  // 7.x-3.0-beta2 and earlier were installed with schema version 0,
-  // which causes update.php to fail.
-  return drupal_get_installed_schema_version('uc_google_checkout') == 0 ? 0 : 6004;
-}
-
-/**
- * Fix incorrect order status configuration.
- */
-function uc_google_checkout_update_7000() {
-  db_delete('uc_order_statuses')
-    ->condition('order_status_id', '')
-    ->execute();
-
-  db_merge('uc_order_statuses')
-    ->key(array('order_status_id' => 'in_google_checkout'))
-    ->insertFields(array(
-      'order_status_id' => 'in_google_checkout',
-      'title' => t('In Google Checkout'),
-      'state' => 'in_checkout',
-      'weight' => -7,
-      'locked' => 1,
-    ))
-    ->updateFields(array(
-      'state' => 'in_checkout',
-      'locked' => 1,
-    ))
-    ->execute();
-
-  db_merge('uc_order_statuses')
-    ->key(array('order_status_id' => 'chargeable'))
-    ->insertFields(array(
-      'order_status_id' => 'chargeable',
-      'title' => t('Chargeable'),
-      'state' => 'post_checkout',
-      'weight' => 2,
-      'locked' => 1,
-    ))
-    ->updateFields(array(
-      'state' => 'post_checkout',
-      'locked' => 1,
-    ))
-    ->execute();
-}
-
-/**
- * Remove obsolete system variable.
- */
-function uc_google_checkout_update_7300() {
-  variable_del('uc_google_checkout_simplenews_tid');
 }
