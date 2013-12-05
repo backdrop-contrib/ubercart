@@ -236,7 +236,7 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
   $form['checkout']['uc_checkout_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable checkout.'),
-    '#description' => t('Disable this to use only third party checkout services, such as PayPal Express Checkout or Google Checkout.'),
+    '#description' => t('Disable this to use only third party checkout services, such as PayPal Express Checkout.'),
     '#default_value' => variable_get('uc_checkout_enabled', TRUE),
   );
 
