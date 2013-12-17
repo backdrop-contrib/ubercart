@@ -349,20 +349,20 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
 
   function testCheckoutLogin() {
     // Log in after checkout.
-    $settings = array(
-      'uc_new_customer_login' => TRUE,
-    );
-    $this->drupalLogin($this->adminUser);
-    $this->drupalPost('admin/store/settings/checkout', $settings, t('Save configuration'));
-    $this->drupalLogout();
+    variable_set('uc_new_customer_login', TRUE);
 
     // Test checkout.
-    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $this->drupalGet('node/' . $this->product->nid);
+    $this->drupalPost(NULL, array(), t('Add to cart'));
+    $this->assertNotNull($this->session_id, 'Session ID is set.');
+    $session_id = $this->session_id;
     $this->checkout();
     $this->assertRaw('Your order is complete!');
     $this->assertRaw('you are already logged in');
 
     // Confirm login.
+    $this->assertNotNull($this->session_id, 'Session ID is set.');
+    $this->assertNotIdentical($this->session_id, $session_id, 'Session ID has changed.');
     $this->drupalGet('<front>');
     $this->assertText('My account', 'User is logged in.');
 
