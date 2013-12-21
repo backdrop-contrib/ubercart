@@ -59,7 +59,6 @@ function uc_usps_country_map($code = NULL) {
     654 => 'Saint Helena',
     534 => 'Saint Maarten (Dutch) (Netherlands Antilles)',
     663 => 'Saint Martin (French) (Guadeloupe)',
-    688 => 'Serbia-Montenegro',
     703 => 'Slovak Republic',
     158 => 'Taiwan',
     834 => 'Tanzania',
