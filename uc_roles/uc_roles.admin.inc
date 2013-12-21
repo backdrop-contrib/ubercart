@@ -92,7 +92,7 @@ function theme_uc_roles_expiration($variables) {
 }
 
 /**
- * Form builder for role expirations.
+ * Form builder for role deletions.
  *
  * @see uc_roles_deletion_form_submit()
  * @ingroup forms
