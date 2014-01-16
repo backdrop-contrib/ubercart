@@ -711,6 +711,17 @@ function uc_order_views_data() {
  */
 function uc_order_views_plugins() {
   return array(
+    'row' => array(
+      'uc_order_invoice' => array(
+        'title' => t('Invoice'),
+        'help' => t('Display the order with standard invoice view.'),
+        'handler' => 'uc_order_plugin_row_invoice',
+        'theme' => 'uc_order_view_row_invoice',
+        'theme path' => drupal_get_path('module', 'uc_order') . '/views',
+        'base' => array('uc_orders'), // only works with 'uc_orders' as base.
+        'type' => 'normal',
+      ),
+    ),
     'argument validator' => array(
       'user_or_permission' => array(
         'title' => t('Current user or user has permission'),
@@ -718,4 +729,30 @@ function uc_order_views_plugins() {
       ),
     ),
   );
+}
+
+/**
+ * Preprocesses a views row invoice plugin.
+ *
+ * @see uc_order-view-row-invoice.tpl.php
+ */
+function template_preprocess_uc_order_view_row_invoice(&$vars) {
+  $order_id = $vars['row']->{$vars['field_alias']};
+
+  if (module_exists('uc_credit')) {
+    // Clear credit cache, otherwise the load function below will return
+    // the same cached credit information for all the subsequent orders
+    // invoices
+    uc_credit_cache('clear');
+  }
+  $order = uc_order_load($order_id);
+
+  $build = array(
+    '#theme' => 'uc_order',
+    '#order' => $order,
+    '#op' => 'view',
+    '#template' => variable_get('uc_cust_order_invoice_template', 'customer'),
+  );
+
+  $vars['invoice'] = theme('uc_order_invoice_page', array('content' => drupal_render($build)));
 }
