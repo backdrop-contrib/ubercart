@@ -256,6 +256,8 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
         $contents['address']['#hidden'] = variable_get('uc_cart_default_same_address', FALSE);
       }
 
+      // If this was an Ajax request, update form input values for the
+      // copy and select address features.
       if (isset($form_state['triggering_element'])) {
         $element = &$form_state['triggering_element'];
 
@@ -265,7 +267,6 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
             if (substr($field, 0, strlen($source)) == $source) {
               $field = str_replace($source, $pane, $field);
               $form_state['input']['panes'][$pane][$field] = $value;
-              $order->$field = $value;
             }
           }
         }
@@ -274,7 +275,6 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
           $address = $addresses[$element['#value']];
           foreach ($address as $field => $value) {
             $form_state['input']['panes'][$pane][$pane . '_' . $field] = $value;
-            $order->{$pane . '_' . $field} = $value;
           }
         }
 
@@ -293,6 +293,13 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
           }
 
           $order->$field = $value;
+        }
+      }
+      if (isset($panes[$pane]['select_address']) && $panes[$pane]['select_address'] >= 0) {
+        $addresses = uc_select_addresses($user->uid, $pane);
+        $address = $addresses[$panes[$pane]['select_address']];
+        foreach ($address as $field => $value) {
+          $order->{$pane . '_' . $field} = $value;
         }
       }
       return TRUE;
