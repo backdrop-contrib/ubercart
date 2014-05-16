@@ -26,6 +26,19 @@ function uc_googleanalytics_enable() {
 }
 
 /**
+ * Check which version of google analytics code is used on the site.
+ */
+function uc_googleanalytics_flush_caches() {
+  $info = system_get_info('module', 'googleanalytics');
+  if (preg_match('|7\.x\-[2-9]\.[0-9x]+|', $info['version'])) {
+    variable_set('uc_googleanalytics_version', 'analytics.js');
+  }
+  else {
+    variable_set('uc_googleanalytics_version', 'ga.js');
+  }
+}
+
+/**
  * Implements hook_page_alter().
  */
 function uc_googleanalytics_page_alter(&$page) {
@@ -98,7 +111,13 @@ function uc_googleanalytics_display() {
  *   The JS that should be added to the page footer.
  */
 function uc_googleanalytics_ecommerce_js($order) {
-  $script = '';
+  $analytics_version = variable_get('uc_googleanalytics_version', 'ga.js');
+  if ($analytics_version == 'analytics.js') {
+    $script = 'ga("require", "ecommerce", "ecommerce.js");';
+  }
+  else {
+    $script = '';
+  }
 
   // Lookup the name of the country or default to the ID if it can't be found
   // for some reason.
@@ -140,20 +159,28 @@ function uc_googleanalytics_ecommerce_js($order) {
   // Allow modules to alter the transaction arguments.
   drupal_alter('ucga_trans', $trans, $order);
 
-  // Put the arguments into an array that is safe to implode directly.
-  $args = array(
-    '"' . $trans['order_id'] . '"',
-    drupal_json_encode($trans['store']),
-    '"' . $trans['total'] . '"',
-    '"' . $trans['tax'] . '"',
-    '"' . $trans['shipping'] . '"',
-    drupal_json_encode($trans['city']),
-    drupal_json_encode($trans['state']),
-    drupal_json_encode($trans['country']),
+  // Create GA-friendly associative array.
+  $script_args = array(
+    'id' => $trans['order_id'],
+    'affiliation' => $trans['store'],
+    'revenue' => $trans['total'],
+    'tax' => $trans['tax'],
+    'shipping' => $trans['shipping'],
+    'city' => $trans['city'],
+    'region' => $trans['state'],
+    'country' => $trans['country'],
   );
 
   // Add the transaction line to the JS.
-  $script .= '_gaq.push(["_addTrans", ' . implode(', ', $args) . ']);';
+  if ($analytics_version == 'analytics.js') {
+    $script .= 'ga("ecommerce:addTransaction", ' . drupal_json_encode($script_args) . ');';
+  }
+  else {
+    foreach ($script_args as &$arg) {
+      $arg = drupal_json_encode($arg);
+    }
+    $script .= '_gaq.push(["_addTrans", ' . implode(', ', $script_args) . ']);';
+  }
 
   // Loop through the products on the order.
   foreach ($order->products as $product) {
@@ -186,22 +213,35 @@ function uc_googleanalytics_ecommerce_js($order) {
     // Allow modules to alter the item arguments.
     drupal_alter('ucga_item', $item, $product, $trans, $order);
 
-    // Put the arguments into an array that is safe to implode directly.
-    $args = array(
-      '"' . $item['order_id'] . '"',
-      drupal_json_encode($item['sku']),
-      drupal_json_encode($item['name']),
-      drupal_json_encode((string) $item['category']),
-      '"' . $item['price'] . '"',
-      '"' . $item['qty'] . '"',
+    // Create GA-friendly associative array.
+    $script_args = array(
+      'id' => $item['order_id'],
+      'sku' => $item['sku'],
+      'name' => $item['name'],
+      'category' => (string) $item['category'],
+      'price' => $item['price'],
+      'quantity' => $item['qty'],
     );
 
     // Add the item line to the JS.
-    $script .= '_gaq.push(["_addItem", ' . implode(', ', $args) . ']);';
+    if ($analytics_version == 'analytics.js') {
+      $script .= 'ga("ecommerce:addItem", ' . drupal_json_encode($script_args) . ');';
+    }
+    else {
+      foreach ($script_args as &$arg) {
+        $arg = drupal_json_encode($arg);
+      }
+      $script .= '_gaq.push(["_addItem", ' . implode(', ', $script_args) . ']);';
+    }
   }
 
   // Add the function to submit the transaction to GA.
-  $script .= '_gaq.push(["_trackTrans"]);';
+  if ($analytics_version == 'analytics.js') {
+    $script .= 'ga("ecommerce:send");';
+  }
+  else {
+    $script .= '_gaq.push(["_trackTrans"]);';
+  }
 
   return $script;
 }
