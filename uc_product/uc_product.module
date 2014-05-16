@@ -1042,9 +1042,14 @@ function uc_product_uc_cart_display($item) {
   $element['module'] = array('#type' => 'value', '#value' => 'uc_product');
   $element['remove'] = array('#type' => 'submit', '#value' => t('Remove'));
 
-  $element['title'] = array(
-    '#markup' => node_access('view', $node) ? l($item->title, 'node/' . $node->nid) : check_plain($item->title),
-  );
+  if (node_access('view', $node) && $uri = entity_uri('node', $node)) {
+    $element['title'] = array(
+      '#markup' => l($item->title, $uri['path'], $uri['options']),
+    );
+  }
+  else {
+    $element['title'] = array('#markup' => $item->title);
+  }
 
   $element['#total'] = $item->price * $item->qty;
   $element['#suffixes'] = array();
