@@ -20,7 +20,7 @@ function uc_shipping_rules_data_info() {
         'type' => 'integer',
         'label' => t('Shipment ID'),
       ),
-      'order-id' => array(
+      'order_id' => array(
         'type' => 'integer',
         'label' => t('Order ID'),
       ),
@@ -42,7 +42,7 @@ function uc_shipping_rules_data_info() {
         'setter permission' => 'fulfill orders',
         'property info' => $address_info,
       ),
-      'shipping-method' => array(
+      'shipping_method' => array(
         'type' => 'text',
         'label' => t('Shipping method'),
         'description' => t('The transportation method used to ship.'),
@@ -57,22 +57,22 @@ function uc_shipping_rules_data_info() {
         'label' => t('Carrier'),
         'description' > t('The company making the delivery.'),
       ),
-      'transaction-id' => array(
+      'transaction_id' => array(
         'type' => 'text',
         'label' => t('Transaction ID'),
         'description' => t("The carrier's shipment identifier."),
       ),
-      'tracking-number' => array(
+      'tracking_number' => array(
         'type' => 'text',
         'label' => t('Tracking number'),
         'description' => t('The number used by the carrier to locate the shipment while it is in transit.'),
       ),
-      'ship-date' => array(
+      'ship_date' => array(
         'type' => 'date',
         'label' => t('Ship date'),
         'description' => t('The time the shipment was sent out.'),
       ),
-      'expected-delivery' => array(
+      'expected_delivery' => array(
         'type' => 'date',
         'label' => t('Expected delivery'),
         'description' => t('The time the shipment is expected to be delivered'),
@@ -87,16 +87,16 @@ function uc_shipping_rules_data_info() {
         'label' => t('Packages'),
         'description' => t('The physical items being shipped.'),
         'property info' => array(
-          'package-id' => array(
+          'package_id' => array(
             'type' => 'integer',
             'label' => t('Package ID'),
           ),
-          'shipping-type' => array(
+          'shipping_type' => array(
             'type' => 'text',
             'label' => t('Shipping type'),
             'description' => t('The basic type of shipment, e.g.: small package, freight, etc.'),
           ),
-          'pkg-type' => array(
+          'pkg_type' => array(
             'type' => 'text',
             'label' => t('Package type'),
             'description' => t('The type of packaging.'),
@@ -121,7 +121,7 @@ function uc_shipping_rules_data_info() {
             'label' => t('Value'),
             'description' => t('The monetary value of the package contents.'),
           ),
-          'tracking-number' => array(
+          'tracking_number' => array(
             'type' => 'text',
             'label' => t('Tracking number'),
             'description' => t('The number used by the carrier to locate the shipment while it is in transit.'),
@@ -141,7 +141,7 @@ function uc_shipping_rules_data_info() {
             'label' => t('Products'),
             'description' => t('The package contents.'),
           ),
-          'label-image' => array(
+          'label_image' => array(
             'type' => 'file',
             'label' => t('Label image'),
             'description' => t('An image of the shipping label.'),
