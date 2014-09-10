@@ -1046,6 +1046,7 @@ function uc_order_views_default_views() {
   $handler->display->display_options['arguments']['uid']['default_action'] = 'not found';
   $handler->display->display_options['arguments']['uid']['default_argument_type'] = 'fixed';
   $handler->display->display_options['arguments']['uid']['default_argument_skip_url'] = 0;
+  $handler->display->display_options['arguments']['uid']['exception']['value'] = '';
   $handler->display->display_options['arguments']['uid']['summary']['number_of_records'] = '0';
   $handler->display->display_options['arguments']['uid']['summary']['format'] = 'default_summary';
   $handler->display->display_options['arguments']['uid']['summary_options']['items_per_page'] = '25';

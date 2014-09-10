@@ -477,6 +477,36 @@ function uc_order_can_view_order($account, $order, $view_invoice = FALSE) {
 }
 
 /**
+ * Implements hook_query_TAG_alter().
+ */
+function uc_order_query_uc_order_access_alter(QueryAlterableInterface $query) {
+  global $user;
+
+  // Read metadata from query, if provided.
+  if (!$account = $query->getMetaData('account')) {
+    $account = $user;
+  }
+
+  // If account can view all orders, we don't need to alter the query.
+  if (user_access('view all orders', $account)) {
+    return;
+  }
+
+  if (user_access('view own orders', $account)) {
+    // Only allow the user to see their own orders.
+    foreach ($query->getTables() as $table) {
+      if ($table['table'] === 'uc_orders') {
+        $query->condition($table['alias'] . '.uid', $user->uid);
+      }
+    }
+  }
+  else {
+    // Deny access to everything.
+    $query->where('1 = 0');
+  }
+}
+
+/**
  * Implements hook_entity_info().
  */
 function uc_order_entity_info() {

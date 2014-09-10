@@ -15,6 +15,7 @@ function uc_order_views_data() {
     'field' => 'order_id',
     'title' => t('Orders'),
     'help' => t('Orders placed in your Ubercart store.'),
+    'access query tag' => 'uc_order_access',
   );
 
   // Pull in user fields directly.
