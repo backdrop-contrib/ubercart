@@ -23,6 +23,7 @@ function uc_country_import_form($form, &$form_state) {
   $header = array(t('Country'), t('Code'), t('Version'), t('Operations'));
   $rows = array();
   if (is_array($countries)) {
+    $link_ops = array('query' => array('token' => drupal_get_token('uc_country_op_link')));
     foreach ($countries as $country) {
       $row = array(
         t($country->country_name),
@@ -32,13 +33,13 @@ function uc_country_import_form($form, &$form_state) {
 
       $ops = array();
       if ($country->version < 0) {
-        $ops[] = l(t('enable'), 'admin/store/settings/countries/' . $country->country_id . '/enable');
+        $ops[] = l(t('enable'), 'admin/store/settings/countries/' . $country->country_id . '/enable', $link_ops);
       }
       else {
-        $ops[] = l(t('disable'), 'admin/store/settings/countries/' . $country->country_id . '/disable');
+        $ops[] = l(t('disable'), 'admin/store/settings/countries/' . $country->country_id . '/disable', $link_ops);
       }
       if ($country->version < $files[$country->country_id]['version'] && $country->version > 0) {
-        $ops[] = l(t('update'), 'admin/store/settings/countries/' . $country->country_id . '/update/' . $files[$country->country_id]['version']);
+        $ops[] = l(t('update'), 'admin/store/settings/countries/' . $country->country_id . '/update/' . $files[$country->country_id]['version'], $link_ops);
       }
       $ops[] = l(t('remove'), 'admin/store/settings/countries/' . $country->country_id . '/remove');
       $row[] = implode(' ', $ops);
@@ -418,4 +419,23 @@ function _uc_country_import_include($country_id, $version) {
   }
 
   return FALSE;
+}
+
+/**
+ * Performs country actions after validating the CSRF-prevention token.
+ *
+ * @param $function
+ *   The function name to run.
+ * @param $param
+ *   Parameter to pass to the function specified.
+ * @param $param2
+ *   (optional) Parameter to pass to the function specified.
+ */
+function _uc_country_perform_country_action($function, $param, $param2 = NULL) {
+  if (isset($_GET['token']) && drupal_valid_token($_GET['token'], 'uc_country_op_link')) {
+    call_user_func($function, $param, $param2);
+  }
+  else {
+    return MENU_ACCESS_DENIED;
+  }
 }
