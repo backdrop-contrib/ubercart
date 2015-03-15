@@ -146,7 +146,14 @@ function uc_attribute_form_submit($form, &$form_state) {
   }
   else {
     drupal_write_record('uc_attributes', $form_state['values']);
-    $form_state['redirect'] = 'admin/store/products/attributes/' . $form_state['values']['aid'] . '/options';
+    if ($form_state['values']['display'] == 0) {
+      // No options needed/allowed for Textfield display type.
+      $form_state['redirect'] = 'admin/store/products/attributes';
+    }
+    else {
+      // All other display types we redirect to add options.
+      $form_state['redirect'] = 'admin/store/products/attributes/' . $form_state['values']['aid'] . '/options';
+    }
   }
 }
 
