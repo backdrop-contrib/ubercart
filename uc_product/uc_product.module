@@ -1223,6 +1223,12 @@ function uc_product_add_to_cart_form($form, &$form_state, $node) {
     ),
   );
 
+  // Ajax forms may have no form state when triggered from a cached page, so
+  // ensure the variant is available for form alter functions to use.
+  if (!empty($form_state['rebuild']) && empty($form_state['storage']['variant'])) {
+    $form_state['storage']['variant'] = uc_product_load_variant($form_state['values']['nid'], module_invoke_all('uc_add_to_cart_data', $form_state['values']));
+  }
+
   $form['node'] = array(
     '#type' => 'value',
     '#value' => isset($form_state['storage']['variant']) ? $form_state['storage']['variant'] : $node,
