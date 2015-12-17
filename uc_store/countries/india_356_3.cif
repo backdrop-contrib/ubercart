@@ -13,7 +13,7 @@ function india_install() {
       'country_name' => 'India',
       'country_iso_code_2' => 'IN',
       'country_iso_code_3' => 'IND',
-      'version' => 2,
+      'version' => 3,
     ))
     ->execute();
 
@@ -44,14 +44,15 @@ function india_install() {
     array(356, 'ML', 'Meghalaya'),
     array(356, 'MZ', 'Mizoram'),
     array(356, 'NL', 'Nagaland'),
-    array(356, 'OR', 'Orissa'),
+    array(356, 'OR', 'Odisha'),
     array(356, 'PY', 'Puducherry'),
     array(356, 'PB', 'Punjab'),
     array(356, 'RJ', 'Rajasthan'),
     array(356, 'SK', 'Sikkim'),
+    array(356, 'TG', 'Telangana'),
     array(356, 'TN', 'Tamil Nadu'),
     array(356, 'TR', 'Tripura'),
-    array(356, 'UL', 'Uttarakhand'),
+    array(356, 'UT', 'Uttarakhand'),
     array(356, 'UP', 'Uttar Pradesh'),
     array(356, 'WB', 'West Bengal'),
   );
@@ -120,6 +121,34 @@ function india_update($version) {
         ->fields(array('zone_name' => 'Uttarakhand', 'zone_code' => 'UL'))
         ->condition('zone_country_id', 356)
         ->condition('zone_code', 'UA')
+        ->execute();
+
+      break;
+
+    case 3:
+      // Add some missing zones
+      $zones = array(
+        array(356, 'TG', 'Telangana'),
+      );
+
+      $query = db_insert('uc_zones')->fields(array('zone_country_id', 'zone_code', 'zone_name'));
+      foreach ($zones as $zone) {
+        $query->values($zone);
+      }
+      $query->execute();
+
+      // Correct zone name
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'Odisha', 'zone_code' => 'OR'))
+        ->condition('zone_country_id', 356)
+        ->condition('zone_code', 'OR')
+        ->execute();
+
+      // Correct ISO-3166-2 code
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'Uttarakhand', 'zone_code' => 'UT'))
+        ->condition('zone_country_id', 356)
+        ->condition('zone_code', 'UL')
         ->execute();
 
       break;

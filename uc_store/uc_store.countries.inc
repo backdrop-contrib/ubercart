@@ -337,7 +337,7 @@ function uc_country_update($country_id, $version) {
   if ($func_base !== FALSE) {
     $func = $func_base . '_update';
     if (function_exists($func)) {
-      for ($i = $country->version; $i <= $version; $i++) {
+      for ($i = $country->version + 1; $i <= $version; $i++) {
         $func($i);
       }
     }
