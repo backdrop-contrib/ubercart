@@ -13,10 +13,9 @@ function uc_2checkout_complete($cart_id = 0) {
 
   $order = uc_order_load($_REQUEST['merchant_order_id']);
 
-  if ($order === FALSE || uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
+  if ($order === FALSE) {
     return t('An error has occurred during payment.  Please contact us to ensure your order has submitted.');
   }
-
   $key = $_REQUEST['key'];
   $order_number = variable_get('uc_2checkout_demo', TRUE) ? 1 : $_REQUEST['order_number'];
   $valid = md5(variable_get('uc_2checkout_secret_word', 'tango') . $_REQUEST['sid'] . $order_number . $_REQUEST['total']);
@@ -85,4 +84,43 @@ function uc_2checkout_complete($cart_id = 0) {
   }
 
   return $build;
+}
+
+/**
+ * React on status changes from 2CO.
+ */
+function uc_2checkout_process_notification() {
+  $values = $_POST;
+  watchdog('ubercart', 'Received 2CO notification with following data: !data', array('!data' => print_r($values, TRUE)));
+
+  if (!empty($values['message_type']) && !empty($values['md5_hash']) && !empty($values['message_id'])) {
+    # Validate the Hash
+    $secret_word = variable_get('uc_2checkout_secret_word', 'tango');
+    $sid = variable_get('uc_2checkout_sid', '');
+    $twocheckout_order_id = $values['sale_id'];
+    $twocheckout_invoice_id = $values['invoice_id'];
+    $hash = strtoupper(md5($twocheckout_order_id . $sid . $twocheckout_invoice_id . $secret_word));
+
+    if ($hash != $values['md5_hash']) {
+      watchdog('ubercart', '2CO notification #@num had a wrong hash.', array('@num' => $values['message_id']));
+      die('Hash Incorrect');
+    }
+
+    $order_id = $values['vendor_order_id'];
+    if ($values['message_type'] == 'FRAUD_STATUS_CHANGED') {
+      switch ($values['fraud_status']) {
+        case 'fail':
+          uc_order_update_status($order_id, uc_order_state_default('canceled'));
+          uc_order_comment_save($order_id, 0, t('Order have not passed 2Checkout fraud review.'));
+          die('fraud');
+          break;
+      }
+    }
+    elseif ($values['message_type'] == 'REFUND_ISSUED') {
+      uc_order_update_status($order_id, uc_order_state_default('canceled'));
+      uc_order_comment_save($order_id, 0, t('Order have been refunded through 2Checkout.'));
+      die('refund');
+    }
+  }
+  die('ok');
 }
