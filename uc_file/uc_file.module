@@ -554,6 +554,12 @@ function uc_file_feature_form($form, &$form_state, $node, $feature) {
     return $form;
   }
 
+  // Rescan the file directory to populate {uc_files} with the current list
+  // because files uploaded via any method other than the Upload button
+  // (e.g. by FTP) won'b be in {uc_files} yet.
+
+  uc_file_refresh();
+
   if (!db_query_range('SELECT 1 FROM {uc_files}', 0, 1)->fetchField()) {
     $form['file']['file_message'] = array(
       '#markup' => t(
@@ -565,9 +571,6 @@ function uc_file_feature_form($form, &$form_state, $node, $feature) {
     unset($form['buttons']);
     return $form;
   }
-
-  // Make sure we have an up-to-date list for the autocompletion.
-  uc_file_refresh();
 
   // Grab all the models on this product.
   $models = uc_product_get_models($node->nid);
