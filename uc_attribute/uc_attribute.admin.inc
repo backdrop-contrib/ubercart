@@ -95,6 +95,7 @@ function uc_attribute_form($form, &$form_state, $attribute = NULL) {
     '#title' => t('Label'),
     '#description' => t("Enter a label that customers will see instead of the attribute name. Use &lt;none&gt; if you don't want a title to appear at all."),
     '#default_value' => $label,
+    '#maxlength' => 255,
   );
   $form['description'] = array(
     '#type' => 'textfield',
@@ -591,6 +592,7 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
             '#title_display' => 'invisible',
             '#default_value' => empty($attribute->label) ? $attribute->name : $attribute->label,
             '#size' => 20,
+            '#maxlength' => 255,
           ),
           'option' => array(
             '#markup' => $option ? (check_plain($option->name) . ' (' . theme('uc_price', array('price' => $option->price)) . ')' ) : t('n/a'),
