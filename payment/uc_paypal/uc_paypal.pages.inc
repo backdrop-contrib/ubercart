@@ -59,14 +59,11 @@ function uc_paypal_ipn() {
     return;
   }
 
-  $req = '';
-
   foreach ($_POST as $key => $value) {
-    $value = urlencode(stripslashes($value));
-    $req .= $key . '=' . $value . '&';
+    $post_fields[] = $key . '=' . urlencode(stripslashes($value));
   }
 
-  $req .= 'cmd=_notify-validate';
+  $post_fields[] = 'cmd=_notify-validate';
 
   if (variable_get('uc_paypal_wpp_server', '') == 'https://api-3t.paypal.com/nvp') {
     $host = 'https://www.paypal.com/cgi-bin/webscr';
@@ -75,18 +72,27 @@ function uc_paypal_ipn() {
     $host = variable_get('uc_paypal_wps_server', 'https://www.sandbox.paypal.com/cgi-bin/webscr');
   }
 
-  $response = drupal_http_request($host, array(
-    'method' => 'POST',
-    'data' => $req,
-  ));
+  // Setup the cURL request.
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, $host);
+  curl_setopt($ch, CURLOPT_VERBOSE, 0);
+  curl_setopt($ch, CURLOPT_POST, 1);
+  curl_setopt($ch, CURLOPT_POSTFIELDS, implode('&', $post_fields));
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 1);
+  curl_setopt($ch, CURLOPT_NOPROGRESS, 1);
+  curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
+  $response = curl_exec($ch);
 
-  // TODO: Change this to property_exists when we have a PHP requirement >= 5.1.
-  if (array_key_exists('error', $response)) {
-    watchdog('uc_paypal', 'IPN failed with HTTP error @error, code @code.', array('@error' => $response->error, '@code' => $response->code), WATCHDOG_ERROR);
+  // Log any errors to the watchdog.
+  if ($error = curl_error($ch)) {
+    watchdog('uc_paypal', 'IPN failed with cURL error: @error', array('@error' => $error), WATCHDOG_ERROR);
     return;
   }
 
-  if (strcmp($response->data, 'VERIFIED') == 0) {
+  curl_close($ch);
+
+  if (strcmp($response, 'VERIFIED') == 0) {
     watchdog('uc_paypal', 'IPN transaction verified.');
 
     $duplicate = (bool) db_query_range('SELECT 1 FROM {uc_payment_paypal_ipn} WHERE txn_id = :id AND status <> :status', 0, 1, array(':id' => $txn_id, ':status' => 'Pending'))->fetchField();
@@ -162,7 +168,7 @@ function uc_paypal_ipn() {
         break;
     }
   }
-  elseif (strcmp($response->data, 'INVALID') == 0) {
+  elseif (strcmp($response, 'INVALID') == 0) {
     watchdog('uc_paypal', 'IPN transaction failed verification.', array(), WATCHDOG_ERROR);
     uc_order_comment_save($order_id, 0, t('An IPN transaction failed verification for this order.'), 'admin');
   }
