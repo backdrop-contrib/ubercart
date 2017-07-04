@@ -23,12 +23,15 @@ function uc_country_import_form($form, &$form_state) {
   $header = array(t('Country'), t('Code'), t('Version'), t('Operations'));
   $rows = array();
   if (is_array($countries)) {
-    $link_ops = array('query' => array('token' => drupal_get_token('uc_country_op_link')));
+    $link_ops = array('query' => array('token' => backdrop_get_token('uc_country_op_link')));
     foreach ($countries as $country) {
       $row = array(
         t($country->country_name),
         $country->country_iso_code_3,
-        array('data' => abs($country->version), 'align' => 'center')
+        array(
+          'data' => abs($country->version),
+          'align' => 'center',
+        ),
       );
 
       $ops = array();
@@ -100,10 +103,10 @@ function uc_country_import_form_submit($form, &$form_state) {
 
   foreach ($files as $file) {
     if (uc_country_import($file)) {
-      drupal_set_message(t('Country file @file imported.', array('@file' => $file)));
+      backdrop_set_message(t('Country file @file imported.', array('@file' => $file)));
     }
     else {
-      drupal_set_message(t('Country file @file could not import or had no install function.', array('@file' => $file)), 'error');
+      backdrop_set_message(t('Country file @file could not import or had no install function.', array('@file' => $file)), 'error');
     }
   }
 }
@@ -162,6 +165,7 @@ function uc_country_formats_form($form, &$form_state) {
         '#title' => check_plain(t($country->country_name)),
         '#group' => 'country',
       );
+      // TODO This variable was probably removed in Backdrop without replacement.
       $form['countries']['country'][$country->country_id]['address_format'] = array(
         '#type' => 'textarea',
         '#title' => t('@country address format', array('@country' => t($country->country_name))),
@@ -188,9 +192,10 @@ function uc_country_formats_form($form, &$form_state) {
  */
 function uc_country_formats_form_submit($form, &$form_state) {
   foreach ($form_state['values']['countries']['country'] as $country_id => $data) {
+    // TODO This variable was probably removed in Backdrop without replacement.
     variable_set('uc_address_format_' . $country_id, $data['address_format']);
   }
-  drupal_set_message(t('Country settings saved.'));
+  backdrop_set_message(t('Country settings saved.'));
 }
 
 /**
@@ -205,20 +210,20 @@ function uc_country_disable($country_id) {
     if ($country->version > 0) {
       db_update('uc_countries')
         ->fields(array(
-          'version' => -$country->version,
-        ))
+        'version' => -$country->version,
+      ))
         ->condition('country_id', $country_id)
         ->execute();
-      drupal_set_message(t('@country disabled.', array('@country' => t($country->country_name))));
+      backdrop_set_message(t('@country disabled.', array('@country' => t($country->country_name))));
     }
     else {
-      drupal_set_message(t('@country is already disabled.', array('@country' => t($country->country_name))), 'error');
+      backdrop_set_message(t('@country is already disabled.', array('@country' => t($country->country_name))), 'error');
     }
   }
   else {
-    drupal_set_message(t('Attempted to disable an invalid country.'), 'error');
+    backdrop_set_message(t('Attempted to disable an invalid country.'), 'error');
   }
-  drupal_goto('admin/store/settings/countries');
+  backdrop_goto('admin/store/settings/countries');
 }
 
 /**
@@ -233,20 +238,20 @@ function uc_country_enable($country_id) {
     if ($country->version < 0) {
       db_update('uc_countries')
         ->fields(array(
-          'version' => abs($country->version),
-        ))
+        'version' => abs($country->version),
+      ))
         ->condition('country_id', $country_id)
         ->execute();
-      drupal_set_message(t('@country enabled.', array('@country' => t($country->country_name))));
+      backdrop_set_message(t('@country enabled.', array('@country' => t($country->country_name))));
     }
     else {
-      drupal_set_message(t('@country is already enabled.', array('@country' => t($country->country_name))), 'error');
+      backdrop_set_message(t('@country is already enabled.', array('@country' => t($country->country_name))), 'error');
     }
   }
   else {
-    drupal_set_message(t('Attempted to enable an invalid country.'), 'error');
+    backdrop_set_message(t('Attempted to enable an invalid country.'), 'error');
   }
-  drupal_goto('admin/store/settings/countries');
+  backdrop_goto('admin/store/settings/countries');
 }
 
 /**
@@ -266,7 +271,7 @@ function uc_country_remove_form($form, &$form_state, $country_id) {
   if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#value'] != t('Remove') && module_exists('uc_order')) {
     $count = db_query("SELECT COUNT(order_id) FROM {uc_orders} WHERE delivery_country = :delivery_country OR billing_country = :billing_country", array(':delivery_country' => $country_id, ':billing_country' => $country_id))->fetchField();
     if ($count > 0) {
-      drupal_set_message(t('Warning: @count orders were found with addresses in this country. Removing this country now will cause errors to show on those order pages. You might consider simply disabling this country instead.', array('@count' => $count)), 'error');
+      backdrop_set_message(t('Warning: @count orders were found with addresses in this country. Removing this country now will cause errors to show on those order pages. You might consider simply disabling this country instead.', array('@count' => $count)), 'error');
     }
   }
 
@@ -289,8 +294,8 @@ function uc_country_remove_form_submit($form, &$form_state) {
 
   $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id));
   if (!($country = $result->fetchObject())) {
-    drupal_set_message(t('Attempted to remove an invalid country.'), 'error');
-    drupal_goto('admin/store/settings/countries');
+    backdrop_set_message(t('Attempted to remove an invalid country.'), 'error');
+    backdrop_goto('admin/store/settings/countries');
   }
 
   db_delete('uc_countries')
@@ -299,6 +304,7 @@ function uc_country_remove_form_submit($form, &$form_state) {
   db_delete('uc_zones')
     ->condition('zone_country_id', $country_id)
     ->execute();
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_address_format_' . $country_id);
 
   $func_base = _uc_country_import_include($country_id, $country->version);
@@ -309,8 +315,8 @@ function uc_country_remove_form_submit($form, &$form_state) {
     }
   }
 
-  drupal_set_message(t('@country removed.', array('@country' => t($country->country_name))));
-  drupal_goto('admin/store/settings/countries');
+  backdrop_set_message(t('@country removed.', array('@country' => t($country->country_name))));
+  backdrop_goto('admin/store/settings/countries');
 }
 
 /**
@@ -324,13 +330,13 @@ function uc_country_remove_form_submit($form, &$form_state) {
 function uc_country_update($country_id, $version) {
   $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = :id", array(':id' => $country_id));
   if (!($country = $result->fetchObject())) {
-    drupal_set_message(t('Attempted to update an invalid country.'));
-    drupal_goto('admin/store/settings/countries');
+    backdrop_set_message(t('Attempted to update an invalid country.'));
+    backdrop_goto('admin/store/settings/countries');
   }
 
   if ($version < $country->version) {
-    drupal_set_message(t('You cannot update to a previous version.'));
-    drupal_goto('admin/store/settings/countries');
+    backdrop_set_message(t('You cannot update to a previous version.'));
+    backdrop_goto('admin/store/settings/countries');
   }
 
   $func_base = _uc_country_import_include($country_id, $version);
@@ -344,17 +350,17 @@ function uc_country_update($country_id, $version) {
 
     db_update('uc_countries')
       ->fields(array(
-        'version' => $version,
-      ))
+      'version' => $version,
+    ))
       ->condition('country_id', $country_id)
       ->execute();
-    drupal_set_message(t('Country update complete.'));
+    backdrop_set_message(t('Country update complete.'));
   }
   else {
-    drupal_set_message(t('Attempted to update an invalid country.'));
+    backdrop_set_message(t('Attempted to update an invalid country.'));
   }
 
-  drupal_goto('admin/store/settings/countries');
+  backdrop_goto('admin/store/settings/countries');
 }
 
 /**
@@ -367,7 +373,7 @@ function uc_country_update($country_id, $version) {
  *   TRUE or FALSE indicating whether or not the country was imported.
  */
 function uc_country_import($file) {
-  require_once(drupal_get_path('module', 'uc_store') . '/countries/' . $file);
+  require_once(backdrop_get_path('module', 'uc_store') . '/countries/' . $file);
 
   $pieces = explode('_', substr($file, 0, strlen($file) - 4));
 
@@ -397,7 +403,7 @@ function uc_country_import($file) {
  *   A string containing the portion of the filename holding the country name.
  */
 function _uc_country_import_include($country_id, $version) {
-  $dir = drupal_get_path('module', 'uc_store') . '/countries/';
+  $dir = backdrop_get_path('module', 'uc_store') . '/countries/';
   $match = '_' . $country_id . '_' . $version . '.cif';
   $matchlen = strlen($match);
 
@@ -432,7 +438,7 @@ function _uc_country_import_include($country_id, $version) {
  *   (optional) Parameter to pass to the function specified.
  */
 function _uc_country_perform_country_action($function, $param, $param2 = NULL) {
-  if (isset($_GET['token']) && drupal_valid_token($_GET['token'], 'uc_country_op_link')) {
+  if (isset($_GET['token']) && backdrop_valid_token($_GET['token'], 'uc_country_op_link')) {
     call_user_func($function, $param, $param2);
   }
   else {

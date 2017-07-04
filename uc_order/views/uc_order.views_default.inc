@@ -578,7 +578,7 @@ function uc_order_views_default_views() {
   $handler->display->display_options['fields']['name']['hide_alter_empty'] = 1;
   $handler->display->display_options['fields']['name']['link_to_user'] = 1;
   $handler->display->display_options['fields']['name']['overwrite_anonymous'] = 0;
-  $handler->display->display_options['fields']['name']['format_username'] = 1;
+  $handler->display->display_options['fields']['name']['user_format_name'] = 1;
   /* Field: Order: Billing address: Full name */
   $handler->display->display_options['fields']['billing_full_name']['id'] = 'billing_full_name';
   $handler->display->display_options['fields']['billing_full_name']['table'] = 'uc_orders';

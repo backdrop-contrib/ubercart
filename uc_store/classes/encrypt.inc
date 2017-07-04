@@ -120,8 +120,8 @@ class UbercartEncryption {
     $target = NULL;
     $factor2 = 0;
 
-    for ($i = 0; $i < drupal_strlen($source); $i++) {
-      $char1 = drupal_substr($source, $i, 1);
+    for ($i = 0; $i < backdrop_strlen($source); $i++) {
+      $char1 = backdrop_substr($source, $i, 1);
 
       $num1 = strpos(self::$scramble1, $char1);
       if ($num1 === FALSE) {
@@ -194,7 +194,7 @@ class UbercartEncryption {
       if (!$alerted) {
         // Throw an error that makes sense so this stops getting reported.
         $this->errors[] = t('No encryption key was found.');
-        drupal_set_message(t('Ubercart cannot find a necessary encryption key. Refer to the store admin <a href="@url">dashboard</a> to isolate which one.', array('@url' => url('admin/store'))), 'error');
+        backdrop_set_message(t('Ubercart cannot find a necessary encryption key. Refer to the store admin <a href="@url">dashboard</a> to isolate which one.', array('@url' => url('admin/store'))), 'error');
 
         $alerted = TRUE;
       }

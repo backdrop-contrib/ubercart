@@ -8,7 +8,7 @@
 /**
  * Form step values.
  */
-define('UC_FILE_FORM_FILES' , NULL);
+define('UC_FILE_FORM_FILES', NULL);
 define('UC_FILE_FORM_ACTION', 1   );
 
 /**
@@ -21,17 +21,17 @@ define('UC_FILE_FORM_ACTION', 1   );
 function uc_file_admin_files_form($form, &$form_state) {
 
   if (isset($form_state['storage']['step']) && $form_state['storage']['step'] == UC_FILE_FORM_ACTION) {
-      return array(
-        '#validate' => array('uc_file_admin_files_form_action_validate'),
-        '#submit'   => array('uc_file_admin_files_form_action_submit'),
-      ) + $form + uc_file_admin_files_form_action($form, $form_state);
+    return array(
+      '#validate' => array('uc_file_admin_files_form_action_validate'),
+      '#submit' => array('uc_file_admin_files_form_action_submit'),
+    ) + $form + uc_file_admin_files_form_action($form, $form_state);
   }
   else {
     // Refresh our file list before display.
     uc_file_refresh();
 
     return array(
-      '#theme'  => 'uc_file_admin_files_form_show',
+      '#theme' => 'uc_file_admin_files_form_show',
       '#validate' => array('uc_file_admin_files_form_show_validate'),
       '#submit' => array('uc_file_admin_files_form_show_submit'),
     ) + $form + uc_file_admin_files_form_show_files($form, $form_state);
@@ -51,9 +51,19 @@ function uc_file_admin_files_form_show_files($form, &$form_state) {
   $form['#tree'] = TRUE;
 
   $header = array(
-    'filename' => array('data' => t('File'), 'field' => 'f.filename', 'sort' => 'asc'),
-    'title' => array('data' => t('Product'), 'field' => 'n.title'),
-    'model' => array('data' => t('SKU'), 'field' => 'fp.model')
+    'filename' => array(
+      'data' => t('File'),
+      'field' => 'f.filename',
+      'sort' => 'asc',
+    ),
+    'title' => array(
+      'data' => t('Product'),
+      'field' => 'n.title',
+    ),
+    'model' => array(
+      'data' => t('SKU'),
+      'field' => 'fp.model',
+    ),
   );
 
   // Create pager.
@@ -196,11 +206,11 @@ function theme_uc_file_admin_files_form_show($variables) {
   $form = $variables['form'];
 
   // Render everything.
-  $output = '<p>' . t('File downloads can be attached to any Ubercart product as a product feature. For security reasons the <a href="!download_url">file downloads directory</a> is separated from the Drupal <a href="!file_url">file system</a>. Below is the list of files (and their associated Ubercart products, if any) that can be used for file downloads.', array('!download_url' => url('admin/store/settings/products', array('query' => array('destination' => 'admin/store/products/files'))), '!file_url' => url('admin/config/media/file-system'))) . '</p>';
-  $output .= drupal_render($form['uc_file_action']);
-  $output .= drupal_render($form['file_select']);
+  $output = '<p>' . t('File downloads can be attached to any Ubercart product as a product feature. For security reasons the <a href="!download_url">file downloads directory</a> is separated from the Backdrop <a href="!file_url">file system</a>. Below is the list of files (and their associated Ubercart products, if any) that can be used for file downloads.', array('!download_url' => url('admin/store/settings/products', array('query' => array('destination' => 'admin/store/products/files'))), '!file_url' => url('admin/config/media/file-system'))) . '</p>';
+  $output .= backdrop_render($form['uc_file_action']);
+  $output .= backdrop_render($form['file_select']);
   $output .= theme('pager');
-  $output .= drupal_render_children($form);
+  $output .= backdrop_render_children($form);
 
   return $output;
 }
@@ -216,8 +226,14 @@ function theme_uc_file_admin_files_form_show($variables) {
 function uc_file_admin_files_form_action($form, &$form_state) {
   $file_ids = array_filter($form_state['values']['file_select']);
 
-  $form['file_ids'] = array('#type' => 'value', '#value' => $file_ids);
-  $form['action'] = array('#type' => 'value', '#value' => $form_state['values']['uc_file_action']['action']);
+  $form['file_ids'] = array(
+    '#type' => 'value',
+    '#value' => $file_ids,
+  );
+  $form['action'] = array(
+    '#type' => 'value',
+    '#value' => $form_state['values']['uc_file_action']['action'],
+  );
 
   $file_ids = _uc_file_sort_names(_uc_file_get_dir_file_ids($file_ids, FALSE));
 
@@ -283,7 +299,7 @@ function uc_file_admin_files_form_action($form, &$form_state) {
 
       // Calculate the max size of uploaded files, in bytes.
       $max_bytes = trim(ini_get('post_max_size'));
-      switch (strtolower($max_bytes{strlen($max_bytes)-1})) {
+      switch (strtolower($max_bytes{strlen($max_bytes) -1})) {
         case 'g':
           $max_bytes *= 1024;
         case 'm':
@@ -297,7 +313,7 @@ function uc_file_admin_files_form_action($form, &$form_state) {
       $directories = array('' => '/');
       $files = db_query("SELECT * FROM {uc_files}");
       foreach ($files as $file) {
-        if (is_dir(variable_get('uc_file_base_dir', NULL) . "/" . $file->filename)) {
+        if (is_dir(config_get('uc_file.settings', 'uc_file_base_dir') . "/" . $file->filename)) {
           $directories[$file->filename] = $file->filename;
         }
       }
@@ -406,10 +422,10 @@ function uc_file_admin_files_form_action_submit($form, &$form_state) {
       $status = uc_file_remove_by_id($form_state['values']['file_ids'], !empty($form_state['values']['recurse_directories'])) && $status;
 
       if ($status) {
-        drupal_set_message(t('The selected file(s) have been deleted.'));
+        backdrop_set_message(t('The selected file(s) have been deleted.'));
       }
       else {
-        drupal_set_message(t('One or more files could not be deleted.'), 'warning');
+        backdrop_set_message(t('One or more files could not be deleted.'), 'warning');
       }
 
       break;
@@ -418,7 +434,7 @@ function uc_file_admin_files_form_action_submit($form, &$form_state) {
 
       // Build the destination location. We start with the base directory,
       // then add any directory which was explicitly selected.
-      $dir = variable_get('uc_file_base_dir', NULL) . '/';
+      $dir = config_get('uc_file.settings', 'uc_file_base_dir') . '/';
       $dir = (is_null($form_state['values']['upload_dir'])) ? $dir : $dir . $form_state['values']['upload_dir'];
       if (is_dir($dir)) {
 
@@ -437,14 +453,14 @@ function uc_file_admin_files_form_action_submit($form, &$form_state) {
           // Update the file list
           uc_file_refresh();
 
-          drupal_set_message(t('The file %file has been uploaded to %dir', array('%file' => $file_object->filename, '%dir' => $dir)));
+          backdrop_set_message(t('The file %file has been uploaded to %dir', array('%file' => $file_object->filename, '%dir' => $dir)));
         }
         else {
-          drupal_set_message(t('An error occurred while copying the file to %dir', array('%dir' => $dir)), 'error');
+          backdrop_set_message(t('An error occurred while copying the file to %dir', array('%dir' => $dir)), 'error');
         }
       }
       else {
-        drupal_set_message(t('Can not move file to %dir', array('%dir' => $dir)), 'error');
+        backdrop_set_message(t('Can not move file to %dir', array('%dir' => $dir)), 'error');
       }
 
       break;
@@ -462,7 +478,7 @@ function uc_file_admin_files_form_action_submit($form, &$form_state) {
 
   // Return to the original form state.
   $form_state['rebuild'] = FALSE;
-  drupal_goto('admin/store/products/files');
+  backdrop_goto('admin/store/products/files');
 }
 
 /**
@@ -515,8 +531,8 @@ function _uc_file_build_js_file_display($file_ids) {
 
   // Set up some JS to dynamically update the list based on the
   // recursion checkbox state.
-  drupal_add_js('uc_file_list[false] = ' . drupal_json_encode('<li>' . implode('</li><li>', $no_recursion) . '</li>') . ';', 'inline');
-  drupal_add_js('uc_file_list[true] = ' . drupal_json_encode('<li>' . implode('</li><li>', $recursion) . '</li>') . ';', 'inline');
+  backdrop_add_js('uc_file_list[false] = ' . backdrop_json_encode('<li>' . implode('</li><li>', $no_recursion) . '</li>') . ';', 'inline');
+  backdrop_add_js('uc_file_list[true] = ' . backdrop_json_encode('<li>' . implode('</li><li>', $recursion) . '</li>') . ';', 'inline');
 
   return $result;
 }

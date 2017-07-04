@@ -36,7 +36,7 @@ function uc_stock_menu() {
   $items['admin/store/settings/stock'] = array(
     'title' => 'Stock notifications',
     'description' => 'Enable or disable stock level notifications.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_stock_settings_form'),
     'access arguments' => array('administer product stock'),
     'file' => 'uc_stock.admin.inc',
@@ -52,7 +52,7 @@ function uc_stock_menu() {
   }
   $items['node/%node/edit/stock'] = array(
     'title' => 'Stock',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_stock_edit_form', 1),
     'access callback' => 'uc_stock_product_access',
     'access arguments' => array(1),
@@ -92,7 +92,7 @@ function uc_stock_permission() {
   return array(
     'administer product stock' => array(
       'title' => t('Administer product stock'),
-    )
+    ),
   );
 }
 
@@ -204,6 +204,16 @@ function uc_stock_is_active($sku) {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function uc_stock_config_info() {
+  $prefixes['uc_stock.settings'] = array(
+    'label' => t('Module name settings'),
+    'group' => t('Configuration'),
+  );
+}
+
+/**
  * Emails administrator regarding any stock level thresholds hit.
  *
  * @param $order
@@ -214,26 +224,32 @@ function uc_stock_is_active($sku) {
  *   The stock level object that contains the stock level and SKU.
  *
  * @return
- *   The result of drupal_mail().
+ *   The result of backdrop_mail().
  */
 function _uc_stock_send_mail($order, $node, $stock) {
+  $config = config('uc_stock.settings');
   $account = user_load($order->uid);
-  $token_filters = array('uc_order' => $order, 'user' => $account, 'uc_stock' => $stock, 'node' => $node);
+  $token_filters = array(
+    'uc_order' => $order,
+    'user' => $account,
+    'uc_stock' => $stock,
+    'node' => $node,
+  );
 
-  $to = variable_get('uc_stock_threshold_notification_recipients', uc_store_email());
+  $to = $config->get('uc_stock_threshold_notification_recipients');
   $to = explode(',', $to);
 
   $from = uc_store_email_from();
 
-  $subject = variable_get('uc_stock_threshold_notification_subject', uc_get_message('uc_stock_threshold_notification_subject'));
+  $subject = $config->get('uc_stock_threshold_notification_subject');
   $subject = token_replace($subject, $token_filters);
 
-  $body = variable_get('uc_stock_threshold_notification_message', uc_get_message('uc_stock_threshold_notification_message'));
+  $body = $config->get('uc_stock_threshold_notification_message');
   $body = token_replace($body, $token_filters);
 
   // Send to each recipient.
   foreach ($to as $email) {
-    $sent = drupal_mail('uc_stock', 'threshold', $email, uc_store_mail_recipient_language($email), array('body' => $body, 'subject' => $subject, 'order' => $order, 'stock' => $stock), $from);
+    $sent = backdrop_mail('uc_stock', 'threshold', $email, uc_store_mail_recipient_language($email), array('body' => $body, 'subject' => $subject, 'order' => $order, 'stock' => $stock), $from);
 
     if (!$sent['result']) {
       watchdog('uc_stock', 'Attempt to e-mail @email concerning stock level on sku @sku failed.', array('@email' => $email, '@sku' => $stock->sku), WATCHDOG_ERROR);
@@ -247,7 +263,7 @@ function _uc_stock_send_mail($order, $node, $stock) {
 function uc_stock_views_api() {
   return array(
     'api' => '2.0',
-    'path' => drupal_get_path('module', 'uc_stock') . '/views',
+    'path' => backdrop_get_path('module', 'uc_stock') . '/views',
   );
 }
 
@@ -279,13 +295,13 @@ function uc_stock_adjust_product_stock($product, $key, $order) {
   $stock = db_query("SELECT * FROM {uc_product_stock} WHERE sku = :sku", array(':sku' => $product->model))->fetchObject();
 
   // Should we notify?
-  if (variable_get('uc_stock_threshold_notification', FALSE) && $stock->stock <= $stock->threshold) {
+  if (config_get('uc_stock.settings', 'uc_stock_threshold_notification') && $stock->stock <= $stock->threshold) {
     $node = node_load($product->nid);
     _uc_stock_send_mail($order, $node, $stock);
   }
 
   // Save a comment about the stock level.
-  uc_order_comment_save($order->order_id, 0, t('The stock level for %model_name has been !action to !qty.', array('%model_name' => $product->model, '!qty' => $stock->stock, '!action' => (-$product->qty <= 0) ? t('decreased') : t('increased') )));
+  uc_order_comment_save($order->order_id, 0, t('The stock level for %model_name has been !action to !qty.', array('%model_name' => $product->model, '!qty' => $stock->stock, '!action' => (-$product->qty <= 0) ? t('decreased') : t('increased'))));
 }
 
 /**
@@ -294,4 +310,13 @@ function uc_stock_adjust_product_stock($product, $key, $order) {
 function uc_stock_increment_product_stock($product, $key, $order) {
   $product->qty = -$product->qty;
   return uc_stock_adjust_product_stock($product, $key, $order);
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function uc_stock_autoload_info() {
+  return array(
+    'uc_stock_handler_filter_below_threshold' => 'views/uc_stock_handler_filter_below_threshold.inc',
+  );
 }

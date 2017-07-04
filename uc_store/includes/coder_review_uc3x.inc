@@ -18,7 +18,6 @@ function coder_review_uc3x_reviews() {
       '#never' => 'function theme',
       '#warning_callback' => '_coder_review_uc3x_hook_warning',
     ),
-
     // Private functions were moved into uc_ namespace.
     array(
       '#type' => 'regex',
@@ -27,14 +26,12 @@ function coder_review_uc3x_reviews() {
       '#source' => 'all',
       '#warning_callback' => '_coder_review_uc3x_function_warning',
     ),
-
     // Theme functions were namespaced.
     array(
       '#type' => 'regex',
       '#value' => 'theme\([\'"](address_pane|cart_review_table|summary_overview)[\'"]',
       '#warning_callback' => '_coder_review_uc3x_function_warning',
     ),
-
     // TAPIr table ids were namespaced.
     array(
       '#type' => 'regex',
@@ -42,21 +39,18 @@ function coder_review_uc3x_reviews() {
       '#source' => 'allphp',
       '#warning_callback' => '_coder_review_uc3x_function_warning',
     ),
-
     // uc_payment_process() is now uc_payment_process_payment().
     array(
       '#type' => 'regex',
       '#value' => '\buc_payment_process\s*\(',
       '#warning' => 'uc_payment_process() is now uc_payment_process_payment() because of hook_process().',
     ),
-
-    // uc_add_js() was removed, use drupal_add_js() instead.
+    // uc_add_js() was removed, use backdrop_add_js() instead.
     array(
       '#type' => 'grep',
       '#value' => 'uc_add_js(',
-      '#warning' => 'uc_add_js() has been removed.  Use drupal_add_js() instead.',
+      '#warning' => 'uc_add_js() has been removed.  Use backdrop_add_js() instead.',
     ),
-
     // First argument to uc_product_get_models() and hook_uc_product_models()
     // changed from $node to $nid.
     array(
@@ -64,7 +58,6 @@ function coder_review_uc3x_reviews() {
       '#value' => '(\buc_product_get_models|\B_uc_product_models)\s*\(',
       '#warning' => 'First argument to uc_product_get_models() and hook_uc_product_models() has changed - it is now an integer node id instead of a node object.',
     ),
-
     // Checkout and order pane callback arguments changed.
     array(
       '#type' => 'regex',
@@ -72,14 +65,12 @@ function coder_review_uc3x_reviews() {
       '#never' => '\(\$op,\s*&?\$order,\s*&?\$form\s*=\s*NULL,\s*&\$form_state\s*=\s*NULL\)',
       '#warning' => 'Checkout and order pane callbacks take the arguments ($op, $order, &$form = NULL, &$form_state = NULL).',
     ),
-
     // uc_price() removed.
     array(
       '#type' => 'grep',
       '#value' => 'uc_price(',
       '#warning' => 'The function uc_price() was removed.',
     ),
-
     // hook_uc_price_handler() removed.
     array(
       '#type' => 'regex',
@@ -87,22 +78,19 @@ function coder_review_uc3x_reviews() {
       '#warning' => 'hook_uc_price_handler() was removed.',
       '#severity' => 'normal',
     ),
-
     // theme_uc_price() has only one argument.
     array(
       '#type' => 'regex',
       '#value' => 'theme\s*\(\s*[\'"]uc_price[\'"]\s*,[^,]+,',
       '#warning' => 'theme_uc_price() takes only one argument: "price", which is a float.',
     ),
-
     // Specify the allowed arguments to theme_uc_product_price() before it is ported.
     array(
       '#type' => 'regex',
       '#value' => 'theme\s*\(\s*[\'"]uc_product_price[\'"]\s*,[^,]+,',
       '#not' => '[\'"]#price',
-      '#warning' => 'theme_uc_product_price() takes a render element with a "#value" and optional "#title" and "#attributes".'
+      '#warning' => 'theme_uc_product_price() takes a render element with a "#value" and optional "#title" and "#attributes".',
     ),
-
     // uc_order_load_line_items() has only one argument.
     array(
       '#type' => 'regex',

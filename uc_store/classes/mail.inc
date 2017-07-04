@@ -6,7 +6,7 @@
  */
 
 /**
- * Modifies the Drupal mail system to send HTML emails.
+ * Modifies the Backdrop mail system to send HTML emails.
  */
 class UbercartMailSystem extends DefaultMailSystem {
 

@@ -21,7 +21,7 @@ class UcCartItemController extends EntityAPIController {
     parent::attachLoad($items, $revision_id);
   }
 
- /**
+  /**
    * Saves a cart item entity.
    *
    * Cart items are deleted if saved with a quantity of zero.

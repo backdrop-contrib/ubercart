@@ -14,6 +14,7 @@ function uc_authorizenet_silent_post() {
   $arb = (isset($_POST['x_subscription_id']) and isset($_POST['x_subscription_paynum']));
 
   // Log ARB payment notification, if enabled.
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (variable_get('uc_authnet_report_arb_post', FALSE)) {
     $args = array(
       '!arb' => $arb ? 'ARB ' : '',

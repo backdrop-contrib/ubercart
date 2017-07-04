@@ -30,7 +30,10 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
     $options = parent::option_definition();
     $options['link_to_user'] = array('default' => TRUE);
     $options['overwrite_anonymous'] = array('default' => TRUE);
-    $options['anonymous_text'] = array('default' => 'Anonymous', 'translatable' => TRUE);
+    $options['anonymous_text'] = array(
+      'default' => 'Anonymous',
+      'translatable' => TRUE,
+    );
     return $options;
   }
 

@@ -9,6 +9,7 @@
  * Finalizes 2Checkout transaction.
  */
 function uc_2checkout_complete($cart_id = 0) {
+  $config = config('uc_2checkout.settings');
   watchdog('uc_2checkout', 'Receiving new order notification for order !order_id.', array('!order_id' => check_plain($_REQUEST['merchant_order_id'])));
 
   $order = uc_order_load($_REQUEST['merchant_order_id']);
@@ -17,22 +18,22 @@ function uc_2checkout_complete($cart_id = 0) {
     return t('An error has occurred during payment.  Please contact us to ensure your order has submitted.');
   }
   $key = $_REQUEST['key'];
-  $order_number = variable_get('uc_2checkout_demo', TRUE) ? 1 : $_REQUEST['order_number'];
-  $valid = md5(variable_get('uc_2checkout_secret_word', 'tango') . $_REQUEST['sid'] . $order_number . $_REQUEST['total']);
-  if (drupal_strtolower($key) != drupal_strtolower($valid)) {
+  $order_number = $config->get('uc_2checkout_demo') ? 1 : $_REQUEST['order_number'];
+  $valid = md5($config->get('uc_2checkout_secret_word') . $_REQUEST['sid'] . $order_number . $_REQUEST['total']);
+  if (backdrop_strtolower($key) != backdrop_strtolower($valid)) {
     uc_order_comment_save($order->order_id, 0, t('Attempted unverified 2Checkout completion for this order.'), 'admin');
     return MENU_ACCESS_DENIED;
   }
 
-  if ($_REQUEST['demo'] == 'Y' xor variable_get('uc_2checkout_demo', TRUE)) {
+  if ($_REQUEST['demo'] == 'Y' xor $config->get('uc_2checkout_demo')) {
     watchdog('uc_2checkout', 'The 2Checkout payment for order <a href="@order_url">@order_id</a> demo flag was set to %flag, but the module is set to %mode mode.', array(
       '@order_url' => url('admin/store/orders/' . $order->order_id),
       '@order_id' => $order->order_id,
       '%flag' => $_REQUEST['demo'] == 'Y' ? 'Y' : 'N',
-      '%mode' => variable_get('uc_2checkout_demo', TRUE) ? 'Y' : 'N',
+      '%mode' => $config->get('uc_2checkout_demo') ? 'Y' : 'N',
     ), WATCHDOG_ERROR);
 
-    if (!variable_get('uc_2checkout_demo', TRUE)) {
+    if (!$config->get('uc_2checkout_demo')) {
       return MENU_ACCESS_DENIED;
     }
   }
@@ -56,7 +57,7 @@ function uc_2checkout_complete($cart_id = 0) {
   // Save changes to order without it's completion.
   uc_order_save($order);
 
-  if (drupal_strtolower($_REQUEST['email']) !== drupal_strtolower($order->primary_email)) {
+  if (backdrop_strtolower($_REQUEST['email']) !== backdrop_strtolower($order->primary_email)) {
     uc_order_comment_save($order->order_id, 0, t('Customer used a different e-mail address during payment: !email', array('!email' => check_plain($_REQUEST['email']))), 'admin');
   }
 
@@ -65,7 +66,7 @@ function uc_2checkout_complete($cart_id = 0) {
     uc_payment_enter($order->order_id, '2Checkout', $_REQUEST['total'], 0, NULL, $comment);
   }
   else {
-    drupal_set_message(t('Your order will be processed as soon as your payment clears at 2Checkout.com.'));
+    backdrop_set_message(t('Your order will be processed as soon as your payment clears at 2Checkout.com.'));
     uc_order_comment_save($order->order_id, 0, t('!type payment is pending approval at 2Checkout.com.', array('!type' => $_REQUEST['pay_method'] == 'CC' ? t('Credit card') : t('eCheck'))), 'admin');
   }
 
@@ -75,12 +76,14 @@ function uc_2checkout_complete($cart_id = 0) {
   // Add a comment to let sales team know this came in through the site.
   uc_order_comment_save($order->order_id, 0, t('Order created through website.'), 'admin');
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $build = uc_cart_complete_sale($order, variable_get('uc_new_customer_login', FALSE));
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $page = variable_get('uc_cart_checkout_complete_page', '');
 
   if (!empty($page)) {
-    drupal_goto($page);
+    backdrop_goto($page);
   }
 
   return $build;
@@ -90,13 +93,14 @@ function uc_2checkout_complete($cart_id = 0) {
  * React on status changes from 2CO.
  */
 function uc_2checkout_process_notification() {
+  $config = config('uc_2checkout.settings');
   $values = $_POST;
   watchdog('uc_2checkout', 'Received 2Checkout notification with following data: !data', array('!data' => print_r($values, TRUE)));
 
   if (!empty($values['message_type']) && !empty($values['md5_hash']) && !empty($values['message_id'])) {
     // Validate the hash.
-    $secret_word = variable_get('uc_2checkout_secret_word', 'tango');
-    $sid = variable_get('uc_2checkout_sid', '');
+    $secret_word = $config->get('uc_2checkout_secret_word');
+    $sid = $config->get('uc_2checkout_sid');
     $twocheckout_order_id = $values['sale_id'];
     $twocheckout_invoice_id = $values['invoice_id'];
     $hash = strtoupper(md5($twocheckout_order_id . $sid . $twocheckout_invoice_id . $secret_word));

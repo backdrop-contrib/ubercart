@@ -45,10 +45,11 @@ class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_
   }
 
   function validate_argument($argument) {
+    $config = config('uc_order.settings');
     $type = $this->options['type'];
     // is_numeric() can return false positives, so we ensure it's an integer.
     // However, is_integer() will always fail, since $argument is a string.
-    if (is_numeric($argument) && $argument == (int)$argument) {
+    if (is_numeric($argument) && $argument == (int) $argument) {
       if ($type == 'uid' || $type == 'either') {
         if ($argument == $GLOBALS['user']->uid) {
           // If you assign an object to a variable in PHP, the variable
@@ -62,7 +63,7 @@ class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_
     }
     else {
       if ($type == 'name' || $type == 'either') {
-        $name = !empty($GLOBALS['user']->name) ? $GLOBALS['user']->name : variable_get('anonymous', t('Anonymous'));
+        $name = !empty($GLOBALS['user']->name) ? $GLOBALS['user']->name : config_get('system.performance', 'anonymous');
         if ($argument == $name) {
           $account = clone $GLOBALS['user'];
         }
@@ -91,7 +92,7 @@ class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_
     }
 
     $this->argument->argument = $account->uid;
-    $this->argument->validated_title = isset($account->name) ? check_plain($account->name) : check_plain(variable_get('anonymous', t('Anonymous')));
+    $this->argument->validated_title = isset($account->name) ? check_plain($account->name) : check_plain(config_get('system.performance', 'anonymous'));
     return TRUE;
   }
 }

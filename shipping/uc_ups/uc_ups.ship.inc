@@ -22,16 +22,19 @@
  */
 function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
   $pkg_types = _uc_ups_pkg_types();
-  $form['order_id'] = array('#type' => 'value', '#value' => $order->order_id);
+  $form['order_id'] = array(
+    '#type' => 'value',
+    '#value' => $order->order_id,
+  );
   $packages = array();
   $addresses = array();
 
   // Container for package data
   $form['packages'] = array(
-    '#type'        => 'fieldset',
-    '#title'       => t('Packages'),
+    '#type' => 'fieldset',
+    '#title' => t('Packages'),
     '#collapsible' => TRUE,
-    '#tree'        => TRUE
+    '#tree' => TRUE,
   );
   foreach ($package_ids as $id) {
     $package = uc_shipping_package_load($id);
@@ -61,76 +64,78 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
         '#items' => $product_list,
       );
       $pkg_form['package_id'] = array(
-        '#type'  => 'hidden',
+        '#type' => 'hidden',
         '#value' => $id,
       );
       $pkg_form['pkg_type'] = array(
-        '#type'          => 'select',
-        '#title'         => t('Package type'),
-        '#options'       => $pkg_types,
+        '#type' => 'select',
+        '#title' => t('Package type'),
+        '#options' => $pkg_types,
         '#default_value' => $product->ups['pkg_type'],
-        '#required'      => TRUE,
+        '#required' => TRUE,
       );
       $pkg_form['declared_value'] = array(
-        '#type'          => 'textfield',
-        '#title'         => t('Declared value'),
+        '#type' => 'textfield',
+        '#title' => t('Declared value'),
         '#default_value' => $declared_value,
-        '#required'      => TRUE,
+        '#required' => TRUE,
       );
       $pkg_form['weight'] = array(
-        '#type'           => 'container',
-        '#attributes'     => array('class' => array('uc-inline-form', 'clearfix')),
-        '#description'    => t('Weight of the package. Default value is sum of product weights in the package.'),
-        '#weight'         => 15,
+        '#type' => 'container',
+        '#attributes' => array('class' => array('uc-inline-form', 'clearfix')),
+        '#description' => t('Weight of the package. Default value is sum of product weights in the package.'),
+        '#weight' => 15,
       );
       $pkg_form['weight']['weight'] = array(
-        '#type'          => 'textfield',
-        '#title'         => t('Weight'),
+        '#type' => 'textfield',
+        '#title' => t('Weight'),
         '#default_value' => isset($package->weight) ? $package->weight : 0,
-        '#size'          => 10,
-        '#maxlength'     => 15,
+        '#size' => 10,
+        '#maxlength' => 15,
       );
+      // TODO This variable was probably removed in Backdrop without replacement.
       $pkg_form['weight']['units'] = array(
-        '#type'          => 'select',
-        '#title'         => t('Units'),
-        '#options'       => array(
+        '#type' => 'select',
+        '#title' => t('Units'),
+        '#options' => array(
           'lb' => t('Pounds'),
           'kg' => t('Kilograms'),
           'oz' => t('Ounces'),
-          'g'  => t('Grams'),
+          'g' => t('Grams'),
         ),
         '#default_value' => isset($package->weight_units) ?
                             $package->weight_units        :
                             variable_get('uc_weight_unit', 'lb'),
       );
       $pkg_form['dimensions'] = array(
-        '#type'          => 'container',
-        '#attributes'    => array('class' => array('uc-inline-form', 'clearfix')),
-        '#description'   => t('Physical dimensions of the package.'),
-        '#weight'        => 20,
+        '#type' => 'container',
+        '#attributes' => array('class' => array('uc-inline-form', 'clearfix')),
+        '#description' => t('Physical dimensions of the package.'),
+        '#weight' => 20,
       );
       $pkg_form['dimensions']['length'] = array(
-        '#type'          => 'textfield',
-        '#title'         => t('Length'),
+        '#type' => 'textfield',
+        '#title' => t('Length'),
         '#default_value' => isset($package->length) ? $package->length : 1,
-        '#size'          => 10,
+        '#size' => 10,
       );
       $pkg_form['dimensions']['width'] = array(
-        '#type'          => 'textfield',
-        '#title'         => t('Width'),
+        '#type' => 'textfield',
+        '#title' => t('Width'),
         '#default_value' => isset($package->width) ? $package->width : 1,
-        '#size'          => 10,
+        '#size' => 10,
       );
       $pkg_form['dimensions']['height'] = array(
-        '#type'          => 'textfield',
-        '#title'         => t('Height'),
+        '#type' => 'textfield',
+        '#title' => t('Height'),
         '#default_value' => isset($package->height) ? $package->height : 1,
-        '#size'          => 10,
+        '#size' => 10,
       );
+      // TODO This variable was probably removed in Backdrop without replacement.
       $pkg_form['dimensions']['units'] = array(
-        '#type'          => 'select',
-        '#title'         => t('Units'),
-        '#options'       => array(
+        '#type' => 'select',
+        '#title' => t('Units'),
+        '#options' => array(
           'in' => t('Inches'),
           'ft' => t('Feet'),
           'cm' => t('Centimeters'),
@@ -161,14 +166,14 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
 
   // Container for shipment data
   $form['shipment'] = array(
-    '#type'        => 'fieldset',
-    '#title'       => t('Shipment data'),
+    '#type' => 'fieldset',
+    '#title' => t('Shipment data'),
     '#collapsible' => TRUE,
   );
 
   // Inform user of customer's shipping choice
   $form['shipment']['shipping_choice'] = array(
-    '#type'   => 'markup',
+    '#type' => 'markup',
     '#prefix' => '<div>',
     '#markup' => t('Customer selected "@method" as the shipping method and paid @rate', array('@method' => $method, '@rate' => uc_currency_format($order->quote['rate']))),
     '#suffix' => '</div>',
@@ -177,7 +182,7 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
   // Pass shipping charge paid information on to validation function so it
   // can be displayed alongside actual costs
   $form['shipment']['paid'] = array(
-    '#type'  => 'value',
+    '#type' => 'value',
     '#value' => uc_currency_format($order->quote['rate']),
   );
 
@@ -188,34 +193,34 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
   }
 
   $form['shipment']['service'] = array(
-    '#type'          => 'select',
-    '#title'         => t('UPS service'),
-    '#options'       => $services,
+    '#type' => 'select',
+    '#title' => t('UPS service'),
+    '#options' => $services,
     '#default_value' => $default_service,
   );
   $today = getdate();
   $form['shipment']['ship_date'] = array(
-    '#type'          => 'date',
-    '#title'         => t('Ship date'),
+    '#type' => 'date',
+    '#title' => t('Ship date'),
     '#default_value' => array(
-      'year'  => $today['year'],
+      'year' => $today['year'],
       'month' => $today['mon'],
-      'day'   => $today['mday']
+      'day' => $today['mday'],
     ),
   );
   $form['shipment']['expected_delivery'] = array(
-    '#type'          => 'date',
-    '#title'         => t('Expected delivery'),
+    '#type' => 'date',
+    '#title' => t('Expected delivery'),
     '#default_value' => array(
-      'year'  => $today['year'],
+      'year' => $today['year'],
       'month' => $today['mon'],
-      'day'   => $today['mday']
+      'day' => $today['mday'],
     ),
   );
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
-    '#type'  => 'submit',
-    '#value' => t('Review shipment')
+    '#type' => 'submit',
+    '#value' => t('Review shipment'),
   );
 
   return $form;
@@ -228,6 +233,7 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
  * @see uc_ups_confirm_shipment()
  */
 function uc_ups_fulfill_order_validate($form, &$form_state) {
+  $config = config('uc_ups.settings');
 
   $errors = form_get_errors();
   if (isset($errors)) {
@@ -274,7 +280,7 @@ function uc_ups_fulfill_order_validate($form, &$form_state) {
   }
 
   // Determine if address is Residential or Commercial
-  $destination->residential = variable_get('uc_ups_residential_quotes', FALSE);
+  $destination->residential = $config->get('uc_ups_residential_quotes');
 
   $_SESSION['ups']['destination'] = $destination;
   foreach ($form_state['values']['packages'] as $id => $pkg_form) {
@@ -297,7 +303,7 @@ function uc_ups_fulfill_order_validate($form, &$form_state) {
   $_SESSION['ups']['order_id'] = $form_state['values']['order_id'];
 
   $request = uc_ups_shipment_request($_SESSION['ups']['packages'], $origin, $destination, $form_state['values']['service']);
-  $response_obj = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') . 'ShipConfirm', array(
+  $response_obj = backdrop_http_request($config->get('uc_ups_connection_address') . 'ShipConfirm', array(
     'method' => 'POST',
     'data' => $request,
   ));
@@ -310,7 +316,7 @@ function uc_ups_fulfill_order_validate($form, &$form_state) {
       return FALSE;
     }
     else {
-      drupal_set_message($error_msg, 'error');
+      backdrop_set_message($error_msg, 'error');
     }
   }
   $charge = new stdClass();
@@ -354,25 +360,38 @@ function uc_ups_fulfill_order_submit($form, &$form_state) {
  *   ShipConfirm XML document to send to UPS.
  */
 function uc_ups_shipment_request($packages, $origin, $destination, $ups_service) {
+  $config = config('uc_ups.settings');
   $store['name'] = uc_store_name();
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['owner'] = variable_get('uc_store_owner', NULL);
   $store['email'] = uc_store_email();
   $store['email_from'] = uc_store_email();
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['phone'] = variable_get('uc_store_phone', NULL);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['fax'] = variable_get('uc_store_fax', NULL);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['street1'] = variable_get('uc_store_street1', NULL);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['street2'] = variable_get('uc_store_street2', NULL);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['city'] = variable_get('uc_store_city', NULL);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['zone'] = variable_get('uc_store_zone', NULL);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['postal_code'] = variable_get('uc_store_postal_code', NULL);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['country'] = variable_get('uc_store_country', 840);
 
-  $account = variable_get('uc_ups_shipper_number', '');
+  $account = $config->get('uc_ups_shipper_number');
   $ua = explode(' ', $_SERVER['HTTP_USER_AGENT']);
   $user_agent = $ua[0];
 
   $services = _uc_ups_service_list();
-  $service = array('code' => $ups_service, 'description' => $services[$ups_service]);
+  $service = array(
+    'code' => $ups_service,
+    'description' => $services[$ups_service],
+  );
 
   $pkg_types = _uc_ups_pkg_types();
 
@@ -389,13 +408,15 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
   $shipfrom_country = $shipfrom_country[0]['country_iso_code_2'];
   $shipfrom_zip = $origin->postal_code;
 
-  $ups_units = variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in'));
+  // TODO This variable was probably removed in Backdrop without replacement.
+  $ups_units = $config->get('uc_ups_unit_system');
 
   $package_schema = '';
   foreach ($packages as $package) {
     // Determine length conversion factor and weight conversion factor
     // for this shipment
-    $length_factor = uc_length_conversion($package->length_units, variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in')));
+    // TODO This variable was probably removed in Backdrop without replacement.
+    $length_factor = uc_length_conversion($package->length_units, $config->get('uc_ups_unit_system'));
     switch ($ups_units) {
       case 'in':
         $weight_factor = uc_weight_conversion($package->weight_units, 'lb');
@@ -411,7 +432,10 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
 
     $qty = $package->qty;
     for ($i = 0; $i < $qty; $i++) {
-      $package_type = array('code' => $package->pkg_type, 'description' => $pkg_types[$package->pkg_type]);
+      $package_type = array(
+        'code' => $package->pkg_type,
+        'description' => $pkg_types[$package->pkg_type],
+      );
       $package_schema .= "<Package>";
       $package_schema .=   "<PackagingType>";
       $package_schema .=     "<Code>" . $package_type['code'] . "</Code>";
@@ -422,7 +446,8 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
         }
         $package_schema .= "<Dimensions>";
         $package_schema .=   "<UnitOfMeasurement>";
-        $package_schema .=     "<Code>" . strtoupper(variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in'))) . "</Code>";
+        // TODO This variable was probably removed in Backdrop without replacement.
+        $package_schema .=     "<Code>" . strtoupper($config->get('uc_ups_unit_system')) . "</Code>";
         $package_schema .=   "</UnitOfMeasurement>";
         $package_schema .=   "<Length>" . (floor($package->length * $length_factor) + 1) . "</Length>";
         $package_schema .=   "<Width>" . (floor($package->width * $length_factor) + 1) . "</Width>";
@@ -443,6 +468,7 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
       }
       $package_schema .=   "<PackageServiceOptions>";
       $package_schema .=     "<InsuredValue>";
+      // TODO This variable was probably removed in Backdrop without replacement.
       $package_schema .=       "<CurrencyCode>" . variable_get('uc_currency_code', 'USD') . "</CurrencyCode>";
       $package_schema .=       "<MonetaryValue>" . number_format($package->value, 2, '.', '') . "</MonetaryValue>";
       $package_schema .=     "</InsuredValue>";
@@ -463,91 +489,91 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
     <RequestOption>validate</RequestOption>
   </Request>
   <Shipment>";
-    $schema .= "<Shipper>";
-      $schema .= "<Name>" . $store['name'] . "</Name>";
-      $schema .= "<ShipperNumber>" . variable_get('uc_ups_shipper_number', '') . "</ShipperNumber>";
-      if ($store['phone']) {
-        $schema .= "<PhoneNumber>" . $store['phone'] . "</PhoneNumber>";
-      }
-      if ($store['fax']) {
-        $schema .= "<FaxNumber>" . $store['fax'] . "</FaxNumber>";
-      }
-      if ($store['email']) {
-        $schema .= "<EMailAddress>" . $store['email'] . "</EMailAddress>";
-      }
-      $schema .= "<Address>";
-        $schema .= "<AddressLine1>" . $store['street1'] . "</AddressLine1>";
-        if ($store['street2']) {
-          $schema .= "<AddressLine2>" . $store['street2'] . "</AddressLine2>";
-        }
-        $schema .= "<City>" . $store['city'] . "</City>";
-        $schema .= "<StateProvinceCode>$shipper_zone</StateProvinceCode>";
-        $schema .= "<PostalCode>$shipper_zip</PostalCode>";
-        $schema .= "<CountryCode>$shipper_country</CountryCode>";
-      $schema .= "</Address>";
-    $schema .= "</Shipper>";
-    $schema .= "<ShipTo>";
-      $schema .= "<CompanyName>" . $destination->company . "</CompanyName>";
-      $schema .= "<AttentionName>" . $destination->first_name . ' ' . $destination->last_name . "</AttentionName>";
-      $schema .= "<PhoneNumber>" . $destination->phone . "</PhoneNumber>";
-      $schema .= "<EMailAddress>" . $destination->email . "</EMailAddress>";
-      $schema .= "<Address>";
-        $schema .= "<AddressLine1>" . $destination->street1 . "</AddressLine1>";
-        if ($destination->street2) {
-          $schema .= "<AddressLine2>" . $destination->street2 . "</AddressLine2>";
-        }
-        $schema .= "<City>" . $destination->city . "</City>";
-        $schema .= "<StateProvinceCode>$shipto_zone</StateProvinceCode>";
-        $schema .= "<PostalCode>$shipto_zip</PostalCode>";
-        $schema .= "<CountryCode>$shipto_country</CountryCode>";
-      if ($destination->residential) {
-        $schema .= "<ResidentialAddressIndicator/>";
-      }
-      $schema .= "</Address>";
-    $schema .= "</ShipTo>";
-    $schema .= "<ShipFrom>";
-      $schema .= "<CompanyName>" . $origin->company . "</CompanyName>";
-      $schema .= "<AttentionName>" . $origin->first_name . ' ' . $origin->last_name . "</AttentionName>";
-      $schema .= "<PhoneNumber>" . $origin->phone . "</PhoneNumber>";
-      $schema .= "<EMailAddress>" . $origin->email . "</EMailAddress>";
-      $schema .= "<Address>";
-        $schema .= "<AddressLine1>" . $origin->street1 . "</AddressLine1>";
-        if ($origin->street2) {
-          $schema .= "<AddressLine2>" . $origin->street2 . "</AddressLine2>";
-        }
-        $schema .= "<City>" . $origin->city . "</City>";
-        $schema .= "<StateProvinceCode>$shipfrom_zone</StateProvinceCode>";
-        $schema .= "<PostalCode>$shipfrom_zip</PostalCode>";
-        $schema .= "<CountryCode>$shipfrom_country</CountryCode>";
-      $schema .= "</Address>";
-    $schema .= "</ShipFrom>";
-    $schema .= "<PaymentInformation>";
-      $schema .= "<Prepaid>";
-        $schema .= "<BillShipper>";
-          $schema .= "<AccountNumber>$account</AccountNumber>";
-        $schema .= "</BillShipper>";
-      $schema .= "</Prepaid>";
-    $schema .= "</PaymentInformation>";
-    if (variable_get('uc_ups_negotiated_rates', FALSE)) {
-      $schema .= "<RateInformation>
+  $schema .= "<Shipper>";
+  $schema .= "<Name>" . $store['name'] . "</Name>";
+  $schema .= "<ShipperNumber>" . $config->get('uc_ups_shipper_number') . "</ShipperNumber>";
+  if ($store['phone']) {
+    $schema .= "<PhoneNumber>" . $store['phone'] . "</PhoneNumber>";
+  }
+  if ($store['fax']) {
+    $schema .= "<FaxNumber>" . $store['fax'] . "</FaxNumber>";
+  }
+  if ($store['email']) {
+    $schema .= "<EMailAddress>" . $store['email'] . "</EMailAddress>";
+  }
+  $schema .= "<Address>";
+  $schema .= "<AddressLine1>" . $store['street1'] . "</AddressLine1>";
+  if ($store['street2']) {
+    $schema .= "<AddressLine2>" . $store['street2'] . "</AddressLine2>";
+  }
+  $schema .= "<City>" . $store['city'] . "</City>";
+  $schema .= "<StateProvinceCode>$shipper_zone</StateProvinceCode>";
+  $schema .= "<PostalCode>$shipper_zip</PostalCode>";
+  $schema .= "<CountryCode>$shipper_country</CountryCode>";
+  $schema .= "</Address>";
+  $schema .= "</Shipper>";
+  $schema .= "<ShipTo>";
+  $schema .= "<CompanyName>" . $destination->company . "</CompanyName>";
+  $schema .= "<AttentionName>" . $destination->first_name . ' ' . $destination->last_name . "</AttentionName>";
+  $schema .= "<PhoneNumber>" . $destination->phone . "</PhoneNumber>";
+  $schema .= "<EMailAddress>" . $destination->email . "</EMailAddress>";
+  $schema .= "<Address>";
+  $schema .= "<AddressLine1>" . $destination->street1 . "</AddressLine1>";
+  if ($destination->street2) {
+    $schema .= "<AddressLine2>" . $destination->street2 . "</AddressLine2>";
+  }
+  $schema .= "<City>" . $destination->city . "</City>";
+  $schema .= "<StateProvinceCode>$shipto_zone</StateProvinceCode>";
+  $schema .= "<PostalCode>$shipto_zip</PostalCode>";
+  $schema .= "<CountryCode>$shipto_country</CountryCode>";
+  if ($destination->residential) {
+    $schema .= "<ResidentialAddressIndicator/>";
+  }
+  $schema .= "</Address>";
+  $schema .= "</ShipTo>";
+  $schema .= "<ShipFrom>";
+  $schema .= "<CompanyName>" . $origin->company . "</CompanyName>";
+  $schema .= "<AttentionName>" . $origin->first_name . ' ' . $origin->last_name . "</AttentionName>";
+  $schema .= "<PhoneNumber>" . $origin->phone . "</PhoneNumber>";
+  $schema .= "<EMailAddress>" . $origin->email . "</EMailAddress>";
+  $schema .= "<Address>";
+  $schema .= "<AddressLine1>" . $origin->street1 . "</AddressLine1>";
+  if ($origin->street2) {
+    $schema .= "<AddressLine2>" . $origin->street2 . "</AddressLine2>";
+  }
+  $schema .= "<City>" . $origin->city . "</City>";
+  $schema .= "<StateProvinceCode>$shipfrom_zone</StateProvinceCode>";
+  $schema .= "<PostalCode>$shipfrom_zip</PostalCode>";
+  $schema .= "<CountryCode>$shipfrom_country</CountryCode>";
+  $schema .= "</Address>";
+  $schema .= "</ShipFrom>";
+  $schema .= "<PaymentInformation>";
+  $schema .= "<Prepaid>";
+  $schema .= "<BillShipper>";
+  $schema .= "<AccountNumber>$account</AccountNumber>";
+  $schema .= "</BillShipper>";
+  $schema .= "</Prepaid>";
+  $schema .= "</PaymentInformation>";
+  if ($config->get('uc_ups_negotiated_rates')) {
+    $schema .= "<RateInformation>
           <NegotiatedRatesIndicator/>
         </RateInformation>";
-    }
-    $schema .= "<Service>";
-      $schema .= "<Code>{$service['code']}</Code>";
-      $schema .= "<Description>{$service['description']}</Description>";
-    $schema .= "</Service>";
-    $schema .= $package_schema;
+  }
+  $schema .= "<Service>";
+  $schema .= "<Code>{$service['code']}</Code>";
+  $schema .= "<Description>{$service['description']}</Description>";
+  $schema .= "</Service>";
+  $schema .= $package_schema;
   $schema .= "</Shipment>";
   $schema .= "<LabelSpecification>";
-    $schema .= "<LabelPrintMethod>";
-      $schema .= "<Code>GIF</Code>";
-    $schema .= "</LabelPrintMethod>";
-    $schema .= "<LabelImageFormat>";
-      $schema .= "<Code>GIF</Code>";
-    $schema .= "</LabelImageFormat>";
+  $schema .= "<LabelPrintMethod>";
+  $schema .= "<Code>GIF</Code>";
+  $schema .= "</LabelPrintMethod>";
+  $schema .= "<LabelImageFormat>";
+  $schema .= "<Code>GIF</Code>";
+  $schema .= "</LabelImageFormat>";
   $schema .= "</LabelSpecification>";
-$schema .= "</ShipmentConfirmRequest>";
+  $schema .= "</ShipmentConfirmRequest>";
 
   return $schema;
 }
@@ -562,12 +588,12 @@ $schema .= "</ShipmentConfirmRequest>";
 function uc_ups_confirm_shipment($form, &$form_state, $order) {
   $form['digest'] = array(
     '#type' => 'hidden',
-    '#value' => $_SESSION['ups']['digest']
+    '#value' => $_SESSION['ups']['digest'],
   );
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Request Pickup')
+    '#value' => t('Request Pickup'),
   );
 
   return $form;
@@ -621,7 +647,7 @@ function theme_uc_ups_confirm_shipment($variables) {
   $exp_delivery = $_SESSION['ups']['expected_delivery'];
   $output .= '<br />Expected delivery: ' . format_date(gmmktime(12, 0, 0, $exp_delivery['month'], $exp_delivery['day'], $exp_delivery['year']), 'uc_store');
   $output .= "</div>\n<br style=\"clear: both;\" />";
-  $output .= drupal_render_children($form);
+  $output .= backdrop_render_children($form);
 
   return $output;
 }
@@ -636,7 +662,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
   $order_id = $_SESSION['ups']['order_id'];
   $packages = array_keys($_SESSION['ups']['packages']);
   $request = uc_ups_request_pickup($form_state['values']['digest'], $order_id, $packages);
-  $result = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') . 'ShipAccept', array(
+  $result = backdrop_http_request(config_get('uc_ups.settings', 'uc_ups_connection_address') . 'ShipAccept', array(
     'method' => 'POST',
     'data' => $request,
   ));
@@ -647,7 +673,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
     $error_severity = (string) $error->ErrorSeverity;
     $error_code = (string) $error->ErrorCode;
     $error_description = (string) $error->ErrorDescription;
-    drupal_set_message(t('(@severity error @code) @description', array('@severity' => $error_severity, '@code' => $error_code, '@description' => $error_description)), 'error');
+    backdrop_set_message(t('(@severity error @code) @description', array('@severity' => $error_severity, '@code' => $error_code, '@description' => $error_description)), 'error');
     if ($error_severity == 'HardError') {
       $form_state['redirect'] = 'admin/store/orders/' . $order_id . '/shipments/ups/' . implode('/', $packages);
       return;
@@ -678,7 +704,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
   $shipment->expected_delivery = gmmktime(12, 0, 0, $exp_delivery['month'], $exp_delivery['day'], $exp_delivery['year']);
 
   foreach ($response->ShipmentResults->PackageResults as $package_results) {
-    $package =& current($shipment->packages);
+    $package = &current($shipment->packages);
     $package->tracking_number = (string) $package_results->TrackingNumber;
     $label_image = (string) $package_results->LabelImage->GraphicImage;
     // Save the label
@@ -690,11 +716,11 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
         $package->label_image = $label_file;
       }
       else {
-        drupal_set_message(t('Could not open a file to save the label image.'), 'error');
+        backdrop_set_message(t('Could not open a file to save the label image.'), 'error');
       }
     }
     else {
-      drupal_set_message(t('Could not find or create the directory %directory in the file system path.', array('%directory' => $directory)), 'error');
+      backdrop_set_message(t('Could not find or create the directory %directory in the file system path.', array('%directory' => $directory)), 'error');
     }
     unset($package);
     next($shipment->packages);
@@ -720,24 +746,24 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
  *   ShipmentAcceptRequest XML document to send to UPS.
  */
 function uc_ups_request_pickup($digest, $order_id = 0, $packages = array()) {
-  $packages = (array)$packages;
+  $packages = (array) $packages;
 
   $schema = uc_ups_access_request();
   $schema .= "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <ShipmentAcceptRequest>
   <Request>
     <RequestAction>ShipAccept</RequestAction>";
-    if ($order_id || count($packages)) {
-      $schema .= "\n<TransactionReference>
+  if ($order_id || count($packages)) {
+    $schema .= "\n<TransactionReference>
       <CustomerContext>";
-      if ($order_id) {
-        $schema .= "<OrderId>" . $order_id . "</OrderId>\n";
-      }
-      foreach ($packages as $pkg_id) {
-        $schema .= "<PackageId>" . $pkg_id . "</PackageId>\n";
-      }
-      $schema .= "</CustomerContext>\n</TransactionReference>\n";
+    if ($order_id) {
+      $schema .= "<OrderId>" . $order_id . "</OrderId>\n";
     }
+    foreach ($packages as $pkg_id) {
+      $schema .= "<PackageId>" . $pkg_id . "</PackageId>\n";
+    }
+    $schema .= "</CustomerContext>\n</TransactionReference>\n";
+  }
   $schema .= "  </Request>
   <ShipmentDigest>" . $digest . "</ShipmentDigest>
 </ShipmentAcceptRequest>";

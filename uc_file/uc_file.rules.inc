@@ -245,7 +245,7 @@ function uc_file_action_order_email($order, $file_expiration, $from, $addresses,
 
   // Send to each recipient.
   foreach ($recipients as $email) {
-    $sent = drupal_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, $settings['from']);
+    $sent = backdrop_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, $settings['from']);
 
     if (!$sent['result']) {
       watchdog('uc_file', 'Attempt to e-mail @email concerning order @order_id failed.', array('@email' => $email, '@order_id' => $order->order_id), WATCHDOG_ERROR);
@@ -259,7 +259,7 @@ function uc_file_action_order_email($order, $file_expiration, $from, $addresses,
  * This function updates access limits on all files found on all products
  * on a given order. First, the order user is loaded, then the order's products
  * are scanned for file product features. An order comment is saved, and the
- * user is notified in Drupal, as well as through the email address associated
+ * user is notified in Backdrop, as well as through the email address associated
  * with the order.
  *
  * @param $order

@@ -23,7 +23,7 @@ function theme_uc_product_model($variables) {
   $attributes['class'][] = "product-info";
   $attributes['class'][] = "model";
 
-  $output = '<div ' . drupal_attributes($attributes) . '>';
+  $output = '<div ' . backdrop_attributes($attributes) . '>';
   $output .= '<span class="product-info-label">' . t('SKU') . ':</span> ';
   $output .= '<span class="product-info-value">' . check_plain($model) . '</span>';
   $output .= '</div>';
@@ -44,7 +44,7 @@ function theme_uc_product_add_to_cart($variables) {
   $form = $variables['form'];
 
   $output = '<div class="add-to-cart">';
-  $output .= drupal_render($form);
+  $output .= backdrop_render($form);
   $output .= '</div>';
 
   return $output;
@@ -75,7 +75,7 @@ function theme_uc_product_price($variables) {
     $attributes['class'] = array('product-info');
   }
 
-  $output = '<div ' . drupal_attributes($attributes) . '>';
+  $output = '<div ' . backdrop_attributes($attributes) . '>';
   if ($label) {
     $output .= '<span class="uc-price-label">' . $label . '</span> ';
   }
@@ -84,7 +84,7 @@ function theme_uc_product_price($variables) {
     $vars['suffixes'] = $element['#suffixes'];
   }
   $output .= theme('uc_price', $vars);
-  $output .= drupal_render_children($element);
+  $output .= backdrop_render_children($element);
   $output .= '</div>';
 
   return $output;
@@ -111,7 +111,7 @@ function theme_uc_product_weight($variables) {
 
   $output = '';
   if ($amount) {
-    $output = '<div ' . drupal_attributes($attributes) . '>';
+    $output = '<div ' . backdrop_attributes($attributes) . '>';
     $output .= '<span class="product-info-label">' . t('Weight') . ':</span> ';
     $output .= '<span class="product-info-value">' . uc_weight_format($amount, $units) . '</span>';
     $output .= '</div>';
@@ -145,9 +145,9 @@ function theme_uc_product_dimensions($variables) {
 
   $output = '';
   if ($length || $width || $height) {
-    $output = '<div ' . drupal_attributes($attributes) . '>';
+    $output = '<div ' . backdrop_attributes($attributes) . '>';
     $output .= '<span class="product-info-label">' . t('Dimensions') . ':</span> ';
-    $output .= '<span class="product-info-value">' ;
+    $output .= '<span class="product-info-value">';
     $output .= uc_length_format($length, $units) . ' × ';
     $output .= uc_length_format($width, $units) . ' × ';
     $output .= uc_length_format($height, $units) . '</span>';

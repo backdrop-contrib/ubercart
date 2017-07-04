@@ -13,6 +13,16 @@ define('UC_PRODUCT_KIT_MUTABLE', 1);
 
 
 /**
+ * Implements hook_config_info().
+ */
+function uc_product_kit_config_info() {
+  $prefixes['uc_product_kit.settings'] = array(
+    'label' => t('Module name settings'),
+    'group' => t('Configuration'),
+  );
+}
+
+/**
  * Implements hook_form_FORM_ID_alter() for uc_product_settings_form().
  */
 function uc_product_kit_form_uc_product_settings_form_alter(&$form, &$form_state) {
@@ -30,7 +40,7 @@ function uc_product_kit_form_uc_product_settings_form_alter(&$form, &$form_state
       UC_PRODUCT_KIT_UNMUTABLE_WITH_LIST => t('As a unit. Customers may only change how many kits they are buying. List component products.'),
       UC_PRODUCT_KIT_MUTABLE => t('As individual products. Customers may add or remove kit components at will. Discounts entered below are not applied to the kit price'),
     ),
-    '#default_value' => variable_get('uc_product_kit_mutable', 0),
+    '#default_value' => config_get('uc_product_kit.settings', 'uc_product_kit_mutable'),
   );
 }
 
@@ -38,7 +48,7 @@ function uc_product_kit_form_uc_product_settings_form_alter(&$form, &$form_state
  * Implements hook_form_FORM_ID_alter() for node_delete_confirm().
  */
 function uc_product_kit_form_node_delete_confirm_alter(&$form, &$form_state) {
-  if (uc_product_is_product((integer)$form['nid']['#value'])) {
+  if (uc_product_is_product((integer) $form['nid']['#value'])) {
     $kits = db_query("SELECT COUNT(k.nid) FROM {node} n JOIN {uc_product_kits} k ON n.vid = k.vid WHERE k.vid IN (SELECT DISTINCT vid FROM {uc_product_kits} WHERE product_id = :nid) GROUP BY k.nid HAVING COUNT(product_id) = 1", array(':nid' => $form['nid']['#value']))->fetchField();
 
     if ($kits) {
@@ -97,7 +107,7 @@ function uc_product_kit_node_info() {
  */
 function uc_product_kit_prepare($node) {
   $defaults = array(
-    'mutable' => variable_get('uc_product_kit_mutable', UC_PRODUCT_KIT_UNMUTABLE_WITH_LIST),
+    'mutable' => config_get('uc_product_kit.settings', 'uc_product_kit_mutable'),
     'products' => array(),
     'default_qty' => 1,
     'ordering' => 0,
@@ -130,6 +140,7 @@ function uc_product_kit_insert(&$node) {
   $obj->cost = 0;
   $obj->sell_price = 0;
   $obj->weight = 0;
+  // TODO This variable was probably removed in Backdrop without replacement.
   $obj->weight_units = variable_get('uc_weight_unit', 'lb');
   $obj->default_qty = $node->default_qty;
   $obj->ordering = $node->ordering;
@@ -151,7 +162,7 @@ function uc_product_kit_insert(&$node) {
       'synchronized' => 1,
     );
 
-    drupal_write_record('uc_product_kits', $kit);
+    backdrop_write_record('uc_product_kits', $kit);
 
     $obj->model .= $product->model . ' / ';
     $obj->list_price += $product->list_price;
@@ -165,7 +176,7 @@ function uc_product_kit_insert(&$node) {
 
   $obj->model = rtrim($obj->model, ' / ');
 
-  drupal_write_record('uc_products', $obj);
+  backdrop_write_record('uc_products', $obj);
 }
 
 /**
@@ -189,6 +200,7 @@ function uc_product_kit_update(&$node) {
   $obj->cost = 0;
   $obj->sell_price = 0;
   $obj->weight = 0;
+  // TODO This variable was probably removed in Backdrop without replacement.
   $obj->weight_units = variable_get('uc_weight_unit', 'lb');
   $obj->default_qty = $node->default_qty;
   $obj->ordering = $node->ordering;
@@ -222,7 +234,7 @@ function uc_product_kit_update(&$node) {
       else {
         $product = $nid;
         $nid = $product->nid;
-        $node->items[$nid] = (array)$product;
+        $node->items[$nid] = (array) $product;
       }
       $base_price += $product->sell_price * $node->items[$nid]['qty'];
     }
@@ -290,41 +302,41 @@ function uc_product_kit_update(&$node) {
 
     db_insert('uc_product_kits')
       ->fields(array(
-        'vid' => $node->vid,
-        'nid' => $node->nid,
-        'product_id' => $nid,
-        'mutable' => $node->mutable,
-        'qty' => $product->qty,
-        'discount' => $discount,
-        'ordering' => $product->ordering,
-        'synchronized' => $override_discounts ? 0 : 1,
-      ))
+      'vid' => $node->vid,
+      'nid' => $node->nid,
+      'product_id' => $nid,
+      'mutable' => $node->mutable,
+      'qty' => $product->qty,
+      'discount' => $discount,
+      'ordering' => $product->ordering,
+      'synchronized' => $override_discounts ? 0 : 1,
+    ))
       ->execute();
   }
 
   $obj->model = rtrim($obj->model, ' / ');
 
   if ($node->mutable == UC_PRODUCT_KIT_MUTABLE && !empty($discount)) {
-    drupal_set_message(t('Product kit discounts are not applied because the customer can remove components from their cart.'));
+    backdrop_set_message(t('Product kit discounts are not applied because the customer can remove components from their cart.'));
   }
 
   if (!empty($node->revision)) {
-    drupal_write_record('uc_products', $obj);
+    backdrop_write_record('uc_products', $obj);
   }
   else {
     db_merge('uc_products')
       ->key(array('vid' => $obj->vid))
       ->fields(array(
-        'model' => $obj->model,
-        'list_price' => $obj->list_price,
-        'cost' => $obj->cost,
-        'sell_price' => $obj->sell_price,
-        'weight' => $obj->weight,
-        'weight_units' => $obj->weight_units,
-        'default_qty' => $obj->default_qty,
-        'ordering' => $obj->ordering,
-        'shippable' => $obj->shippable ? 1 : 0,
-      ))
+      'model' => $obj->model,
+      'list_price' => $obj->list_price,
+      'cost' => $obj->cost,
+      'sell_price' => $obj->sell_price,
+      'weight' => $obj->weight,
+      'weight_units' => $obj->weight_units,
+      'default_qty' => $obj->default_qty,
+      'ordering' => $obj->ordering,
+      'shippable' => $obj->shippable ? 1 : 0,
+    ))
       ->execute();
   }
 
@@ -373,7 +385,10 @@ function uc_product_kit_load($nodes) {
     // Add the component information.
     $data = array();
     if ($prod->mutable != UC_PRODUCT_KIT_MUTABLE) {
-      $data = array('kit_id' => $prod->nid, 'kit_discount' => $prod->discount);
+      $data = array(
+        'kit_id' => $prod->nid,
+        'kit_discount' => $prod->discount,
+      );
     }
     $product = uc_product_load_variant($prod->product_id, $data);
     $product->qty = $prod->qty;
@@ -495,7 +510,7 @@ function uc_product_kit_form(&$node, $form_state) {
     '#required' => TRUE,
     '#weight' => -5,
     '#default_value' => $node->title,
-    '#description' => t('Name of the product kit')
+    '#description' => t('Name of the product kit'),
   );
 
   // Create an array of products on the site for use in the product selector.
@@ -598,6 +613,7 @@ function uc_product_kit_form(&$node, $form_state) {
     );
   }
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (variable_get('uc_product_add_to_cart_qty', FALSE)) {
     $form['base']['default_qty'] = array(
       '#type' => 'uc_quantity',
@@ -640,7 +656,8 @@ function uc_product_kit_view($node, $view_mode) {
   $variant = empty($node->variant) ? uc_product_load_variant($node->nid) : $node;
 
   if (module_exists('uc_cart') && empty($variant->data['display_only'])) {
-    $add_to_cart_form = drupal_get_form('uc_product_kit_add_to_cart_form_' . $variant->nid, clone $variant);
+    $add_to_cart_form = backdrop_get_form('uc_product_kit_add_to_cart_form_' . $variant->nid, clone $variant);
+    // TODO This variable was probably removed in Backdrop without replacement.
     if (variable_get('uc_product_update_node_view', FALSE)) {
       $variant = $add_to_cart_form['node']['#value'];
     }
@@ -757,13 +774,23 @@ function uc_product_kit_view($node, $view_mode) {
  * @ingroup forms
  */
 function uc_product_kit_add_to_cart_form($form, &$form_state, $node) {
-  $form['nid'] = array('#type' => 'value', '#value' => $node->nid);
+  $form['nid'] = array(
+    '#type' => 'value',
+    '#value' => $node->nid,
+  );
   $form['products'] = array('#tree' => TRUE);
   foreach ($node->products as $i => $product) {
     $form['products'][$i] = array('#title' => check_plain($product->title));
-    $form['products'][$i]['nid'] = array('#type' => 'hidden', '#value' => $product->nid);
-    $form['products'][$i]['qty'] = array('#type' => 'hidden', '#value' => $product->qty);
+    $form['products'][$i]['nid'] = array(
+      '#type' => 'hidden',
+      '#value' => $product->nid,
+    );
+    $form['products'][$i]['qty'] = array(
+      '#type' => 'hidden',
+      '#value' => $product->qty,
+    );
   }
+  // TODO This variable was probably removed in Backdrop without replacement.
   if ($node->default_qty > 0 && variable_get('uc_product_add_to_cart_qty', FALSE)) {
     $form['qty'] = array(
       '#type' => 'uc_quantity',
@@ -772,7 +799,10 @@ function uc_product_kit_add_to_cart_form($form, &$form_state, $node) {
     );
   }
   else {
-    $form['qty'] = array('#type' => 'hidden', '#value' => $node->default_qty ? $node->default_qty : 1);
+    $form['qty'] = array(
+      '#type' => 'hidden',
+      '#value' => $node->default_qty ? $node->default_qty : 1,
+    );
   }
 
   $form['actions'] = array('#type' => 'actions');
@@ -818,9 +848,10 @@ function uc_product_kit_add_to_cart_form_validate($form, &$form_state) {
  * @see uc_product_kit_add_to_cart_form()
  */
 function uc_product_kit_add_to_cart_form_submit($form, &$form_state) {
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (variable_get('uc_cart_add_item_msg', TRUE)) {
     $node = node_load($form_state['values']['nid']);
-    drupal_set_message(t('<strong>@product-title</strong> added to <a href="!url">your shopping cart</a>.', array('@product-title' => $node->title, '!url' => url('cart'))));
+    backdrop_set_message(t('<strong>@product-title</strong> added to <a href="!url">your shopping cart</a>.', array('@product-title' => $node->title, '!url' => url('cart'))));
   }
   $form_state['redirect'] = uc_cart_add_item($form_state['values']['nid'], $form_state['values']['qty'], $form_state['values']);
 }
@@ -836,13 +867,19 @@ function uc_product_kit_buy_it_now_form($form, &$form_state, $node) {
   $form['nid'] = array(
     '#type' => 'hidden',
     '#value' => $node->nid,
-    );
+  );
   if ($node->type == 'product_kit') {
     $form['products'] = array('#tree' => TRUE);
     foreach ($node->products as $i => $product) {
       $form['products'][$i] = array('#title' => check_plain($product->title));
-      $form['products'][$i]['nid'] = array('#type' => 'hidden', '#value' => $product->nid);
-      $form['products'][$i]['qty'] = array('#type' => 'hidden', '#value' => $product->qty);
+      $form['products'][$i]['nid'] = array(
+        '#type' => 'hidden',
+        '#value' => $product->nid,
+      );
+      $form['products'][$i]['qty'] = array(
+        '#type' => 'hidden',
+        '#value' => $product->qty,
+      );
     }
   }
 
@@ -873,8 +910,8 @@ function uc_product_kit_buy_it_now_form_validate($form, &$form_state) {
       foreach ($node->products as $nid => $product) {
         $attributes = uc_product_get_attributes($nid);
         if (!empty($attributes)) {
-          drupal_set_message(t('This product has options that need to be selected before purchase. Please select them in the form below.'), 'error');
-          drupal_goto('node/' . $form_state['values']['nid']);
+          backdrop_set_message(t('This product has options that need to be selected before purchase. Please select them in the form below.'), 'error');
+          backdrop_goto('node/' . $form_state['values']['nid']);
         }
       }
     }
@@ -891,21 +928,22 @@ function uc_product_kit_buy_it_now_form_submit($form, &$form_state) {
   if (module_exists('uc_attribute')) {
     $attributes = uc_product_get_attributes($node->nid);
     if (!empty($attributes)) {
-      drupal_set_message(t('This product has options that need to be selected before purchase. Please select them in the form below.'), 'error');
-      $form_state['redirect'] = drupal_get_path_alias('node/' . $form_state['values']['nid']);
+      backdrop_set_message(t('This product has options that need to be selected before purchase. Please select them in the form below.'), 'error');
+      $form_state['redirect'] = backdrop_get_path_alias('node/' . $form_state['values']['nid']);
       return;
     }
     if (is_array($node->products)) {
       foreach ($node->products as $nid => $product) {
         $attributes = uc_product_get_attributes($nid);
         if (!empty($attributes)) {
-          drupal_set_message(t('This product has options that need to be selected before purchase. Please select them in the form below.'), 'error');
-          $form_state['redirect'] = drupal_get_path_alias('node/' . $form_state['values']['nid']);
+          backdrop_set_message(t('This product has options that need to be selected before purchase. Please select them in the form below.'), 'error');
+          $form_state['redirect'] = backdrop_get_path_alias('node/' . $form_state['values']['nid']);
           return;
         }
       }
     }
   }
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form_state['redirect'] = uc_cart_add_item($form_state['values']['nid'], 1, $form_state['values'], NULL, variable_get('uc_cart_add_item_msg', TRUE));
 }
 
@@ -922,6 +960,7 @@ function uc_product_kit_uc_product_types() {
 function uc_product_kit_uc_store_status() {
   if (module_exists('filefield')) {
     // Check for filefields on products.
+    // TODO This variable was probably removed in Backdrop without replacement.
     if ($field = variable_get('uc_image_product_kit', '')) {
       $instances = content_field_instance_read(array('field_name' => $field, 'type_name' => 'product_kit'));
     }
@@ -948,7 +987,10 @@ function uc_product_kit_uc_add_to_cart($nid, $qty, $kit_data) {
     $product_data = array();
 
     foreach ($node->products as $product) {
-      $data = array('kit_id' => $node->nid, 'module' => 'uc_product_kit') + module_invoke_all('uc_add_to_cart_data', $kit_data['products'][$product->nid]);
+      $data = array(
+        'kit_id' => $node->nid,
+        'module' => 'uc_product_kit',
+      ) + module_invoke_all('uc_add_to_cart_data', $kit_data['products'][$product->nid]);
       $product_data[$product->nid] = $data;
       foreach ($cart as $item) {
         if ($item->nid == $product->nid && isset($item->data['kit_id']) && $item->data['kit_id'] == $node->nid) {
@@ -1032,7 +1074,7 @@ function uc_product_kit_uc_order_product_alter(&$product, $order) {
     $data['shippable'] = $product->shippable;
     $kit_product = uc_product_load_variant($kit_product->nid, $data);
     $kit_product->qty = $qty;
-    drupal_alter('uc_order_product', $kit_product, $order);
+    backdrop_alter('uc_order_product', $kit_product, $order);
 
     // Save the individual item to the order.
     uc_order_product_save($order->order_id, $kit_product);
@@ -1071,9 +1113,18 @@ function uc_product_kit_uc_cart_display($item) {
       // Initialize table row.
       $kit_qty = $item->qty / $kit->products[$item->nid]->qty;
       $element = array();
-      $element['nid'] = array('#type' => 'value', '#value' => $kit->nid);
-      $element['module'] = array('#type' => 'value', '#value' => 'uc_product_kit');
-      $element['remove'] = array('#type' => 'submit', '#value' => t('Remove'));
+      $element['nid'] = array(
+        '#type' => 'value',
+        '#value' => $kit->nid,
+      );
+      $element['module'] = array(
+        '#type' => 'value',
+        '#value' => 'uc_product_kit',
+      );
+      $element['remove'] = array(
+        '#type' => 'submit',
+        '#value' => t('Remove'),
+      );
       $element['title'] = array('#markup' => l($kit->title, 'node/' . $kit->nid));
       $element['qty'] = array(
         '#type' => 'uc_quantity',
@@ -1086,7 +1137,7 @@ function uc_product_kit_uc_cart_display($item) {
       $element['#suffixes'] = array();
       $element['#extra'] = array();
       $element['#entity'] = $kit; // Override the entity associated with this
-                                  // render-array to be the kit itself.
+      // render-array to be the kit itself.
 
       $elements[$unique_id] = $element;
     }
@@ -1122,8 +1173,11 @@ function uc_product_kit_uc_cart_display($item) {
     }
 
     if ($done) {
-      drupal_add_css(drupal_get_path('module', 'uc_product_kit') . '/uc_product_kit.css');
-      $elements[$unique_id]['data'] = array('#type' => 'value', '#value' => serialize($elements[$unique_id]['data']));
+      backdrop_add_css(backdrop_get_path('module', 'uc_product_kit') . '/uc_product_kit.css');
+      $elements[$unique_id]['data'] = array(
+        '#type' => 'value',
+        '#value' => serialize($elements[$unique_id]['data']),
+      );
       if ($kit->mutable == UC_PRODUCT_KIT_UNMUTABLE_WITH_LIST) {
         $elements[$unique_id]['description']['#markup'] .= theme('item_list', array('items' => $elements[$unique_id]['#extra'], 'attributes' => array('class' => array('product-description'))));
       }
@@ -1142,7 +1196,9 @@ function uc_product_kit_uc_cart_display($item) {
  * Handles individual products or entire kits.
  */
 function uc_product_kit_uc_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
-  if (!$nid) return NULL;
+  if (!$nid) {
+    return NULL;
+  }
   $cid = !(is_null($cid) || empty($cid)) ? $cid : uc_cart_get_id();
 
   if (isset($data['kit_id'])) {
@@ -1163,6 +1219,16 @@ function uc_product_kit_uc_update_cart_item($nid, $data = array(), $qty, $cid = 
 function uc_product_kit_views_api() {
   return array(
     'api' => 3,
-    'path' => drupal_get_path('module', 'uc_product_kit') . '/views',
+    'path' => backdrop_get_path('module', 'uc_product_kit') . '/views',
+  );
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function uc_product_kit_autoload_info() {
+  return array(
+    'uc_product_kit_handler_filter_product_kit' => 'views/uc_product_kit_handler_filter_product_kit.inc',
+    'uc_product_kit_handler_filter_product_kit_item' => 'views/uc_product_kit_handler_filter_product_kit_item.inc',
   );
 }

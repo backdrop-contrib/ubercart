@@ -9,14 +9,14 @@
  * Redirects to the customers listing page.
  */
 function uc_order_customers() {
-  drupal_goto('admin/store/customers/view');
+  backdrop_goto('admin/store/customers/view');
 }
 
 /**
  * Redirects to the orders listing page.
  */
 function uc_order_orders() {
-  drupal_goto('admin/store/orders/view');
+  backdrop_goto('admin/store/orders/view');
 }
 
 /**
@@ -25,6 +25,8 @@ function uc_order_orders() {
  * @ingroup forms
  */
 function uc_order_settings_form($form, &$form_state) {
+  // TODO This variable was probably removed in Backdrop without replacement.
+  $form['#config'] = 'uc_order.settings';
   $form['invoice']['uc_cust_order_invoice_template'] = array(
     '#type' => 'select',
     '#title' => t('On-site invoice template'),
@@ -152,6 +154,7 @@ function uc_order_workflow_form($form, &$form_state) {
  */
 function uc_order_workflow_form_submit($form, &$form_state) {
   foreach ($form_state['values']['order_states'] as $key => $value) {
+    // TODO This variable was probably removed in Backdrop without replacement.
     variable_set('uc_state_' . $key . '_default', $value['default']);
   }
 
@@ -160,7 +163,7 @@ function uc_order_workflow_form_submit($form, &$form_state) {
       db_delete('uc_order_statuses')
         ->condition('order_status_id', $key)
         ->execute();
-      drupal_set_message(t('Order status %status removed.', array('%status' => $key)));
+      backdrop_set_message(t('Order status %status removed.', array('%status' => $key)));
     }
     else {
       $fields = array(
@@ -180,7 +183,7 @@ function uc_order_workflow_form_submit($form, &$form_state) {
     }
   }
 
-  drupal_set_message(t('Order workflow information saved.'));
+  backdrop_set_message(t('Order workflow information saved.'));
 }
 
 /**
@@ -196,8 +199,8 @@ function theme_uc_order_state_table($variables) {
 
   foreach (element_children($form) as $state_id) {
     $rows[] = array(
-      drupal_render($form[$state_id]['title']),
-      drupal_render($form[$state_id]['default']),
+      backdrop_render($form[$state_id]['title']),
+      backdrop_render($form[$state_id]['default']),
     );
   }
 
@@ -217,11 +220,14 @@ function theme_uc_order_status_table($variables) {
 
   foreach (element_children($form) as $state_id) {
     $rows[] = array(
-      drupal_render($form[$state_id]['id']),
-      drupal_render($form[$state_id]['title']),
-      drupal_render($form[$state_id]['weight']),
-      drupal_render($form[$state_id]['state']),
-      array('data' => drupal_render($form[$state_id]['remove']), 'align' => 'center'),
+      backdrop_render($form[$state_id]['id']),
+      backdrop_render($form[$state_id]['title']),
+      backdrop_render($form[$state_id]['weight']),
+      backdrop_render($form[$state_id]['state']),
+      array(
+        'data' => backdrop_render($form[$state_id]['remove']),
+        'align' => 'center',
+      ),
     );
   }
 
@@ -315,15 +321,15 @@ function uc_order_status_create_form_validate($form, &$form_state) {
 function uc_order_status_create_form_submit($form, &$form_state) {
   db_insert('uc_order_statuses')
     ->fields(array(
-      'order_status_id' => $form_state['values']['status_id'],
-      'title' => $form_state['values']['status_title'],
-      'state' => $form_state['values']['status_state'],
-      'weight' => $form_state['values']['status_weight'],
-      'locked' => 0,
-    ))
+    'order_status_id' => $form_state['values']['status_id'],
+    'title' => $form_state['values']['status_title'],
+    'state' => $form_state['values']['status_state'],
+    'weight' => $form_state['values']['status_weight'],
+    'locked' => 0,
+  ))
     ->execute();
 
-  drupal_set_message(t('Custom order status created.'));
+  backdrop_set_message(t('Custom order status created.'));
 
   $form_state['redirect'] = 'admin/store/settings/orders/workflow';
 }
@@ -341,13 +347,13 @@ function uc_order_create_form($form, &$form_state) {
     '#options' => array(
       'search' => t('Search for an existing customer.'),
       'create' => t('Create a new customer account.'),
-      'none'   => t('No customer account required.'),
+      'none' => t('No customer account required.'),
     ),
     '#required' => TRUE,
     '#default_value' => 'search',
     '#ajax' => array(
       'callback' => 'uc_order_create_form_customer',
-      'wrapper'  => 'uc-order-customer',
+      'wrapper' => 'uc-order-customer',
       'progress' => array('type' => 'throbber'),
     ),
   );
@@ -355,7 +361,7 @@ function uc_order_create_form($form, &$form_state) {
   $form['customer'] = array(
     '#prefix' => '<div id="uc-order-customer">',
     '#suffix' => '</div>',
-    '#tree'   => TRUE,
+    '#tree' => TRUE,
   );
 
   // Create form elements needed for customer search.
@@ -475,7 +481,7 @@ function uc_order_create_form($form, &$form_state) {
   elseif ($form_state['values']['customer_type'] == 'create') {
     // Container for new customer information.
     $form['customer'] += array(
-      '#type'  => 'fieldset',
+      '#type' => 'fieldset',
       '#title' => t('New customer details'),
     );
     // Customer e-mail address.
@@ -487,7 +493,7 @@ function uc_order_create_form($form, &$form_state) {
     );
     // Option to notify customer.
     $form['customer']['sendmail'] = array(
-      '#type'  => 'checkbox',
+      '#type' => 'checkbox',
       '#title' => t('E-mail account details to customer.'),
     );
   }
@@ -562,6 +568,7 @@ function uc_order_create_form_create_submit($form, &$form_state) {
     case 'create':
       // Create new account.
       $email = trim($form_state['values']['customer']['email']);
+      // TODO This variable was probably removed in Backdrop without replacement.
       $fields = array(
         'name' => uc_store_email_to_username($email),
         'mail' => $email,
@@ -574,8 +581,8 @@ function uc_order_create_form_create_submit($form, &$form_state) {
       if ($form_state['values']['customer']['sendmail']) {
         // Manually set the password so it appears in the e-mail.
         $account->password = $fields['pass'];
-        drupal_mail('user', 'register_admin_created', $email, uc_store_mail_recipient_language($email), array('account' => $account), uc_store_email_from());
-        drupal_set_message(t('A welcome message has been e-mailed to the new user.'));
+        backdrop_mail('user', 'register_admin_created', $email, uc_store_mail_recipient_language($email), array('account' => $account), uc_store_email_from());
+        backdrop_set_message(t('A welcome message has been e-mailed to the new user.'));
       }
       break;
 
@@ -598,7 +605,7 @@ function uc_order_create_for_user($account) {
   $order = uc_order_new($account->uid, 'post_checkout');
   uc_order_comment_save($order->order_id, $user->uid, t('Order created by the administration.'), 'admin');
 
-  drupal_goto('admin/store/orders/' . $order->order_id . '/edit');
+  backdrop_goto('admin/store/orders/' . $order->order_id . '/edit');
 }
 
 /**
@@ -611,8 +618,8 @@ function uc_order_address_book() {
   $type = $_POST['type'];
   $func = $_POST['func'];
 
-  $form = drupal_get_form('uc_order_address_book_form', $uid, $type, $func);
-  print drupal_render($form);
+  $form = backdrop_get_form('uc_order_address_book_form', $uid, $type, $func);
+  print backdrop_render($form);
   exit();
 }
 
@@ -721,6 +728,7 @@ function uc_order_select_customer($email = NULL) {
     else {
       $name = uc_store_email_to_username($email);
 
+      // TODO This variable was probably removed in Backdrop without replacement.
       $fields = array(
         'name' => $name,
         'mail' => $email,
@@ -735,7 +743,7 @@ function uc_order_select_customer($email = NULL) {
         $account->password = $fields['pass'];
 
         // Send the e-mail through the user module.
-        drupal_mail('user', 'register_admin_created', $email, uc_store_mail_recipient_language($email), array('account' => $account), uc_store_email_from());
+        backdrop_mail('user', 'register_admin_created', $email, uc_store_mail_recipient_language($email), array('account' => $account), uc_store_email_from());
 
         $build['email']['#markup'] .= t('Account details sent to e-mail provided.<br /><br /><strong>Username:</strong> @username<br /><strong>Password:</strong> @password', array('@username' => $fields['name'], '@password' => $fields['pass'])) . '<br /><br />';
       }
@@ -749,9 +757,9 @@ function uc_order_select_customer($email = NULL) {
     }
   }
 
-  $build['customer_select_form'] = drupal_get_form('uc_order_select_customer_form', $options);
+  $build['customer_select_form'] = backdrop_get_form('uc_order_select_customer_form', $options);
 
-  print drupal_render($build);
+  print backdrop_render($build);
   exit();
 }
 
@@ -866,14 +874,30 @@ function uc_order_select_customer_form($form, &$form_state, $options = NULL) {
  *   The user ID whose orders you wish to list.
  */
 function uc_order_history($user) {
-  drupal_set_title(t('My order history'));
+  backdrop_set_title(t('My order history'));
 
   $header = array(
-    array('data' => t('Date'), 'field' => 'o.created', 'sort' => 'desc'),
-    array('data' => t('Order #'), 'field' => 'o.order_id'),
-    array('data' => t('Status'), 'field' => 'os.title'),
-    array('data' => t('Products'), 'field' => 'products'),
-    array('data' => t('Total'), 'field' => 'o.order_total')
+    array(
+      'data' => t('Date'),
+      'field' => 'o.created',
+      'sort' => 'desc',
+    ),
+    array(
+      'data' => t('Order #'),
+      'field' => 'o.order_id',
+    ),
+    array(
+      'data' => t('Status'),
+      'field' => 'os.title',
+    ),
+    array(
+      'data' => t('Products'),
+      'field' => 'products',
+    ),
+    array(
+      'data' => t('Total'),
+      'field' => 'o.order_total',
+    ),
   );
 
   $rows = array();
@@ -921,8 +945,17 @@ function uc_order_history($user) {
       array('data' => format_date($order->created, 'uc_store')),
       array('data' => $link),
       array('data' => check_plain($order->title)),
-      array('data' => (!is_null($order->products) ? $order->products : 0), 'align' => 'center'),
-      array('data' => array('#theme' => 'uc_price', '#price' => $order->order_total), 'align' => 'right'),
+      array(
+        'data' => (!is_null($order->products) ? $order->products : 0),
+        'align' => 'center',
+      ),
+      array(
+        'data' => array(
+          '#theme' => 'uc_price',
+          '#price' => $order->order_total,
+        ),
+        'align' => 'right',
+      ),
     );
   }
 
@@ -960,11 +993,20 @@ function uc_order_edit_form($form, &$form_state, $order) {
     $form_state['order'] = $order;
   }
   $form['#order'] = $order;
-  $form['order_id'] = array('#type' => 'hidden', '#value' => $order->order_id);
-  $form['order_uid'] = array('#type' => 'hidden', '#value' => $order->uid);
+  $form['order_id'] = array(
+    '#type' => 'hidden',
+    '#value' => $order->order_id,
+  );
+  $form['order_uid'] = array(
+    '#type' => 'hidden',
+    '#value' => $order->uid,
+  );
 
   $modified = isset($form_state['values']['order_modified']) ? $form_state['values']['order_modified'] : $order->modified;
-  $form['order_modified'] = array('#type' => 'hidden', '#value' => $modified);
+  $form['order_modified'] = array(
+    '#type' => 'hidden',
+    '#value' => $modified,
+  );
 
   $panes = _uc_order_pane_list('edit');
   foreach ($panes as $id => $pane) {
@@ -1044,7 +1086,10 @@ function uc_order_edit_form_submit($form, &$form_state) {
   foreach ($form_state['order'] as $key => $value) {
     if (!isset($order->$key) || $order->$key !== $value) {
       if (!is_array($value)) {
-        $log[$key] = array('old' => $order->$key, 'new' => $value);
+        $log[$key] = array(
+          'old' => $order->$key,
+          'new' => $value,
+        );
       }
       $order->$key = $value;
     }
@@ -1062,7 +1107,7 @@ function uc_order_edit_form_submit($form, &$form_state) {
     foreach ($form_state['values']['products'] as $product) {
       if (!isset($product['remove']) && intval($product['qty']) > 0) {
         $product['data'] = unserialize($product['data']);
-        $product = (object)$product;
+        $product = (object) $product;
         $order->products[] = $product;
 
         if (module_exists('uc_stock')) {
@@ -1087,7 +1132,7 @@ function uc_order_edit_form_submit($form, &$form_state) {
 
   uc_order_save($order);
 
-  drupal_set_message(t('Order changes saved.'));
+  backdrop_set_message(t('Order changes saved.'));
 }
 
 /**
@@ -1117,13 +1162,13 @@ function theme_uc_order_edit_form($variables) {
     }
   }
 
-  $last = '<div class="order-pane abs-left">' . drupal_render($form['order_id']) . drupal_render($form['order_modified'])
-    . drupal_render($form['form_id']) . drupal_render($form['form_token'])
-    . drupal_render($form['form_build_id'])
-    . drupal_render($form['actions'])
+  $last = '<div class="order-pane abs-left">' . backdrop_render($form['order_id']) . backdrop_render($form['order_modified'])
+    . backdrop_render($form['form_id']) . backdrop_render($form['form_token'])
+    . backdrop_render($form['form_build_id'])
+    . backdrop_render($form['actions'])
     . '</div>';
 
-  $output .= drupal_render_children($form) . $last;
+  $output .= backdrop_render_children($form) . $last;
 
   return $output;
 }
@@ -1204,7 +1249,7 @@ function uc_order_add_line_item_form_submit($form, &$form_state) {
   }
   else {
     uc_order_line_item_add($form_state['values']['order_id'], $form_state['values']['line_item_id'], $form_state['values']['title'], $form_state['values']['amount']);
-    drupal_set_message(t('Line item added to order.'));
+    backdrop_set_message(t('Line item added to order.'));
   }
 
   $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/edit';
@@ -1228,7 +1273,7 @@ function uc_order_mail_invoice_form($form, &$form_state, $order) {
     '#default_value' => $order->primary_email,
   );
   $form['actions'] = array('#type' => 'actions');
-  $form['actions']['submit' ] = array(
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Mail invoice'),
   );
@@ -1258,14 +1303,14 @@ function uc_order_mail_invoice_form_submit($form, &$form_state) {
   $recipient = check_plain($form_state['values']['email']);
 
   $params = array('order' => $order);
-  $sent = drupal_mail('uc_order', 'invoice', $recipient, uc_store_mail_recipient_language($recipient), $params, uc_store_email_from());
+  $sent = backdrop_mail('uc_order', 'invoice', $recipient, uc_store_mail_recipient_language($recipient), $params, uc_store_email_from());
 
   if (!$sent) {
-    drupal_set_message(t('E-mail failed.'));
+    backdrop_set_message(t('E-mail failed.'));
   }
   else {
     $message = t('Invoice e-mailed to @email.', array('@email' => $recipient));
-    drupal_set_message($message);
+    backdrop_set_message($message);
     uc_order_log_changes($order->order_id, array($message));
   }
 }
@@ -1304,13 +1349,13 @@ function uc_order_log($order) {
  */
 function uc_order_delete_confirm_form($form, &$form_state, $order) {
   if (!uc_order_can_delete($order)) {
-    drupal_set_message(t('It is not possible to delete order @id.', array('@id' => $order->order_id)));
-    drupal_goto('admin/store/orders');
+    backdrop_set_message(t('It is not possible to delete order @id.', array('@id' => $order->order_id)));
+    backdrop_goto('admin/store/orders');
   }
 
   $form['order_id'] = array(
     '#type' => 'value',
-    '#value' => $order->order_id
+    '#value' => $order->order_id,
   );
 
   return confirm_form($form, t('Are you sure you want to delete order @order_id?', array('@order_id' => $order->order_id)), 'admin/store/orders', NULL, t('Delete'));
@@ -1326,7 +1371,7 @@ function uc_order_delete_confirm_form_submit($form, &$form_state) {
   uc_order_delete($form_state['values']['order_id']);
 
   // Display a message to the user and return to the order admin page.
-  drupal_set_message(t('Order @order_id completely removed from the database.', array('@order_id' => $form_state['values']['order_id'])));
+  backdrop_set_message(t('Order @order_id completely removed from the database.', array('@order_id' => $form_state['values']['order_id'])));
 
   $form_state['redirect'] = 'admin/store/orders';
 }

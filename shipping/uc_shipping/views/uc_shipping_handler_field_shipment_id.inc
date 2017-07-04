@@ -16,7 +16,10 @@ class uc_shipping_handler_field_shipment_id extends views_handler_field {
   function init(&$view, &$data) {
     parent::init($view, $data);
     if (!empty($this->options['link_to_shipment'])) {
-      $this->additional_fields['order_id'] = array('table' => $this->table_alias, 'field' => 'order_id');
+      $this->additional_fields['order_id'] = array(
+        'table' => $this->table_alias,
+        'field' => 'order_id',
+      );
     }
   }
 

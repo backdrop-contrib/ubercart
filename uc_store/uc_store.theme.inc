@@ -92,7 +92,7 @@ function theme_uc_pane_sort_table($variables) {
   $attributes = array();
   if (isset($form['#draggable'])) {
     $attributes['id'] = $form['#draggable'] . '-table';
-    drupal_add_tabledrag($form['#draggable'] . '-table', 'order', 'sibling', $form['#draggable']);
+    backdrop_add_tabledrag($form['#draggable'] . '-table', 'order', 'sibling', $form['#draggable']);
   }
 
   $header = array(t('Pane'), t('List position'));
@@ -100,8 +100,8 @@ function theme_uc_pane_sort_table($variables) {
   foreach (element_children($form) as $pane_id) {
     $rows[] = array(
       'data' => array(
-        drupal_render($form[$pane_id][$prefix . '_' . $pane_id . '_enabled']),
-        drupal_render($form[$pane_id][$prefix . '_' . $pane_id . '_weight']),
+        backdrop_render($form[$pane_id][$prefix . '_' . $pane_id . '_enabled']),
+        backdrop_render($form[$pane_id][$prefix . '_' . $pane_id . '_weight']),
       ),
       'class' => array('draggable'),
     );

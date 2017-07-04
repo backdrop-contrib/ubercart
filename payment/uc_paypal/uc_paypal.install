@@ -15,6 +15,7 @@ function uc_paypal_requirements($phase) {
   $has_curl = function_exists('curl_init');
 
   // PayPal WPP requires cURL.
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (variable_get('uc_pg_paypal_wpp_enabled', TRUE)) {
     $requirements['uc_paypal_curl'] = array(
       'title' => $t('cURL'),
@@ -118,17 +119,20 @@ function uc_paypal_install() {
   db_merge('uc_order_statuses')
     ->key(array('order_status_id' => 'paypal_pending'))
     ->insertFields(array(
-      'order_status_id' => 'paypal_pending',
-      'title' => $t('PayPal pending'),
-      'state' => 'post_checkout',
-      'weight' => 7,
-      'locked' => 1,
-    ))
+    'order_status_id' => 'paypal_pending',
+    'title' => $t('PayPal pending'),
+    'state' => 'post_checkout',
+    'weight' => 7,
+    'locked' => 1,
+  ))
     ->updateFields(array(
-      'state' => 'post_checkout',
-      'locked' => 1,
-    ))
+    'state' => 'post_checkout',
+    'locked' => 1,
+  ))
     ->execute();
+  // Dynamically generated variable data was detected on the following lines.
+  // /ubercart/payment/uc_paypal/uc_paypal.pages.inc line 213
+  // /ubercart/payment/uc_paypal/uc_paypal.pages.inc line 75
 }
 
 /**
@@ -137,8 +141,8 @@ function uc_paypal_install() {
 function uc_paypal_uninstall() {
   db_update('uc_order_statuses')
     ->fields(array(
-      'locked' => 0,
-    ))
+    'locked' => 0,
+  ))
     ->condition('order_status_id', 'paypal_pending')
     ->execute();
 
@@ -153,52 +157,76 @@ function uc_paypal_uninstall() {
 function uc_paypal_update_last_removed() {
   // 7.x-3.0-beta2 and earlier were installed with schema version 0,
   // which causes update.php to fail.
-  return drupal_get_installed_schema_version('uc_paypal') == 0 ? 0 : 6000;
+  return backdrop_get_installed_schema_version('uc_paypal') == 0 ? 0 : 6000;
 }
 
 /*
  * Removed completely unnecessary update 7000.
  */
 
-/**
- * Fix incorrect order status configuration.
- */
-function uc_paypal_update_7001() {
-  db_delete('uc_order_statuses')
-    ->condition('order_status_id', '')
-    ->execute();
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_paypal_update_7001() { }
 
-  db_merge('uc_order_statuses')
-    ->key(array('order_status_id' => 'paypal_pending'))
-    ->insertFields(array(
-      'order_status_id' => 'paypal_pending',
-      'title' => t('PayPal pending'),
-      'state' => 'payment_received',
-      'weight' => 7,
-      'locked' => 1,
-    ))
-    ->updateFields(array(
-      'state' => 'payment_received',
-      'locked' => 1,
-    ))
-    ->execute();
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_paypal_update_7300() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_paypal_update_7301() { }
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function uc_paypal_update_last_removed() {
+  return 7301;
 }
 
 /**
- * Fix incorrect order state configuration.
+ * Implements hook_update_N().
  */
-function uc_paypal_update_7300() {
-  db_update('uc_order_statuses')
-    ->fields(array(
-      'state' => 'post_checkout',
-    ))
-    ->condition('order_status_id', 'paypal_pending')
-    ->execute();
-}
-
-/**
- * Remove unused variable.
- */
-function uc_paypal_update_7301() {
-  variable_del('uc_paypal_wps_checkout_button');
+function uc_paypal_update_1000() {
+  $config = config('uc_paypal .settings');
+  $config->set('uc_paypal_wpp_currency', update_variable_get('uc_paypal_wpp_currency', 'USD'));
+  $config->set('uc_paypal_wpp_server', update_variable_get('uc_paypal_wpp_server', 'dynamic value in file /ubercart/payment/uc_paypal/uc_paypal.pages.inc line 213'));
+  $config->set('uc_paypal_wps_email', update_variable_get('uc_paypal_wps_email', ''));
+  $config->set('uc_paypal_wps_currency', update_variable_get('uc_paypal_wps_currency', 'USD'));
+  $config->set('uc_paypal_wps_language', update_variable_get('uc_paypal_wps_language', 'US'));
+  $config->set('uc_paypal_wps_server', update_variable_get('uc_paypal_wps_server', 'dynamic value in file /ubercart/payment/uc_paypal/uc_paypal.pages.inc line 75'));
+  $config->set('uc_paypal_wps_payment_action', update_variable_get('uc_paypal_wps_payment_action', 'Sale'));
+  $config->set('uc_paypal_wps_cancel_return_url', update_variable_get('uc_paypal_wps_cancel_return_url', 'cart'));
+  $config->set('uc_paypal_wps_submit_method', update_variable_get('uc_paypal_wps_submit_method', 'single'));
+  $config->set('uc_paypal_wps_no_shipping', update_variable_get('uc_paypal_wps_no_shipping', '1'));
+  $config->set('uc_paypal_wps_address_override', update_variable_get('uc_paypal_wps_address_override', 'TRUE'));
+  $config->set('uc_paypal_wps_address_selection', update_variable_get('uc_paypal_wps_address_selection', 'billing'));
+  $config->set('uc_paypal_wps_debug_ipn', update_variable_get('uc_paypal_wps_debug_ipn', 'FALSE'));
+  $config->set('uc_paypal_api_username', update_variable_get('uc_paypal_api_username', ''));
+  $config->set('uc_paypal_api_password', update_variable_get('uc_paypal_api_password', ''));
+  $config->set('uc_paypal_api_signature', update_variable_get('uc_paypal_api_signature', ''));
+  $config->set('uc_paypal_ec_landingpage_style', update_variable_get('uc_paypal_ec_landingpage_style', 'Billing'));
+  $config->set('uc_paypal_ec_rqconfirmed_addr', update_variable_get('uc_paypal_ec_rqconfirmed_addr', 'novalue'));
+  $config->set('uc_paypal_ec_review_shipping', update_variable_get('uc_paypal_ec_review_shipping', 'TRUE'));
+  $config->set('uc_paypal_ec_review_company', update_variable_get('uc_paypal_ec_review_company', 'TRUE'));
+  $config->set('uc_paypal_ec_review_phone', update_variable_get('uc_paypal_ec_review_phone', 'TRUE'));
+  $config->set('uc_paypal_ec_review_comment', update_variable_get('uc_paypal_ec_review_comment', 'TRUE'));
+  update_variable_del('uc_paypal_wpp_currency');
+  update_variable_del('uc_paypal_wpp_server');
+  update_variable_del('uc_paypal_wps_email');
+  update_variable_del('uc_paypal_wps_currency');
+  update_variable_del('uc_paypal_wps_language');
+  update_variable_del('uc_paypal_wps_server');
+  update_variable_del('uc_paypal_wps_payment_action');
+  update_variable_del('uc_paypal_wps_cancel_return_url');
+  update_variable_del('uc_paypal_wps_submit_method');
+  update_variable_del('uc_paypal_wps_no_shipping');
+  update_variable_del('uc_paypal_wps_address_override');
+  update_variable_del('uc_paypal_wps_address_selection');
+  update_variable_del('uc_paypal_wps_debug_ipn');
+  update_variable_del('uc_paypal_api_username');
+  update_variable_del('uc_paypal_api_password');
+  update_variable_del('uc_paypal_api_signature');
+  update_variable_del('uc_paypal_ec_landingpage_style');
+  update_variable_del('uc_paypal_ec_rqconfirmed_addr');
+  update_variable_del('uc_paypal_ec_review_shipping');
+  update_variable_del('uc_paypal_ec_review_company');
+  update_variable_del('uc_paypal_ec_review_phone');
+  update_variable_del('uc_paypal_ec_review_comment');
 }

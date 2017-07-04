@@ -17,8 +17,15 @@ function uc_attribute_rules_condition_info() {
     'group' => t('Order: Product'),
     'base' => 'uc_attribute_condition_ordered_product_option',
     'parameter' => array(
-      'order' => array('type' => 'uc_order', 'label' => t('Order')),
-      'option' => array('type' => 'integer', 'label' => t('Attribute option'), 'options list' => 'uc_attribute_condition_ordered_product_options_list'),
+      'order' => array(
+        'type' => 'uc_order',
+        'label' => t('Order'),
+      ),
+      'option' => array(
+        'type' => 'integer',
+        'label' => t('Attribute option'),
+        'options list' => 'uc_attribute_condition_ordered_product_options_list',
+      ),
     ),
   );
 

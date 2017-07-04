@@ -6,7 +6,7 @@
  */
 
 /******************************************************************************
- * Drupal Hooks                                                               *
+ * Backdrop Hooks                                                               *
  ******************************************************************************/
 
 /**
@@ -17,7 +17,7 @@ function uc_usps_menu() {
 
   $items['admin/store/settings/quotes/settings/usps'] = array(
     'title' => 'USPS',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_usps_admin_settings'),
     'access arguments' => array('configure quotes'),
     'type' => MENU_LOCAL_TASK,
@@ -34,7 +34,7 @@ function uc_usps_theme() {
   return array(
     'uc_usps_option_label' => array(
       'variables' => array(
-        'service'  => NULL,
+        'service' => NULL,
         'packages' => NULL,
       ),
       'file' => 'uc_usps.theme.inc',
@@ -52,8 +52,16 @@ function uc_usps_theme() {
 function uc_usps_form_alter(&$form, &$form_state, $form_id) {
   if (uc_product_is_product_form($form)) {
     $node = $form['#node'];
-    $enabled = variable_get('uc_quote_enabled', array()) + array('usps' => FALSE, 'usps_intl' => FALSE);
-    $weight = variable_get('uc_quote_method_weight', array()) + array('usps' => 0, 'usps_intl' => 1);
+    // TODO This variable was probably removed in Backdrop without replacement.
+    $enabled = variable_get('uc_quote_enabled', array()) + array(
+      'usps' => FALSE,
+      'usps_intl' => FALSE,
+    );
+    // TODO This variable was probably removed in Backdrop without replacement.
+    $weight = variable_get('uc_quote_method_weight', array()) + array(
+      'usps' => 0,
+      'usps_intl' => 1,
+    );
 
     $form['shipping']['usps'] = array(
       '#type' => 'fieldset',
@@ -94,10 +102,10 @@ function uc_usps_node_update($node) {
 
       db_insert('uc_usps_products')
         ->fields(array(
-          'vid' => $node->vid,
-          'nid' => $node->nid,
-          'container' => $usps_values['container'],
-        ))
+        'vid' => $node->vid,
+        'nid' => $node->nid,
+        'container' => $usps_values['container'],
+      ))
         ->execute();
     }
   }
@@ -114,6 +122,7 @@ function uc_usps_node_load($nodes, $types) {
   }
 
   $vids = array();
+  // TODO This variable was probably removed in Backdrop without replacement.
   $shipping_type = variable_get('uc_store_shipping_type', 'small_package');
   $shipping_types = db_query("SELECT id, shipping_type FROM {uc_quote_shipping_types} WHERE id_type = :type AND id IN (:ids)", array(':type' => 'product', ':ids' => array_keys($nodes)))->fetchAllKeyed();
 
@@ -168,6 +177,7 @@ function uc_usps_node_revision_delete($node) {
  * Implements hook_uc_shipping_type().
  */
 function uc_usps_uc_shipping_type() {
+  // TODO This variable was probably removed in Backdrop without replacement.
   $weight = variable_get('uc_quote_type_weight', array('envelope' => -1, 'small_package' => 0));
 
   $types = array(
@@ -254,6 +264,16 @@ function uc_usps_uc_shipping_method() {
  ******************************************************************************/
 
 /**
+ * Implements hook_config_info().
+ */
+function uc_usps_config_info() {
+  $prefixes['uc_usps.settings'] = array(
+    'label' => t('Module name settings'),
+    'group' => t('Configuration'),
+  );
+}
+
+/**
  * Callback for retrieving USPS shipping quote.
  *
  * @param $products
@@ -289,8 +309,12 @@ function uc_usps_quote($products, $details, $method) {
   $connection_url = 'http://production.shippingapis.com/ShippingAPI.dll';
 
   // Initialize $debug_data to prevent PHP notices here and in uc_quote.
-  $debug_data = array('debug' => NULL, 'error' => array());
+  $debug_data = array(
+    'debug' => NULL,
+    'error' => array(),
+  );
   $services = array();
+  // TODO This variable was probably removed in Backdrop without replacement.
   $addresses = array(variable_get('uc_quote_store_default_address', new UcAddress()));
   $packages = _uc_usps_package_products($products, $addresses);
   if (!count($packages)) {
@@ -310,29 +334,31 @@ function uc_usps_quote($products, $details, $method) {
       $request = uc_usps_rate_request($ship_packages, $orig, $destination);
     }
 
+    // TODO This variable was probably removed in Backdrop without replacement.
     if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
       $debug_data['debug'] .= htmlentities(urldecode($request)) . "<br />\n";
     }
 
-    $result = drupal_http_request($connection_url, array(
+    $result = backdrop_http_request($connection_url, array(
       'method' => 'POST',
       'data' => $request,
     ));
 
+    // TODO This variable was probably removed in Backdrop without replacement.
     if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
       $debug_data['debug'] .= htmlentities($result->data) . "<br />\n";
     }
 
-    $rate_type = variable_get('uc_usps_online_rates', FALSE);
+    $rate_type = config_get('uc_usps.settings', 'uc_usps_online_rates');
     $response = new SimpleXMLElement($result->data);
 
     // Map double-encoded HTML markup in service names to Unicode characters.
     $service_markup = array(
-      '&lt;sup&gt;&amp;reg;&lt;/sup&gt;'   => '®',
+      '&lt;sup&gt;&amp;reg;&lt;/sup&gt;' => '®',
       '&lt;sup&gt;&amp;trade;&lt;/sup&gt;' => '™',
-      '&lt;sup&gt;&#174;&lt;/sup&gt;'      => '®',
-      '&lt;sup&gt;&#8482;&lt;/sup&gt;'     => '™',
-      '**'                                 => '',
+      '&lt;sup&gt;&#174;&lt;/sup&gt;' => '®',
+      '&lt;sup&gt;&#8482;&lt;/sup&gt;' => '™',
+      '**' => '',
     );
     // Use this map to fix USPS service names.
     if (strpos($method['id'], 'intl')) {
@@ -352,28 +378,28 @@ function uc_usps_quote($products, $details, $method) {
     if (isset($response->Package)) {
       foreach ($response->Package as $package) {
         if (isset($package->Error)) {
-          $debug_data['error'][] = (string)$package->Error[0]->Description . '<br />';
+          $debug_data['error'][] = (string) $package->Error[0]->Description . '<br />';
         }
         else {
           if (strpos($method['id'], 'intl')) {
             foreach ($package->Service as $service) {
-              $id = (string)$service['ID'];
-              $services[$id]['label'] = t('U.S.P.S. @service', array('@service' => (string)$service->SvcDescription));
+              $id = (string) $service['ID'];
+              $services[$id]['label'] = t('U.S.P.S. @service', array('@service' => (string) $service->SvcDescription));
               // Markup rate before customer sees it.
               if (!isset($services[$id]['rate'])) {
                 $services[$id]['rate'] = 0;
               }
-              $services[$id]['rate'] += uc_usps_rate_markup((string)$service->Postage);
+              $services[$id]['rate'] += uc_usps_rate_markup((string) $service->Postage);
             }
           }
           else {
             foreach ($package->Postage as $postage) {
-              $classid = (string)$postage['CLASSID'];
+              $classid = (string) $postage['CLASSID'];
               if ($classid === '0') {
-                if ((string)$postage->MailService == "First-Class Mail® Parcel") {
+                if ((string) $postage->MailService == "First-Class Mail® Parcel") {
                   $classid = 'zeroParcel';
                 }
-                elseif ((string)$postage->MailService == "First-Class Mail® Letter") {
+                elseif ((string) $postage->MailService == "First-Class Mail® Letter") {
                   $classid = 'zeroFlat';
                 }
                 else {
@@ -383,16 +409,16 @@ function uc_usps_quote($products, $details, $method) {
               if (!isset($services[$classid]['rate'])) {
                 $services[$classid]['rate'] = 0;
               }
-              $services[$classid]['label'] = t('U.S.P.S. @service', array('@service' => (string)$postage->MailService));
+              $services[$classid]['label'] = t('U.S.P.S. @service', array('@service' => (string) $postage->MailService));
               // Markup rate before customer sees it.
               // Rates are stored differently if ONLINE $rate_type is requested.
               // First Class doesn't have online rates, so if CommercialRate
               // is missing use Rate instead.
               if ($rate_type && !empty($postage->CommercialRate)) {
-                $services[$classid]['rate'] += uc_usps_rate_markup((string)$postage->CommercialRate);
+                $services[$classid]['rate'] += uc_usps_rate_markup((string) $postage->CommercialRate);
               }
               else {
-                $services[$classid]['rate'] += uc_usps_rate_markup((string)$postage->Rate);
+                $services[$classid]['rate'] += uc_usps_rate_markup((string) $postage->Rate);
               }
             }
           }
@@ -402,6 +428,7 @@ function uc_usps_quote($products, $details, $method) {
   }
 
   $method_services = 'uc_' . $method['id'] . '_services';
+  // TODO This variable was probably removed in Backdrop without replacement.
   $usps_services = array_filter(variable_get($method_services, array_keys(call_user_func('_' . $method_services))));
   foreach ($services as $service => $quote) {
     if (!in_array($service, $usps_services)) {
@@ -442,10 +469,11 @@ function uc_usps_quote($products, $details, $method) {
  *   RateV4Request XML document to send to USPS.
  */
 function uc_usps_rate_request($packages, $origin, $destination) {
-  $request  = '<RateV4Request USERID="' . variable_get('uc_usps_user_id', '') . '">';
+  $config = config('uc_usps.settings');
+  $request  = '<RateV4Request USERID="' . $config->get('uc_usps_user_id') . '">';
   $request .= '<Revision>2</Revision>';
 
-  $rate_type = variable_get('uc_usps_online_rates', FALSE);
+  $rate_type = $config->get('uc_usps_online_rates');
 
   $package_id = 0;
   foreach ($packages as $package) {
@@ -468,35 +496,35 @@ function uc_usps_rate_request($packages, $origin, $destination) {
         '<ReturnLocations>TRUE</ReturnLocations>' .
         '<ShipDate Option="EMSH">' . format_date(time(), 'custom', 'd-M-Y', 'America/New_York', 'en') . '</ShipDate>';
 
-        // Check if we need to add any special services to this package.
-        if (variable_get('uc_usps_insurance', FALSE)            ||
-           variable_get('uc_usps_delivery_confirmation', FALSE) ||
-           variable_get('uc_usps_signature_confirmation', FALSE)  ) {
+      // Check if we need to add any special services to this package.
+      if ($config->get('uc_usps_insurance')             ||
+           $config->get('uc_usps_delivery_confirmation') ||
+           $config->get('uc_usps_signature_confirmation')  ) {
 
-          $request .= '<SpecialServices>';
+        $request .= '<SpecialServices>';
 
-          if (variable_get('uc_usps_insurance', FALSE)) {
-            $request .= '<SpecialService>1</SpecialService>';
-          }
-          if (variable_get('uc_usps_delivery_confirmation', FALSE)) {
-            $request .= '<SpecialService>13</SpecialService>';
-          }
-          if (variable_get('uc_usps_signature_confirmation', FALSE)) {
-            $request .= '<SpecialService>15</SpecialService>';
-          }
-
-          $request .= '</SpecialServices>';
+        if ($config->get('uc_usps_insurance')) {
+          $request .= '<SpecialService>1</SpecialService>';
+        }
+        if ($config->get('uc_usps_delivery_confirmation')) {
+          $request .= '<SpecialService>13</SpecialService>';
+        }
+        if ($config->get('uc_usps_signature_confirmation')) {
+          $request .= '<SpecialService>15</SpecialService>';
         }
 
-        // Close off Package tag.
-        $request .= '</Package>';
+        $request .= '</SpecialServices>';
+      }
+
+      // Close off Package tag.
+      $request .= '</Package>';
 
       $package_id++;
     }
   }
   $request .= '</RateV4Request>';
 
-  return 'API=RateV4&XML=' . drupal_encode_path($request);
+  return 'API=RateV4&XML=' . backdrop_encode_path($request);
 }
 
 /**
@@ -513,8 +541,9 @@ function uc_usps_rate_request($packages, $origin, $destination) {
  *   IntlRateRequest XML document to send to USPS.
  */
 function uc_usps_intl_rate_request($packages, $origin, $destination) {
+  $config = config('uc_usps.settings');
   module_load_include('inc', 'uc_usps', 'uc_usps.countries');
-  $request  = '<IntlRateV2Request USERID="' . variable_get('uc_usps_user_id', '') . '">';
+  $request  = '<IntlRateV2Request USERID="' . $config->get('uc_usps_user_id') . '">';
   $request .= '<Revision>2</Revision>';
 
   // USPS does not use ISO 3166 country name in some cases so we
@@ -539,20 +568,20 @@ function uc_usps_intl_rate_request($packages, $origin, $destination) {
         '<Girth>' . '</Girth>' .
         '<OriginZip>' . substr(trim($origin->postal_code), 0, 5) . '</OriginZip>';
 
-        // Check if we need to add any special services to this package.
-        if (variable_get('uc_usps_insurance', FALSE)) {
-          $request .= '<ExtraServices><ExtraService>1</ExtraService></ExtraServices>';
-        }
+      // Check if we need to add any special services to this package.
+      if ($config->get('uc_usps_insurance')) {
+        $request .= '<ExtraServices><ExtraService>1</ExtraService></ExtraServices>';
+      }
 
-        // Close off Package tag.
-        $request .= '</Package>';
+      // Close off Package tag.
+      $request .= '</Package>';
 
       $package_id++;
     }
   }
   $request .= '</IntlRateV2Request>';
 
-  $request = 'API=IntlRateV2&XML=' . drupal_encode_path($request);
+  $request = 'API=IntlRateV2&XML=' . backdrop_encode_path($request);
   return $request;
 }
 
@@ -566,8 +595,9 @@ function uc_usps_intl_rate_request($packages, $origin, $destination) {
  *   Shipping rate after markup.
  */
 function uc_usps_rate_markup($rate) {
-  $markup = trim(variable_get('uc_usps_rate_markup', '0'));
-  $type   = variable_get('uc_usps_rate_markup_type', 'percentage');
+  $config = config('uc_usps.settings');
+  $markup = trim($config->get('uc_usps_rate_markup'));
+  $type   = $config->get('uc_usps_rate_markup_type');
 
   if (is_numeric($markup)) {
     switch ($type) {
@@ -594,8 +624,9 @@ function uc_usps_rate_markup($rate) {
  *   Shipping weight after markup.
  */
 function uc_usps_weight_markup($weight) {
-  $markup = trim(variable_get('uc_usps_weight_markup', '0'));
-  $type   = variable_get('uc_usps_weight_markup_type', 'percentage');
+  $config = config('uc_usps.settings');
+  $markup = trim($config->get('uc_usps_weight_markup'));
+  $type   = $config->get('uc_usps_weight_markup_type');
 
   if (is_numeric($markup)) {
     switch ($type) {
@@ -631,7 +662,7 @@ function uc_usps_weight_markup($weight) {
 function _uc_usps_package_products($products, &$addresses) {
   $last_key = 0;
   $packages = array();
-  if (variable_get('uc_usps_all_in_one', TRUE) && count($products) > 1) {
+  if (config_get('uc_usps.settings', 'uc_usps_all_in_one') && count($products) > 1) {
     // "All in one" packaging strategy.
     // Only need to do this if more than one product line item in order.
     $packages[$last_key] = array(0 => _uc_usps_new_package());
@@ -714,7 +745,7 @@ function _uc_usps_package_products($products, &$addresses) {
       if (!isset($product->pkg_qty) || !$product->pkg_qty) {
         $product->pkg_qty = 1;
       }
-      $num_of_pkgs = (int)($product->qty / $product->pkg_qty);
+      $num_of_pkgs = (int) ($product->qty / $product->pkg_qty);
       if ($num_of_pkgs) {
         $package = clone $product;
         $package->description = $product->model;

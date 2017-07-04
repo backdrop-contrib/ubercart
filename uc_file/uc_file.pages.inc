@@ -53,11 +53,31 @@ function theme_uc_file_user_downloads($variables) {
   $row = 0;
   foreach ($files as $file) {
     $rows[] = array(
-      array('data' => format_date($file['granted'], 'uc_store'), 'class' => array('date-row'), 'id' => 'date-' . $row),
-      array('data' => $file['link'], 'class' => array('filename-row'), 'id' => 'filename-' . $row),
-      array('data' => $file['description'], 'class' => array('description-row'), 'id' => 'description-' . $row),
-      array('data' => $file['accessed'] . '/' . ($file['download_limit'] ? $file['download_limit'] : t('Unlimited')), 'class' => array('download-row'), 'id' => 'download-' . $row),
-      array('data' => count(unserialize($file['addresses'])) . '/' . ($file['address_limit'] ? $file['address_limit'] : t('Unlimited')), 'class' => array('addresses-row'), 'id' => 'addresses-' . $row),
+      array(
+        'data' => format_date($file['granted'], 'uc_store'),
+        'class' => array('date-row'),
+        'id' => 'date-' . $row,
+      ),
+      array(
+        'data' => $file['link'],
+        'class' => array('filename-row'),
+        'id' => 'filename-' . $row,
+      ),
+      array(
+        'data' => $file['description'],
+        'class' => array('description-row'),
+        'id' => 'description-' . $row,
+      ),
+      array(
+        'data' => $file['accessed'] . '/' . ($file['download_limit'] ? $file['download_limit'] : t('Unlimited')),
+        'class' => array('download-row'),
+        'id' => 'download-' . $row,
+      ),
+      array(
+        'data' => count(unserialize($file['addresses'])) . '/' . ($file['address_limit'] ? $file['address_limit'] : t('Unlimited')),
+        'class' => array('addresses-row'),
+        'id' => 'addresses-' . $row,
+      ),
     );
     $row++;
   }
@@ -82,14 +102,27 @@ function theme_uc_file_user_downloads($variables) {
 function uc_file_user_downloads($account) {
   // Create a header and the pager it belongs to.
   $header = array(
-    array('data' => t('Purchased'  ), 'field' => 'u.granted', 'sort' => 'desc'),
-    array('data' => t('Filename'   ), 'field' => 'f.filename'),
-    array('data' => t('Description'), 'field' => 'p.description'),
-    array('data' => t('Downloads'  ), 'field' => 'u.accessed'),
+    array(
+      'data' => t('Purchased'  ),
+      'field' => 'u.granted',
+      'sort' => 'desc',
+    ),
+    array(
+      'data' => t('Filename'   ),
+      'field' => 'f.filename',
+    ),
+    array(
+      'data' => t('Description'),
+      'field' => 'p.description',
+    ),
+    array(
+      'data' => t('Downloads'  ),
+      'field' => 'u.accessed',
+    ),
     array('data' => t('Addresses'  )),
   );
 
-  drupal_set_title(t('File downloads'));
+  backdrop_set_title(t('File downloads'));
 
   $files = array();
 
@@ -100,18 +133,18 @@ function uc_file_user_downloads($account) {
   $query->leftJoin('uc_files', 'f', 'u.fid = f.fid');
   $query->leftJoin('uc_file_products', 'p', 'p.pfid = u.pfid');
   $query->fields('u', array(
-      'granted',
-      'accessed',
-      'addresses',
-      'file_key',
-      'download_limit',
-      'address_limit',
-      'expiration',
-    ))
+    'granted',
+    'accessed',
+    'addresses',
+    'file_key',
+    'download_limit',
+    'address_limit',
+    'expiration',
+  ))
     ->fields('f', array(
-      'filename',
-      'fid',
-    ))
+    'filename',
+    'fid',
+  ))
     ->fields('p', array('description'));
 
   $count_query = db_select('uc_file_users')
@@ -130,7 +163,8 @@ function uc_file_user_downloads($account) {
     // Set the JS behavior when this link gets clicked.
     $onclick = array(
       'attributes' => array(
-        'onclick' => 'uc_file_update_download(' . $row . ', ' . $file->accessed . ', ' . ((empty($download_limit)) ? -1 : $download_limit) . ');', 'id' => 'link-' . $row
+        'onclick' => 'uc_file_update_download(' . $row . ', ' . $file->accessed . ', ' . ((empty($download_limit)) ? -1 : $download_limit) . ');',
+        'id' => 'link-' . $row,
       ),
     );
 
@@ -168,7 +202,7 @@ function uc_file_user_downloads($account) {
   );
 
   if (user_access('administer users')) {
-    $build['admin'] = drupal_get_form('uc_file_user_form', $account);
+    $build['admin'] = backdrop_get_form('uc_file_user_form', $account);
   }
 
   return $build;
@@ -190,13 +224,13 @@ function _uc_file_download($fid) {
   // Error messages for various failed download states.
   $admin_message = t('Please contact the site administrator if this message has been received in error.');
   $error_messages = array(
-    UC_FILE_ERROR_NOT_A_FILE              => t('The file you requested does not exist.'),
+    UC_FILE_ERROR_NOT_A_FILE => t('The file you requested does not exist.'),
     UC_FILE_ERROR_TOO_MANY_BOGUS_REQUESTS => t('You have attempted to download an incorrect file URL too many times.'),
-    UC_FILE_ERROR_INVALID_DOWNLOAD        => t('The following URL is not a valid download link.') . ' ',
-    UC_FILE_ERROR_TOO_MANY_LOCATIONS      => t('You have downloaded this file from too many different locations.'),
-    UC_FILE_ERROR_TOO_MANY_DOWNLOADS      => t('You have reached the download limit for this file.'),
-    UC_FILE_ERROR_EXPIRED                 => t('This file download has expired.') . ' ',
-    UC_FILE_ERROR_HOOK_ERROR              => t('A hook denied your access to this file.') . ' ',
+    UC_FILE_ERROR_INVALID_DOWNLOAD => t('The following URL is not a valid download link.') . ' ',
+    UC_FILE_ERROR_TOO_MANY_LOCATIONS => t('You have downloaded this file from too many different locations.'),
+    UC_FILE_ERROR_TOO_MANY_DOWNLOADS => t('You have reached the download limit for this file.'),
+    UC_FILE_ERROR_EXPIRED => t('This file download has expired.') . ' ',
+    UC_FILE_ERROR_HOOK_ERROR => t('A hook denied your access to this file.') . ' ',
   );
 
   $ip = ip_address();
@@ -225,13 +259,13 @@ function _uc_file_download($fid) {
 
   // Some error state came back, so report it.
   else {
-    drupal_set_message($error_messages[$status] . $admin_message, 'error');
+    backdrop_set_message($error_messages[$status] . $admin_message, 'error');
 
     // Kick 'em to the curb. >:)
     _uc_file_download_redirect($user->uid);
   }
 
-  drupal_exit();
+  backdrop_exit();
 }
 
 /**
@@ -251,7 +285,7 @@ function _uc_file_download_validate($file_download, &$user, $ip) {
   $request_cache = cache_get('uc_file_' . $ip);
   $requests = ($request_cache) ? $request_cache->data + 1 : 1;
 
-  $message_user = ($user->uid) ? t('The user %username', array('%username' => format_username($user))) : t('The IP address %ip', array('%ip' => $ip));
+  $message_user = ($user->uid) ? t('The user %username', array('%username' => user_format_name($user))) : t('The IP address %ip', array('%ip' => $ip));
 
   if ($requests > UC_FILE_REQUEST_LIMIT) {
     return UC_FILE_ERROR_TOO_MANY_BOGUS_REQUESTS;
@@ -348,8 +382,8 @@ function _uc_file_download_transfer($file_user, $ip) {
       list($range, $extra_ranges) = explode(',', substr($_SERVER['HTTP_RANGE'], 6), 2);
     }
     else {
-      drupal_add_http_header('Status', '416 Requested Range Not Satisfiable');
-      drupal_add_http_header('Content-Range', 'bytes */' . $size);
+      backdrop_add_http_header('Status', '416 Requested Range Not Satisfiable');
+      backdrop_add_http_header('Content-Range', 'bytes */' . $size);
       exit;
     }
   }
@@ -367,23 +401,23 @@ function _uc_file_download_transfer($file_user, $ip) {
   // Only send partial content header if downloading a piece of the file (IE
   // workaround).
   if ($seek_start > 0 || $seek_end < ($size - 1)) {
-    drupal_add_http_header('Status', '206 Partial Content');
+    backdrop_add_http_header('Status', '206 Partial Content');
   }
 
   // Standard headers, including content-range and length
-  drupal_add_http_header('Pragma', 'public');
-  drupal_add_http_header('Cache-Control', 'cache, must-revalidate');
-  drupal_add_http_header('Accept-Ranges', 'bytes');
-  drupal_add_http_header('Content-Range', 'bytes ' . $seek_start . '-' . $seek_end . '/' . $size);
-  drupal_add_http_header('Content-Type', $mimetype);
-  drupal_add_http_header('Content-Disposition', 'attachment; filename="' . $filename . '"');
-  drupal_add_http_header('Content-Length', $seek_end - $seek_start + 1);
+  backdrop_add_http_header('Pragma', 'public');
+  backdrop_add_http_header('Cache-Control', 'cache, must-revalidate');
+  backdrop_add_http_header('Accept-Ranges', 'bytes');
+  backdrop_add_http_header('Content-Range', 'bytes ' . $seek_start . '-' . $seek_end . '/' . $size);
+  backdrop_add_http_header('Content-Type', $mimetype);
+  backdrop_add_http_header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+  backdrop_add_http_header('Content-Length', $seek_end - $seek_start + 1);
 
   // Last-Modified is required for content served dynamically
-  drupal_add_http_header('Last-Modified', gmdate("D, d M Y H:i:s", filemtime($file_user->full_path)) . " GMT");
+  backdrop_add_http_header('Last-Modified', gmdate("D, d M Y H:i:s", filemtime($file_user->full_path)) . " GMT");
 
   // Etag header is required for Firefox3 and other managers
-  drupal_add_http_header('ETag', md5($file_user->full_path));
+  backdrop_add_http_header('ETag', md5($file_user->full_path));
 
   // Open the file and seek to starting byte
   $fp = fopen($file_user->full_path, 'rb');
@@ -393,7 +427,7 @@ function _uc_file_download_transfer($file_user, $ip) {
   while (!feof($fp)) {
 
     // Reset time limit for large files
-    drupal_set_time_limit(0);
+    backdrop_set_time_limit(0);
 
     // Push the data to the client.
     print(fread($fp, UC_FILE_BYTE_SIZE));
@@ -430,9 +464,9 @@ function _uc_file_log_download($file_user, $ip) {
   $file_user->accessed++;
 
   // Calculate hash
-  $file_user->file_key = drupal_get_token(serialize($file_user));
+  $file_user->file_key = backdrop_get_token(serialize($file_user));
 
-  drupal_write_record('uc_file_users', $file_user, 'fuid');
+  backdrop_write_record('uc_file_users', $file_user, 'fuid');
 }
 
 /**
@@ -442,12 +476,12 @@ function _uc_file_download_redirect($uid = NULL) {
 
   // Shoo away anonymous users.
   if ($uid == 0) {
-    drupal_access_denied();
+    backdrop_access_denied();
   }
   // Redirect users back to their file page.
   else {
     if (!headers_sent()) {
-      drupal_goto('user/' . $uid . '/purchased-files');
+      backdrop_goto('user/' . $uid . '/purchased-files');
     }
   }
 }

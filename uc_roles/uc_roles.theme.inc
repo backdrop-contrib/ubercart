@@ -18,14 +18,14 @@ function theme_uc_roles_user_new($variables) {
   $form = $variables['form'];
 
   // Render the expiration tables first.
-  $output = drupal_render($form['expirations']);
+  $output = backdrop_render($form['expirations']);
 
   $output .= '<div class="expiration">';
-  $output .=   drupal_render($form['new_role']);
-  $output .=   drupal_render($form['new_role_add']);
-  $output .=   drupal_render($form['new_role_add_for']);
-  $output .=   drupal_render($form['new_role_add_qty']);
-  $output .=   drupal_render($form['new_role_add_granularity']);
+  $output .=   backdrop_render($form['new_role']);
+  $output .=   backdrop_render($form['new_role_add']);
+  $output .=   backdrop_render($form['new_role_add_for']);
+  $output .=   backdrop_render($form['new_role_add_qty']);
+  $output .=   backdrop_render($form['new_role_add_granularity']);
   $output .= '</div>';
 
   return $output;
@@ -52,7 +52,7 @@ function theme_uc_roles_user_expiration($variables) {
 
   $rows = array();
   // The expiration table.
-  foreach ((array)$form['table'] as $rid => $expiration) {
+  foreach ((array) $form['table'] as $rid => $expiration) {
     // We only want numeric rid's
     if (!is_numeric($rid)) {
       continue;
@@ -62,14 +62,13 @@ function theme_uc_roles_user_expiration($variables) {
     $data = &$form['table'][$rid];
 
     $rows[] = array(
-      array('data' => drupal_render($data['remove'])),
+      array('data' => backdrop_render($data['remove'])),
       array('data' => check_plain($data['name']['#value'])),
       array('data' => format_date($data['expiration']['#value'], 'short')),
-
       // Options to adjust the expiration.
       array('data' => '<a name="role-expiration-' . $rid . '">' .
                       '<div class="expiration">' .
-                        drupal_render($data['polarity']) . drupal_render($data['qty']) . drupal_render($data['granularity']) .
+                        backdrop_render($data['polarity']) . backdrop_render($data['qty']) . backdrop_render($data['granularity']) .
                       '</div></a>'),
     );
   }
@@ -80,7 +79,7 @@ function theme_uc_roles_user_expiration($variables) {
     'caption' => t('Below you can add or remove time to the expiration dates of the following roles.'),
     'empty' => t('There are no pending expirations for roles this user.'),
   ));
-  $output .= drupal_render_children($form);
+  $output .= backdrop_render_children($form);
 
   return $output;
 }

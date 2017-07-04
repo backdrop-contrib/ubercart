@@ -12,8 +12,10 @@
  * @see theme_uc_payment_methods_table()
  */
 function uc_payment_methods_form($form, &$form_state) {
+  $config = config('uc_payment.settings');
   $methods = _uc_payment_method_list();
 
+  $form['#config'] = 'uc_payment.settings';
   $form['pmtable'] = array(
     '#theme' => 'uc_payment_method_table',
   );
@@ -22,11 +24,11 @@ function uc_payment_methods_form($form, &$form_state) {
     $form['pmtable'][$id]['uc_payment_method_' . $id . '_checkout'] = array(
       '#type' => 'checkbox',
       '#title' => check_plain($method['name']),
-      '#default_value' => variable_get('uc_payment_method_' . $id . '_checkout', $method['checkout']),
+      '#default_value' => $config->get('uc_payment_method_' . $id . '_checkout'),
     );
     $form['pmtable'][$id]['uc_payment_method_' . $id . '_weight'] = array(
       '#type' => 'weight',
-      '#default_value' => variable_get('uc_payment_method_' . $id . '_weight', $method['weight']),
+      '#default_value' => $config->get('uc_payment_method_' . $id . '_weight'),
       '#attributes' => array('class' => array('uc-payment-method-weight')),
     );
 
@@ -75,16 +77,16 @@ function uc_payment_methods_form($form, &$form_state) {
 function theme_uc_payment_method_table($variables) {
   $form = $variables['form'];
 
-  drupal_add_tabledrag('uc-payment-methods', 'order', 'sibling', 'uc-payment-method-weight');
+  backdrop_add_tabledrag('uc-payment-methods', 'order', 'sibling', 'uc-payment-method-weight');
 
   $header = array(t('Payment method'), t('List position'), t('Operations'));
 
   $rows = array();
   foreach (element_children($form) as $method) {
     $row = array(
-      drupal_render($form[$method]['uc_payment_method_' . $method . '_checkout']),
-      drupal_render($form[$method]['uc_payment_method_' . $method . '_weight']),
-      drupal_render($form[$method]['settings']),
+      backdrop_render($form[$method]['uc_payment_method_' . $method . '_checkout']),
+      backdrop_render($form[$method]['uc_payment_method_' . $method . '_weight']),
+      backdrop_render($form[$method]['settings']),
     );
 
     $rows[] = array(
@@ -108,11 +110,12 @@ function uc_payment_method_settings_form($form, &$form_state, $method_id) {
   $callback = _uc_payment_method_data($method_id, 'callback');
   $null = NULL;
   if (function_exists($callback)) {
+    $form['#config'] = 'uc_payment.settings';
     $form = $callback('settings', $null, array(), $form_state);
   }
   else {
-    drupal_not_found();
-    drupal_exit();
+    backdrop_not_found();
+    backdrop_exit();
   }
   return system_settings_form($form);
 }
@@ -125,7 +128,7 @@ function uc_payment_method_settings_form($form, &$form_state, $method_id) {
  * @ingroup forms
  */
 function uc_payment_by_order_form($form, &$form_state, $order) {
-  $form['#attached']['css'][] = drupal_get_path('module', 'uc_payment') . '/uc_payment.css';
+  $form['#attached']['css'][] = backdrop_get_path('module', 'uc_payment') . '/uc_payment.css';
 
   $total = $order->order_total;
   $payments = uc_payment_load_payments($order->order_id);
@@ -141,6 +144,7 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
 
   if ($payments !== FALSE) {
     foreach ($payments as $payment) {
+      // TODO This variable was probably removed in Backdrop without replacement.
       $form['payments'][$payment->receipt_id]['received'] = array(
         '#markup' => format_date($payment->received, 'custom', variable_get('date_format_uc_store', 'm/d/Y') . '<b\r />H:i:s'),
       );
@@ -268,7 +272,7 @@ function uc_payment_by_order_form_submit($form, &$form_state) {
 
   uc_payment_enter($form_state['values']['order_id'], $payment['method'], $payment['amount'], $user->uid, '', $payment['comment'], $received);
 
-  drupal_set_message(t('Payment entered.'));
+  backdrop_set_message(t('Payment entered.'));
 }
 
 /**
@@ -280,8 +284,8 @@ function uc_payment_by_order_form_submit($form, &$form_state) {
 function uc_payment_delete_confirm_form($form, &$form_state, $order, $payment) {
   // Make sure the payment is for the specified order.
   if ($payment->order_id != $order->order_id) {
-    drupal_set_message(t('An error loading the payment information occurred.'));
-    drupal_goto('admin/store/orders/' . $order->order_id . '/payments');
+    backdrop_set_message(t('An error loading the payment information occurred.'));
+    backdrop_goto('admin/store/orders/' . $order->order_id . '/payments');
   }
 
   $desc = '<strong>' . t('Payment information:') . '</strong> '
@@ -289,7 +293,7 @@ function uc_payment_delete_confirm_form($form, &$form_state, $order, $payment) {
 
   $form['order_id'] = array(
     '#type' => 'value',
-    '#value' => $order->order_id
+    '#value' => $order->order_id,
   );
   $form['receipt_id'] = array(
     '#type' => 'value',
@@ -307,7 +311,7 @@ function uc_payment_delete_confirm_form($form, &$form_state, $order, $payment) {
 function uc_payment_delete_confirm_form_submit($form, &$form_state) {
   uc_payment_delete($form_state['values']['receipt_id']);
 
-  drupal_set_message(t('Payment deleted.'));
+  backdrop_set_message(t('Payment deleted.'));
 
   $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'] . '/payments';
 }

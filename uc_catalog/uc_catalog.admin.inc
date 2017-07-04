@@ -14,6 +14,7 @@
  * @ingroup forms
  */
 function uc_catalog_settings_form($form, &$form_state) {
+  $config = config('uc_catalog.settings');
   $view = views_get_view('uc_catalog');
   $displays = array();
   foreach ($view->display as $display) {
@@ -22,14 +23,15 @@ function uc_catalog_settings_form($form, &$form_state) {
     }
   }
 
+  $form['#config'] = 'uc_catalog.settings';
   $form['catalog-top-level']['uc_catalog_display'] = array(
     '#type' => 'select',
     '#title' => t('Catalog display'),
-    '#default_value' => variable_get('uc_catalog_display', 'catalog'),
+    '#default_value' => $config->get('uc_catalog_display'),
     '#options' => $displays,
   );
 
-  $vid = variable_get('uc_catalog_vid', NULL);
+  $vid = $config->get('uc_catalog_vid');
   if ($vid) {
     $catalog = taxonomy_vocabulary_load($vid);
 
@@ -47,13 +49,13 @@ function uc_catalog_settings_form($form, &$form_state) {
   $form['catalog-top-level']['uc_catalog_vid'] = array(
     '#type' => 'select',
     '#title' => t('Catalog vocabulary'),
-    '#default_value' => variable_get('uc_catalog_vid', 0),
+    '#default_value' => $config->get('uc_catalog_vid'),
     '#options' => $vocabs,
   );
   $form['catalog-top-level']['uc_catalog_breadcrumb'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display the catalog breadcrumb'),
-    '#default_value' => variable_get('uc_catalog_breadcrumb', TRUE),
+    '#default_value' => $config->get('uc_catalog_breadcrumb'),
   );
 
   return system_settings_form($form);
@@ -65,8 +67,9 @@ function uc_catalog_settings_form($form, &$form_state) {
 function uc_catalog_orphaned_products() {
   $build = array();
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (variable_get('taxonomy_maintain_index_table', TRUE)) {
-    $vid = variable_get('uc_catalog_vid', 0);
+    $vid = config_get('uc_catalog.settings', 'uc_catalog_vid');
     $product_types = uc_product_types();
     $field = field_info_field('taxonomy_catalog');
     $types = array_intersect($product_types, $field['bundles']['node']);
@@ -111,6 +114,6 @@ function uc_catalog_repair_field() {
   }
   uc_catalog_add_image_field();
 
-  drupal_set_message(t('The catalog taxonomy reference field has been repaired.'));
-  drupal_goto('admin/structure/types/manage/product/fields');
+  backdrop_set_message(t('The catalog taxonomy reference field has been repaired.'));
+  backdrop_goto('admin/structure/types/manage/product/fields');
 }

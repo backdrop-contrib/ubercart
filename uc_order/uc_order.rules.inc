@@ -543,11 +543,11 @@ function uc_order_condition_has_products($order, $products, $required, $forbidde
     $required_check = $required_products == $products;
   }
   else {
-    $required_check = (bool)count($required_products);
+    $required_check = (bool) count($required_products);
   }
   if ($forbidden) {
     $forbidden_products = array_diff($order_products, $products);
-    $forbidden_check = (bool)count($forbidden_products);
+    $forbidden_check = (bool) count($forbidden_products);
   }
   else {
     $forbidden_check = FALSE;
@@ -760,7 +760,7 @@ function uc_order_action_email($order, $from, $addresses, $subject, $message, $f
   }
 
   foreach ($recipients as $email) {
-    $sent = drupal_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, $from);
+    $sent = backdrop_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, $from);
 
     if (!$sent['result']) {
       watchdog('uc_order', 'Attempt to e-mail @email concerning order @order_id failed.', array('@email' => $email, '@order_id' => $order->order_id), WATCHDOG_ERROR);
@@ -822,7 +822,7 @@ function uc_order_action_email_invoice($order, $from, $addresses, $subject, $tem
   $settings['message'] = theme('uc_order', array('order' => $order, 'op' => $settings['view'], 'template' => $settings['template']));
 
   foreach ($recipients as $email) {
-    $sent = drupal_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, $from);
+    $sent = backdrop_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, $from);
 
     if (!$sent['result']) {
       watchdog('uc_order', 'Attempt to e-mail invoice for order @order_id to @email failed.', array('@email' => $email, '@order_id' => $order->order_id), WATCHDOG_ERROR);

@@ -222,11 +222,11 @@ function theme_uc_cart_view_form($variables) {
   $form = &$variables['form'];
 
   $output = '<div class="uc-default-submit">';
-  $output .= drupal_render($form['actions']['update']);
+  $output .= backdrop_render($form['actions']['update']);
   $output .= '</div>';
   $form['actions']['update']['#printed'] = FALSE;
 
-  $output .= drupal_render_children($form);
+  $output .= backdrop_render_children($form);
 
   return $output;
 }
@@ -247,7 +247,7 @@ function theme_uc_cart_checkout_buttons($variables) {
   if ($buttons = element_children($variables['buttons'])) {
     // Render the first button.
     $button = array_shift($buttons);
-    $output = drupal_render($variables['buttons'][$button]);
+    $output = backdrop_render($variables['buttons'][$button]);
 
     // Render any remaining buttons inside a separate container.
     if ($buttons) {
@@ -257,13 +257,13 @@ function theme_uc_cart_checkout_buttons($variables) {
       $output .= '<div class="uc-cart-checkout-button">';
       $output .= '<div class="uc-cart-checkout-button-separator">' . t('- or -') . '</div>';
       $button = array_shift($buttons);
-      $output .= drupal_render($variables['buttons'][$button]);
+      $output .= backdrop_render($variables['buttons'][$button]);
       $output .= '</div>';
 
       // Render any remaining buttons.
       foreach ($buttons as $button) {
         $output .= '<div class="uc-cart-checkout-button">';
-        $output .= drupal_render($variables['buttons'][$button]);
+        $output .= backdrop_render($variables['buttons'][$button]);
         $output .= '</div>';
       }
 

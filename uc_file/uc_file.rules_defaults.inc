@@ -17,8 +17,8 @@ function uc_file_default_rules_configuration() {
   $rule->event('uc_order_status_update');
   $rule->condition('data_is', array('data:select' => 'updated_order:order-status', 'value' => 'payment_received'))
     ->action('uc_file_order_renew', array(
-      'order:select' => 'updated_order',
-    ));
+    'order:select' => 'updated_order',
+  ));
   $configs['uc_file_renewal'] = $rule;
 
   // Notify the user when a file is granted.

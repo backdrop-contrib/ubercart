@@ -12,7 +12,7 @@ function uc_store_admin() {
   module_load_include('inc', 'system', 'system.admin');
   // Check for status report errors.
   if (system_status(TRUE) && user_access('administer site configuration')) {
-    drupal_set_message(t('One or more problems were detected with your Drupal installation. Check the <a href="@status">status report</a> for more information.', array('@status' => url('admin/reports/status'))), 'error');
+    backdrop_set_message(t('One or more problems were detected with your Backdrop installation. Check the <a href="@status">status report</a> for more information.', array('@status' => url('admin/reports/status'))), 'error');
   }
   $blocks = array();
   if ($admin = db_query("SELECT menu_name, mlid FROM {menu_links} WHERE link_path = 'admin/store' AND module = 'system'")->fetchAssoc()) {
@@ -52,16 +52,30 @@ function uc_store_admin() {
   if ($results = module_invoke_all('uc_store_status')) {
     foreach ($results as $message) {
       switch ($message['status']) {
-        case 'warning': $icon = 'alert.gif'; break;
-        case 'error':   $icon = 'error.gif'; break;
-        default:        $icon = 'info.gif';
+        case 'warning':
+          $icon = 'alert.gif';
+          break;
+        case 'error':
+          $icon = 'error.gif';
+          break;
+        default:
+          $icon = 'info.gif';
       }
-      $icon = theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/' . $icon));
+      $icon = theme('image', array('path' => backdrop_get_path('module', 'uc_store') . '/images/' . $icon));
 
       $rows[] = array(
-        array('data' => $icon, 'class' => array('icon')),
-        array('data' => $message['title'], 'class' => array('title')),
-        array('data' => $message['desc'], 'class' => array('message')),
+        array(
+          'data' => $icon,
+          'class' => array('icon'),
+        ),
+        array(
+          'data' => $message['title'],
+          'class' => array('title'),
+        ),
+        array(
+          'data' => $message['desc'],
+          'class' => array('message'),
+        ),
       );
     }
 
@@ -115,6 +129,7 @@ function uc_store_configuration_page() {
  * @ingroup forms
  */
 function uc_store_address_fields_form($form, &$form_state) {
+  $form['#config'] = 'uc_store.settings';
   $form['uc_address_fields']['#tree'] = TRUE;
   $form['uc_address_fields_required']['#tree'] = TRUE;
   $form['uc_address_fields_weight']['#tree'] = TRUE;
@@ -131,8 +146,10 @@ function uc_store_address_fields_form($form, &$form_state) {
     'postal_code' => t('Postal code'),
     'phone' => t('Phone number'),
   );
-  $current = variable_get('uc_address_fields', drupal_map_assoc(array('first_name', 'last_name', 'phone', 'company', 'street1', 'street2', 'city', 'zone', 'postal_code', 'country')));
-  $required = variable_get('uc_address_fields_required', drupal_map_assoc(array('first_name', 'last_name', 'street1', 'city', 'zone', 'postal_code', 'country')));
+  // TODO This variable was probably removed in Backdrop without replacement.
+  $current = variable_get('uc_address_fields', backdrop_map_assoc(array('first_name', 'last_name', 'phone', 'company', 'street1', 'street2', 'city', 'zone', 'postal_code', 'country')));
+  // TODO This variable was probably removed in Backdrop without replacement.
+  $required = variable_get('uc_address_fields_required', backdrop_map_assoc(array('first_name', 'last_name', 'street1', 'city', 'zone', 'postal_code', 'country')));
   $weight = uc_store_address_field_weights();
   foreach ($fields as $field => $label) {
     $form['uc_address_fields'][$field] = array(
@@ -193,11 +210,11 @@ function theme_uc_store_address_fields_form($variables) {
 
   foreach (element_children($form['fields']) as $field) {
     $row = array(
-      drupal_render($form['fields'][$field]['default']),
-      drupal_render($form['fields'][$field]['uc_field_' . $field]),
-      drupal_render($form['uc_address_fields'][$field]),
-      drupal_render($form['uc_address_fields_required'][$field]),
-      drupal_render($form['uc_address_fields_weight'][$field]),
+      backdrop_render($form['fields'][$field]['default']),
+      backdrop_render($form['fields'][$field]['uc_field_' . $field]),
+      backdrop_render($form['uc_address_fields'][$field]),
+      backdrop_render($form['uc_address_fields_required'][$field]),
+      backdrop_render($form['uc_address_fields_weight'][$field]),
     );
 
     $rows[] = array(
@@ -206,14 +223,14 @@ function theme_uc_store_address_fields_form($variables) {
     );
   }
 
-  drupal_add_tabledrag('uc-store-address-fields-weight-table', 'order', 'sibling', 'uc-store-address-fields-weight');
+  backdrop_add_tabledrag('uc-store-address-fields-weight-table', 'order', 'sibling', 'uc-store-address-fields-weight');
 
   $output = theme('table', array(
     'header' => $header,
     'rows' => $rows,
     'attributes' => array('id' => 'uc-store-address-fields-weight-table'),
   ));
-  $output .= drupal_render_children($form);
+  $output .= backdrop_render_children($form);
 
   return $output;
 }
@@ -235,6 +252,8 @@ function uc_store_address_fields_form_submit($form, &$form_state) {
  * @ingroup forms
  */
 function uc_store_settings_form($form, &$form_state) {
+  $config = config('uc_store.settings');
+  $form['#config'] = 'uc_store.settings';
   $form['store'] = array('#type' => 'vertical_tabs');
 
   $form['basic'] = array(
@@ -243,7 +262,7 @@ function uc_store_settings_form($form, &$form_state) {
     '#group' => 'store',
   );
   $form['basic']['uc_store_name'] = uc_textfield(t('Store name'), uc_store_name(), FALSE, NULL, 64);
-  $form['basic']['uc_store_owner'] = uc_textfield(t('Store owner'), variable_get('uc_store_owner', NULL), FALSE, NULL, 64);
+  $form['basic']['uc_store_owner'] = uc_textfield(t('Store owner'), $config->get('uc_store_owner'), FALSE, NULL, 64);
   $form['basic']['uc_store_email'] = array(
     '#type' => 'textfield',
     '#title' => t('E-mail address'),
@@ -257,17 +276,17 @@ function uc_store_settings_form($form, &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Include the store name in the "From" line of store e-mails.'),
     '#description' => t('May not be available on all server configurations. Turn off if this causes problems.'),
-    '#default_value' => variable_get('uc_store_email_include_name', TRUE),
+    '#default_value' => $config->get('uc_store_email_include_name'),
   );
-  $form['basic']['uc_store_phone'] = uc_textfield(t('Phone number'), variable_get('uc_store_phone', NULL), FALSE);
-  $form['basic']['uc_store_fax'] = uc_textfield(t('Fax number'), variable_get('uc_store_fax', NULL), FALSE);
+  $form['basic']['uc_store_phone'] = uc_textfield(t('Phone number'), $config->get('uc_store_phone'), FALSE);
+  $form['basic']['uc_store_fax'] = uc_textfield(t('Fax number'), $config->get('uc_store_fax'), FALSE);
   $form['basic']['uc_store_help_page'] = array(
     '#type' => 'textfield',
     '#title' => t('Store help page'),
-    '#description' => t('The Drupal page for the store help link.'),
-    '#default_value' => variable_get('uc_store_help_page', ''),
+    '#description' => t('The Backdrop page for the store help link.'),
+    '#default_value' => $config->get('uc_store_help_page'),
     '#size' => 32,
-    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q='),
+    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.performance', 'clean_url') ? '' : '?q='),
   );
 
   $form['address'] = array(
@@ -278,12 +297,12 @@ function uc_store_settings_form($form, &$form_state) {
   $form['address']['address'] = array(
     '#type' => 'uc_address',
     '#default_value' => array(
-      'uc_store_street1' => variable_get('uc_store_street1', ''),
-      'uc_store_street2' => variable_get('uc_store_street2', ''),
-      'uc_store_city' => variable_get('uc_store_city', ''),
-      'uc_store_zone' => variable_get('uc_store_zone', 0),
+      'uc_store_street1' => $config->get('uc_store_street1'),
+      'uc_store_street2' => $config->get('uc_store_street2'),
+      'uc_store_city' => $config->get('uc_store_city'),
+      'uc_store_zone' => $config->get('uc_store_zone'),
       'uc_store_country' => isset($form_state['values']) ? $form_state['values']['uc_store_country'] : uc_store_default_country(),
-      'uc_store_postal_code' => variable_get('uc_store_postal_code', ''),
+      'uc_store_postal_code' => $config->get('uc_store_postal_code'),
     ),
     '#required' => FALSE,
     '#key_prefix' => 'uc_store',
@@ -294,6 +313,7 @@ function uc_store_settings_form($form, &$form_state) {
     '#title' => t('Currency format'),
     '#group' => 'store',
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['currency']['uc_currency_code'] = array(
     '#type' => 'textfield',
     '#title' => t('Default currency'),
@@ -309,18 +329,23 @@ function uc_store_settings_form($form, &$form_state) {
     '#disabled' => TRUE,
     '#size' => 10,
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['currency']['uc_currency_sign'] = uc_textfield(t('Currency Sign'), variable_get('uc_currency_sign', '$'), FALSE, NULL, 10, 10);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['currency']['uc_sign_after_amount'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display currency sign after amount.'),
     '#default_value' => variable_get('uc_sign_after_amount', FALSE),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['currency']['uc_currency_thou'] = uc_textfield(t('Thousands Marker'), variable_get('uc_currency_thou', ','), FALSE, NULL, 10, 10);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['currency']['uc_currency_dec'] = uc_textfield(t('Decimal Marker'), variable_get('uc_currency_dec', '.'), FALSE, NULL, 10, 10);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['currency']['uc_currency_prec'] = array(
     '#type' => 'select',
     '#title' => t('Number of decimal places'),
-    '#options' => drupal_map_assoc(array(0, 1, 2)),
+    '#options' => backdrop_map_assoc(array(0, 1, 2)),
     '#default_value' => variable_get('uc_currency_prec', 2),
   );
 
@@ -336,6 +361,7 @@ function uc_store_settings_form($form, &$form_state) {
     'kg' => t('Kilograms'),
     'g' => t('Grams'),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['weight']['uc_weight_unit'] = array(
     '#type' => 'select',
     '#title' => t('Default unit of measurement'),
@@ -343,6 +369,7 @@ function uc_store_settings_form($form, &$form_state) {
     '#options' => $units,
   );
   foreach ($units as $unit => $name) {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $form['weight']['uc_weight_format_' . $unit] = array(
       '#type' => 'textfield',
       '#title' => t('@unit format string', array('@unit' => $name)),
@@ -362,6 +389,7 @@ function uc_store_settings_form($form, &$form_state) {
     'cm' => t('Centimeters'),
     'mm' => t('Millimeters'),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['length']['uc_length_unit'] = array(
     '#type' => 'select',
     '#title' => t('Default unit of measurement'),
@@ -369,6 +397,7 @@ function uc_store_settings_form($form, &$form_state) {
     '#options' => $units,
   );
   foreach ($units as $unit => $name) {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $form['length']['uc_length_format_' . $unit] = array(
       '#type' => 'textfield',
       '#title' => t('@unit format string', array('@unit' => $name)),
@@ -381,6 +410,7 @@ function uc_store_settings_form($form, &$form_state) {
     '#title' => t('Display settings'),
     '#group' => 'store',
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['display']['uc_customer_list_address'] = array(
     '#type' => 'radios',
     '#title' => t('Primary customer address'),
@@ -391,6 +421,7 @@ function uc_store_settings_form($form, &$form_state) {
     ),
     '#default_value' => variable_get('uc_customer_list_address', 'billing'),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['display']['uc_footer_message'] = array(
     '#type' => 'radios',
     '#title' => t('Footer message for store pages'),
@@ -446,31 +477,31 @@ function uc_store_uc_store_status() {
   if (count($updates)) {
     $messages[] = array(
       'status' => 'warning',
-      'title'  => t('Countries'),
-      'desc'   => t('Updates are available for the following installed countries: %countries. You may update these countries on the <a href="@url">country settings</a> page.', array('%countries' => implode(', ', $updates), '@url' => url('admin/store/settings/countries'))),
+      'title' => t('Countries'),
+      'desc' => t('Updates are available for the following installed countries: %countries. You may update these countries on the <a href="@url">country settings</a> page.', array('%countries' => implode(', ', $updates), '@url' => url('admin/store/settings/countries'))),
     );
   }
   else {
     $messages[] = array(
       'status' => 'ok',
-      'title'  => t('Countries'),
-      'desc'   => t('Country definitions are up-to-date.'),
+      'title' => t('Countries'),
+      'desc' => t('Country definitions are up-to-date.'),
     );
   }
 
   // Check to see if the store e-mail address has been set.
-  if (variable_get('uc_store_email', '') == '') {
+  if (config_get('uc_store.settings', 'uc_store_email') == '') {
     $messages[] = array(
       'status' => 'error',
-      'title'  => t('Store settings'),
-      'desc'   => t('Store e-mail address has not been set. Please enter it <a href="@url">here</a>.', array('@url' => url('admin/store/settings/store'))),
+      'title' => t('Store settings'),
+      'desc' => t('Store e-mail address has not been set. Please enter it <a href="@url">here</a>.', array('@url' => url('admin/store/settings/store'))),
     );
   }
   else {
     $messages[] = array(
       'status' => 'ok',
-      'title'  => t('Store settings'),
-      'desc'   => t('Store e-mail address is set.'),
+      'title' => t('Store settings'),
+      'desc' => t('Store e-mail address is set.'),
     );
   }
 

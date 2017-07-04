@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains the TAPIr code rolled into Ubercart core from Drupal contrib.
+ * Contains the TAPIr code rolled into Ubercart core from Backdrop contrib.
  */
 
 /**
- * Loads a table element for use in the Forms API or simply drupal_render().
+ * Loads a table element for use in the Forms API or simply backdrop_render().
  *
  * @param $table_id
  *   The string identifying the table you want to display, like a form ID.
@@ -32,7 +32,7 @@ function tapir_get_table($table_id) {
   // Pass the arguments in the table so that alter functions can use them.
   $data['#parameters'] = $args;
 
-  drupal_alter('tapir_table', $data, $table_id);
+  backdrop_alter('tapir_table', $data, $table_id);
 
   return $table;
 }
@@ -105,10 +105,10 @@ function theme_tapir_table($variables) {
             }
             $cell[$property] = $value;
           }
-          $cell['data'] = drupal_render($data[$col_id]);
+          $cell['data'] = backdrop_render($data[$col_id]);
         }
         else {
-          $cell = drupal_render($data[$col_id]);
+          $cell = backdrop_render($data[$col_id]);
         }
         // Add it to the row array.
         $row[] = $cell;
@@ -117,7 +117,7 @@ function theme_tapir_table($variables) {
 
     // Merge the row data into a single row array along with the attributes.
     if (isset($data['#attributes'])) {
-      $row = array_merge(array('data' => $row), (array)$data['#attributes']);
+      $row = array_merge(array('data' => $row), (array) $data['#attributes']);
     }
 
     // Add the current row to the table rows array.
@@ -130,11 +130,11 @@ function theme_tapir_table($variables) {
     'rows' => $rows,
   );
   if (isset($element['#attributes'])) {
-    $options['attributes'] = (array)$element['#attributes'];
+    $options['attributes'] = (array) $element['#attributes'];
   }
   if (isset($element['#title'])) {
     $options['caption'] = $element['#title'];
   }
 
-  return theme('table', $options) . drupal_render_children($element);
+  return theme('table', $options) . backdrop_render_children($element);
 }

@@ -85,7 +85,7 @@ function uc_quote_action_get_quote($order, $method) {
   ob_start();
   // Load include file containing quote callback, if there is one
   if (isset($method['quote']['file'])) {
-    $inc_file = drupal_get_path('module', $method['module']) . '/' . $method['quote']['file'];
+    $inc_file = backdrop_get_path('module', $method['module']) . '/' . $method['quote']['file'];
     if (is_file($inc_file)) {
       require_once($inc_file);
     }
@@ -105,7 +105,7 @@ function uc_quote_action_get_quote($order, $method) {
   $messages = ob_get_contents();
   ob_end_clean();
 
-  if ($messages && variable_get('uc_quote_log_errors', FALSE)) {
+  if ($messages && config_get('uc_quote.settings', 'uc_quote_log_errors')) {
     watchdog('quote', '!messages', array('!messages' => $messages), WATCHDOG_WARNING);
     watchdog('quote', '<pre>@data</pre>', array('@data' => print_r($quote_data, TRUE)), WATCHDOG_WARNING);
   }

@@ -55,47 +55,93 @@ function uc_ups_schema() {
  * Implements hook_uninstall().
  */
 function uc_ups_uninstall() {
-  variable_del('uc_ups_access_license');
-  variable_del('uc_ups_shipper_number');
-  variable_del('uc_ups_user_id');
-  variable_del('uc_ups_password');
-  variable_del('uc_ups_connection_address');
-  variable_del('uc_ups_services');
-  variable_del('uc_ups_pickup_type');
-  variable_del('uc_ups_pkg_type');
-  variable_del('uc_ups_classification');
-  variable_del('uc_ups_negotiated_rates');
-  variable_del('uc_ups_all_in_one');
-  variable_del('uc_ups_unit_system');
-  variable_del('uc_ups_insurance');
-  variable_del('uc_ups_rate_markup');
-  variable_del('uc_ups_rate_markup_type');
-  variable_del('uc_ups_weight_markup');
-  variable_del('uc_ups_weight_markup_type');
+  config_clear('uc_ups.settings', 'uc_ups_access_license');
+  config_clear('uc_ups.settings', 'uc_ups_shipper_number');
+  config_clear('uc_ups.settings', 'uc_ups_user_id');
+  config_clear('uc_ups.settings', 'uc_ups_password');
+  config_clear('uc_ups.settings', 'uc_ups_connection_address');
+  config_clear('uc_ups.settings', 'uc_ups_services');
+  config_clear('uc_ups.settings', 'uc_ups_pickup_type');
+  config_clear('uc_ups.settings', 'uc_ups_pkg_type');
+  config_clear('uc_ups.settings', 'uc_ups_classification');
+  config_clear('uc_ups.settings', 'uc_ups_negotiated_rates');
+  config_clear('uc_ups.settings', 'uc_ups_all_in_one');
+  config_clear('uc_ups.settings', 'uc_ups_unit_system');
+  config_clear('uc_ups.settings', 'uc_ups_insurance');
+  config_clear('uc_ups.settings', 'uc_ups_rate_markup');
+  config_clear('uc_ups.settings', 'uc_ups_rate_markup_type');
+  config_clear('uc_ups.settings', 'uc_ups_weight_markup');
+  config_clear('uc_ups.settings', 'uc_ups_weight_markup_type');
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_ups_update_7300() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_ups_update_7301() { }
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function uc_ups_update_last_removed() {
+  return 7301;
 }
 
 /**
- * Separates markup variables into rate_markup and weight_markup.
+ * Implements hook_update_N().
  */
-function uc_ups_update_7300() {
-  // Rename variables while preserving previous setting values
-  variable_set('uc_ups_rate_markup', variable_get('uc_ups_markup', ''));
-  variable_set('uc_ups_rate_markup_type', variable_get('uc_ups_markup_type', ''));
-
-  // Remove old variables
-  variable_del('uc_ups_markup');
-  variable_del('uc_ups_markup_type');
+function uc_ups_update_1000() {
+  $config = config('uc_ups .settings');
+  $config->set('uc_ups_access_license', update_variable_get('uc_ups_access_license', ''));
+  $config->set('uc_ups_shipper_number', update_variable_get('uc_ups_shipper_number', ''));
+  $config->set('uc_ups_user_id', update_variable_get('uc_ups_user_id', ''));
+  $config->set('uc_ups_password', update_variable_get('uc_ups_password', ''));
+  $config->set('uc_ups_connection_address', update_variable_get('uc_ups_connection_address', 'dynamic value in file /ubercart/shipping/uc_ups/uc_ups.ship.inc line 639'));
+  $config->set('uc_ups_services', update_variable_get('uc_ups_services', 'dynamic value in file /ubercart/shipping/uc_ups/uc_ups.module line 714'));
+  $config->set('uc_ups_all_in_one', update_variable_get('uc_ups_all_in_one', 'TRUE'));
+  $config->set('uc_ups_pkg_type', update_variable_get('uc_ups_pkg_type', '02'));
+  $config->set('uc_ups_classification', update_variable_get('uc_ups_classification', '04'));
+  $config->set('uc_ups_negotiated_rates', update_variable_get('uc_ups_negotiated_rates', 'FALSE'));
+  $config->set('uc_ups_pickup_type', update_variable_get('uc_ups_pickup_type', '01'));
+  $config->set('uc_ups_residential_quotes', update_variable_get('uc_ups_residential_quotes', 'FALSE'));
+  $config->set('uc_ups_unit_system', update_variable_get('uc_ups_unit_system', 'dynamic value in file /ubercart/shipping/uc_ups/uc_ups.ship.inc line 425'));
+  $config->set('uc_ups_insurance', update_variable_get('uc_ups_insurance', 'TRUE'));
+  $config->set('uc_ups_rate_markup_type', update_variable_get('uc_ups_rate_markup_type', 'percentage'));
+  $config->set('uc_ups_rate_markup', update_variable_get('uc_ups_rate_markup', '0'));
+  $config->set('uc_ups_weight_markup_type', update_variable_get('uc_ups_weight_markup_type', 'percentage'));
+  $config->set('uc_ups_weight_markup', update_variable_get('uc_ups_weight_markup', '0'));
+  $config->set('uc_ups_label_lifetime', update_variable_get('uc_ups_label_lifetime', 'novalue'));
+  $config->set('uc_ups_markup', update_variable_get('uc_ups_markup', ''));
+  $config->set('uc_ups_markup_type', update_variable_get('uc_ups_markup_type', ''));
+  update_variable_del('uc_ups_access_license');
+  update_variable_del('uc_ups_shipper_number');
+  update_variable_del('uc_ups_user_id');
+  update_variable_del('uc_ups_password');
+  update_variable_del('uc_ups_connection_address');
+  update_variable_del('uc_ups_services');
+  update_variable_del('uc_ups_all_in_one');
+  update_variable_del('uc_ups_pkg_type');
+  update_variable_del('uc_ups_classification');
+  update_variable_del('uc_ups_negotiated_rates');
+  update_variable_del('uc_ups_pickup_type');
+  update_variable_del('uc_ups_residential_quotes');
+  update_variable_del('uc_ups_unit_system');
+  update_variable_del('uc_ups_insurance');
+  update_variable_del('uc_ups_rate_markup_type');
+  update_variable_del('uc_ups_rate_markup');
+  update_variable_del('uc_ups_weight_markup_type');
+  update_variable_del('uc_ups_weight_markup');
+  update_variable_del('uc_ups_label_lifetime');
+  update_variable_del('uc_ups_markup');
+  update_variable_del('uc_ups_markup_type');
 }
 
 /**
- * Updates UPS Production URL.
+ * Implements hook_install().
  */
-function uc_ups_update_7301() {
-  $current = variable_get('uc_ups_connection_address', '');
-
-  // If currently using production URL, update variable to new value.
-  if ($current == 'https://www.ups.com/ups.app/xml/') {
-    variable_set('uc_ups_connection_address',
-                 'https://onlinetools.ups.com/ups.app/xml/');
-  }
+function uc_ups_install() {
+  // Dynamically generated variable data was detected.
+  // /ubercart/shipping/uc_ups/uc_ups.ship.inc line 639
+  // /ubercart/shipping/uc_ups/uc_ups.module line 714
+  // /ubercart/shipping/uc_ups/uc_ups.ship.inc line 425
 }

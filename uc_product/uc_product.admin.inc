@@ -35,7 +35,7 @@ function uc_product_class_default() {
   $build['header'] = array(
     '#markup' => '<h2>' . t('Add a class') . '</h2>',
   );
-  $build['form'] = drupal_get_form('uc_product_class_form');
+  $build['form'] = backdrop_get_form('uc_product_class_form');
 
   return $build;
 }
@@ -46,8 +46,10 @@ function uc_product_class_default() {
  * @ingroup forms
  */
 function uc_product_settings_form($form, &$form_state) {
+  $config = config('uc_product.settings');
 
   // Put fieldsets into vertical tabs
+  $form['#config'] = 'uc_product.settings';
   $form['product-settings'] = array('#type' => 'vertical_tabs');
 
   $form['product'] = array(
@@ -75,19 +77,19 @@ function uc_product_settings_form($form, &$form_state) {
     '#title' => t('Product image widget'),
     '#description' => t('The selected widget will be used to display a zoomed version of product images when they are clicked.'),
     '#options' => $options,
-    '#default_value' => variable_get('uc_product_image_widget', NULL),
+    '#default_value' => $config->get('uc_product_image_widget'),
   );
 
   if (module_exists('uc_cart')) {
     $form['product']['uc_product_add_to_cart_qty'] = array(
       '#type' => 'checkbox',
       '#title' => t('Display an optional quantity field in the <em>Add to Cart</em> form.'),
-      '#default_value' => variable_get('uc_product_add_to_cart_qty', FALSE),
+      '#default_value' => $config->get('uc_product_add_to_cart_qty'),
     );
     $form['product']['uc_product_update_node_view'] = array(
       '#type' => 'checkbox',
       '#title' => t('Update product display based on customer selections'),
-      '#default_value' => variable_get('uc_product_update_node_view', FALSE),
+      '#default_value' => $config->get('uc_product_update_node_view'),
       '#description' => t('Check this box to dynamically update the display of product information such as display-price or weight based on customer input on the add-to-cart form (e.g. selecting a particular attribute option).'),
     );
   }
@@ -118,7 +120,7 @@ function uc_product_settings_form($form, &$form_state) {
  * Displays the product features tab on a product node edit form.
  */
 function uc_product_features($node, $fid = NULL, $pfid = NULL) {
-  drupal_set_title($node->title);
+  backdrop_set_title($node->title);
 
   $header = array(t('Type'), t('Description'), t('Operations'));
   $rows = array();
@@ -126,8 +128,14 @@ function uc_product_features($node, $fid = NULL, $pfid = NULL) {
   $features = uc_product_feature_load_multiple($node->nid);
   foreach ($features as $feature) {
     $operations = array(
-      'edit' => array('title' => t('edit'), 'href' => 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid),
-      'delete' => array('title' => t('delete'), 'href' => 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid . '/delete'),
+      'edit' => array(
+        'title' => t('edit'),
+        'href' => 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid,
+      ),
+      'delete' => array(
+        'title' => t('delete'),
+        'href' => 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid . '/delete',
+      ),
     );
     $rows[] = array(
       array('data' => uc_product_feature_data($feature->fid, 'title')),
@@ -146,7 +154,7 @@ function uc_product_features($node, $fid = NULL, $pfid = NULL) {
     '#attributes' => array('class' => array('uc-product-features')),
     '#empty' => t('No features found for this product.'),
   );
-  $build['add_form'] = drupal_get_form('uc_product_feature_add_form', $node);
+  $build['add_form'] = backdrop_get_form('uc_product_feature_add_form', $node);
 
   return $build;
 }
@@ -169,28 +177,28 @@ function uc_product_feature_edit($node, $fid, $pfid) {
 
     if ($pfid == 'add') {
       $form_state['build_info']['args'][] = array();
-      $build = drupal_build_form($func, $form_state);
+      $build = backdrop_build_form($func, $form_state);
     }
     elseif (intval($pfid) > 0) {
       $feature = uc_product_feature_load($pfid);
 
       if (isset($feature)) {
         $form_state['build_info']['args'][] = $feature;
-        $build = drupal_build_form($func, $form_state);
+        $build = backdrop_build_form($func, $form_state);
       }
     }
     else {
-      drupal_goto('node/' . $node->nid . '/edit/features');
+      backdrop_goto('node/' . $node->nid . '/edit/features');
     }
   }
   else {
-    drupal_set_message(t('Error: Attempted to add a non-existent product feature type.'), 'error');
-    drupal_goto('node/' . $node->nid . '/edit/features');
+    backdrop_set_message(t('Error: Attempted to add a non-existent product feature type.'), 'error');
+    backdrop_goto('node/' . $node->nid . '/edit/features');
   }
 
   if (empty($build)) {
-    drupal_set_message(t('Error: No form data was returned for that operation.'), 'error');
-    drupal_goto('node/' . $node->nid . '/edit/features');
+    backdrop_set_message(t('Error: No form data was returned for that operation.'), 'error');
+    backdrop_goto('node/' . $node->nid . '/edit/features');
   }
 
   return $build;
@@ -235,7 +243,7 @@ function uc_product_feature_add_form($form, &$form_state, $node) {
  * @ingroup themeable
  */
 function theme_uc_product_feature_add_form($variables) {
-  return '<table class="add-feature"><tr><td>' . drupal_render_children($variables['form']) . '</td></tr></table>';
+  return '<table class="add-feature"><tr><td>' . backdrop_render_children($variables['form']) . '</td></tr></table>';
 }
 
 /**
@@ -274,7 +282,7 @@ function uc_product_feature_confirm_delete_submit($form, &$form_state) {
   if ($form_state['values']['pf_delete']) {
     uc_product_feature_delete($feature['pfid']);
 
-    drupal_set_message(t('The product feature has been deleted.'));
+    backdrop_set_message(t('The product feature has been deleted.'));
   }
 
   $form_state['redirect'] = 'node/' . $node->nid . '/edit/features';
@@ -288,9 +296,9 @@ function uc_product_feature_confirm_delete_submit($form, &$form_state) {
 function uc_product_image_defaults() {
   uc_product_add_default_image_field();
 
-  drupal_set_message(t('Default image support configured for Ubercart products.'));
+  backdrop_set_message(t('Default image support configured for Ubercart products.'));
 
-  drupal_goto('admin/store');
+  backdrop_goto('admin/store');
 }
 
 /**
@@ -304,10 +312,10 @@ function uc_product_class_form($form, &$form_state, $class = NULL) {
   if (!is_null($class)) {
     $classname = $class->name;
     $classdesc = $class->description;
-    drupal_set_title($classname);
+    backdrop_set_title($classname);
     $form['pcid'] = array(
       '#type' => 'hidden',
-      '#value' => $class->pcid
+      '#value' => $class->pcid,
     );
   }
   else {
@@ -381,25 +389,29 @@ function uc_product_class_form_submit($form, &$form_state) {
   $result = db_merge('uc_product_classes')
     ->key(array('pcid' => $pcid))
     ->fields(array(
-      'name' => $form_state['values']['name'],
-      'description' => $form_state['values']['description'],
-    ))
+    'name' => $form_state['values']['name'],
+    'description' => $form_state['values']['description'],
+  ))
     ->execute();
 
   db_update('node_type')
     ->fields(array(
-      'name' => $form_state['values']['name'],
-      'description' => $form_state['values']['description'],
-    ))
+    'name' => $form_state['values']['name'],
+    'description' => $form_state['values']['description'],
+  ))
     ->condition('type', $pcid)
     ->execute();
 
   uc_product_node_info(TRUE);
 
   if ($result == MergeQuery::STATUS_INSERT) {
+    // TODO This variable was probably removed in Backdrop without replacement.
+    // TODO This variable was probably removed in Backdrop without replacement.
     variable_set('node_options_' . $pcid, variable_get('node_options_product', array('status', 'promote')));
 
     if (module_exists('comment')) {
+      // TODO This variable was probably removed in Backdrop without replacement.
+      // TODO This variable was probably removed in Backdrop without replacement.
       variable_set('comment_' . $pcid, variable_get('comment_product', COMMENT_NODE_OPEN));
     }
 
@@ -417,7 +429,7 @@ function uc_product_class_form_submit($form, &$form_state) {
   }
   menu_rebuild();
 
-  drupal_set_message(t('Product class saved.'));
+  backdrop_set_message(t('Product class saved.'));
 }
 
 /**
@@ -463,7 +475,7 @@ function uc_product_class_delete_confirm_submit($form, &$form_state) {
   node_types_rebuild();
   menu_rebuild();
 
-  drupal_set_message(t('Product class %type deleted.', array('%type' => $form_state['values']['pcid'])));
+  backdrop_set_message(t('Product class %type deleted.', array('%type' => $form_state['values']['pcid'])));
 
   $form_state['redirect'] = 'admin/store/products/classes';
 }

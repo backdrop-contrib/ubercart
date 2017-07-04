@@ -433,7 +433,7 @@ function uc_attribute_schema() {
  * Implements hook_uninstall().
  */
 function uc_attribute_uninstall() {
-  variable_del('uc_attribute_option_price_format');
+  config_clear('uc_attribute.settings', 'uc_attribute_option_price_format');
 }
 
 /**
@@ -454,51 +454,37 @@ function uc_attribute_update_last_removed() {
   return 6005;
 }
 
-/**
- * Add description format for attributes.
- */
-function uc_attribute_update_7000() {
-  db_add_field('uc_attributes', 'format', array(
-    'description' => 'Format of the attribute description.',
-    'type' => 'int',
-    'not null' => TRUE,
-    'default' => 0,
-  ));
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_attribute_update_7000() { }
 
-  db_update('uc_attributes')
-    ->fields(array('format' => 0))
-    ->execute();
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_attribute_update_7001() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_attribute_update_7002() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_attribute_update_7003() { }
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function uc_attribute_update_last_removed() {
+  return 7003;
 }
 
 /**
- * Change default description format to NULL.
+ * Implements hook_update_N().
  */
-function uc_attribute_update_7001() {
-  db_change_field('uc_attributes', 'format', 'format', array(
-    'description' => 'Format of the attribute description.',
-    'type' => 'int',
-    'not null' => FALSE,
-    'default' => NULL,
-  ));
-
-  db_update('uc_attributes')
-    ->fields(array('format' => filter_fallback_format()))
-    ->execute();
+function uc_attribute_update_1000() {
+  $config = config('uc_attribute .settings');
+  $config->set('uc_attribute_option_price_format', update_variable_get('uc_attribute_option_price_format', 'adjustment'));
+  update_variable_del('uc_attribute_option_price_format');
 }
 
 /**
- * Remove attribute description format..
+ * Implements hook_install().
  */
-function uc_attribute_update_7002() {
-  db_drop_field('uc_attributes', 'format');
-}
-
-/**
- * Add index to attribute options table.
- */
-function uc_attribute_update_7003() {
-  // Indexes may have been added in 6.x-2.x.
-  if (!db_index_exists('uc_attribute_options', 'aid')) {
-    db_add_index('uc_attribute_options', 'aid', array('aid'));
-  }
+function uc_attribute_install() {
+  // Dynamically generated variable data was detected.
 }

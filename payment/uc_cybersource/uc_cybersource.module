@@ -54,7 +54,7 @@ function uc_cybersource_page_alter(&$page) {
     $order = uc_order_load($order_id);
 
     if ($order->payment_method == 'cybersource_hop') {
-      $page[$block->region]['system_main']['#form'] = drupal_get_form('uc_cybersource_hop_form', $order);
+      $page[$block->region]['system_main']['#form'] = backdrop_get_form('uc_cybersource_hop_form', $order);
     }
   }
 }
@@ -79,10 +79,10 @@ function uc_cybersource_payment_gateway_settings_submit($form, &$form_state) {
 
     // Encrypt the Merchant ID and Transaction key.
     if (!empty($form_state['values']['uc_cybersource_soap_merchant_id'])) {
-      variable_set('uc_cybersource_soap_merchant_id', $crypt->encrypt($key, $form_state['values']['uc_cybersource_soap_merchant_id']));
+      config_set('uc_cybersource.settings', 'uc_cybersource_soap_merchant_id', $crypt->encrypt($key, $form_state['values']['uc_cybersource_soap_merchant_id']));
     }
     if (!empty($form_state['values']['uc_cybersource_soap_transaction_key'])) {
-      variable_set('uc_cybersource_soap_transaction_key', $crypt->encrypt($key, $form_state['values']['uc_cybersource_soap_transaction_key']));
+      config_set('uc_cybersource.settings', 'uc_cybersource_soap_transaction_key', $crypt->encrypt($key, $form_state['values']['uc_cybersource_soap_transaction_key']));
     }
 
     // Store any errors.
@@ -119,14 +119,14 @@ function uc_cybersource_uc_payment_gateway() {
 function uc_cybersource_hop_post() {
   if (!uc_cybersource_hop_include()) {
     watchdog('uc_cybersource_hop', 'Unable to receive HOP POST due to missing or unreadable HOP.php file.', array(), 'error');
-    drupal_add_http_header('Status', '503 Service unavailable');
-    drupal_set_title(t('Unable to receive HOP POST.'));
+    backdrop_add_http_header('Status', '503 Service unavailable');
+    backdrop_set_title(t('Unable to receive HOP POST.'));
     print t('The site was unable to receive a HOP post because of a missing or unreadble HOP.php');
     exit();
   }
   $verify = VerifyTransactionSignature($_POST);
   watchdog('uc_cybersource_hop', 'Receiving payment notification at URL for order @orderNumber',
-    array('@orderNumber' => $_POST['orderNumber'] ));
+    array('@orderNumber' => $_POST['orderNumber']));
 
   if (!isset($_POST['orderNumber'])) {
     watchdog('uc_cybersource_hop', 'CS HOP attempted with invalid order number.', array(), WATCHDOG_ERROR);
@@ -135,7 +135,7 @@ function uc_cybersource_hop_post() {
 
   if (!$verify) {
     watchdog('uc_cybersource_hop', 'Receiving invalid payment notification at URL for order @orderNumber. <pre>@debug</pre>',
-    array('@orderNumber' => $_POST['orderNumber'], '@debug' => print_r($_POST, TRUE) ));
+    array('@orderNumber' => $_POST['orderNumber'], '@debug' => print_r($_POST, TRUE)));
     return;
   }
 
@@ -162,16 +162,16 @@ function uc_cybersource_hop_post() {
       }
       db_insert('uc_payment_cybersource_hop_post')
         ->fields(array(
-          'order_id' => $order_id,
-          'request_id' => $request_id,
-          'request_token' => $request_token,
-          'reconciliation_id' => $reconciliation_id,
-          'gross' => $payment_amount,
-          'decision' => $decision,
-          'reason_code' => $reason_code,
-          'payer_email' => $payer_email,
-          'received' => REQUEST_TIME,
-        ))
+        'order_id' => $order_id,
+        'request_id' => $request_id,
+        'request_token' => $request_token,
+        'reconciliation_id' => $reconciliation_id,
+        'gross' => $payment_amount,
+        'decision' => $decision,
+        'reason_code' => $reason_code,
+        'payer_email' => $payer_email,
+        'received' => REQUEST_TIME,
+      ))
         ->execute();
 
       $comment = t('CyberSource request ID: @txn_id', array('@txn_id' => $request_id));
@@ -197,7 +197,7 @@ function uc_cybersource_hop_post() {
  */
 function uc_cybersource_hop_include() {
   $hop_paths[0] = 'sites/all/libraries/uc_cybersource/HOP.php';
-  $hop_paths[1] = drupal_get_path('module', 'uc_cybersource') . '/HOP.php';
+  $hop_paths[1] = backdrop_get_path('module', 'uc_cybersource') . '/HOP.php';
   // Loop through possible paths, include and return TRUE when HOP.php is
   // located.
   foreach ($hop_paths as $key => $path) {
@@ -211,13 +211,24 @@ function uc_cybersource_hop_include() {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function uc_cybersource_config_info() {
+  $prefixes['uc_cybersource.settings'] = array(
+    'label' => t('Module name settings'),
+    'group' => t('Configuration'),
+  );
+}
+
+/**
  * Adds the CyberSource fields to the payment gateway settings form.
  */
 function uc_cybersource_settings_form($form, &$form_state) {
+  $config = config('uc_cybersource.settings');
   // Check for the HOP.php for Silent Order POST.
-  if (variable_get('uc_cybersource_method', 'post') == 'post' &&
+  if ($config->get('uc_cybersource_method') == 'post' &&
       !uc_cybersource_hop_include()) {
-    drupal_set_message(t('You must download the security script from your CyberSource account (found in Tools & Settings > Hosted Order Page > Security) and place it in the ubercart/payment/uc_cybersource directory to use the Silent Order POST. Remember to open it and replace instances of L( with csL(.'), 'error');
+    backdrop_set_message(t('You must download the security script from your CyberSource account (found in Tools & Settings > Hosted Order Page > Security) and place it in the ubercart/payment/uc_cybersource directory to use the Silent Order POST. Remember to open it and replace instances of L( with csL(.'), 'error');
   }
 
   $form['uc_cybersource_server'] = array(
@@ -228,7 +239,7 @@ function uc_cybersource_settings_form($form, &$form_state) {
       'production' => t('Production'),
       'test' => t('Test'),
     ),
-    '#default_value' => variable_get('uc_cybersource_server', 'test'),
+    '#default_value' => $config->get('uc_cybersource_server'),
   );
   $form['uc_cybersource_method'] = array(
     '#type' => 'radios',
@@ -239,7 +250,7 @@ function uc_cybersource_settings_form($form, &$form_state) {
       // 'api' => t('Simple Order API'),
       'soap' => t('SOAP Toolkit API'),
     ),
-    '#default_value' => variable_get('uc_cybersource_method', 'post'),
+    '#default_value' => $config->get('uc_cybersource_method'),
   );
 
   $form['uc_cybersource_avs'] = array(
@@ -249,7 +260,7 @@ function uc_cybersource_settings_form($form, &$form_state) {
       'true' => t('Process transaction only if address passes verification.'),
       'false' => t('Process transaction regardless of the result of address verification.'),
     ),
-    '#default_value' => variable_get('uc_cybersource_avs', 'true'),
+    '#default_value' => $config->get('uc_cybersource_avs'),
   );
 
   $login = _uc_cybersource_soap_login_data();
@@ -273,39 +284,44 @@ function uc_cybersource_settings_form($form, &$form_state) {
   $form['soap']['uc_cybersource_soap_create_profile'] = array(
     '#type' => 'checkbox',
     '#title' => t('Create a CyberSource Basic Profile for every new credit card order processed.'),
-    '#default_value' => variable_get('uc_cybersource_soap_create_profile', FALSE),
+    '#default_value' => $config->get('uc_cybersource_soap_create_profile'),
   );
 
   $form['soap']['uc_cybersource_soap_tax_calculate'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable calculation of taxes through the CyberSource tax service.'),
-    '#default_value' => variable_get('uc_cybersource_soap_tax_calculate', FALSE),
+    '#default_value' => $config->get('uc_cybersource_soap_tax_calculate'),
   );
   $form['soap']['ship_from'] = array(
     '#type' => 'fieldset',
     '#title' => t('Tax calculation "Ship from" address'),
     '#description' => t('This address will be used when calculating taxes with CyberSource tax service.'),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_first_name'] = array(
     '#type' => 'textfield',
     '#title' => t('First name'),
     '#default_value' => variable_get('cs_ship_from_first_name', ''),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_last_name'] = array(
     '#type' => 'textfield',
     '#title' => t('Last name'),
     '#default_value' => variable_get('cs_ship_from_last_name', ''),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_street1'] = array(
     '#type' => 'textfield',
     '#title' => t('Street address'),
     '#default_value' => variable_get('cs_ship_from_street1', ''),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_city'] = array(
     '#type' => 'textfield',
     '#title' => t('City'),
     '#default_value' => variable_get('cs_ship_from_city', ''),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_zone'] = array(
     '#type' => 'textfield',
     '#title' => t('State/Province'),
@@ -313,11 +329,13 @@ function uc_cybersource_settings_form($form, &$form_state) {
     '#default_value' => variable_get('cs_ship_from_zone', ''),
     '#maxlength' => 2,
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_postal_code'] = array(
     '#type' => 'textfield',
     '#title' => t('ZIP/Postal code'),
     '#default_value' => variable_get('cs_ship_from_postal_code', ''),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_country'] = array(
     '#type' => 'textfield',
     '#title' => t('Country code'),
@@ -325,6 +343,7 @@ function uc_cybersource_settings_form($form, &$form_state) {
     '#default_value' => variable_get('cs_ship_from_country', ''),
     '#maxlength' => 2,
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_email'] = array(
     '#type' => 'textfield',
     '#title' => t('E-mail address'),
@@ -360,6 +379,7 @@ function uc_cybersource_payment_method() {
  * Payment method callback.
  */
 function uc_payment_method_cybersource_hop($op, &$order) {
+  $config = config('uc_cybersource.settings');
   if ($op == 'settings') {
     $form['uc_cybersource_hop_server'] = array(
       '#type' => 'select',
@@ -367,8 +387,9 @@ function uc_payment_method_cybersource_hop($op, &$order) {
       '#description' => t('Select between production/live or test mode.'),
       '#options' => array(
         'https://orderpagetest.ic3.com/hop/orderform.jsp' => t('Test Center'),
-        'https://orderpage.ic3.com/hop/orderform.jsp' => t('Production/Live')),
-      '#default_value' => variable_get('uc_cybersource_hop_server', 'https://orderpagetest.ic3.com/hop/orderform.jsp'),
+        'https://orderpage.ic3.com/hop/orderform.jsp' => t('Production/Live'),
+      ),
+      '#default_value' => $config->get('uc_cybersource_hop_server'),
     );
     $form['uc_cybersource_hop_transaction_type'] = array(
       '#type' => 'radios',
@@ -378,13 +399,13 @@ function uc_payment_method_cybersource_hop($op, &$order) {
         'authorization' => t('Authorize only'),
         'sale' => t('Authorize and capture'),
       ),
-      '#default_value' => variable_get('uc_cybersource_hop_transaction_type', 'sale'),
+      '#default_value' => $config->get('uc_cybersource_hop_transaction_type'),
     );
     $form['uc_cybersource_cs_hop_button_text'] = array(
       '#type' => 'textfield',
       '#title' => t('CyberSource "Buy button" text'),
       '#description' => t('This text appears on the button users press to process their payment on the Hosted Order Page.'),
-      '#default_value' => variable_get('uc_cybersource_cs_hop_button_text', t('Process payment')),
+      '#default_value' => $config->get('uc_cybersource_cs_hop_button_text'),
     );
     return $form;
   }
@@ -400,12 +421,12 @@ function uc_cybersource_hop_complete($order) {
   // legitimate checkout, the CyberSource POST will still register, so the
   // gets processed correctly. We'll leave an ambiguous message just in case.
   if (intval($_SESSION['cart_order']) != $order->order_id) {
-    drupal_set_message(t('Thank you for your order! We will be notified by CyberSource that we have received your payment.'));
-    drupal_goto('cart');
+    backdrop_set_message(t('Thank you for your order! We will be notified by CyberSource that we have received your payment.'));
+    backdrop_goto('cart');
   }
   // This lets us know it's a legitimate access of the complete page.
   $_SESSION['uc_checkout'][$_SESSION['cart_order']]['do_complete'] = TRUE;
-  drupal_goto('cart/checkout/complete');
+  backdrop_goto('cart/checkout/complete');
 }
 
 /**
@@ -415,8 +436,9 @@ function uc_cybersource_hop_complete($order) {
  *   Transaction data arrays are returned as hidden form values.
  */
 function uc_cybersource_hop_form($form, $form_state, $order) {
+  $config = config('uc_cybersource.settings');
   if (!uc_cybersource_hop_include()) {
-    drupal_set_message(t('Hosted Order Page requires the HOP.php provided by CyberSource.'));
+    backdrop_set_message(t('Hosted Order Page requires the HOP.php provided by CyberSource.'));
     // TODO - Does returning false here make sense?
     return array('success' => FALSE);
   }
@@ -463,7 +485,7 @@ function uc_cybersource_hop_form($form, $form_state, $order) {
   }
 
   $amount = $order->order_total - $shipping - $tax;
-  $currency = variable_get('uc_cybersource_hop_currency', 'USD');
+  $currency = $config->get('uc_cybersource_hop_currency');
   $merchantID = getMerchantID();
   $timestamp = getmicrotime();
   $datax = $merchantID . $amount . $currency . $timestamp;
@@ -475,26 +497,26 @@ function uc_cybersource_hop_form($form, $form_state, $order) {
   $data['merchantID'] = $merchantID;
   $data['orderNumber'] = $order->order_id;
   $data['orderPage_timestamp'] = $timestamp;
-  $data['orderPage_ignoreAVS'] = variable_get('uc_cybersource_hop_avs', 'true') == 'true' ? 'false' : 'true';
+  $data['orderPage_ignoreAVS'] = $config->get('uc_cybersource_hop_avs') == 'true' ? 'false' : 'true';
   $data['orderPage_signaturePublic'] = $pub_digest;
   $data['orderPage_version'] = '4';
   $data['orderPage_serialNumber'] = $serialNumber;
-  $data['orderPage_transactionType'] = variable_get('uc_cybersource_hop_transaction_type', 'sale');
-  $data['orderPage_sendMerchantReceiptEmail'] = variable_get('uc_cybersource_hop_merchant_receipt_email', 'true');
+  $data['orderPage_transactionType'] = $config->get('uc_cybersource_hop_transaction_type');
+  $data['orderPage_sendMerchantReceiptEmail'] = $config->get('uc_cybersource_hop_merchant_receipt_email');
   $data['orderPage_sendMerchantURLPost'] = 'true';
   // CyberSource posts payment confirmation to this URL.
-  $data['orderPage_merchantURLPostAddress']= url('cybersource/hop-post', array('absolute' => TRUE));
+  $data['orderPage_merchantURLPostAddress'] = url('cybersource/hop-post', array('absolute' => TRUE));
   $data['orderPage_buyButtonText'] = t('Checkout');
   $receipt_url = url('cybersource/hop-complete/' . $order->order_id, array('absolute' => TRUE));
   $data['orderPage_receiptResponseURL'] = $receipt_url;
-  $data['orderPage_buyButtonText'] = variable_get('uc_cybersource_cs_hop_button_text', t('Process payment'));
+  $data['orderPage_buyButtonText'] = $config->get('uc_cybersource_cs_hop_button_text');
   $comments = t('Order @order-id at @store-name', array('@order-id' => $order->order_id, '@store-name' => uc_store_name()));
   $alter_data['order'] = $order;
   $alter_data['comments'] = $comments;
   $alter_data['merchant_fields'] = array();
   // Allow other modules to alter the comment & merchant field data stored
   // with CyberSource.
-  drupal_alter('uc_cybersource_data', $alter_data);
+  backdrop_alter('uc_cybersource_data', $alter_data);
   $data['comments'] = $alter_data['comments'];
   if (!empty($alter_data['merchant_fields'])) {
     foreach ($alter_data['merchant_fields'] as $key => $value) {
@@ -503,11 +525,14 @@ function uc_cybersource_hop_form($form, $form_state, $order) {
   }
   foreach ($data as $name => $value) {
     if (!empty($value)) {
-      $form[$name] = array('#type' => 'hidden', '#value' => $value);
+      $form[$name] = array(
+        '#type' => 'hidden',
+        '#value' => $value,
+      );
     }
   }
 
-  $form['#action'] = variable_get('uc_cybersource_hop_server', 'https://orderpagetest.ic3.com/hop/orderform.jsp');
+  $form['#action'] = $config->get('uc_cybersource_hop_server');
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit order'),
@@ -520,6 +545,7 @@ function uc_cybersource_hop_form($form, $form_state, $order) {
  * Charges card.
  */
 function uc_cybersource_charge($order_id, $amount, $data) {
+  $config = config('uc_cybersource.settings');
   global $user;
 
   $order = uc_order_load($order_id);
@@ -549,7 +575,7 @@ function uc_cybersource_charge($order_id, $amount, $data) {
   if (is_null($cc_type)) {
     $cc_type = _uc_cybersource_card_type($order->payment_details['cc_number']);
     if ($cc_type === FALSE && in_array($data['txn_type'], array(UC_CREDIT_AUTH_ONLY, UC_CREDIT_AUTH_CAPTURE))) {
-      drupal_set_message(t('The credit card type did not pass validation.'), 'error');
+      backdrop_set_message(t('The credit card type did not pass validation.'), 'error');
       watchdog('uc_cybersource', 'Could not figure out cc type: @number / @type', array('@number' => $order->payment_details['cc_number'], '@type' => $order->payment_details['cc_type']), WATCHDOG_ERROR);
       return array('success' => FALSE);
     }
@@ -561,34 +587,34 @@ function uc_cybersource_charge($order_id, $amount, $data) {
   }
 
   // Process the charge differently depending on the CyberSource method.
-  switch (variable_get('uc_cybersource_method', 'post')) {
+  switch ($config->get('uc_cybersource_method')) {
     // Support for the Silent Order POST.
     case 'post':
       return _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country);
 
-    // Support for the SOAP Toolkit API.
+      // Support for the SOAP Toolkit API.
     case 'soap':
       // TODO: Refactor to use separate function for each API type.
       // - i.e. _uc_cybersource_charge_request_soap($order, $amount, $data);
-      // require_once(drupal_get_path('module', 'uc_cybersource') . '/SOAP.php');
+      // require_once(backdrop_get_path('module', 'uc_cybersource') . '/SOAP.php');
       return _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country);
 
     case 'api':
       $config = cybs_load_config('cybs.ini');
-      if (variable_get('uc_cybersource_server', 'test') == 'test') {
+      if ($config->get('uc_cybersource_server') == 'test') {
         $config['sendToProduction'] = 'false';
       }
 
       $request['ccAuthService_run'] = 'true';
-      if (variable_get('uc_cybersource_hop_transaction_type', 'sale') == 'sale') {
+      if ($config->get('uc_cybersource_hop_transaction_type') == 'sale') {
         $request['ccCaptureService_run'] = 'true';
       }
       $request['merchantReferenceCode'] = $order_id;
       $request['purchaseTotals_currency'] = 'USD';
       $request['purchaseTotals_grandTotalAmount'] = $amount;
 
-      drupal_set_message('<pre>' . print_r($config, TRUE) . '</pre>');
-      drupal_set_message('<pre>' . print_r($request, TRUE) . '</pre>');
+      backdrop_set_message('<pre>' . print_r($config, TRUE) . '</pre>');
+      backdrop_set_message('<pre>' . print_r($request, TRUE) . '</pre>');
 
       break;
   }
@@ -598,9 +624,10 @@ function uc_cybersource_charge($order_id, $amount, $data) {
  * POSTs transaction to CyberSource.
  */
 function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country) {
+  $config = config('uc_cybersource.settings');
   // Include the HOP.php per the module instructions.
   if (!uc_cybersource_hop_include()) {
-    drupal_set_message(t('Silent Order POST requires the HOP.php provided by CyberSource.'));
+    backdrop_set_message(t('Silent Order POST requires the HOP.php provided by CyberSource.'));
     return array('success' => FALSE);
   }
 
@@ -619,11 +646,12 @@ function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country)
     'card_expirationYear' => $order->payment_details['cc_exp_year'],
   );
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (variable_get('uc_credit_cvv_enabled', TRUE)) {
     $request['card_cvNumber'] = $order->payment_details['cc_cvv'];
   }
 
-  $currency = variable_get('uc_cybersource_currency', 'usd');
+  $currency = $config->get('uc_cybersource_currency');
   $merchantID = getMerchantID();
   $timestamp = getmicrotime();
   $data = $merchantID . $amount . $currency . $timestamp;
@@ -636,11 +664,11 @@ function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country)
   $request['merchantID'] = $merchantID;
   $request['orderNumber'] = $order->order_id;
   $request['orderPage_timestamp'] = $timestamp;
-  $request['orderPage_ignoreAVS'] = variable_get('uc_cybersource_avs', 'true') == 'true' ? 'false' : 'true';
+  $request['orderPage_ignoreAVS'] = $config->get('uc_cybersource_avs') == 'true' ? 'false' : 'true';
   $request['orderPage_signaturePublic'] = $pub_digest;
   $request['orderPage_version'] = '4';
   $request['orderPage_serialNumber'] = $serialNumber;
-  $request['orderPage_transactionType'] = variable_get('uc_cybersource_hop_transaction_type', 'sale');
+  $request['orderPage_transactionType'] = $config->get('uc_cybersource_hop_transaction_type');
 
   $data = '';
   while (list($key, $value) = each($request)) {
@@ -648,7 +676,7 @@ function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country)
   }
   $data = substr($data, 0, -1);
 
-  if (variable_get('uc_cybersource_server', 'test') == 'test') {
+  if ($config->get('uc_cybersource_server') == 'test') {
     $url = 'https://orderpagetest.ic3.com/hop/ProcessOrder.do';
   }
   else {
@@ -677,7 +705,7 @@ function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country)
     }
 
     // Create the order and payment ledger comments.
-    $o_comment = t('<b>Credit card !type:</b> !amount<br /><b>Decision: @decision</b><br /><b>Reason:</b> !reason', array('!type' => variable_get('uc_cybersource_hop_transaction_type', 'sale'), '!amount' => uc_currency_format($nvp['orderAmount']), '@decision' => $nvp['decision'], '!reason' => _uc_cybersource_parse_reason_code($nvp['reasonCode'])));
+    $o_comment = t('<b>Credit card !type:</b> !amount<br /><b>Decision: @decision</b><br /><b>Reason:</b> !reason', array('!type' => $config->get('uc_cybersource_hop_transaction_type'), '!amount' => uc_currency_format($nvp['orderAmount']), '@decision' => $nvp['decision'], '!reason' => _uc_cybersource_parse_reason_code($nvp['reasonCode'])));
     $p_comment = t('!id<br />!decision, Reason: !reason', array('!id' => $nvp['orderPage_serialNumber'], '!decision' => $nvp['decision'], '!reason' => $nvp['reasonCode']));
     if (!empty($nvp['ccAuthReply_avsCode'])) {
       $o_comment .= t('<br /><b>AVS:</b> !avs', array('!avs' => _uc_cybersource_parse_avs_code($nvp['ccAuthReply_avsCode'])));
@@ -720,12 +748,13 @@ function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country)
  * Handles the SOAP charge request and Ubercart order save.
  */
 function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country) {
+  $config = config('uc_cybersource.settings');
   // Include the SOAP helper file.
   module_load_include('inc', 'uc_cybersource', 'uc_cybersource.soap');
   global $user;
 
   // Set the URL for the CyberSource SOAP Toolkit API WSDL.
-  if (variable_get('uc_cybersource_server', 'test') == 'test') {
+  if ($config->get('uc_cybersource_server') == 'test') {
     $url = 'https://ics2wstest.ic3.com/commerce/1.x/transactionProcessor/CyberSourceTransaction_1.38.wsdl';
   }
   else {
@@ -733,7 +762,7 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
   }
 
   // Variable currency... not used at the moment.
-  $currency = variable_get('uc_cybersource_currency', 'usd');
+  $currency = $config->get('uc_cybersource_currency');
 
   $billing_country = uc_get_country_data(array('country_id' => $order->billing_country));
   $delivery_country = uc_get_country_data(array('country_id' => $order->delivery_country));
@@ -790,7 +819,7 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
     }
 
     // If enabled, create a subscription profile for this transaction.
-    if (variable_get('uc_cybersource_soap_create_profile', FALSE) && in_array($data['txn_type'], array(UC_CREDIT_AUTH_ONLY, UC_CREDIT_AUTH_CAPTURE))) {
+    if ($config->get('uc_cybersource_soap_create_profile') && in_array($data['txn_type'], array(UC_CREDIT_AUTH_ONLY, UC_CREDIT_AUTH_CAPTURE))) {
       // Skip if a profile already exists for this order.
       if (!isset($order->data['uc_cybersource']['soap']['subscription_id'])) {
         $recurringSubscriptionInfo = new stdClass();
@@ -830,6 +859,7 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
       $card->expirationMonth = $order->payment_details['cc_exp_month'];
       $card->expirationYear = $order->payment_details['cc_exp_year'];
       $card->cardType = $cc_type;
+      // TODO This variable was probably removed in Backdrop without replacement.
       if (variable_get('uc_credit_cvv_enabled', TRUE)) {
         $card->cvNumber = $order->payment_details['cc_cvv'];
       }
@@ -891,7 +921,7 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
 
     // Add business rules.
     $business = new stdClass();
-    $business->ignoreAVSResult = variable_get('uc_cybersource_avs', 'true') == 'true' ? 'false' : 'true';
+    $business->ignoreAVSResult = $config->get('uc_cybersource_avs') == 'true' ? 'false' : 'true';
     $request->businessRules = $business;
 
     // Send the request to CyberSource and get the reply.
@@ -900,7 +930,7 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
   catch (SoapFault $exception) {
     // Log and display errors if Ubercart is unable to connect via SOAP.
     watchdog('uc_cybersource', 'Unable to connect to CyberSource via SOAP.', array(), WATCHDOG_ERROR);
-    drupal_set_message(t('We apologize for the delay, but we are unable to process your credit card at this time. Please <a href="@url">contact sales</a> to complete your order.', array('@url' => url('contact'))), 'error');
+    backdrop_set_message(t('We apologize for the delay, but we are unable to process your credit card at this time. Please <a href="@url">contact sales</a> to complete your order.', array('@url' => url('contact'))), 'error');
   }
 
   // Process a reply from CyberSource.
@@ -943,7 +973,11 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
         'comment' => $p_comment,
         'message' => $o_comment,
         'uid' => $user->uid,
-        'data' => array('module' => 'uc_cybersource', 'txn_type' => $data['txn_type'], 'request_id' => $reply->requestID),
+        'data' => array(
+          'module' => 'uc_cybersource',
+          'txn_type' => $data['txn_type'],
+          'request_id' => $reply->requestID,
+        ),
       );
 
       // If this was an authorization only transaction...
@@ -1025,8 +1059,9 @@ function uc_cybersource_tax_test($order) {
  *   'amount', keyed by id.
  */
 function uc_cybersource_uc_calculate_tax($order) {
+  $config = config('uc_cybersource.settings');
   // Kick out if the tax service is not enabled.
-  if (!variable_set('uc_cybersource_soap_tax_calculate', FALSE)) {
+  if (!config_set('uc_cybersource.settings', 'uc_cybersource_soap_tax_calculate', FALSE)) {
     return array();
   }
 
@@ -1039,7 +1074,7 @@ function uc_cybersource_uc_calculate_tax($order) {
   global $user;
 
   // Set the URL for the CyberSource SOAP Toolkit API WSDL.
-  if (variable_get('uc_cybersource_server', 'test') == 'test') {
+  if ($config->get('uc_cybersource_server') == 'test') {
     $url = 'https://ics2wstest.ic3.com/commerce/1.x/transactionProcessor/CyberSourceTransaction_1.38.wsdl';
   }
   else {
@@ -1047,7 +1082,7 @@ function uc_cybersource_uc_calculate_tax($order) {
   }
 
   // Variable currency... not used at the moment.
-  $currency = variable_get('uc_cybersource_currency', 'usd');
+  $currency = $config->get('uc_cybersource_currency');
 
   $billing_country = uc_get_country_data(array('country_id' => $order->billing_country));
   $delivery_country = uc_get_country_data(array('country_id' => $order->delivery_country));
@@ -1101,13 +1136,21 @@ function uc_cybersource_uc_calculate_tax($order) {
 
     // Add the company's ship from information.
     $shipFrom = new stdClass();
+    // TODO This variable was probably removed in Backdrop without replacement.
     $shipFrom->firstName = variable_get('cs_ship_from_first_name', '');
+    // TODO This variable was probably removed in Backdrop without replacement.
     $shipFrom->lastName = variable_get('cs_ship_from_last_name', '');
+    // TODO This variable was probably removed in Backdrop without replacement.
     $shipFrom->street1 = variable_get('cs_ship_from_street1', '');
+    // TODO This variable was probably removed in Backdrop without replacement.
     $shipFrom->city = variable_get('cs_ship_from_city', '');
+    // TODO This variable was probably removed in Backdrop without replacement.
     $shipFrom->state = variable_get('cs_ship_from_zone', '');
+    // TODO This variable was probably removed in Backdrop without replacement.
     $shipFrom->postalCode = variable_get('cs_ship_from_postal_code', '');
+    // TODO This variable was probably removed in Backdrop without replacement.
     $shipFrom->country = variable_get('cs_ship_from_country', '');
+    // TODO This variable was probably removed in Backdrop without replacement.
     $shipFrom->email = variable_get('cs_ship_from_email', '');
     $request->shipFrom = $shipFrom;
 
@@ -1151,17 +1194,17 @@ function uc_cybersource_uc_calculate_tax($order) {
       $counter++;
     }
 
-    // drupal_set_message('<pre>Request: ' . print_r($request, TRUE) . '</pre>');
+    // backdrop_set_message('<pre>Request: ' . print_r($request, TRUE) . '</pre>');
 
     // Send the request to CyberSource and get the reply.
     $reply = $soapClient->runTransaction($request);
 
-    // drupal_set_message('<pre>Reply: ' . print_r($reply, TRUE) . '</pre>');
+    // backdrop_set_message('<pre>Reply: ' . print_r($reply, TRUE) . '</pre>');
   }
   catch (SoapFault $exception) {
     // Log and display errors if Ubercart is unable to connect via SOAP.
     watchdog('uc_cybersource', 'Unable to connect to CyberSource via SOAP.', array(), WATCHDOG_ERROR);
-    drupal_set_message(t('We apologize for the delay, but we are unable to process your credit card at this time. Please <a href="@url">contact sales</a> to complete your order.', array('@url' => url('contact'))), 'error');
+    backdrop_set_message(t('We apologize for the delay, but we are unable to process your credit card at this time. Please <a href="@url">contact sales</a> to complete your order.', array('@url' => url('contact'))), 'error');
   }
 
   // Process a reply from CyberSource.
@@ -1170,7 +1213,7 @@ function uc_cybersource_uc_calculate_tax($order) {
     if ($reply->reasonCode == '100') {
       // Add a city tax if applicable.
       if (floatval($reply->taxReply->totalCityTaxAmount) > 0) {
-        $result['city'] = (object)array(
+        $result['city'] = (object) array(
           'id' => 'city',
           'name' => t('@city city tax', array('@city' => floatval($reply->taxReply->city))),
           'amount' => floatval($reply->taxReply->totalCityTaxAmount),
@@ -1179,7 +1222,7 @@ function uc_cybersource_uc_calculate_tax($order) {
 
       // Add a county tax if applicable.
       if (floatval($reply->taxReply->totalCountyTaxAmount) > 0) {
-        $result['county'] = (object)array(
+        $result['county'] = (object) array(
           'id' => 'county',
           'name' => t('County tax'),
           'amount' => floatval($reply->taxReply->totalCountryTaxAmount),
@@ -1188,7 +1231,7 @@ function uc_cybersource_uc_calculate_tax($order) {
 
       // Add a district tax if applicable.
       if (floatval($reply->taxReply->totalDistrictTaxAmount) > 0) {
-        $result['district'] = (object)array(
+        $result['district'] = (object) array(
           'id' => 'district',
           'name' => t('District tax'),
           'amount' => floatval($reply->taxReply->totalDistrictTaxAmount),
@@ -1197,7 +1240,7 @@ function uc_cybersource_uc_calculate_tax($order) {
 
       // Add a state tax if applicable.
       if (floatval($reply->taxReply->totalStateTaxAmount) > 0) {
-        $result['state'] = (object)array(
+        $result['state'] = (object) array(
           'id' => 'state',
           'name' => t('@state state tax', array('@state' => $reply->taxReply->state)),
           'amount' => floatval($reply->taxReply->totalStateTaxAmount),
@@ -1215,7 +1258,7 @@ function uc_cybersource_uc_calculate_tax($order) {
         watchdog('uc_cybersource', 'Tax calculation produced uneven results. Expected a total of @total, received the following: @dump', array('@total' => uc_currency_format($reply->taxReply->totalTaxAmount), '@dump' => '<pre>' . print_r($result, TRUE) . '</pre>'), WATCHDOG_ERROR);
 
         $result = array(
-          'total' => (object)array(
+          'total' => (object) array(
             'id' => 'total',
             'name' => t('Tax'),
             'amount' => floatval($reply->taxReply->totalTaxAmount),
@@ -1249,8 +1292,8 @@ function uc_cybersource_uc_calculate_tax($order) {
    *   $request['purchaseTotals_currency'] = 'USD';
    *   $request['purchaseTotals_grandTotalAmount'] = $amount;
    *
-   *   drupal_set_message('<pre>' . print_r($config, TRUE) . '</pre>');
-   *   drupal_set_message('<pre>' . print_r($request, TRUE) . '</pre>');
+   *   backdrop_set_message('<pre>' . print_r($config, TRUE) . '</pre>');
+   *   backdrop_set_message('<pre>' . print_r($request, TRUE) . '</pre>');
    * }
    */
 
@@ -1261,14 +1304,15 @@ function uc_cybersource_uc_calculate_tax($order) {
  * Returns an array with the SOAP Merchant ID and Transaction key.
  */
 function _uc_cybersource_soap_login_data() {
+  $config = config('uc_cybersource.settings');
   static $data;
 
   if (!empty($data)) {
     return $data;
   }
 
-  $merchant_id = variable_get('uc_cybersource_soap_merchant_id', '');
-  $transaction_key = variable_get('uc_cybersource_soap_transaction_key', '');
+  $merchant_id = $config->get('uc_cybersource_soap_merchant_id');
+  $transaction_key = $config->get('uc_cybersource_soap_transaction_key');
 
   // If CC encryption has been configured properly.
   if ($key = uc_credit_encryption_key()) {
@@ -1302,20 +1346,20 @@ function _uc_cybersource_card_type($cc_number) {
   switch (substr(strval($cc_number), 0, 1)) {
     case '3':
       if (strlen($cc_number) == 14) {
-        return '005';  // Diners Club
+        return '005'; // Diners Club
       }
       elseif (strlen($cc_number) == 15) {
-        return '003';  // AmEx
+        return '003'; // AmEx
       }
       else {
-        return '007';  // JCB
+        return '007'; // JCB
       }
     case '4':
-      return '001';  // Visa
+      return '001'; // Visa
     case '5':
-      return '002';  // MasterCard
+      return '002'; // MasterCard
     case '6':
-      return '004';  // Discover
+      return '004'; // Discover
   }
 
   return FALSE;
@@ -1469,4 +1513,13 @@ function _uc_cybersource_parse_cvv_code($code) {
     case '3':
       return t('No result code returned by processor.');
   }
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function uc_cybersource_autoload_info() {
+  return array(
+    'CyberSourceSoapClient' => 'uc_cybersource.soap.inc',
+  );
 }

@@ -43,7 +43,7 @@ function ca_convert_predicate($predicate) {
  *   The name to give the Rules component.
  */
 function ca_extract_conditions($predicate, $name) {
-  $component = rules_and(array('order' => array('uc_order', 'label' => t('Order'))));
+  $component = rules_and(array('order' => array('uc_order','label' => t('Order'))));
   $component->name = $name;
   $component->label = t('@title conditions', array('@title' => $predicate->title));
 
@@ -276,8 +276,8 @@ function ca_add_actions(&$rule, $actions) {
     }
 
     switch ($action['#name']) {
-      case 'ca_drupal_set_message':
-        $name = 'drupal_message';
+      case 'ca_backdrop_set_message':
+        $name = 'backdrop_message';
         $settings = array(
           'message' => $settings['message_text'],
           'error' => $settings['message_type'] == 'error',

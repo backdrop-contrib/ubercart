@@ -31,10 +31,10 @@ function uc_googleanalytics_enable() {
 function uc_googleanalytics_flush_caches() {
   $info = system_get_info('module', 'googleanalytics');
   if (preg_match('|7\.x\-[2-9]\.[0-9x]+|', $info['version'])) {
-    variable_set('uc_googleanalytics_version', 'analytics.js');
+    config_set('uc_googleanalytics.settings', 'uc_googleanalytics_version', 'analytics.js');
   }
   else {
-    variable_set('uc_googleanalytics_version', 'ga.js');
+    config_set('uc_googleanalytics.settings', 'uc_googleanalytics_version', 'ga.js');
   }
 }
 
@@ -50,7 +50,7 @@ function uc_googleanalytics_page_alter(&$page) {
       $script = uc_googleanalytics_ecommerce_js($order);
 
       // Add the code to the footer.
-      drupal_add_js($script, array('type' => 'inline', 'scope' => 'footer', 'preprocess' => FALSE));
+      backdrop_add_js($script, array('type' => 'inline', 'scope' => 'footer', 'preprocess' => FALSE));
     }
 
     // Clean out the session variable.
@@ -84,9 +84,10 @@ function uc_googleanalytics_display() {
   }
 
   // Or if the URL is the custom completion page.
+  // TODO This variable was probably removed in Backdrop without replacement.
   $completion_page = variable_get('uc_cart_checkout_complete_page', '');
 
-  if (!empty($completion_page) && $completion_page == drupal_get_path_alias($_GET['q'])) {
+  if (!empty($completion_page) && $completion_page == backdrop_get_path_alias($_GET['q'])) {
     return TRUE;
   }
 
@@ -102,6 +103,16 @@ function uc_googleanalytics_display() {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function uc_googleanalytics_config_info() {
+  $prefixes['uc_googleanalytics.settings'] = array(
+    'label' => t('Module name settings'),
+    'group' => t('Configuration'),
+  );
+}
+
+/**
  * Build the e-commerce JS passed to Google Analytics for order tracking.
  *
  * @param $order
@@ -111,7 +122,7 @@ function uc_googleanalytics_display() {
  *   The JS that should be added to the page footer.
  */
 function uc_googleanalytics_ecommerce_js($order) {
-  $analytics_version = variable_get('uc_googleanalytics_version', 'ga.js');
+  $analytics_version = config_get('uc_googleanalytics.settings', 'uc_googleanalytics_version');
   if ($analytics_version == 'analytics.js') {
     $script = 'ga("require", "ecommerce", "ecommerce.js");';
   }
@@ -157,7 +168,7 @@ function uc_googleanalytics_ecommerce_js($order) {
   );
 
   // Allow modules to alter the transaction arguments.
-  drupal_alter('ucga_trans', $trans, $order);
+  backdrop_alter('ucga_trans', $trans, $order);
 
   // Create GA-friendly associative array.
   $script_args = array(
@@ -173,11 +184,11 @@ function uc_googleanalytics_ecommerce_js($order) {
 
   // Add the transaction line to the JS.
   if ($analytics_version == 'analytics.js') {
-    $script .= 'ga("ecommerce:addTransaction", ' . drupal_json_encode($script_args) . ');';
+    $script .= 'ga("ecommerce:addTransaction", ' . backdrop_json_encode($script_args) . ');';
   }
   else {
     foreach ($script_args as &$arg) {
-      $arg = drupal_json_encode($arg);
+      $arg = backdrop_json_encode($arg);
     }
     $script .= '_gaq.push(["_addTrans", ' . implode(', ', $script_args) . ']);';
   }
@@ -211,7 +222,7 @@ function uc_googleanalytics_ecommerce_js($order) {
     );
 
     // Allow modules to alter the item arguments.
-    drupal_alter('ucga_item', $item, $product, $trans, $order);
+    backdrop_alter('ucga_item', $item, $product, $trans, $order);
 
     // Create GA-friendly associative array.
     $script_args = array(
@@ -225,11 +236,11 @@ function uc_googleanalytics_ecommerce_js($order) {
 
     // Add the item line to the JS.
     if ($analytics_version == 'analytics.js') {
-      $script .= 'ga("ecommerce:addItem", ' . drupal_json_encode($script_args) . ');';
+      $script .= 'ga("ecommerce:addItem", ' . backdrop_json_encode($script_args) . ');';
     }
     else {
       foreach ($script_args as &$arg) {
-        $arg = drupal_json_encode($arg);
+        $arg = backdrop_json_encode($arg);
       }
       $script .= '_gaq.push(["_addItem", ' . implode(', ', $script_args) . ']);';
     }

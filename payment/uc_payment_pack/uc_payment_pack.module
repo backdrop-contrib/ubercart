@@ -13,7 +13,7 @@ function uc_payment_pack_menu() {
   $items['admin/store/orders/%uc_order/receive_check'] = array(
     'title' => 'Receive check',
     'description' => 'Record details of a check that has been received.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_payment_pack_receive_check_form', 3),
     'access arguments' => array('view all orders'),
     'file' => 'uc_payment_pack.admin.inc',
@@ -27,30 +27,30 @@ function uc_payment_pack_menu() {
  */
 function uc_payment_pack_uc_payment_method() {
   $methods['check'] = array(
-    'name'       => t('Check', array(), array('context' => 'cheque')),
-    'title'      => t('Check or money order'),
-    'desc'       => t('Pay by mailing a check or money order.'),
-    'callback'   => 'uc_payment_method_check',
-    'weight'     => 1,
-    'checkout'   => TRUE,
+    'name' => t('Check', array(), array('context' => 'cheque')),
+    'title' => t('Check or money order'),
+    'desc' => t('Pay by mailing a check or money order.'),
+    'callback' => 'uc_payment_method_check',
+    'weight' => 1,
+    'checkout' => TRUE,
     'no_gateway' => TRUE,
   );
   $methods['cod'] = array(
-    'name'       => t('COD'),
-    'title'      => t('Cash on delivery'),
-    'desc'       => t('Pay cash on delivery on pick-up.'),
-    'callback'   => 'uc_payment_method_cod',
-    'weight'     => 1,
-    'checkout'   => FALSE,
+    'name' => t('COD'),
+    'title' => t('Cash on delivery'),
+    'desc' => t('Pay cash on delivery on pick-up.'),
+    'callback' => 'uc_payment_method_cod',
+    'weight' => 1,
+    'checkout' => FALSE,
     'no_gateway' => TRUE,
   );
   $methods['other'] = array(
-    'name'       => t('Other'),
-    'title'      => t('Other'),
-    'desc'       => t('A generic payment method type.'),
-    'callback'   => 'uc_payment_method_other',
-    'weight'     => 10,
-    'checkout'   => FALSE,
+    'name' => t('Other'),
+    'title' => t('Other'),
+    'desc' => t('A generic payment method type.'),
+    'callback' => 'uc_payment_method_other',
+    'weight' => 10,
+    'checkout' => FALSE,
     'no_gateway' => TRUE,
   );
 
@@ -96,11 +96,11 @@ function uc_payment_method_other($op, &$order) {
       else {
         db_merge('uc_payment_other')
           ->key(array(
-            'order_id' => $order->order_id,
-          ))
+          'order_id' => $order->order_id,
+        ))
           ->fields(array(
-            'description' => $order->payment_details['pm_other_description'],
-          ))
+          'description' => $order->payment_details['pm_other_description'],
+        ))
           ->execute();
       }
       break;
@@ -113,22 +113,26 @@ function uc_payment_method_other($op, &$order) {
 function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
   switch ($op) {
     case 'cart-details':
+      // TODO This variable was probably removed in Backdrop without replacement.
       $build['policy'] = array(
-        '#markup' => '<p>' . variable_get('uc_cod_policy', t('Full payment is expected upon delivery or prior to pick-up.')) . '</p>'
+        '#markup' => '<p>' . variable_get('uc_cod_policy', t('Full payment is expected upon delivery or prior to pick-up.')) . '</p>',
       );
 
+      // TODO This variable was probably removed in Backdrop without replacement.
       if (($max = variable_get('uc_cod_max_order', 0)) > 0 && is_numeric($max)) {
         $build['eligibility'] = array(
-          '#markup' => '<p>' . t('Orders totalling more than !number are <b>not eligible</b> for COD.', array('!number' => uc_currency_format($max))) . '</p>'
+          '#markup' => '<p>' . t('Orders totalling more than !number are <b>not eligible</b> for COD.', array('!number' => uc_currency_format($max))) . '</p>',
         );
       }
 
+      // TODO This variable was probably removed in Backdrop without replacement.
       if (variable_get('uc_cod_delivery_date', FALSE)) {
         $build += uc_payment_method_cod_form(array(), $form_state, $order);
       }
       return $build;
 
     case 'cart-process':
+      // TODO This variable was probably removed in Backdrop without replacement.
       if (variable_get('uc_cod_delivery_date', FALSE)) {
         $order->payment_details = $form_state['values']['panes']['payment']['details'];
       }
@@ -136,19 +140,24 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
 
     case 'cart-review':
       $review = array();
+      // TODO This variable was probably removed in Backdrop without replacement.
       if (variable_get('uc_cod_delivery_date', FALSE)) {
         $date = uc_date_format(
           $order->payment_details['delivery_month'],
           $order->payment_details['delivery_day'],
           $order->payment_details['delivery_year']
         );
-        $review[] = array('title' => t('Delivery date'), 'data' => $date);
+        $review[] = array(
+          'title' => t('Delivery date'),
+          'data' => $date,
+        );
       }
       return $review;
 
     case 'order-view':
     case 'customer-view':
       $build = array('#markup' => '');
+      // TODO This variable was probably removed in Backdrop without replacement.
       if (variable_get('uc_cod_delivery_date', FALSE) &&
           isset($order->payment_details['delivery_month']) &&
           isset($order->payment_details['delivery_day']) &&
@@ -164,6 +173,7 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
 
     case 'order-details':
       $build = array();
+      // TODO This variable was probably removed in Backdrop without replacement.
       if (variable_get('uc_cod_delivery_date', FALSE)) {
         $build = uc_payment_method_cod_form(array(), $form_state, $order);
       }
@@ -174,20 +184,21 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
       if ($row = $result->fetchObject()) {
         $order->payment_details = array(
           'delivery_month' => $row->delivery_month,
-          'delivery_day'   => $row->delivery_day,
-          'delivery_year'  => $row->delivery_year,
+          'delivery_day' => $row->delivery_day,
+          'delivery_year' => $row->delivery_year,
         );
       }
       break;
 
     case 'order-submit':
+      // TODO This variable was probably removed in Backdrop without replacement.
       if ($order->payment_method == 'cod' &&
           ($max = variable_get('uc_cod_max_order', 0)) > 0 &&
           is_numeric($max) &&
           $order->order_total > $max) {
         $result[] = array(
           'pass' => FALSE,
-          'message' => t('Your final order total exceeds the maximum for COD payment.  Please go back and select a different method of payment.')
+          'message' => t('Your final order total exceeds the maximum for COD payment.  Please go back and select a different method of payment.'),
         );
         $_SESSION['expanded_panes'][] = 'payment';
         return $result;
@@ -197,15 +208,15 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
 
     case 'order-save':
       if (isset($order->payment_details['delivery_month']) &&
-          isset($order->payment_details['delivery_day'])   &&
+          isset($order->payment_details['delivery_day'])    &&
           isset($order->payment_details['delivery_year'])    ) {
         db_merge('uc_payment_cod')
           ->key(array('order_id' => $order->order_id))
           ->fields(array(
-            'delivery_month' => $order->payment_details['delivery_month'],
-            'delivery_day'   => $order->payment_details['delivery_day'],
-            'delivery_year'  => $order->payment_details['delivery_year'],
-          ))
+          'delivery_month' => $order->payment_details['delivery_month'],
+          'delivery_day' => $order->payment_details['delivery_day'],
+          'delivery_year' => $order->payment_details['delivery_year'],
+        ))
           ->execute();
       }
       break;
@@ -217,18 +228,21 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
       break;
 
     case 'settings':
+      // TODO This variable was probably removed in Backdrop without replacement.
       $form['uc_cod_policy'] = array(
         '#type' => 'textarea',
         '#title' => t('Policy message'),
         '#default_value' => variable_get('uc_cod_policy', t('Full payment is expected upon delivery or prior to pick-up.')),
         '#description' => t('Help message shown at checkout.'),
       );
+      // TODO This variable was probably removed in Backdrop without replacement.
       $form['uc_cod_max_order'] = array(
         '#type' => 'textfield',
         '#title' => t('Maximum order total eligible for COD'),
         '#default_value' => variable_get('uc_cod_max_order', 0),
         '#description' => t('Set to 0 for no maximum order limit.'),
       );
+      // TODO This variable was probably removed in Backdrop without replacement.
       $form['uc_cod_delivery_date'] = array(
         '#type' => 'checkbox',
         '#title' => t('Let customers enter a desired delivery date.'),
@@ -265,10 +279,18 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
   switch ($op) {
     case 'cart-details':
       $build['instructions'] = array(
-        '#markup' => t('Checks should be made out to:')
+        '#markup' => t('Checks should be made out to:'),
       );
 
+      // TODO This variable was probably removed in Backdrop without replacement.
       if (!variable_get('uc_check_mailing_street1', FALSE)) {
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
         $build['address'] = array(
           '#markup' => uc_address_format(
             uc_store_name(),
@@ -286,6 +308,14 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
         );
       }
       else {
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
         $build['address'] = array(
           '#markup' => uc_address_format(
             variable_get('uc_check_mailing_name', ''),
@@ -303,13 +333,22 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
         );
       }
 
+      // TODO This variable was probably removed in Backdrop without replacement.
       $build['policy'] = array(
-        '#markup' => '<p>' . variable_get('uc_check_policy', '') . '</p>'
+        '#markup' => '<p>' . variable_get('uc_check_policy', '') . '</p>',
       );
       return $build;
 
     case 'cart-review':
+      // TODO This variable was probably removed in Backdrop without replacement.
       if (!variable_get('uc_check_mailing_street1', FALSE)) {
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
         $review[] = array(
           'title' => t('Mail to'),
           'data' => uc_address_format(
@@ -322,10 +361,18 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
             variable_get('uc_store_zone', ''),
             variable_get('uc_store_postal_code', ''),
             variable_get('uc_store_country', 840)
-          )
+          ),
         );
       }
       else {
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
         $review[] = array(
           'title' => t('Mail to'),
           'data' => uc_address_format(
@@ -338,7 +385,7 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
             variable_get('uc_check_mailing_zone', ''),
             variable_get('uc_check_mailing_postal_code', ''),
             variable_get('uc_check_mailing_country', 840)
-          )
+          ),
         );
       }
       return $review;
@@ -368,7 +415,15 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
       $form['check_address_info'] = array(
         '#markup' => '<div>' . t('Set the mailing address to display to customers who choose this payment method during checkout.') . '</div>',
       );
+      // TODO This variable was probably removed in Backdrop without replacement.
       $form['uc_check_mailing_name'] = uc_textfield(t('Contact'), variable_get('uc_check_mailing_name', ''), FALSE, t('Direct checks to a person or department.'), 128);
+      // TODO This variable was probably removed in Backdrop without replacement.
+      // TODO This variable was probably removed in Backdrop without replacement.
+      // TODO This variable was probably removed in Backdrop without replacement.
+      // TODO This variable was probably removed in Backdrop without replacement.
+      // TODO This variable was probably removed in Backdrop without replacement.
+      // TODO This variable was probably removed in Backdrop without replacement.
+      // TODO This variable was probably removed in Backdrop without replacement.
       $form['uc_check_address'] = array(
         '#type' => 'uc_address',
         '#default_value' => array(
@@ -383,6 +438,7 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
         '#required' => FALSE,
         '#key_prefix' => 'uc_check_mailing',
       );
+      // TODO This variable was probably removed in Backdrop without replacement.
       $form['uc_check_policy'] = array(
         '#type' => 'textarea',
         '#title' => t('Check payment policy', array(), array('context' => 'cheque')),

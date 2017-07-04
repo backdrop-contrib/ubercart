@@ -129,8 +129,19 @@ function uc_product_token_info() {
  */
 function uc_product_token_info_alter(&$info) {
   $tokens = array(
-    'model', 'list-price', 'cost', 'sell-price', 'weight', 'weight-units',
-    'length', 'width', 'height', 'length_units', 'pkg-qty', 'ordering', 'shippable',
+    'model',
+    'list-price',
+    'cost',
+    'sell-price',
+    'weight',
+    'weight-units',
+    'length',
+    'width',
+    'height',
+    'length_units',
+    'pkg-qty',
+    'ordering',
+    'shippable',
   );
 
   foreach ($tokens as $token) {

@@ -24,7 +24,7 @@ function uc_ajax_admin_menu() {
   $items['admin/store/settings/checkout/ajax'] = array(
     'title' => 'Ajax',
     'description' => 'Administer ajax updates on checkout form.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_ajax_admin_form', 'checkout'),
     'access arguments' => array('administer store'),
     'type' => MENU_LOCAL_TASK,
@@ -53,9 +53,10 @@ function uc_ajax_admin_form($form, &$form_state, $target_form = 'checkout') {
       break;
 
     default:
-      drupal_not_found();
+      backdrop_not_found();
   }
   $form['#uc_ajax_target'] = $target_form;
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['#uc_ajax_config'] = variable_get('uc_ajax_' . $target_form, _uc_ajax_defaults($target_form));
 
   $form['table'] = tapir_get_table('uc_ajax_admin_table', $triggers, $wrappers, $form['#uc_ajax_config']);
@@ -88,8 +89,9 @@ function uc_ajax_admin_form_submit($form, &$form_state) {
       $config[$key] = $entry['panes'];
     }
   }
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_set('uc_ajax_' . $form['#uc_ajax_target'], $config);
-  drupal_set_message(t('Your changes have been saved.'));
+  backdrop_set_message(t('Your changes have been saved.'));
 }
 
 /**
@@ -179,7 +181,8 @@ function _uc_ajax_admin_list_triggers($element, &$list) {
   if (!empty($element['#input']) && !in_array($element['#type'], array('hidden', 'uc_address'))) {
     $key = implode('][', $element['#array_parents']);
     switch ($element['#type']) {
-      case 'button': case 'submit':
+      case 'button':
+      case 'submit':
         $title = empty($element['#value']) ? $key : $element['#value'];
         break;
       default:
@@ -226,15 +229,15 @@ function _uc_ajax_admin_build_checkout_form() {
   if (!$order) {
     $order = new UcOrder();
     $order->products = array((object) array(
-      'cart_item_id' => 0,
-      'title' => 'fake',
-      'nid' => 0,
-      'qty' => 1,
-      'price' => 1,
-      'data' => array('shippable' => TRUE),
-      'model' => 0,
-      'weight' => 0
-    ));
+        'cart_item_id' => 0,
+        'title' => 'fake',
+        'nid' => 0,
+        'qty' => 1,
+        'price' => 1,
+        'data' => array('shippable' => TRUE),
+        'model' => 0,
+        'weight' => 0,
+      ));
   }
-  return drupal_get_form('uc_cart_checkout_form', $order);
+  return backdrop_get_form('uc_cart_checkout_form', $order);
 }

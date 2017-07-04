@@ -134,29 +134,33 @@ function uc_store_schema() {
  */
 function uc_store_install() {
   // Set mail handler for all Ubercart modules
+  // TODO This variable was probably removed in Backdrop without replacement.
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_set('mail_system',
     array_merge(
       variable_get('mail_system', array('default-system' => 'DefaultMailSystem')),
       array(
-        'uc_cart'  => 'UbercartMailSystem',
-        'uc_order' => 'UbercartMailSystem',
-        'uc_file'  => 'UbercartMailSystem',
-        'uc_roles' => 'UbercartMailSystem',
-        'uc_stock' => 'UbercartMailSystem',
-        'uc_store' => 'UbercartMailSystem',
-      )
+    'uc_cart' => 'UbercartMailSystem',
+    'uc_order' => 'UbercartMailSystem',
+    'uc_file' => 'UbercartMailSystem',
+    'uc_roles' => 'UbercartMailSystem',
+    'uc_stock' => 'UbercartMailSystem',
+    'uc_store' => 'UbercartMailSystem',
+  )
     )
   );
 
   // Set the default store date format.
-  variable_set('date_format_uc_store', 'm/d/Y');
+  config_set('uc_store.settings', 'date_format_uc_store', 'm/d/Y');
 
   // Install United States and Canada by default.
-  $path = drupal_get_path('module', 'uc_store');
+  $path = backdrop_get_path('module', 'uc_store');
   require_once($path . '/countries/united_states_840_1.cif');
   require_once($path . '/countries/canada_124_2.cif');
   united_states_install();
   canada_install();
+  // Dynamically generated variable data was detected on the following lines.
+  // /ubercart/uc_store/uc_store.module line 1563
 }
 
 /**
@@ -174,15 +178,22 @@ function uc_store_uninstall() {
     )
     ->execute();
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_customer_list_address');
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_sign_after_amount');
-  variable_del('date_format_uc_store');
+  config_clear('uc_store.settings', 'date_format_uc_store');
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_address_fields');
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_address_fields_required');
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_address_fields_weight');
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_footer_message');
 
   // Unset mail Ubercart hander in variable mail_system
+  // TODO This variable was probably removed in Backdrop without replacement.
   $mail_system = variable_get('mail_system', array('default-system' => 'DefaultMailSystem'));
   unset($mail_system['uc_cart']);
   unset($mail_system['uc_order']);
@@ -190,6 +201,7 @@ function uc_store_uninstall() {
   unset($mail_system['uc_roles']);
   unset($mail_system['uc_stock']);
   unset($mail_system['uc_store']);
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_set('mail_system', $mail_system);
 }
 
@@ -204,91 +216,69 @@ function uc_store_update_last_removed() {
  * Removed update 7000.
  */
 
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_store_update_7001() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_store_update_7002() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_store_update_7003() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_store_update_7004() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_store_update_7005() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_store_update_7006() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_store_update_7007() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_store_update_7008() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_store_update_7300() { }
+
 /**
- * Removes uc_price cache table.
+ * Implements hook_update_last_removed().
  */
-function uc_store_update_7001() {
-  db_drop_table('cache_uc_price');
+function uc_store_update_last_removed() {
+  return 7300;
 }
 
 /**
- * Removes unused variable.
+ * Implements hook_update_N().
  */
-function uc_store_update_7002() {
-  variable_del('uc_store_admin_page_display');
-}
-
-/**
- * Removes store footer message hash table.
- */
-function uc_store_update_7003() {
-  db_drop_table('uc_store_footers');
-}
-
-/**
- * Installs HTML Mail System for Ubercart.
- */
-function uc_store_update_7004() {
-  // Set mail handler for all Ubercart modules
-  variable_set('mail_system',
-    array_merge(
-      variable_get('mail_system', array('default-system' => 'DefaultMailSystem')),
-      array(
-        'uc_cart'  => 'UbercartMailSystem',
-        'uc_order' => 'UbercartMailSystem',
-        'uc_file'  => 'UbercartMailSystem',
-        'uc_roles' => 'UbercartMailSystem',
-        'uc_stock' => 'UbercartMailSystem',
-        'uc_store' => 'UbercartMailSystem',
-      )
-    )
-  );
-}
-
-/**
- * Changes date formatting to use D7 API.
- */
-function uc_store_update_7005() {
-  variable_set('date_format_uc_store', variable_get('uc_date_format_default', 'm/d/Y'));
-  variable_del('uc_date_format_default');
-}
-
-/**
- * Deletes user initials variables.
- */
-function uc_store_update_7006() {
-  db_delete('variable')->condition('name', 'user_initials_%', 'LIKE')->execute();
-}
-
-/**
- * Ensures Rules and Views are installed.
- */
-function uc_store_update_7007() {
-  $modules = array('rules', 'views');
-  module_enable($modules);
-
-  foreach ($modules as $module) {
-    if (!module_exists($module)) {
-      throw new DrupalUpdateException(t('Rules and Views are now dependencies of Ubercart, but are not currently available. Please download them to sites/all/modules and run update.php again.'));
-    }
-  }
-}
-
-/**
- * Deletes unused address field titles.
- */
-function uc_store_update_7008() {
-  variable_del('uc_field_address');
-  variable_del('uc_field_email');
-  variable_del('uc_field_street');
-}
-
-/**
- * Rebuilds theme registry to pick up new location of theme functions.
- *
- * All theme functions in Ubercart were moved out of the .module files and
- * into .theme.inc files to reduce code memory footprint.
- */
-function uc_store_update_7300() {
-  drupal_theme_rebuild();
+function uc_store_update_1000() {
+  $config = config('uc_store .settings');
+  $config->set('uc_store_country', update_variable_get('uc_store_country', '840'));
+  $config->set('uc_store_owner', update_variable_get('uc_store_owner', ''));
+  $config->set('uc_store_email_include_name', update_variable_get('uc_store_email_include_name', 'TRUE'));
+  $config->set('uc_store_phone', update_variable_get('uc_store_phone', ''));
+  $config->set('uc_store_fax', update_variable_get('uc_store_fax', ''));
+  $config->set('uc_store_help_page', update_variable_get('uc_store_help_page', ''));
+  $config->set('uc_store_street1', update_variable_get('uc_store_street1', 'NULL'));
+  $config->set('uc_store_street2', update_variable_get('uc_store_street2', 'NULL'));
+  $config->set('uc_store_city', update_variable_get('uc_store_city', 'NULL'));
+  $config->set('uc_store_zone', update_variable_get('uc_store_zone', 'NULL'));
+  $config->set('uc_store_postal_code', update_variable_get('uc_store_postal_code', 'NULL'));
+  $config->set('uc_store_email', update_variable_get('uc_store_email', ''));
+  $config->set('uc_store_name', update_variable_get('uc_store_name', 'dynamic value in file /ubercart/uc_store/uc_store.module line 1563'));
+  update_variable_del('uc_store_country');
+  update_variable_del('uc_store_owner');
+  update_variable_del('uc_store_email_include_name');
+  update_variable_del('uc_store_phone');
+  update_variable_del('uc_store_fax');
+  update_variable_del('uc_store_help_page');
+  update_variable_del('uc_store_street1');
+  update_variable_del('uc_store_street2');
+  update_variable_del('uc_store_city');
+  update_variable_del('uc_store_zone');
+  update_variable_del('uc_store_postal_code');
+  update_variable_del('uc_store_email');
+  update_variable_del('uc_store_name');
 }

@@ -74,10 +74,10 @@ function uc_stock_uninstall() {
     ->condition('name', 'uc_stock_%', 'LIKE')
     ->execute();
 
-  variable_del('uc_stock_threshold_notification');
-  variable_del('uc_stock_threshold_notification_recipients');
-  variable_del('uc_stock_threshold_notification_subject');
-  variable_del('uc_stock_threshold_notification_message');
+  config_clear('uc_stock.settings', 'uc_stock_threshold_notification');
+  config_clear('uc_stock.settings', 'uc_stock_threshold_notification_recipients');
+  config_clear('uc_stock.settings', 'uc_stock_threshold_notification_subject');
+  config_clear('uc_stock.settings', 'uc_stock_threshold_notification_message');
 }
 
 /**
@@ -87,16 +87,40 @@ function uc_stock_update_last_removed() {
   return 6000;
 }
 
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_stock_update_7000() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_stock_update_7001() { }
+
 /**
- * Remove unused message format variable.
+ * Implements hook_update_last_removed().
  */
-function uc_stock_update_7000() {
-  variable_del('uc_stock_threshold_notification_format');
+function uc_stock_update_last_removed() {
+  return 7001;
 }
 
 /**
- * Remove unused message format variable.
+ * Implements hook_update_N().
  */
-function uc_stock_update_7001() {
-  variable_del('uc_stock_threshold_notification_message_format');
+function uc_stock_update_1000() {
+  $config = config('uc_stock .settings');
+  $config->set('uc_stock_threshold_notification', update_variable_get('uc_stock_threshold_notification', 'FALSE'));
+  $config->set('uc_stock_threshold_notification_recipients', update_variable_get('uc_stock_threshold_notification_recipients', 'dynamic value in file /ubercart/uc_stock/uc_stock.module line 223'));
+  $config->set('uc_stock_threshold_notification_subject', update_variable_get('uc_stock_threshold_notification_subject', 'dynamic value in file /ubercart/uc_stock/uc_stock.module line 228'));
+  $config->set('uc_stock_threshold_notification_message', update_variable_get('uc_stock_threshold_notification_message', 'dynamic value in file /ubercart/uc_stock/uc_stock.module line 231'));
+  update_variable_del('uc_stock_threshold_notification');
+  update_variable_del('uc_stock_threshold_notification_recipients');
+  update_variable_del('uc_stock_threshold_notification_subject');
+  update_variable_del('uc_stock_threshold_notification_message');
+}
+
+/**
+ * Implements hook_install().
+ */
+function uc_stock_install() {
+  // Dynamically generated variable data was detected.
+  // /ubercart/uc_stock/uc_stock.module line 223
+  // /ubercart/uc_stock/uc_stock.module line 228
+  // /ubercart/uc_stock/uc_stock.module line 231
 }

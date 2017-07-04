@@ -4,7 +4,7 @@
  * @file
  * Defines a class used for communicating with CyberSource via SOAP.
  *
- * Provided by Acquia, Commercially supported Drupal - http://acquia.com
+ * Provided by Acquia, Commercially supported Backdrop - http://acquia.com
  */
 
 class CyberSourceSoapClient extends SoapClient {

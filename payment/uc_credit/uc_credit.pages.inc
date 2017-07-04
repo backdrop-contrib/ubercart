@@ -9,6 +9,7 @@
  * Prints the contents of the CVV information popup window.
  */
 function uc_credit_cvv_info() {
+  $config = config('uc_credit.settings');
   $output = "<!DOCTYPE html>\n";
   $output .= '<html><head><meta charset="utf-8" /></head><body>';
 
@@ -16,27 +17,27 @@ function uc_credit_cvv_info() {
   $cc_types = array(
     'visa' => t('Visa'),
     'mastercard' => t('MasterCard'),
-    'discover' => t('Discover')
+    'discover' => t('Discover'),
   );
   foreach ($cc_types as $id => $type) {
-    if (variable_get('uc_credit_' . $id, TRUE)) {
+    if ($config->get('uc_credit_' . $id)) {
       $valid_types[] = $type;
     }
   }
   if (count($valid_types) > 0) {
     $output .= '<br /><b>' . implode(', ', $valid_types) . ':</b><p>';
     $output .= theme('image', array(
-      'path' => drupal_get_path('module', 'uc_credit') . '/images/visa_cvv.jpg',
+      'path' => backdrop_get_path('module', 'uc_credit') . '/images/visa_cvv.jpg',
       'attributes' => array('align' => 'left'),
     ));
     $output .= t('The CVV for these cards is found on the back side of the card.  It is only the last three digits on the far right of the signature panel box.');
     $output .= '</p>';
   }
 
-  if (variable_get('uc_credit_amex', TRUE)) {
+  if ($config->get('uc_credit_amex')) {
     $output .= '<br /><p><b>' . t('American Express') . ':</b><p>';
     $output .= theme('image', array(
-      'path' => drupal_get_path('module', 'uc_credit') . '/images/amex_cvv.jpg',
+      'path' => backdrop_get_path('module', 'uc_credit') . '/images/amex_cvv.jpg',
       'attributes' => array('align' => 'left'),
     ));
     $output .= t('The CVV on American Express cards is found on the front of the card.  It is a four digit number printed in smaller text on the right side above the credit card number.');

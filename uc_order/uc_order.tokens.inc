@@ -248,6 +248,7 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'first-name':
+          // TODO This variable was probably removed in Backdrop without replacement.
           if (variable_get('uc_customer_list_address', 'billing') == 'shipping') {
             $replacements[$original] = $sanitize ? check_plain($order->delivery_first_name) : $order->delivery_first_name;
           }
@@ -257,6 +258,7 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'last-name':
+          // TODO This variable was probably removed in Backdrop without replacement.
           if (variable_get('uc_customer_list_address', 'billing') == 'shipping') {
             $replacements[$original] = $sanitize ? check_plain($order->delivery_last_name) : $order->delivery_last_name;
           }

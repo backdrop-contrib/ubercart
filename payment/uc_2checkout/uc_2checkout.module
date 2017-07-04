@@ -60,22 +60,33 @@ function uc_2checkout_ucga_display() {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function uc_2checkout_config_info() {
+  $prefixes['uc_2checkout.settings'] = array(
+    'label' => t('Module name settings'),
+    'group' => t('Configuration'),
+  );
+}
+
+/**
  * Implements hook_uc_payment_method().
  *
  * @see uc_payment_method_2checkout()
  */
 function uc_2checkout_uc_payment_method() {
-  $path = base_path() . drupal_get_path('module', 'uc_2checkout');
-  $title = variable_get('uc_2checkout_method_title', t('Credit card on a secure server:'));
+  $config = config('uc_2checkout.settings');
+  $path = base_path() . backdrop_get_path('module', 'uc_2checkout');
+  $title = $config->get('uc_2checkout_method_title');
   $title .= '<br />' . theme('image', array(
-    'path' => drupal_get_path('module', 'uc_2checkout') . '/2co_logo.jpg',
+    'path' => backdrop_get_path('module', 'uc_2checkout') . '/2co_logo.jpg',
     'attributes' => array('class' => array('uc-2checkout-logo')),
   ));
 
   $methods['2checkout'] = array(
     'name' => t('2Checkout'),
     'title' => $title,
-    'review' => variable_get('uc_2checkout_check', FALSE) ? t('Credit card/eCheck') : t('Credit card'),
+    'review' => $config->get('uc_2checkout_check') ? t('Credit card/eCheck') : t('Credit card'),
     'desc' => t('Redirect to 2Checkout to pay by credit card or eCheck.'),
     'callback' => 'uc_payment_method_2checkout',
     'redirect' => 'uc_2checkout_form',
@@ -93,11 +104,12 @@ function uc_2checkout_uc_payment_method() {
  * @see uc_2checkout_uc_payment_method()
  */
 function uc_payment_method_2checkout($op, &$order, $form = NULL, &$form_state = NULL) {
+  $config = config('uc_2checkout.settings');
   switch ($op) {
     case 'cart-details':
       $build = array();
 
-      if (variable_get('uc_2checkout_check', FALSE)) {
+      if ($config->get('uc_2checkout_check')) {
         $build['pay_method'] = array(
           '#type' => 'select',
           '#title' => t('Select your payment type:'),
@@ -123,20 +135,20 @@ function uc_payment_method_2checkout($op, &$order, $form = NULL, &$form_state = 
         '#type' => 'textfield',
         '#title' => t('Vendor account number'),
         '#description' => t('Your 2Checkout vendor account number.'),
-        '#default_value' => variable_get('uc_2checkout_sid', ''),
+        '#default_value' => $config->get('uc_2checkout_sid'),
         '#size' => 16,
       );
       $form['uc_2checkout_secret_word'] = array(
         '#type' => 'textfield',
         '#title' => t('Secret word for order verification'),
         '#description' => t('The secret word entered in your 2Checkout account Look and Feel settings.'),
-        '#default_value' => variable_get('uc_2checkout_secret_word', 'tango'),
+        '#default_value' => $config->get('uc_2checkout_secret_word'),
         '#size' => 16,
       );
       $form['uc_2checkout_demo'] = array(
         '#type' => 'checkbox',
         '#title' => t('Enable demo mode, allowing you to process fake orders for testing purposes.'),
-        '#default_value' => variable_get('uc_2checkout_demo', TRUE),
+        '#default_value' => $config->get('uc_2checkout_demo'),
       );
       $form['uc_2checkout_language'] = array(
         '#type' => 'select',
@@ -146,26 +158,25 @@ function uc_payment_method_2checkout($op, &$order, $form = NULL, &$form_state = 
           'en' => t('English'),
           'sp' => t('Spanish'),
         ),
-        '#default_value' => variable_get('uc_2checkout_language', 'en'),
+        '#default_value' => $config->get('uc_2checkout_language'),
       );
       $form['uc_2checkout_currency_code'] = array(
         '#type' => 'select',
         '#title' => t('Currency for the sale'),
         '#options' => array(
-          '' => t('Auto detected by 2CO'),
-          'USD', 'EUR', 'ARS', 'AUD', 'BRL', 'GBP', 'CAD', 'DKK', 'HKD', 'INR', 'ILS', 'JPY', 'LTL', 'MYR', 'MXN', 'NZD', 'NOK', 'PHP', 'RON', 'RUB', 'SGD', 'ZAR', 'SEK', 'CHF', 'TRY', 'AED'
+          '' => t('Auto detected by 2CO'), 'USD', 'EUR', 'ARS', 'AUD', 'BRL', 'GBP', 'CAD', 'DKK', 'HKD', 'INR', 'ILS', 'JPY', 'LTL', 'MYR', 'MXN', 'NZD', 'NOK', 'PHP', 'RON', 'RUB', 'SGD', 'ZAR', 'SEK', 'CHF', 'TRY', 'AED',
         ),
-        '#default_value' => variable_get('uc_2checkout_currency_code', ''),
+        '#default_value' => $config->get('uc_2checkout_currency_code'),
       );
       $form['uc_2checkout_check'] = array(
         '#type' => 'checkbox',
         '#title' => t('Allow customers to choose to pay by credit card or online check.'),
-        '#default_value' => variable_get('uc_2checkout_check', FALSE),
+        '#default_value' => $config->get('uc_2checkout_check'),
       );
       $form['uc_2checkout_method_title'] = array(
         '#type' => 'textfield',
         '#title' => t('Payment method title'),
-        '#default_value' => variable_get('uc_2checkout_method_title', t('Credit card on a secure server:')),
+        '#default_value' => $config->get('uc_2checkout_method_title'),
       );
       $form['uc_2checkout_checkout_type'] = array(
         '#type' => 'radios',
@@ -174,7 +185,7 @@ function uc_payment_method_2checkout($op, &$order, $form = NULL, &$form_state = 
           'dynamic' => t('Dynamic checkout (user is redirected to 2CO)'),
           'direct' => t('Direct checkout (payment page opens in iframe popup)'),
         ),
-        '#default_value' => variable_get('uc_2checkout_checkout_type', 'dynamic'),
+        '#default_value' => $config->get('uc_2checkout_checkout_type'),
       );
       $form['uc_2checkout_notification_url'] = array(
         '#type' => 'textfield',
@@ -191,36 +202,35 @@ function uc_payment_method_2checkout($op, &$order, $form = NULL, &$form_state = 
  * Form to build the submission to 2Checkout.com.
  */
 function uc_2checkout_form($form, &$form_state, $order) {
+  $config = config('uc_2checkout.settings');
   $country = uc_get_country_data(array('country_id' => $order->billing_country));
   if ($country === FALSE) {
     $country = array(0 => array('country_iso_code_3' => 'USA'));
   }
 
   $data = array(
-    'sid' => variable_get('uc_2checkout_sid', ''),
+    'sid' => $config->get('uc_2checkout_sid'),
     'mode' => '2CO',
-    'card_holder_name' => drupal_substr($order->billing_first_name . ' ' . $order->billing_last_name, 0, 128),
-    'street_address' => drupal_substr($order->billing_street1, 0, 64),
-    'street_address2' => drupal_substr($order->billing_street2, 0, 64),
-    'city' => drupal_substr($order->billing_city, 0, 64),
+    'card_holder_name' => backdrop_substr($order->billing_first_name . ' ' . $order->billing_last_name, 0, 128),
+    'street_address' => backdrop_substr($order->billing_street1, 0, 64),
+    'street_address2' => backdrop_substr($order->billing_street2, 0, 64),
+    'city' => backdrop_substr($order->billing_city, 0, 64),
     'state' => uc_get_zone_code($order->billing_zone),
-    'zip' => drupal_substr($order->billing_postal_code, 0, 16),
+    'zip' => backdrop_substr($order->billing_postal_code, 0, 16),
     'country' => $country[0]['country_iso_code_3'],
-    'email' => drupal_substr($order->primary_email, 0, 64),
-    'phone' => drupal_substr($order->billing_phone, 0, 16),
+    'email' => backdrop_substr($order->primary_email, 0, 64),
+    'phone' => backdrop_substr($order->billing_phone, 0, 16),
     'purchase_step' => 'payment-method',
-
-    'demo' => variable_get('uc_2checkout_demo', TRUE) ? 'Y' : 'N',
-    'lang' => variable_get('uc_2checkout_language', 'en'),
+    'demo' => $config->get('uc_2checkout_demo') ? 'Y' : 'N',
+    'lang' => $config->get('uc_2checkout_language'),
     'merchant_order_id' => $order->order_id,
     'pay_method' => 'CC',
     'x_receipt_link_url' => url('cart/2checkout/complete/' . uc_cart_get_id(), array('absolute' => TRUE)),
-
     'total' => uc_currency_format($order->order_total, FALSE, FALSE, '.'),
     'cart_order_id' => $order->order_id,
   );
 
-  if ($currency_code = variable_get('uc_2checkout_currency_code', '')) {
+  if ($currency_code = $config->get('uc_2checkout_currency_code')) {
     $data['currency_code'] = $currency_code;
   }
 
@@ -231,14 +241,17 @@ function uc_2checkout_form($form, &$form_state, $order) {
     $data['li_' . $i .  '_price'] = uc_currency_format($product->price, FALSE, FALSE, '.');
   }
 
-  if (variable_get('uc_2checkout_checkout_type', 'dynamic') == 'direct') {
+  if ($config->get('uc_2checkout_checkout_type') == 'direct') {
     $form['#suffix'] = '<script src="https://www.2checkout.com/static/checkout/javascript/direct.min.js"></script>';
   }
 
-  $form['#action'] = variable_get('uc_2checkout_server_url', 'https://www.2checkout.com/checkout/purchase');
+  $form['#action'] = $config->get('uc_2checkout_server_url');
 
   foreach ($data as $name => $value) {
-    $form[$name] = array('#type' => 'hidden', '#value' => $value);
+    $form[$name] = array(
+      '#type' => 'hidden',
+      '#value' => $value,
+    );
   }
 
   $form['actions'] = array('#type' => 'actions');

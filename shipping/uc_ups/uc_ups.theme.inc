@@ -23,9 +23,9 @@ function theme_uc_ups_option_label($variables) {
 
   // Start with logo as required by the UPS terms of service.
   $output  = theme('image', array(
-    'path' => drupal_get_path('module', 'uc_ups') . '/uc_ups_logo.gif',
+    'path' => backdrop_get_path('module', 'uc_ups') . '/uc_ups_logo.gif',
     'alt' => t('UPS logo'),
-    'attributes' => array('class' => 'ups-logo')
+    'attributes' => array('class' => 'ups-logo'),
   ));
 
   // Add the UPS service name.

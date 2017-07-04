@@ -32,7 +32,10 @@ function uc_product_rules_condition_info() {
     'label' => t('Content is a product'),
     'base' => 'uc_product_rules_condition_node_is_product',
     'parameter' => array(
-      'node' => array('type' => 'node', 'label' => t('Content')),
+      'node' => array(
+        'type' => 'node',
+        'label' => t('Content'),
+      ),
     ),
     'group' => t('Node'),
     'access callback' => 'rules_node_integration_access',

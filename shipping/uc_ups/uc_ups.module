@@ -6,7 +6,7 @@
  */
 
 /******************************************************************************
- * Drupal Hooks                                                               *
+ * Backdrop Hooks                                                               *
  ******************************************************************************/
 
 /**
@@ -17,7 +17,7 @@ function uc_ups_menu() {
 
   $items['admin/store/settings/quotes/settings/ups'] = array(
     'title' => 'UPS',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_ups_admin_settings'),
     'access arguments' => array('configure quotes'),
     'type' => MENU_LOCAL_TASK,
@@ -25,7 +25,7 @@ function uc_ups_menu() {
   );
   $items['admin/store/orders/%uc_order/shipments/ups'] = array(
     'title' => 'UPS shipment',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_ups_confirm_shipment', 3),
     'access arguments' => array('fulfill orders'),
     'file' => 'uc_ups.ship.inc',
@@ -41,6 +41,16 @@ function uc_ups_menu() {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function uc_ups_config_info() {
+  $prefixes['uc_ups.settings'] = array(
+    'label' => t('Module name settings'),
+    'group' => t('Configuration'),
+  );
+}
+
+/**
  * Implements hook_cron().
  *
  * Deletes UPS shipping labels from the file system automatically
@@ -48,7 +58,7 @@ function uc_ups_menu() {
  * Default is never delete the labels, keep them forever.
  */
 function uc_ups_cron() {
-  $cutoff = REQUEST_TIME - variable_get('uc_ups_label_lifetime', 0);
+  $cutoff = REQUEST_TIME - config_get('uc_ups.settings', 'uc_ups_label_lifetime');
   if ($cutoff == REQUEST_TIME) {
     // Label lifetime is set to 0, meaning never delete.
     return;
@@ -59,7 +69,7 @@ function uc_ups_cron() {
   $files = file_scan_directory('public://ups_labels', '/^label-/');
   foreach ($files as $file) {
     if ($cutoff > filectime($file->uri)) {
-      drupal_unlink($file->uri);
+      backdrop_unlink($file->uri);
       watchdog('uc_ups', 'Removed uc_ups label file @file.', array('@file' => $file->uri), WATCHDOG_NOTICE);
     }
   }
@@ -72,7 +82,7 @@ function uc_ups_theme() {
   return array(
     'uc_ups_option_label' => array(
       'variables' => array(
-        'service'  => NULL,
+        'service' => NULL,
         'packages' => NULL,
       ),
       'file' => 'uc_ups.theme.inc',
@@ -100,7 +110,9 @@ function uc_ups_form_alter(&$form, &$form_state, $form_id) {
   if (uc_product_is_product_form($form)) {
     $node = $form['#node'];
 
+    // TODO This variable was probably removed in Backdrop without replacement.
     $enabled = variable_get('uc_quote_enabled', array()) + array('ups' => FALSE);
+    // TODO This variable was probably removed in Backdrop without replacement.
     $weight = variable_get('uc_quote_method_weight', array()) + array('ups' => 0);
 
     $ups = array(
@@ -115,7 +127,7 @@ function uc_ups_form_alter(&$form, &$form_state, $form_id) {
       '#type' => 'select',
       '#title' => t('Package type'),
       '#options' => _uc_ups_pkg_types(),
-      '#default_value' => isset($node->ups['pkg_type']) ? $node->ups['pkg_type'] : variable_get('uc_ups_pkg_type', '02'),
+      '#default_value' => isset($node->ups['pkg_type']) ? $node->ups['pkg_type'] : config_get('uc_ups.settings', 'uc_ups_pkg_type'),
     );
 
     $form['shipping']['ups'] = $ups;
@@ -131,6 +143,7 @@ function uc_ups_form_alter(&$form, &$form_state, $form_id) {
  * @see uc_ups_form_alter()
  */
 function uc_ups_product_alter_validate($form, &$form_state) {
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (isset($form_state['values']['shippable']) && ($form_state['values']['shipping_type'] == 'small_package' || (empty($form_state['values']['shipping_type']) && variable_get('uc_store_shipping_type', 'small_package') == 'small_package'))) {
     if ($form_state['values']['ups']['pkg_type'] == '02' && (empty($form_state['values']['dim_length']) || empty($form_state['values']['dim_width']) || empty($form_state['values']['dim_height']))) {
       form_set_error('base][dimensions', t('Dimensions are required for custom packaging.'));
@@ -160,10 +173,10 @@ function uc_ups_node_update($node) {
 
       db_insert('uc_ups_products')
         ->fields(array(
-          'vid' => $node->vid,
-          'nid' => $node->nid,
-          'pkg_type' => $ups_values['pkg_type'],
-        ))
+        'vid' => $node->vid,
+        'nid' => $node->nid,
+        'pkg_type' => $ups_values['pkg_type'],
+      ))
         ->execute();
     }
   }
@@ -180,6 +193,7 @@ function uc_ups_node_load($nodes, $types) {
   }
 
   $vids = array();
+  // TODO This variable was probably removed in Backdrop without replacement.
   $shipping_type = variable_get('uc_store_shipping_type', 'small_package');
   $shipping_types = db_query("SELECT id, shipping_type FROM {uc_quote_shipping_types} WHERE id_type = :type AND id IN (:ids)", array(':type' => 'product', ':ids' => array_keys($nodes)))->fetchAllKeyed();
 
@@ -234,6 +248,7 @@ function uc_ups_node_revision_delete($node) {
  * Implements hook_uc_shipping_type().
  */
 function uc_ups_uc_shipping_type() {
+  // TODO This variable was probably removed in Backdrop without replacement.
   $weight = variable_get('uc_quote_type_weight', array('small_package' => 0));
 
   $types = array();
@@ -284,12 +299,13 @@ function uc_ups_uc_shipping_method() {
  * filled out.
  */
 function uc_ups_uc_store_status() {
+  $config = config('uc_ups.settings');
   $messages = array();
 
-  $access   = variable_get('uc_ups_access_license', '') != '';
-  $account  = variable_get('uc_ups_shipper_number', '') != '';
-  $user     = variable_get('uc_ups_user_id', '') != '';
-  $password = variable_get('uc_ups_password', '') != '';
+  $access   = $config->get('uc_ups_access_license') != '';
+  $account  = $config->get('uc_ups_shipper_number') != '';
+  $user     = $config->get('uc_ups_user_id') != '';
+  $password = $config->get('uc_ups_password') != '';
 
   if ($access && $account && $user && $password) {
     $messages[] = array(
@@ -318,9 +334,10 @@ function uc_ups_uc_store_status() {
  * UPS webservice.
  */
 function uc_ups_access_request() {
-  $access = variable_get('uc_ups_access_license', '');
-  $user = variable_get('uc_ups_user_id', '');
-  $password = variable_get('uc_ups_password', '');
+  $config = config('uc_ups.settings');
+  $access = $config->get('uc_ups_access_license');
+  $user = $config->get('uc_ups_user_id');
+  $password = $config->get('uc_ups_password');
   return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <AccessRequest xml:lang=\"en-US\">
   <AccessLicenseNumber>$access</AccessLicenseNumber>
@@ -346,25 +363,38 @@ function uc_ups_access_request() {
  *   RatingServiceSelectionRequest XML document to send to UPS.
  */
 function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
+  $config = config('uc_ups.settings');
   $store['name'] = uc_store_name();
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['owner'] = variable_get('uc_store_owner', NULL);
   $store['email'] = uc_store_email();
   $store['email_from'] = uc_store_email();
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['phone'] = variable_get('uc_store_phone', NULL);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['fax'] = variable_get('uc_store_fax', NULL);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['street1'] = variable_get('uc_store_street1', NULL);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['street2'] = variable_get('uc_store_street2', NULL);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['city'] = variable_get('uc_store_city', NULL);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['zone'] = variable_get('uc_store_zone', NULL);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['postal_code'] = variable_get('uc_store_postal_code', NULL);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store['country'] = variable_get('uc_store_country', 840);
 
-  $account = variable_get('uc_ups_shipper_number', '');
+  $account = $config->get('uc_ups_shipper_number');
   $ua = explode(' ', $_SERVER['HTTP_USER_AGENT']);
   $user_agent = $ua[0];
 
   $services = _uc_ups_service_list();
-  $service = array('code' => $ups_service, 'description' => $services[$ups_service]);
+  $service = array(
+    'code' => $ups_service,
+    'description' => $services[$ups_service],
+  );
 
   $pkg_types = _uc_ups_pkg_types();
 
@@ -381,7 +411,8 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
   $shipfrom_country = $shipfrom_country[0]['country_iso_code_2'];
   $shipfrom_zip = $origin->postal_code;
 
-  $ups_units = variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in'));
+  // TODO This variable was probably removed in Backdrop without replacement.
+  $ups_units = $config->get('uc_ups_unit_system');
   switch ($ups_units) {
     case 'in':
       $units = 'LBS';
@@ -399,7 +430,8 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
 
     // Determine length conversion factor and weight conversion factor
     // for this shipment.
-    $length_factor = uc_length_conversion($package->length_units, variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in')));
+    // TODO This variable was probably removed in Backdrop without replacement.
+    $length_factor = uc_length_conversion($package->length_units, $config->get('uc_ups_unit_system'));
     switch ($ups_units) {
       case 'in':
         $weight_factor = uc_weight_conversion($package->weight_units, 'lb');
@@ -413,7 +445,10 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
     $qty = $package->qty;
     for ($i = 0; $i < $qty; $i++) {
       // Build XML for this package.
-      $package_type = array('code' => $package->pkg_type, 'description' => $pkg_types[$package->pkg_type]);
+      $package_type = array(
+        'code' => $package->pkg_type,
+        'description' => $pkg_types[$package->pkg_type],
+      );
       $package_schema .= "<Package>";
       $package_schema .=   "<PackagingType>";
       $package_schema .=     "<Code>" . $package_type['code'] . "</Code>";
@@ -424,7 +459,8 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
         }
         $package_schema .= "<Dimensions>";
         $package_schema .=   "<UnitOfMeasurement>";
-        $package_schema .=     "<Code>" . strtoupper(variable_get('uc_ups_unit_system', variable_get('uc_length_unit', 'in'))) . "</Code>";
+        // TODO This variable was probably removed in Backdrop without replacement.
+        $package_schema .=     "<Code>" . strtoupper($config->get('uc_ups_unit_system')) . "</Code>";
         $package_schema .=   "</UnitOfMeasurement>";
         $package_schema .=   "<Length>" . number_format($package->length * $length_factor, 2, '.', '') . "</Length>";
         $package_schema .=   "<Width>" . number_format($package->width * $length_factor, 2, '.', '') . "</Width>";
@@ -447,9 +483,10 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
         $package_schema .= "<LargePackageIndicator/>";
       }
 
-      if (variable_get('uc_ups_insurance', TRUE)) {
+      if ($config->get('uc_ups_insurance')) {
         $package_schema .= "<PackageServiceOptions>";
         $package_schema .=   "<InsuredValue>";
+        // TODO This variable was probably removed in Backdrop without replacement.
         $package_schema .=     "<CurrencyCode>" . variable_get('uc_currency_code', 'USD') . "</CurrencyCode>";
         $package_schema .=     "<MonetaryValue>" . $package->price . "</MonetaryValue>";
         $package_schema .=   "</InsuredValue>";
@@ -471,14 +508,14 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
     <RequestOption>rate</RequestOption>
   </Request>
   <PickupType>
-    <Code>" . variable_get('uc_ups_pickup_type', '01') . "</Code>
+    <Code>" . $config->get('uc_ups_pickup_type') . "</Code>
   </PickupType>
   <CustomerClassification>
-    <Code>" . variable_get('uc_ups_classification', '04') . "</Code>
+    <Code>" . $config->get('uc_ups_classification') . "</Code>
   </CustomerClassification>
   <Shipment>
     <Shipper>
-      <ShipperNumber>" . variable_get('uc_ups_shipper_number', '') . "</ShipperNumber>
+      <ShipperNumber>" . $config->get('uc_ups_shipper_number') . "</ShipperNumber>
       <Address>
         <City>" . $store['city'] . "</City>
         <StateProvinceCode>$shipper_zone</StateProvinceCode>
@@ -492,11 +529,11 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
         <PostalCode>$shipto_zip</PostalCode>
         <CountryCode>$shipto_country</CountryCode>
       ";
-      if (variable_get('uc_ups_residential_quotes', 0)) {
-        $schema .= "<ResidentialAddressIndicator/>
+  if ($config->get('uc_ups_residential_quotes')) {
+    $schema .= "<ResidentialAddressIndicator/>
       ";
-      }
-      $schema .= "</Address>
+  }
+  $schema .= "</Address>
     </ShipTo>
     <ShipFrom>
       <Address>
@@ -517,12 +554,12 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
       <Description>{$service['description']}</Description>
     </Service>
     ";
-    $schema .= $package_schema;
-    if (variable_get('uc_ups_negotiated_rates', FALSE)) {
-      $schema .= "<RateInformation>
+  $schema .= $package_schema;
+  if ($config->get('uc_ups_negotiated_rates')) {
+    $schema .= "<RateInformation>
           <NegotiatedRatesIndicator/>
         </RateInformation>";
-    }
+  }
   $schema .= "</Shipment>
 </RatingServiceSelectionRequest>";
 
@@ -547,11 +584,12 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
  *   JSON object containing rate, error, and debugging information.
  */
 function uc_ups_quote($products, $details, $method) {
+  $config = config('uc_ups.settings');
   // The uc_quote AJAX query can fire before the customer has completely
   // filled out the destination address, so check to see whether the address
   // has all needed fields. If not, abort.
   $destination = (object) $details;
-  if (empty($destination->zone)        ||
+  if (empty($destination->zone)         ||
       empty($destination->postal_code) ||
       empty($destination->country)       ) {
     // Skip this shipping method.
@@ -560,11 +598,12 @@ function uc_ups_quote($products, $details, $method) {
 
   $quotes = array();
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $addresses = array(variable_get('uc_quote_store_default_address', new UcAddress()));
   $key = 0;
   $last_key = 0;
   $packages = array();
-  if (variable_get('uc_ups_all_in_one', TRUE) && count($products) > 1) {
+  if ($config->get('uc_ups_all_in_one') && count($products) > 1) {
     foreach ($products as $product) {
       if ($product->nid) {
         // Packages are grouped by the address from which they will be
@@ -663,7 +702,7 @@ function uc_ups_quote($products, $details, $method) {
       if (!isset($product->pkg_qty) || !$product->pkg_qty) {
         $product->pkg_qty = 1;
       }
-      $num_of_pkgs = (int)($product->qty / $product->pkg_qty);
+      $num_of_pkgs = (int) ($product->qty / $product->pkg_qty);
 
       // Grab some product properties directly from the (cached) product
       // data.  They are not normally available here because the $product
@@ -706,17 +745,18 @@ function uc_ups_quote($products, $details, $method) {
     return array();
   }
 
-  $dest = (object)$details;
+  $dest = (object) $details;
 
   foreach ($packages as $key => $ship_packages) {
     $orig = $addresses[$key];
     $orig->email = uc_store_email();
-    foreach (array_keys(array_filter(variable_get('uc_ups_services', array()))) as $ups_service) {
+    foreach (array_keys(array_filter($config->get('uc_ups_services'))) as $ups_service) {
       $request = uc_ups_shipping_quote($ship_packages, $orig, $dest, $ups_service);
-      $resp = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') . 'Rate', array(
+      $resp = backdrop_http_request($config->get('uc_ups_connection_address') . 'Rate', array(
         'method' => 'POST',
         'data' => $request,
       ));
+      // TODO This variable was probably removed in Backdrop without replacement.
       if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
         if (!isset($debug_data[$ups_service]['debug'])) {
           $debug_data[$ups_service]['debug'] = '';
@@ -726,10 +766,11 @@ function uc_ups_quote($products, $details, $method) {
       $response = new SimpleXMLElement($resp->data);
       if (isset($response->Response->Error)) {
         foreach ($response->Response->Error as $error) {
+          // TODO This variable was probably removed in Backdrop without replacement.
           if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
-            $debug_data[$ups_service]['error'][] = (string)$error->ErrorSeverity . ' ' . (string)$error->ErrorCode . ': ' . (string)$error->ErrorDescription;
+            $debug_data[$ups_service]['error'][] = (string) $error->ErrorSeverity . ' ' . (string) $error->ErrorCode . ': ' . (string) $error->ErrorDescription;
           }
-          if (strpos((string)$error->ErrorSeverity, 'Hard') !== FALSE) {
+          if (strpos((string) $error->ErrorSeverity, 'Hard') !== FALSE) {
             // All or nothing quote. If some products can't be shipped by
             // a certain service, no quote is given for that service. If
             // that means no quotes are given at all, they'd better call in.
@@ -744,12 +785,13 @@ function uc_ups_quote($products, $details, $method) {
         if (isset($response->RatedShipment->NegotiatedRates)) {
           $charge = $response->RatedShipment->NegotiatedRates->NetSummaryCharges->GrandTotal;
         }
-        if (!isset($charge->CurrencyCode) || (string)$charge->CurrencyCode == variable_get('uc_currency_code', "USD")) {
+        // TODO This variable was probably removed in Backdrop without replacement.
+        if (!isset($charge->CurrencyCode) || (string) $charge->CurrencyCode == variable_get('uc_currency_code', "USD")) {
           // Markup rate before customer sees it.
           if (!isset($quotes[$ups_service]['rate'])) {
             $quotes[$ups_service]['rate'] = 0;
           }
-          $rate = uc_ups_rate_markup((string)$charge->MonetaryValue);
+          $rate = uc_ups_rate_markup((string) $charge->MonetaryValue);
           $quotes[$ups_service]['rate'] += $rate;
         }
       }
@@ -806,19 +848,19 @@ function uc_ups_void_shipment_request($shipment_number, $tracking_numbers = arra
   $schema .= '<?xml version="1.0"?>';
   $schema .= '<VoidShipmentRequest>';
   $schema .= '<Request>';
-    $schema .= '<RequestAction>Void</RequestAction>';
-    $schema .= '<TransactionReference>';
-      $schema .= '<CustomerContext>';
-      $schema .= t('Void shipment @ship_number and tracking numbers @track_list', array('@ship_number' => $shipment_number, '@track_list' => implode(', ', $tracking_numbers)));
-      $schema .= '</CustomerContext>';
-      $schema .= '<XpciVersion>1.0</XpciVersion>';
-    $schema .= '</TransactionReference>';
+  $schema .= '<RequestAction>Void</RequestAction>';
+  $schema .= '<TransactionReference>';
+  $schema .= '<CustomerContext>';
+  $schema .= t('Void shipment @ship_number and tracking numbers @track_list', array('@ship_number' => $shipment_number, '@track_list' => implode(', ', $tracking_numbers)));
+  $schema .= '</CustomerContext>';
+  $schema .= '<XpciVersion>1.0</XpciVersion>';
+  $schema .= '</TransactionReference>';
   $schema .= '</Request>';
   $schema .= '<ExpandedVoidShipment>';
-    $schema .= '<ShipmentIdentificationNumber>' . $shipment_number . '</ShipmentIdentificationNumber>';
-    foreach ($tracking_numbers as $number) {
-      $schema .= '<TrackingNumber>' . $number . '</TrackingNumber>';
-    }
+  $schema .= '<ShipmentIdentificationNumber>' . $shipment_number . '</ShipmentIdentificationNumber>';
+  foreach ($tracking_numbers as $number) {
+    $schema .= '<TrackingNumber>' . $number . '</TrackingNumber>';
+  }
   $schema .= '</ExpandedVoidShipment>';
   $schema .= '</VoidShipmentRequest>';
   return $schema;
@@ -840,27 +882,27 @@ function uc_ups_void_shipment_request($shipment_number, $tracking_numbers = arra
 function uc_ups_void_shipment($shipment_number, $tracking_numbers = array()) {
   $success = FALSE;
   $request = uc_ups_void_shipment_request($shipment_number, $tracking_numbers);
-  $resp = drupal_http_request(variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/') . 'Void', array(
+  $resp = backdrop_http_request(config_get('uc_ups.settings', 'uc_ups_connection_address') . 'Void', array(
     'method' => 'POST',
     'data' => $request,
   ));
   $response = new SimpleXMLElement($resp->data);
   if (isset($response->Response)) {
     if (isset($response->Response->ResponseStatusCode)) {
-      $success = (string)$response->Response->ResponseStatusCode;
+      $success = (string) $response->Response->ResponseStatusCode;
     }
     if (isset($response->Response->Error)) {
       foreach ($response->Response->Error as $error) {
-        drupal_set_message((string)$error->ErrorSeverity . ' ' . (string)$error->ErrorCode . ': ' . (string)$error->ErrorDescription, 'error');
+        backdrop_set_message((string) $error->ErrorSeverity . ' ' . (string) $error->ErrorCode . ': ' . (string) $error->ErrorDescription, 'error');
       }
     }
   }
   if (isset($response->Status)) {
     if (isset($response->Status->StatusType)) {
-      $success = (string)$response->Status->StatusType->Code;
+      $success = (string) $response->Status->StatusType->Code;
     }
   }
-  return (bool)$success;
+  return (bool) $success;
 }
 
 /**
@@ -873,8 +915,9 @@ function uc_ups_void_shipment($shipment_number, $tracking_numbers = array()) {
  *   Shipping rate after markup.
  */
 function uc_ups_rate_markup($rate) {
-  $markup = trim(variable_get('uc_ups_rate_markup', '0'));
-  $type   = variable_get('uc_ups_rate_markup_type', 'percentage');
+  $config = config('uc_ups.settings');
+  $markup = trim($config->get('uc_ups_rate_markup'));
+  $type   = $config->get('uc_ups_rate_markup_type');
 
   if (is_numeric($markup)) {
     switch ($type) {
@@ -901,8 +944,9 @@ function uc_ups_rate_markup($rate) {
  *   Shipping weight after markup.
  */
 function uc_ups_weight_markup($weight) {
-  $markup = trim(variable_get('uc_ups_weight_markup', '0'));
-  $type   = variable_get('uc_ups_weight_markup_type', 'percentage');
+  $config = config('uc_ups.settings');
+  $markup = trim($config->get('uc_ups_weight_markup'));
+  $type   = $config->get('uc_ups_weight_markup_type');
 
   if (is_numeric($markup)) {
     switch ($type) {

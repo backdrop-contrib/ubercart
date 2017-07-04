@@ -296,7 +296,7 @@ function uc_catalog_views_default_views() {
   $handler->display->display_options['arguments']['parent']['break_phrase'] = 0;
   $handler->display->display_options['arguments']['parent']['not'] = 0;
   /* Filter: Taxonomy: Vocabulary */
-  $vid = variable_get('uc_catalog_vid', 0);
+  $vid = config_get('uc_catalog.settings', 'uc_catalog_vid');
   $handler->display->display_options['filters']['vid']['id'] = 'vid';
   $handler->display->display_options['filters']['vid']['table'] = 'taxonomy_term_data';
   $handler->display->display_options['filters']['vid']['field'] = 'vid';

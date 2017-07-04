@@ -21,7 +21,7 @@ function uc_payment_menu() {
   $items['admin/store/settings/payment'] = array(
     'title' => 'Payment methods',
     'description' => 'Choose and configure available payment methods.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_payment_methods_form'),
     'access arguments' => array('administer store'),
     'file' => 'uc_payment.admin.inc',
@@ -30,7 +30,7 @@ function uc_payment_menu() {
     'title callback' => 'uc_payment_method_title',
     'title arguments' => array(5),
     'description' => 'Configures a specific payment method.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_payment_method_settings_form', 5),
     'access arguments' => array('administer store'),
     'file' => 'uc_payment.admin.inc',
@@ -40,7 +40,7 @@ function uc_payment_menu() {
   $items['admin/store/orders/%uc_order/payments'] = array(
     'title' => 'Payments',
     'description' => 'Show payments made against an order.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_payment_by_order_form', 3),
     'access arguments' => array('view payments'),
     'weight' => 5,
@@ -50,7 +50,7 @@ function uc_payment_menu() {
   $items['admin/store/orders/%uc_order/payments/%uc_payment/delete'] = array(
     'title' => 'Delete payment?',
     'description' => 'Delete payment?',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_payment_delete_confirm_form', 3, 5),
     'access arguments' => array('delete payments'),
     'type' => MENU_CALLBACK,
@@ -126,8 +126,8 @@ function uc_payment_form_uc_cart_checkout_review_form_alter(&$form, &$form_state
 
   if ($redirect = _uc_payment_method_data($order->payment_method, 'redirect')) {
     unset($form['actions']['submit']);
-    $suffix = drupal_get_form($redirect, $order);
-    $form['#suffix'] = drupal_render($suffix);
+    $suffix = backdrop_get_form($redirect, $order);
+    $form['#suffix'] = backdrop_render($suffix);
   }
 }
 
@@ -280,9 +280,9 @@ function uc_payment_method_free_order($op, &$order) {
     case 'order-submit':
       if ($order->order_total >= 0.01) {
         return array(array(
-          'pass' => FALSE,
-          'message' => t('We cannot process your order without payment.'),
-        ));
+            'pass' => FALSE,
+            'message' => t('We cannot process your order without payment.'),
+          ));
       }
 
       uc_payment_enter($order->order_id, 'free_order', 0, 0, NULL, t('Checkout completed for a free order.'));
@@ -303,7 +303,7 @@ function uc_payment_method_free_order($op, &$order) {
  *   The formatted HTML of the order total preview if $return is set to TRUE.
  */
 function uc_payment_get_totals($form, $form_state) {
-  $commands[] = ajax_command_replace('#line-items-div', trim(drupal_render($form['panes']['payment']['line_items'])));
+  $commands[] = ajax_command_replace('#line-items-div', trim(backdrop_render($form['panes']['payment']['line_items'])));
 
   return array('#type' => 'ajax', '#commands' => $commands);
 }
@@ -352,6 +352,16 @@ function uc_payments_table() {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function uc_payment_config_info() {
+  $prefixes['uc_payment.settings'] = array(
+    'label' => t('Module name settings'),
+    'group' => t('Configuration'),
+  );
+}
+
+/**
  * Processes a payment through an enabled payment gateway.
  *
  * @param $method
@@ -387,7 +397,7 @@ function uc_payment_process_payment($method, $order_id, $amount, $data = NULL, $
   if (empty($gateways)) {
     // Display an error message if messages weren't silenced.
     if (!$default) {
-      drupal_set_message(t('You are not able to process %type payments.', array('%type' => _uc_payment_method_data($method, 'name'))));
+      backdrop_set_message(t('You are not able to process %type payments.', array('%type' => _uc_payment_method_data($method, 'name'))));
     }
 
     return FALSE;
@@ -395,7 +405,7 @@ function uc_payment_process_payment($method, $order_id, $amount, $data = NULL, $
 
   // Find the default gateway if requested.
   if ($default) {
-    $default = variable_get('uc_payment_' . $method . '_gateway', '');
+    $default = config_get('uc_payment.settings', 'uc_payment_' . $method . '_gateway');
   }
 
   // If we only found one gateway for this payment method...
@@ -428,7 +438,7 @@ function uc_payment_process_payment($method, $order_id, $amount, $data = NULL, $
     $result['success'] = FALSE;
     $result['message'] = t('An error has occurred with your payment gateway. The charge function could not be found.');
     if (user_access('administer store')) {
-      drupal_set_message($result['message']);
+      backdrop_set_message($result['message']);
     }
   }
 
@@ -447,12 +457,12 @@ function uc_payment_process_payment($method, $order_id, $amount, $data = NULL, $
   // If we have a message for display and aren't simply charging with the
   // default gateway for a customer...
   if (!empty($result['message']) && !$default) {
-    drupal_set_message($result['message']);
+    backdrop_set_message($result['message']);
   }
 
   // Head back to the order if a redirect was specified.
   if ($redirect) {
-    drupal_goto('admin/store/orders/' . $order_id);
+    backdrop_goto('admin/store/orders/' . $order_id);
   }
 
   return $result['success'];
@@ -498,14 +508,14 @@ function uc_payment_enter($order_id, $method, $amount, $uid = 0, $data = NULL, $
 
   $receipt_id = db_insert('uc_payment_receipts')
     ->fields(array(
-      'order_id' => $order_id,
-      'method' => $method_name,
-      'amount' => $amount,
-      'uid' => $uid,
-      'data' => $data,
-      'comment' => $comment,
-      'received' => $received,
-    ))
+    'order_id' => $order_id,
+    'method' => $method_name,
+    'amount' => $amount,
+    'uid' => $uid,
+    'data' => $data,
+    'comment' => $comment,
+    'received' => $received,
+  ))
     ->execute();
 
   $order = uc_order_load($order_id, TRUE);
@@ -593,6 +603,7 @@ function uc_payment_load_payments($order_id) {
  * Builds a list of payment methods defined in the enabled modules.
  */
 function _uc_payment_method_list($action = NULL) {
+  $config = config('uc_payment.settings');
   static $methods = array();
 
   if (count($methods) > 0 && $action !== 'rebuild') {
@@ -607,13 +618,13 @@ function _uc_payment_method_list($action = NULL) {
 
     $methods[$id] = array_merge($method, array(
       'id' => $id,
-      'checkout' => variable_get('uc_payment_method_' . $id . '_checkout', $method['checkout']),
-      'weight' => variable_get('uc_payment_method_' . $id . '_weight', $method['weight']),
+      'checkout' => $config->get('uc_payment_method_' . $id . '_checkout'),
+      'weight' => $config->get('uc_payment_method_' . $id . '_weight'),
     ));
   }
 
   // Allow other modules to alter the payment methods.
-  drupal_alter('uc_payment_method', $methods);
+  backdrop_alter('uc_payment_method', $methods);
 
   uasort($methods, 'uc_weight_sort');
 
@@ -640,6 +651,7 @@ function _uc_payment_gateway_list($filter = NULL, $enabled_only = FALSE) {
       $id = $gateway['id'];
     }
 
+    // TODO This variable was probably removed in Backdrop without replacement.
     $gateways[$id] = array_merge($gateway, array(
       'id' => $id,
       'enabled' => variable_get('uc_pg_' . $id . '_enabled', TRUE),
@@ -647,7 +659,7 @@ function _uc_payment_gateway_list($filter = NULL, $enabled_only = FALSE) {
   }
 
   // Allow other modules to alter the payment gateways.
-  drupal_alter('uc_payment_gateway', $gateways);
+  backdrop_alter('uc_payment_gateway', $gateways);
 
   foreach ($gateways as $id => $gateway) {
     if ($filter && (!isset($gateway[$filter]) || !function_exists($gateway[$filter]))) {
@@ -695,6 +707,14 @@ function uc_payment_method_options_list() {
 function uc_payment_views_api() {
   return array(
     'api' => '2.0',
-    'path' => drupal_get_path('module', 'uc_payment') . '/views',
+    'path' => backdrop_get_path('module', 'uc_payment') . '/views',
+  );
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function uc_payment_autoload_info() {
+  return array(
   );
 }

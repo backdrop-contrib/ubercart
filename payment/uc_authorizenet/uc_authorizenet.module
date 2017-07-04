@@ -48,12 +48,13 @@ function uc_authorizenet_settings_form($form, &$form_state) {
   $login_data = _uc_authorizenet_login_data();
 
   // Allow admin to set duplicate window.
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['uc_authnet_duplicate_window'] = array(
     '#type' => 'select',
     '#title' => t('Duplicate window'),
     '#description' => t('Blocks submission of duplicate transactions within the specified window.  Defaults to 120 seconds.'),
     '#default_value' => variable_get('uc_authnet_duplicate_window', 120),
-    '#options' => drupal_map_assoc(array(0, 15, 30, 45, 60, 75, 90, 105, 120)),
+    '#options' => backdrop_map_assoc(array(0, 15, 30, 45, 60, 75, 90, 105, 120)),
   );
 
   $form['api_id_key'] = array(
@@ -61,21 +62,25 @@ function uc_authorizenet_settings_form($form, &$form_state) {
     '#title' => t('API Login ID and Transaction Key'),
     '#description' => t('This information is required for Ubercart to interact with your payment gateway account.  It is different from your login ID and password and may be found through your account settings page.  Do not change the gateway URLs unless you are using this module with an Authorize.net-compatible gateway that requires different URLs.'),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['api_id_key']['uc_authnet_api_login_id'] = array(
     '#type' => 'textfield',
     '#title' => t('API Login ID'),
     '#default_value' => variable_get('uc_authnet_api_login_id', ''),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['api_id_key']['uc_authnet_api_transaction_key'] = array(
     '#type' => 'textfield',
     '#title' => t('Transaction Key'),
     '#default_value' => variable_get('uc_authnet_api_transaction_key', ''),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['api_id_key']['uc_authnet_api_test_gateway_url'] = array(
     '#type' => 'textfield',
     '#title' => t('Authorize.net Test Gateway URL'),
     '#default_value' => variable_get('uc_authnet_api_test_gateway_url', UC_AUTHORIZENET_TEST_GATEWAY_URL),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['api_id_key']['uc_authnet_api_live_gateway_url'] = array(
     '#type' => 'textfield',
     '#title' => t('Authorize.net Live Gateway URL'),
@@ -87,6 +92,7 @@ function uc_authorizenet_settings_form($form, &$form_state) {
     '#title' => t('AIM settings'),
     '#description' => t('These settings pertain to the Authorize.Net AIM payment method for card not present transactions.'),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['aim_settings']['uc_authnet_aim_txn_mode'] = array(
     '#type' => 'radios',
     '#title' => t('Transaction mode'),
@@ -99,11 +105,13 @@ function uc_authorizenet_settings_form($form, &$form_state) {
     '#default_value' => variable_get('uc_authnet_aim_txn_mode', 'live_test'),
   );
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['aim_settings']['uc_authnet_aim_email_customer'] = array(
     '#type' => 'checkbox',
     '#title' => t('Tell Authorize.net to e-mail the customer a receipt based on your account settings.'),
     '#default_value' => variable_get('uc_authnet_aim_email_customer', FALSE),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['aim_settings']['uc_authnet_response_debug'] = array(
     '#type' => 'checkbox',
     '#title' => t('Log full API response messages from Authorize.net for debugging.'),
@@ -114,8 +122,9 @@ function uc_authorizenet_settings_form($form, &$form_state) {
   $form['arb_settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('ARB settings'),
-    '#description' => t('These settings pertain to the Authorize.Net Automated Recurring Billing service.')
+    '#description' => t('These settings pertain to the Authorize.Net Automated Recurring Billing service.'),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['arb_settings']['uc_authnet_arb_mode'] = array(
     '#type' => 'radios',
     '#title' => t('Transaction mode'),
@@ -134,6 +143,7 @@ function uc_authorizenet_settings_form($form, &$form_state) {
     '#default_value' => $login_data['md5_hash'],
     '#access' => user_access('administer credit cards'),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['arb_settings']['uc_authnet_report_arb_post'] = array(
     '#type' => 'checkbox',
     '#title' => t('Log reported ARB payments in watchdog.'),
@@ -144,13 +154,15 @@ function uc_authorizenet_settings_form($form, &$form_state) {
   $form['cim_settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('CIM settings'),
-    '#description' => t('These settings pertain to the Authorize.Net Customer Information Management service.')
+    '#description' => t('These settings pertain to the Authorize.Net Customer Information Management service.'),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['cim_settings']['uc_authnet_cim_profile'] = array(
     '#type' => 'checkbox',
     '#title' => t('Always create a CIM profile for securely storing CC info for later use.'),
     '#default_value' => variable_get('uc_authnet_cim_profile', FALSE),
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['cim_settings']['uc_authnet_cim_mode'] = array(
     '#type' => 'radios',
     '#title' => t('Transaction mode'),
@@ -187,6 +199,7 @@ function uc_authorizenet_payment_gateway_settings_submit($form, &$form_state) {
 
     // Encrypt the Login ID, Transaction key, and MD5 Hash.
     if (!empty($form_state['values']['uc_authnet_md5_hash'])) {
+      // TODO This variable was probably removed in Backdrop without replacement.
       variable_set('uc_authnet_md5_hash', $crypt->encrypt($key, $form_state['values']['uc_authnet_md5_hash']));
     }
 
@@ -208,7 +221,7 @@ function uc_authorizenet_charge($order_id, $amount, $data) {
     case UC_CREDIT_REFERENCE_TXN:
       return _uc_authorizenet_cim_profile_charge($order, $amount, $data);
 
-    // Set a reference only.
+      // Set a reference only.
     case UC_CREDIT_REFERENCE_SET:
       // Return the error message if this failed.
       if ($message = _uc_authorizenet_cim_profile_create($order)) {
@@ -218,7 +231,7 @@ function uc_authorizenet_charge($order_id, $amount, $data) {
         return array('success' => TRUE, 'log_payment' => FALSE, 'message' => t('New customer profile created successfully at Authorize.Net.'));
       }
 
-    // Accommodate all other transaction types.
+      // Accommodate all other transaction types.
     default:
       return _uc_authorizenet_charge($order, $amount, $data);
   }
@@ -228,6 +241,7 @@ function uc_authorizenet_charge($order_id, $amount, $data) {
  * Creates a CIM profile using an order's data.
  */
 function _uc_authorizenet_cim_profile_create($order) {
+  // TODO This variable was probably removed in Backdrop without replacement.
   $server = variable_get('uc_authnet_cim_mode', 'disabled');
 
   // Help build the request.
@@ -281,6 +295,7 @@ function _uc_authorizenet_cim_profile_create_request($order) {
  */
 function _uc_authorizenet_cim_profile_charge($order, $amount, $data) {
   global $user;
+  // TODO This variable was probably removed in Backdrop without replacement.
   $server = variable_get('uc_authnet_cim_mode', 'disabled');
 
   // Help build the request.
@@ -364,6 +379,7 @@ function _uc_authorizenet_cim_profile_charge_request($order, $amount, $data) {
  * Gets a CIM profile stored at Authorize.Net.
  */
 function _uc_authorizenet_cim_profile_get($order, $profile_id) {
+  // TODO This variable was probably removed in Backdrop without replacement.
   $server = variable_get('uc_authnet_cim_mode', 'disabled');
   $request = array(
     'customerProfileId' => $profile_id,
@@ -382,6 +398,7 @@ function _uc_authorizenet_cim_profile_get($order, $profile_id) {
  * Gets a CIM payment profile stored at auth.net.
  */
 function _uc_authorizenet_cim_payment_profile_get($order, $profile_id, $payment_profile_id) {
+  // TODO This variable was probably removed in Backdrop without replacement.
   $server = variable_get('uc_authnet_cim_mode', 'disabled');
   $request = array(
     'customerProfileId' => $profile_id,
@@ -419,11 +436,15 @@ function _uc_authorizenet_charge($order, $amount, $data) {
   $delivery_country = uc_get_country_data(array('country_id' => $order->delivery_country));
 
   // Build the POST data for the transaction.
+  // TODO This variable was probably removed in Backdrop without replacement.
+  // TODO This variable was probably removed in Backdrop without replacement.
+  // TODO This variable was probably removed in Backdrop without replacement.
+  // TODO This variable was probably removed in Backdrop without replacement.
+  // TODO This variable was probably removed in Backdrop without replacement.
   $submit_data = array(
     // Merchant information.
     'x_login' => trim(variable_get('uc_authnet_api_login_id', '')),
     'x_tran_key' => trim(variable_get('uc_authnet_api_transaction_key', '')),
-
     // Transaction information.
     'x_version' => '3.1',
     'x_type' => _uc_authorizenet_txn_map($data['txn_type']),
@@ -438,11 +459,9 @@ function _uc_authorizenet_charge($order, $amount, $data) {
     // 'x_auth_code' => '',
     'x_test_request' => variable_get('uc_authnet_aim_txn_mode', 'live_test') == 'live_test' ? 'TRUE' : 'FALSE',
     'x_duplicate_window' => variable_get('uc_authnet_duplicate_window', 120),
-
     // Order information.
     'x_invoice_num' => $order->order_id,
     'x_description' => substr(implode(', ', $description), 0, 255),
-
     // Customer information.
     'x_first_name' => substr($order->billing_first_name, 0, 50),
     'x_last_name' => substr($order->billing_last_name, 0, 50),
@@ -457,7 +476,6 @@ function _uc_authorizenet_charge($order, $amount, $data) {
     'x_email' => substr($order->primary_email, 0, 255),
     'x_cust_id' => substr($order->uid, 0, 20),
     'x_customer_ip' => substr(ip_address(), 0, 15),
-
     // Shipping information.
     'x_ship_to_first_name' => substr($order->delivery_first_name, 0, 50),
     'x_ship_to_last_name' => substr($order->delivery_last_name, 0, 50),
@@ -467,7 +485,6 @@ function _uc_authorizenet_charge($order, $amount, $data) {
     'x_ship_to_state' => substr(uc_get_zone_code($order->delivery_zone), 0, 40),
     'x_ship_to_zip' => substr($order->delivery_postal_code, 0, 20),
     'x_ship_to_country' => !$delivery_country ? '' : $delivery_country[0]['country_iso_code_2'],
-
     // Extra information.
     'x_delim_data' => 'TRUE',
     'x_delim_char' => '|',
@@ -481,13 +498,16 @@ function _uc_authorizenet_charge($order, $amount, $data) {
   }
 
   // Allow other modules to alter the transaction.
-  drupal_alter('uc_authorizenet_transaction', $submit_data);
+  backdrop_alter('uc_authorizenet_transaction', $submit_data);
 
   // Determine the correct URL based on the transaction mode.
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (variable_get('uc_authnet_aim_txn_mode', 'live_test') == 'developer_test') {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $post_url = variable_get('uc_authnet_api_test_gateway_url', UC_AUTHORIZENET_TEST_GATEWAY_URL);
   }
   else {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $post_url = variable_get('uc_authnet_api_live_gateway_url', UC_AUTHORIZENET_LIVE_GATEWAY_URL);
   }
 
@@ -518,6 +538,7 @@ function _uc_authorizenet_charge($order, $amount, $data) {
 
   $response = explode('|', $result);
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (variable_get('uc_authnet_response_debug', FALSE)) {
     watchdog('uc_authorizenet', 'Debug response: !data', array('!data' => '<pre>' . check_plain(print_r($response, TRUE)) . '</pre>'));
   }
@@ -558,7 +579,12 @@ function _uc_authorizenet_charge($order, $amount, $data) {
       'success' => TRUE,
       'comment' => $message,
       'message' => $message,
-      'data' => array('module' => 'uc_authorizenet', 'txn_type' => $response[11], 'txn_id' => $response[6], 'txn_authcode' => $response[4]),
+      'data' => array(
+        'module' => 'uc_authorizenet',
+        'txn_type' => $response[11],
+        'txn_id' => $response[6],
+        'txn_authcode' => $response[4],
+      ),
       'uid' => $user->uid,
     );
 
@@ -573,6 +599,7 @@ function _uc_authorizenet_charge($order, $amount, $data) {
 
     // Create a transaction reference if specified in the payment gateway
     // settings and this is an appropriate transaction type.
+    // TODO This variable was probably removed in Backdrop without replacement.
     if (variable_get('uc_authnet_cim_profile', FALSE) && in_array($data['txn_type'], array(UC_CREDIT_AUTH_ONLY, UC_CREDIT_AUTH_CAPTURE))) {
       // Ignore the returned message for now; that will appear in the comments.
       _uc_authorizenet_cim_profile_create($order);
@@ -589,6 +616,7 @@ function _uc_authorizenet_charge($order, $amount, $data) {
     array('@type' => _uc_authorizenet_txn_type($response[11]), '@status' => $result['success'] ? t('ACCEPTED') : t('REJECTED'), '@message' => $response[3], '@amount' => uc_currency_format($response[9]), '@avs' => _uc_authorizenet_avs($response[5])));
 
   // Add the CVV response if enabled.
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (variable_get('uc_credit_cvv_enabled', TRUE)) {
     $comment .= '<br />' . t('CVV match: @cvv', array('@cvv' => _uc_authorizenet_cvv($response[38])));
   }
@@ -626,7 +654,7 @@ function uc_authorizenet_xml_api($server, $xml) {
   $ch = curl_init();
   curl_setopt($ch, CURLOPT_URL, $post_url);
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-  curl_setopt($ch, CURLOPT_HTTPHEADER, Array("Content-Type: text/xml"));
+  curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: text/xml"));
   curl_setopt($ch, CURLOPT_HEADER, 1);
   curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
   curl_setopt($ch, CURLOPT_POST, 1);
@@ -658,6 +686,7 @@ function uc_authorizenet_xml_api($server, $xml) {
  *   TRUE or FALSE indicating the success of the cancellation.
  */
 function uc_authorizenet_arb_update($subscription_id, $updates, $order_id = NULL) {
+  // TODO This variable was probably removed in Backdrop without replacement.
   $server = variable_get('uc_authnet_arb_mode', 'disabled');
 
   unset($updates['paymentSchedule']);
@@ -666,7 +695,7 @@ function uc_authorizenet_arb_update($subscription_id, $updates, $order_id = NULL
   $data = array(
     'refId' => substr($order_id . '-' . REQUEST_TIME, 0, 20),
     'subscriptionId' => $subscription_id,
-    'subscription' => $updates
+    'subscription' => $updates,
   );
 
   // Build the XML string.
@@ -700,6 +729,8 @@ function uc_authorizenet_arb_update($subscription_id, $updates, $order_id = NULL
  * the merchant authentication information.
  */
 function _uc_authorizenet_xml_api_wrapper($request, $xml) {
+  // TODO This variable was probably removed in Backdrop without replacement.
+  // TODO This variable was probably removed in Backdrop without replacement.
   return '<?xml version="1.0" encoding="utf-8"?><' . $request
         . ' xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd"><merchantAuthentication>'
         . '<name>' . trim(variable_get('uc_authnet_api_login_id', '')) . '</name>'
@@ -942,6 +973,7 @@ function _uc_authorizenet_login_data() {
     return $data;
   }
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $md5_hash = variable_get('uc_authnet_md5_hash', '');
 
   // If CC encryption has been configured properly.

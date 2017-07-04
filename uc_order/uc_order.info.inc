@@ -121,7 +121,7 @@ function uc_order_entity_property_info() {
 class UcOrderProductMetadataController extends EntityDefaultMetadataController {
   public function entityPropertyInfo() {
     $props = parent::entityPropertyInfo();
-    // Copy the descriptions from the schema. Drupal discards this information, so we have to
+    // Copy the descriptions from the schema. Backdrop discards this information, so we have to
     // call uc_order_schema() directly.
     module_load_include('install', 'uc_order', 'uc_order');
     $schema = uc_order_schema();

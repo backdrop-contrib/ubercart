@@ -41,17 +41,20 @@ function theme_uc_attribute_add_to_cart($variables) {
   $form = $variables['form'];
 
   $output = '<div id="' . $form['#id'] . '" class="attributes">';
-  $stripes = array('even' => 'odd', 'odd' => 'even');
+  $stripes = array(
+    'even' => 'odd',
+    'odd' => 'even',
+  );
   $parity = 'even';
   foreach (element_children($form) as $aid) {
     $parity = $stripes[$parity];
     $classes = array('attribute', 'attribute-' . $aid, $parity);
     $output .= '<div class="' . implode(' ', $classes) . '">';
-    $output .= drupal_render($form[$aid]);
+    $output .= backdrop_render($form[$aid]);
     $output .= '</div>';
   }
 
-  $output .= drupal_render_children($form) . '</div>';
+  $output .= backdrop_render_children($form) . '</div>';
 
   return $output;
 }

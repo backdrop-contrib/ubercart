@@ -16,8 +16,14 @@ class uc_order_handler_field_order_id extends views_handler_field {
   function init(&$view, &$data) {
     parent::init($view, $data);
     if (!empty($this->options['link_to_order'])) {
-      $this->additional_fields['order_id'] = array('table' => 'uc_orders', 'field' => 'order_id');
-      $this->additional_fields['uid'] = array('table' => 'uc_orders', 'field' => 'uid');
+      $this->additional_fields['order_id'] = array(
+        'table' => 'uc_orders',
+        'field' => 'order_id',
+      );
+      $this->additional_fields['uid'] = array(
+        'table' => 'uc_orders',
+        'field' => 'uid',
+      );
     }
   }
 

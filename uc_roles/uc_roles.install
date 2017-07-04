@@ -45,7 +45,6 @@ function uc_roles_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
-
       // Start of expiration period
       // Not actually implemented yet, this is a placeholder.
       'start_override' => array(
@@ -61,7 +60,6 @@ function uc_roles_schema() {
         'not null' => FALSE,
         'default' => 0,
       ),
-
       // End of expiration period
       'end_override' => array(
         'description' => 'Override the default end time? 1 => Yes. 0 => No.',
@@ -185,7 +183,7 @@ function uc_roles_schema() {
 function uc_roles_update_last_removed() {
   // 7.x-3.0-beta2 and earlier were installed with schema version 0,
   // which causes update.php to fail.
-  return drupal_get_installed_schema_version('uc_roles') == 0 ? 0 : 6004;
+  return backdrop_get_installed_schema_version('uc_roles') == 0 ? 0 : 6004;
 }
 
 /**
@@ -200,11 +198,47 @@ function uc_roles_uninstall() {
     ->execute();
 }
 
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_roles_update_7300() { }
+
 /**
- * Remove unused variables.
+ * Implements hook_update_last_removed().
  */
-function uc_roles_update_7300() {
-  variable_del('uc_roles_default_expiration_header');
-  variable_del('uc_roles_default_expiration_message');
-  variable_del('uc_roles_default_expiration_title');
+function uc_roles_update_last_removed() {
+  return 7300;
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function uc_roles_update_1000() {
+  $config = config('uc_roles .settings');
+  $config->set('uc_roles_reminder_granularity', update_variable_get('uc_roles_reminder_granularity', 'never'));
+  $config->set('uc_roles_reminder_length', update_variable_get('uc_roles_reminder_length', 'NULL'));
+  $config->set('uc_roles_default_role', update_variable_get('uc_roles_default_role', 'NULL'));
+  $config->set('uc_roles_default_granularity', update_variable_get('uc_roles_default_granularity', 'never'));
+  $config->set('uc_roles_default_length', update_variable_get('uc_roles_default_length', 'NULL'));
+  $config->set('uc_roles_default_show_expiration', update_variable_get('uc_roles_default_show_expiration', 'TRUE'));
+  $config->set('uc_roles_default_by_quantity', update_variable_get('uc_roles_default_by_quantity', 'FALSE'));
+  $config->set('uc_roles_default_end_time', update_variable_get('uc_roles_default_end_time', 'NULL'));
+  $config->set('uc_roles_default_end_expiration', update_variable_get('uc_roles_default_end_expiration', 'rel'));
+  $config->set('uc_roles_default_role_choices', update_variable_get('uc_roles_default_role_choices', 'dynamic value in file /ubercart/uc_roles/uc_roles.module line 943'));
+  update_variable_del('uc_roles_reminder_granularity');
+  update_variable_del('uc_roles_reminder_length');
+  update_variable_del('uc_roles_default_role');
+  update_variable_del('uc_roles_default_granularity');
+  update_variable_del('uc_roles_default_length');
+  update_variable_del('uc_roles_default_show_expiration');
+  update_variable_del('uc_roles_default_by_quantity');
+  update_variable_del('uc_roles_default_end_time');
+  update_variable_del('uc_roles_default_end_expiration');
+  update_variable_del('uc_roles_default_role_choices');
+}
+
+/**
+ * Implements hook_install().
+ */
+function uc_roles_install() {
+  // Dynamically generated variable data was detected.
+  // /ubercart/uc_roles/uc_roles.module line 943
 }

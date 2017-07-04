@@ -14,7 +14,10 @@
  */
 function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
   if ($mid && ($method = db_query("SELECT * FROM {uc_weightquote_methods} WHERE mid = :mid", array(':mid' => $mid))->fetchObject())) {
-    $form['mid'] = array('#type' => 'value', '#value' => $mid);
+    $form['mid'] = array(
+      '#type' => 'value',
+      '#value' => $mid,
+    );
   }
   else {
     $method = (object) array(
@@ -46,6 +49,8 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
     '#default_value' => $method->base_rate,
     '#required' => TRUE,
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['product_rate'] = array(
     '#type' => 'uc_price',
     '#title' => t('Default cost adjustment per !unit', array('!unit' => variable_get('uc_weight_unit', 'lb'))),
@@ -79,7 +84,7 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
  * @see uc_weightquote_admin_method_edit_form()
  */
 function uc_weightquote_admin_method_edit_form_delete($form, &$form_state) {
-  drupal_goto('admin/store/settings/quotes/weightquote/' . $form_state['values']['mid'] . '/delete');
+  backdrop_goto('admin/store/settings/quotes/weightquote/' . $form_state['values']['mid'] . '/delete');
 }
 
 /**
@@ -89,17 +94,17 @@ function uc_weightquote_admin_method_edit_form_delete($form, &$form_state) {
  */
 function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
   if (isset($form_state['values']['mid'])) {
-    drupal_write_record('uc_weightquote_methods', $form_state['values'], 'mid');
-    drupal_set_message(t('Weight quote shipping method was updated.'));
+    backdrop_write_record('uc_weightquote_methods', $form_state['values'], 'mid');
+    backdrop_set_message(t('Weight quote shipping method was updated.'));
     $form_state['redirect'] = 'admin/store/settings/quotes/methods';
   }
   else {
-    drupal_write_record('uc_weightquote_methods', $form_state['values']);
+    backdrop_write_record('uc_weightquote_methods', $form_state['values']);
 
     // Ensure Rules picks up the new condition.
     entity_flush_caches();
 
-    drupal_set_message(t('Created and enabled new weight quote shipping method.'));
+    backdrop_set_message(t('Created and enabled new weight quote shipping method.'));
     $form_state['redirect'] = 'admin/store/settings/quotes/manage/get_quote_from_weightquote_' . $form_state['values']['mid'];
   }
 }
@@ -111,7 +116,10 @@ function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
  * @ingroup forms
  */
 function uc_weightquote_admin_method_confirm_delete($form, &$form_state, $mid) {
-  $form['mid'] = array('#type' => 'value', '#value' => $mid);
+  $form['mid'] = array(
+    '#type' => 'value',
+    '#value' => $mid,
+  );
 
   return confirm_form($form, t('Do you want to delete this shipping method?'),
     'admin/store/settings/quotes/methods',
@@ -136,6 +144,6 @@ function uc_weightquote_admin_method_confirm_delete_submit($form, &$form_state) 
 
   rules_config_delete(array('get_quote_from_weightquote_' . $mid));
 
-  drupal_set_message(t('Weight quote shipping method deleted.'));
+  backdrop_set_message(t('Weight quote shipping method deleted.'));
   $form_state['redirect'] = 'admin/store/settings/quotes/methods';
 }

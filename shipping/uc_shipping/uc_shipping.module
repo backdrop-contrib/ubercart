@@ -37,7 +37,7 @@ function uc_shipping_menu() {
   );
   $items['admin/store/orders/%uc_order/packages/new'] = array(
     'title' => 'Create packages',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_shipping_new_package', 3),
     'access callback' => 'uc_shipping_order_access',
     'access arguments' => array(3),
@@ -46,7 +46,7 @@ function uc_shipping_menu() {
   );
   $items['admin/store/orders/%uc_order/packages/%uc_shipping_package/edit'] = array(
     'title' => 'Edit package',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_shipping_package_edit', 3, 5),
     'access callback' => 'uc_shipping_order_access',
     'access arguments' => array(3),
@@ -54,7 +54,7 @@ function uc_shipping_menu() {
   );
   $items['admin/store/orders/%uc_order/packages/%uc_shipping_package/cancel'] = array(
     'title' => 'Cancel package shipment',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_shipping_package_cancel_confirm', 3, 5),
     'access callback' => 'uc_shipping_order_access',
     'access arguments' => array(3),
@@ -62,7 +62,7 @@ function uc_shipping_menu() {
   );
   $items['admin/store/orders/%uc_order/packages/%uc_shipping_package/delete'] = array(
     'title' => 'Delete package',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_shipping_package_delete_confirm', 3, 5),
     'access callback' => 'uc_shipping_order_access',
     'access arguments' => array(3),
@@ -80,7 +80,7 @@ function uc_shipping_menu() {
   );
   $items['admin/store/orders/%uc_order/shipments/new'] = array(
     'title' => 'New shipment',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_shipping_new_shipment', 3),
     'access callback' => 'uc_shipping_new_shipment_access',
     'access arguments' => array(3),
@@ -103,7 +103,7 @@ function uc_shipping_menu() {
   );
   $items['admin/store/orders/%uc_order/shipments/%uc_shipping_shipment/edit'] = array(
     'title' => 'Edit',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_shipping_shipment_edit', 3, 5),
     'access callback' => 'uc_shipping_order_access',
     'access arguments' => array(3),
@@ -131,7 +131,7 @@ function uc_shipping_menu() {
   );
   $items['admin/store/orders/%uc_order/shipments/%uc_shipping_shipment/delete'] = array(
     'title' => 'Delete shipment',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_shipping_shipment_delete_confirm', 3, 5),
     'access callback' => 'uc_shipping_order_access',
     'access arguments' => array(3),
@@ -246,10 +246,10 @@ function uc_shipping_theme() {
  * @see uc-packing-slip.tpl.php
  */
 function template_preprocess_uc_packing_slip(&$variables) {
-  $tokens = token_generate('site', drupal_map_assoc(array('logo')));
+  $tokens = token_generate('site', backdrop_map_assoc(array('logo')));
   $variables['site_logo'] = isset($tokens['logo']) ? $tokens['logo'] : '';
 
-  $tokens = token_generate('store', drupal_map_assoc(array('name', 'address', 'phone')));
+  $tokens = token_generate('store', backdrop_map_assoc(array('name', 'address', 'phone')));
   $variables['store_name'] = $tokens['name'];
   $variables['store_address'] = $tokens['address'];
   $variables['store_phone'] = $tokens['phone'];
@@ -318,7 +318,7 @@ function uc_shipping_uc_order_actions($order) {
       $actions[] = array(
         'name' => t('Package'),
         'url' => 'admin/store/orders/' . $order->order_id . '/packages',
-        'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_shipping') . '/images/package.gif', 'alt' => $title)),
+        'icon' => theme('image', array('path' => backdrop_get_path('module', 'uc_shipping') . '/images/package.gif', 'alt' => $title)),
         'title' => $title,
       );
       $result = db_query("SELECT COUNT(package_id) FROM {uc_packages} WHERE order_id = :id", array(':id' => $order->order_id));
@@ -327,7 +327,7 @@ function uc_shipping_uc_order_actions($order) {
         $actions[] = array(
           'name' => t('Ship'),
           'url' => 'admin/store/orders/' . $order->order_id . '/shipments',
-          'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_shipping') . '/images/ship.gif', 'alt' => $title)),
+          'icon' => theme('image', array('path' => backdrop_get_path('module', 'uc_shipping') . '/images/ship.gif', 'alt' => $title)),
           'title' => $title,
         );
       }
@@ -368,7 +368,10 @@ function uc_shipping_package_view($package) {
     $rows[] = array(t('Dimensions:'), t('!l x !w x !h', array('!l' => uc_length_format($package->length), '!w' => uc_length_format($package->width), '!h' => uc_length_format($package->height))));
   }
 
-  $rows[] = array(t('Insured value:'), array('data' => array('#theme' => 'uc_price', '#price' => $package->value)));
+  $rows[] = array(t('Insured value:'), array('data' => array(
+        '#theme' => 'uc_price',
+        '#price' => $package->value,
+      )));
 
   if ($package->tracking_number) {
     $rows[] = array(t('Tracking number:'), check_plain($package->tracking_number));
@@ -403,6 +406,7 @@ function uc_shipping_package_load($package_id) {
       $products = array();
       $description = '';
       $weight = 0;
+      // TODO This variable was probably removed in Backdrop without replacement.
       $units = variable_get('uc_weight_unit', 'lb');
       $addresses = array();
       $result = db_query("SELECT op.order_product_id, pp.qty, pp.qty * op.weight AS weight, op.weight_units, op.nid, op.title, op.model, op.price, op.data FROM {uc_packaged_products} pp LEFT JOIN {uc_order_products} op ON op.order_product_id = pp.order_product_id WHERE pp.package_id = :id ORDER BY op.order_product_id", array(':id' => $package_id));
@@ -445,7 +449,7 @@ function uc_shipping_package_load($package_id) {
  * Saves a package.
  */
 function uc_shipping_package_save($package) {
-  $package = (object)$package;
+  $package = (object) $package;
 
   if (!isset($package->package_id)) {
     $package->package_id = db_insert('uc_packages')
@@ -459,10 +463,10 @@ function uc_shipping_package_save($package) {
 
     foreach ($package->products as $id => $product) {
       $insert->values(array(
-          'package_id' => $package->package_id,
-          'order_product_id' => $id,
-          'qty' => $product->qty,
-        ));
+        'package_id' => $package->package_id,
+        'order_product_id' => $id,
+        'qty' => $product->qty,
+      ));
 
       $result = db_query("SELECT data FROM {uc_order_products} WHERE order_product_id = :id", array(':id' => $id));
       if ($order_product = $result->fetchObject()) {
@@ -535,7 +539,7 @@ function uc_shipping_package_delete($package_id) {
     file_delete($package->label_image);
   }
 
-  drupal_set_message(t('Package @id has been deleted.', array('@id' => $package_id)));
+  backdrop_set_message(t('Package @id has been deleted.', array('@id' => $package_id)));
 }
 
 /**
@@ -584,11 +588,11 @@ function uc_shipping_shipment_save($shipment) {
   $shipment->changed = time();
 
   if (!isset($shipment->sid)) {
-    drupal_write_record('uc_shipments', $shipment);
+    backdrop_write_record('uc_shipments', $shipment);
     $shipment->is_new = TRUE;
   }
   else {
-    drupal_write_record('uc_shipments', $shipment, 'sid');
+    backdrop_write_record('uc_shipments', $shipment, 'sid');
     $shipment->is_new = FALSE;
   }
 
@@ -619,10 +623,10 @@ function uc_shipping_shipment_delete($shipment_id) {
 
   db_update('uc_packages')
     ->fields(array(
-      'sid' => NULL,
-      'tracking_number' => NULL,
-      'label_image' => NULL,
-    ))
+    'sid' => NULL,
+    'tracking_number' => NULL,
+    'label_image' => NULL,
+  ))
     ->condition('sid', $shipment_id)
     ->execute();
 
@@ -687,6 +691,7 @@ function uc_shipping_select_address($addresses, $onchange = '', $title = NULL) {
   if (!is_array($addresses) || count($addresses) == 0) {
     $addresses = array();
   }
+  // TODO This variable was probably removed in Backdrop without replacement.
   $store_address = variable_get('uc_quote_store_default_address', new UcAddress());
   if (!in_array($store_address, $addresses)) {
     $addresses[] = $store_address;
@@ -704,16 +709,16 @@ function uc_shipping_select_address($addresses, $onchange = '', $title = NULL) {
     'country' => 0,
     'zone' => 0,
   );
-  $options = array(drupal_json_encode($blank) => t('- Reset fields -'));
+  $options = array(backdrop_json_encode($blank) => t('- Reset fields -'));
   foreach ($addresses as $address) {
-    $options[drupal_json_encode($address)] = $address->company . ' ' . $address->street1 . ' ' . $address->city;
+    $options[backdrop_json_encode($address)] = $address->company . ' ' . $address->street1 . ' ' . $address->city;
   }
 
   $select = array(
     '#type' => 'select',
     '#title' => is_null($title) ? t('Address book') : $title,
     '#options' => $options,
-    '#default_value' => drupal_json_encode($addresses[0]),
+    '#default_value' => backdrop_json_encode($addresses[0]),
     '#attributes' => array('onchange' => $onchange),
   );
 
@@ -726,7 +731,7 @@ function uc_shipping_select_address($addresses, $onchange = '', $title = NULL) {
  * @ingroup forms
  */
 function uc_shipping_address_form($form, &$form_state, $addresses, $order) {
-  drupal_add_js(drupal_get_path('module', 'uc_shipping') . '/uc_shipping.js');
+  backdrop_add_js(backdrop_get_path('module', 'uc_shipping') . '/uc_shipping.js');
 
   $form['origin'] = array(
     '#type' => 'fieldset',
@@ -773,7 +778,7 @@ function uc_shipping_address_form($form, &$form_state, $addresses, $order) {
 function uc_shipping_views_api() {
   return array(
     'api' => '2.0',
-    'path' => drupal_get_path('module', 'uc_shipping') . '/views',
+    'path' => backdrop_get_path('module', 'uc_shipping') . '/views',
   );
 }
 
@@ -879,4 +884,14 @@ function uc_shipping_uc_order($op, $order, $arg2) {
       }
       break;
   }
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function uc_shipping_autoload_info() {
+  return array(
+    'uc_shipping_handler_field_package_weight' => 'views/uc_shipping_handler_field_package_weight.inc',
+    'uc_shipping_handler_field_shipment_id' => 'views/uc_shipping_handler_field_shipment_id.inc',
+  );
 }

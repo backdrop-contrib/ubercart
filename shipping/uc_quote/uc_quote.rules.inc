@@ -15,8 +15,15 @@ function uc_quote_rules_condition_info() {
       'group' => t('Order: Shipping Quote'),
       'base' => 'uc_quote_condition_order_shipping_method',
       'parameter' => array(
-        'order' => array('type' => 'uc_order', 'label' => t('Order')),
-        'method' => array('type' => 'text', 'label' => t('Shipping method'), 'options list' => 'uc_quote_condition_order_shipping_method_options'),
+        'order' => array(
+          'type' => 'uc_order',
+          'label' => t('Order'),
+        ),
+        'method' => array(
+          'type' => 'text',
+          'label' => t('Shipping method'),
+          'options list' => 'uc_quote_condition_order_shipping_method_options',
+        ),
       ),
     ),
   );
@@ -51,7 +58,7 @@ function uc_quote_condition_order_shipping_method($order, $method) {
  */
 function uc_quote_condition_order_shipping_method_options() {
   $methods = module_invoke_all('uc_shipping_method');
-  $enabled = variable_get('uc_quote_enabled', array());
+  $enabled = config_get('uc_quote.settings', 'uc_quote_enabled');
 
   $options = array();
   foreach ($methods as $id => $method) {

@@ -32,7 +32,7 @@ function uc_cart_menu() {
   $items['admin/store/settings/cart'] = array(
     'title' => 'Cart',
     'description' => 'Configure the cart page display and settings.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_cart_cart_settings_form'),
     'access arguments' => array('administer store'),
     'file' => 'uc_cart.admin.inc',
@@ -40,7 +40,7 @@ function uc_cart_menu() {
   $items['admin/store/settings/checkout'] = array(
     'title' => 'Checkout',
     'description' => 'Configure the checkout page display and completion rules.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_cart_checkout_settings_form'),
     'access arguments' => array('administer store'),
     'file' => 'uc_cart.admin.inc',
@@ -72,7 +72,7 @@ function uc_cart_menu() {
   $items['cart/empty'] = array(
     'title' => 'Empty cart',
     'description' => 'Confirm that the cart should be emptied.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_cart_empty_confirm'),
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
@@ -216,11 +216,22 @@ function uc_cart_init() {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function uc_cart_config_info() {
+  $prefixes['uc_cart.settings'] = array(
+    'label' => t('Module name settings'),
+    'group' => t('Configuration'),
+  );
+}
+
+/**
  * Implements hook_cron().
  */
 function uc_cart_cron() {
+  $config = config('uc_cart.settings');
   // Empty anonymous carts.
-  $time = strtotime(variable_get('uc_cart_anon_duration', '4') . ' ' . variable_get('uc_cart_anon_unit', 'hours') . ' ago');
+  $time = strtotime($config->get('uc_cart_anon_duration') . ' ' . $config->get('uc_cart_anon_unit') . ' ago');
   $result = db_query("SELECT DISTINCT cart_id FROM {uc_cart_products} WHERE changed <= :changed", array(':changed' => $time));
   foreach ($result as $row) {
     if (strlen($row->cart_id) >= 22) {
@@ -229,7 +240,7 @@ function uc_cart_cron() {
   }
 
   // Empty authenticated carts.
-  $time = strtotime(variable_get('uc_cart_auth_duration', '1') . ' ' . variable_get('uc_cart_auth_unit', 'years') . ' ago');
+  $time = strtotime($config->get('uc_cart_auth_duration') . ' ' . $config->get('uc_cart_auth_unit') . ' ago');
   $result = db_query("SELECT DISTINCT cart_id FROM {uc_cart_products} WHERE changed <= :changed", array(':changed' => $time));
   foreach ($result as $row) {
     if (strlen($row->cart_id) < 22) {
@@ -291,7 +302,7 @@ function uc_cart_block_info() {
 
   $blocks['cart'] = array(
     'info' => t('Shopping cart'),
-    'cache' => DRUPAL_NO_CACHE,
+    'cache' => BACKDROP_NO_CACHE,
     'pages' => 'admin*',
   );
 
@@ -302,6 +313,7 @@ function uc_cart_block_info() {
  * Implements hook_block_view().
  */
 function uc_cart_block_view($delta = '') {
+  $config = config('uc_cart.settings');
   global $user;
 
   if ($delta == 'cart') {
@@ -309,20 +321,20 @@ function uc_cart_block_view($delta = '') {
 
     // Display nothing if the block is set to hide on empty and there are no
     // items in the cart.
-    if (!variable_get('uc_cart_block_empty_hide', FALSE) || $product_count) {
+    if (!$config->get('uc_cart_block_empty_hide') || $product_count) {
       // Add the cart block CSS.
-      drupal_add_css(drupal_get_path('module', 'uc_cart') . '/uc_cart_block.css');
+      backdrop_add_css(backdrop_get_path('module', 'uc_cart') . '/uc_cart_block.css');
 
       // If the block is collapsible, add the appropriate JS.
-      if (variable_get('uc_cart_block_collapsible', TRUE)) {
-        drupal_add_js(drupal_get_path('module', 'uc_cart') . '/uc_cart_block.js');
+      if ($config->get('uc_cart_block_collapsible')) {
+        backdrop_add_js(backdrop_get_path('module', 'uc_cart') . '/uc_cart_block.js');
       }
 
       // First build the help text.
       $help_text = FALSE;
 
       // uc_cart_help_text variable is only here for backward compatibility.
-      if (variable_get('uc_cart_show_help_text', FALSE) && ($text = variable_get('uc_cart_help_text', t('Click title to display cart contents.')))) {
+      if ($config->get('uc_cart_show_help_text') && ($text = $config->get('uc_cart_help_text'))) {
         $help_text = check_plain($text);
       }
 
@@ -362,6 +374,7 @@ function uc_cart_block_view($delta = '') {
       );
 
       // Only add the checkout link if checkout is enabled.
+      // TODO This variable was probably removed in Backdrop without replacement.
       if (variable_get('uc_checkout_enabled', TRUE)) {
         $summary_links['cart-block-checkout'] = array(
           'title' => t('Checkout'),
@@ -378,7 +391,7 @@ function uc_cart_block_view($delta = '') {
         'item_text' => $item_text,
         'total' => $total,
         'summary_links' => $summary_links,
-        'collapsed' => variable_get('uc_cart_block_collapsed', TRUE)
+        'collapsed' => $config->get('uc_cart_block_collapsed'),
       ));
 
       return $block;
@@ -392,31 +405,32 @@ function uc_cart_block_view($delta = '') {
  * Builds the settings form used by the shopping cart block.
  */
 function uc_cart_block_configure($delta = '') {
+  $config = config('uc_cart.settings');
   if ($delta == 'cart') {
     $form['uc_cart_block_empty_hide'] = array(
       '#type' => 'checkbox',
       '#title' => t('Hide block if cart is empty.'),
-      '#default_value' => variable_get('uc_cart_block_empty_hide', FALSE),
+      '#default_value' => $config->get('uc_cart_block_empty_hide'),
     );
     $form['uc_cart_block_image'] = array(
       '#type' => 'checkbox',
       '#title' => t('Display the shopping cart icon in the block title.'),
-      '#default_value' => variable_get('uc_cart_block_image', TRUE),
+      '#default_value' => $config->get('uc_cart_block_image'),
     );
     $form['uc_cart_block_collapsible'] = array(
       '#type' => 'checkbox',
       '#title' => t('Make the shopping cart block collapsible by clicking the name or arrow.'),
-      '#default_value' => variable_get('uc_cart_block_collapsible', TRUE),
+      '#default_value' => $config->get('uc_cart_block_collapsible'),
     );
     $form['uc_cart_block_collapsed'] = array(
       '#type' => 'checkbox',
       '#title' => t('Display the shopping cart block collapsed by default.'),
-      '#default_value' => variable_get('uc_cart_block_collapsed', TRUE),
+      '#default_value' => $config->get('uc_cart_block_collapsed'),
     );
     $form['uc_cart_show_help_text'] = array(
       '#type' => 'checkbox',
       '#title' => t('Display small help text in the shopping cart block.'),
-      '#default_value' => variable_get('uc_cart_show_help_text', FALSE),
+      '#default_value' => $config->get('uc_cart_show_help_text'),
     );
 
     return $form;
@@ -430,11 +444,11 @@ function uc_cart_block_configure($delta = '') {
  */
 function uc_cart_block_save($delta = '', $edit = array()) {
   if ($delta == 'cart') {
-    variable_set('uc_cart_block_empty_hide', $edit['uc_cart_block_empty_hide']);
-    variable_set('uc_cart_block_image', $edit['uc_cart_block_image']);
-    variable_set('uc_cart_block_collapsible', $edit['uc_cart_block_collapsible']);
-    variable_set('uc_cart_block_collapsed', $edit['uc_cart_block_collapsed']);
-    variable_set('uc_cart_show_help_text', $edit['uc_cart_show_help_text']);
+    config_set('uc_cart.settings', 'uc_cart_block_empty_hide', $edit['uc_cart_block_empty_hide']);
+    config_set('uc_cart.settings', 'uc_cart_block_image', $edit['uc_cart_block_image']);
+    config_set('uc_cart.settings', 'uc_cart_block_collapsible', $edit['uc_cart_block_collapsible']);
+    config_set('uc_cart.settings', 'uc_cart_block_collapsed', $edit['uc_cart_block_collapsed']);
+    config_set('uc_cart.settings', 'uc_cart_show_help_text', $edit['uc_cart_show_help_text']);
   }
 }
 
@@ -442,11 +456,12 @@ function uc_cart_block_save($delta = '', $edit = array()) {
  * Preprocesses the cart block output to include the icon.
  */
 function uc_cart_preprocess_block(&$variables) {
+  $config = config('uc_cart.settings');
   global $user;
 
   if ($variables['block']->module == 'uc_cart' && $variables['block']->delta == 0 && $variables['block']->subject) {
     // Build the cart image if enabled.
-    if (variable_get('uc_cart_block_image', TRUE)) {
+    if ($config->get('uc_cart_block_image')) {
       $product_count = count(uc_cart_get_contents());
       if (!$product_count) {
         // Use the "empty" cart icon.
@@ -464,8 +479,8 @@ function uc_cart_preprocess_block(&$variables) {
     $variables['block']->subject = theme('uc_cart_block_title', array(
       'title' => $variables['block']->subject,
       'icon_class' => $icon_class,
-      'collapsible' => variable_get('uc_cart_block_collapsible', TRUE),
-      'collapsed' => variable_get('uc_cart_block_collapsed', TRUE),
+      'collapsible' => $config->get('uc_cart_block_collapsible'),
+      'collapsed' => $config->get('uc_cart_block_collapsed'),
     ));
   }
 }
@@ -476,7 +491,7 @@ function uc_cart_preprocess_block(&$variables) {
 function uc_cart_views_api() {
   return array(
     'api' => '2.0',
-    'path' => drupal_get_path('module', 'uc_cart') . '/views',
+    'path' => backdrop_get_path('module', 'uc_cart') . '/views',
   );
 }
 
@@ -505,7 +520,7 @@ function uc_cart_uc_cart_pane($items) {
   $body = array();
 
   if (!is_null($items)) {
-    $body = drupal_get_form('uc_cart_view_form', $items) + array(
+    $body = backdrop_get_form('uc_cart_view_form', $items) + array(
       '#prefix' => '<div id="cart-form-pane">',
       '#suffix' => '</div>',
     );
@@ -600,7 +615,7 @@ function uc_cart_login_update($uid) {
  * @ingroup forms
  */
 function uc_cart_view_form($form, &$form_state, $items = NULL) {
-  $form['#attached']['css'][] = drupal_get_path('module', 'uc_cart') . '/uc_cart.css';
+  $form['#attached']['css'][] = backdrop_get_path('module', 'uc_cart') . '/uc_cart.css';
 
   $form['items'] = array(
     '#type' => 'tapir_table',
@@ -621,7 +636,10 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
       if (isset($form['items'][$i]['remove'])) {
         // Backward compatibility with old checkbox method.
         if ($form['items'][$i]['remove']['#type'] == 'checkbox') {
-          $form['items'][$i]['remove'] = array('#type' => 'submit', '#value' => t('Remove'));
+          $form['items'][$i]['remove'] = array(
+            '#type' => 'submit',
+            '#value' => t('Remove'),
+          );
         }
 
         $form['items'][$i]['remove']['#name'] = 'remove-' . $i;
@@ -653,13 +671,16 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
   $form['actions'] = array('#type' => 'actions');
 
   // If the continue shopping element is enabled...
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (($cs_type = variable_get('uc_continue_shopping_type', 'link')) !== 'none') {
     // Add the element to the form based on the element type.
+    // TODO This variable was probably removed in Backdrop without replacement.
     if (variable_get('uc_continue_shopping_type', 'link') == 'link') {
       $form['actions']['continue_shopping'] = array(
         '#markup' => l(t('Continue shopping'), uc_cart_continue_shopping_url()),
       );
     }
+    // TODO This variable was probably removed in Backdrop without replacement.
     elseif (variable_get('uc_continue_shopping_type', 'link') == 'button') {
       $form['actions']['continue_shopping'] = array(
         '#type' => 'submit',
@@ -670,7 +691,7 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
   }
 
   // Add the empty cart button if enabled.
-  if (variable_get('uc_cart_empty_button', FALSE)) {
+  if (config_get('uc_cart.settings', 'uc_cart_empty_button')) {
     $form['actions']['empty'] = array(
       '#type' => 'submit',
       '#value' => t('Empty cart'),
@@ -688,6 +709,7 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
   $form['actions']['checkout'] = array(
     '#theme' => 'uc_cart_checkout_buttons',
   );
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (variable_get('uc_checkout_enabled', TRUE)) {
     $form['actions']['checkout']['checkout'] = array(
       '#type' => 'submit',
@@ -709,14 +731,14 @@ function uc_cart_view_form_submit($form, &$form_state) {
   if (substr($form_state['triggering_element']['#name'], 0, 7) == 'remove-') {
     $item = substr($form_state['triggering_element']['#name'], 7);
     $form_state['values']['items'][$item]['qty'] = 0;
-    drupal_set_message(t('<strong>!product-title</strong> removed from your shopping cart.', array('!product-title' => $form['items'][$item]['title']['#markup'])));
+    backdrop_set_message(t('<strong>!product-title</strong> removed from your shopping cart.', array('!product-title' => $form['items'][$item]['title']['#markup'])));
   }
 
   // Update the items in the shopping cart based on the form values, but only
   // if a qty has changed.
   foreach ($form['items'] as $key => $item) {
     if (isset($item['qty']['#default_value']) && $item['qty']['#default_value'] != $form_state['values']['items'][$key]['qty']) {
-      uc_cart_update_item_object((object)$form_state['values']);
+      uc_cart_update_item_object((object) $form_state['values']);
     }
   }
 }
@@ -727,7 +749,7 @@ function uc_cart_view_form_submit($form, &$form_state) {
  * @see uc_cart_view_form()
  */
 function uc_cart_view_form_update_message($form, &$form_state) {
-  drupal_set_message(t('Your cart has been updated.'));
+  backdrop_set_message(t('Your cart has been updated.'));
 }
 
 /**
@@ -817,18 +839,20 @@ function uc_cart_view_table($table) {
  *   TRUE or FALSE indicating whether or not to unset the last URL variable.
  *
  * @return
- *   The URL or Drupal path that will be used for the continue shopping element.
+ *   The URL or Backdrop path that will be used for the continue shopping element.
  */
 function uc_cart_continue_shopping_url($unset = TRUE) {
   $url = '';
 
   // Use the last URL if enabled and available.
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (variable_get('uc_continue_shopping_use_last_url', TRUE) && isset($_SESSION['uc_cart_last_url'])) {
     $url = $_SESSION['uc_cart_last_url'];
   }
 
   // If the URL is still empty, fall back to the default.
   if (empty($url)) {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $url = variable_get('uc_continue_shopping_url', '');
   }
 
@@ -864,9 +888,9 @@ function uc_cart_complete_sale($order, $login = FALSE) {
     // Store account data.
     db_update('uc_orders')
       ->fields(array(
-        'uid' => $order->uid,
-        'data' => serialize($order->data),
-      ))
+      'uid' => $order->uid,
+      'data' => serialize($order->data),
+    ))
       ->condition('order_id', $order->order_id)
       ->execute();
 
@@ -903,6 +927,7 @@ function uc_cart_complete_sale($order, $login = FALSE) {
     'uc_msg_continue_shopping' => uc_get_message('continue_shopping'),
   );
   foreach ($messages as $id => &$message) {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $message = variable_get($id, $message);
     $message = token_replace($message, array('uc_order' => $order));
     if ($id == 'uc_msg_order_' . $type) {
@@ -944,6 +969,7 @@ function uc_cart_complete_sale_account($order) {
   }
 
   // Set up a new user.
+  // TODO This variable was probably removed in Backdrop without replacement.
   $fields = array(
     'name' => uc_store_email_to_username($order->primary_email),
     'mail' => $order->primary_email,
@@ -972,9 +998,11 @@ function uc_cart_complete_sale_account($order) {
   }
 
   // Send the customer their account details if enabled.
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (variable_get('uc_new_customer_email', TRUE)) {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $type = variable_get('uc_new_customer_status_active', TRUE) ? 'register_no_approval_required' : 'register_pending_approval';
-    drupal_mail('user', $type, $order->primary_email, uc_store_mail_recipient_language($order->primary_email), array('account' => $account), uc_store_email_from());
+    backdrop_mail('user', $type, $order->primary_email, uc_store_mail_recipient_language($order->primary_email), array('account' => $account), uc_store_email_from());
   }
 
   $order->uid = $account->uid;
@@ -1060,7 +1088,7 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
     }
 
     // Allow other modules a chance to alter the fully loaded cart object.
-    drupal_alter('uc_cart', $items[$cid]);
+    backdrop_alter('uc_cart', $items[$cid]);
 
     // When there are no longer any items in the cart, the anonymous cart ID is
     // no longer required. To guard against unsetting the session ID in the
@@ -1137,7 +1165,7 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
   }
 
   if (!uc_product_is_product($node->type)) {
-    drupal_set_message(t('@title is not a product. Unable to add to cart.', array('@title' => $node->title)), 'error');
+    backdrop_set_message(t('@title is not a product. Unable to add to cart.', array('@title' => $node->title)), 'error');
     return;
   }
 
@@ -1154,22 +1182,23 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
         if (isset($row['silent']) && ($row['silent'] === TRUE)) {
           if ($check_redirect) {
             if (isset($_GET['destination'])) {
-              drupal_goto();
+              backdrop_goto();
             }
             $_SESSION['uc_cart_last_url'] = current_path();
+            // TODO This variable was probably removed in Backdrop without replacement.
             $redirect = variable_get('uc_add_item_redirect', 'cart');
             if ($redirect != '<none>') {
               return $redirect;
             }
             else {
-              return array(current_path(), array('query' => drupal_get_query_parameters()));
+              return array(current_path(), array('query' => backdrop_get_query_parameters()));
             }
           }
         }
         else {
-          drupal_set_message($message, 'error');
+          backdrop_set_message($message, 'error');
         }
-        return array(current_path(), array('query' => drupal_get_query_parameters()));
+        return array(current_path(), array('query' => backdrop_get_query_parameters()));
       }
     }
   }
@@ -1191,13 +1220,13 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
     ));
     entity_save('uc_cart_item', $item_entity);
     if ($msg) {
-      drupal_set_message(t('<strong>@product-title</strong> added to <a href="!url">your shopping cart</a>.', array('@product-title' => $node->title, '!url' => url('cart'))));
+      backdrop_set_message(t('<strong>@product-title</strong> added to <a href="!url">your shopping cart</a>.', array('@product-title' => $node->title, '!url' => url('cart'))));
     }
   }
   else {
     // Update the item instead.
     if ($msg) {
-      drupal_set_message(t('Your item(s) have been updated.'));
+      backdrop_set_message(t('Your item(s) have been updated.'));
     }
     $item_entity = entity_load_single('uc_cart_item', current(array_keys($result['uc_cart_item'])));
     $qty += $item_entity->qty;
@@ -1211,16 +1240,17 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
 
   if ($check_redirect) {
     if (isset($_GET['destination'])) {
-      drupal_goto();
+      backdrop_goto();
     }
 
     $_SESSION['uc_cart_last_url'] = current_path();
+    // TODO This variable was probably removed in Backdrop without replacement.
     $redirect = variable_get('uc_add_item_redirect', 'cart');
     if ($redirect != '<none>') {
       return $redirect;
     }
     else {
-      return array(current_path(), array('query' => drupal_get_query_parameters()));
+      return array(current_path(), array('query' => backdrop_get_query_parameters()));
     }
   }
 }
@@ -1317,14 +1347,16 @@ function uc_cart_cart_pane_list($items) {
       'body' => array(),
     );
 
+    // TODO This variable was probably removed in Backdrop without replacement.
     $pane['enabled'] = variable_get('uc_cap_' . $id . '_enabled', $pane['enabled']);
+    // TODO This variable was probably removed in Backdrop without replacement.
     $pane['weight'] = variable_get('uc_cap_' . $id . '_weight', $pane['weight']);
 
     $panes[$id] = $pane;
   }
 
   // Allow other modules to alter the defaults.
-  drupal_alter('uc_cart_pane', $panes, $items);
+  backdrop_alter('uc_cart_pane', $panes, $items);
 
   uasort($panes, 'uc_weight_sort');
 
@@ -1384,5 +1416,15 @@ function uc_cart_entity_info() {
         ),
       ),
     ),
+  );
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function uc_cart_autoload_info() {
+  return array(
+    'UcCartItemController' => 'uc_cart.controller.inc',
+    'uc_cart_handler_field_cart_user' => 'views/uc_cart_handler_field_cart_user.inc',
   );
 }

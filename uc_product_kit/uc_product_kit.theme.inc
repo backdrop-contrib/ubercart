@@ -18,10 +18,10 @@ function theme_uc_product_kit_items_form($variables) {
 
   foreach (element_children($form) as $item) {
     $row = array(
-      drupal_render($form[$item]['link']),
-      drupal_render($form[$item]['qty']),
-      drupal_render($form[$item]['ordering']),
-      drupal_render($form[$item]['discount']),
+      backdrop_render($form[$item]['link']),
+      backdrop_render($form[$item]['qty']),
+      backdrop_render($form[$item]['ordering']),
+      backdrop_render($form[$item]['discount']),
     );
     $rows[] = array(
       'data' => $row,
@@ -33,7 +33,7 @@ function theme_uc_product_kit_items_form($variables) {
     return '';
   }
 
-  drupal_add_tabledrag('uc-product-kit-item-table', 'order', 'sibling', 'uc-product-kit-item-ordering');
+  backdrop_add_tabledrag('uc-product-kit-item-table', 'order', 'sibling', 'uc-product-kit-item-ordering');
 
   $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'uc-product-kit-item-table')));
 
@@ -72,7 +72,7 @@ function theme_uc_product_kit_add_to_cart($variables) {
   $form = $variables['form'];
 
   $output = '<div class="add-to-cart" title="' . t('Click to add to cart.') . '">';
-  $output .= drupal_render($form);
+  $output .= backdrop_render($form);
   $output .= '</div>';
 
   return $output;

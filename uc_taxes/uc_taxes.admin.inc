@@ -9,7 +9,10 @@
  * Displays a list of tax rates.
  */
 function uc_taxes_admin_settings() {
-  $header = array(t('Name'), t('Rate'), t('Taxed products'), t('Taxed product types'), t('Taxed line items'), t('Weight'), array('data' => t('Operations'), 'colspan' => 4));
+  $header = array(t('Name'), t('Rate'), t('Taxed products'), t('Taxed product types'), t('Taxed line items'), t('Weight'), array(
+      'data' => t('Operations'),
+      'colspan' => 4,
+    ));
 
   $rows = array();
   foreach (uc_taxes_rate_load() as $rate_id => $rate) {
@@ -53,7 +56,7 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
     // Load the tax rate and set the page title.
     $rate = uc_taxes_rate_load($rate_id);
 
-    drupal_set_title($rate->name);
+    backdrop_set_title($rate->name);
   }
 
   $form['id'] = array(
@@ -198,11 +201,11 @@ function uc_taxes_form_submit($form, &$form_state) {
   // Display a message and redirect back to the overview,
   // or the conditions page for new taxes.
   if ($form_state['values']['id']) {
-    drupal_set_message(t('Tax rate %name saved.', array('%name' => $form_state['values']['name'])));
+    backdrop_set_message(t('Tax rate %name saved.', array('%name' => $form_state['values']['name'])));
     $form_state['redirect'] = 'admin/store/settings/taxes';
   }
   else {
-    drupal_set_message(t('Tax rate %name created.', array('%name' => $form_state['values']['name'])));
+    backdrop_set_message(t('Tax rate %name created.', array('%name' => $form_state['values']['name'])));
     $form_state['redirect'] = 'admin/store/settings/taxes/manage/uc_taxes_' . $rate->id;
   }
 }
@@ -232,9 +235,9 @@ function uc_taxes_clone($rate_id) {
   entity_flush_caches();
 
   // Display a message and redirect back to the overview.
-  drupal_set_message(t('Tax rate %name cloned.', array('%name' => $name)));
+  backdrop_set_message(t('Tax rate %name cloned.', array('%name' => $name)));
 
-  drupal_goto('admin/store/settings/taxes');
+  backdrop_goto('admin/store/settings/taxes');
 }
 
 /**
@@ -246,8 +249,8 @@ function uc_taxes_clone($rate_id) {
 function uc_taxes_delete_form($form, &$form_state, $rate_id) {
   // Bail if we got a bad rate ID.
   if (!$rate = uc_taxes_rate_load($rate_id)) {
-    drupal_set_message(t('That tax rate does not exist.'), 'error');
-    drupal_goto('admin/store/settings/taxes');
+    backdrop_set_message(t('That tax rate does not exist.'), 'error');
+    backdrop_goto('admin/store/settings/taxes');
   }
 
   $form['rate_id'] = array(
@@ -272,7 +275,7 @@ function uc_taxes_delete_form_submit($form, &$form_state) {
   uc_taxes_rate_delete($form_state['values']['rate_id']);
 
   // Display a message and redirect back to the overview.
-  drupal_set_message(t('Tax rate %name deleted.', array('%name' => $form_state['values']['name'])));
+  backdrop_set_message(t('Tax rate %name deleted.', array('%name' => $form_state['values']['name'])));
 
   $form_state['redirect'] = 'admin/store/settings/taxes';
 }

@@ -24,8 +24,8 @@ class uc_product_handler_field_buyitnow extends views_handler_field {
   function render($values) {
     $product = node_load($values->{$this->aliases['nid']});
     if (uc_product_is_product($product)) {
-      $form = drupal_get_form('uc_catalog_buy_it_now_form_' . $values->{$this->aliases['nid']}, $product);
-      return drupal_render($form);
+      $form = backdrop_get_form('uc_catalog_buy_it_now_form_' . $values->{$this->aliases['nid']}, $product);
+      return backdrop_render($form);
     }
   }
 }

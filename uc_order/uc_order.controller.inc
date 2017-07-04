@@ -7,7 +7,7 @@
 /**
  * Controller class for uc_order entity.
  */
-class UcOrderController extends DrupalDefaultEntityController {
+class UcOrderController extends BackdropDefaultEntityController {
 
   function attachLoad(&$orders, $revision_id = FALSE) {
     foreach ($orders as &$order) {
@@ -118,10 +118,12 @@ class UcOrderProductController extends EntityAPIController {
 
     if (empty($product->weight_units)) {
       if (empty($product->nid)) {
+        // TODO This variable was probably removed in Backdrop without replacement.
         $product->weight_units = variable_get('uc_weight_unit', 'lb');
       }
       else {
         $units = db_query("SELECT weight_units FROM {node} n JOIN {uc_products} p ON n.vid = p.vid WHERE n.nid = :nid", array(':nid' => $product->nid))->fetchField();
+        // TODO This variable was probably removed in Backdrop without replacement.
         $product->weight_units = empty($units) ? variable_get('uc_weight_unit', 'lb') : $units;
       }
     }

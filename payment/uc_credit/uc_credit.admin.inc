@@ -12,6 +12,7 @@
  * @see uc_credit_settings_form_submit()
  */
 function uc_credit_settings_form($form, &$form_state) {
+  $config = config('uc_credit.settings');
   if (!user_access('administer credit cards')) {
     $form['notice'] = array(
       '#markup' => '<div>' . t('You must have access to <b>administer credit cards</b> to adjust these settings.') . '</div>',
@@ -31,7 +32,7 @@ function uc_credit_settings_form($form, &$form_state) {
     '#type' => 'vertical_tabs',
     '#attached' => array(
       'js' => array(
-        'vertical-tabs' => drupal_get_path('module', 'uc_credit') . '/uc_credit.admin.js',
+        'vertical-tabs' => backdrop_get_path('module', 'uc_credit') . '/uc_credit.admin.js',
       ),
     ),
   );
@@ -55,7 +56,7 @@ function uc_credit_settings_form($form, &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Validate credit card numbers at checkout.'),
     '#description' => t('Invalid card numbers will show an error message to the user so they can correct it.'),
-    '#default_value' => variable_get('uc_credit_validate_numbers', TRUE),
+    '#default_value' => $config->get('uc_credit_validate_numbers'),
   );
 
   // Form elements that deal specifically with card number security.
@@ -68,8 +69,8 @@ function uc_credit_settings_form($form, &$form_state) {
   $form['cc_security']['uc_credit_encryption_path'] = array(
     '#type' => 'textfield',
     '#title' => t('Encryption key directory'),
-    '#description' => t('The card type, expiration date and last four digits of the card number are encrypted and stored temporarily while the customer is in the process of checking out.<br /><b>You must enable encryption</b> by following the <a href="!url">encryption instructions</a> in order to accept credit card payments.<br />In short, you must enter the path of a directory outside of your document root where the encryption key may be stored.<br />Relative paths will be resolved relative to the Drupal installation directory.<br />Once this directory is set, you should not change it.', array('!url' => 'http://drupal.org/node/1309226')),
-    '#default_value' => uc_credit_encryption_key() ? variable_get('uc_credit_encryption_path', t('Not configured.')) : t('Not configured.'),
+    '#description' => t('The card type, expiration date and last four digits of the card number are encrypted and stored temporarily while the customer is in the process of checking out.<br /><b>You must enable encryption</b> by following the <a href="!url">encryption instructions</a> in order to accept credit card payments.<br />In short, you must enter the path of a directory outside of your document root where the encryption key may be stored.<br />Relative paths will be resolved relative to the Backdrop installation directory.<br />Once this directory is set, you should not change it.', array('!url' => 'http://drupal.org/node/1309226')),
+    '#default_value' => uc_credit_encryption_key() ? $config->get('uc_credit_encryption_path') : t('Not configured.'),
   );
 
   // Form elements that deal with the type of data requested at checkout.
@@ -84,39 +85,39 @@ function uc_credit_settings_form($form, &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Enable CVV text field on checkout form.'),
     '#description' => t('The CVV is an added security measure on credit cards. On Visa, Mastercard, and Discover cards it is a three digit number, and on AmEx cards it is a four digit number. If your credit card processor or payment gateway requires this information, you should enable this feature here.'),
-    '#default_value' => variable_get('uc_credit_cvv_enabled', TRUE),
+    '#default_value' => $config->get('uc_credit_cvv_enabled'),
   );
   $form['cc_fields']['uc_credit_owner_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable card owner text field on checkout form.'),
-    '#default_value' => variable_get('uc_credit_owner_enabled', FALSE),
+    '#default_value' => $config->get('uc_credit_owner_enabled'),
   );
   $form['cc_fields']['uc_credit_start_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable card start date on checkout form.'),
-    '#default_value' => variable_get('uc_credit_start_enabled', FALSE),
+    '#default_value' => $config->get('uc_credit_start_enabled'),
   );
   $form['cc_fields']['uc_credit_issue_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable card issue number text field on checkout form.'),
-    '#default_value' => variable_get('uc_credit_issue_enabled', FALSE),
+    '#default_value' => $config->get('uc_credit_issue_enabled'),
   );
   $form['cc_fields']['uc_credit_bank_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable issuing bank text field on checkout form.'),
-    '#default_value' => variable_get('uc_credit_bank_enabled', FALSE),
+    '#default_value' => $config->get('uc_credit_bank_enabled'),
   );
   $form['cc_fields']['uc_credit_type_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable card type selection on checkout form.'),
     '#description' => t('If enabled, specify in the textarea below which card options to populate the select box with.'),
-    '#default_value' => variable_get('uc_credit_type_enabled', FALSE),
+    '#default_value' => $config->get('uc_credit_type_enabled'),
   );
   $form['cc_fields']['uc_credit_accepted_types'] = array(
     '#type' => 'textarea',
     '#title' => t('Card type select box options'),
     '#description' => t('Enter one card type per line. These fields will populate the card type select box if it is enabled.'),
-    '#default_value' => variable_get('uc_credit_accepted_types', implode("\r\n", array(t('Visa'), t('Mastercard'), t('Discover'), t('American Express')))),
+    '#default_value' => $config->get('uc_credit_accepted_types'),
   );
 
   // Form elements that deal with card types accepted.
@@ -128,22 +129,22 @@ function uc_credit_settings_form($form, &$form_state) {
   $form['cc_fields']['cc_types']['uc_credit_visa'] = array(
     '#type' => 'checkbox',
     '#title' => t('Visa'),
-    '#default_value' => variable_get('uc_credit_visa', TRUE),
+    '#default_value' => $config->get('uc_credit_visa'),
   );
   $form['cc_fields']['cc_types']['uc_credit_mastercard'] = array(
     '#type' => 'checkbox',
     '#title' => t('Mastercard'),
-    '#default_value' => variable_get('uc_credit_mastercard', TRUE),
+    '#default_value' => $config->get('uc_credit_mastercard'),
   );
   $form['cc_fields']['cc_types']['uc_credit_discover'] = array(
     '#type' => 'checkbox',
     '#title' => t('Discover'),
-    '#default_value' => variable_get('uc_credit_discover', TRUE),
+    '#default_value' => $config->get('uc_credit_discover'),
   );
   $form['cc_fields']['cc_types']['uc_credit_amex'] = array(
     '#type' => 'checkbox',
     '#title' => t('American Express'),
-    '#default_value' => variable_get('uc_credit_amex', TRUE),
+    '#default_value' => $config->get('uc_credit_amex'),
   );
 
   // Form elements that deal with credit card messages to customers.
@@ -159,14 +160,14 @@ function uc_credit_settings_form($form, &$form_state) {
     '#type' => 'textarea',
     '#title' => t('Credit card payment policy'),
     '#description' => t('Instructions for customers on the checkout page above the credit card fields.'),
-    '#default_value' => variable_get('uc_credit_policy', t('Your billing information must match the billing address for the credit card entered below or we will be unable to process your payment.')),
+    '#default_value' => $config->get('uc_credit_policy'),
     '#rows' => 3,
   );
   $form['cc_messages']['uc_credit_fail_message'] = array(
     '#type' => 'textarea',
     '#title' => t('Card processing failure message'),
     '#description' => t('Error message displayed to customers when an attempted payment fails at checkout.'),
-    '#default_value' => variable_get('uc_credit_fail_message', t('We were unable to process your credit card payment. Please verify your details and try again.  If the problem persists, contact us to complete your order.')),
+    '#default_value' => $config->get('uc_credit_fail_message'),
   );
 
   $txn_types = array(
@@ -184,6 +185,7 @@ function uc_credit_settings_form($form, &$form_state) {
       '#group' => 'uc_credit',
       '#weight' => 5,
     );
+    // TODO This variable was probably removed in Backdrop without replacement.
     $form['gateways'][$id]['uc_pg_' . $id . '_enabled'] = array(
       '#type' => 'checkbox',
       '#title' => t('Enable this payment gateway for use.'),
@@ -199,6 +201,7 @@ function uc_credit_settings_form($form, &$form_state) {
         $options[$type] = $title;
       }
     }
+    // TODO This variable was probably removed in Backdrop without replacement.
     $form['gateways'][$id]['uc_pg_' . $id . '_cc_txn_type'] = array(
       '#type' => 'radios',
       '#title' => t('Default credit transaction type'),
@@ -217,7 +220,7 @@ function uc_credit_settings_form($form, &$form_state) {
   }
 
   if (empty($_POST) && !uc_credit_encryption_key()) {
-    drupal_set_message(t('Credit card security settings must be configured in the security settings tab.'), 'warning');
+    backdrop_set_message(t('Credit card security settings must be configured in the security settings tab.'), 'warning');
   }
 
   $form['#validate'][] = 'uc_credit_settings_form_validate';
@@ -329,16 +332,16 @@ function uc_credit_settings_form_submit($form, &$form_state) {
 
     if (!file_exists($key_file)) {
       if (!$file = fopen($key_file, 'wb')) {
-        drupal_set_message(t('Credit card encryption key file creation failed for file @file. Check your filepath settings and directory permissions.', array('@file' => $key_file)), 'error');
+        backdrop_set_message(t('Credit card encryption key file creation failed for file @file. Check your filepath settings and directory permissions.', array('@file' => $key_file)), 'error');
         watchdog('uc_credit', 'Credit card encryption key file creation failed for file @file. Check your filepath settings and directory permissions.', array('@file' => $key_file), WATCHDOG_ERROR);
       }
       else {
         // Replacement key generation suggested by Barry Jaspan
         // for increased security.
-        fwrite($file, md5(drupal_get_token(serialize($_REQUEST) . serialize($_SERVER) . REQUEST_TIME)));
+        fwrite($file, md5(backdrop_get_token(serialize($_REQUEST) . serialize($_SERVER) . REQUEST_TIME)));
         fclose($file);
 
-        drupal_set_message(t('Credit card encryption key file generated. Card data will now be encrypted.'));
+        backdrop_set_message(t('Credit card encryption key file generated. Card data will now be encrypted.'));
         watchdog('uc_credit', 'Credit card encryption key file generated. Card data will now be encrypted.');
       }
     }
@@ -352,7 +355,7 @@ function uc_credit_terminal($order) {
   $build['details']['order_total'] = array('#markup' => '<div><strong>' . t('Order total: @total', array('@total' => uc_currency_format($order->order_total))) . '</strong></div>');
   $build['details']['balance'] = array('#markup' => '<div><strong>' . t('Balance: @balance', array('@balance' => uc_currency_format(uc_payment_balance($order)))) . '</strong></div>');
 
-  $build['form'] = drupal_get_form('uc_credit_terminal_form', $order);
+  $build['form'] = backdrop_get_form('uc_credit_terminal_form', $order);
 
   return $build;
 }
@@ -542,7 +545,7 @@ function uc_credit_terminal_form($form, &$form_state, $order, $lock_amount = FAL
     }
   }
 
-  $form['#attached']['css'][] = drupal_get_path('module', 'uc_payment') . '/uc_payment.css';
+  $form['#attached']['css'][] = backdrop_get_path('module', 'uc_payment') . '/uc_payment.css';
 
   return $form;
 }
@@ -634,10 +637,10 @@ function uc_credit_terminal_form_submit($form, &$form_state) {
   _uc_credit_save_cc_data_to_order(uc_credit_cache('load'), $form_state['values']['order_id']);
 
   if ($result) {
-    drupal_set_message(t('The credit card was processed successfully. See the admin comments for more details.'));
+    backdrop_set_message(t('The credit card was processed successfully. See the admin comments for more details.'));
   }
   else {
-    drupal_set_message(t('There was an error processing the credit card.  See the admin comments for details.'), 'error');
+    backdrop_set_message(t('There was an error processing the credit card.  See the admin comments for details.'), 'error');
   }
 
   $form_state['redirect'] = 'admin/store/orders/' . $form_state['values']['order_id'];

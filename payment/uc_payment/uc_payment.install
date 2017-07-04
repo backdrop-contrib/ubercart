@@ -89,17 +89,21 @@ function uc_payment_install() {
   db_merge('uc_order_statuses')
     ->key(array('order_status_id' => 'payment_received'))
     ->insertFields(array(
-      'order_status_id' => 'payment_received',
-      'title' => $t('Payment received'),
-      'state' => 'payment_received',
-      'weight' => 10,
-      'locked' => 1,
-    ))
+    'order_status_id' => 'payment_received',
+    'title' => $t('Payment received'),
+    'state' => 'payment_received',
+    'weight' => 10,
+    'locked' => 1,
+  ))
     ->updateFields(array(
-      'state' => 'payment_received',
-      'locked' => 1,
-    ))
+    'state' => 'payment_received',
+    'locked' => 1,
+  ))
     ->execute();
+  // Dynamically generated variable data was detected on the following lines.
+  // /ubercart/payment/uc_payment/uc_payment.module line 610
+  // /ubercart/payment/uc_payment/uc_payment.module line 611
+  // /ubercart/payment/uc_payment/uc_payment.module line 398
 }
 
 /**
@@ -119,25 +123,33 @@ function uc_payment_uninstall() {
 function uc_payment_update_last_removed() {
   // 7.x-3.0-beta2 and earlier were installed with schema version 0,
   // which causes update.php to fail.
-  return drupal_get_installed_schema_version('uc_payment') == 0 ? 0 : 6002;
+  return backdrop_get_installed_schema_version('uc_payment') == 0 ? 0 : 6002;
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_payment_update_7000() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_payment_update_7001() { }
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function uc_payment_update_last_removed() {
+  return 7001;
 }
 
 /**
- * Remove unused variables.
+ * Implements hook_update_N().
  */
-function uc_payment_update_7000() {
-  variable_del('uc_payment_tracking');
-  variable_del('uc_payment_deleting');
-  variable_del('uc_payment_logging');
-  variable_del('uc_default_payment_msg');
-}
-
-/**
- * Increase maximum length of comment field.
- */
-function uc_payment_update_7001() {
-  db_change_field('uc_payment_receipts', 'comment', 'comment', array(
-    'description' => 'A comment made on the payment.',
-    'type' => 'text',
-  ));
+function uc_payment_update_1000() {
+  $config = config('uc_payment .settings');
+  $config->set('uc_payment_method_id_checkout', update_variable_get('uc_payment_method_id_checkout', 'dynamic variable in file /ubercart/payment/uc_payment/uc_payment.module line 610'));
+  $config->set('uc_payment_method_id_weight', update_variable_get('uc_payment_method_id_weight', 'dynamic variable in file /ubercart/payment/uc_payment/uc_payment.module line 611'));
+  $config->set('uc_payment_method_gateway', update_variable_get('uc_payment_method_gateway', 'dynamic variable in file /ubercart/payment/uc_payment/uc_payment.module line 398'));
+  $config->set('uc_payment_show_order_total_preview', update_variable_get('uc_payment_show_order_total_preview', 'TRUE'));
+  update_variable_del('uc_payment_method_id_checkout');
+  update_variable_del('uc_payment_method_id_weight');
+  update_variable_del('uc_payment_method_gateway');
+  update_variable_del('uc_payment_show_order_total_preview');
 }

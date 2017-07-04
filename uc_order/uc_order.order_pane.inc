@@ -56,15 +56,15 @@ function uc_order_pane_ship_to($op, $order, &$form = NULL, &$form_state = NULL) 
 
     case 'edit-theme':
       $output = '<div class="order-pane-icons">';
-      $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
+      $output .= ' <img src="' . base_path() . backdrop_get_path('module', 'uc_store')
                 . '/images/address_book.gif" alt="' . t('Select from address book.') . '" '
                 . 'title="' . t('Select from address book.') . '" onclick="load_address_select(' . $form['order_uid']['#value'] . ', \'#delivery_address_select\', \'delivery\');" />';
-      $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
+      $output .= ' <img src="' . base_path() . backdrop_get_path('module', 'uc_store')
                  . '/images/copy.gif" alt="' . t('Copy billing information.') . '" title="'
                  . t('Copy billing information.') . '" onclick="uc_order_copy_billing_to_shipping();" />';
       $output .= '</div>';
       $output .= '<div id="delivery_address_select"></div>';
-      return $output . drupal_render($form['ship_to']);
+      return $output . backdrop_render($form['ship_to']);
 
     case 'edit-process':
       foreach ($form_state['values'] as $key => $value) {
@@ -100,15 +100,15 @@ function uc_order_pane_bill_to($op, $order, &$form = NULL, &$form_state = NULL) 
 
     case 'edit-theme':
       $output = '<div class="order-pane-icons">';
-      $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
+      $output .= ' <img src="' . base_path() . backdrop_get_path('module', 'uc_store')
                 . '/images/address_book.gif" alt="' . t('Select from address book.') . '" '
                 . 'title="' . t('Select from address book.') . '" onclick="load_address_select(' . $form['order_uid']['#value'] . ', \'#billing_address_select\', \'billing\');" />';
-      $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
+      $output .= ' <img src="' . base_path() . backdrop_get_path('module', 'uc_store')
                . '/images/copy.gif" alt="' . t('Copy shipping information.') . '" title="'
                . t('Copy shipping information.') . '" onclick="uc_order_copy_shipping_to_billing();" />';
       $output .= '</div>';
       $output .= '<div id="billing_address_select"></div>';
-      return $output . drupal_render($form['bill_to']);
+      return $output . backdrop_render($form['bill_to']);
 
     case 'edit-process':
       foreach ($form_state['values'] as $key => $value) {
@@ -157,15 +157,15 @@ function uc_order_pane_customer($op, $order, &$form = NULL, &$form_state = NULL)
 
     case 'edit-theme':
       $output = '<div class="order-pane-icons">';
-      $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
+      $output .= ' <img src="' . base_path() . backdrop_get_path('module', 'uc_store')
                 . '/images/order_view.gif" alt="' . t('Search for an existing customer.') . '" '
                 . 'title="' . t('Search for an existing customer.') . '" onclick="load_customer_search();" />';
-      $output .= ' <img src="' . base_path() . drupal_get_path('module', 'uc_store')
+      $output .= ' <img src="' . base_path() . backdrop_get_path('module', 'uc_store')
                 . '/images/menu_customers_small.gif" alt="' . t('Create a new customer.') . '" '
                 . 'title="' . t('Create a new customer.') . '" onclick="load_new_customer_form();" />';
       $output .= '</div>';
       $output .= '<div id="customer-select"></div>';
-      $output .= drupal_render($form['customer']);
+      $output .= backdrop_render($form['customer']);
       return $output;
 
     case 'edit-process':
@@ -232,10 +232,10 @@ function uc_order_pane_products($op, $order, &$form = NULL, &$form_state = NULL)
       return $form;
 
     case 'edit-theme':
-      $output = drupal_render($form['add_product_button']);
-      $output .= drupal_render($form['add_blank_line_button']);
-      $output .= drupal_render($form['product_controls']);
-      $output .= drupal_render($form['products']);
+      $output = backdrop_render($form['add_product_button']);
+      $output .= backdrop_render($form['add_blank_line_button']);
+      $output .= backdrop_render($form['product_controls']);
+      $output .= backdrop_render($form['products']);
 
       return $output;
 
@@ -348,7 +348,7 @@ function uc_order_add_product_form($form, &$form_state, $order, $node) {
     '#type' => 'submit',
     '#value' => t('Add to order'),
     '#submit' => array('uc_order_edit_products_add'),
-    '#ajax' =>  array(
+    '#ajax' => array(
       'callback' => 'uc_order_pane_products_ajax_callback',
       'wrapper' => 'product-controls',
     ),
@@ -357,7 +357,7 @@ function uc_order_add_product_form($form, &$form_state, $order, $node) {
     '#type' => 'submit',
     '#value' => t('Cancel'),
     '#submit' => array('uc_order_pane_products_select'),
-    '#ajax' =>  array(
+    '#ajax' => array(
       'callback' => 'uc_order_pane_products_ajax_callback',
       'wrapper' => 'product-controls',
     ),
@@ -382,11 +382,11 @@ function uc_order_add_product_form($form, &$form_state, $order, $node) {
 function uc_order_edit_products_form($form, &$form_state, $products) {
   if (($product_count = count($products)) > 0) {
     $form['products'] = tapir_get_table('uc_op_products_edit_table');
-    for ($i=0, $product = reset($products); $i < $product_count; $i++, $product = next($products)) {
+    for ($i = 0, $product = reset($products); $i < $product_count; $i++, $product = next($products)) {
       $form['products'][$i]['remove'] = array(
         '#type' => 'image_button',
         '#title' => t('Remove this product.'),
-        '#src' => drupal_get_path('module', 'uc_store') . '/images/error.gif',
+        '#src' => backdrop_get_path('module', 'uc_store') . '/images/error.gif',
         '#button_type' => 'remove',
         '#submit' => array('uc_order_edit_products_remove', 'uc_order_edit_form_submit'),
         '#return_value' => $product->order_product_id,
@@ -431,7 +431,7 @@ function uc_order_edit_products_form($form, &$form_state, $products) {
         'lb' => t('Pounds'),
         'kg' => t('Kilograms'),
         'oz' => t('Ounces'),
-        'g'  => t('Grams'),
+        'g' => t('Grams'),
       );
       $form['products'][$i]['weight_units'] = array(
         '#type' => 'select',
@@ -560,7 +560,7 @@ function uc_order_edit_products_add($form, &$form_state) {
   $product = uc_product_load_variant(intval($form_state['values']['product_controls']['nid']), $data);
   $product->qty = isset($form_state['values']['product_controls']['qty']) ? $form_state['values']['product_controls']['qty'] : $product->default_qty;
 
-  drupal_alter('uc_order_product', $product, $order);
+  backdrop_alter('uc_order_product', $product, $order);
   uc_order_product_save($order->order_id, $product);
   $order->products[] = $product;
 
@@ -604,12 +604,12 @@ function uc_order_edit_products_remove($form, &$form_state) {
  * AJAX callback to render the order product controls.
  */
 function uc_order_pane_products_ajax_callback($form, &$form_state) {
-  $commands[] = ajax_command_replace('#product-controls', trim(drupal_render($form['product_controls'])));
+  $commands[] = ajax_command_replace('#product-controls', trim(backdrop_render($form['product_controls'])));
   $commands[] = ajax_command_prepend('#product-controls', trim(theme('status_messages')));
 
   if (isset($form_state['refresh_products']) && $form_state['refresh_products']) {
-    $commands[] = ajax_command_replace('#order-edit-products', trim(drupal_render($form['products'])));
-    $commands[] = ajax_command_replace('#order-line-items', trim(drupal_render($form['line_items'])));
+    $commands[] = ajax_command_replace('#order-edit-products', trim(backdrop_render($form['products'])));
+    $commands[] = ajax_command_replace('#order-line-items', trim(backdrop_render($form['line_items'])));
     $commands[] = ajax_command_prepend('#order-edit-products', trim(theme('status_messages')));
   }
 
@@ -637,7 +637,7 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
               $line_items[] = array(
                 'title' => $line['title'],
                 'amount' => $line['amount'],
-                'weight' => $item['weight']
+                'weight' => $item['weight'],
               );
             }
           }
@@ -728,7 +728,7 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
           $form['line_items'][$item['line_item_id']]['remove'] = array(
             '#type' => 'image_button',
             '#title' => t('Remove line item.'),
-            '#src' => drupal_get_path('module', 'uc_store') . '/images/error.gif',
+            '#src' => backdrop_get_path('module', 'uc_store') . '/images/error.gif',
             '#button_type' => 'remove',
             '#submit' => array('uc_order_pane_line_items_submit', 'uc_order_pane_line_items_remove'),
             '#ajax' => array(
@@ -764,8 +764,8 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
       return $form;
 
     case 'edit-theme':
-      return drupal_render($form['add_line_item'])
-           . drupal_render($form['line_items']);
+      return backdrop_render($form['add_line_item'])
+           . backdrop_render($form['line_items']);
 
     case 'edit-process':
       uc_order_pane_line_items_submit($form, $form_state);
@@ -784,14 +784,14 @@ function theme_uc_order_pane_line_items($variables) {
     $form[$field]['title']['#title'] = '';
     $form[$field]['amount']['#title'] = '';
     $output .= '<tr><td class="li-title">'
-      . drupal_render($form[$field]['li_id'])
-      . drupal_render($form[$field]['remove'])
-      . drupal_render($form[$field]['title'])
+      . backdrop_render($form[$field]['li_id'])
+      . backdrop_render($form[$field]['remove'])
+      . backdrop_render($form[$field]['title'])
       . ':</td><td class="li-amount">'
-      . drupal_render($form[$field]['amount'])
+      . backdrop_render($form[$field]['amount'])
       . '</td></tr>';
   }
-  $output .= '</table>' . drupal_render_children($form);
+  $output .= '</table>' . backdrop_render_children($form);
 
   return $output;
 }
@@ -841,7 +841,7 @@ function uc_order_pane_line_items_remove($form, &$form_state) {
  * AJAX callback to render the line items.
  */
 function uc_order_pane_line_items_update($form, &$form_state) {
-  $commands[] = ajax_command_replace('#order-line-items', trim(drupal_render($form['line_items'])));
+  $commands[] = ajax_command_replace('#order-line-items', trim(backdrop_render($form['line_items'])));
   $commands[] = ajax_command_prepend('#order-line-items', theme('status_messages'));
 
   return array('#type' => 'ajax', '#commands' => $commands);
@@ -860,16 +860,34 @@ function uc_order_pane_order_comments($op, $order, &$form = NULL, &$form_state =
       $comments = uc_order_comments_load($order->order_id);
       $header = array(t('Date'), t('Status'), t('Message'));
       $rows[] = array(
-        array('data' => format_date($order->created, 'uc_store'), 'class' => array('date')),
-        array('data' => '-', 'class' => array('status')),
-        array('data' => t('Order created.'), 'class' => array('message')),
+        array(
+          'data' => format_date($order->created, 'uc_store'),
+          'class' => array('date'),
+        ),
+        array(
+          'data' => '-',
+          'class' => array('status'),
+        ),
+        array(
+          'data' => t('Order created.'),
+          'class' => array('message'),
+        ),
       );
       if (count($comments) > 0) {
         foreach ($comments as $comment) {
           $rows[] = array(
-            array('data' => format_date($comment->created, 'uc_store'), 'class' => array('date')),
-            array('data' => $comment->title, 'class' => array('status')),
-            array('data' => check_plain($comment->message), 'class' => array('message')),
+            array(
+              'data' => format_date($comment->created, 'uc_store'),
+              'class' => array('date'),
+            ),
+            array(
+              'data' => $comment->title,
+              'class' => array('status'),
+            ),
+            array(
+              'data' => check_plain($comment->message),
+              'class' => array('message'),
+            ),
           );
         }
       }
@@ -918,7 +936,7 @@ function uc_order_pane_admin_comments($op, $order, &$form = NULL, &$form_state =
       else {
         $items = array(t('No admin comments have been entered for this order.'));
       }
-      $output = theme('item_list', array('items' => $items)) . drupal_render($form['admin_comment_field']);
+      $output = theme('item_list', array('items' => $items)) . backdrop_render($form['admin_comment_field']);
       return $output;
 
     case 'edit-process':
@@ -935,7 +953,7 @@ function uc_order_pane_admin_comments($op, $order, &$form = NULL, &$form_state =
 function uc_order_pane_update($op, $order, &$form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
-      return drupal_get_form('uc_order_view_update_form', $order);
+      return backdrop_get_form('uc_order_view_update_form', $order);
   }
 }
 
@@ -1038,7 +1056,7 @@ function uc_order_view_update_form_submit($form, &$form_state) {
     rules_invoke_event('uc_order_status_email_update', $order);
   }
 
-  drupal_set_message(t('Order updated.'));
+  backdrop_set_message(t('Order updated.'));
 }
 
 /**
@@ -1184,7 +1202,10 @@ function uc_op_products_edit_table() {
   $table = array(
     '#type' => 'tapir_table',
     '#tree' => TRUE,
-    '#attributes' => array('id' => 'order-edit-products', 'class' => array('order-pane-table')),
+    '#attributes' => array(
+      'id' => 'order-edit-products',
+      'class' => array('order-pane-table'),
+    ),
   );
 
   $table['#columns']['remove'] = array(
@@ -1233,23 +1254,38 @@ function uc_op_order_comments_view_table($comments) {
   );
 
   $table['#columns']['date'] = array(
-    'cell' => array('data' => t('Date'), 'class' => array('date')),
+    'cell' => array(
+      'data' => t('Date'),
+      'class' => array('date'),
+    ),
     'weight' => 0,
   );
   $table['#columns']['user'] = array(
-    'cell' => array('data' => t('User'), 'class' => array('user')),
+    'cell' => array(
+      'data' => t('User'),
+      'class' => array('user'),
+    ),
     'weight' => 1,
   );
   $table['#columns']['notified'] = array(
-    'cell' => array('data' => t('Notified'), 'class' => array('notified')),
+    'cell' => array(
+      'data' => t('Notified'),
+      'class' => array('notified'),
+    ),
     'weight' => 2,
   );
   $table['#columns']['status'] = array(
-    'cell' => array('data' => t('Status'), 'class' => array('status')),
+    'cell' => array(
+      'data' => t('Status'),
+      'class' => array('status'),
+    ),
     'weight' => 3,
   );
   $table['#columns']['comment'] = array(
-    'cell' => array('data' => t('Comment'), 'class' => array('message')),
+    'cell' => array(
+      'data' => t('Comment'),
+      'class' => array('message'),
+    ),
     'weight' => 4,
   );
 
@@ -1266,7 +1302,7 @@ function uc_op_order_comments_view_table($comments) {
       );
       $icon = $comment->notified ? 'true-icon.gif' : 'false-icon.gif';
       $data['notified'] = array(
-        '#markup' => theme('image', array('path' => drupal_get_path('module', 'uc_order') . '/images/' . $icon)),
+        '#markup' => theme('image', array('path' => backdrop_get_path('module', 'uc_order') . '/images/' . $icon)),
         '#cell_attributes' => array('class' => 'notified'),
       );
       $data['status'] = array(
@@ -1301,15 +1337,24 @@ function uc_op_admin_comments_view_table($comments) {
   );
 
   $table['#columns']['date'] = array(
-    'cell' => array('data' => t('Date'), 'class' => array('date')),
+    'cell' => array(
+      'data' => t('Date'),
+      'class' => array('date'),
+    ),
     'weight' => 0,
   );
   $table['#columns']['user'] = array(
-    'cell' => array('data' => t('User'), 'class' => array('user')),
+    'cell' => array(
+      'data' => t('User'),
+      'class' => array('user'),
+    ),
     'weight' => 1,
   );
   $table['#columns']['comment'] = array(
-    'cell' => array('data' => t('Comment'), 'class' => array('message')),
+    'cell' => array(
+      'data' => t('Comment'),
+      'class' => array('message'),
+    ),
     'weight' => 2,
   );
 
@@ -1369,7 +1414,7 @@ function _uc_order_pane_list($view = 'view') {
   }
 
   // Allow other modules to alter the defaults.
-  drupal_alter('uc_order_pane', $panes);
+  backdrop_alter('uc_order_pane', $panes);
 
   uasort($panes, 'uc_weight_sort');
 

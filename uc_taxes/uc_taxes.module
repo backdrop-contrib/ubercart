@@ -15,7 +15,7 @@ function uc_taxes_permission() {
   return array(
     'configure taxes' => array(
       'title' => t('Configure taxes'),
-    )
+    ),
   );
 }
 
@@ -34,7 +34,7 @@ function uc_taxes_menu() {
   );
   $items['admin/store/settings/taxes/add'] = array(
     'title' => 'Add a tax rate',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_taxes_form'),
     'access arguments' => array('configure taxes'),
     'file' => 'uc_taxes.admin.inc',
@@ -42,7 +42,7 @@ function uc_taxes_menu() {
   );
   $items['admin/store/settings/taxes/%/edit'] = array(
     'title' => 'Edit a tax rate',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_taxes_form', 4),
     'access arguments' => array('configure taxes'),
     'file' => 'uc_taxes.admin.inc',
@@ -55,7 +55,7 @@ function uc_taxes_menu() {
   );
   $items['admin/store/settings/taxes/%/delete'] = array(
     'title' => 'Delete tax rule',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_taxes_delete_form', 4),
     'access arguments' => array('configure taxes'),
     'file' => 'uc_taxes.admin.inc',
@@ -230,7 +230,7 @@ function uc_taxes_uc_order($op, $order, $arg2) {
         uc_order_log_changes($order->order_id, $changes);
         usort($order->line_items, 'uc_weight_sort');
       }
-    break;
+      break;
   }
 }
 
@@ -244,8 +244,8 @@ function uc_taxes_node_type_update($info) {
 
   db_update('uc_taxed_product_types')
     ->fields(array(
-      'type' => $info->type,
-    ))
+    'type' => $info->type,
+  ))
     ->condition('type', $existing_type)
     ->execute();
 }
@@ -279,6 +279,7 @@ function uc_line_item_tax_display($op, $order) {
  *   A line item array suitable for returning from line item callbacks.
  */
 function _uc_taxes_to_line_item($tax) {
+  // TODO This variable was probably removed in Backdrop without replacement.
   $line = array(
     'id' => ($tax->summed ? 'tax' : 'tax_included'),
     'title' => !empty($tax->name) ? $tax->name : $tax->id,
@@ -325,12 +326,13 @@ function uc_line_item_tax_subtotal($op, $order) {
       }
 
       if ($different && $has_taxes) {
+        // TODO This variable was probably removed in Backdrop without replacement.
         return array(array(
-          'id' => 'tax_subtotal',
-          'title' => t('Subtotal excluding taxes'),
-          'amount' => $amount,
-          'weight' => variable_get('uc_li_tax_subtotal_weight', 7),
-        ));
+            'id' => 'tax_subtotal',
+            'title' => t('Subtotal excluding taxes'),
+            'amount' => $amount,
+            'weight' => variable_get('uc_li_tax_subtotal_weight', 7),
+          ));
       }
       break;
   }
@@ -350,11 +352,11 @@ function uc_line_item_tax_subtotal($op, $order) {
 function uc_taxes_rate_save($rate, $reset = TRUE) {
   // Save it as a new rate if no ID is specified.
   if (empty($rate->id)) {
-    drupal_write_record('uc_taxes', $rate);
+    backdrop_write_record('uc_taxes', $rate);
   }
   // Otherwise update the existing tax rate's data.
   else {
-    drupal_write_record('uc_taxes', $rate, array('id'));
+    backdrop_write_record('uc_taxes', $rate, array('id'));
   }
 
   db_delete('uc_taxed_product_types')
@@ -586,6 +588,7 @@ function uc_taxes_apply_item_tax($item, $tax) {
     $shippable = $node->shippable;
   }
   else {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $shippable = variable_get('uc_product_shippable_' . $type); // Use default for this node type.
   }
 
@@ -644,7 +647,7 @@ function uc_taxes_apply_tax($order, $tax) {
   }
   $amount = $taxable_amount * $tax->rate;
   if ($amount) {
-    $line_item = (object)array(
+    $line_item = (object) array(
       'id' => $tax->id,
       'name' => $tax->name,
       'amount' => $amount,
@@ -681,4 +684,12 @@ function uc_taxes_get_included_tax($product, $order = NULL) {
   }
 
   return array($amount, $suffixes);
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function uc_taxes_autoload_info() {
+  return array(
+  );
 }

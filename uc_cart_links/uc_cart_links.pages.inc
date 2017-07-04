@@ -14,30 +14,31 @@
  * @see uc_cart_links_form_submit()
  */
 function uc_cart_links_form($form, &$form_state, $cart_actions) {
+  $config = config('uc_cart_links.settings');
   // Fail if the link is restricted.
-  $data = variable_get('uc_cart_links_restrictions', '');
+  $data = $config->get('uc_cart_links_restrictions');
   if (!empty($data)) {
-    $restrictions = explode("\n", variable_get('uc_cart_links_restrictions', ''));
+    $restrictions = explode("\n", $config->get('uc_cart_links_restrictions'));
     $restrictions = array_map('trim', $restrictions);
 
     if (!empty($restrictions) && !in_array($cart_actions, $restrictions)) {
-      $url = variable_get('uc_cart_links_invalid_page', '');
+      $url = $config->get('uc_cart_links_invalid_page');
       if (empty($url)) {
         $url = '<front>';
       }
       unset($_GET['destination']);
-      drupal_goto($url);
+      backdrop_goto($url);
     }
   }
 
   // Confirm with the user if the form contains a destructive action.
   $items = uc_cart_get_contents();
-  if (variable_get('uc_cart_links_empty', TRUE) && !empty($items)) {
+  if ($config->get('uc_cart_links_empty') && !empty($items)) {
     $actions = explode('-', urldecode($cart_actions));
     foreach ($actions as $action) {
-      $action = drupal_substr($action, 0, 1);
+      $action = backdrop_substr($action, 0, 1);
       if ($action == 'e' || $action == 'E') {
-        return confirm_form(array(), t('The current contents of your shopping cart will be lost. Are you sure you want to continue?'), variable_get('uc_cart_links_invalid_page', ''));
+        return confirm_form(array(), t('The current contents of your shopping cart will be lost. Are you sure you want to continue?'), $config->get('uc_cart_links_invalid_page'));
       }
     }
   }
@@ -62,45 +63,50 @@ function uc_cart_links_form_submit($form, &$form_state) {
  *   A Cart Link URL is structured like "/cart/add/$cart_actions".
  */
 function uc_cart_links_process($cart_actions) {
+  $config = config('uc_cart_links.settings');
   $actions = explode('-', urldecode($cart_actions));
   $rebuild_cart = FALSE;
   $messages = array();
   $id = t('(not specified)');
 
   foreach ($actions as $action) {
-    switch (drupal_substr($action, 0, 1)) {
+    switch (backdrop_substr($action, 0, 1)) {
       // Set the ID of the Cart Link.
       case 'i':
       case 'I':
-        $id = drupal_substr($action, 1, 32);
+        $id = backdrop_substr($action, 1, 32);
         break;
 
-      // Add a product to the cart.
+        // Add a product to the cart.
       case 'p':
       case 'P':
         // Set the default product variables.
-        $p = array('nid' => 0, 'qty' => 1, 'data' => array());
+        $p = array(
+          'nid' => 0,
+          'qty' => 1,
+          'data' => array(),
+        );
         $msg = TRUE;
 
         // Parse the product action to adjust the product variables.
         $parts = explode('_', $action);
         foreach ($parts as $part) {
-          switch (drupal_substr($part, 0, 1)) {
+          switch (backdrop_substr($part, 0, 1)) {
             // Set the product node ID: p23
             case 'p':
             case 'P':
-              $p['nid'] = intval(drupal_substr($part, 1));
+              $p['nid'] = intval(backdrop_substr($part, 1));
               break;
-            // Set the quantity to add to cart: _q2
+              // Set the quantity to add to cart: _q2
             case 'q':
             case 'Q':
-              $p['qty'] = intval(drupal_substr($part, 1));
+              $p['qty'] = intval(backdrop_substr($part, 1));
               break;
-            // Set an attribute/option for the product: _a3o6
+              // Set an attribute/option for the product: _a3o6
             case 'a':
             case 'A':
-              $attribute = intval(drupal_substr($part, 1, stripos($part, 'o') - 1));
-              $option = (string) drupal_substr($part, stripos($part, 'o') + 1);
+              $attribute = intval(backdrop_substr($part, 1, stripos($part, 'o') - 1));
+              $option = (string) backdrop_substr($part, stripos($part, 'o') + 1);
               if (!isset($p['attributes'][$attribute])) {
                 $p['attributes'][$attribute] = $option;
               }
@@ -116,12 +122,12 @@ function uc_cart_links_process($cart_actions) {
                   // option, so put that into an array with this new option
                   $p['attributes'][$attribute] = array(
                     $p['attributes'][$attribute] => $p['attributes'][$attribute],
-                    $option => $option
+                    $option => $option,
                   );
                 }
               }
               break;
-            // Suppress the add to cart message: _s
+              // Suppress the add to cart message: _s
             case 's':
             case 'S':
               $msg = FALSE;
@@ -152,24 +158,24 @@ function uc_cart_links_process($cart_actions) {
         }
         break;
 
-      // Empty the shopping cart.
+        // Empty the shopping cart.
       case 'e':
       case 'E':
-        if (variable_get('uc_cart_links_empty', TRUE)) {
+        if ($config->get('uc_cart_links_empty')) {
           uc_cart_empty();
         }
         break;
 
-      // Display a pre-configured message.
+        // Display a pre-configured message.
       case 'm':
       case 'M':
         // Load the messages if they haven't been loaded yet.
         if (empty($messages)) {
-          $data = explode("\n", variable_get('uc_cart_links_messages', ''));
+          $data = explode("\n", $config->get('uc_cart_links_messages'));
           foreach ($data as $message) {
             // Skip blank lines.
             if (preg_match('/^\s*$/', $message)) {
-               continue;
+              continue;
             }
             list($mkey, $mdata) = explode('|', $message, 2);
             $messages[trim($mkey)] = trim($mdata);
@@ -177,9 +183,9 @@ function uc_cart_links_process($cart_actions) {
         }
 
         // Parse the message key and display it if it exists.
-        $mkey = intval(drupal_substr($action, 1));
+        $mkey = intval(backdrop_substr($action, 1));
         if (!empty($messages[$mkey])) {
-          drupal_set_message($messages[$mkey]);
+          backdrop_set_message($messages[$mkey]);
         }
         break;
     }
@@ -190,18 +196,18 @@ function uc_cart_links_process($cart_actions) {
     }
   }
 
-  if (variable_get('uc_cart_links_track', TRUE)) {
+  if ($config->get('uc_cart_links_track')) {
     db_merge('uc_cart_link_clicks')
       ->key(array('cart_link_id' => (string) $id))
       ->fields(array(
-        'clicks' => 1,
-        'last_click' => REQUEST_TIME,
-      ))
+      'clicks' => 1,
+      'last_click' => REQUEST_TIME,
+    ))
       ->expression('clicks', 'clicks + :i', array(':i' => 1))
       ->execute();
   }
 
   $_SESSION['uc_cart_last_url'] = $_SERVER['HTTP_REFERER'];
 
-  drupal_goto();
+  backdrop_goto();
 }

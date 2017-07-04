@@ -74,6 +74,7 @@ function uc_ajax_process_form($form, &$form_state) {
   if (isset($form['#form_id'])) {
     switch ($form['#form_id']) {
       case 'uc_cart_checkout_form':
+        // TODO This variable was probably removed in Backdrop without replacement.
         $config = variable_get('uc_ajax_checkout', _uc_ajax_defaults('checkout'));
         foreach ($config as $key => $panes) {
           foreach (array_keys($panes) as $pane) {
@@ -92,10 +93,10 @@ function uc_ajax_process_form($form, &$form_state) {
   // We have to operate on the children rather than on the element itself, as
   // #process functions are called *after* form_handle_input_elements(),
   // which is where the triggering element is determined. If we haven't added
-  // an '#ajax' key by that time, Drupal won't be able to determine which
+  // an '#ajax' key by that time, Backdrop won't be able to determine which
   // callback to invoke.
   foreach (element_children($form) as $child) {
-    $element =& $form[$child];
+    $element = &$form[$child];
 
     // Add this process function recursively to the children.
     if (empty($element['#process']) && !empty($element['#type'])) {
@@ -164,7 +165,7 @@ function uc_ajax_multiplex($form, $form_state) {
         }
         elseif (is_string($wrapper)) {
           // Otherwise, assume the callback returned a string or render-array, and insert it into the wrapper.
-          $html = is_string($result) ? $result : drupal_render($result);
+          $html = is_string($result) ? $result : backdrop_render($result);
           $commands[] = ajax_command_replace('#' . $wrapper, trim($html));
           $commands[] = ajax_command_prepend('#' . $wrapper, theme('status_messages'));
         }
@@ -218,7 +219,7 @@ function uc_ajax_replace_checkout_pane($form, $form_state, $wrapper = NULL) {
 function _uc_ajax_defaults($target_form) {
   switch ($target_form) {
     case 'checkout':
-      $quotes_defaults = drupal_map_assoc(array('payment-pane', 'quotes-pane'));
+      $quotes_defaults = backdrop_map_assoc(array('payment-pane', 'quotes-pane'));
       return array(
         'panes][delivery][address][delivery_country' => $quotes_defaults,
         'panes][delivery][address][delivery_postal_code' => $quotes_defaults,

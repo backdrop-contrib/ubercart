@@ -16,7 +16,7 @@ function uc_cybersource_requirements($phase) {
   $has_soap = class_exists('SoapClient');
 
   // Valid methods are 'soap' and 'post'.  Defaults here to 'post' on install.
-  $method = variable_get('uc_cybersource_method', 'post');
+  $method = config_get('uc_cybersource.settings', 'uc_cybersource_method');
 
   // Using SOAP.
   if ($method == 'soap') {
@@ -139,7 +139,7 @@ function uc_cybersource_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-     'received' => array(
+      'received' => array(
         'description' => 'The IPN receipt timestamp.',
         'type' => 'int',
         'unsigned' => TRUE,
@@ -156,4 +156,55 @@ function uc_cybersource_schema() {
  */
 function uc_cybersource_update_last_removed() {
   return 2;
+}
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function uc_cybersource_update_last_removed() {
+  return;
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function uc_cybersource_update_1000() {
+  $config = config('uc_cybersource .settings');
+  $config->set('uc_cybersource_method', update_variable_get('uc_cybersource_method', 'post'));
+  $config->set('uc_cybersource_server', update_variable_get('uc_cybersource_server', 'test'));
+  $config->set('uc_cybersource_avs', update_variable_get('uc_cybersource_avs', 'true'));
+  $config->set('uc_cybersource_soap_create_profile', update_variable_get('uc_cybersource_soap_create_profile', 'FALSE'));
+  $config->set('uc_cybersource_soap_tax_calculate', update_variable_get('uc_cybersource_soap_tax_calculate', 'FALSE'));
+  $config->set('uc_cybersource_hop_server', update_variable_get('uc_cybersource_hop_server', 'dynamic value in file /ubercart/payment/uc_cybersource/uc_cybersource.module line 510'));
+  $config->set('uc_cybersource_hop_transaction_type', update_variable_get('uc_cybersource_hop_transaction_type', 'sale'));
+  $config->set('uc_cybersource_cs_hop_button_text', update_variable_get('uc_cybersource_cs_hop_button_text', 'dynamic value in file /ubercart/payment/uc_cybersource/uc_cybersource.module line 490'));
+  $config->set('uc_cybersource_hop_currency', update_variable_get('uc_cybersource_hop_currency', 'USD'));
+  $config->set('uc_cybersource_hop_avs', update_variable_get('uc_cybersource_hop_avs', 'true'));
+  $config->set('uc_cybersource_hop_merchant_receipt_email', update_variable_get('uc_cybersource_hop_merchant_receipt_email', 'true'));
+  $config->set('uc_cybersource_currency', update_variable_get('uc_cybersource_currency', 'usd'));
+  $config->set('uc_cybersource_soap_merchant_id', update_variable_get('uc_cybersource_soap_merchant_id', ''));
+  $config->set('uc_cybersource_soap_transaction_key', update_variable_get('uc_cybersource_soap_transaction_key', ''));
+  update_variable_del('uc_cybersource_method');
+  update_variable_del('uc_cybersource_server');
+  update_variable_del('uc_cybersource_avs');
+  update_variable_del('uc_cybersource_soap_create_profile');
+  update_variable_del('uc_cybersource_soap_tax_calculate');
+  update_variable_del('uc_cybersource_hop_server');
+  update_variable_del('uc_cybersource_hop_transaction_type');
+  update_variable_del('uc_cybersource_cs_hop_button_text');
+  update_variable_del('uc_cybersource_hop_currency');
+  update_variable_del('uc_cybersource_hop_avs');
+  update_variable_del('uc_cybersource_hop_merchant_receipt_email');
+  update_variable_del('uc_cybersource_currency');
+  update_variable_del('uc_cybersource_soap_merchant_id');
+  update_variable_del('uc_cybersource_soap_transaction_key');
+}
+
+/**
+ * Implements hook_install().
+ */
+function uc_cybersource_install() {
+  // Dynamically generated variable data was detected.
+  // /ubercart/payment/uc_cybersource/uc_cybersource.module line 510
+  // /ubercart/payment/uc_cybersource/uc_cybersource.module line 490
 }

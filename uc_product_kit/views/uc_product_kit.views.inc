@@ -106,7 +106,7 @@ function uc_product_kit_views_data() {
     'argument' => array(
       'handler' => 'views_handler_argument_numeric',
     ),
-      'sort' => array(
+    'sort' => array(
       'handler' => 'views_handler_sort',
     ),
   );

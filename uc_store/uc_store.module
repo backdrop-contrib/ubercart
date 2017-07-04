@@ -16,20 +16,20 @@
 /** Converts kilograms to kilograms. */
 define('KG_TO_KG', 1);
 /** Converts kilograms to grams. */
-define('KG_TO_G',  1000);
+define('KG_TO_G',    1000);
 /** Converts kilograms to pounds. */
 define('KG_TO_LB', 2.204622621849);
 /** Converts kilograms to ounces. */
 define('KG_TO_OZ', 35.27396194958);
 
 /** Converts grams to grams. */
-define('G_TO_G',   1);
+define('G_TO_G',     1);
 /** Converts grams to kilograms. */
-define('G_TO_KG',  0.001);
+define('G_TO_KG',    0.001);
 /** Converts grams to pounds. */
-define('G_TO_LB',  0.002204622622);
+define('G_TO_LB',    0.002204622622);
 /** Converts grams to ounces. */
-define('G_TO_OZ',  0.03527396195);
+define('G_TO_OZ',    0.03527396195);
 
 /** Converts pounds to pounds. */
 define('LB_TO_LB', 1);
@@ -38,7 +38,7 @@ define('LB_TO_OZ', 16);
 /** Converts pounds to kilograms. */
 define('LB_TO_KG', 0.45359237);
 /** Converts pounds to grams. */
-define('LB_TO_G',  453.59237);
+define('LB_TO_G',    453.59237);
 
 /** Converts ounces to ounces. */
 define('OZ_TO_OZ', 1);
@@ -47,7 +47,7 @@ define('OZ_TO_LB', 0.0625);
 /** Converts ounces to kilograms. */
 define('OZ_TO_KG', 0.028349523);
 /** Converts ounces to grams. */
-define('OZ_TO_G',  28.349523125);
+define('OZ_TO_G',    28.349523125);
 
 
 /**
@@ -126,7 +126,7 @@ function uc_store_menu() {
   $items['admin/store/settings/countries'] = array(
     'title' => 'Countries and addresses',
     'description' => 'Manage available countries and configure address formats.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_country_import_form'),
     'access arguments' => array('administer store'),
     'file' => 'uc_store.countries.inc',
@@ -141,7 +141,7 @@ function uc_store_menu() {
   $items['admin/store/settings/countries/fields'] = array(
     'title' => 'Address fields',
     'description' => 'Edit the address field settings.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_store_address_fields_form'),
     'access arguments' => array('administer store'),
     'type' => MENU_LOCAL_TASK,
@@ -151,7 +151,7 @@ function uc_store_menu() {
   $items['admin/store/settings/countries/formats'] = array(
     'title' => 'Address formats',
     'description' => 'Edit country specific address format settings.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_country_formats_form'),
     'access arguments' => array('administer store'),
     'type' => MENU_LOCAL_TASK,
@@ -162,7 +162,7 @@ function uc_store_menu() {
   $items['admin/store/settings/store'] = array(
     'title' => 'Store',
     'description' => 'Configure basic store settings.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_store_settings_form'),
     'access arguments' => array('administer store'),
     'file' => 'uc_store.admin.inc',
@@ -190,7 +190,7 @@ function uc_store_menu() {
   $items['admin/store/settings/countries/%/remove'] = array(
     'title' => 'Remove a country',
     'description' => 'Remove an installed country.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_country_remove_form', 4),
     'access arguments' => array('administer store'),
     'file' => 'uc_store.countries.inc',
@@ -255,7 +255,9 @@ function uc_store_element_info() {
     '#hidden' => FALSE,
   );
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $sign_flag = variable_get('uc_sign_after_amount', FALSE);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $currency_sign = variable_get('uc_currency_sign', '$');
 
   $types['uc_price'] = array(
@@ -420,7 +422,7 @@ function uc_store_process_address_field($element, $form_state) {
  * Store the current address for use when rebuilding the form.
  */
 function uc_store_validate_address_field_country($element, &$form_state) {
-  $address = drupal_array_get_nested_value($form_state['values'], array_slice($element['#parents'], 0, -1));
+  $address = backdrop_array_get_nested_value($form_state['values'], array_slice($element['#parents'], 0, -1));
   $form_state['uc_address'] = isset($form_state['uc_address']) ? array_merge($form_state['uc_address'], $address) : $address;
 }
 
@@ -608,6 +610,7 @@ function uc_store_date_format_types() {
  * Implements hook_page_alter().
  */
 function uc_store_page_alter(&$page) {
+  // TODO This variable was probably removed in Backdrop without replacement.
   $id = variable_get('uc_footer_message', 0);
 
   // Exit if the store footer is turned off.
@@ -616,7 +619,7 @@ function uc_store_page_alter(&$page) {
   }
 
   // Figure out what page is being viewed.
-  $path = drupal_get_normal_path($_GET['q']);
+  $path = backdrop_get_normal_path($_GET['q']);
   $parts = explode('/', $path);
 
   // Exit if the page isn't governed by Ubercart.
@@ -657,7 +660,7 @@ function uc_store_page_alter(&$page) {
     // Pseudorandom number based on the hash of the path and the site's private
     // key, so messages are consistent between pages on the same site, but
     // different on the same pages on different sites.
-    $id = (hexdec(substr(md5($path . drupal_get_private_key()), 0, 2)) % count($messages)) + 1;
+    $id = (hexdec(substr(md5($path . backdrop_get_private_key()), 0, 2)) % count($messages)) + 1;
   }
 
   $page['page_bottom']['ubercart_footer'] = array(
@@ -673,11 +676,11 @@ function uc_store_page_alter(&$page) {
  */
 function uc_store_reviews() {
   $coder_reviews = array();
-  $path = drupal_get_path('module', 'uc_store') . '/includes';
-  $files = drupal_system_listing('/coder_review_.*\.inc$/', $path, 'filepath', 0);
+  $path = backdrop_get_path('module', 'uc_store') . '/includes';
+  $files = backdrop_system_listing('/coder_review_.*\.inc$/', $path, 'filepath', 0);
 
   foreach ($files as $file) {
-    require_once DRUPAL_ROOT . '/' . $file->uri;
+    require_once BACKDROP_ROOT . '/' . $file->uri;
 
     $function = $file->name . '_reviews';
     if (function_exists($function)) {
@@ -697,7 +700,7 @@ function _uc_store_footer_options() {
   $url = array('!url' => 'http://www.ubercart.org/');
   return array(
     1 => t('<a href="!url">Powered by Ubercart</a>', $url),
-    2 => t('<a href="!url">Drupal e-commerce</a> provided by Ubercart.', $url),
+    2 => t('<a href="!url">Backdrop e-commerce</a> provided by Ubercart.', $url),
     3 => t('Supported by Ubercart, an <a href="!url">open source e-commerce suite</a>.', $url),
     4 => t('Powered by Ubercart, the <a href="!url">free shopping cart software</a>.', $url),
   );
@@ -775,7 +778,7 @@ function uc_address_property_info() {
  * Returns an IMG tag for a store icon. Deprecated; use theme('image') instead.
  *
  * @param $path
- *   The Drupal path of the menu item. Atlernately may specify a filename by
+ *   The Backdrop path of the menu item. Atlernately may specify a filename by
  *   passing this string as file:filename.png.
  * @param $small
  *   Pass TRUE to get a link to the small version of the icon. If specifying a
@@ -825,7 +828,7 @@ function uc_store_get_icon($path, $small = FALSE, $class = 'uc-store-icon', $alt
   }
 
   return theme('image', array(
-    'path' => drupal_get_path('module', 'uc_store') . '/images/' . $file . '.gif',
+    'path' => backdrop_get_path('module', 'uc_store') . '/images/' . $file . '.gif',
     'alt' => $alt,
     'attributes' => array('class' => array($class)),
   ));
@@ -859,15 +862,20 @@ function uc_currency_format($value, $sign = NULL, $thou = NULL, $dec = NULL) {
 
   $output = '';
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $sign_after = variable_get('uc_sign_after_amount', FALSE);
+  // TODO This variable was probably removed in Backdrop without replacement.
   $prec = variable_get('uc_currency_prec', 2);
   if (is_null($sign)) {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $sign = variable_get('uc_currency_sign', '$');
   }
   if (is_null($thou)) {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $thou = variable_get('uc_currency_thou', ',');
   }
   if (is_null($dec)) {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $dec = variable_get('uc_currency_dec', '.');
   }
 
@@ -914,6 +922,7 @@ function uc_weight_format($value, $unit = NULL) {
   $vars = array('!value' => $value);
 
   if (is_null($unit)) {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $unit = variable_get('uc_weight_unit', 'lb');
   }
 
@@ -924,6 +933,7 @@ function uc_weight_format($value, $unit = NULL) {
     'g' => '!valueg',
   );
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $pattern = variable_get('uc_weight_format_' . $unit, $defaults[$unit]);
   if (strpos($pattern, '!value') === FALSE) {
     $pattern = $defaults[$unit];
@@ -939,6 +949,7 @@ function uc_weight_format($value, $unit = NULL) {
  */
 function uc_weight_conversion($from_units, $to_units = NULL) {
   if (is_null($to_units)) {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $to_units = variable_get('uc_weight_unit', 'lb');
   }
   $constant = strtoupper($from_units) . '_TO_' . strtoupper($to_units);
@@ -966,6 +977,7 @@ function uc_length_format($value, $unit = NULL) {
   $vars = array('!value' => $value);
 
   if (is_null($unit)) {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $unit = variable_get('uc_length_unit', 'in');
   }
 
@@ -976,6 +988,7 @@ function uc_length_format($value, $unit = NULL) {
     'mm' => '!valuemm',
   );
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $pattern = variable_get('uc_length_format_' . $unit, $defaults[$unit]);
   if (strpos($pattern, '!value') === FALSE) {
     $pattern = $defaults[$unit];
@@ -991,6 +1004,7 @@ function uc_length_format($value, $unit = NULL) {
  */
 function uc_length_conversion($from_units, $to_units = NULL) {
   if (is_null($to_units)) {
+    // TODO This variable was probably removed in Backdrop without replacement.
     $to_units = variable_get('uc_length_unit', 'in');
   }
   $constant = strtoupper($from_units) . '_TO_' . strtoupper($to_units);
@@ -1024,6 +1038,7 @@ function uc_date_format($month, $day, $year) {
  * Saves the address format for a country.
  */
 function uc_set_address_format($country_id, $format) {
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_set('uc_address_format_' . intval($country_id), $format);
 }
 
@@ -1033,7 +1048,10 @@ function uc_set_address_format($country_id, $format) {
 function uc_address_format($first_name, $last_name, $company, $street1, $street2, $city, $zone, $postal_code, $country) {
   $result = db_query("SELECT * FROM {uc_zones} WHERE zone_id = :id", array(':id' => $zone));
   if (!($zone_data = $result->fetchAssoc())) {
-    $zone_data = array('zone_code' => t('N/A'), 'zone_name' => t('Unknown'));
+    $zone_data = array(
+      'zone_code' => t('N/A'),
+      'zone_name' => t('Unknown'),
+    );
   }
   $result = db_query("SELECT * FROM {uc_countries} WHERE country_id = :id", array(':id' => $country));
   if (!($country_data = $result->fetchAssoc())) {
@@ -1071,6 +1089,7 @@ function uc_address_format($first_name, $last_name, $company, $street1, $street2
     $variables['!country_code3_if'] = '';
   }
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $format = variable_get('uc_address_format_' . $country, '');
   if (empty($format)) {
     $format = "!company\r\n!first_name !last_name\r\n!street1\r\n!street2\r\n!city, !zone_code !postal_code\r\n!country_name_if";
@@ -1162,10 +1181,11 @@ function uc_get_field_name($field) {
   );
 
   if (!isset($fields[$field])) {
-    drupal_set_message(t('The field title %field is being accessed incorrectly.', array('%field' => $field)), 'error');
+    backdrop_set_message(t('The field title %field is being accessed incorrectly.', array('%field' => $field)), 'error');
     return '';
   }
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   return variable_get('uc_field_' . $field, $fields[$field]);
 }
 
@@ -1173,7 +1193,8 @@ function uc_get_field_name($field) {
  * Returns TRUE if the address field is enabled.
  */
 function uc_address_field_enabled($field = NULL) {
-  $fields = variable_get('uc_address_fields', drupal_map_assoc(array('first_name', 'last_name', 'phone', 'company', 'street1', 'street2', 'city', 'zone', 'postal_code', 'country')));
+  // TODO This variable was probably removed in Backdrop without replacement.
+  $fields = variable_get('uc_address_fields', backdrop_map_assoc(array('first_name', 'last_name', 'phone', 'company', 'street1', 'street2', 'city', 'zone', 'postal_code', 'country')));
 
   return $field ? isset($fields[$field]) : $fields;
 }
@@ -1182,7 +1203,8 @@ function uc_address_field_enabled($field = NULL) {
  * Returns TRUE if the address field is required.
  */
 function uc_address_field_required($field) {
-  $fields = variable_get('uc_address_fields_required', drupal_map_assoc(array('first_name', 'last_name', 'street1', 'city', 'zone', 'postal_code', 'country')));
+  // TODO This variable was probably removed in Backdrop without replacement.
+  $fields = variable_get('uc_address_fields_required', backdrop_map_assoc(array('first_name', 'last_name', 'street1', 'city', 'zone', 'postal_code', 'country')));
 
   return isset($fields[$field]);
 }
@@ -1191,6 +1213,7 @@ function uc_address_field_required($field) {
  * Returns the weights of address fields.
  */
 function uc_store_address_field_weights() {
+  // TODO This variable was probably removed in Backdrop without replacement.
   return variable_get('uc_address_fields_weight', array('first_name' => 0, 'last_name' => 1, 'company' => 2, 'street1' => 3, 'street2' => 4, 'city' => 5, 'zone' => 6, 'country' => 7, 'postal_code' => 8, 'phone' => 9));
 }
 
@@ -1198,8 +1221,9 @@ function uc_store_address_field_weights() {
  * A simple Forms API textfield generator...
  */
 function uc_textfield($title, $default = NULL, $required = TRUE, $description = NULL, $maxlength = 32, $size = 32) {
-  if (is_null($title) || empty($title))
+  if (is_null($title) || empty($title)) {
     return NULL;
+  }
 
   $textfield = array(
     '#type' => 'textfield',
@@ -1328,7 +1352,7 @@ function uc_select_day($title = NULL, $default = NULL, $allow_empty = FALSE) {
   $select = array(
     '#type' => 'select',
     '#title' => (is_null($title) ? t('Day') : $title),
-    '#options' => $options + drupal_map_assoc(range(1, 31)),
+    '#options' => $options + backdrop_map_assoc(range(1, 31)),
     '#default_value' => (is_null($default) ? 0 : $default),
   );
 
@@ -1345,13 +1369,20 @@ function uc_select_month($title = NULL, $default = NULL, $allow_empty = FALSE) {
     '#type' => 'select',
     '#title' => (is_null($title) ? t('Month') : $title),
     '#options' => $options +
-                  array(1 => t('01 - January'), 2 => t('02 - February'),
-                        3 => t('03 - March'), 4 => t('04 - April'),
-                        5 => t('05 - May'), 6 => t('06 - June'),
-                        7 => t('07 - July'), 8 => t('08 - August'),
-                        9 => t('09 - September'), 10 => t('10 - October'),
-                        11 => t('11 - November'), 12 => t('12 - December')
-                  ),
+                  array(
+      1 => t('01 - January'),
+      2 => t('02 - February'),
+      3 => t('03 - March'),
+      4 => t('04 - April'),
+      5 => t('05 - May'),
+      6 => t('06 - June'),
+      7 => t('07 - July'),
+      8 => t('08 - August'),
+      9 => t('09 - September'),
+      10 => t('10 - October'),
+      11 => t('11 - November'),
+      12 => t('12 - December'),
+    ),
     '#default_value' => (is_null($default) ? 0 : $default),
   );
 
@@ -1369,7 +1400,7 @@ function uc_select_year($title = NULL, $default = NULL, $min = NULL, $max = NULL
   $select = array(
     '#type' => 'select',
     '#title' => (is_null($title) ? t('Year') : $title),
-    '#options' => $options + drupal_map_assoc(range($min, $max)),
+    '#options' => $options + backdrop_map_assoc(range($min, $max)),
     '#default_value' => (is_null($default) ? 0 : $default),
   );
 
@@ -1400,7 +1431,7 @@ function uc_select_address($uid, $type = 'billing', $onchange = '', $title = NUL
         (isset($addresses[$key + 1]) && $option == $addresses[$key + 1]['street1'])) {
       $option .= ' - ' . $address['first_name'] . ' ' . $address['last_name'];
     }
-    $options[drupal_json_encode($address)] = check_plain($option);
+    $options[backdrop_json_encode($address)] = check_plain($option);
   }
 
   $select = array(
@@ -1497,7 +1528,7 @@ function uc_get_addresses($uid, $type = 'billing') {
  * Returns an array of country files that can be installed or updated.
  */
 function _uc_country_import_list() {
-  $dir = drupal_get_path('module', 'uc_store') . '/countries/';
+  $dir = backdrop_get_path('module', 'uc_store') . '/countries/';
 
   $countries = array();
   if (is_dir($dir)) {
@@ -1550,27 +1581,38 @@ function uc_get_message($message_id) {
 
   if (empty($messages)) {
     $messages = module_invoke_all('uc_message');
-    drupal_alter('uc_get_message', $messages);
+    backdrop_alter('uc_get_message', $messages);
   }
 
   return $messages[$message_id];
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function uc_store_config_info() {
+  $prefixes['uc_store.settings'] = array(
+    'label' => t('Module name settings'),
+    'group' => t('Configuration'),
+  );
+}
+
+/**
  * Returns the store name if set, or the site name otherwise.
  */
 function uc_store_name() {
-  return variable_get('uc_store_name', variable_get('site_name', 'Ubercart'));
+  return config_get('uc_store.settings', 'uc_store_name');
 }
 
 /**
  * Returns the user-defined store address.
  */
 function uc_store_address() {
+  $config = config('uc_store.settings');
   $store_address = uc_address_format(NULL, NULL, uc_store_name(),
-    variable_get('uc_store_street1', NULL), variable_get('uc_store_street2', NULL),
-    variable_get('uc_store_city', NULL), variable_get('uc_store_zone', NULL),
-    variable_get('uc_store_postal_code', NULL), uc_store_default_country());
+    $config->get('uc_store_street1'), $config->get('uc_store_street2'),
+    $config->get('uc_store_city'), $config->get('uc_store_zone'),
+    $config->get('uc_store_postal_code'), uc_store_default_country());
 
   return $store_address;
 }
@@ -1579,9 +1621,10 @@ function uc_store_address() {
  * Returns the store e-mail address if set, otherwise the site email address.
  */
 function uc_store_email() {
-  $email_from = variable_get('uc_store_email', '');
+  $config = config('uc_store.settings');
+  $email_from = $config->get('uc_store_email');
   if (empty($email_from)) {
-    $email_from = variable_get('site_mail', ini_get('sendmail_from'));
+    $email_from = config_get('system.performance', 'site_mail');
   }
 
   return $email_from;
@@ -1602,7 +1645,7 @@ function uc_store_email_from() {
 
   // Add the store name to the e-mail "From" line.
   // Must be optional to prevent server conflicts.
-  if (variable_get('uc_store_email_include_name', TRUE)) {
+  if (config_get('uc_store.settings', 'uc_store_email_include_name')) {
     $email_from = uc_store_rfc2822_display_name(uc_store_name()) . ' <' . $email_from . '>';
   }
 
@@ -1695,7 +1738,7 @@ function uc_store_default_country() {
     return $default;
   }
 
-  $default = variable_get('uc_store_country', 840);
+  $default = config_get('uc_store.settings', 'uc_store_country');
 
   $result = db_query("SELECT COUNT(*) FROM {uc_countries} WHERE country_id = :id AND version > :version", array(':id' => $default, ':version' => 0))->fetchField();
   if ($result == 0) {
@@ -1816,6 +1859,7 @@ function uc_store_mail_recipient_language($address) {
  */
 function uc_store_format_price_field_value($price) {
   $exact = rtrim(number_format($price, 6, '.', ''), '0');
+  // TODO This variable was probably removed in Backdrop without replacement.
   $round = number_format($price, variable_get('uc_currency_prec', 2), '.', '');
 
   if ($exact == rtrim($round, '0')) {
@@ -1830,11 +1874,22 @@ function uc_store_format_price_field_value($price) {
  * Executes hook_uc_form_alter() implementations.
  *
  * API function to invoke hook_uc_form_alter() implementations allowing those
- * modules to alter the form before the Drupal layer hook_form_alter() is
+ * modules to alter the form before the Backdrop layer hook_form_alter() is
  * invoked.
  *
  * @see hook_uc_form_alter()
  */
 function uc_form_alter(&$form, &$form_state, $form_id) {
-  drupal_alter('uc_form', $form, $form_state, $form_id);
+  backdrop_alter('uc_form', $form, $form_state, $form_id);
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function uc_store_autoload_info() {
+  return array(
+    'UcAddress' => 'classes/address.inc',
+    'UbercartEncryption' => 'classes/encrypt.inc',
+    'UbercartMailSystem' => 'classes/mail.inc',
+  );
 }

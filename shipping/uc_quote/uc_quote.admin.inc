@@ -17,22 +17,23 @@
  * @ingroup forms
  */
 function uc_quote_admin_settings($form, &$form_state) {
-  $address = variable_get('uc_quote_store_default_address', new UcAddress());
+  $config = config('uc_quote.settings');
+  $address = $config->get('uc_quote_store_default_address');
 
   $form['uc_quote_log_errors'] = array(
     '#type' => 'checkbox',
     '#title' => t('Log errors during checkout to watchdog'),
-    '#default_value' => variable_get('uc_quote_log_errors', FALSE),
+    '#default_value' => $config->get('uc_quote_log_errors'),
   );
   $form['uc_quote_display_debug'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display debug information to administrators.'),
-    '#default_value' => variable_get('uc_quote_display_debug', FALSE),
+    '#default_value' => $config->get('uc_quote_display_debug'),
   );
   $form['uc_quote_require_quote'] = array(
     '#type' => 'checkbox',
     '#title' => t('Prevent the customer from completing an order if a shipping quote is not selected.'),
-    '#default_value' => variable_get('uc_quote_require_quote', TRUE),
+    '#default_value' => $config->get('uc_quote_require_quote'),
   );
 
   $form['uc_quote_pane_description'] = array(
@@ -45,7 +46,7 @@ function uc_quote_admin_settings($form, &$form_state) {
   $form['uc_quote_pane_description']['text'] = array(
     '#type' => 'textarea',
     '#title' => t('Message text'),
-    '#default_value' => variable_get('uc_quote_pane_description', t('Shipping quotes are generated automatically when you enter your address and may be updated manually with the button below.')),
+    '#default_value' => $config->get('uc_quote_pane_description'),
   );
 
   $form['uc_quote_err_msg'] = array(
@@ -58,7 +59,7 @@ function uc_quote_admin_settings($form, &$form_state) {
   $form['uc_quote_err_msg']['text'] = array(
     '#type' => 'textarea',
     '#title' => t('Message text'),
-    '#default_value' => variable_get('uc_quote_err_msg', t("There were problems getting a shipping quote. Please verify the delivery and product information and try again.\nIf this does not resolve the issue, please call in to complete your order.")),
+    '#default_value' => $config->get('uc_quote_err_msg'),
   );
 
   $form['default_address'] = array(
@@ -75,7 +76,10 @@ function uc_quote_admin_settings($form, &$form_state) {
   );
 
   $form['actions'] = array('#type' => 'actions');
-  $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+  );
   return $form;
 }
 
@@ -97,14 +101,14 @@ function uc_quote_admin_settings_submit($form, &$form_state) {
   $address->postal_code = $form_state['values']['postal_code'];
   $address->country = $form_state['values']['country'];
 
-  variable_set('uc_quote_store_default_address', $address);
-  variable_set('uc_quote_log_errors', $form_state['values']['uc_quote_log_errors']);
-  variable_set('uc_quote_display_debug', $form_state['values']['uc_quote_display_debug']);
-  variable_set('uc_quote_require_quote', $form_state['values']['uc_quote_require_quote']);
-  variable_set('uc_quote_pane_description', $form_state['values']['uc_quote_pane_description']['text']);
-  variable_set('uc_quote_err_msg', $form_state['values']['uc_quote_err_msg']['text']);
+  config_set('uc_quote.settings', 'uc_quote_store_default_address', $address);
+  config_set('uc_quote.settings', 'uc_quote_log_errors', $form_state['values']['uc_quote_log_errors']);
+  config_set('uc_quote.settings', 'uc_quote_display_debug', $form_state['values']['uc_quote_display_debug']);
+  config_set('uc_quote.settings', 'uc_quote_require_quote', $form_state['values']['uc_quote_require_quote']);
+  config_set('uc_quote.settings', 'uc_quote_pane_description', $form_state['values']['uc_quote_pane_description']['text']);
+  config_set('uc_quote.settings', 'uc_quote_err_msg', $form_state['values']['uc_quote_err_msg']['text']);
 
-  drupal_set_message(t('The configuration options have been saved.'));
+  backdrop_set_message(t('The configuration options have been saved.'));
 }
 
 /**
@@ -129,16 +133,16 @@ function uc_quote_method_settings($form, &$form_state) {
       // Build a list of operations links.
       $operations = isset($method['operations']) ? $method['operations'] : array();
       $operations += array('conditions' => array(
-        'title' => t('conditions'),
-        'href' => 'admin/store/settings/quotes/manage/get_quote_from_' . $id,
-        'weight' => 5,
-      ));
+          'title' => t('conditions'),
+          'href' => 'admin/store/settings/quotes/manage/get_quote_from_' . $id,
+          'weight' => 5,
+        ));
 
       // Ensure "delete" comes towards the end of the list.
       if (isset($operations['delete'])) {
         $operations['delete']['weight'] = 10;
       }
-      uasort($operations, 'drupal_sort_weight');
+      uasort($operations, 'backdrop_sort_weight');
 
       $form['methods'][$id]['uc_quote_enabled'] = array(
         '#type' => 'checkbox',
@@ -170,7 +174,7 @@ function uc_quote_method_settings($form, &$form_state) {
       '#collapsible' => TRUE,
       '#tree' => TRUE,
     );
-    $weight = variable_get('uc_quote_type_weight', array());
+    $weight = config_get('uc_quote.settings', 'uc_quote_type_weight');
     $shipping_methods = module_invoke_all('uc_shipping_method');
     $method_types = array();
     foreach ($shipping_methods as $method) {
@@ -192,6 +196,7 @@ function uc_quote_method_settings($form, &$form_state) {
       );
     }
   }
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['uc_store_shipping_type'] = array(
     '#type' => 'select',
     '#title' => t('Default order fulfillment type for products'),
@@ -200,7 +205,10 @@ function uc_quote_method_settings($form, &$form_state) {
   );
 
   $form['actions'] = array('#type' => 'actions');
-  $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+  );
 
   return $form;
 }
@@ -214,16 +222,19 @@ function uc_quote_method_settings($form, &$form_state) {
 function theme_uc_quote_method_settings($variables) {
   $form = $variables['form'];
 
-  drupal_add_tabledrag('uc-quote-methods', 'order', 'sibling', 'uc-quote-method-weight');
+  backdrop_add_tabledrag('uc-quote-methods', 'order', 'sibling', 'uc-quote-method-weight');
 
-  $header = array(t('Shipping method'), t('Details'),  array('data' => t('List position'), 'sort' => 'asc'), t('Operations'));
+  $header = array(t('Shipping method'), t('Details'), array(
+      'data' => t('List position'),
+      'sort' => 'asc',
+    ), t('Operations'));
   $rows = array();
   foreach (element_children($form['methods']) as $method) {
     $row = array(
-      drupal_render($form['methods'][$method]['uc_quote_enabled']),
-      drupal_render($form['methods'][$method]['description']),
-      drupal_render($form['methods'][$method]['uc_quote_method_weight']),
-      drupal_render($form['methods'][$method]['operations']),
+      backdrop_render($form['methods'][$method]['uc_quote_enabled']),
+      backdrop_render($form['methods'][$method]['description']),
+      backdrop_render($form['methods'][$method]['uc_quote_method_weight']),
+      backdrop_render($form['methods'][$method]['operations']),
     );
 
     $rows[] = array(
@@ -238,7 +249,7 @@ function theme_uc_quote_method_settings($variables) {
     'attributes' => array('id' => 'uc-quote-methods'),
     'empty' => t('No shipping quotes have been configured yet.'),
   ));
-  $output .= drupal_render_children($form);
+  $output .= backdrop_render_children($form);
   return $output;
 }
 
@@ -278,9 +289,10 @@ function uc_quote_method_settings_submit($form, &$form_state) {
     $method_weight[$id] = $method['uc_quote_method_weight'];
   }
 
-  variable_set('uc_quote_enabled', $enabled);
-  variable_set('uc_quote_method_weight', $method_weight);
-  variable_set('uc_quote_type_weight', $form_state['values']['uc_quote_type_weight']);
+  config_set('uc_quote.settings', 'uc_quote_enabled', $enabled);
+  config_set('uc_quote.settings', 'uc_quote_method_weight', $method_weight);
+  config_set('uc_quote.settings', 'uc_quote_type_weight', $form_state['values']['uc_quote_type_weight']);
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_set('uc_store_shipping_type', $form_state['values']['uc_store_shipping_type']);
-  drupal_set_message(t('The configuration options have been saved.'));
+  backdrop_set_message(t('The configuration options have been saved.'));
 }

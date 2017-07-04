@@ -252,7 +252,7 @@ function uc_order_views_data() {
       $data['uc_orders'][$prefix . '_' . $field] = array(
         'group' => $group,
         'title' => $label,
-        'help' => t('The !field of the !address of the order.', array('!field' => drupal_strtolower($label), '!address' => drupal_strtolower($address))),
+        'help' => t('The !field of the !address of the order.', array('!field' => backdrop_strtolower($label), '!address' => backdrop_strtolower($address))),
         'field' => array(
           'handler' => 'views_handler_field',
           'click sortable' => TRUE,
@@ -269,11 +269,11 @@ function uc_order_views_data() {
     $data['uc_orders'][$prefix . '_full_name'] = array(
       'group' => $group,
       'title' => t('Full name'),
-      'help' => t('The !field of the !address of the order.', array('!field' => t('full name'), '!address' => drupal_strtolower($address))),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('full name'), '!address' => backdrop_strtolower($address))),
       'field' => array(
         'additional fields' => array(
           $prefix . '_first_name',
-          $prefix . '_last_name'
+          $prefix . '_last_name',
         ),
         'handler' => 'uc_order_handler_field_order_fullname',
         'prefix' => $prefix,
@@ -288,7 +288,7 @@ function uc_order_views_data() {
     );
     $data[$prefix . '_countries']['country_id'] = array(
       'title' => t('ISO country code (numeric)'),
-      'help' => t('The !field of the !address of the order.', array('!field' => t('numeric ISO country code'), '!address' => drupal_strtolower($address))),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('numeric ISO country code'), '!address' => backdrop_strtolower($address))),
       'argument' => array(
         'handler' => 'views_handler_argument_numeric',
         'name field' => 'country_iso_code_2',
@@ -301,7 +301,7 @@ function uc_order_views_data() {
     );
     $data[$prefix . '_countries']['country_name'] = array(
       'title' => t('Country'),
-      'help' => t('The !field of the !address of the order.', array('!field' => t('country name'), '!address' => drupal_strtolower($address))),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('country name'), '!address' => backdrop_strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -315,7 +315,7 @@ function uc_order_views_data() {
     );
     $data[$prefix . '_countries']['country_iso_code_2'] = array(
       'title' => t('ISO country code (2 characters)'),
-      'help' => t('The !field of the !address of the order.', array('!field' => t('ISO country code'), '!address' => drupal_strtolower($address))),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('ISO country code'), '!address' => backdrop_strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -329,7 +329,7 @@ function uc_order_views_data() {
     );
     $data[$prefix . '_countries']['country_iso_code_3'] = array(
       'title' => t('ISO country code (3 characters)'),
-      'help' => t('The !field of the !address of the order.', array('!field' => t('ISO country code'), '!address' => drupal_strtolower($address))),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('ISO country code'), '!address' => backdrop_strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -350,7 +350,7 @@ function uc_order_views_data() {
     );
     $data[$prefix . '_zones']['zone_name'] = array(
       'title' => t('State/Province'),
-      'help' => t('The !field of the !address of the order.', array('!field' => t('state or province'), '!address' => drupal_strtolower($address))),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('state or province'), '!address' => backdrop_strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -364,7 +364,7 @@ function uc_order_views_data() {
     );
     $data[$prefix . '_zones']['zone_code'] = array(
       'title' => t('State/Province code'),
-      'help' => t('The !field of the !address of the order.', array('!field' => t('state or province code'), '!address' => drupal_strtolower($address))),
+      'help' => t('The !field of the !address of the order.', array('!field' => t('state or province code'), '!address' => backdrop_strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -395,7 +395,7 @@ function uc_order_views_data() {
   // Get the standard EntityAPI Views data table.
   $data['uc_order_products'] =  entity_views_table_definition('uc_order_product');
   // Remove undesirable fields
-  foreach(array('data') as $bad_field) {
+  foreach (array('data') as $bad_field) {
     if (isset($data['uc_order_products'][$bad_field])) {
       unset($data['uc_order_products'][$bad_field]);
     }
@@ -718,7 +718,7 @@ function uc_order_views_plugins() {
         'help' => t('Display the order with standard invoice view.'),
         'handler' => 'uc_order_plugin_row_invoice',
         'theme' => 'uc_order_view_row_invoice',
-        'theme path' => drupal_get_path('module', 'uc_order') . '/views',
+        'theme path' => backdrop_get_path('module', 'uc_order') . '/views',
         'base' => array('uc_orders'), // only works with 'uc_orders' as base.
         'type' => 'normal',
       ),
@@ -748,6 +748,7 @@ function template_preprocess_uc_order_view_row_invoice(&$vars) {
   }
   $order = uc_order_load($order_id);
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $build = array(
     '#theme' => 'uc_order',
     '#order' => $order,
@@ -755,5 +756,5 @@ function template_preprocess_uc_order_view_row_invoice(&$vars) {
     '#template' => variable_get('uc_cust_order_invoice_template', 'customer'),
   );
 
-  $vars['invoice'] = theme('uc_order_invoice_page', array('content' => drupal_render($build)));
+  $vars['invoice'] = theme('uc_order_invoice_page', array('content' => backdrop_render($build)));
 }

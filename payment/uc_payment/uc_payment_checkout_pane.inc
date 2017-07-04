@@ -9,11 +9,12 @@
  */
 
 function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NULL) {
+  $config = config('uc_payment.settings');
   switch ($op) {
     case 'view':
-      $contents['#attached']['css'][] = drupal_get_path('module', 'uc_payment') . '/uc_payment.css';
+      $contents['#attached']['css'][] = backdrop_get_path('module', 'uc_payment') . '/uc_payment.css';
 
-      if (variable_get('uc_payment_show_order_total_preview', TRUE)) {
+      if ($config->get('uc_payment_show_order_total_preview')) {
         $contents['line_items'] = array(
           '#theme' => 'uc_payment_totals',
           '#order' => $order,
@@ -41,7 +42,7 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
         }
       }
 
-      drupal_alter('uc_payment_method_checkout', $options, $order);
+      backdrop_alter('uc_payment_method_checkout', $options, $order);
 
       $description = '';
       if (!$options) {
@@ -105,13 +106,20 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
     case 'review':
       $line_items = uc_order_load_line_items_display($order);
       foreach ($line_items as $line_item) {
-        $review[] = array('title' => $line_item['title'], 'data' => theme('uc_price', array('price' => $line_item['amount'])));
+        $review[] = array(
+          'title' => $line_item['title'],
+          'data' => theme('uc_price', array('price' => $line_item['amount'])),
+        );
       }
       $review_data = _uc_payment_method_data($order->payment_method, 'review');
       if (empty($review_data)) {
         $review_data = _uc_payment_method_data($order->payment_method, 'name');
       }
-      $review[] = array('border' => 'top', 'title' => t('Paying by'), 'data' => $review_data);
+      $review[] = array(
+        'border' => 'top',
+        'title' => t('Paying by'),
+        'data' => $review_data,
+      );
       $func = _uc_payment_method_data($order->payment_method, 'callback');
       if (function_exists($func)) {
         $result = $func('cart-review', $order);
@@ -125,7 +133,7 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
       $form['uc_payment_show_order_total_preview'] = array(
         '#type' => 'checkbox',
         '#title' => t('Show the order total preview on the payment pane.'),
-        '#default_value' => variable_get('uc_payment_show_order_total_preview', TRUE),
+        '#default_value' => $config->get('uc_payment_show_order_total_preview'),
       );
       return $form;
   }

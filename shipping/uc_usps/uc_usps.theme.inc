@@ -23,9 +23,9 @@ function theme_uc_usps_option_label($variables) {
 
   // Start with USPS logo.
   $output  = theme('image', array(
-    'path' => drupal_get_path('module', 'uc_usps') . '/uc_usps_logo.gif',
+    'path' => backdrop_get_path('module', 'uc_usps') . '/uc_usps_logo.gif',
     'alt' => t('U.S.P.S.'),
-    'attributes' => array('class' => 'usps-logo')
+    'attributes' => array('class' => 'usps-logo'),
   ));
 
   // Add USPS service name, removing any 'U.S.P.S.' prefix.

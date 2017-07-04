@@ -55,31 +55,78 @@ function uc_usps_schema() {
  * Implements hook_uninstall().
  */
 function uc_usps_uninstall() {
-  variable_del('uc_usps_user_id');
-  variable_del('uc_usps_services');
-  variable_del('uc_usps_env_services');
-  variable_del('uc_usps_intl_services');
-  variable_del('uc_usps_intl_env_services');
-  variable_del('uc_usps_rate_markup');
-  variable_del('uc_usps_rate_markup_type');
-  variable_del('uc_usps_weight_markup');
-  variable_del('uc_usps_weight_markup_type');
-  variable_del('uc_usps_all_in_one');
-  variable_del('uc_usps_insurance');
-  variable_del('uc_usps_delivery_confirmation');
-  variable_del('uc_usps_signature_confirmation');
-  variable_del('uc_usps_online_rates');
+  config_clear('uc_usps.settings', 'uc_usps_user_id');
+  config_clear('uc_usps.settings', 'uc_usps_services');
+  config_clear('uc_usps.settings', 'uc_usps_env_services');
+  config_clear('uc_usps.settings', 'uc_usps_intl_services');
+  config_clear('uc_usps.settings', 'uc_usps_intl_env_services');
+  config_clear('uc_usps.settings', 'uc_usps_rate_markup');
+  config_clear('uc_usps.settings', 'uc_usps_rate_markup_type');
+  config_clear('uc_usps.settings', 'uc_usps_weight_markup');
+  config_clear('uc_usps.settings', 'uc_usps_weight_markup_type');
+  config_clear('uc_usps.settings', 'uc_usps_all_in_one');
+  config_clear('uc_usps.settings', 'uc_usps_insurance');
+  config_clear('uc_usps.settings', 'uc_usps_delivery_confirmation');
+  config_clear('uc_usps.settings', 'uc_usps_signature_confirmation');
+  config_clear('uc_usps.settings', 'uc_usps_online_rates');
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_usps_update_7300() { }
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function uc_usps_update_last_removed() {
+  return 7300;
 }
 
 /**
- * Separates markup variables into rate_markup and weight_markup.
+ * Implements hook_update_N().
  */
-function uc_usps_update_7300() {
-  // Rename variables while preserving previous setting values
-  variable_set('uc_usps_rate_markup', variable_get('uc_usps_markup', ''));
-  variable_set('uc_usps_rate_markup_type', variable_get('uc_usps_markup_type', ''));
+function uc_usps_update_1000() {
+  $config = config('uc_usps .settings');
+  $config->set('uc_usps_user_id', update_variable_get('uc_usps_user_id', ''));
+  $config->set('uc_usps_online_rates', update_variable_get('uc_usps_online_rates', 'FALSE'));
+  $config->set('uc_usps_env_services', update_variable_get('uc_usps_env_services', 'dynamic value in file /ubercart/shipping/uc_usps/uc_usps.admin.inc line 63'));
+  $config->set('uc_usps_services', update_variable_get('uc_usps_services', 'dynamic value in file /ubercart/shipping/uc_usps/uc_usps.admin.inc line 71'));
+  $config->set('uc_usps_intl_env_services', update_variable_get('uc_usps_intl_env_services', 'dynamic value in file /ubercart/shipping/uc_usps/uc_usps.admin.inc line 88'));
+  $config->set('uc_usps_intl_services', update_variable_get('uc_usps_intl_services', 'dynamic value in file /ubercart/shipping/uc_usps/uc_usps.admin.inc line 96'));
+  $config->set('uc_usps_all_in_one', update_variable_get('uc_usps_all_in_one', 'TRUE'));
+  $config->set('uc_usps_insurance', update_variable_get('uc_usps_insurance', 'FALSE'));
+  $config->set('uc_usps_delivery_confirmation', update_variable_get('uc_usps_delivery_confirmation', 'FALSE'));
+  $config->set('uc_usps_signature_confirmation', update_variable_get('uc_usps_signature_confirmation', 'FALSE'));
+  $config->set('uc_usps_rate_markup_type', update_variable_get('uc_usps_rate_markup_type', 'percentage'));
+  $config->set('uc_usps_rate_markup', update_variable_get('uc_usps_rate_markup', '0'));
+  $config->set('uc_usps_weight_markup_type', update_variable_get('uc_usps_weight_markup_type', 'percentage'));
+  $config->set('uc_usps_weight_markup', update_variable_get('uc_usps_weight_markup', '0'));
+  $config->set('uc_usps_markup', update_variable_get('uc_usps_markup', ''));
+  $config->set('uc_usps_markup_type', update_variable_get('uc_usps_markup_type', ''));
+  update_variable_del('uc_usps_user_id');
+  update_variable_del('uc_usps_online_rates');
+  update_variable_del('uc_usps_env_services');
+  update_variable_del('uc_usps_services');
+  update_variable_del('uc_usps_intl_env_services');
+  update_variable_del('uc_usps_intl_services');
+  update_variable_del('uc_usps_all_in_one');
+  update_variable_del('uc_usps_insurance');
+  update_variable_del('uc_usps_delivery_confirmation');
+  update_variable_del('uc_usps_signature_confirmation');
+  update_variable_del('uc_usps_rate_markup_type');
+  update_variable_del('uc_usps_rate_markup');
+  update_variable_del('uc_usps_weight_markup_type');
+  update_variable_del('uc_usps_weight_markup');
+  update_variable_del('uc_usps_markup');
+  update_variable_del('uc_usps_markup_type');
+}
 
-  // Remove old variables
-  variable_del('uc_usps_markup');
-  variable_del('uc_usps_markup_type');
+/**
+ * Implements hook_install().
+ */
+function uc_usps_install() {
+  // Dynamically generated variable data was detected.
+  // /ubercart/shipping/uc_usps/uc_usps.admin.inc line 63
+  // /ubercart/shipping/uc_usps/uc_usps.admin.inc line 71
+  // /ubercart/shipping/uc_usps/uc_usps.admin.inc line 88
+  // /ubercart/shipping/uc_usps/uc_usps.admin.inc line 96
 }

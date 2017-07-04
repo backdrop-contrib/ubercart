@@ -27,8 +27,8 @@ class uc_product_handler_field_addtocart extends views_handler_field {
       $base = $type->base;
       $product = node_load($values->{$this->aliases['nid']});
       if (function_exists($base . '_add_to_cart_form')) {
-        $form = drupal_get_form($base . '_add_to_cart_form_' . $values->{$this->aliases['nid']}, $product);
-        return drupal_render($form);
+        $form = backdrop_get_form($base . '_add_to_cart_form_' . $values->{$this->aliases['nid']}, $product);
+        return backdrop_render($form);
       }
     }
   }

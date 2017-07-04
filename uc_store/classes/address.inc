@@ -54,7 +54,7 @@ class UcAddress {
    */
   public function __construct($country = NULL) {
     if (!$this->country) {
-      $this->country = isset($country) ? $country : variable_get('uc_store_country', 840);
+      $this->country = isset($country) ? $country : config_get('uc_store.settings', 'uc_store_country');
     }
   }
 
@@ -74,7 +74,12 @@ class UcAddress {
    */
   public function isSamePhysicalLocation(UcAddress $address) {
     $physicalProperty = array(
-      'street1', 'street2', 'city', 'zone', 'country', 'postal_code'
+      'street1',
+      'street2',
+      'city',
+      'zone',
+      'country',
+      'postal_code',
     );
 
     foreach ($physicalProperty as $property) {
@@ -106,7 +111,7 @@ class UcAddress {
     // Remove all whitespace.
     $string = preg_replace('/\s+/', '', $string);
     // Make all characters upper case.
-    $string = drupal_strtoupper($string);
+    $string = backdrop_strtoupper($string);
 
     return $string;
   }
@@ -120,7 +125,10 @@ class UcAddress {
   public function __toString() {
     $result = db_query('SELECT * FROM {uc_zones} WHERE zone_id = :id', array(':id' => $this->zone));
     if (!($zone_data = $result->fetchAssoc())) {
-      $zone_data = array('zone_code' => t('N/A'), 'zone_name' => t('Unknown'));
+      $zone_data = array(
+        'zone_code' => t('N/A'),
+        'zone_name' => t('Unknown'),
+      );
     }
     $result = db_query('SELECT * FROM {uc_countries} WHERE country_id = :id', array(':id' => $this->country));
     if (!($country_data = $result->fetchAssoc())) {
@@ -158,6 +166,7 @@ class UcAddress {
       $variables['!country_code3_if'] = '';
     }
 
+    // TODO This variable was probably removed in Backdrop without replacement.
     $format = variable_get('uc_address_format_' . $this->country, '');
     if (empty($format)) {
       $format = "!company\r\n!first_name !last_name\r\n!street1\r\n!street2\r\n!city, !zone_code !postal_code\r\n!country_name_if";

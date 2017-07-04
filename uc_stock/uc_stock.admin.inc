@@ -11,29 +11,31 @@
  * @ingroup forms
  */
 function uc_stock_settings_form($form, &$form_state) {
+  $config = config('uc_stock.settings');
+  $form['#config'] = 'uc_stock.settings';
   $form['uc_stock_threshold_notification'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send email notification when stock level reaches its threshold value'),
-    '#default_value' => variable_get('uc_stock_threshold_notification', FALSE),
+    '#default_value' => $config->get('uc_stock_threshold_notification'),
   );
 
   $form['uc_stock_threshold_notification_recipients'] = array(
     '#type' => 'textfield',
     '#title' => t('Notification recipients'),
-    '#default_value' => variable_get('uc_stock_threshold_notification_recipients', uc_store_email()),
+    '#default_value' => $config->get('uc_stock_threshold_notification_recipients'),
     '#description' => t('The list of comma-separated email addresses that will receive the notification.'),
   );
 
   $form['uc_stock_threshold_notification_subject'] = array(
     '#type' => 'textfield',
     '#title' => t('Message subject'),
-    '#default_value' => variable_get('uc_stock_threshold_notification_subject', uc_get_message('uc_stock_threshold_notification_subject')),
+    '#default_value' => $config->get('uc_stock_threshold_notification_subject'),
   );
 
   $form['uc_stock_threshold_notification_message'] = array(
     '#type' => 'textarea',
     '#title' => t('Message text'),
-    '#default_value' => variable_get('uc_stock_threshold_notification_message', uc_get_message('uc_stock_threshold_notification_message')),
+    '#default_value' => $config->get('uc_stock_threshold_notification_message'),
     '#description' => t('The message the user receives when the stock level reaches its threshold value.'),
     '#rows' => 10,
   );
@@ -51,15 +53,29 @@ function uc_stock_settings_form($form, &$form_state) {
  * Displays a stock report for products with stock tracking enabled.
  */
 function uc_stock_report() {
+  // TODO This variable was probably removed in Backdrop without replacement.
   $page_size = (isset($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
   $csv_rows = array();
   $rows = array();
 
   $header = array(
-    array('data' => t('SKU'), 'field' => 'sku', 'sort' => 'asc'),
-    array('data' => t('Product'), 'field' => 'title'),
-    array('data' => t('Stock'), 'field' => 'stock'),
-    array('data' => t('Threshold'), 'field' => 'threshold'),
+    array(
+      'data' => t('SKU'),
+      'field' => 'sku',
+      'sort' => 'asc',
+    ),
+    array(
+      'data' => t('Product'),
+      'field' => 'title',
+    ),
+    array(
+      'data' => t('Stock'),
+      'field' => 'stock',
+    ),
+    array(
+      'data' => t('Threshold'),
+      'field' => 'threshold',
+    ),
     array('data' => t('Operations')),
   );
 
@@ -69,11 +85,11 @@ function uc_stock_report() {
     ->orderByHeader($header)
     ->limit($page_size)
     ->fields('s', array(
-      'nid',
-      'sku',
-      'stock',
-      'threshold',
-    ));
+    'nid',
+    'sku',
+    'stock',
+    'threshold',
+  ));
 
   $query->leftJoin('node', 'n', 's.nid = n.nid');
   $query->addField('n', 'title');
@@ -111,12 +127,15 @@ function uc_stock_report() {
   module_load_include('inc', 'uc_reports', 'uc_reports.admin');
   $csv_data = uc_reports_store_csv('uc_stock', $csv_rows);
 
-  $build['form'] = drupal_get_form('uc_stock_report_form');
+  $build['form'] = backdrop_get_form('uc_stock_report_form');
   $build['report'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
-    '#attributes' => array('width' => '100%', 'class' => array('uc-stock-table')),
+    '#attributes' => array(
+      'width' => '100%',
+      'class' => array('uc-stock-table'),
+    ),
   );
   $build['pager'] = array(
     '#theme' => 'pager',
@@ -176,10 +195,10 @@ function uc_stock_report_form($form, &$form_state) {
  */
 function uc_stock_report_form_submit($form, &$form_state) {
   if ($form_state['values']['threshold']) {
-    drupal_goto('admin/store/reports/stock/threshold');
+    backdrop_goto('admin/store/reports/stock/threshold');
   }
   else {
-    drupal_goto('admin/store/reports/stock');
+    backdrop_goto('admin/store/reports/stock');
   }
 }
 
@@ -191,7 +210,7 @@ function uc_stock_report_form_submit($form, &$form_state) {
  * @ingroup forms
  */
 function uc_stock_edit_form($form, &$form_state, $node) {
-  drupal_set_title($node->title);
+  backdrop_set_title($node->title);
 
   $form['stock'] = array('#tree' => TRUE);
 
@@ -201,7 +220,7 @@ function uc_stock_edit_form($form, &$form_state, $node) {
   unset($skus[NULL]);
 
   if (!$skus) {
-    drupal_set_message(t('No SKU found.'), 'error');
+    backdrop_set_message(t('No SKU found.'), 'error');
   }
   else {
     foreach (array_values($skus) as $id => $sku) {
@@ -268,21 +287,21 @@ function uc_stock_edit_form_submit($form, &$form_state) {
     db_merge('uc_product_stock')
       ->key(array('sku' => $stock['sku']))
       ->updateFields(array(
-        'active' => $stock['active'],
-        'stock' => $stock['stock'],
-        'threshold' => $stock['threshold'],
-      ))
+      'active' => $stock['active'],
+      'stock' => $stock['stock'],
+      'threshold' => $stock['threshold'],
+    ))
       ->insertFields(array(
-        'sku' => $stock['sku'],
-        'active' => $stock['active'],
-        'stock' => $stock['stock'],
-        'threshold' => $stock['threshold'],
-        'nid' => $form_state['values']['nid'],
-      ))
+      'sku' => $stock['sku'],
+      'active' => $stock['active'],
+      'stock' => $stock['stock'],
+      'threshold' => $stock['threshold'],
+      'nid' => $form_state['values']['nid'],
+    ))
       ->execute();
   }
 
-  drupal_set_message(t('Stock settings saved.'));
+  backdrop_set_message(t('Stock settings saved.'));
 }
 
 /**
@@ -298,10 +317,13 @@ function uc_stock_edit_form_submit($form, &$form_state) {
  */
 function theme_uc_stock_edit_form($variables) {
   $form = $variables['form'];
-  drupal_add_js('misc/tableselect.js');
+  backdrop_add_js('misc/tableselect.js');
 
   $header = array(
-    array('data' => '&nbsp;&nbsp;' . t('Active'), 'class' => array('select-all')),
+    array(
+      'data' => '&nbsp;&nbsp;' . t('Active'),
+      'class' => array('select-all'),
+    ),
     array('data' => t('SKU')),
     array('data' => t('Stock')),
     array('data' => t('Threshold')),
@@ -310,12 +332,12 @@ function theme_uc_stock_edit_form($variables) {
 
   foreach (element_children($form['stock']) as $id) {
     $rows[] = array(
-      array('data' => drupal_render($form['stock'][$id]['active'])),
-      array('data' => drupal_render($form['stock'][$id]['display_sku'])),
-      array('data' => drupal_render($form['stock'][$id]['stock'])),
-      array('data' => drupal_render($form['stock'][$id]['threshold'])),
+      array('data' => backdrop_render($form['stock'][$id]['active'])),
+      array('data' => backdrop_render($form['stock'][$id]['display_sku'])),
+      array('data' => backdrop_render($form['stock'][$id]['stock'])),
+      array('data' => backdrop_render($form['stock'][$id]['threshold'])),
     );
   }
 
-  return theme('table', array('header' => $header, 'rows' => $rows)) . drupal_render_children($form);
+  return theme('table', array('header' => $header, 'rows' => $rows)) . backdrop_render_children($form);
 }

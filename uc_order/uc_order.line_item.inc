@@ -119,7 +119,7 @@ function uc_order_line_item_add($order_id, $type, $title, $amount, $weight = NUL
     'weight' => $weight,
     'data' => $data,
   );
-  drupal_write_record('uc_order_line_items', $line_item);
+  backdrop_write_record('uc_order_line_items', $line_item);
 
   return $line_item;
 }
@@ -149,13 +149,15 @@ function _uc_line_item_list($action = NULL) {
     );
 
     // Merge in any settings.
+    // TODO This variable was probably removed in Backdrop without replacement.
+    // TODO This variable was probably removed in Backdrop without replacement.
     $items[$id] = array_merge($item, array(
       'enabled' => variable_get('uc_li_' . $id . '_enabled', $item['enabled']),
       'weight' => variable_get('uc_li_' . $id . '_weight', $item['weight']),
     ));
   }
 
-  drupal_alter('uc_line_item_data', $items);
+  backdrop_alter('uc_line_item_data', $items);
 
   uasort($items, 'uc_weight_sort');
 

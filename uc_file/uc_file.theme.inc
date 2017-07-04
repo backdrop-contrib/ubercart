@@ -40,32 +40,25 @@ function theme_uc_file_hook_user_file_downloads($variables) {
 
     $rows[] = array(
       'data' => array(
-        array('data' => drupal_render($file_download['remove'])),
-
-        array('data' => drupal_render($file_download['filename'])),
-
+        array('data' => backdrop_render($file_download['remove'])),
+        array('data' => backdrop_render($file_download['filename'])),
         array(
-          'data' =>
-            drupal_render($file_download['expires']) . ' <br />' .
+          'data' => backdrop_render($file_download['expires']) . ' <br />' .
 
             '<div class="duration">' .
-              drupal_render($file_download['time_polarity']) .
-              drupal_render($file_download['time_quantity']) .
-              drupal_render($file_download['time_granularity']) .
+              backdrop_render($file_download['time_polarity']) .
+              backdrop_render($file_download['time_quantity']) .
+              backdrop_render($file_download['time_granularity']) .
             '</div>',
         ),
-
         array(
-          'data' =>
-            '<div class="download-table-index">' .
-              drupal_render($file_download['downloads_in']) . '/' . drupal_render($file_download['download_limit']) .
+          'data' => '<div class="download-table-index">' .
+              backdrop_render($file_download['downloads_in']) . '/' . backdrop_render($file_download['download_limit']) .
             '</div>',
         ),
-
         array(
-          'data' =>
-            '<div class="download-table-index">' .
-              drupal_render($file_download['addresses_in']) . '/' . drupal_render($file_download['address_limit']) .
+          'data' => '<div class="download-table-index">' .
+              backdrop_render($file_download['addresses_in']) . '/' . backdrop_render($file_download['address_limit']) .
             '</div>',
         ),
       ),
@@ -79,7 +72,7 @@ function theme_uc_file_hook_user_file_downloads($variables) {
     'attributes' => array('id' => 'download-table'),
     'empty' => t('No files can be downloaded by this user.'),
   ));
-  $output .= drupal_render_children($form);
+  $output .= backdrop_render_children($form);
 
   return $output;
 }

@@ -9,36 +9,57 @@
  * Displays the customer report.
  */
 function uc_reports_customers() {
+  $config = config('uc_reports.settings');
+  // TODO This variable was probably removed in Backdrop without replacement.
   $address_preference = variable_get('uc_customer_list_address', 'billing');
   $first_name = ($address_preference == 'billing') ? 'billing_first_name' : 'delivery_first_name';
   $last_name = ($address_preference == 'billing') ? 'billing_last_name' : 'delivery_last_name';
   $page = isset($_GET['page']) ? intval($_GET['page']) : 0;
-  $page_size = isset($_GET['nopage']) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
+  $page_size = isset($_GET['nopage']) ? UC_REPORTS_MAX_RECORDS : $config->get('uc_reports_table_size');
   $order_statuses = uc_reports_order_statuses();
   $rows = array();
   $csv_rows = array();
 
   $header = array(
     array('data' => t('#')),
-    array('data' => t('Customer'), 'field' => "ou.$last_name"),
-    array('data' => t('Username'), 'field' => "u.name"),
-    array('data' => t('Orders'), 'field' => 'orders'),
-    array('data' => t('Products'), 'field' => 'products'),
-    array('data' => t('Total'), 'field' => 'total', 'sort' => 'desc'),
-    array('data' => t('Average'), 'field' => 'average'),
+    array(
+      'data' => t('Customer'),
+      'field' => "ou.$last_name",
+    ),
+    array(
+      'data' => t('Username'),
+      'field' => "u.name",
+    ),
+    array(
+      'data' => t('Orders'),
+      'field' => 'orders',
+    ),
+    array(
+      'data' => t('Products'),
+      'field' => 'products',
+    ),
+    array(
+      'data' => t('Total'),
+      'field' => 'total',
+      'sort' => 'desc',
+    ),
+    array(
+      'data' => t('Average'),
+      'field' => 'average',
+    ),
   );
   $csv_rows[] = array(t('#'), t('Customer'), t('Username'), t('Orders'), t('Products'), t('Total'), t('Average'));
 
   $query = db_select('users', 'u', array('fetch' => PDO::FETCH_ASSOC))->extend('PagerDefault')->extend('TableSort');
   $query->leftJoin('uc_orders', 'ou', 'u.uid = ou.uid');
   $query->fields('u', array(
-      'uid',
-      'name',
-    ))
+    'uid',
+    'name',
+  ))
     ->fields('ou', array(
-      $first_name,
-      $last_name,
-    ))
+    $first_name,
+    $last_name,
+  ))
     ->condition('u.uid', 0, '>')
     ->groupBy('u.uid');
   $query->addExpression("(SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} o WHERE o.uid = u.uid AND o.order_status IN (:statuses))", 'orders', array(':statuses' => $order_statuses));
@@ -63,7 +84,7 @@ function uc_reports_customers() {
 
   foreach ($customers as $customer) {
     $name = (!empty($customer[$last_name]) || !empty($customer[$first_name])) ? l($customer[$last_name] . ', ' . $customer[$first_name], 'admin/store/customers/orders/' . $customer['uid']) : l($customer['name'], 'admin/store/customers/orders/' . $customer['uid']);
-    $customer_number = ($page * variable_get('uc_reports_table_size', 30)) + (count($rows) + 1);
+    $customer_number = ($page * $config->get('uc_reports_table_size')) + (count($rows) + 1);
     $customer_order_name = (!empty($customer[$last_name]) || !empty($customer[$first_name])) ? $customer[$last_name] . ', ' . $customer[$first_name] : $customer['name'];
     $customer_name = $customer['name'];
     $orders = !empty($customer['orders']) ? $customer['orders'] : 0;
@@ -87,7 +108,10 @@ function uc_reports_customers() {
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
-    '#attributes' => array('width' => '100%', 'class' => array('uc-sales-table')),
+    '#attributes' => array(
+      'width' => '100%',
+      'class' => array('uc-sales-table'),
+    ),
     '#empty' => t('No customers found'),
   );
   $build['pager'] = array(
@@ -119,12 +143,14 @@ function uc_reports_customers() {
  * Displays the product reports.
  */
 function uc_reports_products() {
+  $config = config('uc_reports.settings');
+  // TODO This variable was removed in Backdrop without replacement.
   $views_column = module_exists('statistics') && variable_get('statistics_count_content_views', FALSE);
 
   $page = isset($_GET['page']) ? intval($_GET['page']) : 0;
-  $page_size = isset($_GET['nopage']) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
+  $page_size = isset($_GET['nopage']) ? UC_REPORTS_MAX_RECORDS : $config->get('uc_reports_table_size');
   $order_statuses = uc_reports_order_statuses();
-  $row_cell = $page * variable_get('uc_reports_table_size', 30) + 1;
+  $row_cell = $page * $config->get('uc_reports_table_size') + 1;
   $rows = array();
   $csv_rows = array();
 
@@ -153,15 +179,31 @@ function uc_reports_products() {
 
   $header = array(
     array('data' => t('#')),
-    array('data' => t('Product'), 'field' => 'n.title'),
-    array('data' => t('Sold'), 'field' => 'sold'),
-    array('data' => t('Revenue'), 'field' => 'revenue', 'sort' => 'desc'),
-    array('data' => t('Gross'), 'field' => 'gross'),
+    array(
+      'data' => t('Product'),
+      'field' => 'n.title',
+    ),
+    array(
+      'data' => t('Sold'),
+      'field' => 'sold',
+    ),
+    array(
+      'data' => t('Revenue'),
+      'field' => 'revenue',
+      'sort' => 'desc',
+    ),
+    array(
+      'data' => t('Gross'),
+      'field' => 'gross',
+    ),
   );
   $csv_rows[] = array(t('#'), t('Product'), t('Sold'), t('Revenue'), t('Gross'));
 
   if ($views_column) {
-    $header[] = array('data' => t('Views'), 'field' => 'nc.totalcount');
+    $header[] = array(
+      'data' => t('Views'),
+      'field' => 'nc.totalcount',
+    );
     $csv_rows[0][] = t('Views');
   }
 
@@ -257,7 +299,10 @@ function uc_reports_products() {
     '#theme' => 'uc_reports_product_table',
     '#header' => $header,
     '#rows' => $rows,
-    '#attributes' => array('width' => '100%', 'class' => array('uc-sales-table')),
+    '#attributes' => array(
+      'width' => '100%',
+      'class' => array('uc-sales-table'),
+    ),
     '#empty' => t('No products found'),
   );
   $build['pager'] = array(
@@ -316,10 +361,12 @@ function uc_reports_product_get_skus($nid) {
  * Displays the custom product report.
  */
 function uc_reports_products_custom() {
+  $config = config('uc_reports.settings');
+  // TODO This variable was removed in Backdrop without replacement.
   $views_column = module_exists('statistics') && variable_get('statistics_count_content_views', FALSE);
 
   $page = isset($_GET['page']) ? intval($_GET['page']) : 0;
-  $page_size = isset($_GET['nopage']) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
+  $page_size = isset($_GET['nopage']) ? UC_REPORTS_MAX_RECORDS : $config->get('uc_reports_table_size');
   $rows = array();
   $csv_rows = array();
 
@@ -356,9 +403,9 @@ function uc_reports_products_custom() {
     ->extend('TableSort')
     ->limit($page_size)
     ->fields('n', array(
-      'nid',
-      'title',
-    ))
+    'nid',
+    'title',
+  ))
     ->condition('type', $product_types, 'IN')
     ->groupBy('n.nid');
 
@@ -368,15 +415,31 @@ function uc_reports_products_custom() {
 
   $header = array(
     array('data' => t('#')),
-    array('data' => t('Product'), 'field' => 'n.title'),
-    array('data' => t('Sold'), 'field' => 'sold'),
-    array('data' => t('Revenue'), 'field' => 'revenue', 'sort' => 'desc'),
-    array('data' => t('Gross'), 'field' => 'gross'),
+    array(
+      'data' => t('Product'),
+      'field' => 'n.title',
+    ),
+    array(
+      'data' => t('Sold'),
+      'field' => 'sold',
+    ),
+    array(
+      'data' => t('Revenue'),
+      'field' => 'revenue',
+      'sort' => 'desc',
+    ),
+    array(
+      'data' => t('Gross'),
+      'field' => 'gross',
+    ),
   );
   $csv_rows[] = array(t('#'), t('Product'), t('Sold'), t('Revenue'), t('Gross'));
 
   if ($views_column) {
-    $header[] = array('data' => t('Views'), 'field' => 'nc.totalcount');
+    $header[] = array(
+      'data' => t('Views'),
+      'field' => 'nc.totalcount',
+    );
     $csv_rows[0][] = t('Views');
   }
 
@@ -389,7 +452,7 @@ function uc_reports_products_custom() {
 
   $products = $query->execute();
   foreach ($products as $product) {
-    $row_cell = ($page * variable_get('uc_reports_table_size', 30)) + count($rows) + 1;
+    $row_cell = ($page * $config->get('uc_reports_table_size')) + count($rows) + 1;
     $product_cell = l($product['title'], 'node/' . $product['nid']);
     $product_csv = $product['title'];
     $sold_cell = empty($product['sold']) ? 0 : $product['sold'];
@@ -456,12 +519,15 @@ function uc_reports_products_custom() {
   $csv_data = uc_reports_store_csv('uc_products', $csv_rows);
 
   // Build the page output holding the form, table, and CSV export link.
-  $build['form'] = drupal_get_form('uc_reports_products_custom_form', $args);
+  $build['form'] = backdrop_get_form('uc_reports_products_custom_form', $args);
   $build['report'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
-    '#attributes' => array('width' => '100%', 'class' => array('uc-sales-table')),
+    '#attributes' => array(
+      'width' => '100%',
+      'class' => array('uc-sales-table'),
+    ),
     '#empty' => t('No products found'),
   );
   $build['pager'] = array(
@@ -598,13 +664,13 @@ function theme_uc_reports_product_table($variables) {
 
   // Add sticky headers, if applicable.
   if (count($header) && $sticky) {
-    drupal_add_js('misc/tableheader.js');
+    backdrop_add_js('misc/tableheader.js');
     // Add 'sticky-enabled' class to the table to identify it for JS.
     // This is needed to target tables constructed by this function.
     $attributes['class'][] = 'sticky-enabled';
   }
 
-  $output = '<table' . drupal_attributes($attributes) . ">\n";
+  $output = '<table' . backdrop_attributes($attributes) . ">\n";
 
   if (isset($caption)) {
     $output .= '<caption>' . $caption . "</caption>\n";
@@ -632,15 +698,15 @@ function theme_uc_reports_product_table($variables) {
 
       // Build colgroup
       if (is_array($cols) && count($cols)) {
-        $output .= ' <colgroup' . drupal_attributes($attributes) . '>';
+        $output .= ' <colgroup' . backdrop_attributes($attributes) . '>';
         $i = 0;
         foreach ($cols as $col) {
-          $output .= ' <col' . drupal_attributes($col) . ' />';
+          $output .= ' <col' . backdrop_attributes($col) . ' />';
         }
         $output .= " </colgroup>\n";
       }
       else {
-        $output .= ' <colgroup' . drupal_attributes($attributes) . " />\n";
+        $output .= ' <colgroup' . backdrop_attributes($attributes) . " />\n";
       }
     }
   }
@@ -656,7 +722,11 @@ function theme_uc_reports_product_table($variables) {
         $header_count++;
       }
     }
-    $rows[] = array(array('data' => $empty, 'colspan' => $header_count, 'class' => array('empty', 'message')));
+    $rows[] = array(array(
+        'data' => $empty,
+        'colspan' => $header_count,
+        'class' => array('empty', 'message'),
+      ));
   }
 
   // Format the table header:
@@ -679,7 +749,10 @@ function theme_uc_reports_product_table($variables) {
   // Format the table rows:
   if (count($rows)) {
     $output .= "<tbody>\n";
-    $flip = array('even' => 'odd', 'odd' => 'even');
+    $flip = array(
+      'even' => 'odd',
+      'odd' => 'even',
+    );
     $class = 'even';
     foreach ($rows as $number => $row) {
       $attributes = array();
@@ -708,7 +781,7 @@ function theme_uc_reports_product_table($variables) {
         $attributes['class'][] = $class;
 
         // Build row
-        $output .= ' <tr' . drupal_attributes($attributes) . '>';
+        $output .= ' <tr' . backdrop_attributes($attributes) . '>';
         $i = 0;
         foreach ($cells as $cell) {
           $cell = tablesort_cell($cell, $header, $ts, $i++);
@@ -746,8 +819,14 @@ function uc_reports_sales_summary() {
   $rows[] = array(
     l(t('Today, !date', array('!date' => format_date($today_start, 'uc_store'))), 'admin/store/orders/search/results/0/0/0/0/0/0/' . $today_start . '/' . $today_end),
     $today['total'],
-    array('data' => array('#theme' => 'uc_price', '#price' => $today['income'])),
-    array('data' => array('#theme' => 'uc_price', '#price' => $today['average'])),
+    array('data' => array(
+        '#theme' => 'uc_price',
+        '#price' => $today['income'],
+      )),
+    array('data' => array(
+        '#theme' => 'uc_price',
+        '#price' => $today['average'],
+      )),
   );
 
   // Calculate and add yesterday's sales summary to the report table.
@@ -756,8 +835,14 @@ function uc_reports_sales_summary() {
   $rows[] = array(
     l(t('Yesterday, !date', array('!date' => format_date($today_start - 86400, 'uc_store'))), 'admin/store/orders/search/results/0/0/0/0/0/0/' . ($today_start - 86400) . '/' . ($today_end - 86400)),
     $yesterday['total'],
-    array('data' => array('#theme' => 'uc_price', '#price' => $yesterday['income'])),
-    array('data' => array('#theme' => 'uc_price', '#price' => $yesterday['average'])),
+    array('data' => array(
+        '#theme' => 'uc_price',
+        '#price' => $yesterday['income'],
+      )),
+    array('data' => array(
+        '#theme' => 'uc_price',
+        '#price' => $yesterday['average'],
+      )),
   );
 
   // Get the sales report for the month.
@@ -768,8 +853,14 @@ function uc_reports_sales_summary() {
   $rows[] = array(
     l(t('Month-to-date, @month', array('@month' => $month_title)), 'admin/store/orders/search/results/0/0/0/0/0/0/' . $month_start . '/' . $month_end),
     $month['total'],
-    array('data' => array('#theme' => 'uc_price', '#price' => $month['income'])),
-    array('data' => array('#theme' => 'uc_price', '#price' => $month['average'])),
+    array('data' => array(
+        '#theme' => 'uc_price',
+        '#price' => $month['income'],
+      )),
+    array('data' => array(
+        '#theme' => 'uc_price',
+        '#price' => $month['average'],
+      )),
   );
 
   // Calculate the daily averages for the month.
@@ -787,7 +878,10 @@ function uc_reports_sales_summary() {
   $rows[] = array(
     t('Daily average for @month', array('@month' => $month_title)),
     $daily_orders,
-    array('data' => array('#theme' => 'uc_price', '#price' => $daily_revenue)),
+    array('data' => array(
+        '#theme' => 'uc_price',
+        '#price' => $daily_revenue,
+      )),
     '',
   );
 
@@ -798,7 +892,10 @@ function uc_reports_sales_summary() {
   $rows[] = array(
     t('Projected totals for @date', array('@date' => $month_title)),
     round($month['total'] + ($daily_orders * $remaining_days), 2),
-    array('data' => array('#theme' => 'uc_price', '#price' => round($month['income'] + ($daily_revenue * $remaining_days), 2))),
+    array('data' => array(
+        '#theme' => 'uc_price',
+        '#price' => round($month['income'] + ($daily_revenue * $remaining_days), 2),
+      )),
     '',
   );
 
@@ -811,10 +908,16 @@ function uc_reports_sales_summary() {
   );
 
   // Build the header statistics table header.
-  $header = array(array('data' => t('Statistics'), 'width' => '50%'), '');
+  $header = array(array(
+      'data' => t('Statistics'),
+      'width' => '50%',
+    ), '');
 
   $rows = array(
-    array(array('data' => t('Grand total sales')), array('data' => array('#theme' => 'uc_price', '#price' => db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField()))),
+    array(array('data' => t('Grand total sales')), array('data' => array(
+          '#theme' => 'uc_price',
+          '#price' => db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField(),
+        ))),
     array(array('data' => t('Customers total')), array('data' => db_query("SELECT COUNT(DISTINCT uid) FROM {uc_orders} WHERE order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField())),
     array(array('data' => t('New customers today')), array('data' => db_query("SELECT COUNT(DISTINCT uid) FROM {uc_orders} WHERE order_status IN (:statuses) AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $today_start, ':end' => $today_end))->fetchField())),
     array(array('data' => t('Online customers')), array('data' => db_query("SELECT COUNT(DISTINCT s.uid) FROM {sessions} s LEFT JOIN {uc_orders} o ON s.uid = o.uid WHERE s.uid > 0 AND o.order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField())),
@@ -825,11 +928,17 @@ function uc_reports_sales_summary() {
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
-    '#attributes' => array('width' => '100%', 'class' => array('uc-sales-table')),
+    '#attributes' => array(
+      'width' => '100%',
+      'class' => array('uc-sales-table'),
+    ),
   );
 
   // Build the total orders by status table header.
-  $header = array(array('data' => t('Total orders by status'), 'width' => '50%'), '');
+  $header = array(array(
+      'data' => t('Total orders by status'),
+      'width' => '50%',
+    ), '');
   $rows = array();
   $unknown = 0;
 
@@ -957,12 +1066,15 @@ function uc_reports_sales_year() {
   $csv_data = uc_reports_store_csv('uc_sales_yearly', $csv_rows);
 
   // Build the page output holding the form, table, and CSV export link.
-  $build['form'] = drupal_get_form('uc_reports_sales_year_form', $year);
+  $build['form'] = backdrop_get_form('uc_reports_sales_year_form', $year);
   $build['report'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
-    '#attributes' => array('width' => '100%', 'class' => array('uc-sales-table')),
+    '#attributes' => array(
+      'width' => '100%',
+      'class' => array('uc-sales-table'),
+    ),
   );
 
   $build['links'] = array(
@@ -1055,6 +1167,7 @@ function uc_reports_sales_custom() {
 
     // Create the date title for the subreport.
     if ($args['length'] == 'day') {
+      // TODO This variable was probably removed in Backdrop without replacement.
       $date = format_date($subreport['start'], 'custom', variable_get('date_format_uc_store', 'm/d/Y') . ' - D');
     }
     else {
@@ -1133,12 +1246,15 @@ function uc_reports_sales_custom() {
   $csv_data = uc_reports_store_csv('uc_sales_custom', $csv_rows);
 
   // Build the page output holding the form, table, and CSV export link.
-  $build['form'] = drupal_get_form('uc_reports_sales_custom_form', $args, $args['status']);
+  $build['form'] = backdrop_get_form('uc_reports_sales_custom_form', $args, $args['status']);
   $build['report'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
-    '#attributes' => array('width' => '100%', 'class' => array('uc-sales-table')),
+    '#attributes' => array(
+      'width' => '100%',
+      'class' => array('uc-sales-table'),
+    ),
   );
   $build['links'] = array(
     '#prefix' => '<div class="uc-reports-links">',
@@ -1266,7 +1382,7 @@ function uc_reports_sales_custom_form_submit($form, &$form_state) {
 }
 
 /**
- * Stores a CSV file for a report in Drupal's cache to be retrieved later.
+ * Stores a CSV file for a report in Backdrop's cache to be retrieved later.
  *
  * @param $report_id
  *   A unique string that identifies the report of the CSV file.
@@ -1307,8 +1423,8 @@ function uc_reports_get_csv($report_id, $user_id) {
   $csv_data = cache_get('uc_reports_' . $report_id . '_' . $user_id, 'cache');
 
   if (!$csv_data || $user_id != $user_check) {
-    drupal_set_message(t("The CSV data could not be retrieved. It's possible the data might have expired. Refresh the report page and try to retrieve the CSV file again."), 'error');
-    drupal_not_found();
+    backdrop_set_message(t("The CSV data could not be retrieved. It's possible the data might have expired. Refresh the report page and try to retrieve the CSV file again."), 'error');
+    backdrop_not_found();
     exit();
   }
   else {
@@ -1320,11 +1436,11 @@ function uc_reports_get_csv($report_id, $user_id) {
       'Content-Transfer-Encoding' => 'binary',
       'Content-Length' => strlen($csv_data->data),
       'Content-Disposition' => 'attachment; filename="' . $report_id . '.csv"',
-      'Content-Type' => 'text/csv'
+      'Content-Type' => 'text/csv',
     );
     foreach ($http_headers as $header => $value) {
       $value = preg_replace('/\r?\n(?!\t| )/', '', $value);
-      drupal_add_http_header($header, $value);
+      backdrop_add_http_header($header, $value);
     }
 
     print $csv_data->data;

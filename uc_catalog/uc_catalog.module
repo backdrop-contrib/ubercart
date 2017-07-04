@@ -44,7 +44,7 @@ function uc_catalog_menu() {
   $items['admin/store/settings/catalog'] = array(
     'title' => 'Catalog',
     'description' => 'Configure the product catalog pages.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_catalog_settings_form'),
     'access arguments' => array('administer catalog'),
     'file' => 'uc_catalog.admin.inc',
@@ -53,7 +53,7 @@ function uc_catalog_menu() {
     $items['admin/store/settings/catalog/edit'] = array(
       'title' => 'Edit catalog display',
       'description' => 'Configure the catalog display in Views.',
-      'page callback' => 'drupal_goto',
+      'page callback' => 'backdrop_goto',
       'page arguments' => array('admin/structure/views/view/uc_catalog/edit'),
       'access callback' => 'user_access',
       'access arguments' => array('administer views'),
@@ -140,15 +140,26 @@ function uc_catalog_theme() {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function uc_catalog_config_info() {
+  $prefixes['uc_catalog.settings'] = array(
+    'label' => t('Module name settings'),
+    'group' => t('Configuration'),
+  );
+}
+
+/**
  * Implements hook_node_view().
  */
 function uc_catalog_node_view($node, $view_mode) {
+  $config = config('uc_catalog.settings');
   static $parents = array();
 
   if (uc_product_is_product($node->type) && isset($node->taxonomy_catalog)) {
-    if ($view_mode == 'full' && variable_get('uc_catalog_breadcrumb', TRUE)) {
+    if ($view_mode == 'full' && $config->get('uc_catalog_breadcrumb')) {
       $crumbs = array();
-      if (variable_get('site_frontpage', 'node') != 'catalog') {
+      if (config_get('system.performance', 'site_frontpage') != 'catalog') {
         $crumbs[] = l(t('Home'), '');
       }
 
@@ -158,7 +169,7 @@ function uc_catalog_node_view($node, $view_mode) {
 
         foreach ($terms as $term) {
           if (!isset($parents[$term['tid']])) {
-            $parents[$term['tid']] = taxonomy_get_parents_all($term['tid']);
+            $parents[$term['tid']] = taxonomy_term_load_parents_all($term['tid']);
           }
 
           foreach (array_reverse($parents[$term['tid']]) as $parent) {
@@ -170,7 +181,7 @@ function uc_catalog_node_view($node, $view_mode) {
         }
       }
 
-      drupal_set_breadcrumb($crumbs);
+      backdrop_set_breadcrumb($crumbs);
     }
   }
 }
@@ -179,8 +190,8 @@ function uc_catalog_node_view($node, $view_mode) {
  * Implements hook_taxonomy_vocabulary_delete().
  */
 function uc_catalog_taxonomy_vocabulary_delete($vocabulary) {
-  if ($vocabulary->vid == variable_get('uc_catalog_vid', 0)) {
-    variable_del('uc_catalog_vid');
+  if ($vocabulary->vid == config_get('uc_catalog.settings', 'uc_catalog_vid')) {
+    config_clear('uc_catalog.settings', 'uc_catalog_vid');
   }
 }
 
@@ -224,7 +235,7 @@ function uc_catalog_preprocess_link(&$vars) {
   // Link back to the catalog and not the taxonomy term page.
   if (isset($vars['options']['entity_type']) && $vars['options']['entity_type'] == 'taxonomy_term') {
     $term = $vars['options']['entity'];
-    if ($term->vid == variable_get('uc_catalog_vid', 0)) {
+    if ($term->vid == config_get('uc_catalog.settings', 'uc_catalog_vid')) {
       $vars['path'] = uc_catalog_path($term);
     }
   }
@@ -238,7 +249,7 @@ function uc_catalog_preprocess_link(&$vars) {
 function uc_catalog_block_info() {
   $blocks['catalog'] = array(
     'info' => t('Catalog'),
-    'cache' => DRUPAL_CACHE_PER_ROLE | DRUPAL_CACHE_PER_PAGE,
+    'cache' => BACKDROP_CACHE_PER_ROLE | BACKDROP_CACHE_PER_PAGE,
   );
 
   return $blocks;
@@ -252,10 +263,10 @@ function uc_catalog_block_view($delta = '') {
     $block = array();
 
     if (user_access('view catalog')) {
-      drupal_add_css(drupal_get_path('module', 'uc_catalog') . '/uc_catalog.css');
+      backdrop_add_css(backdrop_get_path('module', 'uc_catalog') . '/uc_catalog.css');
 
       // Get the vocabulary tree information.
-      $vid = variable_get('uc_catalog_vid', 0);
+      $vid = config_get('uc_catalog.settings', 'uc_catalog_vid');
       $tree = taxonomy_get_tree($vid);
 
       // Then convert it into an actual tree structure.
@@ -272,10 +283,13 @@ function uc_catalog_block_view($delta = '') {
         $menu_tree->add_child($knothole);
       }
 
-      // Now, create a structured menu, separate from Drupal's menu.
+      // Now, create a structured menu, separate from Backdrop's menu.
       $content = theme('uc_catalog_block', array('menu_tree' => $menu_tree));
 
-      $block = array('subject' => t('Catalog'), 'content' => $content);
+      $block = array(
+        'subject' => t('Catalog'),
+        'content' => $content,
+      );
     }
 
     return $block;
@@ -288,21 +302,22 @@ function uc_catalog_block_view($delta = '') {
  * Builds the settings form used by the catalog block.
  */
 function uc_catalog_block_configure($delta = '') {
+  $config = config('uc_catalog.settings');
   if ($delta == 'catalog') {
     $form['uc_catalog_block_title'] = array(
       '#type' => 'checkbox',
       '#title' => t('Make the block title a link to the top-level catalog page.'),
-      '#default_value' => variable_get('uc_catalog_block_title', FALSE),
+      '#default_value' => $config->get('uc_catalog_block_title'),
     );
     $form['uc_catalog_expand_categories'] = array(
       '#type' => 'checkbox',
       '#title' => t('Always expand categories.'),
-      '#default_value' => variable_get('uc_catalog_expand_categories', FALSE),
+      '#default_value' => $config->get('uc_catalog_expand_categories'),
     );
     $form['uc_catalog_block_nodecount'] = array(
       '#type' => 'checkbox',
       '#title' => t('Display product counts.'),
-      '#default_value' => variable_get('uc_catalog_block_nodecount', TRUE),
+      '#default_value' => $config->get('uc_catalog_block_nodecount'),
     );
 
     return $form;
@@ -316,9 +331,9 @@ function uc_catalog_block_configure($delta = '') {
  */
 function uc_catalog_block_save($delta = '', $edit = array()) {
   if ($delta == 'catalog') {
-    variable_set('uc_catalog_block_title', $edit['uc_catalog_block_title']);
-    variable_set('uc_catalog_expand_categories', $edit['uc_catalog_expand_categories']);
-    variable_set('uc_catalog_block_nodecount', $edit['uc_catalog_block_nodecount']);
+    config_set('uc_catalog.settings', 'uc_catalog_block_title', $edit['uc_catalog_block_title']);
+    config_set('uc_catalog.settings', 'uc_catalog_expand_categories', $edit['uc_catalog_expand_categories']);
+    config_set('uc_catalog.settings', 'uc_catalog_block_nodecount', $edit['uc_catalog_block_nodecount']);
   }
 }
 
@@ -327,7 +342,7 @@ function uc_catalog_block_save($delta = '', $edit = array()) {
  */
 function uc_catalog_preprocess_block(&$variables) {
   $block = &$variables['block'];
-  if ($block->module == 'uc_catalog' && $block->delta == 'catalog' && $block->subject && variable_get('uc_catalog_block_title', FALSE)) {
+  if ($block->module == 'uc_catalog' && $block->delta == 'catalog' && $block->subject && config_get('uc_catalog.settings', 'uc_catalog_block_title')) {
     $block->subject = l($block->subject, 'catalog');
   }
 }
@@ -338,7 +353,7 @@ function uc_catalog_preprocess_block(&$variables) {
 function uc_catalog_views_api() {
   return array(
     'api' => '2.0',
-    'path' => drupal_get_path('module', 'uc_catalog') . '/views',
+    'path' => backdrop_get_path('module', 'uc_catalog') . '/views',
   );
 }
 
@@ -352,20 +367,23 @@ function uc_catalog_uc_store_status() {
   $field = field_info_field('taxonomy_catalog');
   if (!$field) {
     return array(array(
-      'status' => 'error',
-      'title' => t('Catalog field'),
-      'desc' => t('The catalog taxonomy reference field is missing. <a href="!url">Click here to create it</a>.', array('!url' => url('admin/store/settings/catalog/repair'))),
-    ));
+        'status' => 'error',
+        'title' => t('Catalog field'),
+        'desc' => t('The catalog taxonomy reference field is missing. <a href="!url">Click here to create it</a>.', array('!url' => url('admin/store/settings/catalog/repair'))),
+      ));
   }
 
   $statuses = array();
-  $cat_id = variable_get('uc_catalog_vid', 0);
+  $cat_id = config_get('uc_catalog.settings', 'uc_catalog_vid');
   $catalog = taxonomy_vocabulary_load($cat_id);
   if ($catalog) {
     // Don't display a status if the taxonomy_index table has no data.
+    // TODO This variable was probably removed in Backdrop without replacement.
     if (variable_get('taxonomy_maintain_index_table', TRUE)) {
-      $statuses[] = array('status' => 'ok', 'title' => t('Catalog vocabulary'),
-        'desc' => t('Vocabulary !name has been identified as the Ubercart catalog.', array('!name' => l($catalog->name, 'admin/structure/taxonomy/' . $catalog->machine_name)))
+      $statuses[] = array(
+        'status' => 'ok',
+        'title' => t('Catalog vocabulary'),
+        'desc' => t('Vocabulary !name has been identified as the Ubercart catalog.', array('!name' => l($catalog->name, 'admin/structure/taxonomy/' . $catalog->machine_name))),
       );
 
       $product_types = uc_product_types();
@@ -423,7 +441,7 @@ function uc_catalog_browse($tid = 0) {
     );
   }
   if ($products = views_get_view('uc_catalog')) {
-    $display = variable_get('uc_catalog_display', 'catalog');
+    $display = config_get('uc_catalog.settings', 'uc_catalog_display');
     // Force the breadcrumb path to this page.
     $products->override_path = 'catalog';
     $build['products'] = array(
@@ -435,7 +453,7 @@ function uc_catalog_browse($tid = 0) {
 }
 
 /**
- * Emulates Drupal's menu system, but based around the catalog taxonomy.
+ * Emulates Backdrop's menu system, but based around the catalog taxonomy.
  *
  * @param $branch
  *   A treeNode object. Determines if the URL points to itself, or possibly one
@@ -451,6 +469,7 @@ function uc_catalog_browse($tid = 0) {
  *   and its children.
  */
 function _uc_catalog_navigation($branch) {
+  $config = config('uc_catalog.settings');
   static $terms;
   static $breadcrumb;
   static $types;
@@ -470,9 +489,9 @@ function _uc_catalog_navigation($branch) {
 
   $branch_path = uc_catalog_path($branch);
   if (!isset($breadcrumb)) {
-    $breadcrumb = drupal_get_breadcrumb();
+    $breadcrumb = backdrop_get_breadcrumb();
   }
-  $vid = variable_get('uc_catalog_vid', 0);
+  $vid = $config->get('uc_catalog_vid');
   if ($_GET['q'] ==  $branch_path) {
     // The URL points to this term.
     $here = TRUE;
@@ -493,7 +512,7 @@ function _uc_catalog_navigation($branch) {
   if ((arg(0) == 'node' && array_key_exists($branch->tid, $terms))) {
     $inpath = FALSE;
     foreach ($breadcrumb as $link) {
-      if (strpos(urldecode($link), drupal_get_path_alias($branch_path)) !== FALSE) {
+      if (strpos(urldecode($link), backdrop_get_path_alias($branch_path)) !== FALSE) {
         $inpath = TRUE;
       }
     }
@@ -503,7 +522,7 @@ function _uc_catalog_navigation($branch) {
   }
 
   $lis = array();
-  $expand = variable_get('uc_catalog_expand_categories', FALSE);
+  $expand = $config->get('uc_catalog_expand_categories');
   if ($expand || count($branch->children)) {
     foreach ($branch->children as $twig) {
       // Expand if children are in the menu path. Capture their output.
@@ -522,7 +541,7 @@ function _uc_catalog_navigation($branch) {
 
   // Checks to see if node counts are desired in navigation.
   $num_text = '';
-  if (variable_get('uc_catalog_block_nodecount', TRUE)) {
+  if ($config->get('uc_catalog_block_nodecount')) {
     $num_text = ' (' . $num . ')';
   }
   $link = l($branch->name . $num_text, $branch_path);
@@ -551,7 +570,7 @@ function uc_catalog_path($term) {
  * Adds a catalog taxonomy reference field to the specified node type.
  */
 function uc_catalog_add_node_type($type) {
-  $vid = variable_get('uc_catalog_vid', 0);
+  $vid = config_get('uc_catalog.settings', 'uc_catalog_vid');
   if (!$vid) {
     $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE machine_name = 'catalog'")->fetchField();
     if (!$vid) {
@@ -566,7 +585,7 @@ function uc_catalog_add_node_type($type) {
       $vid = $vocabulary->vid;
     }
 
-    variable_set('uc_catalog_vid', $vid);
+    config_set('uc_catalog.settings', 'uc_catalog_vid', $vid);
   }
 
   $vocabulary = taxonomy_vocabulary_load($vid);
@@ -644,4 +663,13 @@ function uc_catalog_add_image_field() {
 
     field_create_instance($instance);
   }
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function uc_catalog_autoload_info() {
+  return array(
+    'UcTreeNode' => 'classes/treenode.inc',
+  );
 }

@@ -42,7 +42,7 @@ function uc_file_menu() {
   $items['admin/store/products/files'] = array(
     'title' => 'View file downloads',
     'description' => 'View all file download features on products.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_file_admin_files_form'),
     'access arguments' => array('administer products'),
     'file' => 'uc_file.admin.inc',
@@ -162,13 +162,16 @@ function uc_file_user_form($form, &$form_state, $account) {
     $downloadable_files[$file_download->fid] = $file_download->filename;
 
     $form['file']['download']['file_download'][$file_download->fid] = array(
-      'fuid' => array('#type' => 'value', '#value' => $file_download->fuid),
-      'expiration' => array('#type' => 'value', '#value' => $file_download->expiration),
-
+      'fuid' => array(
+        '#type' => 'value',
+        '#value' => $file_download->fuid,
+      ),
+      'expiration' => array(
+        '#type' => 'value',
+        '#value' => $file_download->expiration,
+      ),
       'remove' => array('#type' => 'checkbox'),
-
       'filename' => array('#markup' => $file_download->filename),
-
       'expires' => array('#markup' => $file_download->expiration ? format_date($file_download->expiration, 'short') : t('Never')),
       'time_polarity' => array(
         '#type' => 'select',
@@ -194,21 +197,19 @@ function uc_file_user_form($form, &$form_state, $account) {
           'year' => t('year(s)'),
         ),
       ),
-
       'downloads_in' => array('#markup' => $file_download->accessed),
       'download_limit' => array(
         '#type' => 'textfield',
         '#maxlength' => 3,
         '#size' => 3,
-        '#default_value' => $file_download->download_limit ? $file_download->download_limit : NULL
+        '#default_value' => $file_download->download_limit ? $file_download->download_limit : NULL,
       ),
-
       'addresses_in' => array('#markup' => count(unserialize($file_download->addresses))),
       'address_limit' => array(
         '#type' => 'textfield',
         '#maxlength' => 2,
         '#size' => 2,
-        '#default_value' => $file_download->address_limit ? $file_download->address_limit : NULL
+        '#default_value' => $file_download->address_limit ? $file_download->address_limit : NULL,
       ),
     );
 
@@ -218,9 +219,18 @@ function uc_file_user_form($form, &$form_state, $account) {
     // Store old values for comparing to see if we actually made any changes.
     $less_reading = &$form['file']['download']['file_download'][$file_download->fid];
 
-    $less_reading['download_limit_old'] = array('#type' => 'value', '#value' => $less_reading['download_limit']['#default_value']);
-    $less_reading['address_limit_old'] = array('#type' => 'value', '#value' => $less_reading['address_limit']['#default_value']);
-    $less_reading['expiration_old'] = array('#type' => 'value', '#value' => $less_reading['expiration']['#value']);
+    $less_reading['download_limit_old'] = array(
+      '#type' => 'value',
+      '#value' => $less_reading['download_limit']['#default_value'],
+    );
+    $less_reading['address_limit_old'] = array(
+      '#type' => 'value',
+      '#value' => $less_reading['address_limit']['#default_value'],
+    );
+    $less_reading['expiration_old'] = array(
+      '#type' => 'value',
+      '#value' => $less_reading['expiration']['#value'],
+    );
   }
 
   // Create the list of files able to be attached to this user.
@@ -267,7 +277,7 @@ function uc_file_user_form_validate($form, &$form_state) {
   // Determine if any downloads were modified.
   if (isset($edit['file_download'])) {
 
-    foreach ((array)$edit['file_download'] as $key => $download_modification) {
+    foreach ((array) $edit['file_download'] as $key => $download_modification) {
       // We don't care... it's about to be deleted.
       if ($download_modification['remove']) {
         continue;
@@ -302,18 +312,29 @@ function uc_file_user_form_validate($form, &$form_state) {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function uc_file_config_info() {
+  $prefixes['uc_file.settings'] = array(
+    'label' => t('Module name settings'),
+    'group' => t('Configuration'),
+  );
+}
+
+/**
  * Submit handler for per-user file download administration.
  *
  * @see uc_file_user_form()
  * @see uc_file_user_form_validate()
  */
 function uc_file_user_form_submit($form, &$form_state) {
+  $config = config('uc_file.settings');
   $account = $form_state['build_info']['args'][0];
   $edit = $form_state['values'];
 
   // Check out if any downloads were modified.
   if (isset($edit['file_download'])) {
-    foreach ((array)$edit['file_download'] as $fid => $download_modification) {
+    foreach ((array) $edit['file_download'] as $fid => $download_modification) {
       // Remove this user download?
       if ($download_modification['remove']) {
         uc_file_remove_user_file_by_id($account, $fid);
@@ -340,14 +361,14 @@ function uc_file_user_form_submit($form, &$form_state) {
   // Check out if any downloads were added. We pass NULL to file_user_renew,
   // because this shouldn't be associated with a random product.
   if (isset($edit['file_add'])) {
-    foreach ((array)$edit['file_add'] as $fid => $data) {
-      $download_modification['download_limit'] = variable_get('uc_file_download_limit_number', NULL);
-      $download_modification['address_limit'] = variable_get('uc_file_download_limit_addresses', NULL);
+    foreach ((array) $edit['file_add'] as $fid => $data) {
+      $download_modification['download_limit'] = $config->get('uc_file_download_limit_number');
+      $download_modification['address_limit'] = $config->get('uc_file_download_limit_addresses');
 
       $download_modification['expiration'] = _uc_file_expiration_date(array(
         'time_polarity' => '+',
-        'time_quantity' => variable_get('uc_file_download_limit_duration_qty', NULL),
-        'time_granularity' => variable_get('uc_file_download_limit_duration_granularity', 'never'),
+        'time_quantity' => $config->get('uc_file_download_limit_duration_qty'),
+        'time_granularity' => $config->get('uc_file_download_limit_duration_granularity'),
       ), REQUEST_TIME);
 
       // Renew. (Explicit overwrite.)
@@ -383,8 +404,8 @@ function uc_file_user_view($account, $view_mode) {
  */
 function _uc_file_download_table_behavior($id, $fid) {
 
-  drupal_add_js( "
-Drupal.behaviors.ucUserAccountFileDownload" . $id . " = {
+  backdrop_add_js( "
+Backdrop.behaviors.ucUserAccountFileDownload" . $id . " = {
   attach: function(context) {
     jQuery('#edit-file-download-" . $fid . "-time-granularity:not(.ucUserAccountFileDownload-processed)', context).addClass('ucUserAccountFileDownload-processed').change(
       function() {
@@ -406,7 +427,7 @@ Drupal.behaviors.ucUserAccountFileDownload" . $id . " = {
 function uc_file_uc_add_to_cart($nid, $qty, $data) {
 
   // Only warn if it's set in the product admin interface.
-  if (!variable_get('uc_file_duplicate_warning', TRUE)) {
+  if (!config_get('uc_file.settings', 'uc_file_duplicate_warning')) {
     return;
   }
 
@@ -427,7 +448,7 @@ function uc_file_uc_add_to_cart($nid, $qty, $data) {
 
     // Get the current limits, and calculate the new limits to show the user.
     if ($file_user = _uc_file_user_get($user, $product_feature->fid)) {
-      $file_user = (array)$file_user;
+      $file_user = (array) $file_user;
 
       $old_limits = $file_user;
 
@@ -435,8 +456,8 @@ function uc_file_uc_add_to_cart($nid, $qty, $data) {
       // (Or global if it says pass through.)
       $file_modification = array(
         'download_limit' => uc_file_get_download_limit($product_feature),
-        'address_limit'  => uc_file_get_address_limit($product_feature),
-        'expiration'     => _uc_file_expiration_date(uc_file_get_time_limit($product_feature), max($file_user['expiration'], REQUEST_TIME)),
+        'address_limit' => uc_file_get_address_limit($product_feature),
+        'expiration' => _uc_file_expiration_date(uc_file_get_time_limit($product_feature), max($file_user['expiration'], REQUEST_TIME)),
       );
 
       // Calculate the new limits.
@@ -446,23 +467,23 @@ function uc_file_uc_add_to_cart($nid, $qty, $data) {
       // download limit or expiration time.
       if ($old_limits['download_limit'] || $old_limits['expiration']) {
         // But still show the message if it does.
-        drupal_set_message(t('You already have privileges to <a href="!url">download %file</a>. If you complete the purchase of this item, your new download limit will be %download_limit, your access location limit will be %address_limit, and your new expiration time will be %expiration.',
+        backdrop_set_message(t('You already have privileges to <a href="!url">download %file</a>. If you complete the purchase of this item, your new download limit will be %download_limit, your access location limit will be %address_limit, and your new expiration time will be %expiration.',
           array(
-            '!url' => $user->uid ? url('user/' . $user->uid . '/purchased-files') : url('user/login'),
-            '%file' => $product_feature->filename,
-            '%download_limit' => $file_user['download_limit'] ? $file_user['download_limit'] : t('unlimited'),
-            '%address_limit'  => $file_user['address_limit' ] ? $file_user['address_limit' ] : t('unlimited'),
-            '%expiration'     => $file_user['expiration'    ] ? format_date($file_user['expiration'], 'small') : t('never'),
-          )), 'warning');
+          '!url' => $user->uid ? url('user/' . $user->uid . '/purchased-files') : url('user/login'),
+          '%file' => $product_feature->filename,
+          '%download_limit' => $file_user['download_limit'] ? $file_user['download_limit'] : t('unlimited'),
+          '%address_limit' => $file_user['address_limit'] ? $file_user['address_limit'] : t('unlimited'),
+          '%expiration' => $file_user['expiration'    ] ? format_date($file_user['expiration'], 'small') : t('never'),
+        )), 'warning');
       }
       else {
         return array(array(
-          'success' => FALSE,
-          'message' => t('You already have privileges to <a href="!url">download %file</a>.', array(
-            '!url' => $user->uid ? url('user/' . $user->uid . '/purchased-files') : url('user/login'),
-            '%file' => $product_feature->filename,
-          )),
-        ));
+            'success' => FALSE,
+            'message' => t('You already have privileges to <a href="!url">download %file</a>.', array(
+              '!url' => $user->uid ? url('user/' . $user->uid . '/purchased-files') : url('user/login'),
+              '%file' => $product_feature->filename,
+            )),
+          ));
       }
     }
   }
@@ -510,7 +531,7 @@ function uc_file_uc_product_feature() {
  */
 function uc_file_uc_store_status() {
   $message = array();
-  if (!is_dir(variable_get('uc_file_base_dir', NULL))) {
+  if (!is_dir(config_get('uc_file.settings', 'uc_file_base_dir'))) {
     $message[] = array(
       'status' => 'warning',
       'title' => t('File downloads'),
@@ -547,8 +568,9 @@ function uc_file_feature_delete($pfid) {
  * @ingroup forms
  */
 function uc_file_feature_form($form, &$form_state, $node, $feature) {
-  if (!is_dir(variable_get('uc_file_base_dir', NULL))) {
-    drupal_set_message(t('A file directory needs to be configured in <a href="@url">product settings</a> under the file download settings tab before a file can be selected.', array('@url' => url('admin/store/settings/products'))), 'warning');
+  $config = config('uc_file.settings');
+  if (!is_dir($config->get('uc_file_base_dir'))) {
+    backdrop_set_message(t('A file directory needs to be configured in <a href="@url">product settings</a> under the file download settings tab before a file can be selected.', array('@url' => url('admin/store/settings/products'))), 'warning');
 
     unset($form['buttons']);
     return $form;
@@ -637,7 +659,7 @@ function uc_file_feature_form($form, &$form_state, $node, $feature) {
     '#title' => t('File download'),
     '#default_value' => $default_filename,
     '#autocomplete_path' => '_autocomplete_file',
-    '#description' => t('The file that can be downloaded when product is purchased (enter a path relative to the %dir directory).', array('%dir' => variable_get('uc_file_base_dir', NULL))),
+    '#description' => t('The file that can be downloaded when product is purchased (enter a path relative to the %dir directory).', array('%dir' => $config->get('uc_file_base_dir'))),
     '#maxlength' => 255,
   );
   $form['uc_file_description'] = array(
@@ -722,7 +744,7 @@ function uc_file_feature_form($form, &$form_state, $node, $feature) {
       'day' => t('day(s)'),
       'week' => t('week(s)'),
       'month' => t('month(s)'),
-      'year' => t('year(s)')
+      'year' => t('year(s)'),
     ),
     '#description' => t('How long after this product has been purchased until this file download expires.'),
     '#prefix' => '<div class="duration">',
@@ -776,23 +798,22 @@ function uc_file_feature_form_submit($form, &$form_state) {
   // Build the file_product object from the form values.
   $file = uc_file_get_by_name($form_state['values']['uc_file_filename']);
   $file_product = array(
-    'fid'         => $file->fid,
-    'filename'    => $file->filename,
-    'pfid'        => $form_state['values']['pfid'],
-    'model'       => $form_state['values']['uc_file_model'],
+    'fid' => $file->fid,
+    'filename' => $file->filename,
+    'pfid' => $form_state['values']['pfid'],
+    'model' => $form_state['values']['uc_file_model'],
     'description' => $form_state['values']['uc_file_description'],
-    'shippable'   => $form_state['values']['uc_file_shippable'],
-
+    'shippable' => $form_state['values']['uc_file_shippable'],
     // Local limitations... set them if there's an override.
-    'download_limit'   => $form_state['values']['download_override'] ? $form_state['values']['download_limit_number'              ] : UC_FILE_LIMIT_SENTINEL,
-    'address_limit'    => $form_state['values']['location_override'] ? $form_state['values']['download_limit_addresses'           ] : UC_FILE_LIMIT_SENTINEL,
+    'download_limit' => $form_state['values']['download_override'] ? $form_state['values']['download_limit_number'              ] : UC_FILE_LIMIT_SENTINEL,
+    'address_limit' => $form_state['values']['location_override'] ? $form_state['values']['download_limit_addresses'           ] : UC_FILE_LIMIT_SENTINEL,
     'time_granularity' => $form_state['values']['time_override'    ] ? $form_state['values']['download_limit_duration_granularity'] : UC_FILE_LIMIT_SENTINEL,
-    'time_quantity'    => $form_state['values']['time_override'    ] ? $form_state['values']['download_limit_duration_qty'        ] : UC_FILE_LIMIT_SENTINEL,
+    'time_quantity' => $form_state['values']['time_override'    ] ? $form_state['values']['download_limit_duration_qty'        ] : UC_FILE_LIMIT_SENTINEL,
   );
 
   // Build product feature descriptions.
   $description = t('<strong>SKU:</strong> !sku<br />', array('!sku' => empty($file_product['model']) ? 'Any' : $file_product['model']));
-  if (is_dir(variable_get('uc_file_base_dir', NULL) . "/" . $file_product['filename'])) {
+  if (is_dir(config_get('uc_file.settings', 'uc_file_base_dir') . "/" . $file_product['filename'])) {
     $description .= t('<strong>Directory:</strong> !dir<br />', array('!dir' => $file_product['filename']));
   }
   else {
@@ -818,7 +839,7 @@ function uc_file_feature_form_submit($form, &$form_state) {
     $file_product['fpid'] = $fpid;
   }
 
-  drupal_write_record('uc_file_products', $file_product, $key);
+  backdrop_write_record('uc_file_products', $file_product, $key);
 }
 
 /**
@@ -836,6 +857,7 @@ function _uc_file_get_fpid($pfid) {
  * @ingroup forms
  */
 function uc_file_feature_settings($form, &$form_state) {
+  $config = config('uc_file.settings');
   $statuses = array();
   foreach (uc_order_status_list('general') as $status) {
     $statuses[$status['id']] = $status['title'];
@@ -844,14 +866,14 @@ function uc_file_feature_settings($form, &$form_state) {
   $form['uc_file_base_dir'] = array(
     '#type' => 'textfield',
     '#title' => t('Files path'),
-    '#description' => t('The absolute path (or relative to Drupal root) where files used for file downloads are located. For security reasons, it is recommended to choose a path outside the web root.'),
-    '#default_value' => variable_get('uc_file_base_dir', NULL),
+    '#description' => t('The absolute path (or relative to Backdrop root) where files used for file downloads are located. For security reasons, it is recommended to choose a path outside the web root.'),
+    '#default_value' => $config->get('uc_file_base_dir'),
   );
   $form['uc_file_duplicate_warning'] = array(
     '#type' => 'checkbox',
     '#title' => t('Warn about purchasing duplicate files'),
     '#description' => t("If a customer attempts to purchase a product containing a file download, warn them and notify them that the download limits will be added onto their current limits."),
-    '#default_value' => variable_get('uc_file_duplicate_warning', TRUE),
+    '#default_value' => $config->get('uc_file_duplicate_warning'),
   );
   $form['uc_file_download_limit'] = array(
     '#type' => 'fieldset',
@@ -863,7 +885,7 @@ function uc_file_feature_settings($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Downloads'),
     '#description' => t("The number of times a file can be downloaded. Leave empty to set no limit."),
-    '#default_value' => variable_get('uc_file_download_limit_number', NULL),
+    '#default_value' => $config->get('uc_file_download_limit_number'),
     '#maxlength' => 4,
     '#size' => 4,
   );
@@ -871,14 +893,14 @@ function uc_file_feature_settings($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('IP addresses'),
     '#description' => t("The number of unique IPs that a file can be downloaded from. Leave empty to set no limit."),
-    '#default_value' => variable_get('uc_file_download_limit_addresses', NULL),
+    '#default_value' => $config->get('uc_file_download_limit_addresses'),
     '#maxlength' => 4,
     '#size' => 4,
   );
   $form['uc_file_download_limit']['uc_file_download_limit_duration_qty'] = array(
     '#type' => 'textfield',
     '#title' => t('Time'),
-    '#default_value' => variable_get('uc_file_download_limit_duration_qty', NULL),
+    '#default_value' => $config->get('uc_file_download_limit_duration_qty'),
     '#size' => 4,
     '#maxlength' => 4,
     '#prefix' => '<div class="duration">',
@@ -895,9 +917,9 @@ function uc_file_feature_settings($form, &$form_state) {
       'day' => t('day(s)'),
       'week' => t('week(s)'),
       'month' => t('month(s)'),
-      'year' => t('year(s)')
+      'year' => t('year(s)'),
     ),
-    '#default_value' => variable_get('uc_file_download_limit_duration_granularity', 'never'),
+    '#default_value' => $config->get('uc_file_download_limit_duration_granularity'),
     '#description' => t('How long after a product has been purchased until its file download expires.'),
     '#prefix' => '<div class="duration">',
     '#suffix' => '</div>',
@@ -1030,14 +1052,14 @@ function _uc_file_time_accumulate_equation(&$current, $proposed, $force_overwrit
 function _uc_file_accumulate_limits(&$file_user, $file_limits, $force_overwrite) {
   // Accumulate numerics.
   _uc_file_number_accumulate_equation($file_user['download_limit'], $file_limits['download_limit'], $force_overwrite);
-  _uc_file_number_accumulate_equation($file_user['address_limit' ], $file_limits['address_limit' ], $force_overwrite);
+  _uc_file_number_accumulate_equation($file_user['address_limit'], $file_limits['address_limit'], $force_overwrite);
 
   // Accumulate time.
   _uc_file_time_accumulate_equation($file_user['expiration'], $file_limits['expiration'], $force_overwrite);
 }
 
 /**
- * Implements Drupal autocomplete textfield.
+ * Implements Backdrop autocomplete textfield.
  *
  * @return
  *   Sends string containing javascript array of matched files.
@@ -1045,7 +1067,7 @@ function _uc_file_accumulate_limits(&$file_user, $file_limits, $force_overwrite)
 function _uc_file_autocomplete_filename() {
   $matches = array();
 
-  // Catch "/" characters that drupal autocomplete doesn't escape.
+  // Catch "/" characters that backdrop autocomplete doesn't escape.
   $url = explode('_autocomplete_file/', request_uri());
   $string = $url[1];
 
@@ -1054,7 +1076,7 @@ function _uc_file_autocomplete_filename() {
     $matches[$filename] = $filename;
   }
 
-  drupal_json_output($matches);
+  backdrop_json_output($matches);
 }
 
 /**
@@ -1151,13 +1173,14 @@ function _uc_file_prune_files() {
  * Retrieves an updated list of available downloads.
  */
 function _uc_file_gather_files() {
+  $config = config('uc_file.settings');
   // Don't bother if the directory isn't set.
-  if (!($dir = variable_get('uc_file_base_dir', NULL))) {
+  if (!($dir = $config->get('uc_file_base_dir'))) {
     return;
   }
 
   // Grab files and prepare the base dir for appending.
-  $files = file_scan_directory($dir, variable_get('uc_file_file_mask', '/.*/'));
+  $files = file_scan_directory($dir, $config->get('uc_file_file_mask'));
   $dir = (substr($dir, -1) != '/' || substr($dir, -1) != '\\') ? $dir . '/' : $dir;
 
   foreach ($files as $file) {
@@ -1240,16 +1263,16 @@ function uc_file_remove_by_id($fid, $recur) {
       if (empty($dir_contents)) {
 
         if (rmdir($dir)) {
-          drupal_set_message(t('The directory %dir was deleted.', array('%dir' => $filename)));
+          backdrop_set_message(t('The directory %dir was deleted.', array('%dir' => $filename)));
           $remove_fields = TRUE;
         }
         else {
-          drupal_set_message(t('The directory %dir could not be deleted.', array('%dir' => $filename)), 'warning');
+          backdrop_set_message(t('The directory %dir could not be deleted.', array('%dir' => $filename)), 'warning');
           $result = FALSE;
         }
       }
       else {
-        drupal_set_message(t('The directory %dir could not be deleted because it is not empty.', array('%dir' => $filename)), 'warning');
+        backdrop_set_message(t('The directory %dir could not be deleted because it is not empty.', array('%dir' => $filename)), 'warning');
         $result = FALSE;
       }
     }
@@ -1257,10 +1280,10 @@ function uc_file_remove_by_id($fid, $recur) {
 
       if (unlink($dir)) {
         $remove_fields = TRUE;
-        drupal_set_message(t('The file %dir was deleted.', array('%dir' => $filename)));
+        backdrop_set_message(t('The file %dir was deleted.', array('%dir' => $filename)));
       }
       else {
-        drupal_set_message(t('The file %dir could not be deleted.', array('%dir' => $filename)), 'error');
+        backdrop_set_message(t('The file %dir could not be deleted.', array('%dir' => $filename)), 'error');
         $result = FALSE;
       }
     }
@@ -1348,7 +1371,10 @@ function _uc_file_sort_names($fids) {
 
   foreach ($fids as $fid) {
     $file = uc_file_get_by_id($fid);
-    $aggregate[] = array('filename' => $file->filename, 'fid' => $file->fid);
+    $aggregate[] = array(
+      'filename' => $file->filename,
+      'fid' => $file->fid,
+    );
   }
 
   usort($aggregate, '_uc_file_sort_by_name');
@@ -1419,14 +1445,14 @@ function _uc_file_sort_fids($fids) {
  *   The qualified path.
  */
 function uc_file_qualify_file($filename) {
-  return variable_get('uc_file_base_dir', NULL) . '/' . $filename;
+  return config_get('uc_file.settings', 'uc_file_base_dir') . '/' . $filename;
 }
 
 /**
  * Removes all of a user's downloadable files.
  *
  * @param $uid
- *   A Drupal user ID.
+ *   A Backdrop user ID.
  */
 function uc_file_remove_user($user) {
   $query = db_delete('uc_file_users')
@@ -1434,7 +1460,7 @@ function uc_file_remove_user($user) {
 
   // Echo the deletion only if something was actually deleted.
   if ($query->execute()) {
-    drupal_set_message(t('!user has had all of his/her downloadable files removed.', array(
+    backdrop_set_message(t('!user has had all of his/her downloadable files removed.', array(
       '!user' => theme('username', array(
         'account' => $user,
         'name' => check_plain($user->name),
@@ -1448,7 +1474,7 @@ function uc_file_remove_user($user) {
  * Removes a user's downloadable file by hash key.
  *
  * @param $uid
- *   A Drupal user ID.
+ *   A Backdrop user ID.
  * @param $key
  *   The unique hash associated with the file.
  */
@@ -1460,7 +1486,7 @@ function uc_file_remove_user_file_by_id($user, $fid) {
 
   // Echo the deletion only if something was actually deleted.
   if ($query->execute()) {
-    drupal_set_message(t('!user has had %file removed from his/her downloadable file list.', array(
+    backdrop_set_message(t('!user has had %file removed from his/her downloadable file list.', array(
       '!user' => theme('username', array(
         'account' => $user,
         'name' => check_plain($user->name),
@@ -1590,7 +1616,7 @@ function &uc_file_get_by_uid($uid, $fid) {
  * @param $fid
  *   A file ID.
  * @param $user
- *   A Drupal user object.
+ *   A Backdrop user object.
  * @param $pfid
  *   An Ubercart product feature ID.
  * @param $file_limits
@@ -1629,12 +1655,12 @@ function uc_file_user_renew($fid, $user, $pfid, $file_limits, $force_overwrite) 
       $force_overwrite = TRUE;
     }
     else {
-      $file_user = (array)$file_user;
+      $file_user = (array) $file_user;
       $key = 'fuid';
     }
 
     // Add file data in as well.
-    $file_info = (array)uc_file_get_by_id($fid);
+    $file_info = (array) uc_file_get_by_id($fid);
 
     $file_user += $user_file_global + $file_info;
 
@@ -1646,19 +1672,19 @@ function uc_file_user_renew($fid, $user, $pfid, $file_limits, $force_overwrite) 
     $file_user['expiration'] = $file_user['expiration'] ? $file_user['expiration'] : 0;
 
     // Calculate hash.
-    $file_user['file_key'] = isset($file_user['file_key']) && $file_user['file_key'] ? $file_user['file_key'] : drupal_get_token(serialize($file_user));
+    $file_user['file_key'] = isset($file_user['file_key']) && $file_user['file_key'] ? $file_user['file_key'] : backdrop_get_token(serialize($file_user));
 
     // Write and queue the file_user object.
-    drupal_write_record('uc_file_users', $file_user, $key);
+    backdrop_write_record('uc_file_users', $file_user, $key);
 
     if ($key) {
-      watchdog('uc_file', '%user has had download privileges of %file renewed.', array('%user' => format_username($user), '%file' => $file_user['filename']));
+      watchdog('uc_file', '%user has had download privileges of %file renewed.', array('%user' => user_format_name($user), '%file' => $file_user['filename']));
     }
     else {
-      watchdog('uc_file', '%user has been allowed to download %file.', array('%user' => format_username($user), '%file' => $file_user['filename']));
+      watchdog('uc_file', '%user has been allowed to download %file.', array('%user' => user_format_name($user), '%file' => $file_user['filename']));
     }
 
-    $result[] = (object)$file_user;
+    $result[] = (object) $file_user;
   }
   return $result;
 }
@@ -1690,7 +1716,7 @@ function _uc_file_user_get($user, $fid) {
  */
 function uc_file_get_download_limit($file) {
   if (!isset($file->download_limit) || $file->download_limit == UC_FILE_LIMIT_SENTINEL) {
-    return variable_get('uc_file_download_limit_number', NULL);
+    return config_get('uc_file.settings', 'uc_file_download_limit_number');
   }
   else {
     return $file->download_limit;
@@ -1711,7 +1737,7 @@ function uc_file_get_download_limit($file) {
  */
 function uc_file_get_address_limit($file) {
   if (!isset($file->address_limit) || $file->address_limit == UC_FILE_LIMIT_SENTINEL) {
-    return variable_get('uc_file_download_limit_addresses', NULL);
+    return config_get('uc_file.settings', 'uc_file_download_limit_addresses');
   }
   else {
     return $file->address_limit;
@@ -1731,19 +1757,28 @@ function uc_file_get_address_limit($file) {
  *   An array with entries for the granularity and quantity.
  */
 function uc_file_get_time_limit($file) {
+  $config = config('uc_file.settings');
 
   if (!isset($file->time_granularity) || $file->time_granularity == UC_FILE_LIMIT_SENTINEL) {
     return array(
-      'time_polarity'    => '+',
-      'time_granularity' => variable_get('uc_file_download_limit_duration_granularity', 'never'),
-      'time_quantity'    => variable_get('uc_file_download_limit_duration_qty', NULL),
+      'time_polarity' => '+',
+      'time_granularity' => $config->get('uc_file_download_limit_duration_granularity'),
+      'time_quantity' => $config->get('uc_file_download_limit_duration_qty'),
     );
   }
   else {
     return array(
-      'time_polarity'    => '+',
+      'time_polarity' => '+',
       'time_granularity' => $file->time_granularity,
-      'time_quantity'    => $file->time_quantity,
+      'time_quantity' => $file->time_quantity,
     );
   }
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function uc_file_autoload_info() {
+  return array(
+  );
 }

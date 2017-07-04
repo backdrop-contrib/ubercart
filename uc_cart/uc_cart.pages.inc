@@ -12,6 +12,7 @@
  * checkout.
  */
 function uc_cart_view() {
+  $config = config('uc_cart.settings');
   // Failsafe so that this function only works when called with no arguments.
   // This prevents the accidental wiping of the cart_order session variable.
   if (func_num_args() > 0) {
@@ -39,9 +40,9 @@ function uc_cart_view() {
   }
 
   // Add a custom cart breadcrumb if specified.
-  if (($text = variable_get('uc_cart_breadcrumb_text', '')) !== '') {
-    $link = l($text, variable_get('uc_cart_breadcrumb_url', '<front>'));
-    drupal_set_breadcrumb(array($link));
+  if (($text = $config->get('uc_cart_breadcrumb_text')) !== '') {
+    $link = l($text, $config->get('uc_cart_breadcrumb_url'));
+    backdrop_set_breadcrumb(array($link));
   }
 
   return $build;
@@ -69,10 +70,12 @@ function uc_cart_checkout() {
   global $user;
 
   $items = uc_cart_get_contents();
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (count($items) == 0 || !variable_get('uc_checkout_enabled', TRUE)) {
-    drupal_goto('cart');
+    backdrop_goto('cart');
   }
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (($min = variable_get('uc_minimum_subtotal', 0)) > 0) {
     $subtotal = 0;
     if (is_array($items) && count($items) > 0) {
@@ -85,18 +88,19 @@ function uc_cart_checkout() {
     }
 
     if ($subtotal < $min) {
-      drupal_set_message(t('The minimum order subtotal for checkout is @min.', array('@min' => uc_currency_format($min))), 'error');
-      drupal_goto('cart');
+      backdrop_set_message(t('The minimum order subtotal for checkout is @min.', array('@min' => uc_currency_format($min))), 'error');
+      backdrop_goto('cart');
     }
   }
 
   // Send anonymous users to login page when anonymous checkout is disabled.
+  // TODO This variable was probably removed in Backdrop without replacement.
   if (!$user->uid && !variable_get('uc_checkout_anonymous', TRUE)) {
-    drupal_set_message(t('You must login before you can proceed to checkout.'));
-    if (variable_get('user_register', 1) != 0) {
-      drupal_set_message(t('If you do not have an account yet, you should <a href="!url">register now</a>.', array('!url' => url('user/register', array('query' => drupal_get_destination())))));
+    backdrop_set_message(t('You must login before you can proceed to checkout.'));
+    if (config_get('system.performance', 'user_register') != 0) {
+      backdrop_set_message(t('If you do not have an account yet, you should <a href="!url">register now</a>.', array('!url' => url('user/register', array('query' => backdrop_get_destination())))));
     }
-    drupal_goto('user', array('query' => drupal_get_destination()));
+    backdrop_goto('user', array('query' => backdrop_get_destination()));
   }
 
   // Load an order from the session, if available.
@@ -118,8 +122,8 @@ function uc_cart_checkout() {
     else {
       // Ghost session.
       unset($_SESSION['cart_order']);
-      drupal_set_message(t('Your session has expired or is no longer valid.  Please review your order and try again.'));
-      drupal_goto('cart');
+      backdrop_set_message(t('Your session has expired or is no longer valid.  Please review your order and try again.'));
+      backdrop_goto('cart');
     }
   }
 
@@ -127,12 +131,12 @@ function uc_cart_checkout() {
   if (isset($_POST['form_id']) && $_POST['form_id'] == 'uc_cart_checkout_form') {
     // If this is a form submission, make sure the cart order is still valid.
     if (!isset($order)) {
-      drupal_set_message(t('Your session has expired or is no longer valid.  Please review your order and try again.'));
-      drupal_goto('cart');
+      backdrop_set_message(t('Your session has expired or is no longer valid.  Please review your order and try again.'));
+      backdrop_goto('cart');
     }
     elseif (!empty($_SESSION['uc_cart_order_rebuild'])) {
-      drupal_set_message(t('Your shopping cart contents have changed. Please review your order and try again.'));
-      drupal_goto('cart');
+      backdrop_set_message(t('Your shopping cart contents have changed. Please review your order and try again.'));
+      backdrop_goto('cart');
     }
   }
   else {
@@ -164,8 +168,8 @@ function uc_cart_checkout() {
       unset($_SESSION['uc_cart_order_rebuild']);
     }
     elseif (!uc_order_product_revive($order->products)) {
-      drupal_set_message(t('Some of the products in this order are no longer available.'), 'error');
-      drupal_goto('cart');
+      backdrop_set_message(t('Some of the products in this order are no longer available.'), 'error');
+      backdrop_goto('cart');
     }
   }
 
@@ -173,7 +177,7 @@ function uc_cart_checkout() {
   module_invoke_all('uc_cart_checkout_start', $order);
   rules_invoke_event('uc_cart_checkout_start', $order);
 
-  return drupal_get_form('uc_cart_checkout_form', $order);
+  return backdrop_get_form('uc_cart_checkout_form', $order);
 }
 
 /**
@@ -200,9 +204,10 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
   }
 
   $form['#attributes']['class'][] = 'uc-cart-checkout-form';
-  $form['#attached']['js'][] = drupal_get_path('module', 'uc_cart') . '/uc_cart.js';
-  $form['#attached']['css'][] = drupal_get_path('module', 'uc_cart') . '/uc_cart.css';
+  $form['#attached']['js'][] = backdrop_get_path('module', 'uc_cart') . '/uc_cart.js';
+  $form['#attached']['css'][] = backdrop_get_path('module', 'uc_cart') . '/uc_cart.css';
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   if ($instructions = variable_get('uc_checkout_instructions', '')) {
     $form['instructions'] = array(
       '#prefix' => '<div id="checkout-instructions">',
@@ -215,7 +220,7 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
   $panes = _uc_checkout_pane_list();
 
   // If the order isn't shippable, remove panes with shippable == TRUE.
-  if (!uc_order_is_shippable($order) && variable_get('uc_cart_delivery_not_shippable', TRUE)) {
+  if (!uc_order_is_shippable($order) && config_get('uc_cart.settings', 'uc_cart_delivery_not_shippable')) {
     $panes = uc_cart_filter_checkout_panes($panes, array('shippable' => TRUE));
   }
 
@@ -254,6 +259,8 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
       // Add the pane if any display data is returned from the callback.
       if (is_array($return) && (!empty($return['description']) || !empty($return['contents']))) {
         // Create the fieldset for the pane.
+        // TODO This variable was probably removed in Backdrop without replacement.
+        // TODO This variable was probably removed in Backdrop without replacement.
         $form['panes'][$id] = array(
           '#type' => 'fieldset',
           '#title' => check_plain($pane['title']),
@@ -270,8 +277,10 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
         }
 
         // Add the 'Next' button if necessary.
+        // TODO This variable was probably removed in Backdrop without replacement.
         if ((!isset($return['next-button']) || $return['next-button'] !== FALSE) && $pane['next'] !== FALSE &&
             variable_get('uc_use_next_buttons', FALSE) != FALSE) {
+          // TODO This variable was probably removed in Backdrop without replacement.
           $opt = variable_get('uc_collapse_current_pane', FALSE) ? $id : 'false';
           $form['panes'][$id]['next'] = array(
             '#type' => 'button',
@@ -295,7 +304,7 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
     '#type' => 'submit',
     '#value' => t('Cancel'),
     '#validate' => array(), // Disable validation to prevent a new order
-                            // from being created.
+    // from being created.
     '#limit_validation_errors' => array(),
     '#submit' => array('uc_cart_checkout_form_cancel'),
   );
@@ -323,7 +332,7 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
  * @ingroup themeable
  */
 function theme_uc_cart_checkout_form($variables) {
-  return drupal_render_children($variables['form']);
+  return backdrop_render_children($variables['form']);
 }
 
 /**
@@ -398,27 +407,27 @@ function uc_cart_checkout_form_cancel($form, &$form_state) {
  * @see uc_cart_checkout_form()
  */
 function uc_cart_checkout_review() {
-  drupal_add_js(drupal_get_path('module', 'uc_cart') . '/uc_cart.js');
+  backdrop_add_js(backdrop_get_path('module', 'uc_cart') . '/uc_cart.js');
 
   if (empty($_SESSION['cart_order']) || empty($_SESSION['uc_checkout'][$_SESSION['cart_order']]['do_review'])) {
-    drupal_goto('cart/checkout');
+    backdrop_goto('cart/checkout');
   }
 
   $order = uc_order_load($_SESSION['cart_order']);
 
   if ($order === FALSE || uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
     unset($_SESSION['uc_checkout'][$order->order_id]['do_review']);
-    drupal_goto('cart/checkout');
+    backdrop_goto('cart/checkout');
   }
   elseif (!uc_order_product_revive($order->products)) {
-    drupal_set_message(t('Some of the products in this order are no longer available.'), 'error');
-    drupal_goto('cart');
+    backdrop_set_message(t('Some of the products in this order are no longer available.'), 'error');
+    backdrop_goto('cart');
   }
 
   $panes = _uc_checkout_pane_list();
 
   // If the cart isn't shippable, bypass panes with shippable == TRUE.
-  if (!uc_order_is_shippable($order) && variable_get('uc_cart_delivery_not_shippable', TRUE)) {
+  if (!uc_order_is_shippable($order) && config_get('uc_cart.settings', 'uc_cart_delivery_not_shippable')) {
     $panes = uc_cart_filter_checkout_panes($panes, array('shippable' => TRUE));
   }
 
@@ -437,7 +446,7 @@ function uc_cart_checkout_review() {
   $build = array(
     '#theme' => 'uc_cart_checkout_review',
     '#panes' => $data,
-    '#form' => drupal_get_form('uc_cart_checkout_review_form', $order),
+    '#form' => backdrop_get_form('uc_cart_checkout_review_form', $order),
   );
 
   return $build;
@@ -464,8 +473,9 @@ function theme_uc_cart_checkout_review($variables) {
   $panes = $variables['panes'];
   $form = $variables['form'];
 
-  drupal_add_css(drupal_get_path('module', 'uc_cart') . '/uc_cart.css');
+  backdrop_add_css(backdrop_get_path('module', 'uc_cart') . '/uc_cart.css');
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $output = '<div id="review-instructions">' . filter_xss_admin(variable_get('uc_checkout_review_instructions', uc_get_message('review_instructions'))) . '</div>';
 
   $output .= '<table class="order-review-table">';
@@ -499,7 +509,7 @@ function theme_uc_cart_checkout_review($variables) {
   }
 
   $output .= '<tr class="review-button-row">';
-  $output .= '<td colspan="2">' . drupal_render($form) . '</td>';
+  $output .= '<td colspan="2">' . backdrop_render($form) . '</td>';
   $output .= '</tr>';
 
   $output .= '</table>';
@@ -568,7 +578,7 @@ function uc_cart_checkout_review_form_submit($form, &$form_state) {
         $msg_type = 'error';
       }
       if (!empty($result[0]['message'])) {
-        drupal_set_message($result[0]['message'], $msg_type);
+        backdrop_set_message($result[0]['message'], $msg_type);
       }
 
       // Stop invoking the hooks if there was an error.
@@ -593,27 +603,28 @@ function uc_cart_checkout_review_form_submit($form, &$form_state) {
  */
 function uc_cart_checkout_complete() {
   if (empty($_SESSION['cart_order']) || empty($_SESSION['uc_checkout'][$_SESSION['cart_order']]['do_complete'])) {
-    drupal_goto('cart');
+    backdrop_goto('cart');
   }
 
   $order = uc_order_load(intval($_SESSION['cart_order']));
 
   if (empty($order)) {
     // Display messages to customers and the administrator if the order was lost.
-    drupal_set_message(t("We're sorry.  An error occurred while processing your order that prevents us from completing it at this time. Please contact us and we will resolve the issue as soon as possible."), 'error');
+    backdrop_set_message(t("We're sorry.  An error occurred while processing your order that prevents us from completing it at this time. Please contact us and we will resolve the issue as soon as possible."), 'error');
     watchdog('uc_cart', 'An empty order made it to checkout! Cart order ID: @cart_order', array('@cart_order' => $_SESSION['cart_order']), WATCHDOG_ERROR);
-    drupal_goto('cart');
+    backdrop_goto('cart');
   }
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $build = uc_cart_complete_sale($order, variable_get('uc_new_customer_login', FALSE));
   unset($_SESSION['uc_checkout'][$order->order_id], $_SESSION['cart_order']);
 
   // Add a comment to let sales team know this came in through the site.
   uc_order_comment_save($order->order_id, 0, t('Order created through website.'), 'admin');
 
-  $page = variable_get('uc_cart_checkout_complete_page', '');
+  $page = config_get('uc_cart.settings', 'uc_cart_checkout_complete_page');
   if (!empty($page)) {
-    drupal_goto($page);
+    backdrop_goto($page);
   }
 
   return $build;

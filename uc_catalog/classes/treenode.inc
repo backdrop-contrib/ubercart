@@ -6,7 +6,7 @@
  */
 
 /**
- * Data structure to mimic Drupal's menu system.
+ * Data structure to mimic Backdrop's menu system.
  */
 class UcTreeNode {
   public $tid = 0;
@@ -41,7 +41,7 @@ class UcTreeNode {
       $this->children[] = $child;
     }
     else {
-      $last_child =&$this->children[count($this->children)-1];
+      $last_child = &$this->children[count($this->children) -1];
       $last_child->add_child($child);
     }
   }

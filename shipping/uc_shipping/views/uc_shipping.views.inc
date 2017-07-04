@@ -238,7 +238,7 @@ function uc_shipping_views_data() {
       $data['uc_shipments'][$prefix . '_' . $field] = array(
         'group' => $group,
         'title' => $label,
-        'help' => t('The !field of the !address of the shipment.', array('!field' => drupal_strtolower($label), '!address' => drupal_strtolower($address))),
+        'help' => t('The !field of the !address of the shipment.', array('!field' => backdrop_strtolower($label), '!address' => backdrop_strtolower($address))),
         'field' => array(
           'handler' => 'views_handler_field',
           'click sortable' => TRUE,
@@ -255,11 +255,11 @@ function uc_shipping_views_data() {
     $data['uc_shipments'][$prefix . '_full_name'] = array(
       'group' => $group,
       'title' => t('Full name'),
-      'help' => t('The !field of the !address of the shipment.', array('!field' => t('full name'), '!address' => drupal_strtolower($address))),
+      'help' => t('The !field of the !address of the shipment.', array('!field' => t('full name'), '!address' => backdrop_strtolower($address))),
       'field' => array(
         'additional fields' => array(
           $prefix . '_first_name',
-          $prefix . '_last_name'
+          $prefix . '_last_name',
         ),
         'handler' => 'uc_order_handler_field_order_fullname',
         'prefix' => $prefix,
@@ -274,7 +274,7 @@ function uc_shipping_views_data() {
     );
     $data['uc_shipments_' . $prefix . '_countries']['country_id'] = array(
       'title' => t('ISO country code (numeric)'),
-      'help' => t('The !field of the !address of the shipment.', array('!field' => t('numeric ISO country code'), '!address' => drupal_strtolower($address))),
+      'help' => t('The !field of the !address of the shipment.', array('!field' => t('numeric ISO country code'), '!address' => backdrop_strtolower($address))),
       'argument' => array(
         'handler' => 'views_handler_argument_numeric',
         'name field' => 'country_iso_code_2',
@@ -287,7 +287,7 @@ function uc_shipping_views_data() {
     );
     $data['uc_shipments_' . $prefix . '_countries']['country_name'] = array(
       'title' => t('Country'),
-      'help' => t('The !field of the !address of the shipment.', array('!field' => t('country name'), '!address' => drupal_strtolower($address))),
+      'help' => t('The !field of the !address of the shipment.', array('!field' => t('country name'), '!address' => backdrop_strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -301,7 +301,7 @@ function uc_shipping_views_data() {
     );
     $data['uc_shipments_' . $prefix . '_countries']['country_iso_code_2'] = array(
       'title' => t('ISO country code (2 characters)'),
-      'help' => t('The !field of the !address of the shipment.', array('!field' => t('ISO country code'), '!address' => drupal_strtolower($address))),
+      'help' => t('The !field of the !address of the shipment.', array('!field' => t('ISO country code'), '!address' => backdrop_strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -315,7 +315,7 @@ function uc_shipping_views_data() {
     );
     $data['uc_shipments_' . $prefix . '_countries']['country_iso_code_3'] = array(
       'title' => t('ISO country code (3 characters)'),
-      'help' => t('The !field of the !address of the shipment.', array('!field' => t('ISO country code'), '!address' => drupal_strtolower($address))),
+      'help' => t('The !field of the !address of the shipment.', array('!field' => t('ISO country code'), '!address' => backdrop_strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -336,7 +336,7 @@ function uc_shipping_views_data() {
     );
     $data['uc_shipments_' . $prefix . '_zones']['zone_name'] = array(
       'title' => t('State/Province'),
-      'help' => t('The !field of the !address of the shipment.', array('!field' => t('state or province'), '!address' => drupal_strtolower($address))),
+      'help' => t('The !field of the !address of the shipment.', array('!field' => t('state or province'), '!address' => backdrop_strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,
@@ -350,7 +350,7 @@ function uc_shipping_views_data() {
     );
     $data['uc_shipments_' . $prefix . '_zones']['zone_code'] = array(
       'title' => t('State/Province code'),
-      'help' => t('The !field of the !address of the shipment.', array('!field' => t('state or province code'), '!address' => drupal_strtolower($address))),
+      'help' => t('The !field of the !address of the shipment.', array('!field' => t('state or province code'), '!address' => backdrop_strtolower($address))),
       'field' => array(
         'handler' => 'views_handler_field',
         'click sortable' => TRUE,

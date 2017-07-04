@@ -18,7 +18,7 @@ function uc_cart_schema() {
         'description' => 'Unique identifier for cart item.',
         'type' => 'serial',
         'unsigned' => TRUE,
-        'not null' => TRUE
+        'not null' => TRUE,
       ),
       'cart_id' => array(
         'description' => 'A user-specific cart ID. For authenticated users, their {users}.uid. For anonymous users, a token.',
@@ -81,13 +81,21 @@ function uc_cart_uninstall() {
     ->condition('name', 'uc_new_customer_%', 'LIKE')
     ->execute();
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_minimum_subtotal');
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_add_item_redirect');
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_continue_shopping_url');
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_continue_shopping_type');
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_use_next_buttons');
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_collapse_current_pane');
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_checkout_email_customer');
+  // TODO This variable was probably removed in Backdrop without replacement.
   variable_del('uc_checkout_email_admin');
 }
 
@@ -97,45 +105,85 @@ function uc_cart_uninstall() {
 function uc_cart_update_last_removed() {
   // 7.x-3.0-beta2 and earlier were installed with schema version 0,
   // which causes update.php to fail.
-  return drupal_get_installed_schema_version('uc_cart') == 0 ? 0 : 6201;
+  return backdrop_get_installed_schema_version('uc_cart') == 0 ? 0 : 6201;
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_cart_update_6202() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_cart_update_7000() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_cart_update_7001() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_cart_update_7300() { }
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function uc_cart_update_last_removed() {
+  return 7300;
 }
 
 /**
- * Unify cart block title setting.
+ * Implements hook_update_N().
  */
-function uc_cart_update_6202() {
-  variable_del('uc_cart_block_title');
+function uc_cart_update_1000() {
+  $config = config('uc_cart .settings');
+  $config->set('uc_cart_add_item_msg', update_variable_get('uc_cart_add_item_msg', 'TRUE'));
+  $config->set('uc_cart_empty_button', update_variable_get('uc_cart_empty_button', 'FALSE'));
+  $config->set('uc_cart_anon_duration', update_variable_get('uc_cart_anon_duration', '4'));
+  $config->set('uc_cart_anon_unit', update_variable_get('uc_cart_anon_unit', 'hours'));
+  $config->set('uc_cart_auth_duration', update_variable_get('uc_cart_auth_duration', '1'));
+  $config->set('uc_cart_auth_unit', update_variable_get('uc_cart_auth_unit', 'years'));
+  $config->set('uc_cart_breadcrumb_text', update_variable_get('uc_cart_breadcrumb_text', ''));
+  $config->set('uc_cart_breadcrumb_url', update_variable_get('uc_cart_breadcrumb_url', 'dynamic value in file /ubercart/uc_cart/uc_cart.pages.inc line 43'));
+  $config->set('uc_cart_mail_existing', update_variable_get('uc_cart_mail_existing', 'TRUE'));
+  $config->set('uc_cart_email_validation', update_variable_get('uc_cart_email_validation', 'FALSE'));
+  $config->set('uc_cart_new_account_name', update_variable_get('uc_cart_new_account_name', 'FALSE'));
+  $config->set('uc_cart_new_account_password', update_variable_get('uc_cart_new_account_password', 'FALSE'));
+  $config->set('uc_cart_default_same_address', update_variable_get('uc_cart_default_same_address', 'FALSE'));
+  $config->set('uc_cart_delivery_not_shippable', update_variable_get('uc_cart_delivery_not_shippable', 'TRUE'));
+  $config->set('uc_cart_checkout_complete_page', update_variable_get('uc_cart_checkout_complete_page', ''));
+  $config->set('uc_cart_block_empty_hide', update_variable_get('uc_cart_block_empty_hide', 'FALSE'));
+  $config->set('uc_cart_block_collapsible', update_variable_get('uc_cart_block_collapsible', 'TRUE'));
+  $config->set('uc_cart_show_help_text', update_variable_get('uc_cart_show_help_text', 'FALSE'));
+  $config->set('uc_cart_help_text', update_variable_get('uc_cart_help_text', 'dynamic value in file /ubercart/uc_cart/uc_cart.module line 325'));
+  $config->set('uc_cart_block_collapsed', update_variable_get('uc_cart_block_collapsed', 'TRUE'));
+  $config->set('uc_cart_block_image', update_variable_get('uc_cart_block_image', 'TRUE'));
+  $config->set('uc_cart_new_account_details', update_variable_get('uc_cart_new_account_details', 'dynamic value in file /ubercart/uc_cart/uc_cart_checkout_pane.inc line 170'));
+  update_variable_del('uc_cart_add_item_msg');
+  update_variable_del('uc_cart_empty_button');
+  update_variable_del('uc_cart_anon_duration');
+  update_variable_del('uc_cart_anon_unit');
+  update_variable_del('uc_cart_auth_duration');
+  update_variable_del('uc_cart_auth_unit');
+  update_variable_del('uc_cart_breadcrumb_text');
+  update_variable_del('uc_cart_breadcrumb_url');
+  update_variable_del('uc_cart_mail_existing');
+  update_variable_del('uc_cart_email_validation');
+  update_variable_del('uc_cart_new_account_name');
+  update_variable_del('uc_cart_new_account_password');
+  update_variable_del('uc_cart_default_same_address');
+  update_variable_del('uc_cart_delivery_not_shippable');
+  update_variable_del('uc_cart_checkout_complete_page');
+  update_variable_del('uc_cart_block_empty_hide');
+  update_variable_del('uc_cart_block_collapsible');
+  update_variable_del('uc_cart_show_help_text');
+  update_variable_del('uc_cart_help_text');
+  update_variable_del('uc_cart_block_collapsed');
+  update_variable_del('uc_cart_block_image');
+  update_variable_del('uc_cart_new_account_details');
 }
 
 /**
- * Remove unused text format variables.
+ * Implements hook_install().
  */
-function uc_cart_update_7000() {
-  variable_del('uc_checkout_instructions_format');
-  variable_del('uc_checkout_review_instructions_format');
-  variable_del('uc_msg_order_submit_format');
-  variable_del('uc_msg_order_logged_in_format');
-  variable_del('uc_msg_order_existing_user_format');
-  variable_del('uc_msg_order_new_user_format');
-  variable_del('uc_msg_continue_shopping_format');
-}
-
-/**
- * Increase maximum cart item quantity.
- */
-function uc_cart_update_7001() {
-  db_change_field('uc_cart_products', 'qty', 'qty', array(
-    'description' => 'The number of this product in the cart.',
-    'type' => 'int',
-    'unsigned' => TRUE,
-    'not null' => TRUE,
-    'default' => 0,
-  ));
-}
-
-/**
- * Remove unused variable.
- */
-function uc_cart_update_7300() {
-  variable_del('uc_continue_shopping_text');
+function uc_cart_install() {
+  // Dynamically generated variable data was detected.
+  // /ubercart/uc_cart/uc_cart.pages.inc line 43
+  // /ubercart/uc_cart/uc_cart.module line 325
+  // /ubercart/uc_cart/uc_cart_checkout_pane.inc line 170
 }

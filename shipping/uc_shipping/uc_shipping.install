@@ -228,7 +228,7 @@ function uc_shipping_schema() {
     ),
     'indexes' => array(
       'order_id' => array('order_id'),
-     ),
+    ),
   );
 
   $schema['uc_packages'] = array(
@@ -379,142 +379,35 @@ function uc_shipping_update_last_removed() {
   return 6005;
 }
 
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_shipping_update_7000(&$sandbox) { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_shipping_update_7001() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_shipping_update_7300() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_shipping_update_7301() { }
+
 /**
- * Changes {uc_packages}.label_image to an integer file id.
+ * Implements hook_update_last_removed().
  */
-function uc_shipping_update_7000(&$sandbox) {
-  $sandbox['#finished'] = 0;
-
-  $schema = array(
-    'type' => 'int',
-    'unsigned' => TRUE,
-    'not null' => FALSE,
-  );
-
-  if (!isset($sandbox['total'])) {
-    db_add_field('uc_packages', 'label_image_id', $schema);
-
-    $sandbox['last'] = 0;
-    $sandbox['count'] = 0;
-    $sandbox['total'] = db_query("SELECT COUNT(*) FROM {uc_packages} WHERE label_image IS NOT NULL")->fetchField();
-  }
-  else {
-    $found = FALSE;
-    $scheme = variable_get('file_default_scheme', 'public');
-
-    if ($sandbox['total']) {
-      $limit = 200;
-      $images = array();
-
-      $packages = db_query_range("SELECT package_id, label_image FROM {uc_packages} WHERE package_id > :package_id AND label_image IS NOT NULL", 0, $limit, array(':package_id' => $sandbox['last']));
-
-      foreach ($packages as $package) {
-        $found = TRUE;
-
-        $uri = file_stream_wrapper_uri_normalize($scheme . '://' . $package->label_image);
-
-        $fid = db_query("SELECT fid FROM {file_managed} WHERE uri = :uri", array(':uri' => $uri))->fetchField();
-
-        if (!$fid) {
-          $stat = stat($package->label_image);
-          $info = getimagesize($package->label_image);
-          $file = array(
-            'uid' => 1,
-            'filename' => basename($package->label_image),
-            'uri' => $uri,
-            'filemime' => $info['mime'],
-            'filesize' => $stat['size'],
-            'status' => FILE_STATUS_PERMANENT,
-            'timestamp' => $stat['ctime'],
-          );
-
-          $fid = db_insert('file_managed')->fields($file)->execute();
-        }
-
-        db_update('uc_packages')
-          ->fields(array('label_image_id' => $fid))
-          ->condition('package_id', $package->package_id)
-          ->execute();
-
-        $sandbox['last'] = $package->package_id;
-        $sandbox['count']++;
-        $sandbox['message'] = check_plain($package->label_image);
-      }
-
-      $sandbox['#finished'] = min(0.99, $sandbox['count'] / $sandbox['total']);
-    }
-
-    if (!$found) {
-      db_drop_field('uc_packages', 'label_image');
-      db_change_field('uc_packages', 'label_image_id', 'label_image', $schema, array(
-        'foreign keys' => array(
-          'label_image' => array('file_managed' => 'fid'),
-        ),
-      ));
-
-      $sandbox['#finished'] = 1;
-
-      return t('!number label images moved to the file table.', array('!number' => $sandbox['total']));
-    }
-  }
+function uc_shipping_update_last_removed() {
+  return 7301;
 }
 
 /**
- * Add 'changed' column to shipments.
+ * Implements hook_update_N().
  */
-function uc_shipping_update_7001() {
-  if (!db_field_exists('uc_shipments', 'changed')) {
-    db_add_field('uc_shipments', 'changed', array(
-      'description' => 'The Unix timestamp indicating the last time the shipment was modified.',
-      'type' => 'int',
-      'not null' => TRUE,
-      'default' => 0,
-    ));
-  }
+function uc_shipping_update_1000() {
+  $config = config('uc_shipping .settings');
 }
 
 /**
- * Add indexes to package and shipment tables.
+ * Implements hook_install().
  */
-function uc_shipping_update_7300() {
-  // Alter {uc_shipments} table.
-  if (!db_index_exists('uc_shipments', 'order_id')) {
-    db_add_index('uc_shipments', 'order_id', array('order_id'));
-  }
-
-  // Alter {uc_packages} table.
-  if (!db_index_exists('uc_packages', 'order_id')) {
-    db_add_index('uc_packages', 'order_id', array('order_id'));
-  }
-  if (!db_index_exists('uc_packages', 'sid')) {
-    db_add_index('uc_packages', 'sid', array('sid'));
-  }
-
-  // Alter {uc_packaged_products} table.
-  if (!db_index_exists('uc_packaged_products', 'order_product_id')) {
-    db_add_index('uc_packaged_products', 'order_product_id', array('order_product_id'));
-  }
-}
-
-/**
- * Remove orphaned package and shipment records.
- */
-function uc_shipping_update_7301() {
-  $subquery = db_select('uc_orders', 'o')
-    ->fields('o', array('order_id'));
-
-  db_delete('uc_shipments')
-    ->condition('order_id', $subquery, 'NOT IN')
-    ->execute();
-
-  db_delete('uc_packages')
-    ->condition('order_id', $subquery, 'NOT IN')
-    ->execute();
-
-  $subquery = db_select('uc_packages', 'p')
-    ->fields('p', array('package_id'));
-
-  db_delete('uc_packaged_products')
-    ->condition('package_id', $subquery, 'NOT IN')
-    ->execute();
+function uc_shipping_install() {
+  // Dynamically generated variable data was detected.
 }

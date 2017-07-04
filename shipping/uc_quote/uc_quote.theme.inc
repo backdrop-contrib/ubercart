@@ -18,7 +18,7 @@ function theme_uc_cart_pane_quotes($variables) {
   $form = $variables['form'];
 
   $output = '<p class="quote-title">' . t('Estimated shipping cost:') . '</p>';
-  $output .= drupal_render_children($form);
+  $output .= backdrop_render_children($form);
 
   return $output;
 }
@@ -46,13 +46,13 @@ function theme_uc_quote_returned_rates($variables) {
       }
 
       if (isset($form['quote_option'][$key])) {
-        $output .= drupal_render($form['quote_option'][$key]);
+        $output .= backdrop_render($form['quote_option'][$key]);
       }
-      $output .= drupal_render($form[$key]);
+      $output .= backdrop_render($form[$key]);
     }
   }
 
-  $output .= drupal_render_children($form);
+  $output .= backdrop_render_children($form);
 
   return $output;
 }

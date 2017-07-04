@@ -261,7 +261,7 @@ function uc_roles_action_order_email($order, $role_expiration, $from, $addresses
 
   // Send to each recipient.
   foreach ($recipients as $email) {
-    $sent = drupal_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, $settings['from']);
+    $sent = backdrop_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, $settings['from']);
 
     if (!$sent['result']) {
       watchdog('uc_roles', 'Attempt to e-mail @email concerning order @order_id failed.', array('@email' => $email, '@order_id' => $order->order_id), WATCHDOG_ERROR);
@@ -303,7 +303,7 @@ function uc_roles_action_user_email($account, $role_expiration, $from, $addresse
 
   // Send to each recipient.
   foreach ($recipients as $email) {
-    $sent = drupal_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, $settings['from']);
+    $sent = backdrop_mail('uc_order', 'action-mail', $email, uc_store_mail_recipient_language($email), $settings, $settings['from']);
 
     if (!$sent['result']) {
       watchdog('uc_roles', 'Attempt to e-mail @email concerning role notification failed.', array('@email' => $email), WATCHDOG_ERROR);
@@ -319,7 +319,7 @@ function uc_roles_action_user_email($account, $role_expiration, $from, $addresse
  * are scanned for role product features. If any are found, the expiration time
  * of the role is set using the feature settings to determine the new length of
  * time the new expiration will last. An order comment is saved, and the user
- * is notified in Drupal, as well as through the email address associated with
+ * is notified in Backdrop, as well as through the email address associated with
  * the order.
  *
  * @param $order

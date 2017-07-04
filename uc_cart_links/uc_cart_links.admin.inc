@@ -12,40 +12,42 @@
  * @ingroup forms
  */
 function uc_cart_links_settings_form($form, &$form_state) {
+  $config = config('uc_cart_links.settings');
+  $form['#config'] = 'uc_cart_links.settings';
   $form['uc_cart_links_add_show'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display the cart link product action when you add a product to your cart.'),
-    '#default_value' => variable_get('uc_cart_links_add_show', FALSE),
+    '#default_value' => $config->get('uc_cart_links_add_show'),
   );
   $form['uc_cart_links_track'] = array(
     '#type' => 'checkbox',
     '#title' => t('Track clicks through Cart Links that specify tracking IDs.'),
-    '#default_value' => variable_get('uc_cart_links_track', TRUE),
+    '#default_value' => $config->get('uc_cart_links_track'),
   );
   $form['uc_cart_links_empty'] = array(
     '#type' => 'checkbox',
     '#title' => t('Allow Cart Links to empty customer carts.'),
-    '#default_value' => variable_get('uc_cart_links_empty', TRUE),
+    '#default_value' => $config->get('uc_cart_links_empty'),
   );
   $form['uc_cart_links_messages'] = array(
     '#type' => 'textarea',
     '#title' => t('Cart Links messages'),
     '#description' => t('Enter messages available to the Cart Links API for display through a link. Separate messages with a line break. Each message should have a numeric key and text value, separated by "|". For example: 1337|Message text.'),
-    '#default_value' => variable_get('uc_cart_links_messages', ''),
+    '#default_value' => $config->get('uc_cart_links_messages'),
   );
   $form['uc_cart_links_restrictions'] = array(
     '#type' => 'textarea',
     '#title' => t('Cart Links restrictions'),
     '#description' => t('To restrict what Cart Links may be used on your site, enter all valid Cart Links in this textbox.  Separate links with a line break. Leave blank to permit any cart link.'),
-    '#default_value' => variable_get('uc_cart_links_restrictions', ''),
+    '#default_value' => $config->get('uc_cart_links_restrictions'),
   );
   $form['uc_cart_links_invalid_page'] = array(
     '#type' => 'textfield',
     '#title' => t('Invalid link redirect page'),
     '#description' => t('Enter the URL to redirect to when an invalid cart link is used.'),
-    '#default_value' => variable_get('uc_cart_links_invalid_page', ''),
+    '#default_value' => $config->get('uc_cart_links_invalid_page'),
     '#size' => 32,
-    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q='),
+    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.performance', 'clean_url') ? '' : '?q='),
   );
 
   return system_settings_form($form);
@@ -63,7 +65,7 @@ function uc_cart_links_settings_form_validate($form, &$form_state) {
     foreach ($data as $message) {
       // Ignore blank lines.
       if (preg_match('/^\s*$/', $message)) {
-         continue;
+        continue;
       }
       // Check for properly formattted messages.
       // Each line must be one or more numeric characters for the key followed
@@ -85,9 +87,19 @@ function uc_cart_links_settings_form_validate($form, &$form_state) {
  */
 function uc_cart_links_report() {
   $header = array(
-    array('data' => t('ID'), 'field' => 'cart_link_id'),
-    array('data' => t('Clicks'), 'field' => 'clicks'),
-    array('data' => t('Last click'), 'field' => 'last_click', 'sort' => 'desc'),
+    array(
+      'data' => t('ID'),
+      'field' => 'cart_link_id',
+    ),
+    array(
+      'data' => t('Clicks'),
+      'field' => 'clicks',
+    ),
+    array(
+      'data' => t('Last click'),
+      'field' => 'last_click',
+      'sort' => 'desc',
+    ),
   );
 
   $query = db_select('uc_cart_link_clicks')->extend('PagerDefault')->extend('TableSort')

@@ -74,8 +74,11 @@ class UcOrder {
     }
 
     $this->order_status = uc_order_state_default($state);
+    // TODO This variable was probably removed in Backdrop without replacement.
     $this->currency = variable_get('uc_currency_code', 'USD');
+    // TODO This variable was probably removed in Backdrop without replacement.
     $this->billing_country = variable_get('uc_store_country', 840);
+    // TODO This variable was probably removed in Backdrop without replacement.
     $this->delivery_country = variable_get('uc_store_country', 840);
     $this->created = REQUEST_TIME;
     $this->modified = REQUEST_TIME;
@@ -117,7 +120,7 @@ function uc_order_menu() {
   $items['admin/store/settings/orders'] = array(
     'title' => 'Orders',
     'description' => 'Configure the display and workflow for orders.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_order_settings_form'),
     'access arguments' => array('administer store'),
     'file' => 'uc_order.admin.inc',
@@ -131,7 +134,7 @@ function uc_order_menu() {
   $items['admin/store/settings/orders/workflow'] = array(
     'title' => 'Workflow',
     'description' => 'Modify and configure order states and statuses.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_order_workflow_form'),
     'access arguments' => array('administer order workflow'),
     'type' => MENU_LOCAL_TASK,
@@ -141,7 +144,7 @@ function uc_order_menu() {
   $items['admin/store/settings/orders/workflow/create'] = array(
     'title' => 'Create custom order status',
     'description' => 'Create a custom order status for your store.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_order_status_create_form'),
     'access arguments' => array('administer order workflow'),
     'type' => MENU_LOCAL_ACTION,
@@ -161,7 +164,7 @@ function uc_order_menu() {
   $items['admin/store/orders/create'] = array(
     'title' => 'Create order',
     'description' => 'Create an empty new order.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_order_create_form'),
     'access arguments' => array('create orders'),
     'weight' => -5,
@@ -230,11 +233,11 @@ function uc_order_menu() {
   $items['admin/store/orders/%uc_order/view'] = array(
     'title' => 'View',
     'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -10
+    'weight' => -10,
   );
   $items['admin/store/orders/%uc_order/edit'] = array(
     'title' => 'Edit',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_order_edit_form', 3),
     'access arguments' => array('edit orders'),
     'type' => MENU_LOCAL_TASK,
@@ -243,7 +246,7 @@ function uc_order_menu() {
   );
   $items['admin/store/orders/%uc_order/add_line_item/%'] = array(
     'title' => 'Add a line item',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_order_add_line_item_form', 3, 5),
     'access arguments' => array('edit orders'),
     'type' => MENU_CALLBACK,
@@ -271,7 +274,7 @@ function uc_order_menu() {
   );
   $items['admin/store/orders/%uc_order/invoice/mail'] = array(
     'title' => 'Mail invoice',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_order_mail_invoice_form', 3),
     'access arguments' => array('view all orders'),
     'type' => MENU_LOCAL_TASK,
@@ -289,7 +292,7 @@ function uc_order_menu() {
   );
   $items['admin/store/orders/%uc_order/delete'] = array(
     'title' => 'Delete an order',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('uc_order_delete_confirm_form', 3),
     'access callback' => 'uc_order_can_delete',
     'access arguments' => array(3),
@@ -349,12 +352,12 @@ function uc_order_admin_paths() {
 function uc_order_init() {
   // Load uc_order.js on all order and customer admin pages.
   if (arg(0) == 'admin' && arg(1) == 'store' && (arg(2) == 'orders' || arg(2) == 'customers')) {
-    drupal_add_js(array(
+    backdrop_add_js(array(
       'ucURL' => array(
         'adminOrders' => url('admin/store/orders/'),
       ),
     ), 'setting');
-    drupal_add_js(drupal_get_path('module', 'uc_order') . '/uc_order.js');
+    backdrop_add_js(backdrop_get_path('module', 'uc_order') . '/uc_order.js');
   }
 }
 
@@ -539,9 +542,9 @@ function uc_order_entity_info() {
       ),
       'uri callback' => 'uc_order_uri',
       // Entity API callbacks.
-      'access callback'   => 'uc_order_order_entity_access',
+      'access callback' => 'uc_order_order_entity_access',
       'creation callback' => 'uc_order_create',
-      'save callback'     => 'uc_order_save',
+      'save callback' => 'uc_order_save',
       'deletion callback' => 'uc_order_delete',
     ),
     'uc_order_product' => array(
@@ -573,7 +576,7 @@ function uc_order_entity_info() {
         ),
       ),
       // Entity API callbacks.
-      'access callback'   => 'uc_order_order_product_access',
+      'access callback' => 'uc_order_order_product_access',
     ),
   );
 }
@@ -632,10 +635,11 @@ function uc_order_mail($key, &$message, $params) {
       $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
       $message['subject'] = t('Your Order Invoice', array(), array('langcode' => $langcode));
       $message['from'] = uc_store_email_from();
+      // TODO This variable was probably removed in Backdrop without replacement.
       $message['body'][] = theme('uc_order', array('order' => $params['order'], 'op' => 'admin-mail', 'template' => variable_get('uc_cust_order_invoice_template', 'customer')));
       break;
 
-    // Setup a custom e-mail defined by an action on a predicate.
+      // Setup a custom e-mail defined by an action on a predicate.
     case 'action-mail':
       // Assemble an email message from the conditional actions settings.
       $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
@@ -646,7 +650,7 @@ function uc_order_mail($key, &$message, $params) {
       $body = token_replace($params['message'], $params['replacements'], $langcode ? array('language' => $message['language']) : array());
 
       // Strip newline characters from e-mail subjects.
-      // @todo: Maybe drupal_mail_send() should do this?
+      // @todo: Maybe backdrop_mail_send() should do this?
       $message['subject'] = str_replace(array("\r\n", "\r", "\n"), ' ', $subject);
 
       // Apply an input format to the message body if specified.
@@ -667,7 +671,7 @@ function uc_order_mail($key, &$message, $params) {
 function uc_order_views_api() {
   return array(
     'api' => '2.0',
-    'path' => drupal_get_path('module', 'uc_order') . '/views',
+    'path' => backdrop_get_path('module', 'uc_order') . '/views',
   );
 }
 
@@ -679,7 +683,7 @@ function uc_order_form_views_exposed_form_alter(&$form, &$form_state) {
     $form['#submit'][] = 'uc_order_form_views_exposed_form_submit';
 
     if ($form['#id'] == 'views-exposed-form-uc-orders-search' && !module_exists('date_views')) {
-      drupal_set_message(t('Download the <a href="@url">Date module</a> and enable Date Views to allow searching orders by date.', array('@url' => 'http://drupal.org/project/date')), 'warning');
+      backdrop_set_message(t('Download the <a href="@url">Date module</a> and enable Date Views to allow searching orders by date.', array('@url' => 'http://drupal.org/project/date')), 'warning');
     }
   }
 }
@@ -695,13 +699,23 @@ function uc_order_form_views_exposed_form_submit($form, &$form_state) {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function uc_order_config_info() {
+  $prefixes['uc_order.settings'] = array(
+    'label' => t('Module name settings'),
+    'group' => t('Configuration'),
+  );
+}
+
+/**
  * Implements hook_form_FORM_ID_alter() for uc_store_settings_form().
  */
 function uc_order_form_uc_store_settings_form_alter(&$form, &$form_state) {
   $form['display']['uc_order_capitalize_addresses'] = array(
     '#type' => 'checkbox',
     '#title' => t('Capitalize address on order screens'),
-    '#default_value' => variable_get('uc_order_capitalize_addresses', TRUE),
+    '#default_value' => config_get('uc_order.settings', 'uc_order_capitalize_addresses'),
   );
 }
 
@@ -933,7 +947,7 @@ function uc_order_new($uid = 0, $state = 'in_checkout') {
 
   module_invoke_all('entity_presave', $order, 'uc_order');
 
-  drupal_write_record('uc_orders', $order);
+  backdrop_write_record('uc_orders', $order);
 
   uc_order_module_invoke('new', $order, NULL);
   module_invoke_all('entity_insert', $order, 'uc_order');
@@ -955,7 +969,7 @@ function uc_order_create($values, $entity_type) {
 
   module_invoke_all('entity_presave', $order, 'uc_order');
 
-  drupal_write_record('uc_orders', $order);
+  backdrop_write_record('uc_orders', $order);
 
   uc_order_module_invoke('new', $order, NULL);
   module_invoke_all('entity_insert', $order, 'uc_order');
@@ -981,9 +995,11 @@ function uc_order_save($order) {
     $order->order_total = uc_order_get_total($order);
     $order->product_count = uc_order_get_product_count($order);
     if (is_null($order->delivery_country) || $order->delivery_country == 0) {
+      // TODO This variable was probably removed in Backdrop without replacement.
       $order->delivery_country = variable_get('uc_store_country', 840);
     }
     if (is_null($order->billing_country) || $order->billing_country == 0) {
+      // TODO This variable was probably removed in Backdrop without replacement.
       $order->billing_country = variable_get('uc_store_country', 840);
     }
     $order->host = ip_address();
@@ -992,11 +1008,11 @@ function uc_order_save($order) {
     uc_order_module_invoke('presave', $order, NULL);
     module_invoke_all('entity_presave', $order, 'uc_order');
 
-    drupal_write_record('uc_orders', $order, 'order_id');
+    backdrop_write_record('uc_orders', $order, 'order_id');
 
     if (is_array($order->products)) {
       foreach ($order->products as $product) {
-        drupal_alter('uc_order_product', $product, $order);
+        backdrop_alter('uc_order_product', $product, $order);
         uc_order_product_save($order->order_id, $product);
       }
     }
@@ -1287,6 +1303,7 @@ function uc_order_view($order, $view_mode = 'full') {
  * Displays an order invoice.
  */
 function uc_order_view_invoice($order, $print = FALSE) {
+  // TODO This variable was probably removed in Backdrop without replacement.
   $build = array(
     '#theme' => 'uc_order',
     '#order' => $order,
@@ -1295,8 +1312,8 @@ function uc_order_view_invoice($order, $print = FALSE) {
   );
 
   if ($print) {
-    drupal_add_http_header('Content-Type', 'text/html; charset=utf-8');
-    print theme('uc_order_invoice_page', array('content' => drupal_render($build)));
+    backdrop_add_http_header('Content-Type', 'text/html; charset=utf-8');
+    print theme('uc_order_invoice_page', array('content' => backdrop_render($build)));
     exit();
   }
 
@@ -1360,23 +1377,23 @@ function uc_order_comment_save($order_id, $uid, $message, $type = 'admin', $stat
   if ($type == 'admin') {
     db_insert('uc_order_admin_comments')
       ->fields(array(
-        'order_id' => $order_id,
-        'uid' => $uid,
-        'message' => $message,
-        'created' => REQUEST_TIME,
-      ))
+      'order_id' => $order_id,
+      'uid' => $uid,
+      'message' => $message,
+      'created' => REQUEST_TIME,
+    ))
       ->execute();
   }
   elseif ($type == 'order') {
     db_insert('uc_order_comments')
       ->fields(array(
-        'order_id' => $order_id,
-        'uid' => $uid,
-        'message' => $message,
-        'order_status' => $status,
-        'notified' => $notify ? 1 : 0,
-        'created' => REQUEST_TIME,
-      ))
+      'order_id' => $order_id,
+      'uid' => $uid,
+      'message' => $message,
+      'order_status' => $status,
+      'notified' => $notify ? 1 : 0,
+      'created' => REQUEST_TIME,
+    ))
       ->execute();
   }
 }
@@ -1413,7 +1430,7 @@ function uc_order_load_line_items($order) {
       'weight' => $row->weight,
       'data' => unserialize($row->data),
     );
-    drupal_alter('uc_line_item', $item, $order);
+    backdrop_alter('uc_line_item', $item, $order);
     $items[] = $item;
   }
 
@@ -1433,7 +1450,7 @@ function uc_order_load_line_items($order) {
             'weight' => isset($line['weight']) ? $line['weight'] : $type['weight'],
             'data' => isset($line['data']) ? $line['data'] : array(),
           );
-          drupal_alter('uc_line_item', $item, $order);
+          backdrop_alter('uc_line_item', $item, $order);
           $items[] = $item;
         }
       }
@@ -1527,14 +1544,17 @@ function uc_order_update_status($order_id, $status) {
     // Otherwise perform the update and log the changes.
     db_update('uc_orders')
       ->fields(array(
-        'order_status' => $status,
-        'modified' => REQUEST_TIME,
-      ))
+      'order_status' => $status,
+      'modified' => REQUEST_TIME,
+    ))
       ->condition('order_id', $order_id)
       ->execute();
     uc_order_module_invoke('update', $order, $status);
 
-    $change = array(t('Order status') => array('old' => uc_order_status_data($order->order_status, 'title'), 'new' => uc_order_status_data($status, 'title')));
+    $change = array(t('Order status') => array(
+        'old' => uc_order_status_data($order->order_status, 'title'),
+        'new' => uc_order_status_data($status, 'title'),
+      ));
     uc_order_log_changes($order->order_id, $change);
 
     $updated = uc_order_load($order_id, TRUE);
@@ -1582,11 +1602,11 @@ function uc_order_log_changes($order_id, $changes) {
 
   db_insert('uc_order_log')
     ->fields(array(
-      'order_id' => $order_id,
-      'uid' => $user->uid,
-      'changes' => theme('item_list', array('items' => $items)),
-      'created' => REQUEST_TIME,
-    ))
+    'order_id' => $order_id,
+    'uid' => $user->uid,
+    'changes' => theme('item_list', array('items' => $items)),
+    'created' => REQUEST_TIME,
+  ))
     ->execute();
 
   return TRUE;
@@ -1614,8 +1634,8 @@ function uc_order_address($order, $type) {
     $order->{$type . '_country'}
   );
 
-  if (variable_get('uc_order_capitalize_addresses', TRUE)) {
-    $address = drupal_strtoupper($address);
+  if (config_get('uc_order.settings', 'uc_order_capitalize_addresses')) {
+    $address = backdrop_strtoupper($address);
   }
 
   return $address;
@@ -1788,7 +1808,7 @@ function template_preprocess_uc_order(&$variables) {
     if (!empty($product->data['attributes'])) {
       $attributes = array();
       foreach ($product->data['attributes'] as $attribute => $option) {
-        $attributes[] = t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option)));
+        $attributes[] = t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array) $option)));
       }
       $product->details .= theme('item_list', array('items' => $attributes));
     }
@@ -1806,7 +1826,7 @@ function template_preprocess_uc_order(&$variables) {
 
   $replacements = array();
   foreach (array('site', 'store', 'uc_order') as $type) {
-    $replacements[$type] = token_generate($type, drupal_map_assoc(array_keys($token_info['tokens'][$type])), $types);
+    $replacements[$type] = token_generate($type, backdrop_map_assoc(array_keys($token_info['tokens'][$type])), $types);
   }
 
   foreach ($replacements as $type => $tokens) {
@@ -1830,17 +1850,18 @@ function template_preprocess_uc_order(&$variables) {
  * @see uc_order-invoice-page.tpl.php
  */
 function template_preprocess_uc_order_invoice_page(&$variables) {
+  $config = config('uc_order.settings');
   // Construct page title.
-  if (drupal_get_title()) {
+  if (backdrop_get_title()) {
     $head_title = array(
-      'title' => strip_tags(drupal_get_title()),
-      'name' => variable_get('site_name', 'Drupal'),
+      'title' => strip_tags(backdrop_get_title()),
+      'name' => config_get('system.performance', 'site_name'),
     );
   }
   else {
-    $head_title = array('name' => variable_get('site_name', 'Drupal'));
-    if (variable_get('site_slogan', '')) {
-      $head_title['slogan'] = variable_get('site_slogan', '');
+    $head_title = array('name' => config_get('system.performance', 'site_name'));
+    if (config_get('system.performance', 'site_slogan')) {
+      $head_title['slogan'] = config_get('system.performance', 'site_slogan');
     }
   }
 
@@ -1848,9 +1869,9 @@ function template_preprocess_uc_order_invoice_page(&$variables) {
   if (theme_get_setting('toggle_favicon')) {
     $favicon = theme_get_setting('favicon');
     $type = theme_get_setting('favicon_mimetype');
-    drupal_add_html_head_link(array('rel' => 'shortcut icon', 'href' => drupal_strip_dangerous_protocols($favicon), 'type' => $type));
+    backdrop_add_html_head_link(array('rel' => 'shortcut icon', 'href' => backdrop_strip_dangerous_protocols($favicon), 'type' => $type));
   }
-  $variables['head'] = drupal_get_html_head();
+  $variables['head'] = backdrop_get_html_head();
 
   // Set the default language if necessary.
   $language = isset($GLOBALS['language']) ? $GLOBALS['language'] : language_default();
@@ -1865,7 +1886,7 @@ function template_preprocess_uc_order_invoice_page(&$variables) {
  * Returns an array of invoice templates found in ubercart/uc_order/templates.
  */
 function uc_invoice_template_list() {
-  $templates = drupal_map_assoc(module_invoke_all('uc_invoice_templates'));
+  $templates = backdrop_map_assoc(module_invoke_all('uc_invoice_templates'));
 
   // Sort the template names alphabetically.
   sort($templates);
@@ -1877,7 +1898,7 @@ function uc_invoice_template_list() {
  * Returns a list of options for a template select box.
  */
 function uc_order_template_options($custom = FALSE) {
-  $templates = drupal_map_assoc(uc_invoice_template_list());
+  $templates = backdrop_map_assoc(uc_invoice_template_list());
 
   if ($custom) {
     $templates[0] = t('Custom template');
@@ -1959,6 +1980,7 @@ function uc_order_state_default($state_id) {
   }
 
   // Attempt to get the default state from the form.
+  // TODO This variable was probably removed in Backdrop without replacement.
   $default[$state_id] = variable_get('uc_state_' . $state_id . '_default', NULL);
 
   // If it is not found, pick the lightest status for this state.
@@ -2085,7 +2107,7 @@ function uc_order_actions($order, $icon_html = FALSE) {
     $actions[] = array(
       'name' => t('View'),
       'url' => 'admin/store/orders/' . $order->order_id,
-      'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/order_view.gif', 'alt' => $alt)),
+      'icon' => theme('image', array('path' => backdrop_get_path('module', 'uc_store') . '/images/order_view.gif', 'alt' => $alt)),
       'title' => $alt,
     );
 
@@ -2093,7 +2115,7 @@ function uc_order_actions($order, $icon_html = FALSE) {
     $actions[] = array(
       'name' => t('Print'),
       'url' => 'admin/store/orders/' . $order->order_id . '/invoice/print',
-      'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/print.gif', 'alt' => $alt)),
+      'icon' => theme('image', array('path' => backdrop_get_path('module', 'uc_store') . '/images/print.gif', 'alt' => $alt)),
       'title' => $alt,
     );
   }
@@ -2102,7 +2124,7 @@ function uc_order_actions($order, $icon_html = FALSE) {
     $actions[] = array(
       'name' => t('View'),
       'url' => 'user/' . $user->uid . '/orders/' . $order->order_id,
-      'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/order_view.gif', 'alt' => $alt)),
+      'icon' => theme('image', array('path' => backdrop_get_path('module', 'uc_store') . '/images/order_view.gif', 'alt' => $alt)),
       'title' => $alt,
     );
 
@@ -2111,7 +2133,7 @@ function uc_order_actions($order, $icon_html = FALSE) {
       $actions[] = array(
         'name' => t('Print'),
         'url' => 'user/' . $user->uid . '/orders/' . $order->order_id . '/print',
-        'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/print.gif', 'alt' => $alt)),
+        'icon' => theme('image', array('path' => backdrop_get_path('module', 'uc_store') . '/images/print.gif', 'alt' => $alt)),
         'title' => $alt,
       );
     }
@@ -2122,7 +2144,7 @@ function uc_order_actions($order, $icon_html = FALSE) {
     $actions[] = array(
       'name' => t('Edit'),
       'url' => 'admin/store/orders/' . $order->order_id . '/edit',
-      'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/order_edit.gif', 'alt' => $alt)),
+      'icon' => theme('image', array('path' => backdrop_get_path('module', 'uc_store') . '/images/order_edit.gif', 'alt' => $alt)),
       'title' => $alt,
     );
   }
@@ -2132,7 +2154,7 @@ function uc_order_actions($order, $icon_html = FALSE) {
     $actions[] = array(
       'name' => t('Delete'),
       'url' => 'admin/store/orders/' . $order->order_id . '/delete',
-      'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/order_delete.gif', 'alt' => $alt)),
+      'icon' => theme('image', array('path' => backdrop_get_path('module', 'uc_store') . '/images/order_delete.gif', 'alt' => $alt)),
       'title' => $alt,
     );
   }
@@ -2141,7 +2163,7 @@ function uc_order_actions($order, $icon_html = FALSE) {
   if (count($extra)) {
     $actions = array_merge($actions, $extra);
   }
-  drupal_alter('uc_order_actions', $actions, $order);
+  backdrop_alter('uc_order_actions', $actions, $order);
 
   if ($icon_html) {
     $output = '';
@@ -2407,6 +2429,7 @@ function uc_order_action_print($orders, $context = array()) {
 
   foreach ($orders as $order) {
     $output .= '<div style="page-break-after: always;">';
+    // TODO This variable was probably removed in Backdrop without replacement.
     $output .= theme('uc_order', array(
       'order' => $order,
       'op' => 'print',
@@ -2427,4 +2450,35 @@ function uc_order_action_print($orders, $context = array()) {
  */
 function uc_order_action_delete($order) {
   uc_order_delete($order->order_id);
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function uc_order_autoload_info() {
+  return array(
+    'UcOrderController' => 'uc_order.controller.inc',
+    'UcOrderProductController' => 'uc_order.controller.inc',
+    'UcOrderProductMetadataController' => 'uc_order.info.inc',
+    'UcOrder' => 'uc_order.module',
+    'uc_order_handler_field_money_amount' => 'views/uc_order_handler_field_money_amount.inc',
+    'uc_order_handler_field_money_total' => 'views/uc_order_handler_field_money_total.inc',
+    'uc_order_handler_field_order_actions' => 'views/uc_order_handler_field_order_actions.inc',
+    'uc_order_handler_field_order_cc_data' => 'views/uc_order_handler_field_order_cc_data.inc',
+    'uc_order_handler_field_order_cost' => 'views/uc_order_handler_field_order_cost.inc',
+    'uc_order_handler_field_order_fullname' => 'views/uc_order_handler_field_order_fullname.inc',
+    'uc_order_handler_field_order_id' => 'views/uc_order_handler_field_order_id.inc',
+    'uc_order_handler_field_order_status' => 'views/uc_order_handler_field_order_status.inc',
+    'uc_order_handler_field_order_weight_total' => 'views/uc_order_handler_field_order_weight_total.inc',
+    'uc_order_handler_field_payment_method' => 'views/uc_order_handler_field_payment_method.inc',
+    'uc_order_handler_field_weight_total' => 'views/uc_order_handler_field_weight_total.inc',
+    'uc_order_handler_filter_country' => 'views/uc_order_handler_filter_country.inc',
+    'uc_order_handler_filter_order_status' => 'views/uc_order_handler_filter_order_status.inc',
+    'uc_order_handler_filter_payment_method' => 'views/uc_order_handler_filter_payment_method.inc',
+    'uc_order_handler_filter_total' => 'views/uc_order_handler_filter_total.inc',
+    'uc_order_handler_filter_zone' => 'views/uc_order_handler_filter_zone.inc',
+    'uc_order_handler_sort_total' => 'views/uc_order_handler_sort_total.inc',
+    'uc_order_plugin_argument_validate_user_perm' => 'views/uc_order_plugin_argument_validate_user_perm.inc',
+    'uc_order_plugin_row_invoice' => 'views/uc_order_plugin_row_invoice.inc',
+  );
 }

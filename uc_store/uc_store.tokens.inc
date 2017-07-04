@@ -70,6 +70,7 @@ function uc_store_token_info() {
  * Implements hook_tokens().
  */
 function uc_store_tokens($type, $tokens, $data = array(), $options = array()) {
+  $config = config('uc_store.settings');
   $replacements = array();
 
   if ($type == 'site') {
@@ -103,7 +104,7 @@ function uc_store_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'owner':
-          $replacements[$original] = variable_get('uc_store_owner', '');
+          $replacements[$original] = $config->get('uc_store_owner');
           break;
 
         case 'email':
@@ -111,11 +112,11 @@ function uc_store_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'phone':
-          $replacements[$original] = variable_get('uc_store_phone', '');
+          $replacements[$original] = $config->get('uc_store_phone');
           break;
 
         case 'fax':
-          $replacements[$original] = variable_get('uc_store_fax', '');
+          $replacements[$original] = $config->get('uc_store_fax');
           break;
 
         case 'address':
@@ -123,14 +124,14 @@ function uc_store_tokens($type, $tokens, $data = array(), $options = array()) {
           break;
 
         case 'help-url':
-          $replacements[$original] = url(variable_get('uc_store_help_page', ''), array('absolute' => TRUE));
+          $replacements[$original] = url($config->get('uc_store_help_page'), array('absolute' => TRUE));
           break;
       }
     }
 
     // Handle chaining for tokens that have 'type' defined in hook_token_info()
     if ($link_tokens = token_find_with_prefix($tokens, 'help-url')) {
-      $replacements += token_generate('url', $link_tokens, array('path' => variable_get('uc_store_help_page', '')), $options);
+      $replacements += token_generate('url', $link_tokens, array('path' => $config->get('uc_store_help_page')), $options);
     }
   }
 

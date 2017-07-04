@@ -91,7 +91,6 @@ function uc_file_schema() {
         'not null' => FALSE,
         'default' => -1, // UC_FILE_LIMIT_SENTINEL
       ),
-
       'time_granularity' => array(
         'description' => 'The units of time for time_quantity. -1 indicates the store default will be used.',
         'type' => 'varchar',
@@ -242,45 +241,50 @@ function uc_file_update_last_removed() {
   return 6006;
 }
 
-/**
- * Change 'uc_file_file_mask' variable to a preg regular expression.
- */
-function uc_file_update_7000() {
-  $mask = '/' . variable_get('uc_file_file_mask', '.*') . '/';
-  variable_set('uc_file_file_mask', $mask);
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_file_update_7000() { }
 
-  return t("Variable 'uc_file_file_mask' changed to @mask.", array('@mask' => $mask));
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_file_update_7001() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_file_update_7002() { }
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function uc_file_update_7003() { }
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function uc_file_update_last_removed() {
+  return 7003;
 }
 
 /**
- * Increase the length of {uc_file_users}.file_key.
+ * Implements hook_update_N().
  */
-function uc_file_update_7001() {
-  db_change_field('uc_file_users', 'file_key', 'file_key', array(
-    'type' => 'varchar',
-    'length' => 64,
-    'not null' => TRUE,
-    'default' => '',
-  ));
+function uc_file_update_1000() {
+  $config = config('uc_file .settings');
+  $config->set('uc_file_base_dir', update_variable_get('uc_file_base_dir', 'NULL'));
+  $config->set('uc_file_file_mask', update_variable_get('uc_file_file_mask', 'dynamic value in file /ubercart/uc_file/uc_file.module line 1160'));
+  $config->set('uc_file_download_limit_number', update_variable_get('uc_file_download_limit_number', 'NULL'));
+  $config->set('uc_file_download_limit_addresses', update_variable_get('uc_file_download_limit_addresses', 'NULL'));
+  $config->set('uc_file_download_limit_duration_qty', update_variable_get('uc_file_download_limit_duration_qty', 'NULL'));
+  $config->set('uc_file_download_limit_duration_granularity', update_variable_get('uc_file_download_limit_duration_granularity', 'never'));
+  $config->set('uc_file_duplicate_warning', update_variable_get('uc_file_duplicate_warning', 'TRUE'));
+  update_variable_del('uc_file_base_dir');
+  update_variable_del('uc_file_file_mask');
+  update_variable_del('uc_file_download_limit_number');
+  update_variable_del('uc_file_download_limit_addresses');
+  update_variable_del('uc_file_download_limit_duration_qty');
+  update_variable_del('uc_file_download_limit_duration_granularity');
+  update_variable_del('uc_file_duplicate_warning');
 }
 
 /**
- * Add a index on filename since we query on it fairly frequently.
+ * Implements hook_install().
  */
-function uc_file_update_7002() {
-  // Index may have been added by uc_file_update_6007() in 6.x-2.x.
-  if (!db_index_exists('uc_files', 'filename')) {
-    db_add_index('uc_files', 'filename', array('filename'));
-  }
-}
-
-/**
- * Change index on uc_file_users.fid to be over fid and uid.
- */
-function uc_file_update_7003() {
-  // Index may have been changed in 6.x-2.x.
-  if (!db_index_exists('uc_file_users', 'fid_uid')) {
-    db_add_index('uc_file_users', 'fid_uid', array('fid', 'uid'));
-    db_drop_index('uc_file_users', 'fid');
-  }
+function uc_file_install() {
+  // Dynamically generated variable data was detected.
+  // /ubercart/uc_file/uc_file.module line 1160
 }
