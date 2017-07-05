@@ -7,7 +7,7 @@
 /**
  * Controller class for uc_order entity.
  */
-class UcOrderController extends BackdropDefaultEntityController {
+class UcOrderController extends EntityDatabaseStorageController {
 
   function attachLoad(&$orders, $revision_id = FALSE) {
     foreach ($orders as &$order) {
@@ -62,10 +62,10 @@ class UcOrderController extends BackdropDefaultEntityController {
 /**
  * Controller class for the uc_order_product entity.
  */
-class UcOrderProductController extends EntityAPIController {
+class UcOrderProductController extends EntityDatabaseStorageController {
 
   /**
-   * Overrides EntityAPIController::buildContent().
+   * Overrides EntityDatabaseStorageController::buildContent().
    */
   public function buildContent($product, $view_mode = 'full', $langcode = NULL, $content = array()) {
     $content['qty'] = array(
@@ -109,7 +109,7 @@ class UcOrderProductController extends EntityAPIController {
   /**
    * Overrides EntityAPIController::save().
    */
-  public function save($product, DatabaseTransaction $transaction = NULL) {
+  public function save(EntityInterface $product) {
     // Product kits, particularly, shouldn't actually be added to an order,
     // but instead they cause other products to be added.
     if (isset($product->skip_save) && $product->skip_save == TRUE) {

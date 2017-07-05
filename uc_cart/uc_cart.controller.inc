@@ -4,10 +4,10 @@
  *
  * Contains the controller for uc_cart_item entities.
  */
-class UcCartItemController extends EntityAPIController {
+class UcCartItemController extends EntityDatabaseStorageController {
 
   /**
-   * Overrides EntityAPIController::attachLoad().
+   * Overrides EntityDatabaseStorageController::attachLoad().
    */
   public function attachLoad(&$items, $revision_id = FALSE) {
     foreach ($items as &$item) {
@@ -26,7 +26,8 @@ class UcCartItemController extends EntityAPIController {
    *
    * Cart items are deleted if saved with a quantity of zero.
    */
-  public function save($item, DatabaseTransaction $transaction = NULL) {
+  public function save(EntityInterface $item) {
+    $transaction = NULL;
     if ($item->qty < 1) {
       if (isset($item->cart_item_id)) {
         parent::delete(array($item->cart_item_id), $transaction);
