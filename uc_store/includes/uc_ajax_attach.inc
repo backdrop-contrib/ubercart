@@ -74,8 +74,7 @@ function uc_ajax_process_form($form, &$form_state) {
   if (isset($form['#form_id'])) {
     switch ($form['#form_id']) {
       case 'uc_cart_checkout_form':
-        // TODO This variable was probably removed in Backdrop without replacement.
-        $config = variable_get('uc_ajax_checkout', _uc_ajax_defaults('checkout'));
+        $config = config_get('uc_store.settings', 'uc_ajax_checkout');
         foreach ($config as $key => $panes) {
           foreach (array_keys($panes) as $pane) {
             $config[$key][$pane] = 'uc_ajax_replace_checkout_pane';

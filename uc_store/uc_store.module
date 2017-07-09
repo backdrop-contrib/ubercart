@@ -255,10 +255,8 @@ function uc_store_element_info() {
     '#hidden' => FALSE,
   );
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $sign_flag = variable_get('uc_sign_after_amount', FALSE);
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $currency_sign = variable_get('uc_currency_sign', '$');
+  $sign_flag = config_get('uc_store.settings', 'uc_sign_after_amount');
+  $currency_sign = config_get('uc_store.settings', 'uc_currency_sign');
 
   $types['uc_price'] = array(
     '#input' => TRUE,
@@ -610,8 +608,7 @@ function uc_store_date_format_types() {
  * Implements hook_page_alter().
  */
 function uc_store_page_alter(&$page) {
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $id = variable_get('uc_footer_message', 0);
+  $id = config_get('uc_store.settings', 'uc_footer_message');
 
   // Exit if the store footer is turned off.
   if ($id === 'none') {
@@ -862,21 +859,16 @@ function uc_currency_format($value, $sign = NULL, $thou = NULL, $dec = NULL) {
 
   $output = '';
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $sign_after = variable_get('uc_sign_after_amount', FALSE);
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $prec = variable_get('uc_currency_prec', 2);
+  $sign_after = config_get('uc_store.settings', 'uc_sign_after_amount');
+  $prec = config_get('uc_store.settings', 'uc_currency_prec');
   if (is_null($sign)) {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $sign = variable_get('uc_currency_sign', '$');
+    $sign = config_get('uc_store.settings', 'uc_currency_sign');
   }
   if (is_null($thou)) {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $thou = variable_get('uc_currency_thou', ',');
+    $thou = config_get('uc_store.settings', 'uc_currency_thou');
   }
   if (is_null($dec)) {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $dec = variable_get('uc_currency_dec', '.');
+    $dec = config_get('uc_store.settings', 'uc_currency_dec');
   }
 
   // If the value is significantly less than the minimum precision, zero it.
@@ -922,19 +914,17 @@ function uc_weight_format($value, $unit = NULL) {
   $vars = array('!value' => $value);
 
   if (is_null($unit)) {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $unit = variable_get('uc_weight_unit', 'lb');
+    $unit = config_get('uc_store.settings', 'uc_weight_unit');
   }
 
   $defaults = array(
-    'lb' => '!value lb.',
-    'oz' => '!value oz.',
-    'kg' => '!valuekg',
-    'g' => '!valueg',
+    'lb' => '!value lb',
+    'oz' => '!value oz',
+    'kg' => '!value kg',
+    'g' => '!value g',
   );
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $pattern = variable_get('uc_weight_format_' . $unit, $defaults[$unit]);
+  $pattern = config_get('uc_store.settings', 'uc_weight_format_' . $unit);
   if (strpos($pattern, '!value') === FALSE) {
     $pattern = $defaults[$unit];
   }
@@ -949,8 +939,7 @@ function uc_weight_format($value, $unit = NULL) {
  */
 function uc_weight_conversion($from_units, $to_units = NULL) {
   if (is_null($to_units)) {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $to_units = variable_get('uc_weight_unit', 'lb');
+    $to_units = config_get('uc_store.settings', 'uc_weight_unit');
   }
   $constant = strtoupper($from_units) . '_TO_' . strtoupper($to_units);
   if (defined($constant) && ($conversion = constant($constant)) > 0) {
@@ -977,8 +966,7 @@ function uc_length_format($value, $unit = NULL) {
   $vars = array('!value' => $value);
 
   if (is_null($unit)) {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $unit = variable_get('uc_length_unit', 'in');
+    $unit = config_get('uc_store.settings', 'uc_length_unit');
   }
 
   $defaults = array(
@@ -988,8 +976,7 @@ function uc_length_format($value, $unit = NULL) {
     'mm' => '!valuemm',
   );
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $pattern = variable_get('uc_length_format_' . $unit, $defaults[$unit]);
+  $pattern = config_get('uc_store.settings', 'uc_length_format_' . $unit);
   if (strpos($pattern, '!value') === FALSE) {
     $pattern = $defaults[$unit];
   }
@@ -1004,8 +991,7 @@ function uc_length_format($value, $unit = NULL) {
  */
 function uc_length_conversion($from_units, $to_units = NULL) {
   if (is_null($to_units)) {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $to_units = variable_get('uc_length_unit', 'in');
+    $to_units = config_get('uc_store.settings', 'uc_length_unit');
   }
   $constant = strtoupper($from_units) . '_TO_' . strtoupper($to_units);
   if (defined($constant) && ($conversion = constant($constant)) > 0) {
@@ -1038,8 +1024,7 @@ function uc_date_format($month, $day, $year) {
  * Saves the address format for a country.
  */
 function uc_set_address_format($country_id, $format) {
-  // TODO This variable was probably removed in Backdrop without replacement.
-  variable_set('uc_address_format_' . intval($country_id), $format);
+  config_set('uc_store.settings', 'uc_address_format_' . intval($country_id), $format);
 }
 
 /**
@@ -1089,8 +1074,7 @@ function uc_address_format($first_name, $last_name, $company, $street1, $street2
     $variables['!country_code3_if'] = '';
   }
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $format = variable_get('uc_address_format_' . $country, '');
+  $format = config_get('uc_store.settings', 'uc_address_format_' . $country);
   if (empty($format)) {
     $format = "!company\r\n!first_name !last_name\r\n!street1\r\n!street2\r\n!city, !zone_code !postal_code\r\n!country_name_if";
   }
@@ -1185,16 +1169,14 @@ function uc_get_field_name($field) {
     return '';
   }
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  return variable_get('uc_field_' . $field, $fields[$field]);
+  return config_get('uc_store.settings', 'uc_field_' . $field);
 }
 
 /**
  * Returns TRUE if the address field is enabled.
  */
 function uc_address_field_enabled($field = NULL) {
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $fields = variable_get('uc_address_fields', backdrop_map_assoc(array('first_name', 'last_name', 'phone', 'company', 'street1', 'street2', 'city', 'zone', 'postal_code', 'country')));
+  $fields = config_get('uc_store.settings', 'uc_address_fields');
 
   return $field ? isset($fields[$field]) : $fields;
 }
@@ -1203,8 +1185,7 @@ function uc_address_field_enabled($field = NULL) {
  * Returns TRUE if the address field is required.
  */
 function uc_address_field_required($field) {
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $fields = variable_get('uc_address_fields_required', backdrop_map_assoc(array('first_name', 'last_name', 'street1', 'city', 'zone', 'postal_code', 'country')));
+  $fields = config_get('uc_store.settings', 'uc_address_fields_required');
 
   return isset($fields[$field]);
 }
@@ -1213,8 +1194,7 @@ function uc_address_field_required($field) {
  * Returns the weights of address fields.
  */
 function uc_store_address_field_weights() {
-  // TODO This variable was probably removed in Backdrop without replacement.
-  return variable_get('uc_address_fields_weight', array('first_name' => 0, 'last_name' => 1, 'company' => 2, 'street1' => 3, 'street2' => 4, 'city' => 5, 'zone' => 6, 'country' => 7, 'postal_code' => 8, 'phone' => 9));
+  return config_get('uc_store.settings', 'uc_address_fields_weight');
 }
 
 /**
@@ -1859,8 +1839,7 @@ function uc_store_mail_recipient_language($address) {
  */
 function uc_store_format_price_field_value($price) {
   $exact = rtrim(number_format($price, 6, '.', ''), '0');
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $round = number_format($price, variable_get('uc_currency_prec', 2), '.', '');
+  $round = number_format($price, config_get('uc_store.settings', 'uc_currency_prec'), '.', '');
 
   if ($exact == rtrim($round, '0')) {
     return $round;

@@ -146,19 +146,17 @@ function uc_store_address_fields_form($form, &$form_state) {
     'postal_code' => t('Postal code'),
     'phone' => t('Phone number'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $current = variable_get('uc_address_fields', backdrop_map_assoc(array('first_name', 'last_name', 'phone', 'company', 'street1', 'street2', 'city', 'zone', 'postal_code', 'country')));
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $required = variable_get('uc_address_fields_required', backdrop_map_assoc(array('first_name', 'last_name', 'street1', 'city', 'zone', 'postal_code', 'country')));
+  $current = config_get('uc_store.settings','uc_address_fields');
+  $required = config_get('uc_store.settings', 'uc_address_fields_required');
   $weight = uc_store_address_field_weights();
   foreach ($fields as $field => $label) {
     $form['uc_address_fields'][$field] = array(
       '#type' => 'checkbox',
-      '#default_value' => isset($current[$field]) ? TRUE : FALSE,
+      '#default_value' => $current[$field],
     );
     $form['uc_address_fields_required'][$field] = array(
       '#type' => 'checkbox',
-      '#default_value' => isset($required[$field]) ? TRUE : FALSE,
+      '#default_value' => $required[$field],
     );
     $form['uc_address_fields_weight'][$field] = array(
       '#type' => 'weight',
@@ -313,12 +311,11 @@ function uc_store_settings_form($form, &$form_state) {
     '#title' => t('Currency format'),
     '#group' => 'store',
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['currency']['uc_currency_code'] = array(
     '#type' => 'textfield',
     '#title' => t('Default currency'),
     '#description' => t('While not used directly in formatting, the currency code is used by other modules as the primary currency for your site.  Enter here your three character <a href="!url">ISO 4217</a> currency code.', array('!url' => 'http://en.wikipedia.org/wiki/ISO_4217#Active_codes')),
-    '#default_value' => variable_get('uc_currency_code', 'USD'),
+    '#default_value' => $config->get('uc_currency_code'),
     '#maxlength' => 3,
     '#size' => 5,
   );
@@ -329,24 +326,19 @@ function uc_store_settings_form($form, &$form_state) {
     '#disabled' => TRUE,
     '#size' => 10,
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $form['currency']['uc_currency_sign'] = uc_textfield(t('Currency Sign'), variable_get('uc_currency_sign', '$'), FALSE, NULL, 10, 10);
-  // TODO This variable was probably removed in Backdrop without replacement.
+  $form['currency']['uc_currency_sign'] = uc_textfield(t('Currency Sign'), $config->get('uc_currency_sign'), FALSE, NULL, 10, 10);
   $form['currency']['uc_sign_after_amount'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display currency sign after amount.'),
-    '#default_value' => variable_get('uc_sign_after_amount', FALSE),
+    '#default_value' => $config->get('uc_sign_after_amount'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $form['currency']['uc_currency_thou'] = uc_textfield(t('Thousands Marker'), variable_get('uc_currency_thou', ','), FALSE, NULL, 10, 10);
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $form['currency']['uc_currency_dec'] = uc_textfield(t('Decimal Marker'), variable_get('uc_currency_dec', '.'), FALSE, NULL, 10, 10);
-  // TODO This variable was probably removed in Backdrop without replacement.
+  $form['currency']['uc_currency_thou'] = uc_textfield(t('Thousands Marker'), $config->get('uc_currency_thou'), FALSE, NULL, 10, 10);
+  $form['currency']['uc_currency_dec'] = uc_textfield(t('Decimal Marker'), $config->get('uc_currency_dec'), FALSE, NULL, 10, 10);
   $form['currency']['uc_currency_prec'] = array(
     '#type' => 'select',
     '#title' => t('Number of decimal places'),
     '#options' => backdrop_map_assoc(array(0, 1, 2)),
-    '#default_value' => variable_get('uc_currency_prec', 2),
+    '#default_value' => $config->get('uc_currency_prec'),
   );
 
   $form['weight'] = array(
@@ -361,19 +353,17 @@ function uc_store_settings_form($form, &$form_state) {
     'kg' => t('Kilograms'),
     'g' => t('Grams'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['weight']['uc_weight_unit'] = array(
     '#type' => 'select',
     '#title' => t('Default unit of measurement'),
-    '#default_value' => variable_get('uc_weight_unit', 'lb'),
+    '#default_value' => $config->get('uc_weight_unit'),
     '#options' => $units,
   );
   foreach ($units as $unit => $name) {
-    // TODO This variable was probably removed in Backdrop without replacement.
     $form['weight']['uc_weight_format_' . $unit] = array(
       '#type' => 'textfield',
       '#title' => t('@unit format string', array('@unit' => $name)),
-      '#default_value' => variable_get('uc_weight_format_' . $unit, '!value ' . $unit),
+      '#default_value' => $config->get('uc_weight_format_' . $unit),
     );
   }
 
@@ -389,19 +379,17 @@ function uc_store_settings_form($form, &$form_state) {
     'cm' => t('Centimeters'),
     'mm' => t('Millimeters'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['length']['uc_length_unit'] = array(
     '#type' => 'select',
     '#title' => t('Default unit of measurement'),
-    '#default_value' => variable_get('uc_length_unit', 'in'),
+    '#default_value' => $config->get('uc_length_unit'),
     '#options' => $units,
   );
   foreach ($units as $unit => $name) {
-    // TODO This variable was probably removed in Backdrop without replacement.
     $form['length']['uc_length_format_' . $unit] = array(
       '#type' => 'textfield',
       '#title' => t('@unit format string', array('@unit' => $name)),
-      '#default_value' => variable_get('uc_length_format_' . $unit, '!value ' . $unit),
+      '#default_value' => $config->get('uc_length_format_' . $unit),
     );
   }
 
@@ -410,7 +398,6 @@ function uc_store_settings_form($form, &$form_state) {
     '#title' => t('Display settings'),
     '#group' => 'store',
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['display']['uc_customer_list_address'] = array(
     '#type' => 'radios',
     '#title' => t('Primary customer address'),
@@ -419,9 +406,8 @@ function uc_store_settings_form($form, &$form_state) {
       'billing' => t('Billing address'),
       'shipping' => t('Shipping address'),
     ),
-    '#default_value' => variable_get('uc_customer_list_address', 'billing'),
+    '#default_value' => $config->get('uc_customer_list_address'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['display']['uc_footer_message'] = array(
     '#type' => 'radios',
     '#title' => t('Footer message for store pages'),
@@ -430,7 +416,7 @@ function uc_store_settings_form($form, &$form_state) {
       _uc_store_footer_options(),
       array('none' => t('(Do not display a message in the footer.)'))
     ),
-    '#default_value' => variable_get('uc_footer_message', 0),
+    '#default_value' => $config->get('uc_footer_message'),
     '#weight' => 10,
   );
 

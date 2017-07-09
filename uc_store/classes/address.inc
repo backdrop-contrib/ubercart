@@ -166,8 +166,7 @@ class UcAddress {
       $variables['!country_code3_if'] = '';
     }
 
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $format = variable_get('uc_address_format_' . $this->country, '');
+    $format = config_get('uc_store.settings', 'uc_address_format_' . $this->country);
     if (empty($format)) {
       $format = "!company\r\n!first_name !last_name\r\n!street1\r\n!street2\r\n!city, !zone_code !postal_code\r\n!country_name_if";
     }

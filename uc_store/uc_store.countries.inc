@@ -165,11 +165,10 @@ function uc_country_formats_form($form, &$form_state) {
         '#title' => check_plain(t($country->country_name)),
         '#group' => 'country',
       );
-      // TODO This variable was probably removed in Backdrop without replacement.
       $form['countries']['country'][$country->country_id]['address_format'] = array(
         '#type' => 'textarea',
         '#title' => t('@country address format', array('@country' => t($country->country_name))),
-        '#default_value' => variable_get('uc_address_format_' . $country->country_id, ''),
+        '#default_value' => config_get('uc_store.settings', 'uc_address_format_' . $country->country_id),
         '#description' => t('Use the variables mentioned in the instructions to format an address for this country.'),
         '#rows' => 7,
       );
@@ -192,8 +191,7 @@ function uc_country_formats_form($form, &$form_state) {
  */
 function uc_country_formats_form_submit($form, &$form_state) {
   foreach ($form_state['values']['countries']['country'] as $country_id => $data) {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    variable_set('uc_address_format_' . $country_id, $data['address_format']);
+    config_set('uc_store.settings', 'uc_address_format_' . $country_id, $data['address_format']);
   }
   backdrop_set_message(t('Country settings saved.'));
 }
