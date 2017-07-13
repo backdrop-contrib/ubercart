@@ -231,13 +231,16 @@ function uc_product_field_formatter_view($entity_type, $entity, $field, $instanc
 
 /**
  * Implements hook_node_info().
+ * Deprecated in Backdrop. See uc_product.install.
+ * // TODO delete this function when not needed any more
+ * because it is also called directly by uc_store module to create classes.
  *
  * Creates node types for each product class and other product modules.
  */
+
 function uc_product_node_info($reset = FALSE) {
   static $types = array();
   $title_label = t('Name');
-
   if (empty($types) || $reset) {
     $types = array();
     $defaults = module_invoke_all('uc_product_default_classes');
@@ -260,6 +263,7 @@ function uc_product_node_info($reset = FALSE) {
   }
   return $types;
 }
+
 
 /**
  * Implements hook_node_type_update().
@@ -292,6 +296,7 @@ function uc_product_forms($form_id, $args) {
   $forms = array();
   if (isset($args[0]->nid) && isset($args[0]->type)) {
     $product = $args[0];
+    // TODO migrate uc_product_info()
     if (in_array($product->type, array_keys(uc_product_node_info()))) {
       $forms['uc_product_add_to_cart_form_' . $product->nid] = array('callback' => 'uc_product_add_to_cart_form');
       $forms['uc_catalog_buy_it_now_form_' . $product->nid] = array('callback' => 'uc_catalog_buy_it_now_form');
@@ -521,11 +526,11 @@ function uc_product_prepare($node) {
     'cost' => 0,
     'sell_price' => 0,
     'weight' => 0,
-    'weight_units' => variable_get('uc_weight_unit', 'lb'),
+    'weight_units' => config_get('uc_sotre.settings', 'uc_weight_unit'),
     'length' => 0,
     'width' => 0,
     'height' => 0,
-    'length_units' => variable_get('uc_length_unit', 'in'),
+    'length_units' => config_get('uc_store.settings', 'uc_length_unit'),
     'pkg_qty' => 1,
     'default_qty' => 1,
     'shippable' => config_get('uc_product.settings', 'uc_product_shippable_' . $node->type),
@@ -929,7 +934,7 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
   $form['uc_product']['uc_image'] = array(
     '#type' => 'select',
     '#title' => t('Product image field'),
-    '#default_value' => variable_get('uc_image_' . $type->type, NULL),
+    '#default_value' => config_get('uc_product.settings', 'uc_image_' . $type->type),
     '#options' => $options,
     '#description' => t('The selected field will be used on Ubercart pages to represent the products of this content type.'),
     '#weight' => -4,
@@ -1001,10 +1006,8 @@ function uc_product_field_extra_fields() {
  * is removed.
  */
 function uc_product_field_delete_instance($instance) {
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if ($instance['entity_type'] == 'node' && $instance['field_name'] == variable_get('uc_image_' . $instance['bundle'], NULL)) {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    variable_del('uc_image_' . $instance['bundle']);
+  if ($instance['entity_type'] == 'node' && $instance['field_name'] == config_get('uc_product.settings', 'uc_image_' . $instance['bundle'])) {
+    config_clear('uc_product', 'uc_image_' . $instance['bundle']);
   }
 }
 
@@ -1012,6 +1015,7 @@ function uc_product_field_delete_instance($instance) {
  * Implements hook_uc_product_types().
  */
 function uc_product_uc_product_types() {
+  // TODO migrate uc_product_node_info()
   return array_keys(uc_product_node_info());
 }
 
@@ -1024,8 +1028,7 @@ function uc_product_uc_product_types() {
  */
 function uc_product_uc_store_status() {
   // Check for filefields on products.
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if ($field = variable_get('uc_image_product', '')) {
+  if ($field = config_get('uc_product.settings', 'uc_image_product')) {
     $instances = field_info_instances('node', 'product');
     $field_check = (bool) count($instances[$field]);
   }
@@ -1151,6 +1154,15 @@ function uc_product_uc_add_to_cart_data($form_values) {
 function uc_product_uc_product_class($pcid, $op) {
   switch ($op) {
     case 'insert':
+
+      $type = new \stdClass;
+      $type->type = $pcid;
+      $type->base = 'uc_product';
+      $type->module = 'uc_product';
+      // TODO: need a 'custom' parametre??
+      node_type_save($type);
+
+      /*
       db_update('node_type')
         ->fields(array(
         'base' => 'uc_product',
@@ -1158,12 +1170,12 @@ function uc_product_uc_product_class($pcid, $op) {
       ))
         ->condition('type', $pcid)
         ->execute();
+        */
+
       $result = db_query("SELECT n.vid, n.nid FROM {node} n LEFT JOIN {uc_products} p ON n.vid = p.vid WHERE n.type = :pcid AND p.vid IS NULL", array(':pcid' => $pcid));
       foreach ($result as $node) {
-        // TODO This variable was probably removed in Backdrop without replacement.
-        $node->weight_units = variable_get('uc_weight_unit', 'lb');
-        // TODO This variable was probably removed in Backdrop without replacement.
-        $node->length_units = variable_get('uc_length_unit', 'in');
+        $node->weight_units = config_get('uc_store.settings', 'uc_weight_unit');
+        $node->length_units = config_get('uc_store.settings', 'uc_length_unit');
         $node->pkg_qty = 1;
         $node->default_qty = 1;
         $node->shippable = 1;
@@ -1224,8 +1236,7 @@ function uc_catalog_buy_it_now_form_validate($form, &$form_state) {
  * @see uc_catalog_buy_it_now_form_validate()
  */
 function uc_catalog_buy_it_now_form_submit($form, &$form_state) {
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $form_state['redirect'] = uc_cart_add_item($form_state['values']['nid'], 1,    module_invoke_all('uc_add_to_cart_data', $form_state['values']), NULL, variable_get('uc_cart_add_item_msg', TRUE));
+  $form_state['redirect'] = uc_cart_add_item($form_state['values']['nid'], 1,    module_invoke_all('uc_add_to_cart_data', $form_state['values']), NULL, config_get('uc_cart.settings', 'uc_cart_add_item_msg'));
 }
 
 /**
@@ -1297,8 +1308,7 @@ function uc_product_add_to_cart_form_validate($form, &$form_state) {
  * @see uc_product_add_to_cart_form()
  */
 function uc_product_add_to_cart_form_submit($form, &$form_state) {
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $form_state['redirect'] = uc_cart_add_item($form_state['values']['nid'], $form_state['values']['qty'],    module_invoke_all('uc_add_to_cart_data', $form_state['values']), NULL, variable_get('uc_cart_add_item_msg', TRUE));
+  $form_state['redirect'] = uc_cart_add_item($form_state['values']['nid'], $form_state['values']['qty'],    module_invoke_all('uc_add_to_cart_data', $form_state['values']), NULL, config_get('uc_cart.settings', 'uc_cart_add_item_msg'));
 }
 
 /**
@@ -1443,8 +1453,7 @@ function uc_product_get_picture($nid, $style = 'uc_product') {
   if (!$product) {
     return array();
   }
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $field_name = variable_get('uc_image_' . $product->type, 'uc_product_image');
+  $field_name = config_get('uc_product.settings', 'uc_image_' . $product->type);
   $output = array();
 
   if ($field_name && isset($product->$field_name)) {
@@ -1794,8 +1803,7 @@ function uc_product_add_default_image_field($type = NULL) {
   foreach ($types as $type) {
     $new_instance['bundle'] = $type;
 
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $field_name = variable_get('uc_image_' . $type, '');
+    $field_name = config_get('uc_product.settings', 'uc_image_' . $type);
     if (empty($field_name)) {
       $field_name = 'uc_product_image';
     }
@@ -1806,8 +1814,7 @@ function uc_product_add_default_image_field($type = NULL) {
     // Only add the instance if it doesn't exist. Don't overwrite any changes.
     if (!$instance) {
       field_create_instance($new_instance);
-      // TODO This variable was probably removed in Backdrop without replacement.
-      variable_set('uc_image_' . $type, $field_name);
+      config_set('uc_product.settings', 'uc_image_' . $type, $field_name);
     }
   }
 }
