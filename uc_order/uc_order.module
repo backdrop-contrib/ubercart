@@ -74,12 +74,9 @@ class UcOrder {
     }
 
     $this->order_status = uc_order_state_default($state);
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $this->currency = variable_get('uc_currency_code', 'USD');
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $this->billing_country = variable_get('uc_store_country', 840);
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $this->delivery_country = variable_get('uc_store_country', 840);
+    $this->currency = config_get('uc_store.settings', 'uc_currency_code');
+    $this->billing_country = config_get('uc_store.settings', 'uc_store_country');
+    $this->delivery_country = config_get('uc_store.settings', 'uc_store_country');
     $this->created = REQUEST_TIME;
     $this->modified = REQUEST_TIME;
   }
@@ -635,8 +632,7 @@ function uc_order_mail($key, &$message, $params) {
       $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
       $message['subject'] = t('Your Order Invoice', array(), array('langcode' => $langcode));
       $message['from'] = uc_store_email_from();
-      // TODO This variable was probably removed in Backdrop without replacement.
-      $message['body'][] = theme('uc_order', array('order' => $params['order'], 'op' => 'admin-mail', 'template' => variable_get('uc_cust_order_invoice_template', 'customer')));
+      $message['body'][] = theme('uc_order', array('order' => $params['order'], 'op' => 'admin-mail', 'template' => config_get('uc_order.settings', 'uc_cust_order_invoice_template',));
       break;
 
       // Setup a custom e-mail defined by an action on a predicate.
@@ -995,12 +991,10 @@ function uc_order_save($order) {
     $order->order_total = uc_order_get_total($order);
     $order->product_count = uc_order_get_product_count($order);
     if (is_null($order->delivery_country) || $order->delivery_country == 0) {
-      // TODO This variable was probably removed in Backdrop without replacement.
-      $order->delivery_country = variable_get('uc_store_country', 840);
+      $order->delivery_country = config_get('uc_store.settings', 'uc_store_country');
     }
     if (is_null($order->billing_country) || $order->billing_country == 0) {
-      // TODO This variable was probably removed in Backdrop without replacement.
-      $order->billing_country = variable_get('uc_store_country', 840);
+      $order->billing_country = config_get('uc_store.settings', 'uc_store_country');
     }
     $order->host = ip_address();
     $order->modified = REQUEST_TIME;
@@ -1303,12 +1297,11 @@ function uc_order_view($order, $view_mode = 'full') {
  * Displays an order invoice.
  */
 function uc_order_view_invoice($order, $print = FALSE) {
-  // TODO This variable was probably removed in Backdrop without replacement.
   $build = array(
     '#theme' => 'uc_order',
     '#order' => $order,
     '#op' => $print ? 'print' : 'view',
-    '#template' => variable_get('uc_cust_order_invoice_template', 'customer'),
+    '#template' => config_get('uc_order.settings', 'uc_cust_order_invoice_template'),
   );
 
   if ($print) {
@@ -1980,8 +1973,7 @@ function uc_order_state_default($state_id) {
   }
 
   // Attempt to get the default state from the form.
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $default[$state_id] = variable_get('uc_state_' . $state_id . '_default', NULL);
+  $default[$state_id] = config_get('uc_order.settings', 'uc_state_' . $state_id . '_default');
 
   // If it is not found, pick the lightest status for this state.
   if (empty($default[$state_id])) {
@@ -2429,11 +2421,10 @@ function uc_order_action_print($orders, $context = array()) {
 
   foreach ($orders as $order) {
     $output .= '<div style="page-break-after: always;">';
-    // TODO This variable was probably removed in Backdrop without replacement.
     $output .= theme('uc_order', array(
       'order' => $order,
       'op' => 'print',
-      'template' => variable_get('uc_cust_order_invoice_template', 'customer'),
+      'template' => config_get('uc_order.settings', 'uc_cust_order_invoice_template'),
     ));
     $output .= '</div>';
   }

@@ -749,12 +749,11 @@ function template_preprocess_uc_order_view_row_invoice(&$vars) {
   }
   $order = uc_order_load($order_id);
 
-  // TODO This variable was probably removed in Backdrop without replacement.
   $build = array(
     '#theme' => 'uc_order',
     '#order' => $order,
     '#op' => 'view',
-    '#template' => variable_get('uc_cust_order_invoice_template', 'customer'),
+    '#template' => config_get('uc_order.settings', 'uc_cust_order_invoice_template'),
   );
 
   $vars['invoice'] = theme('uc_order_invoice_page', array('content' => backdrop_render($build)));

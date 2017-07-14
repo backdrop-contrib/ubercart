@@ -12,8 +12,7 @@ class uc_order_handler_field_order_weight_total extends uc_product_handler_field
 
   function option_definition() {
     $options = parent::option_definition();
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $options['weight_units'] = array('default' => variable_get('uc_weight_unit', 'lb'));
+    $options['weight_units'] = array('default' => config_get('uc_store.settings', 'uc_weight_unit'));
     return $options;
   }
 
