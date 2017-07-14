@@ -70,13 +70,11 @@ function uc_cart_checkout() {
   global $user;
 
   $items = uc_cart_get_contents();
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if (count($items) == 0 || !variable_get('uc_checkout_enabled', TRUE)) {
+  if (count($items) == 0 || !config_get('uc_cart.settings', 'uc_checkout_enabled')) {
     backdrop_goto('cart');
   }
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if (($min = variable_get('uc_minimum_subtotal', 0)) > 0) {
+  if (($min = config_get('uc_cart.settings', 'uc_minimum_subtotal')) > 0) {
     $subtotal = 0;
     if (is_array($items) && count($items) > 0) {
       foreach ($items as $item) {
@@ -94,8 +92,7 @@ function uc_cart_checkout() {
   }
 
   // Send anonymous users to login page when anonymous checkout is disabled.
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if (!$user->uid && !variable_get('uc_checkout_anonymous', TRUE)) {
+  if (!$user->uid && !config_get('uc_cart.settings', 'uc_checkout_anonymous')) {
     backdrop_set_message(t('You must login before you can proceed to checkout.'));
     if (config_get('system.performance', 'user_register') != 0) {
       backdrop_set_message(t('If you do not have an account yet, you should <a href="!url">register now</a>.', array('!url' => url('user/register', array('query' => backdrop_get_destination())))));
@@ -194,6 +191,7 @@ function uc_cart_checkout() {
  * @ingroup forms
  */
 function uc_cart_checkout_form($form, &$form_state, $order) {
+  $config = config('uc_cart.settings');
 
   if ($processed = isset($form_state['storage']['order'])) {
     $order = $form_state['storage']['order'];
@@ -207,8 +205,7 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
   $form['#attached']['js'][] = backdrop_get_path('module', 'uc_cart') . '/uc_cart.js';
   $form['#attached']['css'][] = backdrop_get_path('module', 'uc_cart') . '/uc_cart.css';
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if ($instructions = variable_get('uc_checkout_instructions', '')) {
+  if ($instructions = config_get('uc_cart.settings', 'uc_checkout_instructions')) {
     $form['instructions'] = array(
       '#prefix' => '<div id="checkout-instructions">',
       '#markup' => filter_xss_admin($instructions),
@@ -259,14 +256,12 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
       // Add the pane if any display data is returned from the callback.
       if (is_array($return) && (!empty($return['description']) || !empty($return['contents']))) {
         // Create the fieldset for the pane.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
         $form['panes'][$id] = array(
           '#type' => 'fieldset',
           '#title' => check_plain($pane['title']),
           '#description' => !empty($return['description']) ? $return['description'] : '',
-          '#collapsible' => $pane['collapsible'] && variable_get('uc_use_next_buttons', FALSE),
-          '#collapsed' => variable_get('uc_use_next_buttons', FALSE) ? $collapsed : FALSE,
+          '#collapsible' => $pane['collapsible'] && $config->get('uc_use_next_buttons'),
+          '#collapsed' => $config->get('uc_use_next_buttons') ? $collapsed : FALSE,
           '#id' => $id . '-pane',
           '#theme' => isset($return['theme']) ? $return['theme'] : NULL,
         );
@@ -277,11 +272,9 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
         }
 
         // Add the 'Next' button if necessary.
-        // TODO This variable was probably removed in Backdrop without replacement.
         if ((!isset($return['next-button']) || $return['next-button'] !== FALSE) && $pane['next'] !== FALSE &&
-            variable_get('uc_use_next_buttons', FALSE) != FALSE) {
-          // TODO This variable was probably removed in Backdrop without replacement.
-          $opt = variable_get('uc_collapse_current_pane', FALSE) ? $id : 'false';
+            $config->get('uc_use_next_buttons') != FALSE) {
+          $opt = $config->get('uc_collapse_current_pane') ? $id : 'false';
           $form['panes'][$id]['next'] = array(
             '#type' => 'button',
             '#value' => t('Next'),
@@ -475,8 +468,7 @@ function theme_uc_cart_checkout_review($variables) {
 
   backdrop_add_css(backdrop_get_path('module', 'uc_cart') . '/uc_cart.css');
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $output = '<div id="review-instructions">' . filter_xss_admin(variable_get('uc_checkout_review_instructions', uc_get_message('review_instructions'))) . '</div>';
+  $output = '<div id="review-instructions">' . filter_xss_admin(config_get('uc_cart.settings', 'uc_checkout_review_instructions')) . '</div>';
 
   $output .= '<table class="order-review-table">';
 
@@ -615,8 +607,7 @@ function uc_cart_checkout_complete() {
     backdrop_goto('cart');
   }
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $build = uc_cart_complete_sale($order, variable_get('uc_new_customer_login', FALSE));
+  $build = uc_cart_complete_sale($order, config_get('uc_cart.settings', 'uc_new_customer_login'));
   unset($_SESSION['uc_checkout'][$order->order_id], $_SESSION['cart_order']);
 
   // Add a comment to let sales team know this came in through the site.

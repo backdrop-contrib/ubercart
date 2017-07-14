@@ -38,17 +38,15 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#draggable' => 'uc-cart-pane-weight',
   );
   foreach ($panes as $id => $pane) {
-    // TODO This variable was probably removed in Backdrop without replacement.
     $form['general']['panes'][$id]['uc_cap_' . $id . '_enabled'] = array(
       '#type' => 'checkbox',
       '#title' => check_plain($pane['title']),
-      '#default_value' => variable_get('uc_cap_' . $pane['id'] . '_enabled', $pane['enabled']),
+      '#default_value' => $config->get('uc_cap_' . $pane['id'] . '_enabled'),
     );
-    // TODO This variable was probably removed in Backdrop without replacement.
     $form['general']['panes'][$id]['uc_cap_' . $id . '_weight'] = array(
       '#type' => 'weight',
       '#delta' => 10,
-      '#default_value' => variable_get('uc_cap_' . $pane['id'] . '_weight', $pane['weight']),
+      '#default_value' => $config->get('uc_cap_' . $pane['id'] . '_weight'),
       '#attributes' => array('class' => array('uc-cart-pane-weight')),
     );
   }
@@ -58,12 +56,11 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#title' => t('Display a message when a customer adds an item to their cart.'),
     '#default_value' => $config->get('uc_cart_add_item_msg'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['general']['uc_add_item_redirect'] = array(
     '#type' => 'textfield',
     '#title' => t('Add to cart redirect'),
     '#description' => t('Enter the page to redirect to when a customer adds an item to their cart, or &lt;none&gt; for no redirect.'),
-    '#default_value' => variable_get('uc_add_item_redirect', 'cart'),
+    '#default_value' => $config->get('uc_add_item_redirect'),
     '#size' => 32,
     '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.performance', 'clean_url') ? '' : '?q='),
   );
@@ -74,12 +71,11 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#default_value' => $config->get('uc_cart_empty_button'),
   );
 
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['general']['uc_minimum_subtotal'] = array(
     '#type' => 'uc_price',
     '#title' => t('Minimum order subtotal'),
     '#description' => t('Customers will not be allowed to check out if the subtotal of items in their cart is less than this amount.'),
-    '#default_value' => variable_get('uc_minimum_subtotal', 0),
+    '#default_value' => $config->get('uc_minimum_subtotal'),
   );
 
   $form['lifetime'] = array(
@@ -159,7 +155,6 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#description' => t('These settings control the <em>continue shopping</em> option on the cart page.'),
     '#group' => 'cart-settings',
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['continue_shopping']['uc_continue_shopping_type'] = array(
     '#type' => 'radios',
     '#title' => t('<em>Continue shopping</em> element'),
@@ -168,20 +163,18 @@ function uc_cart_cart_settings_form($form, &$form_state) {
       'button' => t('Button'),
       'none' => t('Do not display'),
     ),
-    '#default_value' => variable_get('uc_continue_shopping_type', 'link'),
+    '#default_value' => $config->get('uc_continue_shopping_type'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['continue_shopping']['uc_continue_shopping_use_last_url'] = array(
     '#type' => 'checkbox',
     '#title' => t('Make <em>continue shopping</em> go back to the last item that was added to the cart.'),
     '#description' => t('If this is disabled or the item is unavailable, the URL specified below will be used.'),
-    '#default_value' => variable_get('uc_continue_shopping_use_last_url', TRUE),
+    '#default_value' => $config->get('uc_continue_shopping_use_last_url'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['continue_shopping']['uc_continue_shopping_url'] = array(
     '#type' => 'textfield',
     '#title' => t('Default <em>continue shopping</em> destination'),
-    '#default_value' => variable_get('uc_continue_shopping_url', ''),
+    '#default_value' => $config->get('uc_continue_shopping_url'),
     '#size' => 32,
     '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.performance', 'clean_url') ? '' : '?q='),
   );
@@ -244,12 +237,11 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     '#title' => t('Basic settings'),
     '#group' => 'checkout-settings',
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['checkout']['uc_checkout_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable checkout.'),
     '#description' => t('Disable this to use only third party checkout services, such as PayPal Express Checkout.'),
-    '#default_value' => variable_get('uc_checkout_enabled', TRUE),
+    '#default_value' => $config->get('uc_checkout_enabled'),
   );
 
   $form['anonymous'] = array(
@@ -257,12 +249,11 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     '#title' => t('Anonymous checkout'),
     '#group' => 'checkout-settings',
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['anonymous']['uc_checkout_anonymous'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable anonymous checkout.'),
     '#description' => t('Disable this to force users to log in before the checkout page.'),
-    '#default_value' => variable_get('uc_checkout_anonymous', TRUE),
+    '#default_value' => $config->get('uc_checkout_anonymous'),
   );
   $anon_state = array('visible' => array('input[name="uc_checkout_anonymous"]' => array('checked' => TRUE)));
   $form['anonymous']['uc_cart_mail_existing'] = array(
@@ -290,26 +281,23 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     '#default_value' => $config->get('uc_cart_new_account_password'),
     '#states' => $anon_state,
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['anonymous']['uc_new_customer_email'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send new customers a separate e-mail with their account details.'),
-    '#default_value' => variable_get('uc_new_customer_email', TRUE),
+    '#default_value' => $config->get('uc_new_customer_email'),
     '#states' => $anon_state,
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['anonymous']['uc_new_customer_login'] = array(
     '#type' => 'checkbox',
     '#title' => t('Log in new customers after checkout.'),
-    '#default_value' => variable_get('uc_new_customer_login', FALSE),
+    '#default_value' => $config->get('uc_new_customer_login'),
     '#states' => $anon_state,
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['anonymous']['uc_new_customer_status_active'] = array(
     '#type' => 'checkbox',
     '#title' => t('Set new customer accounts to active.'),
     '#description' => t('Uncheck to create new accounts but make them blocked.'),
-    '#default_value' => variable_get('uc_new_customer_status_active', TRUE),
+    '#default_value' => $config->get('uc_new_customer_status_active'),
     '#states' => $anon_state,
   );
 
@@ -320,20 +308,17 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     '#draggable' => 'uc-checkout-pane-weight',
   );
   foreach ($panes as $id => $pane) {
-    // TODO This variable was probably removed in Backdrop without replacement.
     $form['checkout']['panes'][$id]['uc_pane_' . $id . '_enabled'] = array(
       '#type' => 'checkbox',
       '#title' => check_plain($pane['title']),
-      '#default_value' => variable_get('uc_pane_' . $id . '_enabled', $pane['enabled']),
+      '#default_value' => $config->get('uc_pane_' . $id . '_enabled'),
     );
-    // TODO This variable was probably removed in Backdrop without replacement.
     $form['checkout']['panes'][$id]['uc_pane_' . $id . '_weight'] = array(
       '#type' => 'weight',
-      '#default_value' => variable_get('uc_pane_' . $id . '_weight', $pane['weight']),
+      '#default_value' => $config->get('uc_pane_' . $id . '_weight'),
       '#attributes' => array('class' => array('uc-checkout-pane-weight')),
     );
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $form['checkout']['panes'][$id]['#weight'] = variable_get('uc_pane_' . $id . '_weight', $pane['weight']);
+    $form['checkout']['panes'][$id]['#weight'] = $config->get('uc_pane_' . $id . '_weight');
 
     $null = NULL;
     $pane_settings = $pane['callback']('settings', $null, array());
@@ -356,17 +341,15 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     '#title' => t('Hide delivery information when carts have no shippable items.'),
     '#default_value' => $config->get('uc_cart_delivery_not_shippable'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['checkout']['uc_use_next_buttons'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use collapsing checkout panes with <em>Next</em> buttons.'),
-    '#default_value' => variable_get('uc_use_next_buttons', FALSE),
+    '#default_value' => $config->get('uc_use_next_buttons'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['checkout']['uc_collapse_current_pane'] = array(
     '#type' => 'checkbox',
     '#title' => t('Collapse pane after its <em>Next</em> button is clicked.'),
-    '#default_value' => variable_get('uc_collapse_current_pane', TRUE),
+    '#default_value' => $config->get('uc_collapse_current_pane'),
     '#states' => array(
       'visible' => array(
         'input[name="uc_checkout_enabled"]' => array('checked' => TRUE),
@@ -380,20 +363,18 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     '#title' => t('Instruction messages'),
     '#group' => 'checkout-settings',
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['instructions']['uc_checkout_instructions'] = array(
     '#type' => 'textarea',
     '#title' => t('Checkout instructions'),
     '#description' => t('Provide instructions for customers at the top of the checkout screen.'),
-    '#default_value' => variable_get('uc_checkout_instructions', ''),
+    '#default_value' => $config->get('uc_checkout_instructions'),
     '#rows' => 3,
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['instructions']['uc_checkout_review_instructions'] = array(
     '#type' => 'textarea',
     '#title' => t('Checkout review instructions'),
     '#description' => t('Provide instructions for customers at the top of the checkout review screen.'),
-    '#default_value' => variable_get('uc_checkout_review_instructions', uc_get_message('review_instructions')),
+    '#default_value' => $config->get('uc_checkout_review_instructions'),
     '#rows' => 3,
   );
 
@@ -410,55 +391,49 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.performance', 'clean_url') ? '' : '?q='),
     '#size' => 16,
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['completion_messages']['uc_msg_order_submit'] = array(
     '#type' => 'textarea',
     '#title' => t('Message header'),
     '#description' => t('Header for message displayed after a user checks out.'),
-    '#default_value' => variable_get('uc_msg_order_submit', uc_get_message('completion_message')),
+    '#default_value' => $config->get('uc_msg_order_submit'),
     '#rows' => 3,
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['completion_messages']['uc_msg_order_logged_in'] = array(
     '#type' => 'textarea',
     '#title' => t('Logged in users'),
     '#description' => t('Message displayed upon checkout for a user who is logged in.'),
-    '#default_value' => variable_get('uc_msg_order_logged_in', uc_get_message('completion_logged_in')),
+    '#default_value' => $config->get('uc_msg_order_logged_in'),
     '#rows' => 3,
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['completion_messages']['uc_msg_order_existing_user'] = array(
     '#type' => 'textarea',
     '#title' => t('Existing users'),
     '#description' => t("Message displayed upon checkout for a user who has an account but wasn't logged in."),
-    '#default_value' => variable_get('uc_msg_order_existing_user', uc_get_message('completion_existing_user')),
+    '#default_value' => $config->get('uc_msg_order_existing_user'),
     '#rows' => 3,
     '#states' => $anon_state,
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['completion_messages']['uc_msg_order_new_user'] = array(
     '#type' => 'textarea',
     '#title' => t('New users'),
     '#description' => t("Message displayed upon checkout for a new user whose account was just created. You may use the special tokens !new_username for the username of a newly created account and !new_password for that account's password."),
-    '#default_value' => variable_get('uc_msg_order_new_user', uc_get_message('completion_new_user')),
+    '#default_value' => $config->get('uc_msg_order_new_user'),
     '#rows' => 3,
     '#states' => $anon_state,
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['completion_messages']['uc_msg_order_new_user_logged_in'] = array(
     '#type' => 'textarea',
     '#title' => t('New logged in users'),
     '#description' => t('Message displayed upon checkout for a new user whose account was just created and also <em>"Login users when new customer accounts are created at checkout."</em> is set on the <a href="!user_login_setting_ur">checkout settings</a>.', array('!user_login_setting_ur' => 'admin/store/settings/checkout')),
-    '#default_value' => variable_get('uc_msg_order_new_user_logged_in', uc_get_message('completion_new_user_logged_in')),
+    '#default_value' => $config->get('uc_msg_order_new_user_logged_in'),
     '#rows' => 3,
     '#states' => $anon_state,
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['completion_messages']['uc_msg_continue_shopping'] = array(
     '#type' => 'textarea',
     '#title' => t('Continue shopping message'),
     '#description' => t('Message displayed upon checkout to direct customers to another part of your site.'),
-    '#default_value' => variable_get('uc_msg_continue_shopping', uc_get_message('continue_shopping')),
+    '#default_value' => $config->get('uc_msg_continue_shopping'),
     '#rows' => 3,
   );
 
