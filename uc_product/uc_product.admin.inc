@@ -408,11 +408,14 @@ function uc_product_class_form_submit($form, &$form_state) {
   $type = new \stdClass;
   $type->type = $pcid;
   $type->name = $form_state['values']['name'];
+  $type->base = 'uc_product';
+  $type->module = 'uc_product';
   $type->description = $form_state['values']['description'];
+  $type = node_type_set_defaults($type);
   node_type_save($type);
 
 
-  //uc_product_node_info(TRUE);
+  uc_product_node_info(TRUE);
 
   if ($result == MergeQuery::STATUS_INSERT) {
 
@@ -427,7 +430,7 @@ function uc_product_class_form_submit($form, &$form_state) {
       // TODO This variable was probably removed in Backdrop without replacement.
       variable_set('comment_' . $pcid, variable_get('comment_product', COMMENT_NODE_OPEN));
     }
-    */
+    */ 
 
     module_invoke_all('uc_product_class', $pcid, 'insert');
   }
@@ -486,7 +489,7 @@ function uc_product_class_delete_confirm_submit($form, &$form_state) {
     ->execute();
   module_invoke_all('uc_product_class', $form_state['values']['pcid'], 'delete');
   // TODO migrate This nedded?
-  //uc_product_node_info(TRUE);
+  uc_product_node_info(TRUE);
   node_types_rebuild();
   menu_rebuild();
 
