@@ -16,11 +16,10 @@
 function uc_checkout_pane_cart($op, $order, $form = NULL, &$form_state = NULL) {
   switch ($op) {
     case 'view':
-      // TODO This variable was probably removed in Backdrop without replacement.
       $contents['cart_review_table'] = array(
         '#theme' => 'uc_cart_review_table',
         '#items' => $order->products,
-        '#weight' => variable_get('uc_pane_cart_field_cart_weight', 2),
+        '#weight' => config_get('uc_cart.settings', 'uc_pane_cart_field_cart_weight'),
       );
       return array('contents' => $contents, 'next-button' => FALSE);
 
@@ -453,10 +452,8 @@ function _uc_checkout_pane_list($action = NULL) {
       'collapsible' => TRUE,
     );
 
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $pane['enabled'] = variable_get('uc_pane_' . $id . '_enabled', $pane['enabled']);
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $pane['weight'] = variable_get('uc_pane_' . $id . '_weight', $pane['weight']);
+    $pane['enabled'] = config_get('uc_cart.settings', 'uc_pane_' . $id . '_enabled');
+    $pane['weight'] = config_get('uc_cart.settings', 'uc_pane_' . $id . '_weight');
 
     $panes[$id] = $pane;
   }
