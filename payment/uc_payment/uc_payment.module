@@ -616,6 +616,10 @@ function _uc_payment_method_list($action = NULL) {
       $id = $method['id'];
     }
 
+    $config->set('uc_payment_method_' . $id . '_checkout', $method['checkout']);
+    $config->set('uc_payment_method_' . $id . '_weight', $method['weight']);
+    $config->save();
+
     $methods[$id] = array_merge($method, array(
       'id' => $id,
       'checkout' => $config->get('uc_payment_method_' . $id . '_checkout'),
@@ -650,11 +654,10 @@ function _uc_payment_gateway_list($filter = NULL, $enabled_only = FALSE) {
     if (is_numeric($id)) {
       $id = $gateway['id'];
     }
-
-    // TODO This variable was probably removed in Backdrop without replacement.
+    config_set('uc_payment.settings', 'uc_pg_' . $id . '_enabled');
     $gateways[$id] = array_merge($gateway, array(
       'id' => $id,
-      'enabled' => variable_get('uc_pg_' . $id . '_enabled', TRUE),
+      'enabled' => TRUE,
     ));
   }
 

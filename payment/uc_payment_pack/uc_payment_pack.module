@@ -111,37 +111,33 @@ function uc_payment_method_other($op, &$order) {
  * Payment method callback for the "Cash on Delivery" payment method.
  */
 function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
+  $config = config('uc_payment_pack.settings');
   switch ($op) {
     case 'cart-details':
-      // TODO This variable was probably removed in Backdrop without replacement.
       $build['policy'] = array(
-        '#markup' => '<p>' . variable_get('uc_cod_policy', t('Full payment is expected upon delivery or prior to pick-up.')) . '</p>',
+        '#markup' => '<p>' . $config->get('uc_cod_policy') . '</p>',
       );
 
-      // TODO This variable was probably removed in Backdrop without replacement.
-      if (($max = variable_get('uc_cod_max_order', 0)) > 0 && is_numeric($max)) {
+      if (($max = $config->get('uc_cod_max_order')) > 0 && is_numeric($max)) {
         $build['eligibility'] = array(
           '#markup' => '<p>' . t('Orders totalling more than !number are <b>not eligible</b> for COD.', array('!number' => uc_currency_format($max))) . '</p>',
         );
       }
 
-      // TODO This variable was probably removed in Backdrop without replacement.
-      if (variable_get('uc_cod_delivery_date', FALSE)) {
+      if ($config->get('uc_cod_delivery_date')) {
         $build += uc_payment_method_cod_form(array(), $form_state, $order);
       }
       return $build;
 
     case 'cart-process':
-      // TODO This variable was probably removed in Backdrop without replacement.
-      if (variable_get('uc_cod_delivery_date', FALSE)) {
+      if ($config->get('uc_cod_delivery_date')) {
         $order->payment_details = $form_state['values']['panes']['payment']['details'];
       }
       return TRUE;
 
     case 'cart-review':
       $review = array();
-      // TODO This variable was probably removed in Backdrop without replacement.
-      if (variable_get('uc_cod_delivery_date', FALSE)) {
+      if ($config->get('uc_cod_delivery_date')) {
         $date = uc_date_format(
           $order->payment_details['delivery_month'],
           $order->payment_details['delivery_day'],
@@ -157,8 +153,7 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
     case 'order-view':
     case 'customer-view':
       $build = array('#markup' => '');
-      // TODO This variable was probably removed in Backdrop without replacement.
-      if (variable_get('uc_cod_delivery_date', FALSE) &&
+      if ($config->get('uc_cod_delivery_date') &&
           isset($order->payment_details['delivery_month']) &&
           isset($order->payment_details['delivery_day']) &&
           isset($order->payment_details['delivery_year'])) {
@@ -173,8 +168,7 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
 
     case 'order-details':
       $build = array();
-      // TODO This variable was probably removed in Backdrop without replacement.
-      if (variable_get('uc_cod_delivery_date', FALSE)) {
+      if ($config->get('uc_cod_delivery_date')) {
         $build = uc_payment_method_cod_form(array(), $form_state, $order);
       }
       return $build;
@@ -191,9 +185,8 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
       break;
 
     case 'order-submit':
-      // TODO This variable was probably removed in Backdrop without replacement.
       if ($order->payment_method == 'cod' &&
-          ($max = variable_get('uc_cod_max_order', 0)) > 0 &&
+          ($max = $config->get('uc_cod_max_order')) > 0 &&
           is_numeric($max) &&
           $order->order_total > $max) {
         $result[] = array(
@@ -228,25 +221,22 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
       break;
 
     case 'settings':
-      // TODO This variable was probably removed in Backdrop without replacement.
       $form['uc_cod_policy'] = array(
         '#type' => 'textarea',
         '#title' => t('Policy message'),
-        '#default_value' => variable_get('uc_cod_policy', t('Full payment is expected upon delivery or prior to pick-up.')),
+        '#default_value' => $config->get('uc_cod_policy'),
         '#description' => t('Help message shown at checkout.'),
       );
-      // TODO This variable was probably removed in Backdrop without replacement.
       $form['uc_cod_max_order'] = array(
         '#type' => 'textfield',
         '#title' => t('Maximum order total eligible for COD'),
-        '#default_value' => variable_get('uc_cod_max_order', 0),
+        '#default_value' => $config->get('uc_cod_max_order'),
         '#description' => t('Set to 0 for no maximum order limit.'),
       );
-      // TODO This variable was probably removed in Backdrop without replacement.
       $form['uc_cod_delivery_date'] = array(
         '#type' => 'checkbox',
         '#title' => t('Let customers enter a desired delivery date.'),
-        '#default_value' => variable_get('uc_cod_delivery_date', FALSE),
+        '#default_value' => $config->get('uc_cod_delivery_date'),
       );
       return $form;
   }
@@ -282,109 +272,80 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
         '#markup' => t('Checks should be made out to:'),
       );
 
-      // TODO This variable was probably removed in Backdrop without replacement.
-      if (!variable_get('uc_check_mailing_street1', FALSE)) {
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
+      if (!config_get('uc_payment_pack.settings', 'uc_check_mailing_street1')) {
+        $config = config('uc_store.settings');
         $build['address'] = array(
           '#markup' => uc_address_format(
             uc_store_name(),
             NULL,
-            variable_get('uc_store_company', ''),
-            variable_get('uc_store_street1', ''),
-            variable_get('uc_store_street2', ''),
-            variable_get('uc_store_city', ''),
-            variable_get('uc_store_zone', ''),
-            variable_get('uc_store_postal_code', ''),
-            variable_get('uc_store_country', 840)
+            $config->get('uc_store_company'),
+            $config->get('uc_store_street1'),
+            $config->get('uc_store_street2'),
+            $config->get('uc_store_city'),
+            $config->get('uc_store_zone'),
+            $config->get('uc_store_postal_code'),
+            $config->get('uc_store_country')
           ),
           '#prefix' => '<p>',
           '#suffix' => '</p>',
         );
       }
       else {
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
+        $config = config('uc_paymnet_pack.settings');
         $build['address'] = array(
           '#markup' => uc_address_format(
-            variable_get('uc_check_mailing_name', ''),
+            $config->get('uc_check_mailing_name'),
             NULL,
-            variable_get('uc_check_mailing_company', ''),
-            variable_get('uc_check_mailing_street1', ''),
-            variable_get('uc_check_mailing_street2', ''),
-            variable_get('uc_check_mailing_city', ''),
-            variable_get('uc_check_mailing_zone', ''),
-            variable_get('uc_check_mailing_postal_code', ''),
-            variable_get('uc_check_mailing_country', 840)
+            $config->get('uc_check_mailing_company'),
+            $config->get('uc_check_mailing_street1'),
+            $config->get('uc_check_mailing_street2'),
+            $config->get('uc_check_mailing_city'),
+            $config->get('uc_check_mailing_zone'),
+            $config->get('uc_check_mailing_postal_code'),
+            $config->get('uc_check_mailing_country')
           ),
           '#prefix' => '<p>',
           '#suffix' => '</p>',
         );
       }
 
-      // TODO This variable was probably removed in Backdrop without replacement.
       $build['policy'] = array(
-        '#markup' => '<p>' . variable_get('uc_check_policy', '') . '</p>',
+        '#markup' => '<p>' . config_get('uc_payment_pack.settings', 'uc_check_policy') . '</p>',
       );
       return $build;
 
     case 'cart-review':
-      // TODO This variable was probably removed in Backdrop without replacement.
-      if (!variable_get('uc_check_mailing_street1', FALSE)) {
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
+      if (!config_get('uc_payment_pack.settings', 'uc_check_mailing_street1')) {
+        $config = config('uc_store.settings');
         $review[] = array(
           'title' => t('Mail to'),
           'data' => uc_address_format(
             uc_store_name(),
             NULL,
-            variable_get('uc_store_company', ''),
-            variable_get('uc_store_street1', ''),
-            variable_get('uc_store_street2', ''),
-            variable_get('uc_store_city', ''),
-            variable_get('uc_store_zone', ''),
-            variable_get('uc_store_postal_code', ''),
-            variable_get('uc_store_country', 840)
+            $config->get('uc_store_company'),
+            $config->get('uc_store_street1'),
+            $config->get('uc_store_street2'),
+            $config->get('uc_store_city'),
+            $config->get('uc_store_zone'),
+            $config->get('uc_store_postal_code'),
+            $config->get('uc_store_country')
           ),
         );
       }
       else {
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
-        // TODO This variable was probably removed in Backdrop without replacement.
+        $config = config('uc_paymnet_pack.settings');
         $review[] = array(
           'title' => t('Mail to'),
           'data' => uc_address_format(
-            variable_get('uc_check_mailing_name', ''),
+            $config->get('uc_check_mailing_name'),
             NULL,
-            variable_get('uc_check_mailing_company', ''),
-            variable_get('uc_check_mailing_street1', ''),
-            variable_get('uc_check_mailing_street2', ''),
-            variable_get('uc_check_mailing_city', ''),
-            variable_get('uc_check_mailing_zone', ''),
-            variable_get('uc_check_mailing_postal_code', ''),
-            variable_get('uc_check_mailing_country', 840)
+            $config->get('uc_check_mailing_company'),
+            $config->get('uc_check_mailing_street1'),
+            $config->get('uc_check_mailing_street2'),
+            $config->get('uc_check_mailing_city'),
+            $config->get('uc_check_mailing_zone'),
+            $config->get('uc_check_mailing_postal_code'),
+            $config->get('uc_check_mailing_country')
           ),
         );
       }
@@ -412,28 +373,21 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
       return $build;
 
     case 'settings':
+      $config = config('uc_paymnet_pack.settings');
       $form['check_address_info'] = array(
         '#markup' => '<div>' . t('Set the mailing address to display to customers who choose this payment method during checkout.') . '</div>',
       );
-      // TODO This variable was probably removed in Backdrop without replacement.
-      $form['uc_check_mailing_name'] = uc_textfield(t('Contact'), variable_get('uc_check_mailing_name', ''), FALSE, t('Direct checks to a person or department.'), 128);
-      // TODO This variable was probably removed in Backdrop without replacement.
-      // TODO This variable was probably removed in Backdrop without replacement.
-      // TODO This variable was probably removed in Backdrop without replacement.
-      // TODO This variable was probably removed in Backdrop without replacement.
-      // TODO This variable was probably removed in Backdrop without replacement.
-      // TODO This variable was probably removed in Backdrop without replacement.
-      // TODO This variable was probably removed in Backdrop without replacement.
+      $form['uc_check_mailing_name'] = uc_textfield(t('Contact'), $config->get('uc_check_mailing_name'), FALSE, t('Direct checks to a person or department.'), 128);
       $form['uc_check_address'] = array(
         '#type' => 'uc_address',
         '#default_value' => array(
-          'uc_check_mailing_company' => variable_get('uc_check_mailing_company', ''),
-          'uc_check_mailing_street1' => variable_get('uc_check_mailing_street1', ''),
-          'uc_check_mailing_street2' => variable_get('uc_check_mailing_street2', ''),
-          'uc_check_mailing_city' => variable_get('uc_check_mailing_city', ''),
-          'uc_check_mailing_zone' => variable_get('uc_check_mailing_zone', ''),
-          'uc_check_mailing_country' => isset($form_state['values']['uc_check_mailing_country']) ? $form_state['values']['uc_check_mailing_country'] : variable_get('uc_check_mailing_country', ''),
-          'uc_check_mailing_postal_code' => variable_get('uc_check_mailing_postal_code', ''),
+          'uc_check_mailing_company' => $config->get('uc_check_mailing_company'),
+          'uc_check_mailing_street1' => $config->get('uc_check_mailing_street1'),
+          'uc_check_mailing_street2' => $config->get('uc_check_mailing_street2'),
+          'uc_check_mailing_city' => $config->get('uc_check_mailing_city'),
+          'uc_check_mailing_zone' => $config->get('uc_check_mailing_zone'),
+          'uc_check_mailing_country' => isset($form_state['values']['uc_check_mailing_country']) ? $form_state['values']['uc_check_mailing_country'] : $config->get('uc_check_mailing_country'),
+          'uc_check_mailing_postal_code' => $config->get('uc_check_mailing_postal_code'),
         ),
         '#required' => FALSE,
         '#key_prefix' => 'uc_check_mailing',
@@ -443,9 +397,19 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
         '#type' => 'textarea',
         '#title' => t('Check payment policy', array(), array('context' => 'cheque')),
         '#description' => t('Instructions for customers on the checkout page.'),
-        '#default_value' => variable_get('uc_check_policy', t('Personal and business checks will be held for up to 10 business days to ensure payment clears before an order is shipped.')),
+        '#default_value' => $config->get('uc_check_policy'),
         '#rows' => 3,
       );
       return $form;
   }
+}
+
+/**
+ * Implements hook_config_info().
+ */
+function uc_payment_pack_config_info() {
+  $prefixes['uc_payment_pack.settings'] = array(
+    'label' => t('Payment pack settings'),
+    'group' => t('Configuration'),
+  );
 }
