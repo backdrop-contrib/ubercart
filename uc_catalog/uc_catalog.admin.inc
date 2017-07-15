@@ -67,8 +67,7 @@ function uc_catalog_settings_form($form, &$form_state) {
 function uc_catalog_orphaned_products() {
   $build = array();
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if (variable_get('taxonomy_maintain_index_table', TRUE)) {
+  if (config_get('uc_catalog.settings', 'taxonomy_maintain_index_table')) {
     $vid = config_get('uc_catalog.settings', 'uc_catalog_vid');
     $product_types = uc_product_types();
     $field = field_info_field('taxonomy_catalog');
