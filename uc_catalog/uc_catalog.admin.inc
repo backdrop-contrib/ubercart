@@ -31,7 +31,7 @@ function uc_catalog_settings_form($form, &$form_state) {
     '#options' => $displays,
   );
 
-  $vid = $config->get('uc_catalog_vid');
+  $vid = $config->get('uc_catalog_machine_name');
   if ($vid) {
     $catalog = taxonomy_vocabulary_load($vid);
 
@@ -46,10 +46,10 @@ function uc_catalog_settings_form($form, &$form_state) {
     $vocabs[$vid] = $vocabulary->name;
   }
 
-  $form['catalog-top-level']['uc_catalog_vid'] = array(
+  $form['catalog-top-level']['uc_catalog_machine_name'] = array(
     '#type' => 'select',
     '#title' => t('Catalog vocabulary'),
-    '#default_value' => $config->get('uc_catalog_vid'),
+    '#default_value' => $config->get('uc_catalog_machine_name'),
     '#options' => $vocabs,
   );
   $form['catalog-top-level']['uc_catalog_breadcrumb'] = array(
@@ -68,7 +68,7 @@ function uc_catalog_orphaned_products() {
   $build = array();
 
   if (config_get('uc_catalog.settings', 'taxonomy_maintain_index_table')) {
-    $vid = config_get('uc_catalog.settings', 'uc_catalog_vid');
+    $vid = config_get('uc_catalog.settings', 'uc_catalog_machine_name');
     $product_types = uc_product_types();
     $field = field_info_field('taxonomy_catalog');
     $types = array_intersect($product_types, $field['bundles']['node']);

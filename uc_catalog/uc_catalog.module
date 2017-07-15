@@ -54,7 +54,7 @@ function uc_catalog_menu() {
       'title' => 'Edit catalog display',
       'description' => 'Configure the catalog display in Views.',
       'page callback' => 'backdrop_goto',
-      'page arguments' => array('admin/structure/views/view/uc_catalog/edit'),
+      'page arguments' => array('admin/structure/views/view/uc_catalog'),
       'access callback' => 'user_access',
       'access arguments' => array('administer views'),
       'type' => MENU_LOCAL_ACTION,
@@ -190,8 +190,8 @@ function uc_catalog_node_view($node, $view_mode) {
  * Implements hook_taxonomy_vocabulary_delete().
  */
 function uc_catalog_taxonomy_vocabulary_delete($vocabulary) {
-  if ($vocabulary->vid == config_get('uc_catalog.settings', 'uc_catalog_vid')) {
-    config_clear('uc_catalog.settings', 'uc_catalog_vid');
+  if ($vocabulary->vid == config_get('uc_catalog.settings', 'uc_catalog_machine_name')) {
+    config_clear('uc_catalog.settings', 'uc_catalog_machine_name');
   }
 }
 
@@ -235,7 +235,7 @@ function uc_catalog_preprocess_link(&$vars) {
   // Link back to the catalog and not the taxonomy term page.
   if (isset($vars['options']['entity_type']) && $vars['options']['entity_type'] == 'taxonomy_term') {
     $term = $vars['options']['entity'];
-    if ($term->vid == config_get('uc_catalog.settings', 'uc_catalog_vid')) {
+    if ($term->vid == config_get('uc_catalog.settings', 'uc_catalog_machine_name')) {
       $vars['path'] = uc_catalog_path($term);
     }
   }
@@ -266,7 +266,7 @@ function uc_catalog_block_view($delta = '') {
       backdrop_add_css(backdrop_get_path('module', 'uc_catalog') . '/uc_catalog.css');
 
       // Get the vocabulary tree information.
-      $vid = config_get('uc_catalog.settings', 'uc_catalog_vid');
+      $vid = config_get('uc_catalog.settings', 'uc_catalog_machine_name');
       $tree = taxonomy_get_tree($vid);
 
       // Then convert it into an actual tree structure.
@@ -374,7 +374,7 @@ function uc_catalog_uc_store_status() {
   }
 
   $statuses = array();
-  $cat_id = config_get('uc_catalog.settings', 'uc_catalog_vid');
+  $cat_id = config_get('uc_catalog.settings', 'uc_catalog_machine_name');
   $catalog = taxonomy_vocabulary_load($cat_id);
   if ($catalog) {
     // Don't display a status if the taxonomy_index table has no data.
@@ -490,7 +490,7 @@ function _uc_catalog_navigation($branch) {
   if (!isset($breadcrumb)) {
     $breadcrumb = backdrop_get_breadcrumb();
   }
-  $vid = $config->get('uc_catalog_vid');
+  $vid = $config->get('uc_catalog_machine_name');
   if ($_GET['q'] ==  $branch_path) {
     // The URL points to this term.
     $here = TRUE;
@@ -569,7 +569,7 @@ function uc_catalog_path($term) {
  * Adds a catalog taxonomy reference field to the specified node type.
  */
 function uc_catalog_add_node_type($type) {
-  $vid = config_get('uc_catalog.settings', 'uc_catalog_vid');
+  $vid = config_get('uc_catalog.settings', 'uc_catalog_machine_name');
   if (!$vid) {
     $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE machine_name = 'catalog'")->fetchField();
     if (!$vid) {
@@ -584,7 +584,7 @@ function uc_catalog_add_node_type($type) {
       $vid = $vocabulary->vid;
     }
 
-    config_set('uc_catalog.settings', 'uc_catalog_vid', $vid);
+    config_set('uc_catalog.settings', 'uc_catalog_machine_name', $vid);
   }
 
   $vocabulary = taxonomy_vocabulary_load($vid);
