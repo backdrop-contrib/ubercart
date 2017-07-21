@@ -103,8 +103,7 @@ function uc_shipping_new_package($form, &$form_state, $order) {
     }
   }
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $shipping_type_weights = variable_get('uc_quote_type_weight', array());
+  $shipping_type_weights = config_get('uc_quote.settings', 'uc_quote_type_weight');
 
   $result = db_query("SELECT op.order_product_id, SUM(pp.qty) AS quantity FROM {uc_packaged_products} pp LEFT JOIN {uc_packages} p ON pp.package_id = p.package_id LEFT JOIN {uc_order_products} op ON op.order_product_id = pp.order_product_id WHERE p.order_id = :id GROUP BY op.order_product_id", array(':id' => $order->order_id));
   $packaged_products = $result->fetchAllKeyed();
@@ -581,8 +580,7 @@ function uc_shipping_new_shipment($form, &$form_state, $order) {
   );
 
   $packages_by_type = array();
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $units = variable_get('uc_weight_unit', 'lb');
+  $units = config_get('uc_store.settings', 'uc_weight_unit');
   $result = db_query("SELECT * FROM {uc_packages} WHERE order_id = :id AND sid IS NULL", array(':id' => $order->order_id));
   foreach ($result as $package) {
     $products = array();
@@ -867,7 +865,6 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
       '#default_value' => isset($package->weight) ? $package->weight : 0,
       '#size' => 10,
     );
-    // TODO This variable was probably removed in Backdrop without replacement.
     $pkg_form['weight']['units'] = array(
       '#type' => 'select',
       '#title' => t('Units'),
@@ -879,7 +876,7 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
       ),
       '#default_value' => isset($package->weight_units) ?
                           $package->weight_units        :
-                          variable_get('uc_weight_unit', 'lb'),
+                          config_get('uc_store.settings', 'uc_weight_unit'),
     );
     $pkg_form['dimensions'] = array(
       '#type' => 'container',
@@ -906,7 +903,6 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
       '#default_value' => isset($package->height) ? $package->height : 1,
       '#size' => 8,
     );
-    // TODO This variable was probably removed in Backdrop without replacement.
     $pkg_form['dimensions']['units'] = array(
       '#type' => 'select',
       '#title' => t('Units of measurement'),
@@ -918,7 +914,7 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
       ),
       '#default_value' => isset($package->length_units) ?
                           $package->length_units :
-                          variable_get('uc_length_unit', 'in'),
+                          config_get('uc_store.settings', 'uc_length_unit'),
     );
     $pkg_form['tracking_number'] = array(
       '#type' => 'textfield',

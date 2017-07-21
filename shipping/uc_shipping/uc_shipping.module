@@ -406,8 +406,7 @@ function uc_shipping_package_load($package_id) {
       $products = array();
       $description = '';
       $weight = 0;
-      // TODO This variable was probably removed in Backdrop without replacement.
-      $units = variable_get('uc_weight_unit', 'lb');
+      $units = config_get('uc_store.settings', 'uc_weight_unit');
       $addresses = array();
       $result = db_query("SELECT op.order_product_id, pp.qty, pp.qty * op.weight AS weight, op.weight_units, op.nid, op.title, op.model, op.price, op.data FROM {uc_packaged_products} pp LEFT JOIN {uc_order_products} op ON op.order_product_id = pp.order_product_id WHERE pp.package_id = :id ORDER BY op.order_product_id", array(':id' => $package_id));
       foreach ($result as $product) {
@@ -691,8 +690,7 @@ function uc_shipping_select_address($addresses, $onchange = '', $title = NULL) {
   if (!is_array($addresses) || count($addresses) == 0) {
     $addresses = array();
   }
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $store_address = variable_get('uc_quote_store_default_address', new UcAddress());
+  $store_address = config_get('uc_quote.settings', 'uc_quote_store_default_address');
   if (!in_array($store_address, $addresses)) {
     $addresses[] = $store_address;
   }

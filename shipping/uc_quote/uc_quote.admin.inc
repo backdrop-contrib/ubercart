@@ -196,12 +196,11 @@ function uc_quote_method_settings($form, &$form_state) {
       );
     }
   }
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['uc_store_shipping_type'] = array(
     '#type' => 'select',
     '#title' => t('Default order fulfillment type for products'),
     '#options' => $shipping_types,
-    '#default_value' => variable_get('uc_store_shipping_type', 'small_package'),
+    '#default_value' => config_get('uc_shipping.settings', 'uc_store_shipping_type'),
   );
 
   $form['actions'] = array('#type' => 'actions');
@@ -292,7 +291,6 @@ function uc_quote_method_settings_submit($form, &$form_state) {
   config_set('uc_quote.settings', 'uc_quote_enabled', $enabled);
   config_set('uc_quote.settings', 'uc_quote_method_weight', $method_weight);
   config_set('uc_quote.settings', 'uc_quote_type_weight', $form_state['values']['uc_quote_type_weight']);
-  // TODO This variable was probably removed in Backdrop without replacement.
-  variable_set('uc_store_shipping_type', $form_state['values']['uc_store_shipping_type']);
+  config_set('uc_shipping.settings', 'uc_store_shipping_type', $form_state['values']['uc_store_shipping_type']);
   backdrop_set_message(t('The configuration options have been saved.'));
 }
