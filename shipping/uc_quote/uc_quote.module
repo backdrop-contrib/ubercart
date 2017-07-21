@@ -139,8 +139,7 @@ function uc_quote_node_load($nodes, $types) {
     return;
   }
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $shipping_type = variable_get('uc_store_shipping_type', 'small_package');
+  $shipping_type = config_get('uc_shipping.settings', 'uc_store_shipping_type');
   $shipping_types = db_query("SELECT id, shipping_type FROM {uc_quote_shipping_types} WHERE id_type = :type AND id IN (:ids)", array(':type' => 'product', ':ids' => array_keys($nodes)))->fetchAllKeyed();
 
   $addresses = db_query("SELECT nid, first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid IN (:nids)", array(':nids' => array_keys($nodes)), array('fetch' => 'UcAddress'))->fetchAllAssoc('nid');
@@ -247,9 +246,7 @@ function uc_quote_form_alter(&$form, &$form_state, $form_id) {
  */
 function uc_quote_uc_cart_pane($items) {
   if (arg(0) == 'cart') {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    // TODO This variable was probably removed in Backdrop without replacement.
-    if (!variable_get('uc_cap_quotes_enabled', FALSE) || (variable_get('uc_cart_delivery_not_shippable', TRUE) && !uc_cart_is_shippable())) {
+    if (!config_get('uc_quote.settings', 'uc_cap_quotes_enabled') || (config_get('uc_cart.settings', 'uc_cart_delivery_not_shippable') && !uc_cart_is_shippable())) {
       return array();
     }
 
@@ -429,8 +426,7 @@ function uc_quote_get_shipping_type($id_type, $id) {
  *   the product's is not set.
  */
 function uc_product_get_shipping_type($product) {
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $shipping_type = variable_get('uc_store_shipping_type', 'small_package');
+  $shipping_type = config_get('uc_shipping.settings', 'uc_store_shipping_type');
   if (isset($product->nid) &&
       $type = uc_quote_get_shipping_type('product', $product->nid)) {
     $shipping_type = $type;
@@ -872,7 +868,6 @@ function uc_quote_build_quote_form($order, $show_errors = TRUE) {
     );
   }
   elseif ($show_errors) {
-    // TODO This variable was probably removed in Backdrop without replacement.
     $return['error'] = array(
       '#markup' => filter_xss_admin(config_get('uc_quote.settings', 'uc_quote_err_msg')),
     );
