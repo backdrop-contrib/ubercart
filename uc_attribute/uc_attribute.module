@@ -293,6 +293,7 @@ function uc_attribute_form_uc_product_settings_form_alter(&$form, &$form_state) 
     '#group' => 'product-settings',
     '#weight' => -3,
   );
+  $form['attributes']['#config'] = 'uc_attribute.settings';
   $form['attributes']['uc_attribute_option_price_format'] = array(
     '#type' => 'radios',
     '#title' => t('Option price format'),
@@ -329,8 +330,7 @@ function uc_attribute_module_implements_alter(&$implementations, $hook) {
  */
 function uc_attribute_uc_form_alter(&$form, &$form_state, $form_id) {
   if (strpos($form_id, 'add_to_cart_form') || $form_id == 'uc_order_add_product_form') {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $use_ajax = strpos($form_id, 'add_to_cart_form') && variable_get('uc_product_update_node_view', FALSE);
+    $use_ajax = strpos($form_id, 'add_to_cart_form') && config_get('uc_product.settings', 'uc_product_update_node_view');
     $node = &$form['node']['#value'];
     $id = $form_id . '-' . $node->nid . '-attributes';
     // If the node has a product list, add attributes to them.
