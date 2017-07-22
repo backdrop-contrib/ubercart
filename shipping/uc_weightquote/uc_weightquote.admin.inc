@@ -102,7 +102,7 @@ function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
     backdrop_write_record('uc_weightquote_methods', $form_state['values']);
 
     // Ensure Rules picks up the new condition.
-    entity_flush_caches();
+    entity_info_cache_clear();
 
     backdrop_set_message(t('Created and enabled new weight quote shipping method.'));
     $form_state['redirect'] = 'admin/store/settings/quotes/manage/get_quote_from_weightquote_' . $form_state['values']['mid'];
