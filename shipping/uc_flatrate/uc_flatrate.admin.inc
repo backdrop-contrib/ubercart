@@ -99,7 +99,7 @@ function uc_flatrate_admin_method_edit_form_submit($form, &$form_state) {
     backdrop_write_record('uc_flatrate_methods', $form_state['values']);
 
     // Ensure Rules picks up the new condition.
-    entity_flush_caches();
+    entity_info_cache_clear();
 
     backdrop_set_message(t('Created and enabled new flat rate shipping method.'));
     $form_state['redirect'] = 'admin/store/settings/quotes/manage/get_quote_from_flatrate_' . $form_state['values']['mid'];
