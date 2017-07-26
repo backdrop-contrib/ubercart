@@ -168,7 +168,6 @@ function uc_ups_admin_settings($form, &$form_state) {
     ),
   );
 
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['uc_ups_quote_options']['uc_ups_unit_system'] = array(
     '#type' => 'select',
     '#title' => t('System of measurement'),
@@ -198,7 +197,6 @@ function uc_ups_admin_settings($form, &$form_state) {
   );
 
   // Form to select type of rate markup
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['uc_ups_markups']['uc_ups_rate_markup_type'] = array(
     '#type' => 'select',
     '#title' => t('Rate markup type'),
@@ -206,7 +204,7 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#options' => array(
       'percentage' => t('Percentage (%)'),
       'multiplier' => t('Multiplier (×)'),
-      'currency' => t('Addition (!currency)', array('!currency' => variable_get('uc_currency_sign', '$'))),
+      'currency' => t('Addition (!currency)', array('!currency' => config_get('uc_store.settings', 'uc_currency_sign'))),
     ),
   );
 
@@ -347,8 +345,7 @@ function uc_ups_admin_settings_submit($form, &$form_state) {
     if (is_array($value) && isset($form_state['values']['array_filter'])) {
       $value = array_keys(array_filter($value));
     }
-    // TODO This variable was probably removed in Backdrop without replacement.
-    variable_set($key, $value);
+    config_set('uc_ups.settings', $key, $value);
   }
 
   backdrop_set_message(t('The configuration options have been saved.'));
