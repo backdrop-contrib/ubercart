@@ -76,11 +76,9 @@ function uc_2checkout_complete($cart_id = 0) {
   // Add a comment to let sales team know this came in through the site.
   uc_order_comment_save($order->order_id, 0, t('Order created through website.'), 'admin');
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $build = uc_cart_complete_sale($order, variable_get('uc_new_customer_login', FALSE));
+  $build = uc_cart_complete_sale($order, config_get('uc_cart.settings', 'uc_new_customer_login'));
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $page = variable_get('uc_cart_checkout_complete_page', '');
+  $page = config_get('uc_cart.settings', 'uc_cart_checkout_complete_page');
 
   if (!empty($page)) {
     backdrop_goto($page);
