@@ -185,11 +185,10 @@ function uc_credit_settings_form($form, &$form_state) {
       '#group' => 'uc_credit',
       '#weight' => 5,
     );
-    // TODO This variable was probably removed in Backdrop without replacement.
     $form['gateways'][$id]['uc_pg_' . $id . '_enabled'] = array(
       '#type' => 'checkbox',
       '#title' => t('Enable this payment gateway for use.'),
-      '#default_value' => variable_get('uc_pg_' . $id . '_enabled', TRUE),
+      '#default_value' => config_get('uc_payment.settings', 'uc_pg_' . $id . '_enabled'),
       '#weight' => -10,
     );
 
@@ -201,13 +200,12 @@ function uc_credit_settings_form($form, &$form_state) {
         $options[$type] = $title;
       }
     }
-    // TODO This variable was probably removed in Backdrop without replacement.
     $form['gateways'][$id]['uc_pg_' . $id . '_cc_txn_type'] = array(
       '#type' => 'radios',
       '#title' => t('Default credit transaction type'),
       '#description' => t('Only available transaction types are listed. The default will be used unless an administrator chooses otherwise through the terminal.'),
       '#options' => $options,
-      '#default_value' => variable_get('uc_pg_' . $id . '_cc_txn_type', UC_CREDIT_AUTH_CAPTURE),
+      '#default_value' => config_get('uc_payment.settings', 'uc_pg_' . $id . '_cc_txn_type'),
       '#weight' => -5,
     );
 
