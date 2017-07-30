@@ -15,8 +15,7 @@ function uc_paypal_requirements($phase) {
   $has_curl = function_exists('curl_init');
 
   // PayPal WPP requires cURL.
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if (variable_get('uc_pg_paypal_wpp_enabled', TRUE)) {
+  if (config_get('uc_payment.settings', 'uc_pg_paypal_wpp_enabled')) {
     $requirements['uc_paypal_curl'] = array(
       'title' => $t('cURL'),
       'value' => $has_curl ? $t('Enabled') : $t('Not found'),
@@ -177,11 +176,11 @@ function uc_paypal_update_last_removed() {
 function uc_paypal_update_1000() {
   $config = config('uc_paypal.settings');
   $config->set('uc_paypal_wpp_currency', update_variable_get('uc_paypal_wpp_currency', 'USD'));
-  $config->set('uc_paypal_wpp_server', update_variable_get('uc_paypal_wpp_server', 'dynamic value in file /ubercart/payment/uc_paypal/uc_paypal.pages.inc line 213'));
+  $config->set('uc_paypal_wpp_server', update_variable_get('uc_paypal_wpp_server', 'https://api-3t.sandbox.paypal.com/nvp'));
   $config->set('uc_paypal_wps_email', update_variable_get('uc_paypal_wps_email', ''));
   $config->set('uc_paypal_wps_currency', update_variable_get('uc_paypal_wps_currency', 'USD'));
   $config->set('uc_paypal_wps_language', update_variable_get('uc_paypal_wps_language', 'US'));
-  $config->set('uc_paypal_wps_server', update_variable_get('uc_paypal_wps_server', 'dynamic value in file /ubercart/payment/uc_paypal/uc_paypal.pages.inc line 75'));
+  $config->set('uc_paypal_wps_server', update_variable_get('uc_paypal_wps_server', 'https://www.sandbox.paypal.com/cgi-bin/webscr'));
   $config->set('uc_paypal_wps_payment_action', update_variable_get('uc_paypal_wps_payment_action', 'Sale'));
   $config->set('uc_paypal_wps_cancel_return_url', update_variable_get('uc_paypal_wps_cancel_return_url', 'cart'));
   $config->set('uc_paypal_wps_submit_method', update_variable_get('uc_paypal_wps_submit_method', 'single'));
@@ -198,6 +197,8 @@ function uc_paypal_update_1000() {
   $config->set('uc_paypal_ec_review_company', update_variable_get('uc_paypal_ec_review_company', 'TRUE'));
   $config->set('uc_paypal_ec_review_phone', update_variable_get('uc_paypal_ec_review_phone', 'TRUE'));
   $config->set('uc_paypal_ec_review_comment', update_variable_get('uc_paypal_ec_review_comment', 'TRUE'));
+  $config_>save();
+
   update_variable_del('uc_paypal_wpp_currency');
   update_variable_del('uc_paypal_wpp_server');
   update_variable_del('uc_paypal_wps_email');
