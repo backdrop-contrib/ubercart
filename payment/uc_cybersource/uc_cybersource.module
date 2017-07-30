@@ -297,57 +297,49 @@ function uc_cybersource_settings_form($form, &$form_state) {
     '#title' => t('Tax calculation "Ship from" address'),
     '#description' => t('This address will be used when calculating taxes with CyberSource tax service.'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_first_name'] = array(
     '#type' => 'textfield',
     '#title' => t('First name'),
-    '#default_value' => variable_get('cs_ship_from_first_name', ''),
+    '#default_value' => $config->get('cs_ship_from_first_name'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_last_name'] = array(
     '#type' => 'textfield',
     '#title' => t('Last name'),
-    '#default_value' => variable_get('cs_ship_from_last_name', ''),
+    '#default_value' => $config->get('cs_ship_from_last_name'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_street1'] = array(
     '#type' => 'textfield',
     '#title' => t('Street address'),
-    '#default_value' => variable_get('cs_ship_from_street1', ''),
+    '#default_value' => $config->get('cs_ship_from_street1'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_city'] = array(
     '#type' => 'textfield',
     '#title' => t('City'),
-    '#default_value' => variable_get('cs_ship_from_city', ''),
+    '#default_value' => $config->get('cs_ship_from_city'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_zone'] = array(
     '#type' => 'textfield',
     '#title' => t('State/Province'),
     '#description' => t('Enter the 2 letter abbreviation of your state or province.'),
-    '#default_value' => variable_get('cs_ship_from_zone', ''),
+    '#default_value' => $config->get('cs_ship_from_zone'),
     '#maxlength' => 2,
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_postal_code'] = array(
     '#type' => 'textfield',
     '#title' => t('ZIP/Postal code'),
-    '#default_value' => variable_get('cs_ship_from_postal_code', ''),
+    '#default_value' => $config->get('cs_ship_from_postal_code'),
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_country'] = array(
     '#type' => 'textfield',
     '#title' => t('Country code'),
     '#description' => t("Enter the 2 letter ISO 3166-1 code; consult Wikipedia if you don't know yours."),
-    '#default_value' => variable_get('cs_ship_from_country', ''),
+    '#default_value' => $config->get('cs_ship_from_country'),
     '#maxlength' => 2,
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['soap']['ship_from']['cs_ship_from_email'] = array(
     '#type' => 'textfield',
     '#title' => t('E-mail address'),
-    '#default_value' => variable_get('cs_ship_from_email', ''),
+    '#default_value' => $config->get('cs_ship_from_email'),
   );
 
   return $form;
@@ -646,8 +638,7 @@ function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country)
     'card_expirationYear' => $order->payment_details['cc_exp_year'],
   );
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if (variable_get('uc_credit_cvv_enabled', TRUE)) {
+  if (config_get('uc_credit.settings', 'uc_credit_cvv_enabled')) {
     $request['card_cvNumber'] = $order->payment_details['cc_cvv'];
   }
 
@@ -859,8 +850,7 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
       $card->expirationMonth = $order->payment_details['cc_exp_month'];
       $card->expirationYear = $order->payment_details['cc_exp_year'];
       $card->cardType = $cc_type;
-      // TODO This variable was probably removed in Backdrop without replacement.
-      if (variable_get('uc_credit_cvv_enabled', TRUE)) {
+      if (config_get('uc_credit.settings', 'uc_credit_cvv_enabled')) {
         $card->cvNumber = $order->payment_details['cc_cvv'];
       }
       $request->card = $card;
@@ -1136,22 +1126,14 @@ function uc_cybersource_uc_calculate_tax($order) {
 
     // Add the company's ship from information.
     $shipFrom = new stdClass();
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $shipFrom->firstName = variable_get('cs_ship_from_first_name', '');
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $shipFrom->lastName = variable_get('cs_ship_from_last_name', '');
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $shipFrom->street1 = variable_get('cs_ship_from_street1', '');
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $shipFrom->city = variable_get('cs_ship_from_city', '');
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $shipFrom->state = variable_get('cs_ship_from_zone', '');
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $shipFrom->postalCode = variable_get('cs_ship_from_postal_code', '');
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $shipFrom->country = variable_get('cs_ship_from_country', '');
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $shipFrom->email = variable_get('cs_ship_from_email', '');
+    $shipFrom->firstName = $config->get('cs_ship_from_first_name');
+    $shipFrom->lastName = $config->get('cs_ship_from_last_name');
+    $shipFrom->street1 = $config->get('cs_ship_from_street1');
+    $shipFrom->city = $config->get('cs_ship_from_city');
+    $shipFrom->state = $config->get('cs_ship_from_zone');
+    $shipFrom->postalCode = $config->get('cs_ship_from_postal_code');
+    $shipFrom->country = $config->get('cs_ship_from_country');
+    $shipFrom->email = $config->get('cs_ship_from_email');
     $request->shipFrom = $shipFrom;
 
     // TaxService
