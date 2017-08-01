@@ -128,3 +128,63 @@ class UcOrderProductController extends EntityDatabaseStorageController {
     return parent::save($product, $transaction);
   }
 }
+
+/**
+ * UcOrderEntity extends Entity.
+ *
+ * A subclass of Entity is a requirement for creating a custom entity. It is
+ * also a minimum requirement to define the methods included here, even as 
+ * empty functions.
+ */
+class UcOrderEntity extends Entity {
+  /**
+   * Implements EntityInterface::id().
+   */
+  public function id() {}
+  /**
+   * Implements EntityInterface::entityType().
+   */
+  public function entityType() {}
+  /**
+   * Implements EntityInterface::bundle().
+   */
+  public function bundle() {}
+  /**
+   * Implements EntityInterface::label().
+   */
+  public function label() {}
+  /**
+   * Implements EntityInterface::uri().
+   */
+  public function uri() {}
+}
+
+/**
+ * UcOrderProduct extends Entity.
+ *
+ * A subclass of Entity is a requirement for creating a custom entity. It is
+ * also a minimum requirement to define the methods included here, even as 
+ * empty functions.
+ */
+class UcOrderProduct extends Entity {
+  /**
+   * Implements EntityInterface::id().
+   */
+  public function id() {}
+  /**
+   * Implements EntityInterface::entityType().
+   */
+  public function entityType() {}
+  /**
+   * Implements EntityInterface::bundle().
+   */
+  public function bundle() {}
+  /**
+   * Implements EntityInterface::label().
+   */
+  public function label() {}
+  /**
+   * Implements EntityInterface::uri().
+   */
+  public function uri() {}
+}
