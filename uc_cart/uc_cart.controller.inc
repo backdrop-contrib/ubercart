@@ -54,3 +54,38 @@ class UcCartItemController extends EntityDatabaseStorageController {
     return parent::buildContent($product, $view_mode, $langcode, $content);
   }
 }
+
+
+/**
+ * UcCartItem extends Entity.
+ *
+ * A subclass of Entity is a requirement for creating a custom entity. It is
+ * also a minimum requirement to define the methods included here, even as 
+ * empty functions.
+ */
+class UcCartItem extends Entity {
+  /**
+   * Implements EntityInterface::id().
+   */
+  public function id() {
+    return isset($this->nid) ? $this->nid : NULL;
+  }
+  /**
+   * Implements EntityInterface::entityType().
+   */
+  public function entityType() {
+    return 'uc_cart_item';
+  }
+  /**
+   * Implements EntityInterface::bundle().
+   */
+  public function bundle() {}
+  /**
+   * Implements EntityInterface::label().
+   */
+  public function label() {}
+  /**
+   * Implements EntityInterface::uri().
+   */
+  public function uri() {}
+}
