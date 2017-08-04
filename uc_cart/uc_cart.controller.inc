@@ -65,10 +65,18 @@ class UcCartItemController extends EntityDatabaseStorageController {
  */
 class UcCartItem extends Entity {
   /**
+   * The cart item ID.
+   *
+   * @var integer
+   */
+  public $cart_item_id;
+
+
+  /**
    * Implements EntityInterface::id().
    */
   public function id() {
-    return isset($this->nid) ? $this->nid : NULL;
+    return isset($this->cart_item_id) ? $this->cart_item_id : NULL;
   }
   /**
    * Implements EntityInterface::entityType().
