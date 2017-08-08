@@ -4,7 +4,7 @@
  *
  * Contains the controller for uc_cart_item entities.
  */
-class UcCartItemController extends EntityDatabaseStorageController {
+class UcCartItemController extends EMWController {
 
   /**
    * Overrides EntityDatabaseStorageController::attachLoad().
@@ -26,7 +26,7 @@ class UcCartItemController extends EntityDatabaseStorageController {
    *
    * Cart items are deleted if saved with a quantity of zero.
    */
-  public function save(EntityInterface $item) {
+  public function save($item) {
     $transaction = NULL;
     if ($item->qty < 1) {
       if (isset($item->cart_item_id)) {
@@ -65,10 +65,18 @@ class UcCartItemController extends EntityDatabaseStorageController {
  */
 class UcCartItem extends Entity {
   /**
+   * The cart item ID.
+   *
+   * @var integer
+   */
+  public $cart_item_id;
+
+
+  /**
    * Implements EntityInterface::id().
    */
   public function id() {
-    return isset($this->nid) ? $this->nid : NULL;
+    return isset($this->cart_item_id) ? $this->cart_item_id : NULL;
   }
   /**
    * Implements EntityInterface::entityType().
