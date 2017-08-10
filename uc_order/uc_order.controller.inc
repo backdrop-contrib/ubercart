@@ -62,7 +62,7 @@ class UcOrderController extends EntityDatabaseStorageController {
 /**
  * Controller class for the uc_order_product entity.
  */
-class UcOrderProductController extends EntityDatabaseStorageController {
+class UcOrderProductController extends EMWController {
 
   /**
    * Overrides EntityDatabaseStorageController::buildContent().
@@ -109,7 +109,7 @@ class UcOrderProductController extends EntityDatabaseStorageController {
   /**
    * Overrides EntityAPIController::save().
    */
-  public function save(EntityInterface $product, DatabaseTransaction $transaction = NULL) {
+  public function save($product) {
     // Product kits, particularly, shouldn't actually be added to an order,
     // but instead they cause other products to be added.
     if (isset($product->skip_save) && $product->skip_save == TRUE) {
@@ -125,7 +125,7 @@ class UcOrderProductController extends EntityDatabaseStorageController {
         $product->weight_units = empty($units) ? config_get('uc_store.settings', 'uc_weight_unit') : $units;
       }
     }
-    return parent::save($product, $transaction);
+    return parent::save($product);
   }
 }
 
@@ -167,22 +167,44 @@ class UcOrderEntity extends Entity {
  * empty functions.
  */
 class UcOrderProduct extends Entity {
+
+  /**
+   * The node ID.
+   *
+   * @var integer
+   */
+  public $order_product_id;
+
+  /**
+   * The node ID.
+   *
+   * @var integer
+   */
+  public $title;
   /**
    * Implements EntityInterface::id().
    */
-  public function id() {}
+  public function id() {
+    return isset($this->order_product_id ) ? $this->order_product_id  : NULL;
+  }
   /**
    * Implements EntityInterface::entityType().
    */
-  public function entityType() {}
+  public function entityType() {
+    return 'uc_order_product';
+  }
   /**
    * Implements EntityInterface::bundle().
    */
-  public function bundle() {}
+  public function bundle() {
+    // return $this->type;
+  }
   /**
    * Implements EntityInterface::label().
    */
-  public function label() {}
+  public function label() {
+    return $this->title;
+  }
   /**
    * Implements EntityInterface::uri().
    */
