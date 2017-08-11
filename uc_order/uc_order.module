@@ -14,76 +14,6 @@ require_once dirname(__FILE__) . '/uc_order.order_pane.inc';
 require_once dirname(__FILE__) . '/uc_order.line_item.inc';
 
 /**
- * Defines an order object.
- */
-class UcOrder {
-
-  public $order_id = 0;
-  public $uid = 0;
-  public $order_status = '';
-  public $order_total = 0;
-  public $primary_email = '';
-
-  public $delivery_first_name = '';
-  public $delivery_last_name = '';
-  public $delivery_phone = '';
-  public $delivery_company = '';
-  public $delivery_street1 = '';
-  public $delivery_street2 = '';
-  public $delivery_city = '';
-  public $delivery_zone = 0;
-  public $delivery_postal_code = '';
-  public $delivery_country = 0;
-
-  public $billing_first_name = '';
-  public $billing_last_name = '';
-  public $billing_phone = '';
-  public $billing_company = '';
-  public $billing_street1 = '';
-  public $billing_street2 = '';
-  public $billing_city = '';
-  public $billing_zone = 0;
-  public $billing_postal_code = '';
-  public $billing_country = 0;
-
-  public $products = array();
-  public $line_items = array();
-
-  public $payment_method = '';
-  public $data = array();
-  public $created = 0;
-  public $modified = 0;
-  public $currency = '';
-
-  /**
-   * Order object constructor.
-   *
-   * @param $uid
-   *   The user ID that owns the order, or a cart ID. Cart IDs are integer
-   *   user IDs for authenticated users, or are strings of 22 characters
-   *   or more for anonymous users.
-   * @param $state
-   *   The initial order state.
-   */
-  function __construct($uid = 0, $state = 'in_checkout') {
-    if (strlen($uid) < 22 && $uid > 0) {
-      $this->uid = $uid;
-      if ($account = user_load($uid)) {
-        $this->primary_email = $account->mail;
-      }
-    }
-
-    $this->order_status = uc_order_state_default($state);
-    $this->currency = config_get('uc_store.settings', 'uc_currency_code');
-    $this->billing_country = config_get('uc_store.settings', 'uc_store_country');
-    $this->delivery_country = config_get('uc_store.settings', 'uc_store_country');
-    $this->created = REQUEST_TIME;
-    $this->modified = REQUEST_TIME;
-  }
-
-}
-
-/**
  * Implements hook_help().
  */
 function uc_order_help($path, $arg) {
@@ -941,7 +871,11 @@ function uc_order_order_entity_access($op, $order = NULL, $account = NULL) {
  *   The initial state of the order.
  */
 function uc_order_new($uid = 0, $state = 'in_checkout') {
-  $order = new UcOrder($uid, $state);
+  $order_values = array(
+    'uid' => $uid,
+    'state' => $state,
+  );
+  $order = new UcOrder($order_values);
 
   module_invoke_all('entity_presave', $order, 'uc_order');
 
@@ -1105,8 +1039,11 @@ function uc_order_order_product_access($op, $product = NULL, $account = NULL) {
  */
 function uc_order_product_save($order_id, $product) {
   $product->order_id = $order_id;
+  if (!isset($product->order_product_id)) {
+    $product->is_new = TRUE;
+  }
   //eturn entity_save('uc_order_product', $product);
-  return entity_get_controller('uc_order_product')->save($item_entity);
+  return entity_get_controller('uc_order_product')->save($product);
 }
 
 /**
@@ -2454,7 +2391,7 @@ function uc_order_autoload_info() {
     'UcOrderController' => 'uc_order.controller.inc',
     'UcOrderProductController' => 'uc_order.controller.inc',
     'UcOrderProductMetadataController' => 'uc_order.info.inc',
-    'UcOrder' => 'uc_order.module',
+    'UcOrder' => 'uc_order.entity.inc',
     'uc_order_handler_field_money_amount' => 'views/uc_order_handler_field_money_amount.inc',
     'uc_order_handler_field_money_total' => 'views/uc_order_handler_field_money_total.inc',
     'uc_order_handler_field_order_actions' => 'views/uc_order_handler_field_order_actions.inc',
