@@ -679,5 +679,35 @@ function uc_catalog_add_image_field() {
 function uc_catalog_autoload_info() {
   return array(
     'UcTreeNode' => 'classes/treenode.inc',
+    'uc_catalog_handler_argument_term_node_tid_depth_new' => 'views/uc_catalog_handler_argument_term_node_tid_depth.inc',
   );
+}
+
+/**
+ * Helper function to set a breadcrumb for taxonomy. Copy of the core function
+ * views_taxonomy_set_breadcrumb() but without the deprecated function
+ * taxonomy_get_parents_all(). See https://github.com/backdrop/backdrop-issues/issues/2792
+ */
+function uc_catalog_taxonomy_set_breadcrumb(&$breadcrumb, &$argument) {
+  if (empty($argument->options['set_breadcrumb'])) {
+    return;
+  }
+
+  $args = $argument->view->args;
+  $parents = taxonomy_term_load_parents_all($argument->argument);
+  foreach (array_reverse($parents) as $parent) {
+    // Unfortunately parents includes the current argument. Skip.
+    if ($parent->tid == $argument->argument) {
+      continue;
+    }
+    if (!empty($argument->options['use_taxonomy_term_path'])) {
+      $path = $parent->uri();
+      $path = $path['path'];
+    }
+    else {
+      $args[$argument->position] = $parent->tid;
+      $path = $argument->view->get_url($args);
+    }
+    $breadcrumb[$path] = check_plain($parent->name);
+  }
 }
