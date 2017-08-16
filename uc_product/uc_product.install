@@ -293,13 +293,16 @@ function uc_product_update_last_removed() {
  * Implements hook_update_N().
  */
 function uc_product_update_1000() {
-  $config = config('uc_product .settings');
+  $config = config('uc_product.settings');
   $config->set('uc_product_image_widget', update_variable_get('uc_product_image_widget', 'NULL'));
   $config->set('uc_product_add_to_cart_qty', update_variable_get('uc_product_add_to_cart_qty', 'FALSE'));
   $config->set('uc_product_update_node_view', update_variable_get('uc_product_update_node_view', 'FALSE'));
   $config->set('uc_product_shippable_nodetype', update_variable_get('uc_product_shippable_nodetype', 'dynamic variable in file /ubercart/uc_product/uc_product.module line 1105'));
   $config->set('uc_product_shippable_typetype', update_variable_get('uc_product_shippable_typetype', 'dynamic variable in file /ubercart/uc_product/uc_product.module line 900'));
   $config->set('uc_product_shippable_product', update_variable_get('uc_product_shippable_product', '1'));
+
+  $config->save();
+
   update_variable_del('uc_product_image_widget');
   update_variable_del('uc_product_add_to_cart_qty');
   update_variable_del('uc_product_update_node_view');
@@ -315,4 +318,29 @@ function uc_product_install() {
   // Dynamically generated variable data was detected.
   // /ubercart/uc_product/uc_product.module line 1105
   // /ubercart/uc_product/uc_product.module line 900
+  _uc_product_type_create();
+}
+
+/**
+ * Creates the product type.
+ */
+function _uc_product_type_create() {
+  // Create an additional node type.
+  $product_node_type = array(
+    'type' => 'product',
+    'name' => t('Product'),
+    'base' => 'uc_product',
+    'description' => t('Use <em>products</em> to represent items for sale on the website, including all the unique information that can be attributed to a specific model number.'),
+    'custom' => 1,
+    'modified' => 1,
+    'locked' => 0,
+    'is_new' => TRUE,
+    'settings' => array(
+      'promote_enabled' => FALSE,
+    ),
+  );
+
+  $product_node_type = node_type_set_defaults($product_node_type);
+  node_type_save($product_node_type);
+  node_add_body_field($product_node_type);
 }

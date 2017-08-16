@@ -52,13 +52,11 @@ function uc_usps_theme() {
 function uc_usps_form_alter(&$form, &$form_state, $form_id) {
   if (uc_product_is_product_form($form)) {
     $node = $form['#node'];
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $enabled = variable_get('uc_quote_enabled', array()) + array(
+    $enabled = config_get('uc_quote.settings', 'uc_quote_enabled') + array(
       'usps' => FALSE,
       'usps_intl' => FALSE,
     );
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $weight = variable_get('uc_quote_method_weight', array()) + array(
+    $weight = config_get('uc_quote.settings', 'uc_quote_method_weight') + array(
       'usps' => 0,
       'usps_intl' => 1,
     );
@@ -122,8 +120,7 @@ function uc_usps_node_load($nodes, $types) {
   }
 
   $vids = array();
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $shipping_type = variable_get('uc_store_shipping_type', 'small_package');
+  $shipping_type = config_get('uc_shipping', 'uc_store_shipping_type');
   $shipping_types = db_query("SELECT id, shipping_type FROM {uc_quote_shipping_types} WHERE id_type = :type AND id IN (:ids)", array(':type' => 'product', ':ids' => array_keys($nodes)))->fetchAllKeyed();
 
   foreach ($nodes as $nid => $node) {
@@ -177,8 +174,7 @@ function uc_usps_node_revision_delete($node) {
  * Implements hook_uc_shipping_type().
  */
 function uc_usps_uc_shipping_type() {
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $weight = variable_get('uc_quote_type_weight', array('envelope' => -1, 'small_package' => 0));
+  $weight = config_get('uc_quote.settings', 'uc_quote_type_weight');
 
   $types = array(
     'envelope' => array(
@@ -314,8 +310,7 @@ function uc_usps_quote($products, $details, $method) {
     'error' => array(),
   );
   $services = array();
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $addresses = array(variable_get('uc_quote_store_default_address', new UcAddress()));
+  $addresses = array(config_get('uc_quote.settings', 'uc_quote_store_default_address'));
   $packages = _uc_usps_package_products($products, $addresses);
   if (!count($packages)) {
     return array();
@@ -334,8 +329,7 @@ function uc_usps_quote($products, $details, $method) {
       $request = uc_usps_rate_request($ship_packages, $orig, $destination);
     }
 
-    // TODO This variable was probably removed in Backdrop without replacement.
-    if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
+    if (user_access('configure quotes') && config_get('uc_quote.settings', 'uc_quote_display_debug')) {
       $debug_data['debug'] .= htmlentities(urldecode($request)) . "<br />\n";
     }
 
@@ -344,8 +338,7 @@ function uc_usps_quote($products, $details, $method) {
       'data' => $request,
     ));
 
-    // TODO This variable was probably removed in Backdrop without replacement.
-    if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
+    if (user_access('configure quotes') && config_get('uc_quote.settings', 'uc_quote_display_debug')) {
       $debug_data['debug'] .= htmlentities($result->data) . "<br />\n";
     }
 
@@ -428,8 +421,7 @@ function uc_usps_quote($products, $details, $method) {
   }
 
   $method_services = 'uc_' . $method['id'] . '_services';
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $usps_services = array_filter(variable_get($method_services, array_keys(call_user_func('_' . $method_services))));
+  $usps_services = array_filter(config_get('uc_' . $method['id'] . '.settings', $method_services));
   foreach ($services as $service => $quote) {
     if (!in_array($service, $usps_services)) {
       unset($services[$service]);

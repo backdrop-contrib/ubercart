@@ -62,7 +62,7 @@ class UcOrderController extends EntityDatabaseStorageController {
 /**
  * Controller class for the uc_order_product entity.
  */
-class UcOrderProductController extends EntityDatabaseStorageController {
+class UcOrderProductController extends EMWController {
 
   /**
    * Overrides EntityDatabaseStorageController::buildContent().
@@ -109,7 +109,7 @@ class UcOrderProductController extends EntityDatabaseStorageController {
   /**
    * Overrides EntityAPIController::save().
    */
-  public function save(EntityInterface $product) {
+  public function save($product) {
     // Product kits, particularly, shouldn't actually be added to an order,
     // but instead they cause other products to be added.
     if (isset($product->skip_save) && $product->skip_save == TRUE) {
@@ -118,15 +118,95 @@ class UcOrderProductController extends EntityDatabaseStorageController {
 
     if (empty($product->weight_units)) {
       if (empty($product->nid)) {
-        // TODO This variable was probably removed in Backdrop without replacement.
-        $product->weight_units = variable_get('uc_weight_unit', 'lb');
+        $product->weight_units = config_get('uc_store.settings', 'uc_weight_unit');
       }
       else {
         $units = db_query("SELECT weight_units FROM {node} n JOIN {uc_products} p ON n.vid = p.vid WHERE n.nid = :nid", array(':nid' => $product->nid))->fetchField();
-        // TODO This variable was probably removed in Backdrop without replacement.
-        $product->weight_units = empty($units) ? variable_get('uc_weight_unit', 'lb') : $units;
+        $product->weight_units = empty($units) ? config_get('uc_store.settings', 'uc_weight_unit') : $units;
       }
     }
-    return parent::save($product, $transaction);
+    return parent::save($product);
   }
+}
+
+/**
+ * UcOrderEntity extends Entity.
+ *
+ * A subclass of Entity is a requirement for creating a custom entity. It is
+ * also a minimum requirement to define the methods included here, even as 
+ * empty functions.
+ */
+class UcOrderEntity extends Entity {
+  /**
+   * Implements EntityInterface::id().
+   */
+  public function id() {}
+  /**
+   * Implements EntityInterface::entityType().
+   */
+  public function entityType() {}
+  /**
+   * Implements EntityInterface::bundle().
+   */
+  public function bundle() {}
+  /**
+   * Implements EntityInterface::label().
+   */
+  public function label() {}
+  /**
+   * Implements EntityInterface::uri().
+   */
+  public function uri() {}
+}
+
+/**
+ * UcOrderProduct extends Entity.
+ *
+ * A subclass of Entity is a requirement for creating a custom entity. It is
+ * also a minimum requirement to define the methods included here, even as 
+ * empty functions.
+ */
+class UcOrderProduct extends Entity {
+
+  /**
+   * The node ID.
+   *
+   * @var integer
+   */
+  public $order_product_id;
+
+  /**
+   * The node ID.
+   *
+   * @var integer
+   */
+  public $title;
+  /**
+   * Implements EntityInterface::id().
+   */
+  public function id() {
+    return isset($this->order_product_id ) ? $this->order_product_id  : NULL;
+  }
+  /**
+   * Implements EntityInterface::entityType().
+   */
+  public function entityType() {
+    return 'uc_order_product';
+  }
+  /**
+   * Implements EntityInterface::bundle().
+   */
+  public function bundle() {
+    // return $this->type;
+  }
+  /**
+   * Implements EntityInterface::label().
+   */
+  public function label() {
+    return $this->title;
+  }
+  /**
+   * Implements EntityInterface::uri().
+   */
+  public function uri() {}
 }

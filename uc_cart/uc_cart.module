@@ -374,8 +374,7 @@ function uc_cart_block_view($delta = '') {
       );
 
       // Only add the checkout link if checkout is enabled.
-      // TODO This variable was probably removed in Backdrop without replacement.
-      if (variable_get('uc_checkout_enabled', TRUE)) {
+      if ($config->get('uc_checkout_enabled')) {
         $summary_links['cart-block-checkout'] = array(
           'title' => t('Checkout'),
           'href' => 'cart/checkout',
@@ -615,6 +614,7 @@ function uc_cart_login_update($uid) {
  * @ingroup forms
  */
 function uc_cart_view_form($form, &$form_state, $items = NULL) {
+  $config = config('uc_cart.settings');
   $form['#attached']['css'][] = backdrop_get_path('module', 'uc_cart') . '/uc_cart.css';
 
   $form['items'] = array(
@@ -671,17 +671,14 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
   $form['actions'] = array('#type' => 'actions');
 
   // If the continue shopping element is enabled...
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if (($cs_type = variable_get('uc_continue_shopping_type', 'link')) !== 'none') {
+  if (($cs_type = $config->get('uc_continue_shopping_type')) !== 'none') {
     // Add the element to the form based on the element type.
-    // TODO This variable was probably removed in Backdrop without replacement.
-    if (variable_get('uc_continue_shopping_type', 'link') == 'link') {
+    if ($config->get('uc_continue_shopping_type') == 'link') {
       $form['actions']['continue_shopping'] = array(
         '#markup' => l(t('Continue shopping'), uc_cart_continue_shopping_url()),
       );
     }
-    // TODO This variable was probably removed in Backdrop without replacement.
-    elseif (variable_get('uc_continue_shopping_type', 'link') == 'button') {
+    elseif ($config->get('uc_continue_shopping_type') == 'button') {
       $form['actions']['continue_shopping'] = array(
         '#type' => 'submit',
         '#value' => t('Continue shopping'),
@@ -691,7 +688,7 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
   }
 
   // Add the empty cart button if enabled.
-  if (config_get('uc_cart.settings', 'uc_cart_empty_button')) {
+  if ($config->get('uc_cart_empty_button')) {
     $form['actions']['empty'] = array(
       '#type' => 'submit',
       '#value' => t('Empty cart'),
@@ -707,10 +704,10 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
     '#submit' => array('uc_cart_view_form_submit', 'uc_cart_view_form_update_message'),
   );
   $form['actions']['checkout'] = array(
+    '#type' => 'actions',
     '#theme' => 'uc_cart_checkout_buttons',
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if (variable_get('uc_checkout_enabled', TRUE)) {
+  if ($config->get('uc_checkout_enabled')) {
     $form['actions']['checkout']['checkout'] = array(
       '#type' => 'submit',
       '#value' => t('Checkout'),
@@ -845,15 +842,13 @@ function uc_cart_continue_shopping_url($unset = TRUE) {
   $url = '';
 
   // Use the last URL if enabled and available.
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if (variable_get('uc_continue_shopping_use_last_url', TRUE) && isset($_SESSION['uc_cart_last_url'])) {
+  if (config_get('uc_cart.settings','uc_continue_shopping_use_last_url') && isset($_SESSION['uc_cart_last_url'])) {
     $url = $_SESSION['uc_cart_last_url'];
   }
 
   // If the URL is still empty, fall back to the default.
   if (empty($url)) {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $url = variable_get('uc_continue_shopping_url', '');
+    $url = config_get('uc_cart.settings', 'uc_continue_shopping_url');
   }
 
   // Unset the last URL if specified.
@@ -927,8 +922,7 @@ function uc_cart_complete_sale($order, $login = FALSE) {
     'uc_msg_continue_shopping' => uc_get_message('continue_shopping'),
   );
   foreach ($messages as $id => &$message) {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $message = variable_get($id, $message);
+    $message = config_get('uc_cart.settings', $id);
     $message = token_replace($message, array('uc_order' => $order));
     if ($id == 'uc_msg_order_' . $type) {
       $message = strtr($message, $variables);
@@ -969,14 +963,13 @@ function uc_cart_complete_sale_account($order) {
   }
 
   // Set up a new user.
-  // TODO This variable was probably removed in Backdrop without replacement.
   $fields = array(
     'name' => uc_store_email_to_username($order->primary_email),
     'mail' => $order->primary_email,
     'init' => $order->primary_email,
     'pass' => user_password(),
     'roles' => array(),
-    'status' => variable_get('uc_new_customer_status_active', TRUE) ? 1 : 0,
+    'status' => config_get('uc_cart.settings', 'uc_new_customer_status_active') ? 1 : 0,
   );
 
   // Override the username, if specified.
@@ -998,10 +991,8 @@ function uc_cart_complete_sale_account($order) {
   }
 
   // Send the customer their account details if enabled.
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if (variable_get('uc_new_customer_email', TRUE)) {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $type = variable_get('uc_new_customer_status_active', TRUE) ? 'register_no_approval_required' : 'register_pending_approval';
+  if (config_get('uc_cart.settings', 'uc_new_customer_email')) {
+    $type = config_get('uc_cart.settings', 'uc_new_customer_status_active') ? 'register_no_approval_required' : 'register_pending_approval';
     backdrop_mail('user', $type, $order->primary_email, uc_store_mail_recipient_language($order->primary_email), array('account' => $account), uc_store_email_from());
   }
 
@@ -1074,7 +1065,11 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
         $items[$cid] = entity_load('uc_cart_item', array_keys($result['uc_cart_item']), NULL, TRUE);
 
         // Create a bare order and attach it to each item as context.
-        $order = new UcOrder($cid);
+        $order_values = array(
+          'uid' => $cid,
+          'state' => 'in_checkout',
+        );
+        $order = new UcOrder($order_values);
         foreach ($items[$cid] as $item) {
           $item->order = $order;
         }
@@ -1144,10 +1139,11 @@ function uc_cart_get_total_qty($cid = NULL) {
  *   unknown_type
  */
 function uc_cart_update_item($item) {
-  $item_entity = entity_load_single('uc_cart_item', $item->cart_item_id);
+  $item_entity = entity_load('uc_cart_item', $item->cart_item_id);
   $item_entity->qty = $item->qty;
   $item_entity->data = $item->data;
-  entity_save('uc_cart_item', $item_entity);
+  //entity_save('uc_cart_item', $item_entity);
+  entity_get_controller('uc_cart_item')->save($item_entity);
 }
 
 /**
@@ -1185,8 +1181,7 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
               backdrop_goto();
             }
             $_SESSION['uc_cart_last_url'] = current_path();
-            // TODO This variable was probably removed in Backdrop without replacement.
-            $redirect = variable_get('uc_add_item_redirect', 'cart');
+            $redirect = config_get('uc_cart.settings', 'uc_add_item_redirect');
             if ($redirect != '<none>') {
               return $redirect;
             }
@@ -1218,7 +1213,8 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
       'qty' => $qty,
       'data' => $data,
     ));
-    entity_save('uc_cart_item', $item_entity);
+    //entity_save('uc_cart_item', $item_entity);
+    entity_get_controller('uc_cart_item')->save($item_entity);
     if ($msg) {
       backdrop_set_message(t('<strong>@product-title</strong> added to <a href="!url">your shopping cart</a>.', array('@product-title' => $node->title, '!url' => url('cart'))));
     }
@@ -1228,7 +1224,7 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
     if ($msg) {
       backdrop_set_message(t('Your item(s) have been updated.'));
     }
-    $item_entity = entity_load_single('uc_cart_item', current(array_keys($result['uc_cart_item'])));
+    $item_entity = entity_load('uc_cart_item', current(array_keys($result['uc_cart_item'])));
     $qty += $item_entity->qty;
     module_invoke($data['module'], 'uc_update_cart_item', $node->nid, $data, min($qty, 999999), $cid);
   }
@@ -1244,8 +1240,7 @@ function uc_cart_add_item($nid, $qty = 1, $data = NULL, $cid = NULL, $msg = TRUE
     }
 
     $_SESSION['uc_cart_last_url'] = current_path();
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $redirect = variable_get('uc_add_item_redirect', 'cart');
+    $redirect = config_get('uc_cart.settings', 'uc_add_item_redirect');
     if ($redirect != '<none>') {
       return $redirect;
     }
@@ -1347,10 +1342,8 @@ function uc_cart_cart_pane_list($items) {
       'body' => array(),
     );
 
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $pane['enabled'] = variable_get('uc_cap_' . $id . '_enabled', $pane['enabled']);
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $pane['weight'] = variable_get('uc_cap_' . $id . '_weight', $pane['weight']);
+    $pane['enabled'] = config_get('uc_cart.settings', 'uc_cap_' . $id . '_enabled');
+    $pane['weight'] = config_get('uc_cart.settings', 'uc_cap_' . $id . '_weight');
 
     $panes[$id] = $pane;
   }
@@ -1406,6 +1399,7 @@ function uc_cart_entity_info() {
       'label' => t('Cart item'),
       'module' => 'uc_cart',
       'base table' => 'uc_cart_products',
+      'entity class' => 'UcCartItem',
       'controller class' => 'UcCartItemController',
       'entity keys' => array(
         'id' => 'cart_item_id',

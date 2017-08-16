@@ -279,12 +279,11 @@ function uc_line_item_tax_display($op, $order) {
  *   A line item array suitable for returning from line item callbacks.
  */
 function _uc_taxes_to_line_item($tax) {
-  // TODO This variable was probably removed in Backdrop without replacement.
   $line = array(
     'id' => ($tax->summed ? 'tax' : 'tax_included'),
     'title' => !empty($tax->name) ? $tax->name : $tax->id,
     'amount' => $tax->amount,
-    'weight' => variable_get('uc_li_tax_weight', 9) + (!empty($tax->weight) ? $tax->weight / 10 : 0),
+    'weight' => config_get('uc_taxes.settings', 'uc_li_tax_weight') + (!empty($tax->weight) ? $tax->weight / 10 : 0),
     'data' => isset($tax->data) ? $tax->data : array(),
   );
   $line['data']['tax_id'] = $tax->id;
@@ -326,12 +325,11 @@ function uc_line_item_tax_subtotal($op, $order) {
       }
 
       if ($different && $has_taxes) {
-        // TODO This variable was probably removed in Backdrop without replacement.
         return array(array(
             'id' => 'tax_subtotal',
             'title' => t('Subtotal excluding taxes'),
             'amount' => $amount,
-            'weight' => variable_get('uc_li_tax_subtotal_weight', 7),
+            'weight' => config_get('uc_taxes.settings', 'uc_li_tax_subtotal_weight'),
           ));
       }
       break;
@@ -388,7 +386,7 @@ function uc_taxes_rate_save($rate, $reset = TRUE) {
 
   if ($reset) {
     // Ensure Rules picks up the new condition.
-    entity_flush_caches();
+    entity_info_cache_clear();
   }
 
   return $rate;
@@ -588,8 +586,7 @@ function uc_taxes_apply_item_tax($item, $tax) {
     $shippable = $node->shippable;
   }
   else {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $shippable = variable_get('uc_product_shippable_' . $type); // Use default for this node type.
+    $shippable = config_get('uc_product.settings', 'uc_product_shippable_' . $type); // Use default for this node type.
   }
 
   // Tax products if they are of a taxed type and if it is shippable if

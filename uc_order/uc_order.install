@@ -702,8 +702,7 @@ function uc_order_uninstall() {
     ->execute();
 
   config_clear('uc_order.settings', 'uc_order_capitalize_addresses');
-  // TODO This variable was probably removed in Backdrop without replacement.
-  variable_del('uc_cust_order_invoice_template');
+  config_clear('uc_order.settings', 'uc_cust_order_invoice_template');
 }
 
 // TODO The old hook_update_N functions cannot be applied to Backdrop.
@@ -754,7 +753,12 @@ function uc_order_update_last_removed() {
  * Implements hook_update_N().
  */
 function uc_order_update_1000() {
-  $config = config('uc_order .settings');
+  $config = config('uc_order.settings');
   $config->set('uc_order_capitalize_addresses', update_variable_get('uc_order_capitalize_addresses', 'TRUE'));
+  $config->set('uc_cust_order_invoice_template', update_variable_get('uc_cust_order_invoice_template', 'TRUE'));
+
+  $config->save();
+
   update_variable_del('uc_order_capitalize_addresses');
+  update_variable_del('uc_cust_order_invoice_template');
 }

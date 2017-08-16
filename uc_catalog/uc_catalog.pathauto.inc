@@ -36,12 +36,12 @@ function uc_catalog_pathauto_bulkupdate(&$context) {
     $context['sandbox']['current'] = 0;
   }
 
-  $catalog_vid = config_get('uc_catalog.settings', 'uc_catalog_vid');
+  $catalog_vocabulary = config_get('uc_catalog.settings', 'uc_catalog_vocabulary');
   $query = db_select('taxonomy_term_data', 'td');
   $query->leftJoin('url_alias', 'ua', "CONCAT('catalog/', td.tid) = ua.source");
   $query->addField('td', 'tid');
   $query->isNull('ua.source');
-  $query->condition('vid', $catalog_vid);
+  $query->condition('vocabulary', $catalog_vocabulary);
   $query->orderBy('td.tid');
   $query->addTag('pathauto_bulk_update');
   $query->addMetaData('entity', 'taxonomy_term');
@@ -87,10 +87,10 @@ function _uc_catalog_pathauto_alias($category, $op) {
   module_load_include('inc', 'pathauto');
   $count = 0;
 
-  if ($category->vid == config_get('uc_catalog.settings', 'uc_catalog_vid')) {
+  if ($category->vocabulary == config_get('uc_catalog.settings', 'uc_catalog_vocabulary')) {
     // Check that the term has its bundle, which is the vocabulary's machine name.
     if (!isset($category->vocabulary_machine_name)) {
-      $vocabulary = taxonomy_vocabulary_load($term->vid);
+      $vocabulary = taxonomy_vocabulary_load($term->vocabulary);
       $category->vocabulary_machine_name = $vocabulary->machine_name;
     }
 

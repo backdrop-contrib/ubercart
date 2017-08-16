@@ -14,79 +14,6 @@ require_once dirname(__FILE__) . '/uc_order.order_pane.inc';
 require_once dirname(__FILE__) . '/uc_order.line_item.inc';
 
 /**
- * Defines an order object.
- */
-class UcOrder {
-
-  public $order_id = 0;
-  public $uid = 0;
-  public $order_status = '';
-  public $order_total = 0;
-  public $primary_email = '';
-
-  public $delivery_first_name = '';
-  public $delivery_last_name = '';
-  public $delivery_phone = '';
-  public $delivery_company = '';
-  public $delivery_street1 = '';
-  public $delivery_street2 = '';
-  public $delivery_city = '';
-  public $delivery_zone = 0;
-  public $delivery_postal_code = '';
-  public $delivery_country = 0;
-
-  public $billing_first_name = '';
-  public $billing_last_name = '';
-  public $billing_phone = '';
-  public $billing_company = '';
-  public $billing_street1 = '';
-  public $billing_street2 = '';
-  public $billing_city = '';
-  public $billing_zone = 0;
-  public $billing_postal_code = '';
-  public $billing_country = 0;
-
-  public $products = array();
-  public $line_items = array();
-
-  public $payment_method = '';
-  public $data = array();
-  public $created = 0;
-  public $modified = 0;
-  public $currency = '';
-
-  /**
-   * Order object constructor.
-   *
-   * @param $uid
-   *   The user ID that owns the order, or a cart ID. Cart IDs are integer
-   *   user IDs for authenticated users, or are strings of 22 characters
-   *   or more for anonymous users.
-   * @param $state
-   *   The initial order state.
-   */
-  function __construct($uid = 0, $state = 'in_checkout') {
-    if (strlen($uid) < 22 && $uid > 0) {
-      $this->uid = $uid;
-      if ($account = user_load($uid)) {
-        $this->primary_email = $account->mail;
-      }
-    }
-
-    $this->order_status = uc_order_state_default($state);
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $this->currency = variable_get('uc_currency_code', 'USD');
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $this->billing_country = variable_get('uc_store_country', 840);
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $this->delivery_country = variable_get('uc_store_country', 840);
-    $this->created = REQUEST_TIME;
-    $this->modified = REQUEST_TIME;
-  }
-
-}
-
-/**
  * Implements hook_help().
  */
 function uc_order_help($path, $arg) {
@@ -516,6 +443,7 @@ function uc_order_entity_info() {
   return array(
     'uc_order' => array(
       'label' => t('Order'),
+      'entity class' => 'UcOrderEntity',
       'controller class' => 'UcOrderController',
       'base table' => 'uc_orders',
       'fieldable' => TRUE,
@@ -550,6 +478,7 @@ function uc_order_entity_info() {
     'uc_order_product' => array(
       'label' => t('Order product'),
       'base table' => 'uc_order_products',
+      'entity class' => 'UcOrderProduct',
       'controller class' => 'UcOrderProductController',
       'metadata controller class' => 'UcOrderProductMetadataController',
       'fieldable' => TRUE,
@@ -635,8 +564,7 @@ function uc_order_mail($key, &$message, $params) {
       $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
       $message['subject'] = t('Your Order Invoice', array(), array('langcode' => $langcode));
       $message['from'] = uc_store_email_from();
-      // TODO This variable was probably removed in Backdrop without replacement.
-      $message['body'][] = theme('uc_order', array('order' => $params['order'], 'op' => 'admin-mail', 'template' => variable_get('uc_cust_order_invoice_template', 'customer')));
+      $message['body'][] = theme('uc_order', array('order' => $params['order'], 'op' => 'admin-mail', 'template' => config_get('uc_order.settings', 'uc_cust_order_invoice_template')));
       break;
 
       // Setup a custom e-mail defined by an action on a predicate.
@@ -943,7 +871,11 @@ function uc_order_order_entity_access($op, $order = NULL, $account = NULL) {
  *   The initial state of the order.
  */
 function uc_order_new($uid = 0, $state = 'in_checkout') {
-  $order = new UcOrder($uid, $state);
+  $order_values = array(
+    'uid' => $uid,
+    'state' => $state,
+  );
+  $order = new UcOrder($order_values);
 
   module_invoke_all('entity_presave', $order, 'uc_order');
 
@@ -995,12 +927,10 @@ function uc_order_save($order) {
     $order->order_total = uc_order_get_total($order);
     $order->product_count = uc_order_get_product_count($order);
     if (is_null($order->delivery_country) || $order->delivery_country == 0) {
-      // TODO This variable was probably removed in Backdrop without replacement.
-      $order->delivery_country = variable_get('uc_store_country', 840);
+      $order->delivery_country = config_get('uc_store.settings', 'uc_store_country');
     }
     if (is_null($order->billing_country) || $order->billing_country == 0) {
-      // TODO This variable was probably removed in Backdrop without replacement.
-      $order->billing_country = variable_get('uc_store_country', 840);
+      $order->billing_country = config_get('uc_store.settings', 'uc_store_country');
     }
     $order->host = ip_address();
     $order->modified = REQUEST_TIME;
@@ -1109,7 +1039,11 @@ function uc_order_order_product_access($op, $product = NULL, $account = NULL) {
  */
 function uc_order_product_save($order_id, $product) {
   $product->order_id = $order_id;
-  return entity_save('uc_order_product', $product);
+  if (!isset($product->order_product_id)) {
+    $product->is_new = TRUE;
+  }
+  //eturn entity_save('uc_order_product', $product);
+  return entity_get_controller('uc_order_product')->save($product);
 }
 
 /**
@@ -1303,12 +1237,11 @@ function uc_order_view($order, $view_mode = 'full') {
  * Displays an order invoice.
  */
 function uc_order_view_invoice($order, $print = FALSE) {
-  // TODO This variable was probably removed in Backdrop without replacement.
   $build = array(
     '#theme' => 'uc_order',
     '#order' => $order,
     '#op' => $print ? 'print' : 'view',
-    '#template' => variable_get('uc_cust_order_invoice_template', 'customer'),
+    '#template' => config_get('uc_order.settings', 'uc_cust_order_invoice_template'),
   );
 
   if ($print) {
@@ -1980,8 +1913,7 @@ function uc_order_state_default($state_id) {
   }
 
   // Attempt to get the default state from the form.
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $default[$state_id] = variable_get('uc_state_' . $state_id . '_default', NULL);
+  $default[$state_id] = config_get('uc_order.settings', 'uc_state_' . $state_id . '_default');
 
   // If it is not found, pick the lightest status for this state.
   if (empty($default[$state_id])) {
@@ -2429,11 +2361,10 @@ function uc_order_action_print($orders, $context = array()) {
 
   foreach ($orders as $order) {
     $output .= '<div style="page-break-after: always;">';
-    // TODO This variable was probably removed in Backdrop without replacement.
     $output .= theme('uc_order', array(
       'order' => $order,
       'op' => 'print',
-      'template' => variable_get('uc_cust_order_invoice_template', 'customer'),
+      'template' => config_get('uc_order.settings', 'uc_cust_order_invoice_template'),
     ));
     $output .= '</div>';
   }
@@ -2460,7 +2391,7 @@ function uc_order_autoload_info() {
     'UcOrderController' => 'uc_order.controller.inc',
     'UcOrderProductController' => 'uc_order.controller.inc',
     'UcOrderProductMetadataController' => 'uc_order.info.inc',
-    'UcOrder' => 'uc_order.module',
+    'UcOrder' => 'uc_order.entity.inc',
     'uc_order_handler_field_money_amount' => 'views/uc_order_handler_field_money_amount.inc',
     'uc_order_handler_field_money_total' => 'views/uc_order_handler_field_money_total.inc',
     'uc_order_handler_field_order_actions' => 'views/uc_order_handler_field_order_actions.inc',

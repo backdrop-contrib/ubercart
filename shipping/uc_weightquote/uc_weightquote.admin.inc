@@ -49,15 +49,13 @@ function uc_weightquote_admin_method_edit_form($form, &$form_state, $mid = 0) {
     '#default_value' => $method->base_rate,
     '#required' => TRUE,
   );
-  // TODO This variable was probably removed in Backdrop without replacement.
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['product_rate'] = array(
     '#type' => 'uc_price',
-    '#title' => t('Default cost adjustment per !unit', array('!unit' => variable_get('uc_weight_unit', 'lb'))),
+    '#title' => t('Default cost adjustment per !unit', array('!unit' => config_get('uc_store.settings', 'uc_weight_unit'))),
     '#description' => t('The amount per weight unit to add to the shipping cost for an item.'),
     '#default_value' => $method->product_rate,
     '#required' => TRUE,
-    '#field_suffix' => t('per @unit', array('@unit' => variable_get('uc_weight_unit', 'lb'))),
+    '#field_suffix' => t('per @unit', array('@unit' => config_get('uc_store.settings', 'uc_weight_unit'))),
   );
 
   $form['actions'] = array('#type' => 'actions');
@@ -102,7 +100,7 @@ function uc_weightquote_admin_method_edit_form_submit($form, &$form_state) {
     backdrop_write_record('uc_weightquote_methods', $form_state['values']);
 
     // Ensure Rules picks up the new condition.
-    entity_flush_caches();
+    entity_info_cache_clear();
 
     backdrop_set_message(t('Created and enabled new weight quote shipping method.'));
     $form_state['redirect'] = 'admin/store/settings/quotes/manage/get_quote_from_weightquote_' . $form_state['values']['mid'];

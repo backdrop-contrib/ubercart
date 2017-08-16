@@ -25,14 +25,13 @@ function uc_order_orders() {
  * @ingroup forms
  */
 function uc_order_settings_form($form, &$form_state) {
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['#config'] = 'uc_order.settings';
   $form['invoice']['uc_cust_order_invoice_template'] = array(
     '#type' => 'select',
     '#title' => t('On-site invoice template'),
     '#description' => t('Select the invoice template to use when invoices are viewed on the site.'),
     '#options' => uc_order_template_options(),
-    '#default_value' => variable_get('uc_cust_order_invoice_template', 'customer'),
+    '#default_value' => config_get('uc_order.settings', 'uc_cust_order_invoice_template'),
   );
   if (module_exists('uc_cart')) {
     $form['invoice']['uc_cust_order_invoice_template']['#description'] .= '<br />' . t('This is separate from the template used to e-mail invoices to customers which is configured through <a href="!url">Rules</a>.', array('!url' => url('admin/store/settings/checkout/rules')));
@@ -154,8 +153,7 @@ function uc_order_workflow_form($form, &$form_state) {
  */
 function uc_order_workflow_form_submit($form, &$form_state) {
   foreach ($form_state['values']['order_states'] as $key => $value) {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    variable_set('uc_state_' . $key . '_default', $value['default']);
+    config_set('uc_order.settings', 'uc_state_' . $key . '_default', $value['default']);
   }
 
   foreach ($form_state['values']['order_statuses'] as $key => $value) {
@@ -568,12 +566,11 @@ function uc_order_create_form_create_submit($form, &$form_state) {
     case 'create':
       // Create new account.
       $email = trim($form_state['values']['customer']['email']);
-      // TODO This variable was probably removed in Backdrop without replacement.
       $fields = array(
         'name' => uc_store_email_to_username($email),
         'mail' => $email,
         'pass' => user_password(),
-        'status' => variable_get('uc_new_customer_status_active', TRUE) ? 1 : 0,
+        'status' => config_get('uc_cart.settings', 'uc_new_customer_status_active') ? 1 : 0,
       );
       $account = user_save(NULL, $fields);
       $uid = $account->uid;
@@ -728,12 +725,11 @@ function uc_order_select_customer($email = NULL) {
     else {
       $name = uc_store_email_to_username($email);
 
-      // TODO This variable was probably removed in Backdrop without replacement.
       $fields = array(
         'name' => $name,
         'mail' => $email,
         'pass' => user_password(6),
-        'status' => variable_get('uc_new_customer_status_active', TRUE) ? 1 : 0,
+        'status' => config_get('uc_cart.settings', 'uc_new_customer_status_active') ? 1 : 0,
       );
 
       $account = user_save('', $fields);

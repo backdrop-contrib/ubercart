@@ -130,6 +130,8 @@ function uc_order_line_item_add($order_id, $type, $title, $amount, $weight = NUL
 function _uc_line_item_list($action = NULL) {
   static $items;
 
+  $config = config('uc_order.settings');
+
   if (count($items) > 0 && $action !== 'rebuild') {
     return $items;
   }
@@ -147,13 +149,14 @@ function _uc_line_item_list($action = NULL) {
       'enabled' => TRUE,
       'weight' => 1,
     );
+    
+    $config->set('uc_li_' . $id . '_enabled', $item['enabled']);
+    $config->set('uc_li_' . $id . '_weight', $item['weight']);
 
     // Merge in any settings.
-    // TODO This variable was probably removed in Backdrop without replacement.
-    // TODO This variable was probably removed in Backdrop without replacement.
     $items[$id] = array_merge($item, array(
-      'enabled' => variable_get('uc_li_' . $id . '_enabled', $item['enabled']),
-      'weight' => variable_get('uc_li_' . $id . '_weight', $item['weight']),
+      'enabled' => $config->get('uc_li_' . $id . '_enabled'),
+      'weight' => $config->get('uc_li_' . $id . '_weight'),
     ));
   }
 

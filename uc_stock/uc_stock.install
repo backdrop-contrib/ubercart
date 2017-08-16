@@ -97,11 +97,13 @@ function uc_stock_update_last_removed() {
  * Implements hook_update_N().
  */
 function uc_stock_update_1000() {
-  $config = config('uc_stock .settings');
+  $config = config('uc_stock.settings');
   $config->set('uc_stock_threshold_notification', update_variable_get('uc_stock_threshold_notification', 'FALSE'));
-  $config->set('uc_stock_threshold_notification_recipients', update_variable_get('uc_stock_threshold_notification_recipients', 'dynamic value in file /ubercart/uc_stock/uc_stock.module line 223'));
-  $config->set('uc_stock_threshold_notification_subject', update_variable_get('uc_stock_threshold_notification_subject', 'dynamic value in file /ubercart/uc_stock/uc_stock.module line 228'));
-  $config->set('uc_stock_threshold_notification_message', update_variable_get('uc_stock_threshold_notification_message', 'dynamic value in file /ubercart/uc_stock/uc_stock.module line 231'));
+  $config->set('uc_stock_threshold_notification_recipients', update_variable_get('uc_stock_threshold_notification_recipients', uc_store_email()));
+  $config->set('uc_stock_threshold_notification_subject', update_variable_get('uc_stock_threshold_notification_subject', uc_get_message('uc_stock_threshold_notification_subject')));
+  $config->set('uc_stock_threshold_notification_message', update_variable_get('uc_stock_threshold_notification_message', uc_get_message('uc_stock_threshold_notification_message')));
+  $config->save();
+
   update_variable_del('uc_stock_threshold_notification');
   update_variable_del('uc_stock_threshold_notification_recipients');
   update_variable_del('uc_stock_threshold_notification_subject');
@@ -116,4 +118,7 @@ function uc_stock_install() {
   // /ubercart/uc_stock/uc_stock.module line 223
   // /ubercart/uc_stock/uc_stock.module line 228
   // /ubercart/uc_stock/uc_stock.module line 231
+  config_set('uc_stock.settings', 'uc_stock_threshold_notification_recipients', uc_store_email());
+  config_set('uc_stock.settings', 'uc_stock_threshold_notification_subject', uc_get_message('uc_stock_threshold_notification_subject'));
+  config_set('uc_stock.settings', 'uc_stock_threshold_notification_message', uc_get_message('uc_stock_threshold_notification_message'));
 }

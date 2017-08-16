@@ -49,8 +49,7 @@ function uc_weightquote_menu() {
  */
 function uc_weightquote_form_alter(&$form, &$form_state, $form_id) {
   if (uc_product_is_product_form($form)) {
-    // TODO This variable was probably removed in Backdrop without replacement.
-    $weight = variable_get('uc_quote_method_weight', array());
+    $weight = config_get('uc_quote.settings', 'uc_quote_method_weight');
     $result = db_query("SELECT mid, title, product_rate FROM {uc_weightquote_methods}");
     foreach ($result as $method) {
       // Ensure the default weight is set.
@@ -67,14 +66,12 @@ function uc_weightquote_form_alter(&$form, &$form_state, $form_id) {
           '#weight' => 0,
         );
       }
-      // TODO This variable was probably removed in Backdrop without replacement.
-      // TODO This variable was probably removed in Backdrop without replacement.
       $form['shipping']['weightquote'][$method->mid] = array(
         '#type' => 'uc_price',
         '#title' => check_plain($method->title),
         '#default_value' => isset($form['#node']->weightquote[$method->mid]) ? $form['#node']->weightquote[$method->mid] : '',
-        '#description' => t('Default rate: %price per @unit', array('%price' => uc_currency_format($method->product_rate), '@unit' => variable_get('uc_weight_unit', 'lb'))),
-        '#field_suffix' => t('per @unit', array('@unit' => variable_get('uc_weight_unit', 'lb'))),
+        '#description' => t('Default rate: %price per @unit', array('%price' => uc_currency_format($method->product_rate), '@unit' => config_get('uc_store.settings', 'uc_weight_unit'))),
+        '#field_suffix' => t('per @unit', array('@unit' => config_get('uc_store.settings', 'uc_weight_unit'))),
         '#weight' => $weight['weightquote_' . $method->mid],
         '#empty_zero' => FALSE,
       );
@@ -167,12 +164,11 @@ function uc_weightquote_uc_shipping_method() {
 
   $result = db_query("SELECT mid, title, label, base_rate, product_rate FROM {uc_weightquote_methods}");
   foreach ($result as $method) {
-    // TODO This variable was probably removed in Backdrop without replacement.
     $methods['weightquote_' . $method->mid] = array(
       'id' => 'weightquote_' . $method->mid,
       'module' => 'uc_weightquote',
       'title' => $method->title,
-      'description' => t('!base_rate + !product_rate per !unit', array('!base_rate' => uc_currency_format($method->base_rate), '!product_rate' => uc_currency_format($method->product_rate), '!unit' => variable_get('uc_weight_unit', 'lb'))),
+      'description' => t('!base_rate + !product_rate per !unit', array('!base_rate' => uc_currency_format($method->base_rate), '!product_rate' => uc_currency_format($method->product_rate), '!unit' => config_get('uc_store.settings', 'uc_weight_unit'))),
       'operations' => array(
         'edit' => array(
           'title' => t('edit'),
@@ -228,7 +224,7 @@ function uc_weightquote_quote($products, $details, $method) {
         $product_rate = $product->weightquote[$mid] * $product->qty;
       }
       // TODO This variable was probably removed in Backdrop without replacement.
-      $rate += $product_rate  * $product->weight * uc_weight_conversion($product->weight_units, variable_get('uc_weight_unit', 'lb'));
+      $rate += $product_rate  * $product->weight * uc_weight_conversion($product->weight_units, config_get('uc_store.settings', 'uc_weight_unit'));
     }
 
     $quotes[] = array(

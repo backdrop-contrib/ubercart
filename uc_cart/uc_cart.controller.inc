@@ -4,7 +4,7 @@
  *
  * Contains the controller for uc_cart_item entities.
  */
-class UcCartItemController extends EntityDatabaseStorageController {
+class UcCartItemController extends EMWController {
 
   /**
    * Overrides EntityDatabaseStorageController::attachLoad().
@@ -26,7 +26,7 @@ class UcCartItemController extends EntityDatabaseStorageController {
    *
    * Cart items are deleted if saved with a quantity of zero.
    */
-  public function save(EntityInterface $item) {
+  public function save($item) {
     $transaction = NULL;
     if ($item->qty < 1) {
       if (isset($item->cart_item_id)) {
@@ -53,4 +53,47 @@ class UcCartItemController extends EntityDatabaseStorageController {
 
     return parent::buildContent($product, $view_mode, $langcode, $content);
   }
+}
+
+
+/**
+ * UcCartItem extends Entity.
+ *
+ * A subclass of Entity is a requirement for creating a custom entity. It is
+ * also a minimum requirement to define the methods included here, even as 
+ * empty functions.
+ */
+class UcCartItem extends Entity {
+  /**
+   * The cart item ID.
+   *
+   * @var integer
+   */
+  public $cart_item_id;
+
+
+  /**
+   * Implements EntityInterface::id().
+   */
+  public function id() {
+    return isset($this->cart_item_id) ? $this->cart_item_id : NULL;
+  }
+  /**
+   * Implements EntityInterface::entityType().
+   */
+  public function entityType() {
+    return 'uc_cart_item';
+  }
+  /**
+   * Implements EntityInterface::bundle().
+   */
+  public function bundle() {}
+  /**
+   * Implements EntityInterface::label().
+   */
+  public function label() {}
+  /**
+   * Implements EntityInterface::uri().
+   */
+  public function uri() {}
 }

@@ -134,11 +134,9 @@ function uc_store_schema() {
  */
 function uc_store_install() {
   // Set mail handler for all Ubercart modules
-  // TODO This variable was probably removed in Backdrop without replacement.
-  // TODO This variable was probably removed in Backdrop without replacement.
-  variable_set('mail_system',
+  config_set('system.mail', 'mail_system',
     array_merge(
-      variable_get('mail_system', array('default-system' => 'DefaultMailSystem')),
+      array('default-system' => config_get('system.mail', 'default-system')),
       array(
     'uc_cart' => 'UbercartMailSystem',
     'uc_order' => 'UbercartMailSystem',
@@ -146,8 +144,8 @@ function uc_store_install() {
     'uc_roles' => 'UbercartMailSystem',
     'uc_stock' => 'UbercartMailSystem',
     'uc_store' => 'UbercartMailSystem',
-  )
     )
+  )
   );
 
   // Set the default store date format.
@@ -159,8 +157,8 @@ function uc_store_install() {
   require_once($path . '/countries/canada_124_2.cif');
   united_states_install();
   canada_install();
-  // Dynamically generated variable data was detected on the following lines.
-  // /ubercart/uc_store/uc_store.module line 1563
+  
+  config_set('uc_store.settings', 'uc_store_name', config_get('system.core', 'site_name'));
 }
 
 /**
@@ -247,7 +245,9 @@ function uc_store_update_last_removed() {
  * Implements hook_update_N().
  */
 function uc_store_update_1000() {
-  $config = config('uc_store .settings');
+  $config = config('uc_store.settings');
+
+  //migrate variables
   $config->set('uc_store_country', update_variable_get('uc_store_country', '840'));
   $config->set('uc_store_owner', update_variable_get('uc_store_owner', ''));
   $config->set('uc_store_email_include_name', update_variable_get('uc_store_email_include_name', 'TRUE'));
@@ -260,7 +260,53 @@ function uc_store_update_1000() {
   $config->set('uc_store_zone', update_variable_get('uc_store_zone', 'NULL'));
   $config->set('uc_store_postal_code', update_variable_get('uc_store_postal_code', 'NULL'));
   $config->set('uc_store_email', update_variable_get('uc_store_email', ''));
-  $config->set('uc_store_name', update_variable_get('uc_store_name', 'dynamic value in file /ubercart/uc_store/uc_store.module line 1563'));
+  $config->set('uc_store_name', update_variable_get('uc_store_name', ''));
+  $config->set('uc_address_fields', update_variable_get('uc_address_fields', array('first_name' => 1, 'last_name' => 1, 'phone' => 1, 'company' => 1, 'street1' => 1, 'street2' => 1, 'city' => 1, 'zone' => 1, 'postal_code' => 1, 'country' => 1)));
+  $config->set('uc_address_fields_required', update_variable_get('uc_address_fields_required', array('first_name' => 1, 'last_name' => 1, 'phone' => 0, 'company' => 0, 'street1' => 1, 'street2' => 0, 'city' => 1, 'zone' => 1, 'postal_code' => 1, 'country' => 1)));
+  $config->set('uc_address_fields_weight', update_variable_get('uc_address_fields_weight', array('first_name' => 0, 'last_name' => 1, 'company' => 2, 'street1' => 3, 'street2' => 4, 'city' => 5, 'zone' => 6, 'country' => 7, 'postal_code' => 8, 'phone' => 9)));
+  $config->set('uc_currency_code', update_variable_get('uc_currency_code', '$'));
+  $config->set('uc_currency_sign', update_variable_get('uc_currency_sign', '$'));
+  $config->set('uc_sign_after_amount', update_variable_get('uc_sign_after_amount', 'FALSE'));
+  $config->set('uc_currency_thou', update_variable_get('uc_currency_thou', 'FALSE'));
+  $config->set('uc_currency_dec', update_variable_get('uc_currency_dec', '.'));
+  $config->set('uc_currency_prec', update_variable_get('uc_currency_prec', '2'));
+  $config->set('uc_weight_unit', update_variable_get('uc_weight_unit', 'lb'));
+  $config->set('uc_weight_format_lb', update_variable_get('uc_weight_format_lb', '!value lb'));
+  $config->set('uc_weight_format_oz', update_variable_get('uc_weight_format_oz', '!value oz'));
+  $config->set('uc_weight_format_kg', update_variable_get('uc_weight_format_kg', '!value kg'));
+  $config->set('uc_weight_format_g', update_variable_get('uc_weight_format_g', '!value g'));
+  $config->set('uc_length_unit', update_variable_get('uc_length_unit', 'in'));
+  $config->set('uc_length_format_in', update_variable_get('uc_length_format_in', '!value in'));
+  $config->set('uc_length_format_ft', update_variable_get('uc_length_format_ft', '!value ft'));
+  $config->set('uc_length_format_cm', update_variable_get('uc_length_format_cm', '!value cm'));
+  $config->set('uc_length_format_mm', update_variable_get('uc_length_format_mm', '!value mm'));
+  $config->set('uc_customer_list_address', update_variable_get('uc_customer_list_address', 'billing'));
+  $config->set('uc_footer_message', update_variable_get('uc_footer_message', '0'));
+  $config->set('uc_field_first_name', update_variable_get('uc_field_first_name', 'First name'));
+  $config->set('uc_field_last_name', update_variable_get('uc_field_last_name', 'Last name'));
+  $config->set('uc_field_company', update_variable_get('uc_field_company', 'Company'));
+  $config->set('uc_field_street1', update_variable_get('uc_field_street1', 'Street address'));
+  $config->set('uc_field_street2', update_variable_get('uc_field_street2', ''));
+  $config->set('uc_field_city', update_variable_get('uc_field_city', 'City'));
+  $config->set('uc_field_zone', update_variable_get('uc_field_zone', 'State/Province'));
+  $config->set('uc_field_country', update_variable_get('uc_field_country', 'Country'));
+  $config->set('uc_field_postal_code', update_variable_get('uc_field_postal_code', 'Postal code'));
+  $config->set('uc_field_phone', update_variable_get('uc_field_phone', 'Phone number'));
+  $config->set('uc_field_email', update_variable_get('uc_field_email', 'E-mail'));
+  $quotes_defaults = backdrop_map_assoc(array('payment-pane', 'quotes-pane'));
+  $config->set('uc_ajax_checkout', update_variable_get('uc_ajax_checkout', 
+    array('panes][delivery][address][delivery_country' => $quotes_defaults,
+      'panes][delivery][address][delivery_postal_code' => $quotes_defaults,
+      'panes][delivery][select_address' => $quotes_defaults,
+      'panes][billing][address][billing_country' => array('payment-pane' => 'payment-pane'),
+      )
+    )
+  );
+
+
+  $config->save();
+
+  //delete variables
   update_variable_del('uc_store_country');
   update_variable_del('uc_store_owner');
   update_variable_del('uc_store_email_include_name');
@@ -274,4 +320,38 @@ function uc_store_update_1000() {
   update_variable_del('uc_store_postal_code');
   update_variable_del('uc_store_email');
   update_variable_del('uc_store_name');
+  update_variable_del('uc_address_fields');
+  update_variable_del('uc_address_fields_required');
+  update_variable_del('uc_address_fields_weight');
+  update_variable_del('uc_currency_code');
+  update_variable_del('uc_currency_sign');
+  update_variable_del('uc_sign_after_amount');
+  update_variable_del('uc_currency_thou');
+  update_variable_del('uc_currency_dec');
+  update_variable_del('uc_currency_prec');
+  update_variable_del('uc_weight_unit');
+  update_variable_del('uc_weight_format_lb');
+  update_variable_del('uc_weight_format_oz');
+  update_variable_del('uc_weight_format_kg');
+  update_variable_del('uc_weight_format_g');
+  update_variable_del('uc_length_unit');
+  update_variable_del('uc_length_format_in');
+  update_variable_del('uc_length_format_ft');
+  update_variable_del('uc_length_format_cm');
+  update_variable_del('uc_length_format_mm');
+  update_variable_del('uc_customer_list_address');
+  update_variable_del('uc_footer_message');
+  update_variable_del('uc_field_first_name');
+  update_variable_del('uc_field_last_name');
+  update_variable_del('uc_field_company');
+  update_variable_del('uc_field_street1');
+  update_variable_del('uc_field_street2');
+  update_variable_del('uc_field_city');
+  update_variable_del('uc_field_zone');
+  update_variable_del('uc_field_country');
+  update_variable_del('uc_field_postal_code');
+  update_variable_del('uc_field_phone');
+  update_variable_del('uc_field_email');
+  update_variable_del('uc_ajax_checkout');
+
 }

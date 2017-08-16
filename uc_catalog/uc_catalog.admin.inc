@@ -31,25 +31,25 @@ function uc_catalog_settings_form($form, &$form_state) {
     '#options' => $displays,
   );
 
-  $vid = $config->get('uc_catalog_vid');
-  if ($vid) {
-    $catalog = taxonomy_vocabulary_load($vid);
+  $vocabulary = $config->get('uc_catalog_vocabulary');
+  if ($vocabulary) {
+    $catalog = taxonomy_vocabulary_load($vocabulary);
 
-    $form['catalog_vid'] = array(
+    $form['catalog_vocabulary'] = array(
       '#markup' => '<p>' . t('The taxonomy vocabulary <a href="!edit-url">%name</a> is set as the product catalog.', array('!edit-url' => url('admin/structure/taxonomy/' . $catalog->machine_name), '%name' => $catalog->name)) . '</p>',
     );
   }
 
   $vocabs = array();
   $vocabularies = taxonomy_vocabulary_load_multiple(FALSE);
-  foreach ($vocabularies as $vid => $vocabulary) {
-    $vocabs[$vid] = $vocabulary->name;
+  foreach ($vocabularies as $name => $vocabulary) {
+    $vocabs[$name] = $vocabulary->name;
   }
 
-  $form['catalog-top-level']['uc_catalog_vid'] = array(
+  $form['catalog-top-level']['uc_catalog_vocabulary'] = array(
     '#type' => 'select',
     '#title' => t('Catalog vocabulary'),
-    '#default_value' => $config->get('uc_catalog_vid'),
+    '#default_value' => $config->get('uc_catalog_vocabulary'),
     '#options' => $vocabs,
   );
   $form['catalog-top-level']['uc_catalog_breadcrumb'] = array(
@@ -67,13 +67,12 @@ function uc_catalog_settings_form($form, &$form_state) {
 function uc_catalog_orphaned_products() {
   $build = array();
 
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if (variable_get('taxonomy_maintain_index_table', TRUE)) {
-    $vid = config_get('uc_catalog.settings', 'uc_catalog_vid');
+  if (config_get('uc_catalog.settings', 'taxonomy_maintain_index_table')) {
+    $vocabulary = config_get('uc_catalog.settings', 'uc_catalog_vocabulary');
     $product_types = uc_product_types();
     $field = field_info_field('taxonomy_catalog');
     $types = array_intersect($product_types, $field['bundles']['node']);
-    $result = db_query("SELECT DISTINCT n.nid, n.title FROM {node} n LEFT JOIN (SELECT ti.nid, td.vid FROM {taxonomy_index} ti LEFT JOIN {taxonomy_term_data} td ON ti.tid = td.tid WHERE td.vid = :vid) txnome ON n.nid = txnome.nid WHERE n.type IN (:types) AND txnome.vid IS NULL", array(':vid' => $vid, ':types' => $types));
+    $result = db_query("SELECT DISTINCT n.nid, n.title FROM {node} n LEFT JOIN (SELECT ti.nid, td.vocabulary FROM {taxonomy_index} ti LEFT JOIN {taxonomy_term_data} td ON ti.tid = td.tid WHERE td.vocabulary = :vocabulary) txnome ON n.nid = txnome.nid WHERE n.type IN (:types) AND txnome.vocabulary IS NULL", array(':vocabulary' => $vocabulary, ':types' => $types));
 
     $rows = array();
     while ($node = $result->fetchObject()) {

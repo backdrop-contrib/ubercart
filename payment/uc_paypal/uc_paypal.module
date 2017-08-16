@@ -76,8 +76,7 @@ function uc_paypal_menu() {
  * Implements hook_form_FORM_ID_alter() for uc_cart_checkout_form().
  */
 function uc_paypal_form_uc_cart_checkout_form_alter(&$form, &$form_state, $form_id) {
-  // TODO This variable was probably removed in Backdrop without replacement.
-  if (variable_get('uc_payment_method_paypal_ec_checkout', FALSE)) {
+  if (config_get('uc_payment.settings', 'uc_payment_method_paypal_ec_checkout')) {
     $form['#submit'][] = 'uc_paypal_ec_checkout';
   }
 }
@@ -292,8 +291,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
       $nvp_request += $shipdata;
     }
 
-    // TODO This variable was probably removed in Backdrop without replacement.
-    if (variable_get('uc_credit_cvv_enabled', TRUE)) {
+    if (config_get('uc_credit.settings', 'uc_credit_cvv_enabled')) {
       $nvp_request['CVV2'] = $order->payment_details['cc_cvv'];
     }
   }
@@ -316,8 +314,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
       $message = t('<b>@type</b><br /><b>Success: </b>@amount @currency', array('@type' => $types[$data['txn_type']], '@amount' => uc_currency_format($nvp_response['AMT'], FALSE), '@currency' => $nvp_response['CURRENCYCODE']));
       if ($data['txn_type'] != UC_CREDIT_PRIOR_AUTH_CAPTURE) {
         $message .= '<br />' . t('<b>Address:</b> @avscode', array('@avscode' => _uc_paypal_avscode_message($nvp_response['AVSCODE'])));
-        // TODO This variable was probably removed in Backdrop without replacement.
-        if (variable_get('uc_credit_cvv_enabled', TRUE)) {
+        if (config_get('uc_credit.settings', 'uc_credit_cvv_enabled')) {
           $message .= '<br />' . t('<b>CVV2:</b> @cvvmatch', array('@cvvmatch' => _uc_paypal_cvvmatch_message($nvp_response['CVV2MATCH'])));
         }
       }
@@ -411,6 +408,7 @@ function uc_payment_method_paypal_wps($op, &$order) {
       return $build;
 
     case 'settings':
+      $form['#config'] = 'uc_paypal.settings';
       $form['uc_paypal_wps_email'] = array(
         '#type' => 'textfield',
         '#title' => t('PayPal e-mail address'),
@@ -518,6 +516,7 @@ function uc_payment_method_paypal_ec($op, &$order) {
       return $build;
 
     case 'settings':
+      $form['#config'] = 'uc_paypal.settings';
       $form['uc_paypal_wps_email'] = array(
         '#type' => 'textfield',
         '#title' => t('PayPal e-mail address'),
@@ -599,7 +598,6 @@ function uc_payment_method_paypal_ec($op, &$order) {
         '#title' => t('Enable the comment text box on the Review payment page.'),
         '#default_value' => $config->get('uc_paypal_ec_review_comment'),
       );
-      // TODO This variable was probably removed in Backdrop without replacement.
       $form['ec']['uc_pg_paypal_wpp_cc_txn_type'] = array(
         '#type' => 'radios',
         '#title' => t('Payment action'),
@@ -610,7 +608,7 @@ function uc_payment_method_paypal_ec($op, &$order) {
           'auth_capture' => t('Complete sale'),
           'authorize' => t('Authorization'),
         ),
-        '#default_value' => variable_get('uc_pg_paypal_wpp_cc_txn_type', 'auth_capture'),
+        '#default_value' => config_get('uc_payment.settings', 'uc_pg_paypal_wpp_cc_txn_type'),
       );
       return $form;
   }
@@ -645,14 +643,13 @@ function uc_paypal_ec_checkout($form, &$form_state) {
     $country = array(0 => array('country_iso_code_2' => 'US'));
   }
 
-  // TODO This variable was probably removed in Backdrop without replacement.
   $nvp_request = array(
     'METHOD' => 'SetExpressCheckout',
     'RETURNURL' => url('cart/echeckout/selected', array('absolute' => TRUE)),
     'CANCELURL' => url('uc_paypal/wps/cancel', array('absolute' => TRUE)),
     'AMT' => uc_currency_format($order->order_total, FALSE, FALSE, '.'),
     'CURRENCYCODE' => $config->get('uc_paypal_wpp_currency'),
-    'PAYMENTACTION' => variable_get('uc_pg_paypal_wpp_cc_txn_type', 'auth_capture') == 'authorize' ? 'Authorization' : 'Sale',
+    'PAYMENTACTION' => config_get('uc_payment.settings', 'uc_pg_paypal_wpp_cc_txn_type') == 'authorize' ? 'Authorization' : 'Sale',
     'DESC' => substr($desc, 0, 127),
     'INVNUM' => $order->order_id . '-' . REQUEST_TIME,
     'REQCONFIRMSHIPPING' => $config->get('uc_paypal_ec_rqconfirmed_addr'),
@@ -728,14 +725,13 @@ function uc_paypal_ec_form_submit($form, &$form_state) {
 
   $order = uc_order_new($user->uid);
 
-  // TODO This variable was probably removed in Backdrop without replacement.
   $nvp_request = array(
     'METHOD' => 'SetExpressCheckout',
     'RETURNURL' => url('cart/echeckout/review', array('absolute' => TRUE)),
     'CANCELURL' => url('uc_paypal/wps/cancel', array('absolute' => TRUE)),
     'AMT' => uc_currency_format($subtotal, FALSE, FALSE, '.'),
     'CURRENCYCODE' => $config->get('uc_paypal_wpp_currency'),
-    'PAYMENTACTION' => variable_get('uc_pg_paypal_wpp_cc_txn_type', 'auth_capture') == 'authorize' ? 'Authorization' : 'Sale',
+    'PAYMENTACTION' => config_get('uc_payment.settings', 'uc_pg_paypal_wpp_cc_txn_type') == 'authorize' ? 'Authorization' : 'Sale',
     'DESC' => substr($desc, 0, 127),
     'INVNUM' => $order->order_id . '-' . REQUEST_TIME,
     'REQCONFIRMSHIPPING' => $config->get('uc_paypal_ec_rqconfirmed_addr'),
@@ -800,11 +796,10 @@ function uc_paypal_ec_submit_form_submit($form, &$form_state) {
     $country = array(0 => array('country_iso_code_2' => 'US'));
   }
 
-  // TODO This variable was probably removed in Backdrop without replacement.
   $nvp_request = array(
     'METHOD' => 'DoExpressCheckoutPayment',
     'TOKEN' => $_SESSION['TOKEN'],
-    'PAYMENTACTION' => variable_get('uc_pg_paypal_wpp_cc_txn_type', 'auth_capture') == 'authorize' ? 'Authorization' : 'Sale',
+    'PAYMENTACTION' => config_get('uc_payment.settings', 'uc_pg_paypal_wpp_cc_txn_type') == 'authorize' ? 'Authorization' : 'Sale',
     'PAYERID' => $_SESSION['PAYERID'],
     'AMT' => uc_currency_format($order->order_total, FALSE, FALSE, '.'),
     'DESC' => substr($desc, 0, 127),

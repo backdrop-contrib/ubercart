@@ -93,7 +93,6 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
         '#size' => 10,
         '#maxlength' => 15,
       );
-      // TODO This variable was probably removed in Backdrop without replacement.
       $pkg_form['weight']['units'] = array(
         '#type' => 'select',
         '#title' => t('Units'),
@@ -105,7 +104,7 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
         ),
         '#default_value' => isset($package->weight_units) ?
                             $package->weight_units        :
-                            variable_get('uc_weight_unit', 'lb'),
+                            config_get('uc_store.settings', 'uc_weight_unit'),
       );
       $pkg_form['dimensions'] = array(
         '#type' => 'container',
@@ -131,7 +130,6 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
         '#default_value' => isset($package->height) ? $package->height : 1,
         '#size' => 10,
       );
-      // TODO This variable was probably removed in Backdrop without replacement.
       $pkg_form['dimensions']['units'] = array(
         '#type' => 'select',
         '#title' => t('Units'),
@@ -143,7 +141,7 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
         ),
         '#default_value' => isset($package->length_units) ?
                             $package->length_units        :
-                            variable_get('uc_length_unit', 'in'),
+                            config_get('uc_store.settings', 'uc_length_unit'),
       );
 
       $form['packages'][$id] = $pkg_form;
@@ -362,26 +360,17 @@ function uc_ups_fulfill_order_submit($form, &$form_state) {
 function uc_ups_shipment_request($packages, $origin, $destination, $ups_service) {
   $config = config('uc_ups.settings');
   $store['name'] = uc_store_name();
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $store['owner'] = variable_get('uc_store_owner', NULL);
+  $store['owner'] = config_get('uc_store.settings', 'uc_store_owner');
   $store['email'] = uc_store_email();
   $store['email_from'] = uc_store_email();
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $store['phone'] = variable_get('uc_store_phone', NULL);
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $store['fax'] = variable_get('uc_store_fax', NULL);
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $store['street1'] = variable_get('uc_store_street1', NULL);
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $store['street2'] = variable_get('uc_store_street2', NULL);
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $store['city'] = variable_get('uc_store_city', NULL);
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $store['zone'] = variable_get('uc_store_zone', NULL);
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $store['postal_code'] = variable_get('uc_store_postal_code', NULL);
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $store['country'] = variable_get('uc_store_country', 840);
+  $store['phone'] = config_get('uc_store.settings', 'uc_store_phone');
+  $store['fax'] = config_get('uc_store.settings', 'uc_store_fax');
+  $store['street1'] = config_get('uc_store.settings', 'uc_store_street1');
+  $store['street2'] = config_get('uc_store.settings', 'uc_store_street2');
+  $store['city'] = config_get('uc_store.settings', 'uc_store_city');
+  $store['zone'] = config_get('uc_store.settings', 'uc_store_zone');
+  $store['postal_code'] = config_get('uc_store.settings', 'uc_store_postal_code');
+  $store['country'] = config_get('uc_store.settings', 'uc_store_country');
 
   $account = $config->get('uc_ups_shipper_number');
   $ua = explode(' ', $_SERVER['HTTP_USER_AGENT']);
@@ -408,14 +397,12 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
   $shipfrom_country = $shipfrom_country[0]['country_iso_code_2'];
   $shipfrom_zip = $origin->postal_code;
 
-  // TODO This variable was probably removed in Backdrop without replacement.
   $ups_units = $config->get('uc_ups_unit_system');
 
   $package_schema = '';
   foreach ($packages as $package) {
     // Determine length conversion factor and weight conversion factor
     // for this shipment
-    // TODO This variable was probably removed in Backdrop without replacement.
     $length_factor = uc_length_conversion($package->length_units, $config->get('uc_ups_unit_system'));
     switch ($ups_units) {
       case 'in':
@@ -446,7 +433,6 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
         }
         $package_schema .= "<Dimensions>";
         $package_schema .=   "<UnitOfMeasurement>";
-        // TODO This variable was probably removed in Backdrop without replacement.
         $package_schema .=     "<Code>" . strtoupper($config->get('uc_ups_unit_system')) . "</Code>";
         $package_schema .=   "</UnitOfMeasurement>";
         $package_schema .=   "<Length>" . (floor($package->length * $length_factor) + 1) . "</Length>";
@@ -468,8 +454,7 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
       }
       $package_schema .=   "<PackageServiceOptions>";
       $package_schema .=     "<InsuredValue>";
-      // TODO This variable was probably removed in Backdrop without replacement.
-      $package_schema .=       "<CurrencyCode>" . variable_get('uc_currency_code', 'USD') . "</CurrencyCode>";
+      $package_schema .=       "<CurrencyCode>" . config_get('uc_store.settings', 'uc_currency_code') . "</CurrencyCode>";
       $package_schema .=       "<MonetaryValue>" . number_format($package->value, 2, '.', '') . "</MonetaryValue>";
       $package_schema .=     "</InsuredValue>";
       $package_schema .=   "</PackageServiceOptions>";
