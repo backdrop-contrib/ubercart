@@ -110,7 +110,6 @@ function uc_payment_method_settings_form($form, &$form_state, $method_id) {
   $callback = _uc_payment_method_data($method_id, 'callback');
   $null = NULL;
   if (function_exists($callback)) {
-    $form['#config'] = 'uc_payment.settings';
     $form = $callback('settings', $null, array(), $form_state);
   }
   else {

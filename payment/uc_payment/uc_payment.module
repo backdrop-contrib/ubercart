@@ -642,6 +642,20 @@ function _uc_payment_method_data($method_id, $key) {
 }
 
 /**
+ * Implements hook_modules_enabled().
+ */
+function uc_payment_modules_installed($modules) {
+  // Enable any gateway as soon as it's installed.
+  foreach ($modules as $module) {
+    if ($gateways = module_invoke($module, 'uc_payment_gateway')) {
+      foreach ($gateways as $id => $gateway) {
+        config_set('uc_payment.settings', 'uc_pg_' . $id . '_enabled', true);
+      }
+    }
+  }
+}
+
+/**
  * Builds a list of payment gateways defined in the enabled modules.
  */
 function _uc_payment_gateway_list($filter = NULL, $enabled_only = FALSE) {

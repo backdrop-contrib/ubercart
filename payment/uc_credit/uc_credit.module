@@ -1007,6 +1007,21 @@ function uc_credit_transaction_types() {
 }
 
 /**
+ * Implements hook_modules_enabled().
+ */
+function uc_credit_modules_installed($modules) {
+  // Set the default credit transaction type for any gateway as soon as it's 
+  // installed.
+  foreach ($modules as $module) {
+    if ($gateways = module_invoke($module, 'uc_payment_gateway')) {
+      foreach ($gateways as $id => $gateway) {
+        config_set('uc_credit.settings', 'uc_pg_' . $id . '_cc_txn_type', UC_CREDIT_AUTH_CAPTURE);
+      }
+    }
+  }
+}
+
+/**
  * Retrieves the ID of the default credit card gateway.
  *
  * @return
