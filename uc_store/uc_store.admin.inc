@@ -53,29 +53,26 @@ function uc_store_admin() {
     foreach ($results as $message) {
       switch ($message['status']) {
         case 'warning':
-          $icon = 'alert.gif';
+          $status = t('Warning');
+          $class = 'report-warning';
           break;
         case 'error':
-          $icon = 'error.gif';
+          $status = t('Error');
+          $class = 'report-error';
           break;
         default:
-          $icon = 'info.gif';
+          $status = t('OK');
+          $class = 'report-status';
       }
-      $icon = theme('image', array('path' => backdrop_get_path('module', 'uc_store') . '/images/' . $icon));
+      $status_html = '<div title="' . $status . '"><span class="element-invisible">' . $status . '</span></div>';
 
       $rows[] = array(
-        array(
-          'data' => $icon,
-          'class' => array('icon'),
-        ),
-        array(
-          'data' => $message['title'],
-          'class' => array('title'),
-        ),
-        array(
-          'data' => $message['desc'],
-          'class' => array('message'),
-        ),
+        'data' => array(
+          array('data' => $status_html, 'class' => 'report-icon'),
+          array('data' => $message['title'], 'class' => array('title')),
+          array('data' => $message['desc'], 'class' => array('message')),
+          ),
+        'class' => array($class),
       );
     }
 
@@ -83,7 +80,7 @@ function uc_store_admin() {
       '#theme' => 'table',
       '#caption' => '<h2>' . t('Store status') . '</h2>',
       '#rows' => $rows,
-      '#attributes' => array('class' => array('uc-store-status')),
+      '#attributes' => array('class' => array('system-status-report')),
     );
   }
 
