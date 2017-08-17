@@ -47,7 +47,7 @@ function uc_cart_links_settings_form($form, &$form_state) {
     '#description' => t('Enter the URL to redirect to when an invalid cart link is used.'),
     '#default_value' => $config->get('uc_cart_links_invalid_page'),
     '#size' => 32,
-    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.performance', 'clean_url') ? '' : '?q='),
+    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.core', 'clean_url') ? '' : '?q='),
   );
 
   return system_settings_form($form);

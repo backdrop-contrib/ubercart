@@ -281,7 +281,7 @@ function uc_store_settings_form($form, &$form_state) {
     '#description' => t('The Backdrop page for the store help link.'),
     '#default_value' => $config->get('uc_store_help_page'),
     '#size' => 32,
-    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.performance', 'clean_url') ? '' : '?q='),
+    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.core', 'clean_url') ? '' : '?q='),
   );
 
   $form['address'] = array(
