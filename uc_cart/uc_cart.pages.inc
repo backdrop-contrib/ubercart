@@ -94,7 +94,7 @@ function uc_cart_checkout() {
   // Send anonymous users to login page when anonymous checkout is disabled.
   if (!$user->uid && !config_get('uc_cart.settings', 'uc_checkout_anonymous')) {
     backdrop_set_message(t('You must login before you can proceed to checkout.'));
-    if (config_get('system.performance', 'user_register') != 0) {
+    if (config_get('system.core', 'user_register') != 0) {
       backdrop_set_message(t('If you do not have an account yet, you should <a href="!url">register now</a>.', array('!url' => url('user/register', array('query' => backdrop_get_destination())))));
     }
     backdrop_goto('user', array('query' => backdrop_get_destination()));

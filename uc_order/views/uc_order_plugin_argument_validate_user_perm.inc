@@ -63,7 +63,7 @@ class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_
     }
     else {
       if ($type == 'name' || $type == 'either') {
-        $name = !empty($GLOBALS['user']->name) ? $GLOBALS['user']->name : config_get('system.performance', 'anonymous');
+        $name = !empty($GLOBALS['user']->name) ? $GLOBALS['user']->name : config_get('system.core', 'anonymous');
         if ($argument == $name) {
           $account = clone $GLOBALS['user'];
         }
@@ -92,7 +92,7 @@ class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_
     }
 
     $this->argument->argument = $account->uid;
-    $this->argument->validated_title = isset($account->name) ? check_plain($account->name) : check_plain(config_get('system.performance', 'anonymous'));
+    $this->argument->validated_title = isset($account->name) ? check_plain($account->name) : check_plain(config_get('system.core', 'anonymous'));
     return TRUE;
   }
 }
