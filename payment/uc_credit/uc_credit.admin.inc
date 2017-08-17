@@ -13,6 +13,7 @@
  */
 function uc_credit_settings_form($form, &$form_state) {
   $config = config('uc_credit.settings');
+  $form['#config'] = 'uc_credit.settings';
   if (!user_access('administer credit cards')) {
     $form['notice'] = array(
       '#markup' => '<div>' . t('You must have access to <b>administer credit cards</b> to adjust these settings.') . '</div>',
@@ -51,6 +52,7 @@ function uc_credit_settings_form($form, &$form_state) {
     '#title' => t('Default gateway'),
     '#options' => $options,
     '#default_value' => uc_credit_default_gateway(),
+    '#config' => 'uc_payment.settings',
   );
   $form['cc_basic']['uc_credit_validate_numbers'] = array(
     '#type' => 'checkbox',
@@ -189,6 +191,7 @@ function uc_credit_settings_form($form, &$form_state) {
       '#type' => 'checkbox',
       '#title' => t('Enable this payment gateway for use.'),
       '#default_value' => config_get('uc_payment.settings', 'uc_pg_' . $id . '_enabled'),
+      '#config' => 'uc_payment.settings',
       '#weight' => -10,
     );
 
@@ -200,12 +203,13 @@ function uc_credit_settings_form($form, &$form_state) {
         $options[$type] = $title;
       }
     }
+    $default_cc_txn_type = config_get('uc_credit.settings', 'uc_pg_' . $id . '_cc_txn_type');
     $form['gateways'][$id]['uc_pg_' . $id . '_cc_txn_type'] = array(
       '#type' => 'radios',
       '#title' => t('Default credit transaction type'),
       '#description' => t('Only available transaction types are listed. The default will be used unless an administrator chooses otherwise through the terminal.'),
       '#options' => $options,
-      '#default_value' => config_get('uc_payment.settings', 'uc_pg_' . $id . '_cc_txn_type'),
+      '#default_value' => !empty($default_cc_txn_type) ? $default_cc_txn_type : UC_CREDIT_AUTH_CAPTURE,
       '#weight' => -5,
     );
 
