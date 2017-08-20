@@ -29,7 +29,7 @@
  *   Any comments from the user about the transaction.
  */
 function hook_uc_payment_entered($order, $method, $amount, $account, $data, $comment) {
-  drupal_set_message(t('User @uid entered a @method payment of @amount for order @order_id.',
+  backdrop_set_message(t('User @uid entered a @method payment of @amount for order @order_id.',
     array(
       '@uid' => $account->uid,
       '@method' => $method,

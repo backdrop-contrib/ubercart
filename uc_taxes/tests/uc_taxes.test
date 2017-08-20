@@ -19,7 +19,7 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
   }
 
   /**
-   * Overrides DrupalWebTestCase::setUp().
+   * Overrides BackdropWebTestCase::setUp().
    */
   protected function setUp($modules = array(), $permissions = array()) {
     $modules = array('uc_product_kit', 'uc_attribute', 'uc_cart', 'uc_payment', 'uc_payment_pack', 'uc_taxes');
@@ -28,7 +28,7 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
   }
 
   function testInclusiveTaxes() {
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
 
     // Create a 20% inclusive tax rate.
     $rate = (object) array(
@@ -78,7 +78,7 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
     uc_attribute_subject_save($attribute, 'product', $product->nid, TRUE);
 
     // Create a product kit containing the product.
-    $kit = $this->drupalCreateNode(array(
+    $kit = $this->backdropCreateNode(array(
       'type' => 'product_kit',
       'products' => array($product->nid),
       'ordering' => 0,
@@ -94,20 +94,20 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
     $this->assertEqual($kit->products[$product->nid]->discount, -1, 'Product kit component has correct discount applied.');
 
     // Ensure the price is displayed tax-inclusively on the add-to-cart form.
-    $this->drupalGet('node/' . $kit->nid);
+    $this->backdropGet('node/' . $kit->nid);
     $this->assertText('$10.80' . $rate->inclusion_text, 'Tax inclusive price on node-view form is accurate.'); // $10.80 = $9.00 + 20%
     $this->assertRaw($option->name . ', +$6.00</option>', 'Tax inclusive option price on node view form is accurate.'); // $6.00 = $5.00 + 20%
 
     // Add the product kit to the cart, selecting the option.
     $attribute_key = 'products[' . $product->nid . '][attributes][' . $attribute->aid . ']';
-    $this->drupalPost('node/' . $kit->nid, array($attribute_key => $option->oid), t('Add to cart'));
+    $this->backdropPost('node/' . $kit->nid, array($attribute_key => $option->oid), t('Add to cart'));
 
     // Check that the subtotal is $16.80 ($10 base + $5 option - $1 discount, with 20% tax)
-    $this->drupalGet('cart');
+    $this->backdropGet('cart');
     $this->assertText('Subtotal: $16.80', 'Order subtotal is correct on cart page.');
 
     // Make sure that the subtotal is also correct on the checkout page.
-    $this->drupalPost('cart', array(), 'Checkout');
+    $this->backdropPost('cart', array(), 'Checkout');
     $this->assertText('Subtotal: $16.80', 'Order subtotal is correct on checkout page.');
 
     // Manually proceed to checkout review.
@@ -127,7 +127,7 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
       'panes[billing][billing_zone]' => $zone_id,
       'panes[billing][billing_postal_code]' => mt_rand(10000, 99999),
     );
-    $this->drupalPost('cart/checkout', $edit, t('Review order'));
+    $this->backdropPost('cart/checkout', $edit, t('Review order'));
     $this->assertRaw(t('Your order is almost complete.'));
 
     // Make sure the price is still listed tax-inclusively.
@@ -137,15 +137,15 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
     // Ensure the tax-inclusive price is listed on the order admin page.
     $order_id = db_query("SELECT order_id FROM {uc_orders} WHERE delivery_first_name = :name", array(':name' => $edit['panes[delivery][delivery_first_name]']))->fetchField();
     $this->assertTrue($order_id, 'Order was created successfully');
-    $this->drupalGet('admin/store/orders/' . $order_id);
+    $this->backdropGet('admin/store/orders/' . $order_id);
     $this->assertText('$16.80' . $rate->inclusion_text, 'Tax inclusive price appears on the order view page.');
 
     // And on the invoice.
-    $this->drupalGet('admin/store/orders/' . $order_id . '/invoice');
+    $this->backdropGet('admin/store/orders/' . $order_id . '/invoice');
     $this->assertText('$16.80' . $rate->inclusion_text, 'Tax inclusive price appears on the invoice.');
 
     // And on the printable invoice.
-    $this->drupalGet('admin/store/orders/' . $order_id . '/invoice');
+    $this->backdropGet('admin/store/orders/' . $order_id . '/invoice');
     $this->assertText('$16.80' . $rate->inclusion_text, 'Tax inclusive price appears on the printable invoice.');
   }
 
@@ -168,11 +168,11 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
   }
 
   function testStoredTaxDisplay() {
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
 
     // Enable a payment method for the payment preview checkout pane.
     $edit = array('uc_payment_method_check_checkout' => 1);
-    $this->drupalPost('admin/store/settings/payment', $edit, t('Save configuration'));
+    $this->backdropPost('admin/store/settings/payment', $edit, t('Save configuration'));
 
     // Create a 20% inclusive tax rate.
     $rate = (object) array(
@@ -187,16 +187,16 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
     );
     uc_taxes_rate_save($rate);
 
-    $this->drupalGet('admin/store/settings/taxes');
+    $this->backdropGet('admin/store/settings/taxes');
     $this->assertText($rate->name, t('Tax was saved successfully.'));
 
-    $this->drupalGet("admin/store/settings/taxes/manage/uc_taxes_$rate->id");
+    $this->backdropGet("admin/store/settings/taxes/manage/uc_taxes_$rate->id");
     $this->assertText(t('Conditions'), t('Rules configuration linked to tax.'));
 
-    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $this->backdropPost('node/' . $this->product->nid, array(), t('Add to cart'));
 
     // Manually step through checkout. $this->checkout() doesn't know about taxes.
-    $this->drupalPost('cart', array(), 'Checkout');
+    $this->backdropPost('cart', array(), 'Checkout');
     $this->assertText(
       t('Enter your billing address and information here.'),
       t('Viewed cart page: Billing pane has been displayed.')
@@ -223,13 +223,13 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
     );
 
     // Submit the checkout page.
-    $this->drupalPost('cart/checkout', $edit, t('Review order'));
+    $this->backdropPost('cart/checkout', $edit, t('Review order'));
     $this->assertRaw(t('Your order is almost complete.'));
     $this->assertRaw($rate->name, t('Tax line item displayed.'));
     $this->assertRaw(uc_currency_format($rate->rate * $this->product->sell_price), t('Correct tax amount displayed.'));
 
     // Complete the review page.
-    $this->drupalPost(NULL, array(), t('Submit order'));
+    $this->backdropPost(NULL, array(), t('Submit order'));
 
     $order_id = db_query("SELECT order_id FROM {uc_orders} WHERE delivery_first_name = :name", array(':name' => $edit['panes[delivery][delivery_first_name]']))->fetchField();
     if ($order_id) {
@@ -237,10 +237,10 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
         t('Order %order_id has been created', array('%order_id' => $order_id))
       );
 
-      $this->drupalGet('admin/store/orders/' . $order_id . '/edit');
+      $this->backdropGet('admin/store/orders/' . $order_id . '/edit');
       $this->assertTaxLineCorrect($this->loadTaxLine($order_id), $rate->rate, 'on initial order load');
 
-      $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
+      $this->backdropPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
       $this->assertText(t('Order changes saved.'));
       $this->assertTaxLineCorrect($this->loadTaxLine($order_id), $rate->rate, 'after saving order');
 
@@ -250,7 +250,7 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
       $rate = uc_taxes_rate_save($rate);
 
       // Save order because tax changes are only updated on save.
-      $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
+      $this->backdropPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
       $this->assertText(t('Order changes saved.'));
       $this->assertTaxLineCorrect($this->loadTaxLine($order_id), $oldrate, 'after rate change');
 
@@ -259,20 +259,20 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
       $rate->taxed_product_types = array($class->name);
       uc_taxes_rate_save($rate);
       entity_info_cache_clear();
-      $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
+      $this->backdropPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
       $this->assertText(t('Order changes saved.'));
       $this->assertTaxLineCorrect($this->loadTaxLine($order_id), $oldrate, 'after applicable product change');
 
       // Change order Status back to in_checkout and ensure tax-rate changes now update the order.
       uc_order_update_status($order_id, 'in_checkout');
-      $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
+      $this->backdropPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
       $this->assertText(t('Order changes saved.'));
       $this->assertFalse($this->loadTaxLine($order_id), t('The tax line was removed from the order when order status changed back to in_checkout.'));
 
       // Restore taxable product and ensure new tax is added.
       $rate->taxed_product_types = array('product');
       uc_taxes_rate_save($rate);
-      $this->drupalPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
+      $this->backdropPost('admin/store/orders/' . $order_id . '/edit', array(), t('Submit changes'));
       $this->assertText(t('Order changes saved.'));
       $this->assertTaxLineCorrect($this->loadTaxLine($order_id), $rate->rate, 'when order status changed back to in_checkout');
     }
@@ -282,7 +282,7 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
   }
 
   function testTaxProductClassUpdate() {
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
 
     // Create a new product class.
     $type = strtolower($this->randomName(12));
@@ -291,7 +291,7 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
       'name' => $type,
       'description' => $this->randomName(32),
     );
-    $this->drupalPost('admin/store/products/classes', $edit, t('Save'));
+    $this->backdropPost('admin/store/products/classes', $edit, t('Save'));
     node_types_rebuild();
 
     // Create a tax rate.
@@ -309,8 +309,8 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
 
     // Check that the tax rate shows up at checkout.
     $product = $this->createProduct(array('type' => $type));
-    $this->drupalPost('node/' . $product->nid, array(), t('Add to cart'));
-    $this->drupalGet('cart/checkout');
+    $this->backdropPost('node/' . $product->nid, array(), t('Add to cart'));
+    $this->backdropGet('cart/checkout');
     $this->assertText($tax, 'Tax line item displayed.');
 
     // Change the machine name of the product class.
@@ -319,12 +319,12 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
       'name' => $new_type,
       'type' => $new_type,
     );
-    $this->drupalPost('admin/structure/types/manage/' . $type, $edit, t('Save content type'));
+    $this->backdropPost('admin/structure/types/manage/' . $type, $edit, t('Save content type'));
 
     // Check that the tax rate still shows up at checkout.
-    $this->drupalPost('cart', array(), t('Remove'));
-    $this->drupalPost('node/' . $product->nid, array(), t('Add to cart'));
-    $this->drupalGet('cart/checkout');
+    $this->backdropPost('cart', array(), t('Remove'));
+    $this->backdropPost('node/' . $product->nid, array(), t('Add to cart'));
+    $this->backdropGet('cart/checkout');
     $this->assertText($tax, 'Tax line item displayed after changing product class node type.');
   }
 

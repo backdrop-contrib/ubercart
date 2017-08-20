@@ -19,7 +19,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
   }
 
   /**
-   * Overrides DrupalWebTestCase::setUp().
+   * Overrides BackdropWebTestCase::setUp().
    */
   protected function setUp($modules = array(), $permissions = array()) {
     parent::setUp(array('uc_cart_links', 'uc_attribute'), array('administer cart links', 'view cart links report', 'access administration pages'));
@@ -30,13 +30,13 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
    */
   function testCartLinksUISettingsPage() {
     // Access settings page by anonymous user
-    $this->drupalGet('admin/store/settings/cart-links');
+    $this->backdropGet('admin/store/settings/cart-links');
     $this->assertText(t('Access denied'));
     $this->assertText(t('You are not authorized to access this page.'));
 
     // Access settings page by privileged user
-    $this->drupalLogin($this->adminUser);
-    $this->drupalGet('admin/store/settings/cart-links');
+    $this->backdropLogin($this->adminUser);
+    $this->backdropGet('admin/store/settings/cart-links');
     $this->assertText(
       t('View the help page to learn how to create Cart Links.'),
       t('Settings page found.')
@@ -102,7 +102,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     //
 
     foreach ($cart_links as $key => $test_link) {
-      $this->drupalGet('node/' . $page->nid);
+      $this->backdropGet('node/' . $page->nid);
       // Look for link on page
       $this->assertLink(
         t('Cart Link #@link', array('@link' => $key)),
@@ -126,7 +126,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
       );
 
       // Check contents of cart
-      $this->drupalGet('cart');
+      $this->backdropGet('cart');
       $this->assertText(
         $link_data[$key]['title'],
         t('Product title correct in cart.')
@@ -154,7 +154,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
 
       // Use the same link, but this time append an '_s' to turn
       // off message display for this product
-      $this->drupalGet($test_link . '_s');
+      $this->backdropGet($test_link . '_s');
       // Default add-to-cart message is different when adding a duplicate item
       $this->assertNoText(
         t('Your item(s) have been updated.'),
@@ -162,7 +162,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
       );
 
       // Empty cart (press remove button)
-      $this->drupalPost('cart', array(), t('Remove'));
+      $this->backdropPost('cart', array(), t('Remove'));
       $this->assertText('There are no products in your shopping cart.');
     }
 
@@ -186,7 +186,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // Create a page containing these links
     $page = $this->createCartLinksPage($cart_links);
 
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
 
     //
     // Test product action message display
@@ -195,7 +195,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // Turn on display of product action message
     $this->setCartLinksUIProductActionMessage(TRUE);
     // Go to page with Cart Links
-    $this->drupalGet('node/' . $page->nid);
+    $this->backdropGet('node/' . $page->nid);
     // Pick one of the links at random
     $test_link = array_rand($cart_links);
     $this->clickLink(t('Cart Link #@link', array('@link' => $test_link)));
@@ -205,13 +205,13 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     );
 
     // Empty cart (press remove button)
-    $this->drupalPost('cart', array(), t('Remove'));
+    $this->backdropPost('cart', array(), t('Remove'));
     $this->assertText('There are no products in your shopping cart.');
 
     // Turn off display of product action message
     $this->setCartLinksUIProductActionMessage(FALSE);
     // Go to page with Cart Links
-    $this->drupalGet('node/' . $page->nid);
+    $this->backdropGet('node/' . $page->nid);
     // Pick one of the links at random
     $test_link = array_rand($cart_links);
     $this->clickLink(t('Cart Link #@link', array('@link' => $test_link)));
@@ -220,7 +220,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
       t('Cart Link product action message not present.')
     );
 
-    $this->drupalLogout();
+    $this->backdropLogout();
   }
 
   /**
@@ -241,7 +241,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // Create a page containing these links
     $page = $this->createCartLinksPage($cart_links);
 
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
 
     //
     // Test empty cart action
@@ -250,7 +250,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // Allow links to empty cart
     $this->setCartLinksUIAllowEmptying(TRUE);
     // Go to page with Cart Links
-    $this->drupalGet('node/' . $page->nid);
+    $this->backdropGet('node/' . $page->nid);
     // Pick one of the links at random and add it to the cart
     $test_link_0 = array_rand($cart_links);
     $this->clickLink(t('Cart Link #@link', array('@link' => $test_link_0)));
@@ -260,16 +260,16 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // (Don't want to use the same link.)
     unset($cart_links[$test_link_0]);
     $test_link = array_rand($cart_links);
-    $this->drupalGet(str_replace('add/p', 'add/e-p', $cart_links[$test_link]));
+    $this->backdropGet(str_replace('add/p', 'add/e-p', $cart_links[$test_link]));
     $this->assertText(
       t('The current contents of your shopping cart will be lost. Are you sure you want to continue?'),
       t('Empty cart confirmation page found.')
     );
     // Allow
-    $this->drupalPost(NULL, array(), t('Confirm'));
+    $this->backdropPost(NULL, array(), t('Confirm'));
 
     // Verify the cart doesn't have the first item and does have the second item
-    $this->drupalGet('cart');
+    $this->backdropGet('cart');
     $this->assertText(
       $link_data[$test_link]['title'],
       t('Product title correct in cart.')
@@ -284,9 +284,9 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // Forbid links to empty cart
     $this->setCartLinksUIAllowEmptying(FALSE);
     // Re-use $test_link_0 and prepend an 'e-' so it will (try to) empty cart
-    $this->drupalGet(str_replace('add/p', 'add/e-p', $in_cart));
+    $this->backdropGet(str_replace('add/p', 'add/e-p', $in_cart));
     // Verify the cart has both items - cart wasn't emptied
-    $this->drupalGet('cart');
+    $this->backdropGet('cart');
     $this->assertText(
       $link_data[$test_link_0]['title'],
       t('Cart was not emptied by Cart Link.')
@@ -296,7 +296,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
       t('Cart was not emptied by Cart Link.')
     );
 
-    $this->drupalLogout();
+    $this->backdropLogout();
   }
 
   /**
@@ -317,21 +317,21 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // Create a page containing these links
     $page = $this->createCartLinksPage($cart_links);
 
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
 
     //
     // Test Cart Links restrictions
     //
 
     // Go to page with Cart Links
-    $this->drupalGet('node/' . $page->nid);
+    $this->backdropGet('node/' . $page->nid);
     // Pick one of the links at random and restrict it
     $test_link_0 = array_rand($cart_links);
     // Only this link is allowed - strip '/cart/add/' from beginning
     $this->setCartLinksUIRestrictions(substr($cart_links[$test_link_0], 10));
 
     // Attempt to click link - should pass
-    $this->drupalGet('node/' . $page->nid);
+    $this->backdropGet('node/' . $page->nid);
     $this->clickLink(t('Cart Link #@link', array('@link' => $test_link_0)));
 
     // Check for notice that item was added (this notice is set ON
@@ -348,10 +348,10 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
 
     // Attempt to click it
     // It should fail and redirect to the home page (default)
-    $this->drupalGet('node/' . $page->nid);
+    $this->backdropGet('node/' . $page->nid);
     $this->clickLink(t('Cart Link #@link', array('@link' => $test_link)));
     $this->assertText(
-      t('Welcome to Drupal')
+      t('Welcome to Backdrop')
     );
     $this->assertText(
       t('No front page content has been created yet.'),
@@ -359,7 +359,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     );
 
     // Now create a special redirect page for bad links
-    $redirect_page = $this->drupalCreateNode(
+    $redirect_page = $this->backdropCreateNode(
       array(
         'body' => array(
           LANGUAGE_NONE => array(
@@ -374,7 +374,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
 
     // Attempt to click same restricted link as above.
     // It should fail again but this time redirect to $redirect_page.
-    $this->drupalGet('node/' . $page->nid);
+    $this->backdropGet('node/' . $page->nid);
     $this->clickLink(t('Cart Link #@link', array('@link' => $test_link)));
     $this->assertText(
       t('ERROR: Invalid Cart Link!'),
@@ -383,14 +383,14 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
 
     // Remove restrictions, try to add again - it should pass
     $this->setCartLinksUIRestrictions('');
-    $this->drupalGet('node/' . $page->nid);
+    $this->backdropGet('node/' . $page->nid);
     $this->clickLink(t('Cart Link #@link', array('@link' => $test_link)));
     $this->assertText(
       t('@title added to your shopping cart.', array('@title' => $link_data[$test_link]['title'])),
       t('Product @title added to cart.', array('@title' => $link_data[$test_link]['title']))
     );
 
-    $this->drupalLogout();
+    $this->backdropLogout();
   }
 
   /**
@@ -430,7 +430,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     $page = $this->createCartLinksPage($cart_links);
 
     // Need to be admin to define messages
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
 
     // Define some messages
     $messages = array();
@@ -445,23 +445,23 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     //
 
     // Go to page with Cart Links
-    $this->drupalGet('node/' . $page->nid);
+    $this->backdropGet('node/' . $page->nid);
 
     // Pick one link at random and append an '-m<#>' to display a message
     $test_link = array_rand($cart_links);
     $message_key  = array_rand($messages);
     $message_text = explode('|', $messages[$message_key]);
-    $this->drupalGet($cart_links[$test_link] . '-m' . $message_key);
+    $this->backdropGet($cart_links[$test_link] . '-m' . $message_key);
     $this->assertText(
       t('@message', array('@message' => $message_text[1])),
       t('Message @key displayed.', array('@key' => $message_key))
     );
 
     // Empty cart (press remove button)
-    $this->drupalPost('cart', array(), t('Remove'));
+    $this->backdropPost('cart', array(), t('Remove'));
     $this->assertText('There are no products in your shopping cart.');
 
-    $this->drupalLogout();
+    $this->backdropLogout();
   }
 
   /**
@@ -483,14 +483,14 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     // Create a page containing these links
     $page = $this->createCartLinksPage($cart_links);
 
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
 
     //
     // Test Cart Links tracking
     //
 
     // Go to page with Cart Links
-    $this->drupalGet('node/' . $page->nid);
+    $this->backdropGet('node/' . $page->nid);
 
     // Create three tracking IDs
     $tracking = array();
@@ -505,13 +505,13 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
 
       // Assign one of the tracking IDs
       $tracking_id = array_rand($tracking);
-      $this->drupalGet($cart_links[$test_link] . '-i' . $tracking_id);
+      $this->backdropGet($cart_links[$test_link] . '-i' . $tracking_id);
       // Keep a record of how many links were assigned this key
       $tracking[$tracking_id] += 1;
     }
 
     // Check report to see these clicks have been recorded correctly
-    $this->drupalGet('admin/store/reports/cart-links');
+    $this->backdropGet('admin/store/reports/cart-links');
     $total = 0;
     foreach ($tracking as $id => $clicks) {
       $total += $clicks;
@@ -522,7 +522,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     }
     $this->assertEqual($total, 50, t('Fifty clicks recorded.'));
 
-    $this->drupalLogout();
+    $this->backdropLogout();
   }
 
   /****************************************************************************
@@ -539,7 +539,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
    *   Defaults to FALSE.
    */
   function setCartLinksUIProductActionMessage($state = FALSE) {
-    $this->drupalPost(
+    $this->backdropPost(
       'admin/store/settings/cart-links',
       array('uc_cart_links_add_show' => $state),
       t('Save configuration')
@@ -561,7 +561,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
    *   Defaults to TRUE.
    */
   function setCartLinksUITrackClicks($state = TRUE) {
-    $this->drupalPost(
+    $this->backdropPost(
       'admin/store/settings/cart-links',
       array('uc_cart_links_track' => 0),
       t('Save configuration')
@@ -583,7 +583,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
    *   Defaults to TRUE.
    */
   function setCartLinksUIAllowEmptying($state = TRUE) {
-    $this->drupalPost(
+    $this->backdropPost(
       'admin/store/settings/cart-links',
       array('uc_cart_links_empty' => $state),
       t('Save configuration')
@@ -606,7 +606,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
    */
   function setCartLinksUIMessages($messages = '') {
     $message_string = implode("\n", $messages);
-    $this->drupalPost(
+    $this->backdropPost(
       'admin/store/settings/cart-links',
       array('uc_cart_links_messages' => $message_string),
       t('Save configuration')
@@ -628,7 +628,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
    *   Restrictions are valid Cart Links - i.e. relative URLs.
    */
   function setCartLinksUIRestrictions($restrictions = '') {
-    $this->drupalPost(
+    $this->backdropPost(
       'admin/store/settings/cart-links',
       array('uc_cart_links_restrictions' => $restrictions),
       t('Save configuration')
@@ -649,7 +649,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
    *   Relative URL of the destination page for the redirect.  Omit leading '/'.
    */
   function setCartLinksUIRedirect($url = '') {
-    $this->drupalPost(
+    $this->backdropPost(
       'admin/store/settings/cart-links',
       array('uc_cart_links_invalid_page' => $url),
       t('Save configuration')
@@ -688,7 +688,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
       )),
     );
 
-    return $this->drupalCreateNode($page);
+    return $this->backdropCreateNode($page);
   }
 
   /**
@@ -734,7 +734,7 @@ class UbercartCartLinksTestCase extends UbercartTestHelper {
     $attributes_with_options = uc_attribute_load_multiple();
 
     // Pick 5 keys to check at random.
-    $aids = drupal_map_assoc(array_rand($attributes, 3));
+    $aids = backdrop_map_assoc(array_rand($attributes, 3));
 
     // Load the attributes back.
     $loaded_attributes = uc_attribute_load_multiple($aids);

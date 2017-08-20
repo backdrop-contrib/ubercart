@@ -19,7 +19,7 @@ jQuery(document).ready(
 );
 
 // When you (un)check the recursion option on the file deletion form.
-Drupal.behaviors.ucFileDeleteList = {
+Backdrop.behaviors.ucFileDeleteList = {
   attach: function(context, settings) {
     jQuery('#edit-recurse-directories:not(.ucFileDeleteList-processed)', context).addClass('ucFileDeleteList-processed').change(
       function() {

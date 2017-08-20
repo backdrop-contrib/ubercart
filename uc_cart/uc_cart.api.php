@@ -32,7 +32,7 @@
  * @return
  *   The function can use this data to whatever purpose to see if the item
  *   can be added to the cart or not. The function should return an array
- *   containing the result array. (This is due to the nature of Drupal's
+ *   containing the result array. (This is due to the nature of Backdrop's
  *   module_invoke_all() function. You must return an array within an array
  *   or other module data will end up getting ignored.) At this moment,
  *   there are only three keys:
@@ -162,7 +162,7 @@ function hook_uc_cart_item_presave($entity) {
  *   The cart item entity object.
  */
 function hook_uc_cart_item_insert($entity) {
-  drupal_set_message(t('An item was added to your cart'));
+  backdrop_set_message(t('An item was added to your cart'));
 }
 
 /**
@@ -172,7 +172,7 @@ function hook_uc_cart_item_insert($entity) {
  *   The cart item entity object.
  */
 function hook_uc_cart_item_update($entity) {
-  drupal_set_message(t('An item was updated in your cart'));
+  backdrop_set_message(t('An item was updated in your cart'));
 }
 
 /**
@@ -182,7 +182,7 @@ function hook_uc_cart_item_update($entity) {
  *   The cart item entity object.
  */
 function hook_uc_cart_item_delete($entity) {
-  drupal_set_message(t('An item was deleted from your cart'));
+  backdrop_set_message(t('An item was deleted from your cart'));
 }
 
 /**
@@ -222,7 +222,7 @@ function hook_uc_cart_pane($items) {
   $body = array();
 
   if (!is_null($items)) {
-    $body = drupal_get_form('uc_cart_view_form', $items) + array(
+    $body = backdrop_get_form('uc_cart_view_form', $items) + array(
       '#prefix' => '<div id="cart-form-pane">',
       '#suffix' => '</div>',
     );
@@ -248,7 +248,7 @@ function hook_uc_cart_pane($items) {
  *   The array of item information.
  */
 function hook_uc_cart_pane_alter(&$panes, $items) {
-  $panes['cart_form']['body'] = drupal_get_form('my_custom_pane_form_builder', $items);
+  $panes['cart_form']['body'] = backdrop_get_form('my_custom_pane_form_builder', $items);
 }
 
 /**
@@ -286,7 +286,7 @@ function hook_uc_checkout_complete($order, $account) {
 /**
  * Takes action immediately before bringing up the checkout page.
  *
- * Use drupal_goto() in the hook implementation to abort checkout and
+ * Use backdrop_goto() in the hook implementation to abort checkout and
  * enforce restrictions on the order.
  *
  * @param $order
@@ -295,8 +295,8 @@ function hook_uc_checkout_complete($order, $account) {
 function hook_uc_cart_checkout_start($order) {
   $account = user_load($order->uid);
   if (is_array($account->roles) && in_array('administrator', $account->roles)) {
-    drupal_set_message(t('Administrators may not purchase products.', 'error'));
-    drupal_goto('cart');
+    backdrop_set_message(t('Administrators may not purchase products.', 'error'));
+    backdrop_goto('cart');
   }
 }
 
@@ -474,7 +474,7 @@ function hook_uc_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
   // Rebuild the items hash
   uc_cart_get_contents(NULL, 'rebuild');
   if (!strpos(request_uri(), 'cart', -4)) {
-    drupal_set_message(t('Your item(s) have been updated.'));
+    backdrop_set_message(t('Your item(s) have been updated.'));
   }
 }
 

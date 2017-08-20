@@ -96,14 +96,14 @@ function hook_uc_product_default_classes() {
  * Modules that add data to cart items when they are selected should display it
  * with this hook. The return values from each implementation will be
  * sent through to hook_uc_product_description_alter() implementations and then
- * all descriptions are rendered using drupal_render().
+ * all descriptions are rendered using backdrop_render().
  *
  * @param $product
  *   Product. Usually one of the values of the array returned by
  *   uc_cart_get_contents().
  *
  * @return
- *   A structured array that can be fed into drupal_render().
+ *   A structured array that can be fed into backdrop_render().
  */
 function hook_uc_product_description($product) {
   $description = array(

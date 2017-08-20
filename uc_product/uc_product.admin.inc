@@ -394,7 +394,7 @@ function uc_product_class_form_submit($form, &$form_state) {
   ))
     ->execute();
 
-  // Drupal7 node_type table is deprecated in backdrop. Changed to save config file.
+  // Backdrop7 node_type table is deprecated in backdrop. Changed to save config file.
   /*
   db_update('node_type')
     ->fields(array(

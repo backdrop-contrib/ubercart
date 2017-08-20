@@ -6,7 +6,7 @@
 /**
  * Sets the behavior to (un)collapse the cart block on a click
  */
-Drupal.behaviors.ucCollapseBlock = {
+Backdrop.behaviors.ucCollapseBlock = {
   attach: function(context) {
     jQuery('.cart-block-title-bar:not(.ucCollapseBlock-processed)', context).addClass('ucCollapseBlock-processed').click(
       function() {

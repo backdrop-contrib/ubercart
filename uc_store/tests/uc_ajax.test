@@ -17,14 +17,14 @@ class UbercartAjaxTestCase extends UbercartTestHelper {
   }
 
   /**
-   * Overrides DrupalWebTestCase::setUp().
+   * Overrides BackdropWebTestCase::setUp().
    */
   protected function setUp($modules = array(), $permissions = array()) {
     module_load_include('inc', 'uc_store', 'includes/uc_ajax_attach');
     $modules = array('rules_admin', 'uc_payment', 'uc_payment_pack');
     $permissions = array('administer rules', 'bypass rules access');
     parent::setUp($modules, $permissions);
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
   }
 
   /**
@@ -69,7 +69,7 @@ class UbercartAjaxTestCase extends UbercartTestHelper {
     }
     $newconfig->save();
     entity_info_cache_clear();
-    //$this->drupalGet('admin/config/workflow/rules/components/manage/' . $newconfig->id);
+    //$this->backdropGet('admin/config/workflow/rules/components/manage/' . $newconfig->id);
   }
 
   function testCheckoutAjax() {
@@ -86,8 +86,8 @@ class UbercartAjaxTestCase extends UbercartTestHelper {
     // Go to the checkout page, veriy that the conditional payment method is
     // not available.
     $product = $this->createProduct(array('shippable' => FALSE));
-    $this->drupalPost('node/' . $product->nid, array(), t('Add to cart'));
-    $this->drupalPost('cart', array('items[0][qty]' => 1), t('Checkout'));
+    $this->backdropPost('node/' . $product->nid, array(), t('Add to cart'));
+    $this->backdropPost('cart', array('items[0][qty]' => 1), t('Checkout'));
     $this->assertNoText('Other');
 
     // Change the billing zone and veriy that payment pane updates.

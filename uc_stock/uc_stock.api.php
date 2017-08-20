@@ -27,7 +27,7 @@ function hook_uc_stock_adjusted($sku, $stock, $qty) {
     'qty' => $qty,
   );
 
-  drupal_mail('uc_stock_notify', 'stock-adjusted', uc_store_email_from(), language_default(), $params);
+  backdrop_mail('uc_stock_notify', 'stock-adjusted', uc_store_email_from(), language_default(), $params);
 }
 
 /**
