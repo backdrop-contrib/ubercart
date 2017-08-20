@@ -3,7 +3,7 @@
  * Adds effects and behaviors to elements on the checkout page.
  */
 
-Drupal.behaviors.ucCart = {
+Backdrop.behaviors.ucCart = {
   attach: function(context, settings) {
     // Add a throbber to the submit order button on the review order form.
     jQuery('form#uc-cart-checkout-review-form input#edit-submit:not(.ucSubmitOrderThrobber-processed)', context).addClass('ucSubmitOrderThrobber-processed').click(function() {

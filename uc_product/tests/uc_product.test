@@ -16,18 +16,18 @@ class UbercartProductTestCase extends UbercartTestHelper {
   }
 
   /**
-   * Overrides DrupalWebTestCase::setUp().
+   * Overrides BackdropWebTestCase::setUp().
    */
   protected function setUp($modules = array(), $permissions = array()) {
     parent::setUp(array(), array('administer content types'));
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
   }
 
   /**
    *
    */
   public function testProductNodeForm() {
-    $this->drupalGet('node/add/product');
+    $this->backdropGet('node/add/product');
 
     foreach (array('model', 'list_price', 'cost', 'sell_price', 'shippable', 'weight', 'weight_units', 'dim_length', 'dim_width', 'dim_height', 'length_units', 'pkg_qty', 'ordering') as $field) {
       $this->assertFieldByName($field, NULL);
@@ -62,7 +62,7 @@ class UbercartProductTestCase extends UbercartTestHelper {
       )),
     );
 
-    $this->drupalPost(
+    $this->backdropPost(
       'node/add/product',
       $edit,
       t('Save')
@@ -105,7 +105,7 @@ class UbercartProductTestCase extends UbercartTestHelper {
       'description' => $this->randomName(32),
     );
 
-    $this->drupalPost(
+    $this->backdropPost(
       'admin/store/products/classes',
       $edit,
       t('Save')
@@ -127,20 +127,20 @@ class UbercartProductTestCase extends UbercartTestHelper {
     $edit = array(
       'type' => $new_type,
     );
-    $this->drupalPost('admin/structure/types/manage/' . $type, $edit, 'Save content type');
+    $this->backdropPost('admin/structure/types/manage/' . $type, $edit, 'Save content type');
     $this->assertText('Machine name: ' . $new_type, 'Updated machine name found.');
     $this->assertNoText('Machine name: ' . $type, 'Old machine name not found.');
 
     // Make an existing node type a product class.
-    $type = $this->drupalCreateContentType();
+    $type = $this->backdropCreateContentType();
     $edit = array(
       'pcid' => $type->type,
       'name' => $type->name,
       'description' => $type->description,
     );
-    $node = $this->drupalCreateNode(array('type' => $type->type));
+    $node = $this->backdropCreateNode(array('type' => $type->type));
 
-    $this->drupalPost(
+    $this->backdropPost(
       'admin/store/products/classes',
       $edit,
       t('Save')
@@ -156,7 +156,7 @@ class UbercartProductTestCase extends UbercartTestHelper {
       'uc_product',
       t('The new content type has been taken over by uc_product.'));
 
-    $this->drupalPost('node/' . $node->nid, array('qty' => '1'), 'Add to cart');
+    $this->backdropPost('node/' . $node->nid, array('qty' => '1'), 'Add to cart');
     $this->assertText($node->title . ' added to your shopping cart.');
   }
 
@@ -164,22 +164,22 @@ class UbercartProductTestCase extends UbercartTestHelper {
     config_set('uc_product.settings', 'uc_product_add_to_cart_qty', TRUE);
 
     // Check zero quantity message.
-    $this->drupalPost('node/' . $this->product->nid, array('qty' => '0'), 'Add to cart');
+    $this->backdropPost('node/' . $this->product->nid, array('qty' => '0'), 'Add to cart');
     $this->assertText('The quantity cannot be zero.');
 
     // Check invalid quantity messages.
-    $this->drupalPost('node/' . $this->product->nid, array('qty' => 'x'), 'Add to cart');
+    $this->backdropPost('node/' . $this->product->nid, array('qty' => 'x'), 'Add to cart');
     $this->assertText('The quantity must be an integer.');
 
-    $this->drupalPost('node/' . $this->product->nid, array('qty' => '1a'), 'Add to cart');
+    $this->backdropPost('node/' . $this->product->nid, array('qty' => '1a'), 'Add to cart');
     $this->assertText('The quantity must be an integer.');
 
     // Check cart add message.
-    $this->drupalPost('node/' . $this->product->nid, array('qty' => '1'), 'Add to cart');
+    $this->backdropPost('node/' . $this->product->nid, array('qty' => '1'), 'Add to cart');
     $this->assertText($this->product->title . ' added to your shopping cart.');
 
     // Check cart update message.
-    $this->drupalPost('node/' . $this->product->nid, array('qty' => '1'), 'Add to cart');
+    $this->backdropPost('node/' . $this->product->nid, array('qty' => '1'), 'Add to cart');
     $this->assertText('Your item(s) have been updated.');
   }
 }

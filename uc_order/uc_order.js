@@ -8,7 +8,7 @@ var customer_select = '';
 /**
  * Adds double click behavior to the order and customer admin tables.
  */
-Drupal.behaviors.ucOrderClick = {
+Backdrop.behaviors.ucOrderClick = {
   attach: function(context, settings) {
     jQuery('.view-uc-orders tbody tr, .view-uc-customers tbody tr', context).dblclick(
       function() {
@@ -21,7 +21,7 @@ Drupal.behaviors.ucOrderClick = {
 /**
  * Adds the submit behavior to the order form
  */
-Drupal.behaviors.ucOrderSubmit = {
+Backdrop.behaviors.ucOrderSubmit = {
   attach: function(context, settings) {
     jQuery('#uc-order-edit-form:not(.ucOrderSubmit-processed)', context).addClass('ucOrderSubmit-processed').submit(
       function() {
@@ -80,7 +80,7 @@ function load_address_select(uid, div, address_type) {
     'func' : "apply_address('" + address_type + "', this.value);"
   };
 
-  jQuery.post(Drupal.settings.ucURL.adminOrders + 'address_book', options,
+  jQuery.post(Backdrop.settings.ucURL.adminOrders + 'address_book', options,
     function (contents) {
       jQuery(div).empty().addClass('address-select-box').append(contents);
     }
@@ -124,7 +124,7 @@ function load_customer_search() {
     return close_customer_select();
   }
 
-  jQuery.post(Drupal.settings.ucURL.adminOrders + 'customer', {},
+  jQuery.post(Backdrop.settings.ucURL.adminOrders + 'customer', {},
     function (contents) {
       jQuery('#customer-select').empty().addClass('customer-select-box').append(contents);
       jQuery('#customer-select #edit-first-name').val(jQuery('#edit-billing-first-name').val());
@@ -140,7 +140,7 @@ function load_customer_search() {
  * Displays the results of the customer search.
  */
 function load_customer_search_results() {
-  jQuery.post(Drupal.settings.ucURL.adminOrders + 'customer/search',
+  jQuery.post(Backdrop.settings.ucURL.adminOrders + 'customer/search',
     {
       first_name: jQuery('#customer-select #edit-first-name').val(),
       last_name: jQuery('#customer-select #edit-last-name').val(),
@@ -170,7 +170,7 @@ function load_new_customer_form() {
     return close_customer_select();
   }
 
-  jQuery.post(Drupal.settings.ucURL.adminOrders + 'customer/new', {},
+  jQuery.post(Backdrop.settings.ucURL.adminOrders + 'customer/new', {},
     function (contents) {
       jQuery('#customer-select').empty().addClass('customer-select-box').append(contents);
       customer_select = 'new';
@@ -187,7 +187,7 @@ function check_new_customer_address() {
     'email' : jQuery('#customer-select #edit-email').val(),
     'sendmail' : jQuery('#customer-select #edit-sendmail').attr('checked')
   };
-  jQuery.post(Drupal.settings.ucURL.adminOrders + 'customer/new/check', options,
+  jQuery.post(Backdrop.settings.ucURL.adminOrders + 'customer/new/check', options,
     function (contents) {
       jQuery('#customer-select').empty().append(contents);
     }

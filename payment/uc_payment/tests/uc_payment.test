@@ -16,12 +16,12 @@ class UbercartPaymentPaneTestCase extends UbercartTestHelper {
   }
 
   /**
-   * Overrides DrupalWebTestCase::setUp().
+   * Overrides BackdropWebTestCase::setUp().
    */
   protected function setUp($modules = array(), $permissions = array()) {
     parent::setUp(array('uc_payment', 'uc_payment_pack'));
-    $this->drupalLogin($this->adminUser);
-    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $this->backdropLogin($this->adminUser);
+    $this->backdropPost('node/' . $this->product->nid, array(), t('Add to cart'));
   }
 
   /**
@@ -30,18 +30,18 @@ class UbercartPaymentPaneTestCase extends UbercartTestHelper {
   public function testPaymentMethodOptions() {
     // No payment methods.
     variable_set('uc_payment_method_check_checkout', FALSE);
-    $this->drupalGet('cart/checkout');
+    $this->backdropGet('cart/checkout');
     $this->assertText('Checkout cannot be completed without any payment methods enabled. Please contact an administrator to resolve the issue.');
 
     // Single payment method.
     variable_set('uc_payment_method_check_checkout', TRUE);
-    $this->drupalGet('cart/checkout');
+    $this->backdropGet('cart/checkout');
     $this->assertNoText('Select a payment method from the following options.');
     $this->assertFieldByXPath("//input[@name='panes[payment][payment_method]' and @disabled='disabled']");
 
     // Multiple payment methods.
     variable_set('uc_payment_method_other_checkout', TRUE);
-    $this->drupalGet('cart/checkout');
+    $this->backdropGet('cart/checkout');
     $this->assertText('Select a payment method from the following options.');
     $this->assertNoFieldByXPath("//input[@name='panes[payment][payment_method]' and @disabled='disabled']");
   }
@@ -51,11 +51,11 @@ class UbercartPaymentPaneTestCase extends UbercartTestHelper {
    */
   public function testOrderTotalPreview() {
     variable_set('uc_payment_show_order_total_preview', TRUE);
-    $this->drupalGet('cart/checkout');
+    $this->backdropGet('cart/checkout');
     $this->assertText('Order total:');
 
     variable_set('uc_payment_show_order_total_preview', FALSE);
-    $this->drupalGet('cart/checkout');
+    $this->backdropGet('cart/checkout');
     $this->assertNoText('Order total:');
   }
 
@@ -67,23 +67,23 @@ class UbercartPaymentPaneTestCase extends UbercartTestHelper {
     variable_set('uc_payment_method_check_checkout', TRUE);
 
     // Check that paid products cannot be purchased for free.
-    $this->drupalGet('cart/checkout');
+    $this->backdropGet('cart/checkout');
     $this->assertText('Check or money order');
     $this->assertNoText('No payment required');
     $this->assertNoText('Subtotal: $0.00');
 
     // Check that a mixture of free and paid products cannot be purchased for free.
-    $this->drupalPost('node/' . $free_product->nid, array(), t('Add to cart'));
-    $this->drupalGet('cart/checkout');
+    $this->backdropPost('node/' . $free_product->nid, array(), t('Add to cart'));
+    $this->backdropGet('cart/checkout');
     $this->assertText('Check or money order');
     $this->assertNoText('No payment required');
     $this->assertNoText('Subtotal: $0.00');
 
     // Check that free products can be purchased successfully with no payment.
-    $this->drupalPost('cart', array(), t('Remove'));
-    $this->drupalPost('cart', array(), t('Remove'));
-    $this->drupalPost('node/' . $free_product->nid, array(), t('Add to cart'));
-    $this->drupalGet('cart/checkout');
+    $this->backdropPost('cart', array(), t('Remove'));
+    $this->backdropPost('cart', array(), t('Remove'));
+    $this->backdropPost('node/' . $free_product->nid, array(), t('Add to cart'));
+    $this->backdropGet('cart/checkout');
     $this->assertNoText('Check or money order');
     $this->assertText('No payment required');
     $this->assertText('Subtotal: $0.00');

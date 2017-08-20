@@ -81,23 +81,23 @@ class UbercartOrderTestCase extends UbercartTestHelper {
   }
 
   public function testOrderCreation() {
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
 
     $edit = array(
       'customer_type' => 'search',
       'customer[email]' => $this->customer->mail,
     );
-    $this->drupalPost('admin/store/orders/create', $edit, t('Search'));
+    $this->backdropPost('admin/store/orders/create', $edit, t('Search'));
 
     $edit['customer[uid]'] = $this->customer->uid;
-    $this->drupalPost(NULL, $edit, t('Create order'));
+    $this->backdropPost(NULL, $edit, t('Create order'));
     $this->assertText(t('Order created by the administration.'), 'Order created by the administration.');
     $this->assertFieldByName('uid_text', $this->customer->uid, 'The customer UID appears on the page.');
 
     $order_id = db_query("SELECT order_id FROM {uc_orders} WHERE uid = :uid", array(':uid' => $this->customer->uid))->fetchField();
     $this->assertTrue($order_id, t('Found order ID @order_id', array('@order_id' => $order_id)));
 
-    $this->drupalGet('admin/store/orders');
+    $this->backdropGet('admin/store/orders');
     $this->assertLinkByHref('admin/store/orders/' . $order_id, 0, 'View link appears on order list.');
     $this->assertText('Pending', 'New order is "Pending".');
   }
@@ -105,25 +105,25 @@ class UbercartOrderTestCase extends UbercartTestHelper {
   public function testOrderEditing() {
     $order = $this->ucCreateOrder($this->customer);
 
-    $this->drupalLogin($this->customer);
-    $this->drupalGet('user/' . $this->customer->uid . '/orders');
+    $this->backdropLogin($this->customer);
+    $this->backdropGet('user/' . $this->customer->uid . '/orders');
     $this->assertText(t('My order history'));
 
-    $this->drupalGet('user/' . $this->customer->uid . '/orders/' . $order->order_id);
+    $this->backdropGet('user/' . $this->customer->uid . '/orders/' . $order->order_id);
     $this->assertResponse(200, 'Customer can view their own order.');
 
-    $this->drupalGet('admin/store/orders/' . $order->order_id);
+    $this->backdropGet('admin/store/orders/' . $order->order_id);
     $this->assertResponse(403, 'Customer may not edit orders.');
 
-    $this->drupalLogin($this->adminUser);
-    $this->drupalGet('user/' . $this->customer->uid . '/orders/' . $order->order_id);
-    $this->assertText(drupal_strtoupper($order->billing_first_name . ' ' . $order->billing_last_name), 'Found customer name.');
+    $this->backdropLogin($this->adminUser);
+    $this->backdropGet('user/' . $this->customer->uid . '/orders/' . $order->order_id);
+    $this->assertText(backdrop_strtoupper($order->billing_first_name . ' ' . $order->billing_last_name), 'Found customer name.');
 
     $edit = array(
       'billing_first_name' => $this->randomName(8),
       'billing_last_name' => $this->randomName(15),
     );
-    $this->drupalPost('admin/store/orders/' . $order->order_id . '/edit', $edit, t('Submit changes'));
+    $this->backdropPost('admin/store/orders/' . $order->order_id . '/edit', $edit, t('Submit changes'));
     $this->assertText(t('Order changes saved.'));
     $this->assertFieldByName('billing_first_name', $edit['billing_first_name'], 'Billing first name changed.');
     $this->assertFieldByName('billing_last_name', $edit['billing_last_name'], 'Billing last name changed.');

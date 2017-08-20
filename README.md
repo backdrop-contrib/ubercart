@@ -11,7 +11,7 @@ designed to be extended to meet any need.  Furthermore, the administrative
 interface, particularly relating to processing and fulfilling orders, has been
 designed for ease of use and efficient display of information.
 
-This is the Backdrop port of the Drupal 7 module you can find on
+This is the Backdrop port of the Backdrop 7 module you can find on
 http://drupal.org/project/ubercart.
 
 Installation
@@ -29,7 +29,7 @@ Documentation
 Additional documentation is located in the Wiki:
 https://github.com/backdrop-contrib/ubercart/wiki/Documentation
 
-Original documentation for the drupal version is located in:
+Original documentation for the backdrop version is located in:
 http://www.ubercart.org
 
 Issues
@@ -49,7 +49,7 @@ Credits
 - Ported to Backdrop CMS by:
 	- Docwilmot (https://github.com/docwilmot/).
 	- Robert Garrigos (https://github.com/robertgarrigos/).
-- Originally written for Drupal by https://www.drupal.org/node/129292/committers.
+- Originally written for Backdrop by https://www.drupal.org/node/129292/committers.
 
 License
 -------

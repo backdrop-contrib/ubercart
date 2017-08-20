@@ -19,7 +19,7 @@ class UbercartRolesTestCase extends UbercartTestHelper {
   }
 
   /**
-   * Overrides DrupalWebTestCase::setUp().
+   * Overrides BackdropWebTestCase::setUp().
    */
   protected function setUp($modules = array(), $permissions = array()) {
     $modules = array('uc_payment', 'uc_payment_pack', 'uc_roles');
@@ -30,19 +30,19 @@ class UbercartRolesTestCase extends UbercartTestHelper {
 
   function testRolePurchaseCheckout() {
     // Add role assignment to the test product.
-    $rid = $this->drupalCreateRole(array('access content'));
-    $this->drupalLogin($this->adminUser);
-    $this->drupalPost('node/' . $this->product->nid . '/edit/features', array('feature' => 'role'), t('Add'));
+    $rid = $this->backdropCreateRole(array('access content'));
+    $this->backdropLogin($this->adminUser);
+    $this->backdropPost('node/' . $this->product->nid . '/edit/features', array('feature' => 'role'), t('Add'));
     $edit = array(
       'uc_roles_role' => $rid,
       'end_override' => TRUE,
       'uc_roles_expire_relative_duration' => 1,
       'uc_roles_expire_relative_granularity' => 'day',
     );
-    $this->drupalPost(NULL, $edit, t('Save feature'));
+    $this->backdropPost(NULL, $edit, t('Save feature'));
 
     // Check out with the test product.
-    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $this->backdropPost('node/' . $this->product->nid, array(), t('Add to cart'));
     $order = $this->checkout();
     uc_payment_enter($order->order_id, 'other', $order->order_total);
 
@@ -57,25 +57,25 @@ class UbercartRolesTestCase extends UbercartTestHelper {
     user_delete($order->uid);
 
     // Run cron to ensure deleted users are handled correctly.
-    $this->drupalLogout();
+    $this->backdropLogout();
     $this->cronRun();
   }
 
   function testRoleAdminDelete() {
     // Add role assignment to the test product.
-    $rid = $this->drupalCreateRole(array('access content'));
-    $this->drupalLogin($this->adminUser);
-    $this->drupalPost('node/' . $this->product->nid . '/edit/features', array('feature' => 'role'), t('Add'));
+    $rid = $this->backdropCreateRole(array('access content'));
+    $this->backdropLogin($this->adminUser);
+    $this->backdropPost('node/' . $this->product->nid . '/edit/features', array('feature' => 'role'), t('Add'));
     $edit = array(
       'uc_roles_role' => $rid,
       'end_override' => TRUE,
       'uc_roles_expire_relative_duration' => 1,
       'uc_roles_expire_relative_granularity' => 'day',
     );
-    $this->drupalPost(NULL, $edit, t('Save feature'));
+    $this->backdropPost(NULL, $edit, t('Save feature'));
 
     // Check out with the test product.
-    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
+    $this->backdropPost('node/' . $this->product->nid, array(), t('Add to cart'));
     $order = $this->checkout();
     uc_payment_enter($order->order_id, 'other', $order->order_total);
 
@@ -84,13 +84,13 @@ class UbercartRolesTestCase extends UbercartTestHelper {
     $this->assertTrue(isset($account->roles[$rid]), 'Existing user was granted role.');
 
     // Test that the role appears on the user edit page.
-    $this->drupalGet('user/' . $order->uid . '/edit');
+    $this->backdropGet('user/' . $order->uid . '/edit');
     $this->assertText('Ubercart roles', 'Ubercart roles fieldset found.');
     $this->assertNoText('There are no pending expirations for roles this user.', 'User has a role expiration.');
 
-    // Delete the role using the Drupal user edit page
+    // Delete the role using the Backdrop user edit page
     // by unchecking the role and submitting the form.
-    $this->drupalPost(
+    $this->backdropPost(
       'user/' . $order->uid . '/edit',
       array('roles[' . $rid . ']' => FALSE),
       t('Save')
