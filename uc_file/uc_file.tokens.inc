@@ -32,7 +32,7 @@ function uc_file_token_info() {
 function uc_file_tokens($type, $tokens, $data = array(), $options = array()) {
   $language_code = NULL;
   if (isset($options['language'])) {
-    $language_code = $options['language']->language;
+    $language_code = $options['language']->langcode;
   }
   $sanitize = !empty($options['sanitize']);
 
