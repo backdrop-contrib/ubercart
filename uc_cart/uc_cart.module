@@ -304,8 +304,7 @@ function uc_cart_block_info() {
 
   $blocks['cart'] = array(
     'info' => t('Shopping cart'),
-    'cache' => BACKDROP_NO_CACHE,
-    'pages' => 'admin*',
+    'description' => t('Displays a list of Ubercart\'s shopping cart contents.'),
   );
 
   return $blocks;
@@ -314,7 +313,7 @@ function uc_cart_block_info() {
 /**
  * Implements hook_block_view().
  */
-function uc_cart_block_view($delta = '') {
+function uc_cart_block_view($delta = '', $settings = array(), $contexts = array()) {
   $config = config('uc_cart.settings');
   global $user;
 
@@ -405,7 +404,7 @@ function uc_cart_block_view($delta = '') {
  *
  * Builds the settings form used by the shopping cart block.
  */
-function uc_cart_block_configure($delta = '') {
+function uc_cart_block_configure($delta = '', $settings = array()) {
   $config = config('uc_cart.settings');
   if ($delta == 'cart') {
     $form['uc_cart_block_empty_hide'] = array(
@@ -460,7 +459,7 @@ function uc_cart_preprocess_block(&$variables) {
   $config = config('uc_cart.settings');
   global $user;
 
-  if ($variables['block']->module == 'uc_cart' && $variables['block']->delta == 0 && $variables['block']->subject) {
+  if ($variables['block']->module == 'uc_cart' && $variables['block']->delta == 'cart' && $variables['title']) {
     // Build the cart image if enabled.
     if ($config->get('uc_cart_block_image')) {
       $product_count = count(uc_cart_get_contents());
@@ -477,8 +476,8 @@ function uc_cart_preprocess_block(&$variables) {
       $icon_class = FALSE;
     }
 
-    $variables['block']->subject = theme('uc_cart_block_title', array(
-      'title' => $variables['block']->subject,
+    $variables['title'] = theme('uc_cart_block_title', array(
+      'title' => $variables['title'],
       'icon_class' => $icon_class,
       'collapsible' => $config->get('uc_cart_block_collapsible'),
       'collapsed' => $config->get('uc_cart_block_collapsed'),
