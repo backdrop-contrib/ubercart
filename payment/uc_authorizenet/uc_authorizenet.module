@@ -181,16 +181,23 @@ function uc_authorizenet_form_uc_payment_method_settings_form_alter(&$form, &$fo
  * Submit handler for payment gateway settings form to encrypt fields.
  */
 function uc_authorizenet_payment_gateway_settings_submit($form, &$form_state) {
+  $config = config('uc_authorizenet.settings');
   // If CC encryption has been configured properly.
   if ($key = uc_credit_encryption_key()) {
+    foreach ($form_state['values'] as $key => $value) {
+      if (FALSE !== strpos($key, 'uc_authnet_') && $key != 'uc_authnet_md5_hash') {
+        $config->set($key, $value);
+      }
+    }
+
     // Setup our encryption object.
     $crypt = new UbercartEncryption();
 
     // Encrypt the Login ID, Transaction key, and MD5 Hash.
     if (!empty($form_state['values']['uc_authnet_md5_hash'])) {
-      config_set('uc_authorizenet.settings', 'uc_authnet_md5_hash', $crypt->encrypt($key, $form_state['values']['uc_authnet_md5_hash']));
+      $config->set('uc_authnet_md5_hash', $crypt->encrypt($key, $form_state['values']['uc_authnet_md5_hash']));
     }
-
+    $config->save();
     // Store any errors.
     uc_store_encryption_errors($crypt, 'uc_authorizenet');
   }
