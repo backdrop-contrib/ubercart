@@ -58,31 +58,37 @@ class UcOrder extends Entity {
    */
   // function __construct($uid = 0, $state = 'in_checkout') {
   function __construct(array $values) {
-    $uid = isset($values['uid']) ? $values['uid'] : 0;
-    $state = isset($values['state']) ? $values['state'] : 'in_checkout';
-    if (strlen($uid) < 22 && $uid > 0) {
-      $this->uid = $uid;
-      if ($account = user_load($uid)) {
-        $this->primary_email = $account->mail;
+    if ($this->isNew()) {
+      $uid = isset($values['uid']) ? $values['uid'] : 0;
+      $state = isset($values['state']) ? $values['state'] : 'in_checkout';
+      if (strlen($uid) < 22 && $uid > 0) {
+        $this->uid = $uid;
+        if ($account = user_load($uid)) {
+          $this->primary_email = $account->mail;
+        }
       }
-    }
 
-    $this->order_status = uc_order_state_default($state);
-    $this->currency = config_get('uc_store.settings', 'uc_currency_code');
-    $this->billing_country = config_get('uc_store.settings', 'uc_store_country');
-    $this->delivery_country = config_get('uc_store.settings', 'uc_store_country');
-    $this->created = REQUEST_TIME;
-    $this->modified = REQUEST_TIME;
+      $this->order_status = uc_order_state_default($state);
+      $this->currency = config_get('uc_store.settings', 'uc_currency_code');
+      $this->billing_country = config_get('uc_store.settings', 'uc_store_country');
+      $this->delivery_country = config_get('uc_store.settings', 'uc_store_country');
+      $this->created = REQUEST_TIME;
+      $this->modified = REQUEST_TIME;
+    }
   }
 
   /**
    * Implements EntityInterface::id().
    */
-  public function id() {}
+  public function id() {
+    return $this->order_id;
+  }
   /**
    * Implements EntityInterface::entityType().
    */
-  public function entityType() {}
+  public function entityType() {
+    return 'uc_order';
+  }
   /**
    * Implements EntityInterface::bundle().
    */
