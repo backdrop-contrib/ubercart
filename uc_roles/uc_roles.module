@@ -148,15 +148,8 @@ function uc_roles_theme() {
 function uc_roles_form_user_profile_form_alter(&$form, &$form_state) {
   $config = config('uc_roles.settings');
   $account = $form_state['build_info']['args'][0];
-  if (isset($form_state['build_info']['args'][1])) {
-    $category = $form_state['build_info']['args'][1];
-  }
-  else {
-    // user_profile_form() has a default value for $category.
-    $category = 'account';
-  }
 
-  if (!user_access('administer users') || $category != 'account') {
+  if (!user_access('administer users')) {
     return;
   }
 
@@ -253,6 +246,7 @@ function uc_roles_form_user_profile_form_alter(&$form, &$form_state) {
   }
 
   $form['#validate'][] = 'uc_roles_user_validate';
+  $form['#submit'][] = 'uc_roles_user_submit';
 
   return $form;
 }
@@ -261,20 +255,14 @@ function uc_roles_form_user_profile_form_alter(&$form, &$form_state) {
  * User profile form validate handler.
  *
  * @see uc_roles_form_user_profile_form_alter()
+ * @see uc_roles_user_submit()
  */
 function uc_roles_user_validate($form, &$form_state) {
   $edit = $form_state['values'];
   $account = $form_state['build_info']['args'][0];
-  if (isset($form_state['build_info']['args'][1])) {
-    $category = $form_state['build_info']['args'][1];
-  }
-  else {
-    // user_profile_form() has a default value for $category.
-    $category = 'account';
-  }
 
   // Validate the amount of time for the expiration.
-  if (!empty($edit['new_role']) && $category == 'account') {
+  if (!empty($edit['new_role'])) {
     if (intval($edit['new_role_add_qty']) < 1) {
       form_set_error('new_role_add_qty', t('The expiration length must be a positive integer'));
     }
@@ -308,23 +296,22 @@ function uc_roles_user_cancel($edit, $account, $method) {
 }
 
 /**
- * Implements hook_user_presave().
+ * User profile form submit handler.
+ *
+ * @see uc_roles_form_user_profile_form_alter()
+ * @see uc_roles_user_validate()
  */
-function uc_roles_user_presave(&$edit, $account, $category) {
-  if (!user_access('administer users') || $category != 'account') {
+function uc_roles_user_submit($form, &$form_state) {
+  $edit = $form_state['values'];
+  $account = $form_state['build_info']['args'][0];
+  if (!user_access('administer users')) {
     return;
   }
 
   // Grant a new role if a new temporary role is added.
-  if (isset($edit['new_role']) && $edit['new_role'] && $category == 'account') {
-    // Save our role info, but don't save the user; user.module will do that.
-    uc_roles_grant($account, $edit['new_role_add'], _uc_roles_get_expiration($edit['new_role_add_qty'], $edit['new_role_add_granularity']), FALSE);
-
-    // Push in values so user.module will save in the roles.
-    $edit['roles'][$edit['new_role_add']] = _uc_roles_get_name($edit['new_role_add']);
-
-    // Reset the new role form.
-    $edit['new_role'] = $edit['new_role_add'] = $edit['new_role_add_qty'] = $edit['new_role_add_granularity'] = NULL;
+  if (isset($edit['new_role']) && $edit['new_role']) {
+    // Save our role info.
+    uc_roles_grant($account, $edit['new_role_add'], _uc_roles_get_expiration($edit['new_role_add_qty'], $edit['new_role_add_granularity']), TRUE);
   }
 
   // Check if any temporary role actions were taken.
@@ -928,8 +915,8 @@ function uc_roles_feature_settings($form, &$form_state) {
  *   A string containing the name of the role, returns FALSE if rid is invalid.
  */
 function _uc_roles_get_name($rid) {
-  $roles = user_roles(TRUE);
-  return (!is_null($roles[$rid])) ? $roles[$rid] : FALSE;
+  $roles = user_roles(TRUE, NULL, TRUE);
+  return (!is_null($roles[$rid])) ? $roles[$rid]->label : FALSE;
 }
 
 /**
@@ -1095,12 +1082,10 @@ function uc_roles_grant(&$account, $rid, $timestamp, $save_user = TRUE, $silent 
   // First, delete any previous record of this user/role association.
   uc_roles_delete($account, $rid, $silent);
 
-  if ($save_user) {
-    // Punch the role into the user object.
-    $roles_list = $account->roles + array($rid => _uc_roles_get_name($rid));
-    $account = user_save($account, array('roles' => $roles_list));
+  if ($save_user && !in_array($rid, $account->roles)) {
+    $account->roles[] = $rid;
+    $account->save();
   }
-
 
   // If the role expires, keep a record.
   if (!is_null($timestamp)) {
@@ -1118,7 +1103,8 @@ function uc_roles_grant(&$account, $rid, $timestamp, $save_user = TRUE, $silent 
 
   // Display the message if appropriate.
   if (!$silent) {
-    $role_name = db_query("SELECT name FROM {role} WHERE rid = :rid", array(':rid' => $rid))->fetchField();
+    $role_load = user_role_load($rid);
+    $role_name = $role_load->label;
 
     if ($user->uid == $account->uid) {
       $message = t('You have been granted the %role role.', array('%role' => $role_name));
@@ -1182,7 +1168,8 @@ function uc_roles_renew($account, $rid, $timestamp, $silent = FALSE) {
     ->execute();
 
   if (!$silent) {
-    $role_name = db_query("SELECT name FROM {role} WHERE rid = :rid", array(':rid' => $rid))->fetchField();
+    $role_load = user_role_load($rid);
+    $role_name = $role_load->label;
     if ($user->uid == $account->uid) {
       $message = t('Your %role role has been renewed. It will expire on %date.', array('%role' => $role_name, '%date' => format_date($timestamp, 'short')));
     }
