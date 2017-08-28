@@ -232,7 +232,7 @@ function uc_taxes_clone($rate_id) {
     $conditions->save('uc_taxes_' . $rate->id);
   }
 
-  entity_info_cache_clear();
+  rules_flush_caches();
 
   // Display a message and redirect back to the overview.
   backdrop_set_message(t('Tax rate %name cloned.', array('%name' => $name)));
