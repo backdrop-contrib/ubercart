@@ -374,10 +374,10 @@ function uc_roles_action_order_renew($order, $message) {
         $new_expiration->expiration = NULL;
       }
 
-      // uc_order_comment_save($order->order_id, $account->uid, $comment);
+      uc_order_comment_save($order->order_id, $account->uid, $comment);
 
       // Trigger role email.
-      //rules_invoke_event('uc_roles_notify_' . $op, $order, $new_expiration);
+      rules_invoke_event('uc_roles_notify_' . $op, $order, $new_expiration);
     }
   }
 }
