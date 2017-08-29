@@ -871,7 +871,7 @@ function uc_product_preprocess_html(&$variables) {
  */
 function uc_product_form_alter(&$form, &$form_state, $form_id) {
   // Add a button to product node forms to continue editing after saving.
-  if (uc_product_is_product_form($form)) {
+  if (uc_product_is_product_form($form, $form_state)) {
     $form['actions']['save_continue'] = array(
       '#type' => 'submit',
       '#value' => t('Save and continue'),
@@ -1377,12 +1377,14 @@ function uc_product_is_product($node) {
  *
  * @param $form
  *   The form array to examine.
+ * @param $form_state
+ *   The form_state array to examine.
  *
  * @return
  *   TRUE or FALSE indicating whether or not the form is a product node form.
  */
-function uc_product_is_product_form($form) {
-  return !empty($form['#node_edit_form']) && uc_product_is_product($form['#node']);
+function uc_product_is_product_form($form, $form_state) {
+  return isset($form_state['build_info']['base_form_id']) && ($form_state['build_info']['base_form_id'] == 'node_form') && uc_product_is_product($form['#node']);
 }
 
 /**
