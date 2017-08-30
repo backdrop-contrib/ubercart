@@ -514,6 +514,21 @@ function uc_cart_uc_message() {
 }
 
 /**
+ * Implements hook_modules_installed().
+ */
+function uc_cart_modules_installed($modules) {
+  // Set provided pane enabled state and weight upon install.
+  foreach ($modules as $module) {
+    if ($panes = module_invoke($module, 'uc_cart_pane', NULL)) {
+      foreach ($panes as $id => $pane) {
+        config_set('uc_cart.settings', 'uc_cap_' . $id . '_weight', $pane['weight']);
+        config_set('uc_cart.settings', 'uc_cap_' . $id . '_enabled', $pane['enabled']);
+      }
+    }
+  }
+}
+
+/**
  * Implements hook_uc_cart_pane().
  */
 function uc_cart_uc_cart_pane($items) {
