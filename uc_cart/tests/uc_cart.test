@@ -234,16 +234,16 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->backdropGet('cart');
     $this->assertText('There are no products in your shopping cart.');
 
+    // Test invoice email.
+    $mail = $this->backdropGetMails(array('subject' => 'Your Order at ' . uc_store_name()));
+    $mail = array_pop($mail);
+    $this->assertTrue(strpos($mail['body'], $new_user->name) !== FALSE, 'Invoice body contains username.');
+    $this->assertFalse(strpos($mail['body'], $new_user->pass_raw) !== FALSE, 'Mail body does not contain password.');
+
     // Test new account email.
     $mail = $this->backdropGetMails(array('id' => 'user_register_no_approval_required'));
     $mail = array_pop($mail);
     $this->assertTrue(strpos($mail['body'], $new_user->name) !== FALSE, 'Mail body contains username.');
-
-    // Test invoice email.
-    $mail = $this->backdropGetMails(array('subject' => 'Your Order at Ubercart'));
-    $mail = array_pop($mail);
-    $this->assertTrue(strpos($mail['body'], $new_user->name) !== FALSE, 'Invoice body contains username.');
-    $this->assertFalse(strpos($mail['body'], $new_user->pass_raw) !== FALSE, 'Mail body does not contain password.');
 
     // Check that the password works.
     $this->backdropLogout();
@@ -272,7 +272,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertTrue(strpos($mail['body'], $new_user->name) !== FALSE, 'Mail body contains username.');
 
     // Test invoice email.
-    $mail = $this->backdropGetMails(array('subject' => 'Your Order at Ubercart'));
+    $mail = $this->backdropGetMails(array('subject' => 'Your Order at ' . uc_store_name()));
     $mail = array_pop($mail);
     $this->assertTrue(strpos($mail['body'], $new_user->name) !== FALSE, 'Invoice body contains username.');
     $this->assertTrue(strpos($mail['body'], $new_user->pass_raw) !== FALSE, 'Invoice body contains password.');
@@ -349,7 +349,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
 
   function testCheckoutLogin() {
     // Log in after checkout.
-    variable_set('uc_new_customer_login', TRUE);
+    config_set('uc_cart.settings', 'uc_new_customer_login', TRUE);
 
     // Test checkout.
     $this->backdropGet('node/' . $this->product->nid);
@@ -381,10 +381,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     // Check that a new account was created.
     $this->assertTrue(strpos($output['#message'], 'new account has been created') !== FALSE, 'Checkout message mentions new account.');
 
-    // 2 e-mails: new account, customer invoice
+    // 3 e-mails: new account, customer invoice, admin invoice
     $mails = $this->backdropGetMails();
-    $this->assertEqual(count($mails), 2, '2 e-mails were sent.');
-    variable_del('backdrop_test_email_collector');
+    $this->assertEqual(count($mails), 3, '3 e-mails were sent.');
+    state_del('test_email_collector');
 
     $password = $mails[0]['params']['account']->password;
     $this->assertTrue(!empty($password), 'New password is not empty.');
@@ -397,10 +397,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $output = uc_cart_complete_sale($order, TRUE);
     uc_payment_enter($order->order_id, 'SimpleTest', $order->order_total);
 
-    // 2 e-mails: new account, customer invoice
+    // 3 e-mails: new account, customer invoice, admin invoice
     $mails = $this->backdropGetMails();
-    $this->assertEqual(count($mails), 2, '2 e-mails were sent.');
-    variable_del('backdrop_test_email_collector');
+    $this->assertEqual(count($mails), 3, '3 e-mails were sent.');
+    state_del('test_email_collector');
 
     $password = $mails[0]['params']['account']->password;
     $this->assertTrue(!empty($password), 'New password is not empty.');
@@ -415,10 +415,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     // Check that no new account was created.
     $this->assertTrue(strpos($output['#message'], 'order has been attached to the account') !== FALSE, 'Checkout message mentions existing account.');
 
-    // 1 e-mail: customer invoice
+    // 2 e-mails: customer invoice, admin invoice
     $mails = $this->backdropGetMails();
-    $this->assertEqual(count($mails), 1, '1 e-mail was sent.');
-    variable_del('backdrop_test_email_collector');
+    $this->assertEqual(count($mails), 2, '2 e-mails were sent.');
+    state_del('test_email_collector');
   }
 
   function testCheckoutRoleAssignment() {
@@ -441,14 +441,14 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     // Find the order uid.
     $uid = db_query("SELECT uid FROM {uc_orders} ORDER BY order_id DESC")->fetchField();
     $account = user_load($uid);
-    $this->assertTrue(isset($account->roles[$rid]), 'New user was granted role.');
+    $this->assertTrue(in_array($rid, $account->roles), 'New user was granted role.');
     $order = uc_order_load($order->order_id);
     $this->assertEqual($order->order_status, 'payment_received', 'Shippable order was set to payment received.');
 
-    // 3 e-mails: new account, customer invoice, role assignment
+    // 3 e-mails: new account, customer invoice, admin invoice, role assignment
     $mails = $this->backdropGetMails();
-    $this->assertEqual(count($mails), 3, '3 e-mails were sent.');
-    variable_del('backdrop_test_email_collector');
+    $this->assertEqual(count($mails), 4, '4 e-mails were sent.');
+    state_del('test_email_collector');
 
     // Test again with an existing email address and a non-shippable order.
     $item->data = array('shippable' => FALSE);
@@ -458,14 +458,14 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     ));
     uc_payment_enter($order->order_id, 'SimpleTest', $order->order_total);
     $account = user_load($this->customer->uid);
-    $this->assertTrue(isset($account->roles[$rid]), 'Existing user was granted role.');
+    $this->assertTrue(in_array($rid, $account->roles), 'Existing user was granted role.');
     $order = uc_order_load($order->order_id);
     $this->assertEqual($order->order_status, 'completed', 'Non-shippable order was set to completed.');
 
-    // 2 e-mails: customer invoice, role assignment
+    // 2 e-mails: customer invoice, admin invoice, role assignment
     $mails = $this->backdropGetMails();
-    $this->assertEqual(count($mails), 2, '2 e-mails were sent.');
-    variable_del('backdrop_test_email_collector');
+    $this->assertEqual(count($mails), 3, '3 e-mails were sent.');
+    state_del('test_email_collector');
   }
 
   /**
@@ -480,7 +480,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     );
 
     // Build the panes.
-    $zone_id = db_query_range('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand()', 0, 1, array('country' => variable_get('uc_store_country', 840)))->fetchField();
+    $zone_id = db_query_range('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand()', 0, 1, array('country' => config_get('uc_store.settings', 'uc_store_country')))->fetchField();
     $oldname = $this->randomName(10);
     $edit = array(
       'panes[delivery][delivery_first_name]' => $oldname,
@@ -572,7 +572,6 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertNoText('E-mail address: ' . $mail);
     $this->assertText('E-mail address: ' . $new_mail);
   }
-
 }
 
 /**
