@@ -1028,9 +1028,14 @@ function uc_roles_revoke(&$account, $rid, $silent = FALSE) {
 
   // Remove this role from the user's list.
   $roles_list = $account->roles;
-  unset($roles_list[$rid]);
 
-  $account = user_save($account, array('roles' => $roles_list));
+  $key = array_search($rid, $roles_list);
+  if ($key!==false) {
+    unset($roles_list[$key]);
+  }
+  
+  $account->roles = $roles_list;
+  $account->save();
 
   // Remove our record of the expiration.
   uc_roles_delete($account, $rid, $silent);
