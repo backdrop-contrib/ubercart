@@ -115,21 +115,13 @@ class UbercartProductTestCase extends UbercartTestHelper {
       t('Product class form submitted.')
     );
 
-    $base = db_query('SELECT base FROM {node_type} WHERE type = :type', array(':type' => $type))->fetchField();
+    $type_config = config_get('node.type.' . $type);
+    $base = $type_config['base'];
     $this->assertEqual(
       $base,
       'uc_product',
       t('The new content type has been created in the database.')
     );
-
-    // Change the machine name of an existing class.
-    $new_type = strtolower($this->randomName(12));
-    $edit = array(
-      'type' => $new_type,
-    );
-    $this->backdropPost('admin/structure/types/manage/' . $type, $edit, 'Save content type');
-    $this->assertText('Machine name: ' . $new_type, 'Updated machine name found.');
-    $this->assertNoText('Machine name: ' . $type, 'Old machine name not found.');
 
     // Make an existing node type a product class.
     $type = $this->backdropCreateContentType();
@@ -150,7 +142,8 @@ class UbercartProductTestCase extends UbercartTestHelper {
       t('Product class form submitted.')
     );
 
-    $base = db_query('SELECT base FROM {node_type} WHERE type = :type', array(':type' => $type->type))->fetchField();
+    $type_config = config_get('node.type.' . $type->type);
+    $base = $type_config['base'];
     $this->assertEqual(
       $base,
       'uc_product',
