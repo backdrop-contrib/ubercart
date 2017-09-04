@@ -150,7 +150,7 @@ function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NUL
               form_set_error('panes][customer][new_account][pass_confirm', t('The passwords you entered did not match. Please try again.'));
             }
             if (!empty($pane['new_account']['pass'])) {
-              require_once BACKDROP_ROOT . '/' . settings_get('password_inc', 'includes/password.inc');
+              require_once BACKDROP_ROOT . '/' . settings_get('password_inc', 'core/includes/password.inc');
               $order->data['new_user']['hash'] = user_hash_password(trim($pane['new_account']['pass']));
             }
           }
