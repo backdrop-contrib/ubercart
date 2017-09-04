@@ -58,6 +58,7 @@ class UcOrder extends Entity {
    */
   // function __construct($uid = 0, $state = 'in_checkout') {
   function __construct(array $values) {
+    parent::__construct($values);
     if ($this->isNew()) {
       $uid = isset($values['uid']) ? $values['uid'] : 0;
       $state = isset($values['state']) ? $values['state'] : 'in_checkout';
@@ -68,7 +69,9 @@ class UcOrder extends Entity {
         }
       }
 
-      $this->order_status = uc_order_state_default($state);
+      if (empty($this->order_status)) {
+        $this->order_status = uc_order_state_default($state);
+      }
       $this->currency = config_get('uc_store.settings', 'uc_currency_code');
       $this->billing_country = config_get('uc_store.settings', 'uc_store_country');
       $this->delivery_country = config_get('uc_store.settings', 'uc_store_country');
