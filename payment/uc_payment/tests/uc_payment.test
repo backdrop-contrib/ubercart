@@ -29,18 +29,18 @@ class UbercartPaymentPaneTestCase extends UbercartTestHelper {
    */
   public function testPaymentMethodOptions() {
     // No payment methods.
-    variable_set('uc_payment_method_check_checkout', FALSE);
+    config_set('uc_payment.settings', 'uc_payment_method_check_checkout', FALSE);
     $this->backdropGet('cart/checkout');
     $this->assertText('Checkout cannot be completed without any payment methods enabled. Please contact an administrator to resolve the issue.');
 
     // Single payment method.
-    variable_set('uc_payment_method_check_checkout', TRUE);
+    config_set('uc_payment.settings', 'uc_payment_method_check_checkout', TRUE);
     $this->backdropGet('cart/checkout');
     $this->assertNoText('Select a payment method from the following options.');
     $this->assertFieldByXPath("//input[@name='panes[payment][payment_method]' and @disabled='disabled']");
 
     // Multiple payment methods.
-    variable_set('uc_payment_method_other_checkout', TRUE);
+    config_set('uc_payment.settings', 'uc_payment_method_other_checkout', TRUE);
     $this->backdropGet('cart/checkout');
     $this->assertText('Select a payment method from the following options.');
     $this->assertNoFieldByXPath("//input[@name='panes[payment][payment_method]' and @disabled='disabled']");
@@ -50,11 +50,11 @@ class UbercartPaymentPaneTestCase extends UbercartTestHelper {
    * Tests operation of uc_payment_show_order_total_preview variable.
    */
   public function testOrderTotalPreview() {
-    variable_set('uc_payment_show_order_total_preview', TRUE);
+    config_set('uc_payment.settings', 'uc_payment_show_order_total_preview', TRUE);
     $this->backdropGet('cart/checkout');
     $this->assertText('Order total:');
 
-    variable_set('uc_payment_show_order_total_preview', FALSE);
+    config_set('uc_payment.settings', 'uc_payment_show_order_total_preview', FALSE);
     $this->backdropGet('cart/checkout');
     $this->assertNoText('Order total:');
   }
@@ -64,7 +64,7 @@ class UbercartPaymentPaneTestCase extends UbercartTestHelper {
    */
   public function testFreeOrders() {
     $free_product = $this->createProduct(array('sell_price' => 0));
-    variable_set('uc_payment_method_check_checkout', TRUE);
+    config_set('uc_payment.settings', 'uc_payment_method_check_checkout', TRUE);
 
     // Check that paid products cannot be purchased for free.
     $this->backdropGet('cart/checkout');
