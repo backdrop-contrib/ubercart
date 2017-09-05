@@ -1046,7 +1046,7 @@ function theme_uc_object_options_form($variables) {
   $form = $variables['form'];
   $output = '';
 
-  backdrop_add_js('misc/tableselect.js');
+  backdrop_add_js('core/misc/tableselect.js');
   $header = array(array(
       'data' => '&nbsp;&nbsp;' . t('Options'),
       'class' => array('select-all'),
