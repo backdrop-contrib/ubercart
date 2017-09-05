@@ -91,27 +91,27 @@ class UbercartCreditCardTestCase extends UbercartTestHelper {
     );
 
     // Create key directory, make it readable and writeable.
-    // Putting this under sites/default/files because SimpleTest needs to be
+    // Putting this under files because SimpleTest needs to be
     // able to create the directory - this is NOT where you'd put the key file
     // on a live site.  On a live site, it should be outside the web root.
-    backdrop_mkdir('sites/default/files/simpletest.keys', 0755);
+    backdrop_mkdir('files/simpletest.keys', 0755);
 
     $this->backdropPost(
       'admin/store/settings/payment/method/credit',
       array(
-        'uc_credit_encryption_path' => 'sites/default/files/simpletest.keys',
+        'uc_credit_encryption_path' => 'files/simpletest.keys',
       ),
       t('Save configuration')
     );
 
     $this->assertFieldByName(
       'uc_credit_encryption_path',
-      'sites/default/files/simpletest.keys',
+      'files/simpletest.keys',
       t('Key file path has been set.')
     );
 
     $this->assertTrue(
-      file_exists('sites/default/files/simpletest.keys/' . UC_CREDIT_KEYFILE_NAME),
+      file_exists('files/simpletest.keys/' . UC_CREDIT_KEYFILE_NAME),
       t('Key has been generated and stored.')
     );
     $this->pass('Key = ' . uc_credit_encryption_key());
@@ -143,8 +143,8 @@ class UbercartCreditCardTestCase extends UbercartTestHelper {
    */
   public function tearDown() {
     // Cleanup keys directory after test.
-    backdrop_unlink('sites/default/files/simpletest.keys/' . UC_CREDIT_KEYFILE_NAME);
-    backdrop_rmdir('sites/default/files/simpletest.keys');
+    backdrop_unlink('files/simpletest.keys/' . UC_CREDIT_KEYFILE_NAME);
+    backdrop_rmdir('files/simpletest.keys');
     parent::tearDown();
   }
 
@@ -184,12 +184,12 @@ class UbercartCreditCardTestCase extends UbercartTestHelper {
     // where key file is not readable or doesn't contain a valid key
 
     // Create key directory, make it readable and writeable.
-    backdrop_mkdir('sites/default/files/testkey', 0755);
+    backdrop_mkdir('files/testkey', 0755);
 
     // Try to submit settings form without a key file path.
     // Save current variable, reset to its value when first installed.
-    $temp_variable = variable_get('uc_credit_encryption_path', '');
-    variable_set('uc_credit_encryption_path', '');
+    $temp_variable = config_get('uc_credit.settings', 'uc_credit_encryption_path');
+    config_set('uc_credit.settings', 'uc_credit_encryption_path', '');
 
     $this->backdropGet('admin/store/settings/payment/method/credit');
     $this->assertText(t('Credit card security settings must be configured in the security settings tab.'));
@@ -205,7 +205,7 @@ class UbercartCreditCardTestCase extends UbercartTestHelper {
       t('Key file has not yet been configured.')
     );
     // Restore variable setting.
-    variable_set('uc_credit_encryption_path', $temp_variable);
+    config_set('uc_credit.settings', 'uc_credit_encryption_path', $temp_variable);
 
     // Try to submit settings form with an empty key file path.
     $this->backdropPost(
@@ -218,13 +218,14 @@ class UbercartCreditCardTestCase extends UbercartTestHelper {
     // Specify non-existent directory
     $this->backdropPost(
       'admin/store/settings/payment/method/credit',
-      array('uc_credit_encryption_path' => 'sites/default/ljkh/asdfasfaaaaa'),
+      array('uc_credit_encryption_path' => 'ljkh/asdfasfaaaaa'),
       t('Save configuration')
     );
     $this->assertText('You have specified a non-existent directory.');
 
     // Next, specify existing directory that's write protected.
     // Use /dev, as that should never be accessible.
+    // @Todo: this fails on Windows.
     $this->backdropPost(
       'admin/store/settings/payment/method/credit',
       array('uc_credit_encryption_path' => '/dev'),
@@ -236,14 +237,14 @@ class UbercartCreditCardTestCase extends UbercartTestHelper {
     // and trailing /
     $this->backdropPost(
       'admin/store/settings/payment/method/credit',
-      array('uc_credit_encryption_path' => '  sites/default/files/testkey/ '),
+      array('uc_credit_encryption_path' => '  files/testkey/ '),
       t('Save configuration')
     );
     // See that the directory has been properly re-written to remove
     // whitespace and trailing /
     $this->assertFieldByName(
       'uc_credit_encryption_path',
-      'sites/default/files/testkey',
+      'files/testkey',
       t('Key file path has been set.')
     );
     $this->assertText('Credit card encryption key file generated.');
@@ -251,19 +252,19 @@ class UbercartCreditCardTestCase extends UbercartTestHelper {
     // Check that warning about needing key file goes away.
     $this->assertNoText(t('Credit card security settings must be configured in the security settings tab.'));
     // Remove key file.
-    backdrop_unlink('sites/default/files/testkey/' . UC_CREDIT_KEYFILE_NAME);
+    backdrop_unlink('files/testkey/' . UC_CREDIT_KEYFILE_NAME);
 
     // Finally, specify good directory
     $this->backdropPost(
       'admin/store/settings/payment/method/credit',
-      array('uc_credit_encryption_path' => 'sites/default/files/testkey'),
+      array('uc_credit_encryption_path' => 'files/testkey'),
       t('Save configuration')
     );
     $this->assertText('Credit card encryption key file generated.');
 
     // Test contents - must contain 32-character hexadecimal string.
     $this->assertTrue(
-      file_exists('sites/default/files/simpletest.keys/' . UC_CREDIT_KEYFILE_NAME),
+      file_exists('files/simpletest.keys/' . UC_CREDIT_KEYFILE_NAME),
       t('Key has been generated and stored.')
     );
     $this->assertTrue(
@@ -272,8 +273,8 @@ class UbercartCreditCardTestCase extends UbercartTestHelper {
     );
 
     // Cleanup keys directory after test.
-    backdrop_unlink('sites/default/files/testkey/' . UC_CREDIT_KEYFILE_NAME);
-    backdrop_rmdir('sites/default/files/testkey');
+    backdrop_unlink('files/testkey/' . UC_CREDIT_KEYFILE_NAME);
+    backdrop_rmdir('files/testkey');
   }
 
   /**
