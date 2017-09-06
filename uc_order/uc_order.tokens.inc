@@ -17,6 +17,10 @@ function uc_order_token_info() {
 
   $tokens = array();
 
+  $tokens['order-id'] = array(
+    'name' => t('Order ID'),
+    'description' => t('The order ID.'),
+  );
   $tokens['new-username'] = array(
     'name' => t('New username'),
     'description' => t('New username associated with an order if applicable.'),
@@ -149,6 +153,10 @@ function uc_order_tokens($type, $tokens, $data = array(), $options = array()) {
 
     foreach ($tokens as $name => $original) {
       switch ($name) {
+        case 'order-id':
+          $replacements[$original] = $order->order_id;
+          break;
+
         case 'new-username':
           if (isset($order->data['new_user']['name'])) {
             $replacements[$original] = $sanitize ? check_plain($order->data['new_user']['name']) : $order->data['new_user']['name'];
