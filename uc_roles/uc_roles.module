@@ -324,7 +324,7 @@ function uc_roles_user_submit($form, &$form_state) {
 
       // Adjust it.
       else {
-        if ($value['qty'] && $edit['roles'][$rid]) {
+        if ($value['qty'] && in_array($rid, $edit['roles'])) {
           $qty = $value['qty'];
           $qty *= $value['polarity'] == 'add' ? 1 : -1;
 
@@ -337,8 +337,9 @@ function uc_roles_user_submit($form, &$form_state) {
   // If a user's role is removed using Backdrop, then so is any expiration data.
   if (isset($edit['roles']) && is_array($edit['roles']) && isset($account->roles)) {
     $allowed_uc_roles = _uc_roles_get_choices();
-    foreach ($account->roles as $rid => $role) {
-      if (isset($allowed_uc_roles[$rid]) && !$edit['roles'][$rid]) {
+    $roles = user_roles(TRUE);
+    foreach ($roles as $rid => $label) {
+      if (isset($allowed_uc_roles[$rid]) && !in_array($rid, $edit['roles'])) {
         uc_roles_delete($account, $rid);
       }
     }

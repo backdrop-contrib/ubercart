@@ -24,7 +24,7 @@ class UbercartRolesTestCase extends UbercartTestHelper {
   protected function setUp($modules = array(), $permissions = array()) {
     $modules = array('uc_payment', 'uc_payment_pack', 'uc_roles');
     // Needed to see/modify roles on the /user/%/edit page
-    $permissions = array('administer permissions', 'administer users', 'view all role expirations');
+    $permissions = array('administer permissions', 'administer users', 'view all role expirations', 'assign roles');
     parent::setUp($modules, $permissions);
   }
 
@@ -48,10 +48,13 @@ class UbercartRolesTestCase extends UbercartTestHelper {
 
     // Test that the role was granted.
     $account = user_load($order->uid);
-    $this->assertTrue(isset($account->roles[$rid]), 'Existing user was granted role.');
+    $this->assertTrue(in_array($rid, $account->roles), 'Existing user was granted role.');
 
     // Test that the email is correct.
-    $mail = $this->findMail('/Ubercart: ' . preg_quote($account->roles[$rid]) . ' role granted/');
+    $roles = user_roles(TRUE);
+    $label = $roles[$rid];
+    $store_name = uc_store_name();
+    $mail = $this->findMail('/' . $store_name . ': ' . preg_quote($label) . ' role granted/');
 
     // Delete the user.
     user_delete($order->uid);
@@ -81,7 +84,7 @@ class UbercartRolesTestCase extends UbercartTestHelper {
 
     // Test that the role was granted.
     $account = user_load($order->uid);
-    $this->assertTrue(isset($account->roles[$rid]), 'Existing user was granted role.');
+    $this->assertTrue(in_array($rid, $account->roles), 'Existing user was granted role.');
 
     // Test that the role appears on the user edit page.
     $this->backdropGet('user/' . $order->uid . '/edit');
@@ -98,9 +101,10 @@ class UbercartRolesTestCase extends UbercartTestHelper {
 
     // Test that the role was removed.
     $account = user_load($order->uid, TRUE);
-    $this->assertFalse(isset($account->roles[$rid]), 'Role was removed from user.');
+    $this->assertFalse(in_array($rid, $account->roles), 'Role was removed from user.');
 
     // Test that the role expiration data was removed.
+    $this->backdropGet('user/' . $order->uid . '/edit');
     $this->assertText('There are no pending expirations for roles this user.', 'User has no role expirations.');
 
   }
