@@ -46,7 +46,7 @@
         <?php if ($business_header): ?>
         <tr valign="top">
           <td>
-            <table class="uc-order-customer-header" width="100%">
+            <table" width="100%">
               <tr>
                 <?php if ($site_logo): ?>
                   <td class="uc-order-customer-logo">
@@ -56,11 +56,15 @@
                   </td>
                 <?php endif; ?>
                 <td class="uc-order-customer-name" width="98%">
-                  <span style="font-size: large;"><?php print $store_name; ?></span><br />
-                  <?php print $site_slogan; ?>
+                  <div class="uc-order-customer-header">
+                    <span style="font-size: large;"><?php print $store_name; ?></span><br />
+                    <?php print $site_slogan; ?>
+                  </div>
                 </td>
                 <td class="uc-order-customer-detail" nowrap="nowrap">
-                  <?php print $store_address; ?><br /><?php print $store_phone; ?>
+                  <div class="uc-order-customer-header">
+                    <?php print $store_address; ?><br /><?php print $store_phone; ?>
+                  </div>
                 </td>
               </tr>
             </table>
