@@ -423,10 +423,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
 
   function testCheckoutRoleAssignment() {
     // Add role assignment to the test product.
-    $rid = $this->backdropCreateRole(array('access content'));
+    $role = $this->backdropCreateRole(array('access content'));
     $this->backdropLogin($this->adminUser);
     $this->backdropPost('node/' . $this->product->nid . '/edit/features', array('feature' => 'role'), t('Add'));
-    $this->backdropPost(NULL, array('uc_roles_role' => $rid), t('Save feature'));
+    $this->backdropPost(NULL, array('uc_roles_role' => $role), t('Save feature'));
 
     // Process an anonymous, shippable order.
     $item = clone $this->product;
@@ -441,7 +441,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     // Find the order uid.
     $uid = db_query("SELECT uid FROM {uc_orders} ORDER BY order_id DESC")->fetchField();
     $account = user_load($uid);
-    $this->assertTrue(in_array($rid, $account->roles), 'New user was granted role.');
+    $this->assertTrue(in_array($role, $account->roles), 'New user was granted role.');
     $order = uc_order_load($order->order_id);
     $this->assertEqual($order->order_status, 'payment_received', 'Shippable order was set to payment received.');
 
@@ -458,7 +458,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     ));
     uc_payment_enter($order->order_id, 'SimpleTest', $order->order_total);
     $account = user_load($this->customer->uid);
-    $this->assertTrue(in_array($rid, $account->roles), 'Existing user was granted role.');
+    $this->assertTrue(in_array($role, $account->roles), 'Existing user was granted role.');
     $order = uc_order_load($order->order_id);
     $this->assertEqual($order->order_status, 'completed', 'Non-shippable order was set to completed.');
 
