@@ -15,9 +15,12 @@
   <?php print $head; ?>
   <title><?php print $head_title; ?></title>
   <style type="text/css">
-    .buttons {
-      text-align: right;
-      margin: 0 1em 1em 0;
+    @import url("<?php print $css; ?>");
+    .uc-order-customer-main td {
+      padding: 7px;
+    }
+    label {
+      font-weight: bold;
     }
   </style>
   <style type="text/css" media="print">

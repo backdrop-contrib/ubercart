@@ -203,13 +203,15 @@ function uc_quote_update_last_removed() {
  * Implements hook_update_N().
  */
 function uc_quote_update_1000() {
+  $phone = config_get('uc_store_phone');
+  $phone = !empty($phone) ? $phone : 'us';
   $config = config('uc_quote.settings');
   $config->set('uc_quote_store_default_address', update_variable_get('uc_quote_store_default_address', new UcAddress()));
   $config->set('uc_quote_log_errors', update_variable_get('uc_quote_log_errors', 'FALSE'));
   $config->set('uc_quote_display_debug', update_variable_get('uc_quote_display_debug', 'FALSE'));
   $config->set('uc_quote_require_quote', update_variable_get('uc_quote_require_quote', 'TRUE'));
   $config->set('uc_quote_pane_description', update_variable_get('uc_quote_pane_description', t('Shipping quotes are generated automatically when you enter your address and may be updated manually with the button below.')));
-  $config->set('uc_quote_err_msg', update_variable_get('uc_quote_err_msg', t("There were problems getting a shipping quote. Please verify the delivery address and product information and try again.\nIf this does not resolve the issue, please call @phone to complete your order.", array('@phone' => config_get('uc_store_phone')))));
+  $config->set('uc_quote_err_msg', update_variable_get('uc_quote_err_msg', t("There were problems getting a shipping quote. Please verify the delivery address and product information and try again.\nIf this does not resolve the issue, please call @phone to complete your order.", array('@phone' => $phone))));
   $config->set('uc_quote_type_weight', update_variable_get('uc_quote_type_weight', array('small_package' => 0)));
   $config->set('uc_quote_enabled', update_variable_get('uc_quote_enabled', array()));
   $config->set('uc_quote_method_weight', update_variable_get('uc_quote_method_weight', array()));
@@ -232,10 +234,11 @@ function uc_quote_update_1000() {
  * Implements hook_install().
  */
 function uc_quote_install() {
-
+  $phone = config_get('uc_store_phone');
+  $phone = !empty($phone) ? $phone : 'us';
   config_set('uc_quote.settings', 'uc_quote_store_default_address', new UcAddress());
   config_set('uc_quote.settings', 'uc_quote_pane_description', t('Shipping quotes are generated automatically when you enter your address and may be updated manually with the button below.'));
-  config_set('uc_quote.settings', 'uc_quote_err_msg', t("There were problems getting a shipping quote. Please verify the delivery address and product information and try again.\nIf this does not resolve the issue, please call @phone to complete your order.", array('@phone' => config_get('uc_store_phone'))));
+  config_set('uc_quote.settings', 'uc_quote_err_msg', t("There were problems getting a shipping quote. Please verify the delivery address and product information and try again.\nIf this does not resolve the issue, please call @phone to complete your order.", array('@phone' => $phone)));
   config_set('uc_quote.settings', 'uc_quote_type_weight', array('small_package' => 0));
   config_set('uc_quote.settings', 'uc_quote_enabled', array());
   config_set('uc_quote.settings', 'uc_quote_method_weight', array());

@@ -12,19 +12,6 @@
 
 
 /**
- * Implements hook_help().
- */
-function uc_roles_help($path, $arg) {
-  if ($path == 'node/%/edit/features/%/%' && $arg[4] == 'role') {
-    return '<p>' . t('Add roles through this page and then use the <a href="!url">Rules interface</a> to limit which orders they are applied to. Most important is the order status on which role granting will be triggered.', array('!url' => url('admin/config/workflow/rules/reaction'))) . '</p>';
-  }
-  switch ($path) {
-    case 'admin/people/expiration':
-      return '<p>' . t('Ubercart grants certain roles to customers when they purchase products with a role assignment feature. These can be permanent or temporary roles. Here you can view and edit when temporary roles are set to expire.') . '</p>';
-  }
-}
-
-/**
  * Implements hook_config_info().
  */
 function uc_roles_config_info() {
@@ -324,7 +311,7 @@ function uc_roles_user_submit($form, &$form_state) {
 
       // Adjust it.
       else {
-        if ($value['qty'] && $edit['roles'][$role]) {
+        if ($value['qty'] && in_array($role, $edit['roles'])) {
           $qty = $value['qty'];
           $qty *= $value['polarity'] == 'add' ? 1 : -1;
 
@@ -337,8 +324,9 @@ function uc_roles_user_submit($form, &$form_state) {
   // If a user's role is removed using Backdrop, then so is any expiration data.
   if (isset($edit['roles']) && is_array($edit['roles']) && isset($account->roles)) {
     $allowed_uc_roles = _uc_roles_get_choices();
-    foreach ($account->roles as $role => $role) {
-      if (isset($allowed_uc_roles[$role]) && !$edit['roles'][$role]) {
+    $roles = user_roles(TRUE);
+    foreach ($roles as $role => $label) {
+      if (isset($allowed_uc_roles[$role]) && !in_array($role, $edit['roles'])) {
         uc_roles_delete($account, $role);
       }
     }

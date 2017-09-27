@@ -111,7 +111,7 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
     $this->assertText('Subtotal: $16.80', 'Order subtotal is correct on checkout page.');
 
     // Manually proceed to checkout review.
-    $zone_id = db_query_range('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand()', 0, 1, array('country' => variable_get('uc_store_country', 840)))->fetchField();
+    $zone_id = db_query_range('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand()', 0, 1, array('country' => config_get('uc_store.settings', 'uc_store_country')))->fetchField();
     $edit = array(
       'panes[delivery][delivery_first_name]' => $this->randomName(10),
       'panes[delivery][delivery_last_name]' => $this->randomName(10),
@@ -205,7 +205,7 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
     $this->assertRaw(uc_currency_format($rate->rate * $this->product->sell_price), t('Correct tax amount displayed.'));
 
     // Build the panes.
-    $zone_id = db_query_range('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand()', 0, 1, array('country' => variable_get('uc_store_country', 840)))->fetchField();
+    $zone_id = db_query_range('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand()', 0, 1, array('country' => config_get('uc_store.settings', 'uc_store_country')))->fetchField();
     $edit = array(
       'panes[delivery][delivery_first_name]' => $this->randomName(10),
       'panes[delivery][delivery_last_name]' => $this->randomName(10),
@@ -313,6 +313,7 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
     $this->backdropGet('cart/checkout');
     $this->assertText($tax, 'Tax line item displayed.');
 
+  /* We cant change product class machine names in Backdrop.
     // Change the machine name of the product class.
     $new_type = strtolower($this->randomName(12));
     $edit = array(
@@ -326,6 +327,7 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
     $this->backdropPost('node/' . $product->nid, array(), t('Add to cart'));
     $this->backdropGet('cart/checkout');
     $this->assertText($tax, 'Tax line item displayed after changing product class node type.');
+  */
   }
 
 }

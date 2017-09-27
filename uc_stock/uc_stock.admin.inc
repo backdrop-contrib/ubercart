@@ -317,7 +317,7 @@ function uc_stock_edit_form_submit($form, &$form_state) {
  */
 function theme_uc_stock_edit_form($variables) {
   $form = $variables['form'];
-  backdrop_add_js('misc/tableselect.js');
+  backdrop_add_js('core/misc/tableselect.js');
 
   $header = array(
     array(
