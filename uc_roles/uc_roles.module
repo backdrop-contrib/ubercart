@@ -48,14 +48,14 @@ function uc_roles_cron() {
     $account = user_load($expiration->uid);
 
     // Cleanup if user or role was deleted already.
-    if (!$account || !in_array($expiration->rid, array_keys($account->roles))) {
-      uc_roles_delete($expiration, $expiration->rid, TRUE);
+    if (!$account || !in_array($expiration->role, array_keys($account->roles))) {
+      uc_roles_delete($expiration, $expiration->role, TRUE);
     }
 
     // Role expired.
     elseif ($expiration->expiration <= REQUEST_TIME) {
       rules_invoke_event('uc_roles_notify_revoke', $account, $expiration);
-      uc_roles_revoke($account, $expiration->rid);
+      uc_roles_revoke($account, $expiration->role);
     }
 
     // Remind the user about an upcoming expiration.
@@ -64,7 +64,7 @@ function uc_roles_cron() {
       db_update('uc_roles_expirations')
         ->fields(array('notified' => 1))
         ->condition('uid', $account->uid)
-        ->condition('rid', $expiration->rid)
+        ->condition('role', $expiration->role)
         ->execute();
     }
   }
@@ -188,10 +188,10 @@ function uc_roles_form_user_profile_form_alter(&$form, &$form_state) {
   // Create the expirations table.
   $expirations = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid", array(':uid' => $account->uid));
   foreach ($expirations as $expiration) {
-    $form['uc_roles']['expirations']['table'][$expiration->rid] = array(
+    $form['uc_roles']['expirations']['table'][$expiration->role] = array(
       'name' => array(
         '#type' => 'value',
-        '#value' => _uc_roles_get_name($expiration->rid),
+        '#value' => _uc_roles_get_name($expiration->role),
       ),
       'remove' => array(
         '#type' => 'checkbox',
@@ -257,10 +257,10 @@ function uc_roles_user_validate($form, &$form_state) {
 
   // Validate adjusted expirations.
   if (isset($edit['table'])) {
-    foreach ((array) $edit['table'] as $rid => $value) {
+    foreach ((array) $edit['table'] as $role => $value) {
       // We don't validate if nothing was actually selected, the role, or the
       // expiration is removed.
-      if ($value['qty'] == 0 || $value['remove'] == 1 || !$edit['roles'][$rid]) {
+      if ($value['qty'] == 0 || $value['remove'] == 1 || !$edit['roles'][$role]) {
         continue;
       }
 
@@ -303,19 +303,19 @@ function uc_roles_user_submit($form, &$form_state) {
 
   // Check if any temporary role actions were taken.
   if (isset($edit['table'])) {
-    foreach ((array) $edit['table'] as $rid => $value) {
+    foreach ((array) $edit['table'] as $role => $value) {
       // Remove this expiration.
       if ($value['remove']) {
-        uc_roles_delete($account, $rid);
+        uc_roles_delete($account, $role);
       }
 
       // Adjust it.
       else {
-        if ($value['qty'] && in_array($rid, $edit['roles'])) {
+        if ($value['qty'] && in_array($role, $edit['roles'])) {
           $qty = $value['qty'];
           $qty *= $value['polarity'] == 'add' ? 1 : -1;
 
-          uc_roles_renew($account, $rid, _uc_roles_get_expiration($qty, $value['granularity'], $value['expiration']));
+          uc_roles_renew($account, $role, _uc_roles_get_expiration($qty, $value['granularity'], $value['expiration']));
         }
       }
     }
@@ -325,9 +325,9 @@ function uc_roles_user_submit($form, &$form_state) {
   if (isset($edit['roles']) && is_array($edit['roles']) && isset($account->roles)) {
     $allowed_uc_roles = _uc_roles_get_choices();
     $roles = user_roles(TRUE);
-    foreach ($roles as $rid => $label) {
-      if (isset($allowed_uc_roles[$rid]) && !in_array($rid, $edit['roles'])) {
-        uc_roles_delete($account, $rid);
+    foreach ($roles as $role => $label) {
+      if (isset($allowed_uc_roles[$role]) && !in_array($role, $edit['roles'])) {
+        uc_roles_delete($account, $role);
       }
     }
   }
@@ -358,9 +358,9 @@ function uc_roles_user_view($account, $view_mode) {
 
   $expirations = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid", array(':uid' => $account->uid));
   foreach ($expirations as $expiration) {
-    $form[$expiration->rid] = array(
+    $form[$expiration->role] = array(
       '#type' => 'user_profile_item',
-      '#title' => check_plain(_uc_roles_get_name($expiration->rid)),
+      '#title' => check_plain(_uc_roles_get_name($expiration->role)),
       '#markup' => t('This role will expire on !date', array('!date' => format_date($expiration->expiration, 'short'))),
     );
   }
@@ -472,7 +472,7 @@ function uc_roles_feature_form($form, &$form_state, $node, $feature) {
     $product_role = db_query("SELECT * FROM {uc_roles_products} WHERE pfid = :pfid", array(':pfid' => $feature['pfid']))->fetchObject();
 
     $default_model = $product_role->model;
-    $default_role = $product_role->rid;
+    $default_role = $product_role->role;
     $default_qty = $product_role->duration;
     $default_granularity = $product_role->granularity;
     $default_shippable = $product_role->shippable;
@@ -663,7 +663,7 @@ function uc_roles_feature_form_validate($form, &$form_state) {
   }
 
   // This role already set on this SKU?
-  if (!isset($form_state['values']['pfid']) && ($product_roles = db_query("SELECT * FROM {uc_roles_products} WHERE nid = :nid AND model = :model AND rid = :rid", array(':nid' => $form_state['values']['nid'], ':model' => $form_state['values']['uc_roles_model'], ':rid' => $form_state['values']['uc_roles_role']))->fetchObject())) {
+  if (!isset($form_state['values']['pfid']) && ($product_roles = db_query("SELECT * FROM {uc_roles_products} WHERE nid = :nid AND model = :model AND role = :role", array(':nid' => $form_state['values']['nid'], ':model' => $form_state['values']['uc_roles_model'], ':role' => $form_state['values']['uc_roles_role']))->fetchObject())) {
     form_set_error('uc_roles_role', t('The combination of SKU and role already exists for this product.'));
     form_set_error('uc_roles_model', ' ');
   }
@@ -697,7 +697,7 @@ function uc_roles_feature_form_submit($form, &$form_state) {
     'rpid' => isset($form_state['values']['rpid']) ? $form_state['values']['rpid'] : NULL,
     'nid' => $form_state['values']['nid'],
     'model' => $form_state['values']['uc_roles_model'],
-    'rid' => $form_state['values']['uc_roles_role'],
+    'role' => $form_state['values']['uc_roles_role'],
     'duration' => $form_state['values']['uc_roles_expire_relative_granularity'] != 'never' ? $form_state['values']['uc_roles_expire_relative_duration'] : NULL,
     'granularity' => $form_state['values']['uc_roles_expire_relative_granularity'],
     'by_quantity' => $form_state['values']['uc_roles_by_quantity'],
@@ -708,7 +708,7 @@ function uc_roles_feature_form_submit($form, &$form_state) {
   );
 
   $description = empty($product_role['model']) ? t('<strong>SKU:</strong> Any<br />') : t('<strong>SKU:</strong> !sku<br />', array('!sku' => $product_role['model']));
-  $description .=  t('<strong>Role:</strong> @role_name<br />', array('@role_name' => _uc_roles_get_name($product_role['rid'])));
+  $description .=  t('<strong>Role:</strong> @role_name<br />', array('@role_name' => _uc_roles_get_name($product_role['role'])));
 
   if ($product_role['end_override']) {
     if ($product_role['end_time']) {
@@ -897,15 +897,15 @@ function uc_roles_feature_settings($form, &$form_state) {
 /**
  * Gets role name.
  *
- * @param $rid
+ * @param $role
  *   The Backdrop role id number.
  *
  * @return
- *   A string containing the name of the role, returns FALSE if rid is invalid.
+ *   A string containing the name of the role, returns FALSE if role is invalid.
  */
-function _uc_roles_get_name($rid) {
+function _uc_roles_get_name($role) {
   $roles = user_roles(TRUE, NULL, TRUE);
-  return (!is_null($roles[$rid])) ? $roles[$rid]->label : FALSE;
+  return (!is_null($roles[$role])) ? $roles[$role]->label : FALSE;
 }
 
 /**
@@ -915,7 +915,7 @@ function _uc_roles_get_name($rid) {
  *   A list of role ids to exclude from the list.
  *
  * @return
- *   An assoc array with key = rid and value = role name.
+ *   An assoc array with key = role and value = role name.
  */
 function _uc_roles_get_choices($exclude = array()) {
   $output = array();
@@ -929,9 +929,9 @@ function _uc_roles_get_choices($exclude = array()) {
 
   // If there's none, or if none are checked, use all of em.
   $default = empty($selected) || array_sum($selected) == 0;
-  foreach ($roles as $rid => $name) {
-    if ($default || (!empty($selected[$rid]) && !in_array($rid, $exclude))) {
-      $output[$rid] = $roles[$rid];
+  foreach ($roles as $role => $name) {
+    if ($default || (!empty($selected[$role]) && !in_array($role, $exclude))) {
+      $output[$role] = $roles[$role];
     }
   }
 
@@ -951,7 +951,7 @@ function uc_roles_feature_delete($pfid) {
 }
 
 /**
- * Deletes an expiration using user id or user id and rid.
+ * Deletes an expiration using user id or user id and role.
  *
  * This function deletes expirations associated with users and roles. If
  * no role ID is passed, the function deletes all role expirations associated
@@ -962,25 +962,25 @@ function uc_roles_feature_delete($pfid) {
  *
  * @param $account
  *   A Backdrop user object.
- * @param $rid
+ * @param $role
  *   A Backdrop role ID.
  * @param $silent
  *   When set to TRUE will suppress any Backdrop messages from this function.
  */
-function uc_roles_delete($account, $rid = NULL, $silent = FALSE) {
+function uc_roles_delete($account, $role = NULL, $silent = FALSE) {
   global $user;
 
   $query = db_delete('uc_roles_expirations')
     ->condition('uid', $account->uid);
 
-  if ($rid) {
-    $query->condition('rid', $rid);
+  if ($role) {
+    $query->condition('role', $role);
   }
 
   // Echo the deletion only if something was actually deleted.
   if ($query->execute() && !$silent) {
     if ($user->uid == $account->uid) {
-      backdrop_set_message(t('The expiration of your %role_name role has been deleted.', array('%role_name' => _uc_roles_get_name($rid))));
+      backdrop_set_message(t('The expiration of your %role_name role has been deleted.', array('%role_name' => _uc_roles_get_name($role))));
     }
     else {
       backdrop_set_message(t('The expiration of %role_name role for the user !user has been deleted.', array(
@@ -989,7 +989,7 @@ function uc_roles_delete($account, $rid = NULL, $silent = FALSE) {
           'name' => check_plain(user_format_name($account)),
           'link_path' => 'user/' . $account->uid,
         )),
-        '%role_name' => _uc_roles_get_name($rid),
+        '%role_name' => _uc_roles_get_name($role),
       )));
     }
   }
@@ -1007,18 +1007,18 @@ function uc_roles_delete($account, $rid = NULL, $silent = FALSE) {
  *
  * @param $account
  *   A Backdrop user object.
- * @param $rid
+ * @param $role
  *   A Backdrop role ID.
  * @param $silent
  *   When set to TRUE will suppress any Backdrop messages from this function.
  */
-function uc_roles_revoke(&$account, $rid, $silent = FALSE) {
+function uc_roles_revoke(&$account, $role, $silent = FALSE) {
   global $user;
 
   // Remove this role from the user's list.
   $roles_list = $account->roles;
 
-  $key = array_search($rid, $roles_list);
+  $key = array_search($role, $roles_list);
   if ($key!==false) {
     unset($roles_list[$key]);
   }
@@ -1027,9 +1027,9 @@ function uc_roles_revoke(&$account, $rid, $silent = FALSE) {
   $account->save();
 
   // Remove our record of the expiration.
-  uc_roles_delete($account, $rid, $silent);
+  uc_roles_delete($account, $role, $silent);
 
-  $role_name = db_query("SELECT name FROM {role} WHERE rid = :rid", array(':rid' => $rid))->fetchField();
+  $role_name = db_query("SELECT name FROM {role} WHERE role = :role", array(':role' => $role))->fetchField();
 
   if (!$silent) {
     if ($user->uid == $account->uid) {
@@ -1060,7 +1060,7 @@ function uc_roles_revoke(&$account, $rid, $silent = FALSE) {
  *
  * @param $account
  *   A Backdrop user object.
- * @param $rid
+ * @param $role
  *   A Backdrop role ID.
  * @param $timestamp
  *   When this role will expire.
@@ -1070,14 +1070,14 @@ function uc_roles_revoke(&$account, $rid, $silent = FALSE) {
  * @param $silent
  *   When set to TRUE will suppress any Backdrop messages from this function.
  */
-function uc_roles_grant(&$account, $rid, $timestamp, $save_user = TRUE, $silent = FALSE) {
+function uc_roles_grant(&$account, $role, $timestamp, $save_user = TRUE, $silent = FALSE) {
   global $user;
 
   // First, delete any previous record of this user/role association.
-  uc_roles_delete($account, $rid, $silent);
+  uc_roles_delete($account, $role, $silent);
 
-  if ($save_user && !in_array($rid, $account->roles)) {
-    $account->roles[] = $rid;
+  if ($save_user && !in_array($role, $account->roles)) {
+    $account->roles[] = $role;
     $account->save();
   }
 
@@ -1086,7 +1086,7 @@ function uc_roles_grant(&$account, $rid, $timestamp, $save_user = TRUE, $silent 
     db_insert('uc_roles_expirations')
       ->fields(array(
       'uid' => $account->uid,
-      'rid' => $rid,
+      'role' => $role,
       'expiration' => $timestamp,
     ))
       ->execute();
@@ -1097,7 +1097,7 @@ function uc_roles_grant(&$account, $rid, $timestamp, $save_user = TRUE, $silent 
 
   // Display the message if appropriate.
   if (!$silent) {
-    $role_load = user_role_load($rid);
+    $role_load = user_role_load($role);
     $role_name = $role_load->label;
 
     if ($user->uid == $account->uid) {
@@ -1133,20 +1133,20 @@ function uc_roles_grant(&$account, $rid, $timestamp, $save_user = TRUE, $silent 
  *
  * @param $account
  *   A Backdrop user object.
- * @param $rid
+ * @param $role
  *   A Backdrop role ID.
  * @param $timestamp
  *   When this role will expire.
  * @param $silent
  *   When set to TRUE will suppress any Backdrop messages from this function.
  */
-function uc_roles_renew($account, $rid, $timestamp, $silent = FALSE) {
+function uc_roles_renew($account, $role, $timestamp, $silent = FALSE) {
   global $user;
 
   // If it doesn't expire, we'll remove our data associated with it.
   // After that, Backdrop will take care of it.
   if (is_null($timestamp)) {
-    uc_roles_delete($account, $rid);
+    uc_roles_delete($account, $role);
 
     return;
   }
@@ -1158,11 +1158,11 @@ function uc_roles_renew($account, $rid, $timestamp, $silent = FALSE) {
     'notified' => NULL,
   ))
     ->condition('uid', $account->uid)
-    ->condition('rid', $rid)
+    ->condition('role', $role)
     ->execute();
 
   if (!$silent) {
-    $role_load = user_role_load($rid);
+    $role_load = user_role_load($role);
     $role_name = $role_load->label;
     if ($user->uid == $account->uid) {
       $message = t('Your %role role has been renewed. It will expire on %date.', array('%role' => $role_name, '%date' => format_date($timestamp, 'short')));

@@ -30,11 +30,11 @@ class UbercartRolesTestCase extends UbercartTestHelper {
 
   function testRolePurchaseCheckout() {
     // Add role assignment to the test product.
-    $rid = $this->backdropCreateRole(array('access content'));
+    $role = $this->backdropCreateRole(array('access content'));
     $this->backdropLogin($this->adminUser);
     $this->backdropPost('node/' . $this->product->nid . '/edit/features', array('feature' => 'role'), t('Add'));
     $edit = array(
-      'uc_roles_role' => $rid,
+      'uc_roles_role' => $role,
       'end_override' => TRUE,
       'uc_roles_expire_relative_duration' => 1,
       'uc_roles_expire_relative_granularity' => 'day',
@@ -48,11 +48,11 @@ class UbercartRolesTestCase extends UbercartTestHelper {
 
     // Test that the role was granted.
     $account = user_load($order->uid);
-    $this->assertTrue(in_array($rid, $account->roles), 'Existing user was granted role.');
+    $this->assertTrue(in_array($role, $account->roles), 'Existing user was granted role.');
 
     // Test that the email is correct.
     $roles = user_roles(TRUE);
-    $label = $roles[$rid];
+    $label = $roles[$role];
     $store_name = uc_store_name();
     $mail = $this->findMail('/' . $store_name . ': ' . preg_quote($label) . ' role granted/');
 
@@ -66,11 +66,11 @@ class UbercartRolesTestCase extends UbercartTestHelper {
 
   function testRoleAdminDelete() {
     // Add role assignment to the test product.
-    $rid = $this->backdropCreateRole(array('access content'));
+    $role = $this->backdropCreateRole(array('access content'));
     $this->backdropLogin($this->adminUser);
     $this->backdropPost('node/' . $this->product->nid . '/edit/features', array('feature' => 'role'), t('Add'));
     $edit = array(
-      'uc_roles_role' => $rid,
+      'uc_roles_role' => $role,
       'end_override' => TRUE,
       'uc_roles_expire_relative_duration' => 1,
       'uc_roles_expire_relative_granularity' => 'day',
@@ -84,7 +84,7 @@ class UbercartRolesTestCase extends UbercartTestHelper {
 
     // Test that the role was granted.
     $account = user_load($order->uid);
-    $this->assertTrue(in_array($rid, $account->roles), 'Existing user was granted role.');
+    $this->assertTrue(in_array($role, $account->roles), 'Existing user was granted role.');
 
     // Test that the role appears on the user edit page.
     $this->backdropGet('user/' . $order->uid . '/edit');
@@ -95,13 +95,13 @@ class UbercartRolesTestCase extends UbercartTestHelper {
     // by unchecking the role and submitting the form.
     $this->backdropPost(
       'user/' . $order->uid . '/edit',
-      array('roles[' . $rid . ']' => FALSE),
+      array('roles[' . $role . ']' => FALSE),
       t('Save')
     );
 
     // Test that the role was removed.
     $account = user_load($order->uid, TRUE);
-    $this->assertFalse(in_array($rid, $account->roles), 'Role was removed from user.');
+    $this->assertFalse(in_array($role, $account->roles), 'Role was removed from user.');
 
     // Test that the role expiration data was removed.
     $this->backdropGet('user/' . $order->uid . '/edit');

@@ -52,9 +52,9 @@ function theme_uc_roles_user_expiration($variables) {
 
   $rows = array();
   // The expiration table.
-  foreach (element_children($form['table']) as $rid) {
+  foreach (element_children($form['table']) as $role) {
     // Make sure the renders actually touch the elements.
-    $data = $form['table'][$rid];
+    $data = $form['table'][$role];
     $remove = $data['remove'];
     $polarity = $data['polarity'];
     $qty = $data['qty'];
@@ -65,12 +65,12 @@ function theme_uc_roles_user_expiration($variables) {
       array('data' => check_plain($data['name']['#value'])),
       array('data' => format_date($data['expiration']['#value'], 'short')),
       // Options to adjust the expiration.
-      array('data' => '<a name="role-expiration-' . $rid . '">' .
+      array('data' => '<a name="role-expiration-' . $role . '">' .
                       '<div class="expiration">' .
                         backdrop_render($polarity) . backdrop_render($qty) . backdrop_render($granularity) .
                       '</div></a>'),
     );
-    unset($form['table'][$rid]);
+    unset($form['table'][$role]);
   }
 
   $output = theme('table', array(
