@@ -104,6 +104,7 @@ function uc_order_pane_payment($op, $order, &$form = NULL, &$form_state = NULL) 
       return drupal_render($form['payment']);
 
     case 'edit-process':
+      $changes = array();
       $changes['payment_method'] = $form_state['values']['payment_method'];
       $changes['payment_details'] = isset($form_state['values']['payment_details']) ? $form_state['values']['payment_details'] : array();
       $func = _uc_payment_method_data($form_state['values']['payment_method'], 'callback');

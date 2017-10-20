@@ -67,6 +67,7 @@ function uc_order_pane_ship_to($op, $order, &$form = NULL, &$form_state = NULL) 
       return $output . drupal_render($form['ship_to']);
 
     case 'edit-process':
+      $changes = array();
       foreach ($form_state['values'] as $key => $value) {
         if (substr($key, 0, 9) == 'delivery_') {
           if (uc_address_field_enabled(substr($key, 9))) {
@@ -111,6 +112,7 @@ function uc_order_pane_bill_to($op, $order, &$form = NULL, &$form_state = NULL) 
       return $output . drupal_render($form['bill_to']);
 
     case 'edit-process':
+      $changes = array();
       foreach ($form_state['values'] as $key => $value) {
         if (substr($key, 0, 8) == 'billing_') {
           if (uc_address_field_enabled(substr($key, 8))) {
@@ -169,6 +171,7 @@ function uc_order_pane_customer($op, $order, &$form = NULL, &$form_state = NULL)
       return $output;
 
     case 'edit-process':
+      $changes = array();
       $changes['uid'] = $form_state['values']['uid'];
       $changes['primary_email'] = $form_state['values']['primary_email'];
       return $changes;
