@@ -271,7 +271,7 @@ function uc_checkout_pane_address($pane, $op, $order, &$form_state, $description
           }
         }
 
-        if ($element['#name'] == "panes[$pane][select_address]") {
+        if ($element['#name'] == "panes[$pane][select_address]" && isset($addresses[$element['#value']])) {
           $address = $addresses[$element['#value']];
           foreach ($address as $field => $value) {
             $form_state['input']['panes'][$pane][$pane . '_' . $field] = $value;
