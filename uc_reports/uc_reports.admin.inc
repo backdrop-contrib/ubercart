@@ -475,14 +475,15 @@ function uc_reports_products_custom() {
     '#markup' => l(t('Export to CSV file.'), 'admin/store/reports/getcsv/' . $csv_data['report'] . '/' . $csv_data['user']),
     '#suffix' => '&nbsp;&nbsp;&nbsp;',
   );
+  $filters = str_replace('admin/store/reports/products/custom', '', current_path());
   if (isset($_GET['nopage'])) {
     $build['links']['toggle_pager'] = array(
-      '#markup' => l(t('Show paged records'), 'admin/store/reports/products/custom'),
+      '#markup' => l(t('Show paged records'), 'admin/store/reports/products/custom' . $filters),
     );
   }
   else {
     $build['links']['toggle_pager'] = array(
-      '#markup' => l(t('Show all records'), 'admin/store/reports/products/custom', array('query' => array('nopage' => '1'))),
+      '#markup' => l(t('Show all records'), 'admin/store/reports/products/custom' . $filters, array('query' => array('nopage' => '1'))),
     );
   }
 
