@@ -21,7 +21,7 @@ function uc_catalog_pathauto($op) {
       $settings['batch_update_callback'] = 'uc_catalog_pathauto_bulkupdate';
       $settings['batch_file'] = drupal_get_path('module', 'uc_catalog') . '/uc_catalog.pathauto.inc';
 
-    return (object) $settings;
+      return (object) $settings;
   }
 }
 

@@ -42,7 +42,7 @@ function uc_product_rules_condition_info() {
 }
 
 /**
- * Condition: Check for product content types
+ * Condition: Check for product content types.
  */
 function uc_product_rules_condition_node_is_product($node) {
   return in_array($node->type, uc_product_types());

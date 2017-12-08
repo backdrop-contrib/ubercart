@@ -18,7 +18,7 @@ class UcTreeNode {
   /**
    * Constructor.
    */
-  function __construct($term = NULL) {
+  public function __construct($term = NULL) {
     if ($term) {
       $this->tid = $term->tid;
       $this->name = $term->name;
@@ -36,13 +36,14 @@ class UcTreeNode {
    * tree structure. Therefore, if the parameter is more than one level
    * deeper than $this, it should be passed to the last child of $this.
    */
-  function add_child(&$child) {
+  public function add_child(&$child) {
     if ($child->depth - $this->depth == 1) {
       $this->children[] = $child;
     }
     else {
-      $last_child =&$this->children[count($this->children)-1];
+      $last_child =&$this->children[count($this->children) - 1];
       $last_child->add_child($child);
     }
   }
+
 }

@@ -113,7 +113,6 @@ function uc_2checkout_process_notification() {
           uc_order_update_status($order_id, uc_order_state_default('canceled'));
           uc_order_comment_save($order_id, 0, t('Order have not passed 2Checkout fraud review.'));
           die('fraud');
-          break;
       }
     }
     elseif ($values['message_type'] == 'REFUND_ISSUED') {

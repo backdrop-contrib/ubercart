@@ -48,7 +48,7 @@ function uc_cart_default_rules_configuration() {
 
   // Setup a default predicate for admin checkout notifications.
   $rule = rules_reaction_rule();
-  $rule ->label = t('E-mail admin checkout notification');
+  $rule->label = t('E-mail admin checkout notification');
   $rule->active = TRUE;
   $rule->event('uc_checkout_complete')
     ->action('uc_order_email_invoice', array(

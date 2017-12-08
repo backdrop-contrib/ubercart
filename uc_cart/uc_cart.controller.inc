@@ -1,7 +1,6 @@
 <?php
 /**
  * @file
- *
  * Contains the controller for uc_cart_item entities.
  */
 class UcCartItemController extends EntityAPIController {
@@ -21,7 +20,7 @@ class UcCartItemController extends EntityAPIController {
     parent::attachLoad($items, $revision_id);
   }
 
- /**
+  /**
    * Saves a cart item entity.
    *
    * Cart items are deleted if saved with a quantity of zero.
@@ -52,4 +51,5 @@ class UcCartItemController extends EntityAPIController {
 
     return parent::buildContent($product, $view_mode, $langcode, $content);
   }
+
 }

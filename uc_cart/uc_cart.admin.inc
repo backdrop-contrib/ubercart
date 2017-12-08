@@ -9,11 +9,12 @@
  * General settings for the shopping cart.
  *
  * @see uc_cart_cart_settings_form_validate()
+ *
  * @ingroup forms
  */
 function uc_cart_cart_settings_form($form, &$form_state) {
 
-  // Put fieldsets into vertical tabs
+  // Put fieldsets into vertical tabs.
   $form['cart-settings'] = array(
     '#type' => 'vertical_tabs',
     '#attached' => array(
@@ -39,12 +40,12 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     $form['general']['panes'][$id]['uc_cap_' . $id . '_enabled'] = array(
       '#type' => 'checkbox',
       '#title' => check_plain($pane['title']),
-      '#default_value' => variable_get('uc_cap_'. $pane['id'] .'_enabled', $pane['enabled']),
+      '#default_value' => variable_get('uc_cap_' . $pane['id'] . '_enabled', $pane['enabled']),
     );
     $form['general']['panes'][$id]['uc_cap_' . $id . '_weight'] = array(
       '#type' => 'weight',
       '#delta' => 10,
-      '#default_value' => variable_get('uc_cap_'. $pane['id'] .'_weight', $pane['weight']),
+      '#default_value' => variable_get('uc_cap_' . $pane['id'] . '_weight', $pane['weight']),
       '#attributes' => array('class' => array('uc-cart-pane-weight')),
     );
   }
@@ -218,7 +219,7 @@ function uc_cart_cart_settings_form_validate($form, &$form_state) {
  */
 function uc_cart_checkout_settings_form($form, &$form_state) {
 
-  // Put fieldsets into vertical tabs
+  // Put fieldsets into vertical tabs.
   $form['checkout-settings'] = array(
     '#type' => 'vertical_tabs',
     '#attached' => array(
