@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the uc_googleanalytics module.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function uc_googleanalytics_enable() {
+  // Get the weight of the Google Analytics module.
+  $weight = db_query("SELECT weight FROM {system} WHERE name = :module", array(':module' => 'googleanalytics'))->fetchField();
+
+  // Update the weight of the UC Google Analytics module so its hooks get called
+  // after the actual Google Analytics module.
+  db_update('system')
+    ->fields(array('weight' => max(1000, $weight + 1)))
+    ->condition('name', 'uc_googleanalytics')
+    ->execute();
+}

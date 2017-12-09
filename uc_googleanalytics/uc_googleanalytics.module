@@ -2,6 +2,8 @@
 
 /**
  * @file
+ * Adds Google Analytics Javascript to the checkout completion page.
+ *
  * Adds the required Javascript to the checkout completion page to allow
  * e-commerce statistics tracking through Google Analytics.
  *
@@ -9,21 +11,6 @@
  * for documentation on the functions used to submit e-commerce statistics to
  * Google Analytics.
  */
-
-/**
- * Implements hook_enable().
- */
-function uc_googleanalytics_enable() {
-  // Get the weight of the Google Analytics module.
-  $weight = db_query("SELECT weight FROM {system} WHERE name = :module", array(':module' => 'googleanalytics'))->fetchField();
-
-  // Update the weight of the UC Google Analytics module so its hooks get called
-  // after the actual Google Analytics module.
-  db_update('system')
-    ->fields(array('weight' => max(1000, $weight + 1)))
-    ->condition('name', 'uc_googleanalytics')
-    ->execute();
-}
 
 /**
  * Check which version of google analytics code is used on the site.
@@ -74,7 +61,7 @@ function uc_googleanalytics_uc_order($op, $order, $arg2) {
 /**
  * Determine whether or not to display the e-commerce related JS through GA.
  *
- * @return
+ * @return bool
  *   TRUE or FALSE indicating whether or not to display the GA e-commerce JS.
  */
 function uc_googleanalytics_display() {
@@ -107,7 +94,7 @@ function uc_googleanalytics_display() {
  * @param $order
  *   The fully loaded order object to convert into GA JS.
  *
- * @return
+ * @return string
  *   The JS that should be added to the page footer.
  */
 function uc_googleanalytics_ecommerce_js($order) {
