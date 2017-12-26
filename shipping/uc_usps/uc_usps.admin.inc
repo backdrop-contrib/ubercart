@@ -14,7 +14,7 @@
  */
 function uc_usps_admin_settings($form, &$form_state) {
 
-  // Put fieldsets into vertical tabs
+  // Put fieldsets into vertical tabs.
   $form['usps-settings'] = array(
     '#type' => 'vertical_tabs',
     '#attached' => array(
@@ -24,7 +24,7 @@ function uc_usps_admin_settings($form, &$form_state) {
     ),
   );
 
-  // Container for credential forms
+  // Container for credential forms.
   $form['uc_usps_credentials'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Credentials'),
@@ -98,7 +98,7 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
   );
 
-  // Container for quote options
+  // Container for quote options.
   $form['uc_usps_quote_options'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Quote options'),
@@ -119,7 +119,7 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Indicate whether each product is quoted as shipping separately or all in one package. Orders with one kind of product will still use the package quantity to determine the number of packages needed, however.'),
   );
 
-  // Insurance
+  // Insurance.
   $form['uc_usps_quote_options']['uc_usps_insurance'] = array(
     '#type' => 'checkbox',
     '#title' => t('Package insurance'),
@@ -128,7 +128,7 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#disabled' => TRUE,
   );
 
-  // Delivery Confirmation
+  // Delivery Confirmation.
   $form['uc_usps_quote_options']['uc_usps_delivery_confirmation'] = array(
     '#type' => 'checkbox',
     '#title' => t('Delivery confirmation'),
@@ -137,7 +137,7 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#disabled' => TRUE,
   );
 
-  // Signature Confirmation
+  // Signature Confirmation.
   $form['uc_usps_quote_options']['uc_usps_signature_confirmation'] = array(
     '#type' => 'checkbox',
     '#title' => t('Signature confirmation'),
@@ -146,7 +146,7 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#disabled' => TRUE,
   );
 
-  // Container for markup forms
+  // Container for markup forms.
   $form['uc_usps_markups'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Markups'),
@@ -173,7 +173,7 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Markup shipping rate quote by dollar amount, percentage, or multiplier.'),
   );
 
-  // Form to select type of weight markup
+  // Form to select type of weight markup.
   $form['uc_usps_markups']['uc_usps_weight_markup_type'] = array(
     '#type'          => 'select',
     '#title'         => t('Weight markup type'),
@@ -186,7 +186,7 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#disabled' => TRUE,
   );
 
-  // Form to select weight markup amount
+  // Form to select weight markup amount.
   $form['uc_usps_markups']['uc_usps_weight_markup'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Shipping weight markup'),

@@ -39,11 +39,11 @@ function uc_tax_report_report_page($start_date = NULL, $end_date = NULL, $status
   $csv_rows = array();
   $csv_rows[] = $header;
 
-  // Query to get the tax line items in this date range
+  // Query to get the tax line items in this date range.
 
   $result = db_query("SELECT ucoli.amount, ucoli.title, ucoli.data FROM {uc_orders} ucord LEFT JOIN {uc_order_statuses} ON order_status_id = order_status LEFT JOIN {uc_order_line_items} ucoli ON ucord.order_id = ucoli.order_id WHERE :start <= created AND created <= :end AND order_status IN (:statuses) AND ucoli.type = :type", array(':start' => $args['start_date'], ':end' => $args['end_date'], ':statuses' => $order_statuses, ':type' => 'tax'));
 
-  // add up the amounts by jurisdiction
+  // Add up the amounts by jurisdiction.
   $totals = array();
   $no_meta_totals = array();
 
@@ -51,17 +51,17 @@ function uc_tax_report_report_page($start_date = NULL, $end_date = NULL, $status
     $name = trim($item->title);
     $amount = floatval($item->amount);
 
-    // get the meta-data out of the serialized array
+    // Get the meta-data out of the serialized array.
     $data = unserialize($item->data);
     $jurisdiction = trim($data['tax_jurisdiction']);
     $taxable_amount = floatval($data['taxable_amount']);
     $rate = floatval($data['tax_rate']);
 
-    // make a line item in the report for each name/jurisdiction/rate
+    // Make a line item in the report for each name/jurisdiction/rate.
     $key = strtolower($name) . strtolower($jurisdiction) . number_format($rate, 5);
 
     if (!empty($jurisdiction) && $amount && $taxable_amount) {
-      // we have meta-data
+      // We have meta-data.
       if (empty($totals[$key])) {
         $totals[$key] = array(
           'name' => $name,
@@ -90,7 +90,7 @@ function uc_tax_report_report_page($start_date = NULL, $end_date = NULL, $status
     }
   }
 
-  // sort and make this into a report
+  // Sort and make this into a report.
 
   ksort($totals);
   ksort($no_meta_totals);

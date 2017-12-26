@@ -15,7 +15,6 @@
  * https://www.paypal.com/us/mrb/pal=6NXAPNGSS6DFJ
  */
 
-
 /**
  * Implements hook_menu().
  */
@@ -208,13 +207,16 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
         case 'american express':
           $cc_type = 'Amex';
           break;
+
         case 'visa':
           $cc_type = 'Visa';
           break;
+
         case 'mastercard':
         case 'master card':
           $cc_type = 'MasterCard';
           break;
+
         case 'discover':
           $cc_type = 'Discover';
           break;
@@ -247,7 +249,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
       'IPADDRESS' => $ip_address,
       'AMT' => uc_currency_format($amount, FALSE, FALSE, '.'),
       'CREDITCARDTYPE' => $cc_type,
-      'ACCT' =>  $order->payment_details['cc_number'],
+      'ACCT' => $order->payment_details['cc_number'],
       'EXPDATE' => $expdate,
       'CVV2' => $order->payment_details['cc_cvv'],
       'FIRSTNAME' => substr($order->billing_first_name, 0, 25),
@@ -338,6 +340,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
         ->execute();
 
       break;
+
     case 'FailureWithWarning':
       // Fall through.
     case 'Failure':
@@ -348,6 +351,7 @@ function uc_paypal_wpp_charge($order_id, $amount, $data) {
         'uid' => $user->uid,
       );
       break;
+
     default:
       $message = t('Unexpected acknowledgement status: @status', array('@status' => $nvp_response['ACK']));
       $result = array(
@@ -1031,10 +1035,13 @@ function _uc_paypal_card_type($cc_number) {
   switch (substr(strval($cc_number), 0, 1)) {
     case '3':
       return 'Amex';
+
     case '4':
       return 'Visa';
+
     case '5':
       return 'MasterCard';
+
     case '6':
       return 'Discover';
   }
@@ -1062,14 +1069,19 @@ function _uc_paypal_avscode_message($code) {
     switch ($code) {
       case '0':
         return t('All the address information matched.');
+
       case '1':
         return t('None of the address information matched; transaction declined.');
+
       case '2':
         return t('Part of the address information matched.');
+
       case '3':
         return t('The merchant did not provide AVS information. Not processed.');
+
       case '4':
         return t('Address not checked, or acquirer had no response. Service not available.');
+
       default:
         return t('No AVS response was obtained.');
     }
@@ -1079,32 +1091,43 @@ function _uc_paypal_avscode_message($code) {
     case 'A':
     case 'B':
       return t('Address matched; postal code did not');
+
     case 'C':
     case 'N':
       return t('Nothing matched; transaction declined');
+
     case 'D':
     case 'F':
     case 'X':
     case 'Y':
       return t('Address and postal code matched');
+
     case 'E':
       return t('Not allowed for MOTO transactions; transaction declined');
+
     case 'G':
       return t('Global unavailable');
+
     case 'I':
       return t('International unavailable');
+
     case 'P':
     case 'W':
     case 'Z':
       return t('Postal code matched; address did not');
+
     case 'R':
       return t('Retry for validation');
+
     case 'S':
       return t('Service not supported');
+
     case 'U':
       return t('Unavailable');
+
     case 'Null':
       return t('No AVS response was obtained.');
+
     default:
       return t('An unknown error occurred.');
   }
@@ -1118,14 +1141,19 @@ function _uc_paypal_cvvmatch_message($code) {
     switch ($code) {
       case '0':
         return t('Matched');
+
       case '1':
         return t('No match');
+
       case '2':
         return t('The merchant has not implemented CVV2 code handling.');
+
       case '3':
         return t('Merchant has indicated that CVV2 is not present on card.');
+
       case '4':
         return t('Service not available');
+
       default:
         return t('Unkown error');
     }
@@ -1134,16 +1162,22 @@ function _uc_paypal_cvvmatch_message($code) {
   switch ($code) {
     case 'M':
       return t('Match');
+
     case 'N':
       return t('No match');
+
     case 'P':
       return t('Not processed');
+
     case 'S':
       return t('Service not supported');
+
     case 'U':
       return t('Service not available');
+
     case 'X':
       return t('No response');
+
     default:
       return t('Not checked');
   }
@@ -1156,21 +1190,29 @@ function _uc_paypal_pending_message($reason) {
   switch ($reason) {
     case 'address':
       return t('Customer did not include a confirmed shipping address per your address settings.');
+
     case 'authorization':
       return t('Waiting on you to capture the funds per your authorization settings.');
+
     case 'echeck':
       return t('eCheck has not yet cleared.');
+
     case 'intl':
       return t('You must manually accept or deny this international payment from your Account Overview.');
+
     case 'multi-currency':
     case 'multi_currency':
       return t('You must manually accept or deny a payment of this currency from your Account Overview.');
+
     case 'unilateral':
       return t('Your e-mail address is not yet registered or confirmed.');
+
     case 'upgrade':
       return t('You must upgrade your account to Business or Premier status to receive credit card payments.');
+
     case 'verify':
       return t('You must verify your account before you can accept this payment.');
+
     case 'other':
     default:
       return t('Reason "@reason" unknown; contact PayPal Customer Service for more information.', array('@reason' => $reason));
@@ -1184,12 +1226,16 @@ function _uc_paypal_reversal_message($reason) {
   switch ($reason) {
     case 'chargeback':
       return t('The customer has initiated a chargeback.');
+
     case 'guarantee':
       return t('The customer triggered a money-back guarantee.');
+
     case 'buyer-complaint':
       return t('The customer filed a complaint about the transaction.');
+
     case 'refund':
       return t('You gave the customer a refund.');
+
     case 'other':
     default:
       return t('Reason "@reason" unknown; contact PayPal Customer Service for more information.', array('@reason' => $reason));

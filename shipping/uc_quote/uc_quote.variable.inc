@@ -5,7 +5,6 @@
  * Variable module hook implementations.
  */
 
-
 /**
  * Implements hook_variable_group_info().
  */

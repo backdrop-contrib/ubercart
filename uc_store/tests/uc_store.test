@@ -62,7 +62,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
   /**
    * Creates a new product.
    */
-  function createProduct($product = array()) {
+  protected function createProduct($product = array()) {
     // Set the default required fields.
     $weight_units = array('lb', 'kg', 'oz', 'g');
     $length_units = array('in', 'ft', 'cm', 'mm');
@@ -92,7 +92,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
    *
    * Fix this after adding a proper API call for saving a product class.
    */
-  function createProductClass($data = array()) {
+  protected function createProductClass($data = array()) {
     $product_class = $data + array(
       'pcid' => $this->randomName(8),
       'name' => $this->randomName(8),
@@ -111,7 +111,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
    * @param $edit
    *   The form-values array to which to add required fields.
    */
-  function populateCheckoutForm($edit = array()) {
+  protected function populateCheckoutForm($edit = array()) {
     foreach (array('billing', 'delivery') as $pane) {
       $prefix = 'panes[' . $pane . '][' . $pane;
       $key =  $prefix . '_country]';
@@ -139,7 +139,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
   /**
    * Executes the checkout process.
    */
-  function checkout($edit = array()) {
+  protected function checkout($edit = array()) {
     $this->drupalPost('cart', array(), 'Checkout');
     $this->assertText(
       t('Enter your billing address and information here.'),
@@ -180,7 +180,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
    *   An array containing the most recently sent matching email,
    *   or FALSE if the subject line did not match anything.
    */
-  function findMail($pattern) {
+  protected function findMail($pattern) {
     foreach (array_reverse($this->drupalGetMails()) as $mail) {
       if (preg_match($pattern, $mail['subject'])) {
         $this->pass(t('E-mail found with subject matching %pattern.', array('%pattern' => $pattern)));
@@ -207,7 +207,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
    *   TRUE to check only the plain-text contents of the 'data' keys of each 'insert' command (i.e. what would
    *   be inserted into the page).  FALSE to check the complete, json-encoded ajax response.
    */
-  function assertAjaxHelper($ajax, $text, $message = FALSE, $not_exists = FALSE, $plain = TRUE) {
+  protected function assertAjaxHelper($ajax, $text, $message = FALSE, $not_exists = FALSE, $plain = TRUE) {
     $content = '';
     if ($plain) {
       foreach ($ajax as $command) {
@@ -237,7 +237,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
    * @param $message
    *   The assertion message.
    */
-  function assertAjaxText($ajax, $text, $message = FALSE) {
+  protected function assertAjaxText($ajax, $text, $message = FALSE) {
     $this->assertAjaxHelper($ajax, $text, $message, FALSE, TRUE);
   }
 
@@ -252,7 +252,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
    * @param $message
    *   The assertion message.
    */
-  function assertNoAjaxText($ajax, $text, $message = FALSE) {
+  protected function assertNoAjaxText($ajax, $text, $message = FALSE) {
     $this->assertAjaxHelper($ajax, $text, $message, TRUE, TRUE);
   }
 
@@ -266,7 +266,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
    * @param $message
    *   The assertion message.
    */
-  function assertAjaxRaw($ajax, $text, $message = FALSE) {
+  protected function assertAjaxRaw($ajax, $text, $message = FALSE) {
     $this>assertAjaxHelper($ajax, $text, $message, FALSE, FALSE);
   }
 
@@ -280,7 +280,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
    * @param $message
    *   The assertion message.
    */
-  function assertNoAjaxRaw($ajax, $text, $message = FALSE) {
+  protected function assertNoAjaxRaw($ajax, $text, $message = FALSE) {
     $this>assertAjaxHelper($ajax, $text, $message, TRUE, FALSE);
   }
 
@@ -363,7 +363,7 @@ class UbercartCountryTestCase extends UbercartTestHelper {
   /**
    * Test import/enable/disable/remove of Country information files.
    */
-  function testCountries() {
+  public function testCountries() {
     $import_file = 'belgium_56_3.cif';
     $country_name = 'Belgium';
     $country_code = 'BEL';
