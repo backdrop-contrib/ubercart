@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Theme functions for uc_product module.
@@ -7,7 +8,7 @@
 /**
  * Formats a product's model number.
  *
- * @param $variables
+ * @param array $variables
  *   An associative array containing:
  *   - model: Product model number, also known as SKU.
  *   - attributes: (optional) Array of attributes to apply to enclosing DIV.
@@ -34,7 +35,7 @@ function theme_uc_product_model($variables) {
 /**
  * Wraps the "Add to Cart" form in a <div>.
  *
- * @param $variables
+ * @param array $variables
  *   An associative array containing:
  *   - form: A render element representing the add-to-cart form.
  *
@@ -53,7 +54,7 @@ function theme_uc_product_add_to_cart($variables) {
 /**
  * Formats a product's price.
  *
- * @param $variables
+ * @param array $variables
  *   An associative array containing:
  *   - element: An associative array render element containing:
  *     - #value: Price to be formatted.
@@ -93,13 +94,14 @@ function theme_uc_product_price($variables) {
 /**
  * Formats a product's weight.
  *
- * @param $variables
+ * @param array $variables
  *   An associative array containing:
  *   - amount: A numerical weight value.
  *   - units: String abbreviation representing the units of measure.
  *   - attributes: (optional) Array of attributes to apply to enclosing DIV.
  *
  * @see uc_weight_format()
+ *
  * @ingroup themeable
  */
 function theme_uc_product_weight($variables) {
@@ -123,7 +125,7 @@ function theme_uc_product_weight($variables) {
 /**
  * Formats a product's length, width, and height.
  *
- * @param $variables
+ * @param array $variables
  *   An associative array containing:
  *   - length: A numerical length value.
  *   - width: A numerical width value.
@@ -132,6 +134,7 @@ function theme_uc_product_weight($variables) {
  *   - attributes: (optional) Array of attributes to apply to enclosing DIV.
  *
  * @see uc_length_format()
+ *
  * @ingroup themeable
  */
 function theme_uc_product_dimensions($variables) {
@@ -147,7 +150,7 @@ function theme_uc_product_dimensions($variables) {
   if ($length || $width || $height) {
     $output = '<div ' . drupal_attributes($attributes) . '>';
     $output .= '<span class="product-info-label">' . t('Dimensions') . ':</span> ';
-    $output .= '<span class="product-info-value">' ;
+    $output .= '<span class="product-info-value">';
     $output .= uc_length_format($length, $units) . ' × ';
     $output .= uc_length_format($width, $units) . ' × ';
     $output .= uc_length_format($height, $units) . '</span>';
@@ -160,13 +163,14 @@ function theme_uc_product_dimensions($variables) {
 /**
  * Formats a product's images.
  *
- * @param $variables
+ * @param array $variables
  *   - images: An array of image render elements, each containing:
  *     - uri: URI of image.
  *     - alt: Alternate text to display for image.
  *     - title: Title for image.
  *
  * @see theme_image_style()
+ *
  * @ingroup themeable
  */
 function theme_uc_product_image($variables) {

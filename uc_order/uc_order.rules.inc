@@ -2,8 +2,7 @@
 
 /**
  * @file
- * This file contains the Rules hooks and functions necessary to make the order
- * related entity, conditions, events, and actions work.
+ * Hooks and functions for uc_order Rules integration.
  */
 
 /**
@@ -681,6 +680,8 @@ function uc_order_action_update_status($order, $status) {
 }
 
 /**
+ * Order status update context options.
+ *
  * @see uc_order_action_update_status()
  */
 function uc_order_action_update_status_options() {
@@ -709,6 +710,8 @@ function uc_order_action_add_comment($order, $comment, $comment_type) {
 }
 
 /**
+ * Order comment types context options.
+ *
  * @see uc_order_action_add_comment()
  */
 function uc_order_action_order_comment_types() {
@@ -831,6 +834,8 @@ function uc_order_action_email_invoice($order, $from, $addresses, $subject, $tem
 }
 
 /**
+ * Email invoice context options.
+ *
  * @see uc_order_action_email_invoice()
  */
 function uc_order_action_email_invoice_view_options() {

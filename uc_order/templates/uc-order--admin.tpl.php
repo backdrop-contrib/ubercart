@@ -20,7 +20,7 @@
 &nbsp;&nbsp;<?php print t('SKU'); ?>: <?php print $product->model; ?><br />
     <?php if (!empty($product->data['attributes'])): ?>
     <?php foreach ($product->data['attributes'] as $attribute => $option): ?>
-    &nbsp;&nbsp;<?php print t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option))); ?><br />
+    &nbsp;&nbsp;<?php print t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array) $option))); ?><br />
     <?php endforeach; ?>
     <?php endif; ?>
 <br />

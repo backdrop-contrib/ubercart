@@ -719,7 +719,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
  *   ShipmentAcceptRequest XML document to send to UPS.
  */
 function uc_ups_request_pickup($digest, $order_id = 0, $packages = array()) {
-  $packages = (array)$packages;
+  $packages = (array) $packages;
 
   $schema = uc_ups_access_request();
   $schema .= "<?xml version=\"1.0\" encoding=\"UTF-8\"?>

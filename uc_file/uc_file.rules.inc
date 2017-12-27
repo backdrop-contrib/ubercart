@@ -102,6 +102,7 @@ function uc_file_get_expiration_properties($expiration, array $options, $name, $
   switch ($name) {
     case 'user':
       return $expiration->uid;
+
     case 'file':
       return $expiration->fid;
   }
@@ -138,7 +139,7 @@ function uc_file_rules_action_info() {
     ),
   );
 
-  // Send an email to an order with a file expiration
+  // Send an email to an order with a file expiration.
   $actions['uc_file_order_email'] = array(
     'label' => t('Send an order email regarding files.'),
     'group' => t('Notification'),
@@ -230,7 +231,7 @@ function uc_file_action_order_email($order, $file_expiration, $from, $addresses,
     'format' => $format,
   );
 
-  // Token replacements for the subject and body
+  // Token replacements for the subject and body.
   $settings['replacements'] = array(
     'uc_order' => $order,
     'uc_file' => $file_expiration,
@@ -262,7 +263,7 @@ function uc_file_action_order_email($order, $file_expiration, $from, $addresses,
  * user is notified in Drupal, as well as through the email address associated
  * with the order.
  *
- * @param $order
+ * @param object $order
  *   An Ubercart order object.
  */
 function uc_file_action_order_renew($order) {
@@ -292,14 +293,14 @@ function uc_file_action_order_renew($order) {
       // as an offset of the previous.
       $file_user = _uc_file_user_get($order_user, $file->fid);
 
-      // Get the limit info from the product feature
+      // Get the limit info from the product feature.
       $file_modification = array(
         'download_limit' => uc_file_get_download_limit($file),
         'address_limit' => uc_file_get_address_limit($file),
         'expiration' => _uc_file_expiration_date(uc_file_get_time_limit($file), ($file_user ? max($file_user->expiration, REQUEST_TIME) : NULL)),
       );
 
-      // Add file_user(s) for this file/directory. (No overwrite)
+      // Add file_user(s) for this file/directory. (No overwrite).
       $new_files = uc_file_user_renew($file->fid, $order_user, $file->pfid, $file_modification, FALSE);
 
       // Save for notification.

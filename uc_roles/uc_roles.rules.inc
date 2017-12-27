@@ -322,7 +322,7 @@ function uc_roles_action_user_email($account, $role_expiration, $from, $addresse
  * is notified in Drupal, as well as through the email address associated with
  * the order.
  *
- * @param $order
+ * @param object $order
  *   An Ubercart order object.
  * @param bool $message
  *   If TRUE, messages will be displayed to the user about the renewal.

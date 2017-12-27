@@ -49,7 +49,7 @@ function hook_uc_product_alter(&$node) {
  *
  * @param $type
  *   The node type of the product class.
- * @param $op
+ * @param string $op
  *   The action being performed on the product class:
  *   - insert: A new node type is created, or an existing node type is being
  *     converted into a product type.
@@ -102,7 +102,7 @@ function hook_uc_product_default_classes() {
  *   Product. Usually one of the values of the array returned by
  *   uc_cart_get_contents().
  *
- * @return
+ * @return array
  *   A structured array that can be fed into drupal_render().
  */
 function hook_uc_product_description($product) {
@@ -120,7 +120,7 @@ function hook_uc_product_description($product) {
   $desc =& $description['attributes'];
 
   // Cart version of the product has numeric attribute => option values so we
-  // need to retrieve the right ones
+  // need to retrieve the right ones.
   $weight = 0;
   if (empty($product->order_id)) {
     foreach (_uc_cart_product_get_options($product) as $option) {
@@ -135,7 +135,7 @@ function hook_uc_product_description($product) {
     }
   }
   else {
-    foreach ((array)$product->data['attributes'] as $attribute => $option) {
+    foreach ((array) $product->data['attributes'] as $attribute => $option) {
       $desc[] = array(
         '#attribute_name' => $attribute,
         '#options' => $option,
@@ -183,7 +183,7 @@ function hook_uc_product_models($nid) {
  * Products are nodes with prices, SKUs, and everything else Ubercart expects
  * them to have.
  *
- * @return
+ * @return array
  *   Array of node type ids.
  */
 function hook_uc_product_types() {
