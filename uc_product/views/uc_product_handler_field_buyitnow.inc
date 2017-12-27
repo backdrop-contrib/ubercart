@@ -28,4 +28,5 @@ class uc_product_handler_field_buyitnow extends views_handler_field {
       return drupal_render($form);
     }
   }
+
 }

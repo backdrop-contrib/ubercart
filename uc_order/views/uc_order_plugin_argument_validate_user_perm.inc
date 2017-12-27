@@ -94,4 +94,5 @@ class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_
     $this->argument->validated_title = isset($account->name) ? check_plain($account->name) : check_plain(variable_get('anonymous', t('Anonymous')));
     return TRUE;
   }
+
 }

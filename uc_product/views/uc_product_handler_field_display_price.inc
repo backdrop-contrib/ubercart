@@ -38,4 +38,5 @@ class uc_product_handler_field_display_price extends uc_product_handler_field_pr
     $params = $this->options['group_type'] != 'group' ? array('function' => $this->options['group_type']) : array();
     $this->query->add_orderby(NULL, NULL, $order, 'sell_price', $params);
   }
+
 }

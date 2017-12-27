@@ -21,4 +21,5 @@ class uc_order_handler_sort_total extends views_handler_sort {
     // Add the field.
     $this->query->add_orderby(NULL, NULL, $this->options['order'], $this->table . '_' . $this->field);
   }
+
 }

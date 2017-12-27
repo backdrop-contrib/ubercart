@@ -28,4 +28,5 @@ class uc_order_handler_filter_total extends views_handler_filter_group_by_numeri
       $this->{$info[$this->operator]['method']}($field);
     }
   }
+
 }

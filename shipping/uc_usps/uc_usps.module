@@ -352,28 +352,28 @@ function uc_usps_quote($products, $details, $method) {
     if (isset($response->Package)) {
       foreach ($response->Package as $package) {
         if (isset($package->Error)) {
-          $debug_data['error'][] = (string)$package->Error[0]->Description . '<br />';
+          $debug_data['error'][] = (string) $package->Error[0]->Description . '<br />';
         }
         else {
           if (strpos($method['id'], 'intl')) {
             foreach ($package->Service as $service) {
-              $id = (string)$service['ID'];
-              $services[$id]['label'] = t('U.S.P.S. @service', array('@service' => (string)$service->SvcDescription));
+              $id = (string) $service['ID'];
+              $services[$id]['label'] = t('U.S.P.S. @service', array('@service' => (string) $service->SvcDescription));
               // Markup rate before customer sees it.
               if (!isset($services[$id]['rate'])) {
                 $services[$id]['rate'] = 0;
               }
-              $services[$id]['rate'] += uc_usps_rate_markup((string)$service->Postage);
+              $services[$id]['rate'] += uc_usps_rate_markup((string) $service->Postage);
             }
           }
           else {
             foreach ($package->Postage as $postage) {
-              $classid = (string)$postage['CLASSID'];
+              $classid = (string) $postage['CLASSID'];
               if ($classid === '0') {
-                if ((string)$postage->MailService == "First-Class Mail® Parcel") {
+                if ((string) $postage->MailService == "First-Class Mail® Parcel") {
                   $classid = 'zeroParcel';
                 }
-                elseif ((string)$postage->MailService == "First-Class Mail® Letter") {
+                elseif ((string) $postage->MailService == "First-Class Mail® Letter") {
                   $classid = 'zeroFlat';
                 }
                 else {
@@ -383,16 +383,16 @@ function uc_usps_quote($products, $details, $method) {
               if (!isset($services[$classid]['rate'])) {
                 $services[$classid]['rate'] = 0;
               }
-              $services[$classid]['label'] = t('U.S.P.S. @service', array('@service' => (string)$postage->MailService));
+              $services[$classid]['label'] = t('U.S.P.S. @service', array('@service' => (string) $postage->MailService));
               // Markup rate before customer sees it.
               // Rates are stored differently if ONLINE $rate_type is requested.
               // First Class doesn't have online rates, so if CommercialRate
               // is missing use Rate instead.
               if ($rate_type && !empty($postage->CommercialRate)) {
-                $services[$classid]['rate'] += uc_usps_rate_markup((string)$postage->CommercialRate);
+                $services[$classid]['rate'] += uc_usps_rate_markup((string) $postage->CommercialRate);
               }
               else {
-                $services[$classid]['rate'] += uc_usps_rate_markup((string)$postage->Rate);
+                $services[$classid]['rate'] += uc_usps_rate_markup((string) $postage->Rate);
               }
             }
           }
@@ -573,8 +573,10 @@ function uc_usps_rate_markup($rate) {
     switch ($type) {
       case 'percentage':
         return $rate + $rate * floatval($markup) / 100;
+
       case 'multiplier':
         return $rate * floatval($markup);
+
       case 'currency':
         return $rate + floatval($markup);
     }
@@ -714,7 +716,7 @@ function _uc_usps_package_products($products, &$addresses) {
       if (!isset($product->pkg_qty) || !$product->pkg_qty) {
         $product->pkg_qty = 1;
       }
-      $num_of_pkgs = (int)($product->qty / $product->pkg_qty);
+      $num_of_pkgs = (int) ($product->qty / $product->pkg_qty);
       if ($num_of_pkgs) {
         $package = clone $product;
         $package->description = $product->model;
@@ -730,6 +732,7 @@ function _uc_usps_package_products($products, &$addresses) {
             $package->pounds = floor($weight);
             $package->ounces = LB_TO_OZ * ($weight - $package->pounds);
             break;
+
           case 'oz':
             $package->pounds = floor($weight * OZ_TO_LB);
             $package->ounces = $weight - $package->pounds * LB_TO_OZ;
@@ -786,6 +789,7 @@ function _uc_usps_package_products($products, &$addresses) {
             $package->pounds = floor($weight);
             $package->ounces = LB_TO_OZ * ($weight - $package->pounds);
             break;
+
           case 'oz':
             $package->pounds = floor($weight * OZ_TO_LB);
             $package->ounces = $weight - $package->pounds * LB_TO_OZ;
