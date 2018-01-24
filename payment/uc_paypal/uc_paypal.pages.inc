@@ -66,10 +66,10 @@ function uc_paypal_ipn() {
   $post_fields[] = 'cmd=_notify-validate';
 
   if (variable_get('uc_paypal_wpp_server', '') == 'https://api-3t.paypal.com/nvp') {
-    $host = 'https://www.paypal.com/cgi-bin/webscr';
+    $host = 'https://ipnpb.paypal.com/cgi-bin/webscr';
   }
   else {
-    $host = variable_get('uc_paypal_wps_server', 'https://www.sandbox.paypal.com/cgi-bin/webscr');
+    $host = variable_get('uc_paypal_wps_server', 'https://ipnpb.sandbox.paypal.com/cgi-bin/webscr');
   }
 
   // Setup the cURL request.
