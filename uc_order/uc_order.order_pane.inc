@@ -543,6 +543,7 @@ function uc_order_edit_products_add_blank($form, &$form_state) {
   $product = new stdClass();
   $product->qty = 1;
   $product->order_id = $order->order_id;
+  $product->data = NULL;
   uc_order_product_save($order->order_id, $product);
 
   $order->products[] = $product;
