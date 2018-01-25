@@ -88,6 +88,7 @@ function uc_shipping_order_packages($order) {
  * @see uc_shipping_new_package_validate()
  * @see uc_shipping_new_package_submit()
  * @see theme_uc_shipping_new_package_fieldset()
+ *
  * @ingroup forms
  */
 function uc_shipping_new_package($form, &$form_state, $order) {
@@ -131,10 +132,10 @@ function uc_shipping_new_package($form, &$form_state, $order) {
           '#default_value' => 0,
         );
         $product_row['model'] = array(
-          '#markup' => check_plain($product->model)
+          '#markup' => check_plain($product->model),
         );
         $product_row['name'] = array(
-          '#markup' => filter_xss_admin($product->title)
+          '#markup' => filter_xss_admin($product->title),
         );
         $product_row['qty'] = array(
           '#type'          => 'select',
@@ -263,14 +264,14 @@ function uc_shipping_new_package_submit($form, &$form_state) {
           }
 
           if ($product['package'] != 0) {
-            $packages[$product['package']]['products'][$id] = (object)$product;
+            $packages[$product['package']]['products'][$id] = (object) $product;
 
             if (!isset($packages[$product['package']]['shipping_type'])) {
               $packages[$product['package']]['shipping_type'] = $shipping_type;
             }
           }
           else {
-            $packages[0][$shipping_type][$id] = (object)$product;
+            $packages[0][$shipping_type][$id] = (object) $product;
           }
         }
       }
@@ -305,6 +306,7 @@ function uc_shipping_new_package_submit($form, &$form_state) {
  *
  * @see uc_shipping_package_edit_submit()
  * @see theme_uc_shipping_edit_package_fieldset()
+ *
  * @ingroup forms
  */
 function uc_shipping_package_edit($form, &$form_state, $order, $package) {
@@ -401,7 +403,7 @@ function uc_shipping_package_edit_submit($form, &$form_state) {
   $package = uc_shipping_package_load($form_state['values']['package_id']);
   foreach ($form_state['values']['products'] as $id => $product) {
     if ($product['checked']) {
-      $package->products[$id] = (object)$product;
+      $package->products[$id] = (object) $product;
     }
     else {
       unset($package->products[$id]);
@@ -417,6 +419,7 @@ function uc_shipping_package_edit_submit($form, &$form_state) {
  * Confirms cancellation of a package's shipment.
  *
  * @see uc_shipping_package_cancel_confirm_submit()
+ *
  * @ingroup forms
  */
 function uc_shipping_package_cancel_confirm($form, &$form_state, $order, $package) {
@@ -468,6 +471,7 @@ function uc_shipping_package_cancel_confirm_submit($form, &$form_state) {
  * Decides to unpackage products.
  *
  * @see uc_shipping_package_delete_confirm_submit()
+ *
  * @ingroup forms
  */
 function uc_shipping_package_delete_confirm($form, &$form_state, $order, $package) {
@@ -541,6 +545,7 @@ function uc_shipping_order_shipments($order) {
  *
  * @see uc_shipping_new_shipment_submit()
  * @see theme_uc_shipping_new_shipment()
+ *
  * @ingroup forms
  */
 function uc_shipping_new_shipment($form, &$form_state, $order) {
@@ -622,6 +627,7 @@ function uc_shipping_new_shipment($form, &$form_state, $order) {
  * Formats and displays the new shipment form.
  *
  * @see uc_shipping_new_shipment()
+ *
  * @ingroup themeable
  */
 function theme_uc_shipping_new_shipment($variables) {
@@ -741,6 +747,7 @@ function uc_shipping_shipment_view($order, $shipment) {
  *
  * @see uc_shipping_shipment_edit_validate()
  * @see uc_shipping_shipment_edit_submit()
+ *
  * @ingroup forms
  */
 function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
@@ -776,7 +783,7 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
     }
 
     // Create list of products and get a representative product (last one in
-    // the loop) to use for some default values
+    // the loop) to use for some default values.
     $product_list = array();
     $declared_value = 0;
     foreach ($package->products as $product) {
@@ -968,7 +975,7 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
     '#default_value' => array(
       'year'  => $ship_date['year'],
       'month' => $ship_date['mon'],
-      'day'   => $ship_date['mday']
+      'day'   => $ship_date['mday'],
     ),
   );
   $form['shipment']['expected_delivery'] = array(
@@ -977,7 +984,7 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
     '#default_value' => array(
       'year'  => $exp_delivery['year'],
       'month' => $exp_delivery['mon'],
-      'day'   => $exp_delivery['mday']
+      'day'   => $exp_delivery['mday'],
     ),
   );
   $form['shipment']['cost'] = array(
@@ -987,12 +994,12 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
   );
 
   $form['actions'] = array(
-    '#type' => 'actions'
+    '#type' => 'actions',
   );
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save shipment'),
-    '#weight' => 10
+    '#weight' => 10,
   );
 
   return $form;
@@ -1113,6 +1120,7 @@ function theme_uc_shipping_shipment_print($variables) {
  * Decides to release packages to be put on another shipment.
  *
  * @see uc_shipping_shipment_delete_confirm_submit()
+ *
  * @ingroup forms
  */
 function uc_shipping_shipment_delete_confirm($form, &$form_state, $order, $shipment) {

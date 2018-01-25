@@ -64,7 +64,7 @@ function tapir_gather_rows($element) {
  * @param $form
  *   The array of form information needing to be rendered into the table.
  *
- * @return
+ * @return string
  *   The table output rendered in HTML.
  *
  * @ingroup themeable
@@ -117,7 +117,7 @@ function theme_tapir_table($variables) {
 
     // Merge the row data into a single row array along with the attributes.
     if (isset($data['#attributes'])) {
-      $row = array_merge(array('data' => $row), (array)$data['#attributes']);
+      $row = array_merge(array('data' => $row), (array) $data['#attributes']);
     }
 
     // Add the current row to the table rows array.
@@ -130,7 +130,7 @@ function theme_tapir_table($variables) {
     'rows' => $rows,
   );
   if (isset($element['#attributes'])) {
-    $options['attributes'] = (array)$element['#attributes'];
+    $options['attributes'] = (array) $element['#attributes'];
   }
   if (isset($element['#title'])) {
     $options['caption'] = $element['#title'];

@@ -45,6 +45,7 @@ function uc_order_settings_form($form, &$form_state) {
  * @see uc_order_workflow_form_submit()
  * @see theme_uc_order_state_table()
  * @see theme_uc_order_status_table()
+ *
  * @ingroup forms
  */
 function uc_order_workflow_form($form, &$form_state) {
@@ -187,6 +188,7 @@ function uc_order_workflow_form_submit($form, &$form_state) {
  * Themes the order state table in the order workflow settings.
  *
  * @see uc_order_workflow_form()
+ *
  * @ingroup themeable
  */
 function theme_uc_order_state_table($variables) {
@@ -208,6 +210,7 @@ function theme_uc_order_state_table($variables) {
  * Themes the order status table in the order workflow settings.
  *
  * @see uc_order_workflow_form()
+ *
  * @ingroup themeable
  */
 function theme_uc_order_status_table($variables) {
@@ -233,6 +236,7 @@ function theme_uc_order_status_table($variables) {
  *
  * @see uc_order_status_create_form_validate()
  * @see uc_order_status_create_form_submit()
+ *
  * @ingroup forms
  */
 function uc_order_status_create_form($form, &$form_state) {
@@ -333,6 +337,7 @@ function uc_order_status_create_form_submit($form, &$form_state) {
  *
  * @see uc_order_create_form_create_validate()
  * @see uc_order_create_form_create_submit()
+ *
  * @ingroup forms
  */
 function uc_order_create_form($form, &$form_state) {
@@ -521,6 +526,7 @@ function uc_order_create_form_customer_search($form, &$form_state) {
  * Form validation handler for customer search.
  *
  * @see uc_order_create_form()
+ *
  * @ingroup forms
  */
 function uc_order_create_form_create_validate($form, &$form_state) {
@@ -549,6 +555,7 @@ function uc_order_create_form_create_validate($form, &$form_state) {
  * Form submission handler for customer search.
  *
  * @see uc_order_create_form()
+ *
  * @ingroup forms
  */
 function uc_order_create_form_create_submit($form, &$form_state) {
@@ -620,6 +627,7 @@ function uc_order_address_book() {
  * Presents previously entered addresses as selectable options.
  *
  * @see uc_order_address_book()
+ *
  * @ingroup forms
  */
 function uc_order_address_book_form($form, &$form_state, $uid = 0, $type = 'billing', $func = '') {
@@ -759,6 +767,7 @@ function uc_order_select_customer($email = NULL) {
  * Form to choose a customer from a list.
  *
  * @see uc_order_select_customer()
+ *
  * @ingroup forms
  */
 function uc_order_select_customer_form($form, &$form_state, $options = NULL) {
@@ -873,7 +882,7 @@ function uc_order_history($user) {
     array('data' => t('Order #'), 'field' => 'o.order_id'),
     array('data' => t('Status'), 'field' => 'os.title'),
     array('data' => t('Products'), 'field' => 'products'),
-    array('data' => t('Total'), 'field' => 'o.order_total')
+    array('data' => t('Total'), 'field' => 'o.order_total'),
   );
 
   $rows = array();
@@ -950,6 +959,7 @@ function uc_order_history($user) {
  * @see uc_order_edit_form_submit()
  * @see theme_uc_order_edit_form()
  * @see uc_order_edit_form_delete()
+ *
  * @ingroup forms
  */
 function uc_order_edit_form($form, &$form_state, $order) {
@@ -1062,7 +1072,7 @@ function uc_order_edit_form_submit($form, &$form_state) {
     foreach ($form_state['values']['products'] as $product) {
       if (!isset($product['remove']) && intval($product['qty']) > 0) {
         $product['data'] = unserialize($product['data']);
-        $product = (object)$product;
+        $product = (object) $product;
         $order->products[] = $product;
 
         if (module_exists('uc_stock')) {
@@ -1096,6 +1106,7 @@ function uc_order_edit_form_submit($form, &$form_state) {
  * @see uc_order_edit_form()
  * @see uc_order_edit_form_validate()
  * @see uc_order_edit_form_submit()
+ *
  * @ingroup themeable
  */
 function theme_uc_order_edit_form($variables) {
@@ -1215,6 +1226,7 @@ function uc_order_add_line_item_form_submit($form, &$form_state) {
  *
  * @see uc_order_mail_invoice_form_validate()
  * @see uc_order_mail_invoice_form_submit()
+ *
  * @ingroup forms
  */
 function uc_order_mail_invoice_form($form, &$form_state, $order) {
@@ -1228,7 +1240,7 @@ function uc_order_mail_invoice_form($form, &$form_state, $order) {
     '#default_value' => $order->primary_email,
   );
   $form['actions'] = array('#type' => 'actions');
-  $form['actions']['submit' ] = array(
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Mail invoice'),
   );
@@ -1300,6 +1312,7 @@ function uc_order_log($order) {
  * Confirmation form to delete an order.
  *
  * @see uc_order_delete_confirm_form_submit()
+ *
  * @ingroup forms
  */
 function uc_order_delete_confirm_form($form, &$form_state, $order) {
@@ -1310,7 +1323,7 @@ function uc_order_delete_confirm_form($form, &$form_state, $order) {
 
   $form['order_id'] = array(
     '#type' => 'value',
-    '#value' => $order->order_id
+    '#value' => $order->order_id,
   );
 
   return confirm_form($form, t('Are you sure you want to delete order @order_id?', array('@order_id' => $order->order_id)), 'admin/store/orders', NULL, t('Delete'));

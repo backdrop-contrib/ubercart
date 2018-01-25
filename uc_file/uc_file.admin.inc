@@ -16,6 +16,7 @@ define('UC_FILE_FORM_ACTION', 1   );
  *
  * @see uc_file_admin_files_form_show_files()
  * @see uc_file_admin_files_form_action()
+ *
  * @ingroup forms
  */
 function uc_file_admin_files_form($form, &$form_state) {
@@ -45,6 +46,7 @@ function uc_file_admin_files_form($form, &$form_state) {
  * @see uc_file_admin_files_form_show_validate()
  * @see uc_file_admin_files_form_show_submit()
  * @see theme_uc_file_admin_files_form_show()
+ *
  * @ingroup forms
  */
 function uc_file_admin_files_form_show_files($form, &$form_state) {
@@ -53,7 +55,7 @@ function uc_file_admin_files_form_show_files($form, &$form_state) {
   $header = array(
     'filename' => array('data' => t('File'), 'field' => 'f.filename', 'sort' => 'asc'),
     'title' => array('data' => t('Product'), 'field' => 'n.title'),
-    'model' => array('data' => t('SKU'), 'field' => 'fp.model')
+    'model' => array('data' => t('SKU'), 'field' => 'fp.model'),
   );
 
   // Create pager.
@@ -109,7 +111,7 @@ function uc_file_admin_files_form_show_files($form, &$form_state) {
     'uc_file_delete' => t('Delete file(s)'),
   );
 
-  // Check if any hook_uc_file_action('info', $args) are implemented
+  // Check if any hook_uc_file_action('info', $args) are implemented.
   foreach (module_implements('uc_file_action') as $module) {
     $name = $module . '_uc_file_action';
     $result = $name('info', NULL);
@@ -190,6 +192,7 @@ function uc_file_admin_files_form_show_submit($form, &$form_state) {
  *   - form: A render element representing the form.
  *
  * @see uc_file_admin_files_form_show_files()
+ *
  * @ingroup themeable
  */
 function theme_uc_file_admin_files_form_show($variables) {
@@ -211,6 +214,7 @@ function theme_uc_file_admin_files_form_show($variables) {
  * @see uc_file_admin_files_form()
  * @see uc_file_admin_files_form_action_validate()
  * @see uc_file_admin_files_form_action_submit()
+ *
  * @ingroup forms
  */
 function uc_file_admin_files_form_action($form, &$form_state) {
@@ -258,7 +262,7 @@ function uc_file_admin_files_form_action($form, &$form_state) {
       );
 
       // Don't even show the recursion checkbox unless we have any directories.
-      if ($has_directory && $affected_list[TRUE] !== FALSE ) {
+      if ($has_directory && $affected_list[TRUE] !== FALSE) {
         $form['recurse_directories'] = array(
           '#type' => 'checkbox',
           '#title' => t('Delete selected directories and their sub directories'),
@@ -276,14 +280,12 @@ function uc_file_admin_files_form_action($form, &$form_state) {
           ),
         );
       }
-
       break;
 
     case 'uc_file_upload':
-
       // Calculate the max size of uploaded files, in bytes.
       $max_bytes = trim(ini_get('post_max_size'));
-      switch (strtolower($max_bytes{strlen($max_bytes)-1})) {
+      switch (strtolower($max_bytes{strlen($max_bytes) - 1})) {
         case 'g':
           $max_bytes *= 1024;
         case 'm':
@@ -323,13 +325,11 @@ function uc_file_admin_files_form_action($form, &$form_state) {
       );
 
       // Must add this after confirm_form, as it runs over $form['#attributes'].
-      // Issue logged at d#319723
+      // Issue logged at https://www.drupal.org/node/319723.
       $form['#attributes']['enctype'] = 'multipart/form-data';
-
       break;
 
     default:
-
       // This action isn't handled by us, so check if any
       // hook_uc_file_action('form', $args) are implemented.
       foreach (module_implements('uc_file_action') as $module) {
@@ -337,7 +337,6 @@ function uc_file_admin_files_form_action($form, &$form_state) {
         $result = $name('form', array('action' => $form_state['values']['uc_file_action']['action'], 'file_ids' => $file_ids));
         $form = (is_array($result)) ? array_merge($form, $result) : $form;
       }
-
       break;
   }
 
@@ -378,7 +377,7 @@ function uc_file_admin_files_form_action_validate($form, &$form_state) {
     default:
 
       // This action isn't handled by us, so check if any
-      // hook_uc_file_action('validate', $args) are implemented
+      // hook_uc_file_action('validate', $args) are implemented.
       foreach (module_implements('uc_file_action') as $module) {
         $name = $module . '_uc_file_action';
         $result = $name('validate', array('form_id' => $form_id, 'form_state' => $form_state));
@@ -398,7 +397,6 @@ function uc_file_admin_files_form_action_submit($form, &$form_state) {
   switch ($form_state['values']['action']) {
 
     case 'uc_file_delete':
-
       // File deletion status.
       $status = TRUE;
 
@@ -411,11 +409,9 @@ function uc_file_admin_files_form_action_submit($form, &$form_state) {
       else {
         drupal_set_message(t('One or more files could not be deleted.'), 'warning');
       }
-
       break;
 
     case 'uc_file_upload':
-
       // Build the destination location. We start with the base directory,
       // then add any directory which was explicitly selected.
       $dir = variable_get('uc_file_base_dir', NULL) . '/';
@@ -428,13 +424,13 @@ function uc_file_admin_files_form_action_submit($form, &$form_state) {
         // Copy the file to its final location.
         if (copy($file_object->uri, $dir . '/' . $file_object->filename)) {
 
-          // Check if any hook_uc_file_action('upload', $args) are implemented
+          // Check if any hook_uc_file_action('upload', $args) are implemented.
           foreach (module_implements('uc_file_action') as $module) {
             $name = $module . '_uc_file_action';
             $result = $name('upload', array('file_object' => $file_object, 'form_id' => $form_id, 'form_state' => $form_state));
           }
 
-          // Update the file list
+          // Update the file list.
           uc_file_refresh();
 
           drupal_set_message(t('The file %file has been uploaded to %dir', array('%file' => $file_object->filename, '%dir' => $dir)));
@@ -446,13 +442,11 @@ function uc_file_admin_files_form_action_submit($form, &$form_state) {
       else {
         drupal_set_message(t('Can not move file to %dir', array('%dir' => $dir)), 'error');
       }
-
       break;
 
     default:
-
       // This action isn't handled by us, so check if any
-      // hook_uc_file_action('submit', $args) are implemented
+      // hook_uc_file_action('submit', $args) are implemented.
       foreach (module_implements('uc_file_action') as $module) {
         $name = $module . '_uc_file_action';
         $result = $name('submit', array('form_id' => $form_id, 'form_state' => $form_state));

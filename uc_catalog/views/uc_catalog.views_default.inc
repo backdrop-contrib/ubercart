@@ -9,7 +9,7 @@
  * Implements hook_views_default_views().
  */
 function uc_catalog_views_default_views() {
-  $view = new view;
+  $view = new view();
   $view->name = 'uc_catalog';
   $view->description = t('Catalog');
   $view->tag = '';
@@ -191,7 +191,7 @@ function uc_catalog_views_default_views() {
 
   $views[$view->name] = $view;
 
-  $view = new view;
+  $view = new view();
   $view->name = 'uc_catalog_terms';
   $view->description = 'Catalog categories';
   $view->tag = '';

@@ -37,7 +37,7 @@ function uc_product_kit_form_uc_product_settings_form_alter(&$form, &$form_state
  * Implements hook_form_FORM_ID_alter() for node_delete_confirm().
  */
 function uc_product_kit_form_node_delete_confirm_alter(&$form, &$form_state) {
-  if (uc_product_is_product((integer)$form['nid']['#value'])) {
+  if (uc_product_is_product((integer) $form['nid']['#value'])) {
     $kits = db_query("SELECT COUNT(k.nid) FROM {node} n JOIN {uc_product_kits} k ON n.vid = k.vid WHERE k.vid IN (SELECT DISTINCT vid FROM {uc_product_kits} WHERE product_id = :nid) GROUP BY k.nid HAVING COUNT(product_id) = 1", array(':nid' => $form['nid']['#value']))->fetchField();
 
     if ($kits) {
@@ -221,7 +221,7 @@ function uc_product_kit_update(&$node) {
       else {
         $product = $nid;
         $nid = $product->nid;
-        $node->items[$nid] = (array)$product;
+        $node->items[$nid] = (array) $product;
       }
       $base_price += $product->sell_price * $node->items[$nid]['qty'];
     }
@@ -397,7 +397,7 @@ function uc_product_kit_module_implements_alter(&$implementations, $hook) {
   if ($hook == 'uc_product_alter') {
     $group = $implementations['uc_product_kit'];
     unset($implementations['uc_product_kit']);
-    $implementations =  array('uc_product_kit' => $group) + $implementations;
+    $implementations = array('uc_product_kit' => $group) + $implementations;
   }
 }
 
@@ -494,7 +494,7 @@ function uc_product_kit_form(&$node, $form_state) {
     '#required' => TRUE,
     '#weight' => -5,
     '#default_value' => $node->title,
-    '#description' => t('Name of the product kit')
+    '#description' => t('Name of the product kit'),
   );
 
   // Create an array of products on the site for use in the product selector.
@@ -753,6 +753,7 @@ function uc_product_kit_view($node, $view_mode) {
  *
  * @see uc_product_kit_add_to_cart_form_validate()
  * @see uc_product_kit_add_to_cart_form_submit()
+ *
  * @ingroup forms
  */
 function uc_product_kit_add_to_cart_form($form, &$form_state, $node) {
@@ -829,13 +830,14 @@ function uc_product_kit_add_to_cart_form_submit($form, &$form_state) {
  *
  * @see uc_product_kit_buy_it_now_form_validate()
  * @see uc_product_kit_buy_it_now_form_submit()
+ *
  * @ingroup forms
  */
 function uc_product_kit_buy_it_now_form($form, &$form_state, $node) {
   $form['nid'] = array(
     '#type' => 'hidden',
     '#value' => $node->nid,
-    );
+  );
   if ($node->type == 'product_kit') {
     $form['products'] = array('#tree' => TRUE);
     foreach ($node->products as $i => $product) {
@@ -1141,7 +1143,9 @@ function uc_product_kit_uc_cart_display($item) {
  * Handles individual products or entire kits.
  */
 function uc_product_kit_uc_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
-  if (!$nid) return NULL;
+  if (!$nid) {
+    return NULL;
+  }
   $cid = !(is_null($cid) || empty($cid)) ? $cid : uc_cart_get_id();
 
   if (isset($data['kit_id'])) {

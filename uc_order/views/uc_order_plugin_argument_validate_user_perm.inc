@@ -48,7 +48,7 @@ class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_
     $type = $this->options['type'];
     // is_numeric() can return false positives, so we ensure it's an integer.
     // However, is_integer() will always fail, since $argument is a string.
-    if (is_numeric($argument) && $argument == (int)$argument) {
+    if (is_numeric($argument) && $argument == (int) $argument) {
       if ($type == 'uid' || $type == 'either') {
         if ($argument == $GLOBALS['user']->uid) {
           // If you assign an object to a variable in PHP, the variable

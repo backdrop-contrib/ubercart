@@ -43,6 +43,7 @@ define('UC_FILE_ERROR_HOOK_ERROR'             , 7);
  *     - address_limit: Integer limit on IP addresses.
  *
  * @see theme_table()
+ *
  * @ingroup themeable
  */
 function theme_uc_file_user_downloads($variables) {

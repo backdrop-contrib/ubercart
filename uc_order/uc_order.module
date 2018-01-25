@@ -65,7 +65,7 @@ class UcOrder {
    * @param $state
    *   The initial order state.
    */
-  function __construct($uid = 0, $state = 'in_checkout') {
+  public function __construct($uid = 0, $state = 'in_checkout') {
     if (strlen($uid) < 22 && $uid > 0) {
       $this->uid = $uid;
       if ($account = user_load($uid)) {
@@ -230,7 +230,7 @@ function uc_order_menu() {
   $items['admin/store/orders/%uc_order/view'] = array(
     'title' => 'View',
     'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -10
+    'weight' => -10,
   );
   $items['admin/store/orders/%uc_order/edit'] = array(
     'title' => 'Edit',
@@ -306,7 +306,8 @@ function uc_order_menu_alter(&$items) {
   // Adjust the Field UI tabs on admin/store/settings/orders.
   $items['admin/store/settings/orders/products/fields']['title'] = 'Ordered product fields';
   $items['admin/store/settings/orders/products/fields']['weight'] = 3;
-  // Disable field display settings for ordered products, as we don't use this anywhere (yet).
+  // Disable field display settings for ordered products,
+  // as we don't use this anywhere (yet).
   $items['admin/store/settings/orders/products/display']['access callback'] = FALSE;
 }
 
@@ -460,7 +461,8 @@ function uc_order_can_view_order($account, $order, $view_invoice = FALSE) {
   // Users with 'view all orders' are straightforward.
   $access = user_access('view all orders');
 
-  // If the user is the current user and is not anonymous, also allow the "own" permissions.
+  // If the user is the current user and is not anonymous,
+  // also allow the "own" permissions.
   if ($user->uid && $user->uid == $account->uid) {
     if ($view_invoice) {
       $access = $access || user_access('view own invoices');
@@ -1106,7 +1108,7 @@ function uc_order_product_entity_save($product) {
 /**
  * Remove a single product line from an order.
  *
- * @param integer $order_product_id
+ * @param int $order_product_id
  *   Ordered product ID of product to remove.
  */
 function uc_order_product_delete($order_product_id) {
@@ -1126,9 +1128,9 @@ function uc_order_product_delete_multiple($order_product_ids) {
 /**
  * Load a single ordered product entity.
  *
- * @param integer $opid
+ * @param int $opid
  *   The ID of the ordered product entity.
- * @param boolean $reset
+ * @param bool $reset
  *   Whether to reset the internal cache for ordered product IDs. Defaults to
  *   FALSE.
  *
@@ -1146,7 +1148,7 @@ function uc_order_product_load($opid, $reset = FALSE) {
  * @param array $opids
  *   Array of ordered product IDs of products to load.  Default is the empty
  *   array, which loads all ordered products.
- * @param boolean $reset
+ * @param bool $reset
  *   Whether to reset the internal cache for ordered product IDs. Defaults to
  *   FALSE.
  *
@@ -1319,11 +1321,11 @@ function uc_order_load($order_id, $reset = FALSE) {
  *
  * @param $ids
  *   An array of order IDs.
- * @param $conditions
+ * @param array $conditions
  *   An array of conditions on the {uc_orders} table in the form
- *  'field' => $value.
+ *   'field' => $value.
  *
- * @return
+ * @return array
  *   An array of order objects indexed by order_id.
  */
 function uc_order_load_multiple($ids, $conditions = array(), $reset = FALSE) {
@@ -1786,7 +1788,7 @@ function template_preprocess_uc_order(&$variables) {
     if (!empty($product->data['attributes'])) {
       $attributes = array();
       foreach ($product->data['attributes'] as $attribute => $option) {
-        $attributes[] = t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array)$option)));
+        $attributes[] = t('@attribute: @options', array('@attribute' => $attribute, '@options' => implode(', ', (array) $option)));
       }
       $product->details .= theme('item_list', array('items' => $attributes));
     }
@@ -1992,10 +1994,12 @@ function uc_order_status_list($scope = 'all', $sql = FALSE, $action = '') {
       case 'all':
         $result = db_query("SELECT * FROM {uc_order_statuses}");
         break;
+
       case 'general':
       case 'specific':
         $result = db_query("SELECT * FROM {uc_order_statuses} WHERE state IN (:states)", array(':states' => uc_order_state_list($scope, TRUE)));
         break;
+
       default:
         $result = db_query("SELECT * FROM {uc_order_statuses} WHERE state = :scope", array(':scope' => $scope));
         break;
