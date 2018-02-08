@@ -8,6 +8,7 @@
  * argument's title to the username.
  */
 class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_validate_user {
+
   function option_definition() {
     $options = parent::option_definition();
 

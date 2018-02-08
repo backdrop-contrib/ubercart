@@ -8,6 +8,7 @@
  */
 
 class CyberSourceSoapClient extends SoapClient {
+
   function __construct($wsdl, $options = NULL) {
     parent::__construct($wsdl, $options);
   }
@@ -36,4 +37,5 @@ class CyberSourceSoapClient extends SoapClient {
 
     return parent::__doRequest($request, $location, $action, $version);
   }
+
 }

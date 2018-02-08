@@ -52,9 +52,16 @@ function uc_store_admin() {
   if ($results = module_invoke_all('uc_store_status')) {
     foreach ($results as $message) {
       switch ($message['status']) {
-        case 'warning': $icon = 'alert.gif'; break;
-        case 'error':   $icon = 'error.gif'; break;
-        default:        $icon = 'info.gif';
+        case 'warning':
+          $icon = 'alert.gif';
+          break;
+
+        case 'error':
+          $icon = 'error.gif';
+          break;
+
+        default:
+          $icon = 'info.gif';
       }
       $icon = theme('image', array('path' => drupal_get_path('module', 'uc_store') . '/images/' . $icon));
 

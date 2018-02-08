@@ -43,7 +43,6 @@ class UcAddress {
   /** Email address. */
   public $email = '';
 
-
   /**
    * Constructor.
    *

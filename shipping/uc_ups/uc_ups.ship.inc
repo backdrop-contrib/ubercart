@@ -401,6 +401,7 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
         $units = 'LBS';
         $unit_name = 'Pounds';
         break;
+
       case 'cm':
         $weight_factor = uc_weight_conversion($package->weight_units, 'kg');
         $units = 'KGS';

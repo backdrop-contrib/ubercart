@@ -12,6 +12,7 @@
  * in packages have the same weight unit.
  */
 class uc_shipping_handler_field_package_weight extends uc_product_handler_field_weight {
+
   /**
    * Overrides views_handler::use_group_by().
    *

@@ -13,6 +13,7 @@
  * in the query with an alias like "table_field".
  */
 class uc_order_handler_sort_total extends views_handler_sort {
+
   /**
    * Overrides views_handler_sort::query().
    */

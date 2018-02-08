@@ -30,7 +30,6 @@ class UbercartEncryption {
   protected $adj = 1.75;
   protected $mod = 3;
 
-
   /**
    * Decrypts cyphertext.
    *
@@ -269,4 +268,5 @@ class UbercartEncryption {
 
     return $array;
   }
+
 }

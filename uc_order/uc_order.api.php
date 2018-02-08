@@ -121,7 +121,6 @@ function hook_uc_line_item_data_alter(&$items) {
   $items['tax_subtotal']['callback'] = NULL;
 }
 
-
 /**
  * Performs actions on orders.
  *

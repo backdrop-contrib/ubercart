@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Contains logic to aid in attaching multiple ajax behaviors to form
@@ -225,6 +226,7 @@ function _uc_ajax_defaults($target_form) {
         'panes][delivery][select_address' => $quotes_defaults,
         'panes][billing][address][billing_country' => array('payment-pane' => 'payment-pane'),
       );
+
     default:
       return array();
   }

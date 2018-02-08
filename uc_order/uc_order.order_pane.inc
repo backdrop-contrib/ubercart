@@ -222,6 +222,7 @@ function uc_order_pane_products($op, $order, &$form = NULL, &$form_state = NULL)
           case 'select':
             $controls = uc_order_product_select_form($form['product_controls'], $form_state, $order);
             break;
+
           case 'add_product':
             $controls = uc_order_add_product_form($form['product_controls'], $form_state, $order, $form_state['node']);
             break;
@@ -351,7 +352,7 @@ function uc_order_add_product_form($form, &$form_state, $order, $node) {
     '#type' => 'submit',
     '#value' => t('Add to order'),
     '#submit' => array('uc_order_edit_products_add'),
-    '#ajax' =>  array(
+    '#ajax' => array(
       'callback' => 'uc_order_pane_products_ajax_callback',
       'wrapper' => 'product-controls',
     ),
@@ -360,7 +361,7 @@ function uc_order_add_product_form($form, &$form_state, $order, $node) {
     '#type' => 'submit',
     '#value' => t('Cancel'),
     '#submit' => array('uc_order_pane_products_select'),
-    '#ajax' =>  array(
+    '#ajax' => array(
       'callback' => 'uc_order_pane_products_ajax_callback',
       'wrapper' => 'product-controls',
     ),
@@ -385,7 +386,7 @@ function uc_order_add_product_form($form, &$form_state, $order, $node) {
 function uc_order_edit_products_form($form, &$form_state, $products) {
   if (($product_count = count($products)) > 0) {
     $form['products'] = tapir_get_table('uc_op_products_edit_table');
-    for ($i=0, $product = reset($products); $i < $product_count; $i++, $product = next($products)) {
+    for ($i = 0, $product = reset($products); $i < $product_count; $i++, $product = next($products)) {
       $form['products'][$i]['remove'] = array(
         '#type' => 'image_button',
         '#title' => t('Remove this product.'),
@@ -641,7 +642,7 @@ function uc_order_pane_line_items($op, $order, &$form = NULL, &$form_state = NUL
               $line_items[] = array(
                 'title' => $line['title'],
                 'amount' => $line['amount'],
-                'weight' => $item['weight']
+                'weight' => $item['weight'],
               );
             }
           }

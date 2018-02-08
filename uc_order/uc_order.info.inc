@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Entity Metadata hooks
+ * Entity Metadata hooks.
  */
 
 /**
@@ -119,6 +119,7 @@ function uc_order_entity_property_info() {
  * Metadata controller class for uc_order_product entities.
  */
 class UcOrderProductMetadataController extends EntityDefaultMetadataController {
+
   public function entityPropertyInfo() {
     $props = parent::entityPropertyInfo();
     // Copy the descriptions from the schema. Drupal discards this information, so we have to
@@ -142,4 +143,5 @@ class UcOrderProductMetadataController extends EntityDefaultMetadataController {
 
     return $props;
   }
+
 }
