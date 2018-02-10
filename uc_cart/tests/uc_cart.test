@@ -55,7 +55,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     return $order;
   }
 
-  public function testCartAPI() {
+  /**
+   * Tests cart API.
+   */
+  public function testCartApi() {
     // Test the empty cart.
     $items = uc_cart_get_contents();
     $this->assertEqual($items, array(), 'Cart is an empty array.');
@@ -99,7 +102,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     foreach ($items as $item) {
       uc_cart_remove_item($item->nid, NULL, $item->data);
     }
-    // @TODO: remove the need for this
+    // @todo Remove the need for this.
     uc_cart_get_contents(NULL, 'rebuild');
 
     $items = uc_cart_get_contents();
@@ -113,6 +116,9 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertEqual($items, array(), 'Cart is emptied correctly.');
   }
 
+  /**
+   * Tests basic cart functionality.
+   */
   public function testCart() {
     module_enable(array('uc_cart_entity_test'));
 
@@ -160,6 +166,9 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertText('hook_uc_cart_item_delete fired');
   }
 
+  /**
+   * Tests that anonymous cart is merged into authenticated cart upon login.
+   */
   public function testCartMerge() {
     // Add an item to the cart as an anonymous user.
     $this->drupalLogin($this->customer);
@@ -178,6 +187,9 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertFieldByName('items[0][qty]', 2, t('The product quantity is 2.'));
   }
 
+  /**
+   * Tests that cart automatically removes products that have been deleted.
+   */
   public function testDeletedCartItem() {
     // Add a product to the cart, then delete the node.
     $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
@@ -189,6 +201,9 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertEqual(uc_cart_get_total_qty(), 0, 'There are no items in the cart.');
   }
 
+  /**
+   * Tests Rule integration for uc_cart_maximum_product_qty reaction rule.
+   */
   public function testMaximumQuantityRule() {
     // Enable the example maximum quantity rule.
     $rule = rules_config_load('uc_cart_maximum_product_qty');
@@ -204,8 +219,12 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertFieldByName('items[0][qty]', 10);
   }
 
+  /**
+   * Tests the checkout process.
+   */
   public function testCheckout() {
-    // Allow customer to specify username and password, but don't log in after checkout.
+    // Allow customer to specify username and password,
+    // but don't log in after checkout.
     $settings = array(
       'uc_cart_new_account_name' => TRUE,
       'uc_cart_new_account_password' => TRUE,
@@ -285,7 +304,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->drupalLogout();
     $this->drupalLogin($new_user);
 
-    // Test again with an existing email address
+    // Test again with an existing email address.
     $this->drupalLogout();
     $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
     $this->checkout(array('panes[customer][primary_email]' => $this->customer->mail));
@@ -293,6 +312,9 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertRaw('order has been attached to the account we found');
   }
 
+  /**
+   * Tests generating a new account at checkout.
+   */
   public function testCheckoutNewUsername() {
     // Configure the checkout for this test.
     $this->drupalLogin($this->adminUser);
@@ -326,6 +348,9 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertText('A new account has been created');
   }
 
+  /**
+   * Tests blocked user checkout.
+   */
   public function testCheckoutBlockedUser() {
     // Block user after checkout.
     $settings = array(
@@ -347,6 +372,9 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertTrue(empty($mail), 'No unblocked user email found.');
   }
 
+  /**
+   * Tests logging in the customer after checkout.
+   */
   public function testCheckoutLogin() {
     // Log in after checkout.
     variable_set('uc_new_customer_login', TRUE);
@@ -371,6 +399,9 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertText('There are no products in your shopping cart.');
   }
 
+  /**
+   * Tests checkout complete functioning.
+   */
   public function testCheckoutComplete() {
     // Payment notification is received first.
     $order_data = array('primary_email' => 'simpletest@ubercart.org');
@@ -381,7 +412,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     // Check that a new account was created.
     $this->assertTrue(strpos($output['#message'], 'new account has been created') !== FALSE, 'Checkout message mentions new account.');
 
-    // 2 e-mails: new account, customer invoice
+    // 2 e-mails: new account, customer invoice.
     $mails = $this->drupalGetMails();
     $this->assertEqual(count($mails), 2, '2 e-mails were sent.');
     variable_del('drupal_test_email_collector');
@@ -397,7 +428,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $output = uc_cart_complete_sale($order, TRUE);
     uc_payment_enter($order->order_id, 'SimpleTest', $order->order_total);
 
-    // 2 e-mails: new account, customer invoice
+    // 2 e-mails: new account, customer invoice.
     $mails = $this->drupalGetMails();
     $this->assertEqual(count($mails), 2, '2 e-mails were sent.');
     variable_del('drupal_test_email_collector');
@@ -415,7 +446,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     // Check that no new account was created.
     $this->assertTrue(strpos($output['#message'], 'order has been attached to the account') !== FALSE, 'Checkout message mentions existing account.');
 
-    // 1 e-mail: customer invoice
+    // 1 e-mail: customer invoice.
     $mails = $this->drupalGetMails();
     $this->assertEqual(count($mails), 1, '1 e-mail was sent.');
     variable_del('drupal_test_email_collector');
@@ -445,7 +476,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $order = uc_order_load($order->order_id);
     $this->assertEqual($order->order_status, 'payment_received', 'Shippable order was set to payment received.');
 
-    // 3 e-mails: new account, customer invoice, role assignment
+    // 3 e-mails: new account, customer invoice, role assignment.
     $mails = $this->drupalGetMails();
     $this->assertEqual(count($mails), 3, '3 e-mails were sent.');
     variable_del('drupal_test_email_collector');
@@ -462,7 +493,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $order = uc_order_load($order->order_id);
     $this->assertEqual($order->order_status, 'completed', 'Non-shippable order was set to completed.');
 
-    // 2 e-mails: customer invoice, role assignment
+    // 2 e-mails: customer invoice, role assignment.
     $mails = $this->drupalGetMails();
     $this->assertEqual(count($mails), 2, '2 e-mails were sent.');
     variable_del('drupal_test_email_collector');
@@ -509,7 +540,8 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
 
     $order_id = db_query("SELECT order_id FROM {uc_orders} WHERE delivery_first_name = :name", array(':name' => $oldname))->fetchField();
     if ($order_id) {
-      // Go to a different page, then back to order - make sure order_id is the same.
+      // Go to a different page, then back to order to make sure
+      // order_id is the same.
       $this->drupalGet('<front>');
       $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
       $this->drupalPost('cart', array(), 'Checkout');
@@ -527,7 +559,8 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
         ->execute();
       $old_order = uc_order_load($order_id);
 
-      // Go to a different page, then back to order - verify that we are using a new order.
+      // Go to a different page, then back to order to verify that we are
+      // using a new order.
       $this->drupalGet('<front>');
       $this->drupalPost('cart', array(), 'Checkout');
       $this->assertNoRaw($oldname, 'Customer name was cleared after timeout.');
@@ -546,6 +579,9 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     }
   }
 
+  /**
+   * Tests functioning of customer information pane on checkout page.
+   */
   public function testCustomerInformationCheckoutPane() {
     // Log in as a customer and add an item to the cart.
     $this->drupalLogin($this->customer);
@@ -588,6 +624,9 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     );
   }
 
+  /**
+   * Tests add-to-cart redirection.
+   */
   public function testAddToCartRedirect() {
     $this->drupalLogin($this->adminUser);
     $this->drupalGet('admin/store/settings/cart');
@@ -625,6 +664,9 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     $this->assertTrue($this->getUrl() == $url, 'Add to cart no-redirect works with a query string.');
   }
 
+  /**
+   * Tests minimum subtotal for checkout.
+   */
   public function testMinimumSubtotal() {
     $this->drupalLogin($this->adminUser);
     $this->drupalGet('admin/store/settings/cart');
@@ -640,12 +682,12 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
       t('Save configuration')
     );
 
-    // Create two products, one below the minimum price, and one above the minimum price.
+    // Create two products, one below the minimum price and one above.
     $product_below_limit = $this->createProduct(array('sell_price' => $minimum_subtotal - 1));
     $product_above_limit = $this->createProduct(array('sell_price' => $minimum_subtotal + 1));
     $this->drupalLogout();
 
-    // Check to see if the lower priced product triggers the minimum price logic.
+    // Checks if the lower priced product triggers the minimum price logic.
     $this->drupalPost(
       'node/' . $product_below_limit->nid,
       array(),
@@ -660,7 +702,8 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
       t('Prevented checkout below the minimum order total.')
     );
 
-    // Add another product to the cart, and verify that we land on the checkout page.
+    // Add another product to the cart, and verify that we land on
+    // the checkout page.
     $this->drupalPost(
       'node/' . $product_above_limit->nid,
       array(),
@@ -693,6 +736,9 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     $this->assertText('There are no products in your shopping cart.');
   }
 
+  /**
+   * Tests that continue shopping link returns customer to the correct place.
+   */
   public function testContinueShopping() {
     // Continue shopping link should take you back to the product page.
     $this->drupalPost(
@@ -747,6 +793,9 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     );
   }
 
+  /**
+   * Tests the shopping cart page breadcrumb.
+   */
   public function testCartBreadcrumb() {
     $this->drupalLogin($this->adminUser);
     $this->drupalGet('admin/store/settings/cart');
@@ -801,6 +850,9 @@ class UbercartCheckoutSettingsTestCase extends UbercartTestHelper {
     );
   }
 
+  /**
+   * Tests enabling checkout functionality.
+   */
   public function testEnableCheckout() {
     $this->drupalLogin($this->adminUser);
     $this->drupalGet('admin/store/settings/checkout');
@@ -828,6 +880,9 @@ class UbercartCheckoutSettingsTestCase extends UbercartTestHelper {
     );
   }
 
+  /**
+   * Tests anonymous checkout functionality.
+   */
   public function testAnonymousCheckout() {
     $this->drupalLogin($this->adminUser);
     $this->drupalGet('admin/store/settings/checkout');
