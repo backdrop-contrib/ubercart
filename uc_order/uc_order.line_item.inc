@@ -128,7 +128,7 @@ function uc_order_line_item_add($order_id, $type, $title, $amount, $weight = NUL
  * Builds a list of line items defined in the enabled modules.
  */
 function _uc_line_item_list($action = NULL) {
-  static $items;
+  static $items = array();
 
   if (count($items) > 0 && $action !== 'rebuild') {
     return $items;
