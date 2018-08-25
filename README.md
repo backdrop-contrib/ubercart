@@ -48,7 +48,7 @@ Credits
 
 - Ported to Backdrop CMS by:
 	- Docwilmot (https://github.com/docwilmot/).
-	- Robert Garrigos (https://github.com/robertgarrigos/).
+	- Robert Garrigós (https://github.com/robertgarrigos/).
 - Originally written for Drupal by https://www.drupal.org/node/129292/committers.
 
 License
