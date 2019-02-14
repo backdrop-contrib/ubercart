@@ -142,7 +142,7 @@ function uc_quote_method_settings($form, &$form_state) {
       if (isset($operations['delete'])) {
         $operations['delete']['weight'] = 10;
       }
-      uasort($operations, 'backdrop_sort_weight');
+      backdrop_sort($operations, array('weight' => SORT_NUMERIC));
 
       $form['methods'][$id]['uc_quote_enabled'] = array(
         '#type' => 'checkbox',
