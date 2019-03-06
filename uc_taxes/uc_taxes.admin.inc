@@ -15,6 +15,7 @@ function uc_taxes_admin_settings() {
     ));
 
   $rows = array();
+  $options = array('query' => array('token' => backdrop_get_token('uc_taxes_clone')));
   foreach (uc_taxes_rate_load() as $rate_id => $rate) {
     $rows[] = array(
       check_plain($rate->name),
@@ -25,7 +26,7 @@ function uc_taxes_admin_settings() {
       $rate->weight,
       l(t('edit'), 'admin/store/settings/taxes/' . $rate_id . '/edit'),
       l(t('conditions'), 'admin/store/settings/taxes/manage/uc_taxes_' . $rate_id),
-      l(t('clone'), 'admin/store/settings/taxes/' . $rate_id . '/clone'),
+      l(t('clone'), 'admin/store/settings/taxes/' . $rate_id . '/clone', $options),
       l(t('delete'), 'admin/store/settings/taxes/' . $rate_id . '/delete'),
     );
   }
@@ -214,6 +215,10 @@ function uc_taxes_form_submit($form, &$form_state) {
  * Clones a tax rate.
  */
 function uc_taxes_clone($rate_id) {
+  if (!isset($_GET['token']) || !backdrop($_GET['token'], 'uc_taxes_clone')) {
+    return MENU_ACCESS_DENIED;
+  }
+
   // Load the source rate object.
   $rate = uc_taxes_rate_load($rate_id);
   $name = $rate->name;
