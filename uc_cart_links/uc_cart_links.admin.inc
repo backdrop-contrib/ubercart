@@ -63,13 +63,13 @@ function uc_cart_links_settings_form_validate($form, &$form_state) {
     foreach ($data as $message) {
       // Ignore blank lines.
       if (preg_match('/^\s*$/', $message)) {
-         continue;
+        continue;
       }
       // Check for properly formattted messages.
       // Each line must be one or more numeric characters for the key followed
       // by "|" followed by one or more characters for the value. Both the key
       // and the value may have leading and/or trailing whitespace.
-      else if (!preg_match('/^\s*[1-9][0-9]*\s*\|\s*\S+.*$/', $message)) {
+      elseif (!preg_match('/^\s*[1-9][0-9]*\s*\|\s*\S+.*$/', $message)) {
         form_set_error('uc_cart_links_messages', t('Invalid Cart Links message "%message". Messages must be a numeric key followed by "|" followed by a value.', array('%message' => $message)));
         break;
       }

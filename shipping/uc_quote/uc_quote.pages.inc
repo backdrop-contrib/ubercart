@@ -22,7 +22,7 @@ function uc_quote_assemble_quotes($order) {
 
   $shipping_types = array();
   foreach ($products as $product) {
-    $shipping_types[] =  uc_product_get_shipping_type($product);
+    $shipping_types[] = uc_product_get_shipping_type($product);
   }
 
   $shipping_types = array_unique($shipping_types);
@@ -83,7 +83,7 @@ function uc_quote_action_get_quote($order, $method) {
     }
   }
   ob_start();
-  // Load include file containing quote callback, if there is one
+  // Load include file containing quote callback, if there is one.
   if (isset($method['quote']['file'])) {
     $inc_file = drupal_get_path('module', $method['module']) . '/' . $method['quote']['file'];
     if (is_file($inc_file)) {

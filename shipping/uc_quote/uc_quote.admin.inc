@@ -75,7 +75,7 @@ function uc_quote_admin_settings($form, &$form_state) {
   );
 
   $form['actions'] = array('#type' => 'actions');
-  $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
+  $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration'));
   return $form;
 }
 
@@ -200,7 +200,7 @@ function uc_quote_method_settings($form, &$form_state) {
   );
 
   $form['actions'] = array('#type' => 'actions');
-  $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
+  $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration'));
 
   return $form;
 }
@@ -216,7 +216,7 @@ function theme_uc_quote_method_settings($variables) {
 
   drupal_add_tabledrag('uc-quote-methods', 'order', 'sibling', 'uc-quote-method-weight');
 
-  $header = array(t('Shipping method'), t('Details'),  array('data' => t('List position'), 'sort' => 'asc'), t('Operations'));
+  $header = array(t('Shipping method'), t('Details'), array('data' => t('List position'), 'sort' => 'asc'), t('Operations'));
   $rows = array();
   foreach (element_children($form['methods']) as $method) {
     $row = array(

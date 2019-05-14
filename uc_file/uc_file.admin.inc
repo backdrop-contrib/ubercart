@@ -22,10 +22,10 @@ define('UC_FILE_FORM_ACTION', 1   );
 function uc_file_admin_files_form($form, &$form_state) {
 
   if (isset($form_state['storage']['step']) && $form_state['storage']['step'] == UC_FILE_FORM_ACTION) {
-      return array(
-        '#validate' => array('uc_file_admin_files_form_action_validate'),
-        '#submit'   => array('uc_file_admin_files_form_action_submit'),
-      ) + $form + uc_file_admin_files_form_action($form, $form_state);
+    return array(
+      '#validate' => array('uc_file_admin_files_form_action_validate'),
+      '#submit'   => array('uc_file_admin_files_form_action_submit'),
+    ) + $form + uc_file_admin_files_form_action($form, $form_state);
   }
   else {
     // Refresh our file list before display.
@@ -393,7 +393,6 @@ function uc_file_admin_files_form_action_validate($form, &$form_state) {
       break;
 
     default:
-
       // This action isn't handled by us, so check if any
       // hook_uc_file_action('validate', $args) are implemented.
       foreach (module_implements('uc_file_action') as $module) {
