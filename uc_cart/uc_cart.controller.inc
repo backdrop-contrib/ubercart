@@ -4,7 +4,7 @@
  *
  * Contains the controller for uc_cart_item entities.
  */
-class UcCartItemController extends EMWController {
+class UcCartItemController extends EntityPlusController {
 
   /**
    * Overrides EntityDatabaseStorageController::attachLoad().

@@ -62,7 +62,7 @@ class UcOrderController extends EntityDatabaseStorageController {
 /**
  * Controller class for the uc_order_product entity.
  */
-class UcOrderProductController extends EMWController {
+class UcOrderProductController extends EntityPlusController {
 
   /**
    * Overrides EntityDatabaseStorageController::buildContent().
