@@ -181,9 +181,7 @@ class UcAddress {
   }
 
   /**
-   * PHP magic method to use in relation with var_export().
-   *
-   * Created for strongarm compatibility.
+   * PHP magic method to use in relation with addresses loaded from config.
    *
    * @param array $data
    *   Data to import

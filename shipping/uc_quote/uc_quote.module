@@ -430,8 +430,8 @@ function uc_quote_get_shipping_type($id_type, $id) {
 function uc_product_get_shipping_type($product) {
   $shipping_type = config_get('uc_store.settings', 'uc_store_shipping_type');
   if (isset($product->nid) &&
-    uc_quote_get_shipping_type('product', $product->nid) != '') {
-      $shipping_type = uc_quote_get_shipping_type('product', $product->nid);
+    $type = uc_quote_get_shipping_type('product', $product->nid)) {
+      $shipping_type = $type;
   }
   return $shipping_type;
 }
@@ -450,7 +450,9 @@ function uc_quote_get_default_shipping_address($nid) {
   $address = db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid = :nid", array(':nid' => $nid))->fetchObject('UcAddress');
 
   if (empty($address)) {
-    $address = config_get('uc_quote.settings', 'uc_quote_store_default_address');
+    $address_array = config_get('uc_quote.settings', 'uc_quote_store_default_address');
+    $address = new UcAddress;
+    $address->__set_state($address_array);
   }
 
   return $address;
