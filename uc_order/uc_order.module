@@ -1481,6 +1481,7 @@ function uc_order_load_line_items_display($order) {
     }
   }
   foreach ($line_items as &$item) {
+    $item['title'] = check_plain($item['title']);
     $item['formatted_amount'] = uc_currency_format($item['amount']);
   }
 
@@ -1776,6 +1777,8 @@ function template_preprocess_uc_order(&$variables) {
   $variables['products'] = $order->products;
   $display = uc_order_product_view_multiple($order->products);
   foreach ($variables['products'] as &$product) {
+    $product->title = check_plain($product->title);
+    $product->model = check_plain($product->model);
     $product->total_price = render($display['uc_order_product'][$product->order_product_id]['total']);
     if ($product->qty > 1) {
       $product->individual_price = t('(!price each)', array('!price' => uc_currency_format($display['uc_order_product'][$product->order_product_id]['price']['#price'])));
