@@ -296,16 +296,31 @@ function uc_file_admin_files_form_action($form, &$form_state) {
       break;
 
     case 'uc_file_upload':
+      // Calculate the maximum size of uploaded files in bytes.
+      $post_max_size = ini_get('post_max_size');
+      // Handle the case where 'post_max_size' has no suffix.
+      if (is_numeric($post_max_size)) {
+        // An explicit cast is needed, because floats are not allowed.
+        $max_bytes = (int) $post_max_size;
+      }
+      else {
+        // Handle the case where 'post_max_size' has a suffix of
+        // 'M', 'K', or 'G' (case insensitive).
+        $max_bytes = (int) substr($post_max_size, 0, -1);
+        $suffix = strtolower(substr($post_max_size, -1));
+        switch ($suffix) {
+          case 'k':
+            $max_bytes *= 1024;
+            break;
 
-      // Calculate the max size of uploaded files, in bytes.
-      $max_bytes = trim(ini_get('post_max_size'));
-      switch (strtolower($max_bytes{strlen($max_bytes) -1})) {
-        case 'g':
-          $max_bytes *= 1024;
-        case 'm':
-          $max_bytes *= 1024;
-        case 'k':
-          $max_bytes *= 1024;
+          case 'm':
+            $max_bytes *= 1048576;
+            break;
+
+          case 'g':
+            $max_bytes *= 1073741824;
+            break;
+        }
       }
 
       // Gather list of directories under the selected one(s).
