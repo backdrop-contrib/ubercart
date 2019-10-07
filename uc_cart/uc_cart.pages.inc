@@ -94,7 +94,7 @@ function uc_cart_checkout() {
   // Send anonymous users to login page when anonymous checkout is disabled.
   if (!$user->uid && !config_get('uc_cart.settings', 'uc_checkout_anonymous')) {
     backdrop_set_message(t('You must login before you can proceed to checkout.'));
-    if (config_get('system.performance', 'user_register') != 0) {
+    if (config_get('system.core', 'user_register') != 0) {
       backdrop_set_message(t('If you do not have an account yet, you should <a href="!url">register now</a>.', array('!url' => url('user/register', array('query' => backdrop_get_destination())))));
     }
     backdrop_goto('user', array('query' => backdrop_get_destination()));
@@ -300,10 +300,12 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
     // from being created.
     '#limit_validation_errors' => array(),
     '#submit' => array('uc_cart_checkout_form_cancel'),
+    '#weight' => 5,
   );
   $form['actions']['continue'] = array(
     '#type' => 'submit',
     '#value' => t('Review order'),
+    '#weight' => 1,
   );
 
   form_load_include($form_state, 'inc', 'uc_store', 'includes/uc_ajax_attach');
@@ -528,10 +530,12 @@ function uc_cart_checkout_review_form($form, &$form_state, $order) {
     '#type' => 'submit',
     '#value' => t('Back'),
     '#submit' => array('uc_cart_checkout_review_form_back'),
+    '#weight' => 5,
   );
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit order'),
+    '#weight' => 1,
   );
 
   return $form;

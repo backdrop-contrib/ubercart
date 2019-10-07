@@ -221,6 +221,7 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
       break;
 
     case 'settings':
+      $form['#config'] = 'uc_payment_pack.settings';
       $form['uc_cod_policy'] = array(
         '#type' => 'textarea',
         '#title' => t('Policy message'),
@@ -291,7 +292,7 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
         );
       }
       else {
-        $config = config('uc_paymnet_pack.settings');
+        $config = config('uc_payment_pack.settings');
         $build['address'] = array(
           '#markup' => uc_address_format(
             $config->get('uc_check_mailing_name'),
@@ -333,7 +334,7 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
         );
       }
       else {
-        $config = config('uc_paymnet_pack.settings');
+        $config = config('uc_payment_pack.settings');
         $review[] = array(
           'title' => t('Mail to'),
           'data' => uc_address_format(
@@ -373,7 +374,8 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
       return $build;
 
     case 'settings':
-      $config = config('uc_paymnet_pack.settings');
+      $config = config('uc_payment_pack.settings');
+      $form['#config'] = 'uc_payment_pack.settings';
       $form['check_address_info'] = array(
         '#markup' => '<div>' . t('Set the mailing address to display to customers who choose this payment method during checkout.') . '</div>',
       );
@@ -392,7 +394,6 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
         '#required' => FALSE,
         '#key_prefix' => 'uc_check_mailing',
       );
-      // TODO This variable was probably removed in Backdrop without replacement.
       $form['uc_check_policy'] = array(
         '#type' => 'textarea',
         '#title' => t('Check payment policy', array(), array('context' => 'cheque')),
@@ -400,6 +401,7 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
         '#default_value' => $config->get('uc_check_policy'),
         '#rows' => 3,
       );
+
       return $form;
   }
 }
@@ -409,7 +411,10 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
  */
 function uc_payment_pack_config_info() {
   $prefixes['uc_payment_pack.settings'] = array(
-    'label' => t('Payment pack settings'),
+    'label' => t('Ubercart payment pack settings'),
     'group' => t('Configuration'),
   );
+
+  return $prefixes;
 }
+

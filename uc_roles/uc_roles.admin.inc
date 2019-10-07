@@ -13,7 +13,7 @@ function _uc_roles_expiration_header() {
     array('data' => t('Username'), 'field' => 'u.name'),
     array(
       'data' => t('Role'),
-      'field' => 'e.rid',
+      'field' => 'e.role',
     ),
     array(
       'data' => t('Expiration date'),
@@ -49,15 +49,15 @@ function uc_roles_expiration($form, &$form_state) {
   foreach ($result as $row) {
     $account = user_load($row->uid);
     $name = check_plain(user_format_name($account));
-    $form['name'][$row->uid . ' ' . $row->rid] = array(
+    $form['name'][$row->uid . ' ' . $row->role] = array(
       '#theme' => 'username',
       '#account' => $account,
       '#name' => $name,
     );
-    $form['role'][$row->uid . ' ' . $row->rid] = array('#markup' => check_plain(_uc_roles_get_name($row->rid)));
-    $form['expiration'][$row->uid . ' ' . $row->rid] = array('#markup' => format_date($row->expiration, 'short'));
-    $form['edit'][$row->uid . ' ' . $row->rid] = array('#markup' => l(t('edit'), 'user/' . $row->uid . '/edit', array('fragment' => 'role-expiration-' . $row->rid, 'query' => array('destination' => 'admin/people/expiration'))));
-    $form['delete'][$row->uid . ' ' . $row->rid] = array('#markup' => l(t('delete'), 'admin/people/expiration/delete/' . $row->uid . '/' . $row->rid));
+    $form['role'][$row->uid . ' ' . $row->role] = array('#markup' => check_plain(_uc_roles_get_name($row->role)));
+    $form['expiration'][$row->uid . ' ' . $row->role] = array('#markup' => format_date($row->expiration, 'short'));
+    $form['edit'][$row->uid . ' ' . $row->role] = array('#markup' => l(t('edit'), 'user/' . $row->uid . '/edit', array('fragment' => 'role-expiration-' . $row->role, 'query' => array('destination' => 'admin/people/expiration'))));
+    $form['delete'][$row->uid . ' ' . $row->role] = array('#markup' => l(t('delete'), 'admin/people/expiration/delete/' . $row->uid . '/' . $row->role));
   }
 
   return $form;
@@ -107,11 +107,11 @@ function theme_uc_roles_expiration($variables) {
  * @see uc_roles_deletion_form_submit()
  * @ingroup forms
  */
-function uc_roles_deletion_form($form, &$form_state, $account, $rid) {
-  $expiration = db_query("SELECT expiration FROM {uc_roles_expirations} WHERE uid = :uid AND rid = :rid", array(':uid' => $account->uid, ':rid' => $rid))->fetchField();
+function uc_roles_deletion_form($form, &$form_state, $account, $role) {
+  $expiration = db_query("SELECT expiration FROM {uc_roles_expirations} WHERE uid = :uid AND role = :role", array(':uid' => $account->uid, ':role' => $role))->fetchField();
   if ($expiration) {
 
-    $role_name = _uc_roles_get_name($rid);
+    $role_name = _uc_roles_get_name($role);
 
     $form['user'] = array(
       '#type' => 'value',
@@ -125,9 +125,9 @@ function uc_roles_deletion_form($form, &$form_state, $account, $rid) {
       '#type' => 'value',
       '#value' => $role_name,
     );
-    $form['rid'] = array(
+    $form['role'] = array(
       '#type' => 'value',
-      '#value' => $rid,
+      '#value' => $role,
     );
 
     $form = confirm_form(
@@ -168,7 +168,7 @@ function uc_roles_deletion_form($form, &$form_state, $account, $rid) {
  * @see uc_roles_deletion_form()
  */
 function uc_roles_deletion_form_submit($form, &$form_state) {
-  uc_roles_delete(user_load($form_state['values']['uid']), $form_state['values']['rid']);
+  uc_roles_delete(user_load($form_state['values']['uid']), $form_state['values']['role']);
 
   backdrop_goto('admin/people/expiration');
 }

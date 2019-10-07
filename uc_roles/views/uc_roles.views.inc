@@ -35,20 +35,20 @@ function uc_roles_views_data() {
   );
 
   // Expose the role id from uc_roles_expirations.
-  $data['uc_roles_expirations']['rid'] = array(
+  $data['uc_roles_expirations']['role'] = array(
     'title' => t('Ubercart Role expiration role'),
     'help' => t('The Role that corresponds with the Role expiration date/time'),
-    // Information for displaying the rid
+    // Information for displaying the role
     'field' => array(
       'handler' => 'uc_roles_handler_field_rid',
       'click sortable' => TRUE,
     ),
-    // Information for accepting a rid as an argument.
+    // Information for accepting a role as an argument.
     'argument' => array(
       'handler' => 'views_handler_argument_users_roles_rid',
       'name field' => 'title', // The field to display in the summary.
       'numeric' => TRUE,
-      'validate type' => 'rid',
+      'validate type' => 'role',
     ),
     // Information for accepting a uid as a filter.
     'filter' => array(

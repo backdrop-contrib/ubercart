@@ -5,31 +5,31 @@
 
 (function ($) {
 
-Drupal.behaviors.ucCartAdminFieldsetSummaries = {
+Backdrop.behaviors.ucCartAdminFieldsetSummaries = {
   attach: function (context) {
-    $('fieldset#edit-lifetime', context).drupalSetSummary(function(context) {
-      return Drupal.t('Anonymous users') + ': '
+    $('fieldset#edit-lifetime', context).backdropSetSummary(function(context) {
+      return Backdrop.t('Anonymous users') + ': '
         + $('#edit-uc-cart-anon-duration', context).val() + ' '
         + $('#edit-uc-cart-anon-unit', context).val() + '<br />'
-        + Drupal.t('Authenticated users') + ': '
+        + Backdrop.t('Authenticated users') + ': '
         + $('#edit-uc-cart-auth-duration', context).val() + ' '
         + $('#edit-uc-cart-auth-unit', context).val();
     });
 
-    $('fieldset#edit-checkout', context).drupalSetSummary(function(context) {
+    $('fieldset#edit-checkout', context).backdropSetSummary(function(context) {
       if ($('#edit-uc-checkout-enabled').is(':checked')) {
-        return Drupal.t('Checkout is enabled.');
+        return Backdrop.t('Checkout is enabled.');
       }
       else {
-        return Drupal.t('Checkout is disabled.');
+        return Backdrop.t('Checkout is disabled.');
       }
     });
-    $('fieldset#edit-anonymous', context).drupalSetSummary(function(context) {
+    $('fieldset#edit-anonymous', context).backdropSetSummary(function(context) {
       if ($('#edit-uc-checkout-anonymous').is(':checked')) {
-        return Drupal.t('Anonymous checkout is enabled.');
+        return Backdrop.t('Anonymous checkout is enabled.');
       }
       else {
-        return Drupal.t('Anonymous checkout is disabled.');
+        return Backdrop.t('Anonymous checkout is disabled.');
       }
     });
   }

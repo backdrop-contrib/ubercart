@@ -62,7 +62,7 @@ class UcOrderController extends EntityDatabaseStorageController {
 /**
  * Controller class for the uc_order_product entity.
  */
-class UcOrderProductController extends EMWController {
+class UcOrderProductController extends EntityPlusController {
 
   /**
    * Overrides EntityDatabaseStorageController::buildContent().
@@ -127,86 +127,4 @@ class UcOrderProductController extends EMWController {
     }
     return parent::save($product);
   }
-}
-
-/**
- * UcOrderEntity extends Entity.
- *
- * A subclass of Entity is a requirement for creating a custom entity. It is
- * also a minimum requirement to define the methods included here, even as 
- * empty functions.
- */
-class UcOrderEntity extends Entity {
-  /**
-   * Implements EntityInterface::id().
-   */
-  public function id() {}
-  /**
-   * Implements EntityInterface::entityType().
-   */
-  public function entityType() {}
-  /**
-   * Implements EntityInterface::bundle().
-   */
-  public function bundle() {}
-  /**
-   * Implements EntityInterface::label().
-   */
-  public function label() {}
-  /**
-   * Implements EntityInterface::uri().
-   */
-  public function uri() {}
-}
-
-/**
- * UcOrderProduct extends Entity.
- *
- * A subclass of Entity is a requirement for creating a custom entity. It is
- * also a minimum requirement to define the methods included here, even as 
- * empty functions.
- */
-class UcOrderProduct extends Entity {
-
-  /**
-   * The node ID.
-   *
-   * @var integer
-   */
-  public $order_product_id;
-
-  /**
-   * The node ID.
-   *
-   * @var integer
-   */
-  public $title;
-  /**
-   * Implements EntityInterface::id().
-   */
-  public function id() {
-    return isset($this->order_product_id ) ? $this->order_product_id  : NULL;
-  }
-  /**
-   * Implements EntityInterface::entityType().
-   */
-  public function entityType() {
-    return 'uc_order_product';
-  }
-  /**
-   * Implements EntityInterface::bundle().
-   */
-  public function bundle() {
-    // return $this->type;
-  }
-  /**
-   * Implements EntityInterface::label().
-   */
-  public function label() {
-    return $this->title;
-  }
-  /**
-   * Implements EntityInterface::uri().
-   */
-  public function uri() {}
 }

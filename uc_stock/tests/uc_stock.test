@@ -16,15 +16,15 @@ class UbercartStockTestCase extends UbercartTestHelper {
   }
 
   /**
-   * Overrides DrupalWebTestCase::setUp().
+   * Overrides BackdropWebTestCase::setUp().
    */
   protected function setUp($modules = array(), $permissions = array()) {
     parent::setUp(array('uc_stock'), array('administer product stock'));
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
   }
 
   public function testProductStock() {
-    $this->drupalGet('node/' . $this->product->nid . '/edit/stock');
+    $this->backdropGet('node/' . $this->product->nid . '/edit/stock');
     $this->assertText($this->product->title);
     $this->assertText($this->product->model, 'Product SKU found.');
 
@@ -38,14 +38,14 @@ class UbercartStockTestCase extends UbercartTestHelper {
       'stock[0][stock]' => $stock,
       'stock[0][threshold]' => rand(1, 100),
     );
-    $this->drupalPost(NULL, $edit, t('Save changes'));
+    $this->backdropPost(NULL, $edit, t('Save changes'));
     $this->assertText('Stock settings saved.');
     $this->assertTrue(uc_stock_is_active($this->product->model));
     $this->assertEqual($stock, uc_stock_level($this->product->model));
 
     $stock = rand(1, 1000);
     uc_stock_set($this->product->model, $stock);
-    $this->drupalGet('node/' . $this->product->nid . '/edit/stock');
+    $this->backdropGet('node/' . $this->product->nid . '/edit/stock');
     $this->assertFieldByName('stock[0][stock]', (string)$stock, 'Set stock level found.');
   }
 
@@ -55,15 +55,15 @@ class UbercartStockTestCase extends UbercartTestHelper {
       'stock[0][active]' => 1,
       'stock[0][stock]' => $stock,
     );
-    $this->drupalPost('node/' . $this->product->nid . '/edit/stock', $edit, t('Save changes'));
+    $this->backdropPost('node/' . $this->product->nid . '/edit/stock', $edit, t('Save changes'));
     $this->assertText('Stock settings saved.');
 
     // Enable product quantity field.
-    variable_set('uc_product_add_to_cart_qty', TRUE);
+    config_set('uc_product.settings', 'uc_product_add_to_cart_qty', TRUE);
 
     $qty = rand(1, 100);
     $edit = array('qty' => $qty);
-    $this->drupalPost('node/' . $this->product->nid, $edit, t('Add to cart'));
+    $this->backdropPost('node/' . $this->product->nid, $edit, t('Add to cart'));
 
     $this->checkout();
 
@@ -72,7 +72,7 @@ class UbercartStockTestCase extends UbercartTestHelper {
 
   public function testStockThresholdMail() {
     $edit = array('uc_stock_threshold_notification' => 1);
-    $this->drupalPost('admin/store/settings/stock', $edit, 'Save configuration');
+    $this->backdropPost('admin/store/settings/stock', $edit, 'Save configuration');
 
     $qty = rand(10, 100);
     $edit = array(
@@ -80,12 +80,12 @@ class UbercartStockTestCase extends UbercartTestHelper {
       'stock[0][stock]' => $qty + 1,
       'stock[0][threshold]' => $qty,
     );
-    $this->drupalPost('node/' . $this->product->nid . '/edit/stock', $edit, 'Save changes');
+    $this->backdropPost('node/' . $this->product->nid . '/edit/stock', $edit, 'Save changes');
 
-    $this->drupalPost('node/' . $this->product->nid, array(), 'Add to cart');
+    $this->backdropPost('node/' . $this->product->nid, array(), 'Add to cart');
     $this->checkout();
 
-    $mail = $this->drupalGetMails(array('id' => 'uc_stock_threshold'));
+    $mail = $this->backdropGetMails(array('id' => 'uc_stock_threshold'));
     $mail = array_pop($mail);
     $this->assertTrue(strpos($mail['subject'], 'Stock threshold limit reached') !== FALSE, 'Threshold mail subject is correct.');
     $this->assertTrue(strpos($mail['body'], $this->product->title) !== FALSE, 'Mail body contains product title.');

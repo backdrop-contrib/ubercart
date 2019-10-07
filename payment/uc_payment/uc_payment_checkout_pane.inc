@@ -9,7 +9,7 @@
  */
 
 function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NULL) {
-  $config = config('uc_cart.settings');
+  $config = config('uc_payment.settings');
   switch ($op) {
     case 'view':
       $contents['#attached']['css'][] = backdrop_get_path('module', 'uc_payment') . '/uc_payment.css';

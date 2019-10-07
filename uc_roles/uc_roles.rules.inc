@@ -34,7 +34,7 @@ function uc_roles_rules_data_info() {
         'getter callback' => 'uc_roles_get_expiration_properties',
         'setter callback' => 'uc_roles_set_expiration_properties',
       ),
-      'rid' => array(
+      'role' => array(
         'type' => 'integer',
         'label' => t('Role ID'),
         'description' => t('The granted role.'),
@@ -329,7 +329,7 @@ function uc_roles_action_user_email($account, $role_expiration, $from, $addresse
  */
 function uc_roles_action_order_renew($order, $message) {
   // Load the order's user and exit if not available.
-  if (!($account = user_load($order->uid))) {
+  if (!($account = user_load($order->uid, TRUE))) {
     return;
   }
 
@@ -344,7 +344,7 @@ function uc_roles_action_order_renew($order, $message) {
         continue;
       }
 
-      $existing_role = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid AND rid = :rid", array(':uid' => $account->uid, ':rid' => $role->rid))->fetchObject();
+      $existing_role = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid AND role = :role", array(':uid' => $account->uid, ':role' => $role->role))->fetchObject();
 
       // Determine the expiration timestamp for the role.
       $expiration = _uc_roles_product_get_expiration($role, $product->qty, isset($existing_role->expiration) ? $existing_role->expiration : NULL);
@@ -352,25 +352,25 @@ function uc_roles_action_order_renew($order, $message) {
       // Leave an order comment.
       if (isset($existing_role->expiration)) {
         $op = 'renew';
-        $comment = t('Customer user role %role renewed.', array('%role' => _uc_roles_get_name($role->rid)));
+        $comment = t('Customer user role %role renewed.', array('%role' => _uc_roles_get_name($role->role)));
 
         // Renew the user's role.
-        uc_roles_renew($account, $role->rid, $expiration, !$message);
+        uc_roles_renew($account, $role->role, $expiration, !$message);
       }
       else {
         $op = 'grant';
-        $comment = t('Customer granted user role %role.', array('%role' => _uc_roles_get_name($role->rid)));
+        $comment = t('Customer granted user role %role.', array('%role' => _uc_roles_get_name($role->role)));
 
         // Grant the role to the user.
-        uc_roles_grant($account, $role->rid, $expiration, TRUE, !$message);
+        uc_roles_grant($account, $role->role, $expiration, TRUE, !$message);
       }
 
       // Get the new expiration (if applicable)
-      $new_expiration = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid AND rid = :rid", array(':uid' => $account->uid, ':rid' => $role->rid))->fetchObject();
+      $new_expiration = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid AND role = :role", array(':uid' => $account->uid, ':role' => $role->role))->fetchObject();
       if (!$new_expiration) {
         $new_expiration = new stdClass();
         $new_expiration->uid = $account->uid;
-        $new_expiration->rid = $role->rid;
+        $new_expiration->role = $role->role;
         $new_expiration->expiration = NULL;
       }
 

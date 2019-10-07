@@ -37,7 +37,7 @@ function uc_roles_token_info() {
 function uc_roles_tokens($type, $tokens, $data = array(), $options = array()) {
   $language_code = NULL;
   if (isset($options['language'])) {
-    $language_code = $options['language']->language;
+    $language_code = $options['language']->langcode;
   }
   $sanitize = !empty($options['sanitize']);
 
@@ -52,7 +52,7 @@ function uc_roles_tokens($type, $tokens, $data = array(), $options = array()) {
           $replacements[$original] = format_date($object->expiration, 'medium');
           break;
         case 'name':
-          $replacements[$original] = $sanitize ? check_plain(_uc_roles_get_name($object->rid)) : _uc_roles_get_name($object->rid);
+          $replacements[$original] = $sanitize ? check_plain(_uc_roles_get_name($object->role)) : _uc_roles_get_name($object->role);
           break;
       }
     }

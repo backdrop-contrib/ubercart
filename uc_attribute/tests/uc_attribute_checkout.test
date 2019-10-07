@@ -5,6 +5,8 @@
  * Ubercart attribute checkout tests.
  */
 
+require_once(__DIR__ . '/uc_attribute.test');
+
 class UbercartAttributeCheckoutTestCase extends UbercartTestHelper {
 
   public static function getInfo() {
@@ -16,11 +18,11 @@ class UbercartAttributeCheckoutTestCase extends UbercartTestHelper {
   }
 
   /**
-   * Overrides DrupalWebTestCase::setUp().
+   * Overrides BackdropWebTestCase::setUp().
    */
   protected function setUp($modules = array(), $permissions = array()) {
     parent::setUp(array('uc_attribute', 'uc_cart'), array('administer attributes', 'administer product attributes', 'administer product options'));
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
   }
 
   /**
@@ -59,7 +61,7 @@ class UbercartAttributeCheckoutTestCase extends UbercartTestHelper {
         $edit = array("attributes[$attribute->aid]" => $option->name);
       }
 
-      $this->drupalPost('node/' . $product->nid, $edit, t('Add to cart'));
+      $this->backdropPost('node/' . $product->nid, $edit, t('Add to cart'));
       $this->assertText("$attribute->label: $option->name", t('Option selected on cart item.'));
       $this->assertText(uc_currency_format($product->sell_price + $option->price), t('Product has adjusted price.'));
     }

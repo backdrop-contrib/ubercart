@@ -20,7 +20,7 @@
  * the uc_file module will check for implementations of this hook.
  *
  * @param $user
- *   The drupal user object that has requested the download
+ *   The backdrop user object that has requested the download
  * @param $file_download
  *   The file download object as defined as a row from the uc_file_users table
  *   that grants the user the download
@@ -28,12 +28,12 @@
  * @return
  *   TRUE or FALSE depending on whether the user is to be permitted download of
  *   the requested files. When a implementation returns FALSE it should set an
- *   error message in Drupal using drupal_set_message() to inform customers of
+ *   error message in Backdrop using backdrop_set_message() to inform customers of
  *   what is going on.
  */
 function hook_uc_download_authorize($user, $file_download) {
   if (!$user->status) {
-    drupal_set_message(t("This account has been banned and can't download files anymore."), 'error');
+    backdrop_set_message(t("This account has been banned and can't download files anymore."), 'error');
     return FALSE;
   }
   else {
@@ -111,8 +111,8 @@ function hook_uc_download_authorize($user, $file_download) {
  *     unique strings that defines the actions to perform. The values are the
  *     text to be displayed in the file action select box.
  *   - insert: None.
- *   - form: This op should return an array of drupal form elements as defined
- *     by the drupal form API.
+ *   - form: This op should return an array of backdrop form elements as defined
+ *     by the backdrop form API.
  *   - upload: None.
  *   - upload_validate: None.
  *   - validate: None.

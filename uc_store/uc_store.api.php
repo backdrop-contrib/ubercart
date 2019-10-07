@@ -36,11 +36,11 @@ function hook_tapir_table_alter(&$table, $table_id) {
 }
 
 /**
- * Allows modules to modify forms before Drupal invokes hook_form_alter().
+ * Allows modules to modify forms before Backdrop invokes hook_form_alter().
  *
  * This hook will normally be used by core modules so any form modifications
  * they make can be further modified by contrib modules using a normal
- * hook_form_alter(). At this point, drupal_prepare_form() has not been called,
+ * hook_form_alter(). At this point, backdrop_prepare_form() has not been called,
  * so none of the automatic form data (e.g.: #parameters, #build_id, etc.) has
  * been added yet.
  *

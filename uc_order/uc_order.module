@@ -14,18 +14,6 @@ require_once dirname(__FILE__) . '/uc_order.order_pane.inc';
 require_once dirname(__FILE__) . '/uc_order.line_item.inc';
 
 /**
- * Implements hook_help().
- */
-function uc_order_help($path, $arg) {
-  switch ($path) {
-    case 'admin/store/settings/orders/products/fields':
-      return '<p>' . t('Attach fields to order product entities.  These entities represent the product line items that appear in orders.  Fields attached here are not visible in the current version of Ubercart, but they are available in Views.  A ')
-        . l(t('Computed Field'), 'http://drupal.org/project/computed_field')
-        . t(' is useful for attaching custom data to each product as it is ordered.') . '</p>';
-  }
-}
-
-/**
  * Implements hook_menu().
  */
 function uc_order_menu() {
@@ -443,7 +431,7 @@ function uc_order_entity_info() {
   return array(
     'uc_order' => array(
       'label' => t('Order'),
-      'entity class' => 'UcOrderEntity',
+      'entity class' => 'UcOrder',
       'controller class' => 'UcOrderController',
       'base table' => 'uc_orders',
       'fieldable' => TRUE,
@@ -555,7 +543,7 @@ function uc_order_user_view($account, $view_mode) {
  * Implements hook_mail().
  */
 function uc_order_mail($key, &$message, $params) {
-  $langcode = isset($message['language']) ? $message['language']->language : NULL;
+  $langcode = isset($message['language']) ? $message['language']->langcode : NULL;
 
   // Build the appropriate message parameters based on the e-mail key.
   switch ($key) {
@@ -609,10 +597,6 @@ function uc_order_views_api() {
 function uc_order_form_views_exposed_form_alter(&$form, &$form_state) {
   if (substr($form['#id'], 0, 29) == 'views-exposed-form-uc-orders-') {
     $form['#submit'][] = 'uc_order_form_views_exposed_form_submit';
-
-    if ($form['#id'] == 'views-exposed-form-uc-orders-search' && !module_exists('date_views')) {
-      backdrop_set_message(t('Download the <a href="@url">Date module</a> and enable Date Views to allow searching orders by date.', array('@url' => 'http://drupal.org/project/date')), 'warning');
-    }
   }
 }
 
@@ -631,9 +615,24 @@ function uc_order_form_views_exposed_form_submit($form, &$form_state) {
  */
 function uc_order_config_info() {
   $prefixes['uc_order.settings'] = array(
-    'label' => t('Module name settings'),
+    'label' => t('Ubercart order settings'),
     'group' => t('Configuration'),
   );
+  $prefixes['views.view.uc_customers'] = array(
+    'label' => t('Ubercart customers view'),
+    'group' => t('Views'),
+  );
+  $prefixes['views.view.uc_orders'] = array(
+    'label' => t('Ubercart orders view'),
+    'group' => t('Views'),
+  );
+  $prefixes['views.view.uc_orders_user'] = array(
+    'label' => t('Ubercart user orders view'),
+    'group' => t('Views'),
+  );
+
+  return $prefixes;
+
 }
 
 /**
@@ -1042,7 +1041,7 @@ function uc_order_product_save($order_id, $product) {
   if (!isset($product->order_product_id)) {
     $product->is_new = TRUE;
   }
-  //eturn entity_save('uc_order_product', $product);
+
   return entity_get_controller('uc_order_product')->save($product);
 }
 
@@ -1139,7 +1138,7 @@ function uc_order_product_load_multiple($opids = array(), $reset = FALSE) {
  *   is no information on how to view an entity, FALSE is returned.
  */
 function uc_order_product_view_multiple($order_products, $view_mode = 'full', $langcode = NULL, $page = NULL) {
-  return entity_view('uc_order_product', $order_products, $view_mode, $langcode, $page);
+  return entity_plus_view('uc_order_product', $order_products, $view_mode, $langcode, $page);
 }
 
 /**
@@ -1238,6 +1237,9 @@ function uc_order_view($order, $view_mode = 'full') {
  */
 function uc_order_view_invoice($order, $print = FALSE) {
   $build = array(
+    '#attached' => array(
+      'css' => array(backdrop_get_path('module', 'uc_order') . '/uc_order-invoice.css'),
+      ),
     '#theme' => 'uc_order',
     '#order' => $order,
     '#op' => $print ? 'print' : 'view',
@@ -1788,13 +1790,13 @@ function template_preprocess_uc_order_invoice_page(&$variables) {
   if (backdrop_get_title()) {
     $head_title = array(
       'title' => strip_tags(backdrop_get_title()),
-      'name' => config_get('system.performance', 'site_name'),
+      'name' => config_get('system.core', 'site_name'),
     );
   }
   else {
-    $head_title = array('name' => config_get('system.performance', 'site_name'));
-    if (config_get('system.performance', 'site_slogan')) {
-      $head_title['slogan'] = config_get('system.performance', 'site_slogan');
+    $head_title = array('name' => config_get('system.core', 'site_name'));
+    if (config_get('system.core', 'site_slogan')) {
+      $head_title['slogan'] = config_get('system.core', 'site_slogan');
     }
   }
 
@@ -1805,6 +1807,7 @@ function template_preprocess_uc_order_invoice_page(&$variables) {
     backdrop_add_html_head_link(array('rel' => 'shortcut icon', 'href' => backdrop_strip_dangerous_protocols($favicon), 'type' => $type));
   }
   $variables['head'] = backdrop_get_html_head();
+  $variables['css'] = base_path() . backdrop_get_path('module', 'uc_order') . '/uc_order-invoice.css';
 
   // Set the default language if necessary.
   $language = isset($GLOBALS['language']) ? $GLOBALS['language'] : language_default();
@@ -2392,6 +2395,7 @@ function uc_order_autoload_info() {
     'UcOrderProductController' => 'uc_order.controller.inc',
     'UcOrderProductMetadataController' => 'uc_order.info.inc',
     'UcOrder' => 'uc_order.entity.inc',
+    'UcOrderProduct' => 'uc_order.entity.inc',
     'uc_order_handler_field_money_amount' => 'views/uc_order_handler_field_money_amount.inc',
     'uc_order_handler_field_money_total' => 'views/uc_order_handler_field_money_total.inc',
     'uc_order_handler_field_order_actions' => 'views/uc_order_handler_field_order_actions.inc',

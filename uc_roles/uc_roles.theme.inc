@@ -52,25 +52,25 @@ function theme_uc_roles_user_expiration($variables) {
 
   $rows = array();
   // The expiration table.
-  foreach ((array) $form['table'] as $rid => $expiration) {
-    // We only want numeric rid's
-    if (!is_numeric($rid)) {
-      continue;
-    }
-
+  foreach (element_children($form['table']) as $role) {
     // Make sure the renders actually touch the elements.
-    $data = &$form['table'][$rid];
+    $data = $form['table'][$role];
+    $remove = $data['remove'];
+    $polarity = $data['polarity'];
+    $qty = $data['qty'];
+    $granularity = $data['granularity'];
 
     $rows[] = array(
-      array('data' => backdrop_render($data['remove'])),
+      array('data' => backdrop_render($remove)),
       array('data' => check_plain($data['name']['#value'])),
       array('data' => format_date($data['expiration']['#value'], 'short')),
       // Options to adjust the expiration.
-      array('data' => '<a name="role-expiration-' . $rid . '">' .
+      array('data' => '<a name="role-expiration-' . $role . '">' .
                       '<div class="expiration">' .
-                        backdrop_render($data['polarity']) . backdrop_render($data['qty']) . backdrop_render($data['granularity']) .
+                        backdrop_render($polarity) . backdrop_render($qty) . backdrop_render($granularity) .
                       '</div></a>'),
     );
+    unset($form['table'][$role]);
   }
 
   $output = theme('table', array(

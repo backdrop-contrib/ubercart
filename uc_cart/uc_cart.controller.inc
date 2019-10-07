@@ -4,7 +4,7 @@
  *
  * Contains the controller for uc_cart_item entities.
  */
-class UcCartItemController extends EMWController {
+class UcCartItemController extends EntityPlusController {
 
   /**
    * Overrides EntityDatabaseStorageController::attachLoad().
@@ -12,9 +12,11 @@ class UcCartItemController extends EMWController {
   public function attachLoad(&$items, $revision_id = FALSE) {
     foreach ($items as &$item) {
       $product = uc_product_load_variant($item->nid, $item->data);
-      // Merge in fields from the product.
-      foreach ($product as $key => $value) {
-        $item->$key = $value;
+      if ($product) {
+        // Merge in fields from the product.
+        foreach ($product as $key => $value) {
+          $item->$key = $value;
+        }
       }
       $item->module = $item->data['module'];
     }

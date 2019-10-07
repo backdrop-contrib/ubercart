@@ -48,7 +48,7 @@ function uc_weightquote_menu() {
  * Adds a form element for the shipping rate of a product.
  */
 function uc_weightquote_form_alter(&$form, &$form_state, $form_id) {
-  if (uc_product_is_product_form($form)) {
+  if (uc_product_is_product_form($form, $form_state)) {
     $weight = config_get('uc_quote.settings', 'uc_quote_method_weight');
     $result = db_query("SELECT mid, title, product_rate FROM {uc_weightquote_methods}");
     foreach ($result as $method) {
@@ -235,4 +235,16 @@ function uc_weightquote_quote($products, $details, $method) {
   }
 
   return $quotes;
+}
+
+/**
+ * Implements hook_config_info().
+ */
+function uc_weightquote_config_info() {
+  $prefixes['uc_weightquote.settings'] = array(
+    'label' => t('Ubercart weight shipping quote settings'),
+    'group' => t('Configuration'),
+  );
+
+  return $prefixes;
 }

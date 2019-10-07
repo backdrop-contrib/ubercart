@@ -64,7 +64,7 @@ function hook_uc_shipping_method() {
     'id' => 'ups',
     'title' => t('UPS'),
     'quote' => array(
-      'type' => 'small package',
+      'type' => 'small_package',
       'callback' => 'uc_ups_quote',
       'accessorials' => array(
         '03' => t('UPS Ground'),
@@ -78,7 +78,7 @@ function hook_uc_shipping_method() {
       ),
     ),
     'ship' => array(
-      'type' => 'small package',
+      'type' => 'small_package',
       'callback' => 'uc_ups_fulfill_order',
       'pkg_types' => array(
         '01' => t('UPS Letter'),

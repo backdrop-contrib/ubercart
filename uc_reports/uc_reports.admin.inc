@@ -10,8 +10,7 @@
  */
 function uc_reports_customers() {
   $config = config('uc_reports.settings');
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $address_preference = variable_get('uc_customer_list_address', 'billing');
+  $address_preference = config_get('uc_store.settings', 'uc_customer_list_address');
   $first_name = ($address_preference == 'billing') ? 'billing_first_name' : 'delivery_first_name';
   $last_name = ($address_preference == 'billing') ? 'billing_last_name' : 'delivery_last_name';
   $page = isset($_GET['page']) ? intval($_GET['page']) : 0;
@@ -1167,8 +1166,7 @@ function uc_reports_sales_custom() {
 
     // Create the date title for the subreport.
     if ($args['length'] == 'day') {
-      // TODO This variable was probably removed in Backdrop without replacement.
-      $date = format_date($subreport['start'], 'custom', variable_get('date_format_uc_store', 'm/d/Y') . ' - D');
+      $date = format_date($subreport['start'], 'custom', config_get('uc_store.settings', 'date_format_uc_store') . ' - D');
     }
     else {
       $date = format_date($subreport['start'], 'uc_store') . ' - ' . format_date($subreport['end'], 'uc_store');

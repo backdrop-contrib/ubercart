@@ -58,31 +58,40 @@ class UcOrder extends Entity {
    */
   // function __construct($uid = 0, $state = 'in_checkout') {
   function __construct(array $values) {
-    $uid = isset($values['uid']) ? $values['uid'] : 0;
-    $state = isset($values['state']) ? $values['state'] : 'in_checkout';
-    if (strlen($uid) < 22 && $uid > 0) {
-      $this->uid = $uid;
-      if ($account = user_load($uid)) {
-        $this->primary_email = $account->mail;
+    parent::__construct($values);
+    if ($this->isNew()) {
+      $uid = isset($values['uid']) ? $values['uid'] : 0;
+      $state = isset($values['state']) ? $values['state'] : 'in_checkout';
+      if (strlen($uid) < 22 && $uid > 0) {
+        $this->uid = $uid;
+        if ($account = user_load($uid)) {
+          $this->primary_email = $account->mail;
+        }
       }
-    }
 
-    $this->order_status = uc_order_state_default($state);
-    $this->currency = config_get('uc_store.settings', 'uc_currency_code');
-    $this->billing_country = config_get('uc_store.settings', 'uc_store_country');
-    $this->delivery_country = config_get('uc_store.settings', 'uc_store_country');
-    $this->created = REQUEST_TIME;
-    $this->modified = REQUEST_TIME;
+      if (empty($this->order_status)) {
+        $this->order_status = uc_order_state_default($state);
+      }
+      $this->currency = config_get('uc_store.settings', 'uc_currency_code');
+      $this->billing_country = config_get('uc_store.settings', 'uc_store_country');
+      $this->delivery_country = config_get('uc_store.settings', 'uc_store_country');
+      $this->created = REQUEST_TIME;
+      $this->modified = REQUEST_TIME;
+    }
   }
 
   /**
    * Implements EntityInterface::id().
    */
-  public function id() {}
+  public function id() {
+    return $this->order_id;
+  }
   /**
    * Implements EntityInterface::entityType().
    */
-  public function entityType() {}
+  public function entityType() {
+    return 'uc_order';
+  }
   /**
    * Implements EntityInterface::bundle().
    */
@@ -91,6 +100,59 @@ class UcOrder extends Entity {
    * Implements EntityInterface::label().
    */
   public function label() {}
+  /**
+   * Implements EntityInterface::uri().
+   */
+  public function uri() {}
+}
+
+
+/**
+ * UcOrderProduct extends Entity.
+ *
+ * A subclass of Entity is a requirement for creating a custom entity. It is
+ * also a minimum requirement to define the methods included here, even as 
+ * empty functions.
+ */
+class UcOrderProduct extends Entity {
+
+  /**
+   * The node ID.
+   *
+   * @var integer
+   */
+  public $order_product_id;
+
+  /**
+   * The node ID.
+   *
+   * @var integer
+   */
+  public $title;
+  /**
+   * Implements EntityInterface::id().
+   */
+  public function id() {
+    return isset($this->order_product_id ) ? $this->order_product_id  : NULL;
+  }
+  /**
+   * Implements EntityInterface::entityType().
+   */
+  public function entityType() {
+    return 'uc_order_product';
+  }
+  /**
+   * Implements EntityInterface::bundle().
+   */
+  public function bundle() {
+    // return $this->type;
+  }
+  /**
+   * Implements EntityInterface::label().
+   */
+  public function label() {
+    return $this->title;
+  }
   /**
    * Implements EntityInterface::uri().
    */

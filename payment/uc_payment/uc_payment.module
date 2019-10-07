@@ -356,9 +356,11 @@ function uc_payments_table() {
  */
 function uc_payment_config_info() {
   $prefixes['uc_payment.settings'] = array(
-    'label' => t('Module name settings'),
+    'label' => t('Ubercart payment settings'),
     'group' => t('Configuration'),
   );
+
+  return $prefixes;
 }
 
 /**
@@ -637,6 +639,25 @@ function _uc_payment_method_list($action = NULL) {
 function _uc_payment_method_data($method_id, $key) {
   $methods = _uc_payment_method_list();
   return isset($methods[$method_id][$key]) ? $methods[$method_id][$key] : NULL;
+}
+
+/**
+ * Implements hook_modules_enabled().
+ */
+function uc_payment_modules_installed($modules) {
+  // Enable any gateway as soon as it's installed.
+  foreach ($modules as $module) {
+    if ($gateways = module_invoke($module, 'uc_payment_gateway')) {
+      foreach ($gateways as $id => $gateway) {
+        config_set('uc_payment.settings', 'uc_pg_' . $id . '_enabled', true);
+      }
+    }
+    if ($payment_methods = module_invoke($module, 'uc_payment_method')) {
+      foreach ($payment_methods as $id => $payment_method) {
+        config_set('uc_payment.settings', 'uc_payment_method_' . $id . '_checkout', $payment_method['checkout']);
+      }
+    }
+  }
 }
 
 /**

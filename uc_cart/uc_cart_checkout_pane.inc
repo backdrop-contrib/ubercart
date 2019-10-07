@@ -150,7 +150,7 @@ function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NUL
               form_set_error('panes][customer][new_account][pass_confirm', t('The passwords you entered did not match. Please try again.'));
             }
             if (!empty($pane['new_account']['pass'])) {
-              require_once BACKDROP_ROOT . '/' . settings_get('password_inc', 'includes/password.inc');
+              require_once BACKDROP_ROOT . '/' . settings_get('password_inc', 'core/includes/password.inc');
               $order->data['new_user']['hash'] = user_hash_password(trim($pane['new_account']['pass']));
             }
           }
@@ -452,8 +452,15 @@ function _uc_checkout_pane_list($action = NULL) {
       'collapsible' => TRUE,
     );
 
-    $pane['enabled'] = config_get('uc_cart.settings', 'uc_pane_' . $id . '_enabled');
-    $pane['weight'] = config_get('uc_cart.settings', 'uc_pane_' . $id . '_weight');
+    // This function is called on install to set the config values, at which
+    // point the values would be NULL. So we check first to see if theyre set.
+    $config = config('uc_cart.settings');
+    if (!is_null($config->get('uc_pane_' . $id . '_enabled'))) {
+      $pane['enabled'] = $config->get('uc_pane_' . $id . '_enabled');
+    }
+    if (!is_null($config->get('uc_pane_' . $id . '_weight'))) {
+      $pane['weight'] = $config->get('uc_pane_' . $id . '_weight');
+    }
 
     $panes[$id] = $pane;
   }

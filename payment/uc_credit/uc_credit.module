@@ -39,16 +39,6 @@ define('UC_CREDIT_KEYFILE_NAME', 'uc_credit.key');
 
 
 /**
- * Implements hook_help().
- */
-function uc_credit_help($path, $arg) {
-  switch ($path) {
-    case 'admin/store/orders/%/credit':
-      return '<p>' . t('Use this terminal to process credit card payments through your default gateway.') . '</p>';
-  }
-}
-
-/**
  * Implements hook_menu().
  */
 function uc_credit_menu() {
@@ -222,9 +212,11 @@ function uc_credit_uc_store_status() {
  */
 function uc_credit_config_info() {
   $prefixes['uc_credit.settings'] = array(
-    'label' => t('Module name settings'),
+    'label' => t('Ubercart credit settings'),
     'group' => t('Configuration'),
   );
+
+  return $prefixes;
 }
 
 /**
@@ -248,7 +240,7 @@ function uc_credit_uc_order($op, $order, $arg2) {
         // Process CC transactions when an order is submitted after review.
         $gateway_id = uc_credit_default_gateway();
         $data = array(
-          'txn_type' => config_get('uc_payment.settings', 'uc_pg_' . $gateway_id . '_cc_txn_type'),
+          'txn_type' => config_get('uc_credit.settings', 'uc_pg_' . $gateway_id . '_cc_txn_type'),
         );
 
         // Attempt to process the CC payment.
@@ -1002,6 +994,21 @@ function uc_credit_transaction_types() {
   );
 
   return $types;
+}
+
+/**
+ * Implements hook_modules_enabled().
+ */
+function uc_credit_modules_installed($modules) {
+  // Set the default credit transaction type for any gateway as soon as it's 
+  // installed.
+  foreach ($modules as $module) {
+    if ($gateways = module_invoke($module, 'uc_payment_gateway')) {
+      foreach ($gateways as $id => $gateway) {
+        config_set('uc_credit.settings', 'uc_pg_' . $id . '_cc_txn_type', UC_CREDIT_AUTH_CAPTURE);
+      }
+    }
+  }
 }
 
 /**

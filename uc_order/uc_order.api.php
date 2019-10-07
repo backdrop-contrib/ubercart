@@ -215,7 +215,7 @@ function hook_uc_order_actions($order) {
       $actions[] = array(
         'name' => t('Package'),
         'url' => 'admin/store/orders/' . $order->order_id . '/packages',
-        'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_shipping') . '/images/package.gif')),
+        'icon' => theme('image', array('path' => backdrop_get_path('module', 'uc_shipping') . '/images/package.gif')),
         'title' => $title,
       );
       $result = db_query("SELECT COUNT(package_id) FROM {uc_packages} WHERE order_id = :id", array(':id' => $order->order_id));
@@ -224,7 +224,7 @@ function hook_uc_order_actions($order) {
         $actions[] = array(
           'name' => t('Ship'),
           'url' => 'admin/store/orders/' . $order->order_id . '/shipments',
-          'icon' => theme('image', array('path' => drupal_get_path('module', 'uc_shipping') . '/images/ship.gif')),
+          'icon' => theme('image', array('path' => backdrop_get_path('module', 'uc_shipping') . '/images/ship.gif')),
           'title' => $title,
         );
       }
@@ -377,7 +377,7 @@ function uc_order_pane_callback($op, $order, &$form = NULL, &$form_state = NULL)
       else {
         $items = array(t('No admin comments have been entered for this order.'));
       }
-      $output = theme('item_list', array('items' => $items)) . drupal_render($form['admin_comment_field']);
+      $output = theme('item_list', array('items' => $items)) . backdrop_render($form['admin_comment_field']);
       return $output;
 
     case 'edit-process':

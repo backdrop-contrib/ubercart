@@ -62,7 +62,7 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#description' => t('Enter the page to redirect to when a customer adds an item to their cart, or &lt;none&gt; for no redirect.'),
     '#default_value' => $config->get('uc_add_item_redirect'),
     '#size' => 32,
-    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.performance', 'clean_url') ? '' : '?q='),
+    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.core', 'clean_url') ? '' : '?q='),
   );
 
   $form['general']['uc_cart_empty_button'] = array(
@@ -176,7 +176,7 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#title' => t('Default <em>continue shopping</em> destination'),
     '#default_value' => $config->get('uc_continue_shopping_url'),
     '#size' => 32,
-    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.performance', 'clean_url') ? '' : '?q='),
+    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.core', 'clean_url') ? '' : '?q='),
   );
 
   $form['breadcrumb'] = array(
@@ -196,7 +196,7 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#title' => t('Cart page breadcrumb destination'),
     '#default_value' => $config->get('uc_cart_breadcrumb_url'),
     '#size' => 32,
-    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.performance', 'clean_url') ? '' : '?q='),
+    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.core', 'clean_url') ? '' : '?q='),
   );
 
   return system_settings_form($form);
@@ -388,7 +388,7 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     '#title' => t('Alternate checkout completion page'),
     '#description' => t('Leave blank to use the default completion page (recommended).'),
     '#default_value' => $config->get('uc_cart_checkout_complete_page'),
-    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.performance', 'clean_url') ? '' : '?q='),
+    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.core', 'clean_url') ? '' : '?q='),
     '#size' => 16,
   );
   $form['completion_messages']['uc_msg_order_submit'] = array(

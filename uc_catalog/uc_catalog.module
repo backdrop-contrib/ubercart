@@ -13,22 +13,6 @@
 
 
 /**
- * Implements hook_help().
- */
-function uc_catalog_help($path, $arg) {
-  switch ($path) {
-    case 'admin/store/products/orphans':
-      return '<p>' . t('Orphaned products are products that you have created but not yet assigned to a category in your product catalog. All such products will appear as links below that you can follow to edit the product listings to assign them to categories.') . '</p>';
-
-    case 'admin/store/settings/catalog':
-      if (!module_exists('views_ui')) {
-        return '<p>' . t('<a href="@modules">Enable the Views UI module</a> to edit the catalog display.', array('@modules' => url('admin/modules', array('fragment' => 'edit-modules-views')))) . '</p>';
-      }
-      break;
-  }
-}
-
-/**
  * Implements hook_menu().
  */
 function uc_catalog_menu() {
@@ -144,9 +128,19 @@ function uc_catalog_theme() {
  */
 function uc_catalog_config_info() {
   $prefixes['uc_catalog.settings'] = array(
-    'label' => t('Module name settings'),
+    'label' => t('Ubercart catalog settings'),
     'group' => t('Configuration'),
   );
+  $prefixes['views.view.uc_catalog'] = array(
+    'label' => t('Ubercart catalog view'),
+    'group' => t('Views'),
+  );
+  $prefixes['views.view.uc_catalog_terms'] = array(
+    'label' => t('Ubercart catalog terms view'),
+    'group' => t('Views'),
+  );
+
+  return $prefixes;
 }
 
 /**
@@ -159,7 +153,7 @@ function uc_catalog_node_view($node, $view_mode) {
   if (uc_product_is_product($node->type) && isset($node->taxonomy_catalog)) {
     if ($view_mode == 'full' && $config->get('uc_catalog_breadcrumb')) {
       $crumbs = array();
-      if (config_get('system.performance', 'site_frontpage') != 'catalog') {
+      if (config_get('system.core', 'site_frontpage') != 'catalog') {
         $crumbs[] = l(t('Home'), '');
       }
 
@@ -388,11 +382,11 @@ function uc_catalog_uc_store_status() {
       $product_types = uc_product_types();
       $types = array_intersect($product_types, $field['bundles']['node']);
       $excluded = 0;
-      $result = db_query("SELECT COUNT(DISTINCT n.nid) FROM {node} n LEFT JOIN {taxonomy_index} ti ON n.nid = ti.nid LEFT JOIN {taxonomy_term_data} td ON ti.tid = td.tid WHERE n.type IN (:types) AND ti.tid IS NULL AND td.vocabulary = :vocabulary", array(':types' => $types, ':vocabulary' => $catalog->vocabulary));
+      $result = db_query("SELECT COUNT(DISTINCT n.nid) FROM {node} n LEFT JOIN {taxonomy_index} ti ON n.nid = ti.nid LEFT JOIN {taxonomy_term_data} td ON ti.tid = td.tid WHERE n.type IN (:types) AND ti.tid IS NULL AND td.vocabulary = :vocabulary", array(':types' => $types, ':vocabulary' => $catalog->machine_name));
       if ($excluded = $result->fetchField()) {
         $description = format_plural($excluded, 'There is 1 product not listed in the catalog.', 'There are @count products not listed in the catalog.')
           . t('Products are listed by assigning a category from the <a href="!cat_url">Product Catalog</a> vocabulary to them.', array('!cat_url' => url('admin/structure/taxonomy/' . $catalog->machine_name)));
-        $terms = db_query("SELECT COUNT(1) FROM {taxonomy_term_data} WHERE vocabulary = :vocabulary", array(':vocabulary' => $catalog->vocabulary))->fetchField();
+        $terms = db_query("SELECT COUNT(1) FROM {taxonomy_term_data} WHERE vocabulary = :vocabulary", array(':vocabulary' => $catalog->machine_name))->fetchField();
         if ($terms) {
           $description .= ' ' . l(t('Find orphaned products here.'), 'admin/store/products/orphans');
         }
@@ -669,5 +663,35 @@ function uc_catalog_add_image_field() {
 function uc_catalog_autoload_info() {
   return array(
     'UcTreeNode' => 'classes/treenode.inc',
+    'uc_catalog_handler_argument_term_node_tid_depth_new' => 'views/uc_catalog_handler_argument_term_node_tid_depth.inc',
   );
+}
+
+/**
+ * Helper function to set a breadcrumb for taxonomy. Copy of the core function
+ * views_taxonomy_set_breadcrumb() but without the deprecated function
+ * taxonomy_get_parents_all(). See https://github.com/backdrop/backdrop-issues/issues/2792
+ */
+function uc_catalog_taxonomy_set_breadcrumb(&$breadcrumb, &$argument) {
+  if (empty($argument->options['set_breadcrumb'])) {
+    return;
+  }
+
+  $args = $argument->view->args;
+  $parents = taxonomy_term_load_parents_all($argument->argument);
+  foreach (array_reverse($parents) as $parent) {
+    // Unfortunately parents includes the current argument. Skip.
+    if ($parent->tid == $argument->argument) {
+      continue;
+    }
+    if (!empty($argument->options['use_taxonomy_term_path'])) {
+      $path = $parent->uri();
+      $path = $path['path'];
+    }
+    else {
+      $args[$argument->position] = $parent->tid;
+      $path = $argument->view->get_url($args);
+    }
+    $breadcrumb[$path] = check_plain($parent->name);
+  }
 }

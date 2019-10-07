@@ -8,7 +8,7 @@
 /**
  * Defines a base helper class for Ubercart tests.
  */
-class UbercartTestHelper extends DrupalWebTestCase {
+class UbercartTestHelper extends BackdropWebTestCase {
 
   /** User with privileges to do everything. */
   protected $adminUser;
@@ -21,7 +21,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
 
 
   /**
-   * Overrides DrupalWebTestCase::setUp().
+   * Overrides BackdropWebTestCase::setUp().
    *
    * Configures basic Ubercart store components.
    *
@@ -36,7 +36,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
     call_user_func_array(array('parent', 'setUp'), $modules);
 
     // Create a store administrator user account.
-    $this->adminUser = $this->drupalCreateUser(array_merge($permissions, array(
+    $this->adminUser = $this->backdropCreateUser(array_merge($permissions, array(
       'administer store',
       'administer order workflow',
       'administer product classes',
@@ -53,7 +53,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
     )));
 
     // Create a simple customer user account.
-    $this->customer = $this->drupalCreateUser(array('view own orders'));
+    $this->customer = $this->backdropCreateUser(array('view own orders'));
 
     // Create a test product.
     $this->product = $this->createProduct(array('uid' => $this->adminUser->uid));
@@ -84,7 +84,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
       'shippable' => TRUE,
     );
 
-    return $this->drupalCreateNode($product);
+    return $this->backdropCreateNode($product);
   }
 
   /**
@@ -100,7 +100,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
     );
     $product_class = (object) $product_class;
 
-    drupal_write_record('uc_product_classes', $product_class);
+    backdrop_write_record('uc_product_classes', $product_class);
 
     return $product_class;
   }
@@ -140,7 +140,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
    * Executes the checkout process.
    */
   function checkout($edit = array()) {
-    $this->drupalPost('cart', array(), 'Checkout');
+    $this->backdropPost('cart', array(), 'Checkout');
     $this->assertText(
       t('Enter your billing address and information here.'),
       t('Viewed cart page: Billing pane has been displayed.')
@@ -149,11 +149,11 @@ class UbercartTestHelper extends DrupalWebTestCase {
     $edit = $this->populateCheckoutForm($edit);
 
     // Submit the checkout page.
-    $this->drupalPost('cart/checkout', $edit, t('Review order'));
+    $this->backdropPost('cart/checkout', $edit, t('Review order'));
     $this->assertRaw(t('Your order is almost complete.'));
 
     // Complete the review page.
-    $this->drupalPost(NULL, array(), t('Submit order'));
+    $this->backdropPost(NULL, array(), t('Submit order'));
 
     $order_id = db_query("SELECT order_id FROM {uc_orders} WHERE delivery_first_name = :name", array(':name' => $edit['panes[delivery][delivery_first_name]']))->fetchField();
     if ($order_id) {
@@ -181,7 +181,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
    *   or FALSE if the subject line did not match anything.
    */
   function findMail($pattern) {
-    foreach (array_reverse($this->drupalGetMails()) as $mail) {
+    foreach (array_reverse($this->backdropGetMails()) as $mail) {
       if (preg_match($pattern, $mail['subject'])) {
         $this->pass(t('E-mail found with subject matching %pattern.', array('%pattern' => $pattern)));
         return $mail;
@@ -193,10 +193,10 @@ class UbercartTestHelper extends DrupalWebTestCase {
   }
 
   /**
-   * Helper function to test for text in a drupal ajax response.
+   * Helper function to test for text in a backdrop ajax response.
    *
    * @param $ajax
-   *   The ajax response to test.  Must be an array of ajax commands as returned by drupalPostAjax().
+   *   The ajax response to test.  Must be an array of ajax commands as returned by backdropPostAjax().
    * @param $text
    *   The text to search for.
    * @param $message
@@ -218,7 +218,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
       $content = filter_xss($content, array());
     }
     else {
-      $content = drupal_json_encode($ajax);
+      $content = backdrop_json_encode($ajax);
     }
     if (!$message) {
       $message = !$not_exists ? t('"@text" found in ajax response', array('@text' => $text)) : t('"@text" not found in ajax response', array('@text' => $text));
@@ -231,7 +231,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
    * be inserted into the page if this ajax response were executed.
    *
    * @param $ajax
-   *   The ajax response to test.  Must be an array of ajax commands as returned by drupalPostAjax().
+   *   The ajax response to test.  Must be an array of ajax commands as returned by backdropPostAjax().
    * @param $text
    *   The text to search for.
    * @param $message
@@ -246,7 +246,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
    * be inserted into the page if this ajax response were executed.
    *
    * @param $ajax
-   *   The ajax response to test.  Must be an array of ajax commands as returned by drupalPostAjax().
+   *   The ajax response to test.  Must be an array of ajax commands as returned by backdropPostAjax().
    * @param $text
    *   The text to search for.
    * @param $message
@@ -257,10 +257,10 @@ class UbercartTestHelper extends DrupalWebTestCase {
   }
 
   /**
-   * Assert that the specified text is present in the raw drupal ajax response.
+   * Assert that the specified text is present in the raw backdrop ajax response.
    *
    * @param $ajax
-   *   The ajax response to test.  Must be an array of ajax commands as returned by drupalPostAjax().
+   *   The ajax response to test.  Must be an array of ajax commands as returned by backdropPostAjax().
    * @param $text
    *   The text to search for.
    * @param $message
@@ -271,10 +271,10 @@ class UbercartTestHelper extends DrupalWebTestCase {
   }
 
   /**
-   * Assert that the specified text is not present in the raw drupal ajax response.
+   * Assert that the specified text is not present in the raw backdrop ajax response.
    *
    * @param $ajax
-   *   The ajax response to test.  Must be an array of ajax commands as returned by drupalPostAjax().
+   *   The ajax response to test.  Must be an array of ajax commands as returned by backdropPostAjax().
    * @param $text
    *   The text to search for.
    * @param $message
@@ -285,19 +285,19 @@ class UbercartTestHelper extends DrupalWebTestCase {
   }
 
   /**
-   * Extends drupalPostAjax() to replace additional content on the page after an ajax submission.
+   * Extends backdropPostAjax() to replace additional content on the page after an ajax submission.
    *
-   * DrupalWebTestCase::drupalPostAjax() will only process ajax insertions which don't have a 'selector' attribute,
+   * BackdropWebTestCase::backdropPostAjax() will only process ajax insertions which don't have a 'selector' attribute,
    * because it's not easy to convert from a jQuery selector to an XPath.  However, ubercart uses many simple,
    * id-based selectors, and these can be converted easily (eg: '#my-identifier' => '//*[@id="my-identifier"]').
-   * This helper method post-processes the command array returned by drupalPostAjax() to perform these insertions.
+   * This helper method post-processes the command array returned by backdropPostAjax() to perform these insertions.
    *
-   * @see DrupalWebTestCase::drupalPostAjax()
+   * @see BackdropWebTestCase::backdropPostAjax()
    */
   protected function ucPostAJAX($path, $edit, $triggering_element, $ajax_path = NULL, array $options = array(), array $headers = array(), $form_html_id = NULL, $ajax_settings = NULL) {
-    $commands = parent::drupalPostAJAX($path, $edit, $triggering_element, $ajax_path, $options, $headers, $form_html_id, $ajax_settings);
+    $commands = parent::backdropPostAJAX($path, $edit, $triggering_element, $ajax_path, $options, $headers, $form_html_id, $ajax_settings);
     $dom = new DOMDocument();
-    @$dom->loadHTML($this->drupalGetContent());
+    @$dom->loadHTML($this->backdropGetContent());
     foreach ($commands as $command) {
       if ($command['command'] == 'insert' && isset($command['selector']) && preg_match('/^\#-?[_a-zA-Z]+[_a-zA-Z0-9-]*$/', $command['selector'])) {
         $xpath = new DOMXPath($dom);
@@ -341,7 +341,7 @@ class UbercartTestHelper extends DrupalWebTestCase {
       }
     }
     $content = $dom->saveHTML();
-    $this->drupalSetContent($content);
+    $this->backdropSetContent($content);
     $this->verbose('Page content after ajax submission:<hr />' . $this->content);
     return $commands;
   }
@@ -368,9 +368,9 @@ class UbercartCountryTestCase extends UbercartTestHelper {
     $country_name = 'Belgium';
     $country_code = 'BEL';
 
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
 
-    $this->drupalGet('admin/store/settings/countries');
+    $this->backdropGet('admin/store/settings/countries');
     $this->assertRaw(
       '<option value="' . $import_file . '">' . $import_file . '</option>',
       t('Ensure country file is not imported yet.')
@@ -379,7 +379,7 @@ class UbercartCountryTestCase extends UbercartTestHelper {
     $edit = array(
       'import_file[]' => array($import_file => $import_file),
     );
-    $this->drupalPost(
+    $this->backdropPost(
       'admin/store/settings/countries',
       $edit,
       t('Import')
@@ -416,7 +416,7 @@ class UbercartCountryTestCase extends UbercartTestHelper {
       t('Confirm form is displayed.')
     );
 
-    $this->drupalPost(
+    $this->backdropPost(
       'admin/store/settings/countries/56/remove',
       array(),
       t('Remove')

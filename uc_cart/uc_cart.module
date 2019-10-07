@@ -220,9 +220,11 @@ function uc_cart_init() {
  */
 function uc_cart_config_info() {
   $prefixes['uc_cart.settings'] = array(
-    'label' => t('Module name settings'),
+    'label' => t('Ubercart cart settings'),
     'group' => t('Configuration'),
   );
+
+  return $prefixes;
 }
 
 /**
@@ -302,8 +304,7 @@ function uc_cart_block_info() {
 
   $blocks['cart'] = array(
     'info' => t('Shopping cart'),
-    'cache' => BACKDROP_NO_CACHE,
-    'pages' => 'admin*',
+    'description' => t('Displays a list of Ubercart\'s shopping cart contents.'),
   );
 
   return $blocks;
@@ -312,7 +313,7 @@ function uc_cart_block_info() {
 /**
  * Implements hook_block_view().
  */
-function uc_cart_block_view($delta = '') {
+function uc_cart_block_view($delta = '', $settings = array(), $contexts = array()) {
   $config = config('uc_cart.settings');
   global $user;
 
@@ -343,7 +344,7 @@ function uc_cart_block_view($delta = '') {
       $total = 0;
 
       if ($product_count) {
-        $display_items = entity_view('uc_cart_item', uc_cart_get_contents(), 'cart');
+        $display_items = entity_plus_view('uc_cart_item', uc_cart_get_contents(), 'cart');
         foreach (element_children($display_items['uc_cart_item']) as $key) {
           $display_item = $display_items['uc_cart_item'][$key];
 
@@ -403,7 +404,7 @@ function uc_cart_block_view($delta = '') {
  *
  * Builds the settings form used by the shopping cart block.
  */
-function uc_cart_block_configure($delta = '') {
+function uc_cart_block_configure($delta = '', $settings = array()) {
   $config = config('uc_cart.settings');
   if ($delta == 'cart') {
     $form['uc_cart_block_empty_hide'] = array(
@@ -458,7 +459,7 @@ function uc_cart_preprocess_block(&$variables) {
   $config = config('uc_cart.settings');
   global $user;
 
-  if ($variables['block']->module == 'uc_cart' && $variables['block']->delta == 0 && $variables['block']->subject) {
+  if ($variables['block']->module == 'uc_cart' && $variables['block']->delta == 'cart' && $variables['title']) {
     // Build the cart image if enabled.
     if ($config->get('uc_cart_block_image')) {
       $product_count = count(uc_cart_get_contents());
@@ -475,8 +476,8 @@ function uc_cart_preprocess_block(&$variables) {
       $icon_class = FALSE;
     }
 
-    $variables['block']->subject = theme('uc_cart_block_title', array(
-      'title' => $variables['block']->subject,
+    $variables['title'] = theme('uc_cart_block_title', array(
+      'title' => $variables['title'],
       'icon_class' => $icon_class,
       'collapsible' => $config->get('uc_cart_block_collapsible'),
       'collapsed' => $config->get('uc_cart_block_collapsed'),
@@ -510,6 +511,21 @@ function uc_cart_uc_message() {
   $messages['continue_shopping'] = '<p>' . t('<a href="[site:url]">Return to the front page.</a>') . '</p>';
 
   return $messages;
+}
+
+/**
+ * Implements hook_modules_installed().
+ */
+function uc_cart_modules_installed($modules) {
+  // Set provided pane enabled state and weight upon install.
+  foreach ($modules as $module) {
+    if ($panes = module_invoke($module, 'uc_cart_pane', NULL)) {
+      foreach ($panes as $id => $pane) {
+        config_set('uc_cart.settings', 'uc_cap_' . $id . '_weight', $pane['weight']);
+        config_set('uc_cart.settings', 'uc_cap_' . $id . '_enabled', $pane['enabled']);
+      }
+    }
+  }
 }
 
 /**
@@ -623,7 +639,7 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
   );
 
   $i = 0;
-  $display_items = entity_view('uc_cart_item', $items, 'cart');
+  $display_items = entity_plus_view('uc_cart_item', $items, 'cart');
   foreach (element_children($display_items['uc_cart_item']) as $key) {
     $display_item = $display_items['uc_cart_item'][$key];
     if (count(element_children($display_item))) {
@@ -675,6 +691,7 @@ function uc_cart_view_form($form, &$form_state, $items = NULL) {
     // Add the element to the form based on the element type.
     if ($config->get('uc_continue_shopping_type') == 'link') {
       $form['actions']['continue_shopping'] = array(
+        '#type' => 'markup',
         '#markup' => l(t('Continue shopping'), uc_cart_continue_shopping_url()),
       );
     }
@@ -978,7 +995,8 @@ function uc_cart_complete_sale_account($order) {
   }
 
   // Create the account.
-  $account = user_save('', $fields);
+  $account = entity_create('user', $fields);
+  $account->save();
 
   // Override the password, if specified.
   if (isset($order->data['new_user']['hash'])) {
@@ -1418,6 +1436,7 @@ function uc_cart_entity_info() {
  */
 function uc_cart_autoload_info() {
   return array(
+    'UcCartItem' => 'uc_cart.controller.inc',
     'UcCartItemController' => 'uc_cart.controller.inc',
     'uc_cart_handler_field_cart_user' => 'views/uc_cart_handler_field_cart_user.inc',
   );

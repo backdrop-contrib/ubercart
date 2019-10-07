@@ -17,14 +17,14 @@ class UbercartAjaxTestCase extends UbercartTestHelper {
   }
 
   /**
-   * Overrides DrupalWebTestCase::setUp().
+   * Overrides BackdropWebTestCase::setUp().
    */
   protected function setUp($modules = array(), $permissions = array()) {
     module_load_include('inc', 'uc_store', 'includes/uc_ajax_attach');
     $modules = array('rules_admin', 'uc_payment', 'uc_payment_pack');
     $permissions = array('administer rules', 'bypass rules access');
     parent::setUp($modules, $permissions);
-    $this->drupalLogin($this->adminUser);
+    $this->backdropLogin($this->adminUser);
   }
 
   /**
@@ -69,25 +69,25 @@ class UbercartAjaxTestCase extends UbercartTestHelper {
     }
     $newconfig->save();
     entity_info_cache_clear();
-    //$this->drupalGet('admin/config/workflow/rules/components/manage/' . $newconfig->id);
+    //$this->backdropGet('admin/config/workflow/rules/components/manage/' . $newconfig->id);
   }
 
   function testCheckoutAjax() {
     // Enable two payment methods and set a condition on one.
-    variable_set('uc_payment_method_check_checkout', TRUE);
-    variable_set('uc_payment_method_other_checkout', TRUE);
+    config_set('uc_payment.settings', 'uc_payment_method_check_checkout', TRUE);
+    config_set('uc_payment.settings', 'uc_payment_method_other_checkout', TRUE);
     $this->addPaymentZoneCondition('other', '26');
 
     // Speciy that the billing zone should update the payment pane.
     $config = config_get('uc_store.settings', 'uc_ajax_checkout');
     $config['panes][billing][address][billing_zone'] = array('payment-pane' => 'payment-pane');
-    variable_set('uc_ajax_checkout', $config);
+    config_set('uc_store.settings', 'uc_ajax_checkout', $config);
 
     // Go to the checkout page, veriy that the conditional payment method is
     // not available.
     $product = $this->createProduct(array('shippable' => FALSE));
-    $this->drupalPost('node/' . $product->nid, array(), t('Add to cart'));
-    $this->drupalPost('cart', array('items[0][qty]' => 1), t('Checkout'));
+    $this->backdropPost('node/' . $product->nid, array(), t('Add to cart'));
+    $this->backdropPost('cart', array('items[0][qty]' => 1), t('Checkout'));
     $this->assertNoText('Other');
 
     // Change the billing zone and veriy that payment pane updates.
