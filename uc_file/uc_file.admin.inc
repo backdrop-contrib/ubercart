@@ -342,7 +342,9 @@ function uc_file_admin_files_form_action($form, &$form_state) {
       $form['upload'] = array(
         '#type' => 'file',
         '#title' => t('File'),
-        '#description' => t('The maximum file size that can be uploaded is %size bytes. You will need to use a different method to upload the file to the directory (e.g. (S)FTP, SCP) if your file exceeds this size. Files you upload using one of these alternate methods will be automatically detected.', array('%size' => number_format($max_bytes))),
+        // Deliberately concatenate the strings to preserve backwards
+        // compatibility with existing translations.
+        '#description' => t('The maximum file size that can be uploaded is %size bytes. You will need to use a different method to upload the file to the directory (e.g. (S)FTP, SCP) if your file exceeds this size. Files you upload using one of these alternate methods will be automatically detected.', array('%size' => number_format($max_bytes))) . ' ' . t("Note: A value of '0' means there is no size limit."),
       );
 
       $form['#attributes']['class'][] = 'foo';
