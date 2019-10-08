@@ -28,8 +28,7 @@ class UcCartItemController extends EntityPlusController {
    *
    * Cart items are deleted if saved with a quantity of zero.
    */
-  public function save($item) {
-    $transaction = NULL;
+  public function save($item, $transaction = NULL) {
     if ($item->qty < 1) {
       if (isset($item->cart_item_id)) {
         parent::delete(array($item->cart_item_id), $transaction);
