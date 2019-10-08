@@ -107,9 +107,9 @@ class UcOrderProductController extends EntityPlusController {
   }
 
   /**
-   * Overrides EntityAPIController::save().
+   * Overrides EntityPlusController::save().
    */
-  public function save($product) {
+  public function save($product, $transaction = NULL) {
     // Product kits, particularly, shouldn't actually be added to an order,
     // but instead they cause other products to be added.
     if (isset($product->skip_save) && $product->skip_save == TRUE) {
@@ -125,6 +125,6 @@ class UcOrderProductController extends EntityPlusController {
         $product->weight_units = empty($units) ? config_get('uc_store.settings', 'uc_weight_unit') : $units;
       }
     }
-    return parent::save($product);
+    return parent::save($product, $transaction = NULL);
   }
 }
