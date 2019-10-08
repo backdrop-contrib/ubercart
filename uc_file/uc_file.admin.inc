@@ -362,7 +362,6 @@ function uc_file_admin_files_form_action($form, &$form_state) {
       break;
 
     default:
-
       // This action isn't handled by us, so check if any
       // hook_uc_file_action('form', $args) are implemented.
       foreach (module_implements('uc_file_action') as $module) {
