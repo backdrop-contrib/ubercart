@@ -134,19 +134,15 @@ function uc_store_schema() {
  */
 function uc_store_install() {
   // Set mail handler for all Ubercart modules
-  config_set('system.mail', 'mail_system',
-    array_merge(
-      array('default-system' => config_get('system.mail', 'default-system')),
-      array(
-    'uc_cart' => 'UbercartMailSystem',
-    'uc_order' => 'UbercartMailSystem',
-    'uc_file' => 'UbercartMailSystem',
-    'uc_roles' => 'UbercartMailSystem',
-    'uc_stock' => 'UbercartMailSystem',
-    'uc_store' => 'UbercartMailSystem',
-    )
-  )
-  );
+  $config = config('system.mail');
+  $config->set('uc_cart', 'UbercartMailSystem');
+  $config->set('uc_order', 'UbercartMailSystem');
+  $config->set('uc_file', 'UbercartMailSystem');
+  $config->set('uc_roles', 'UbercartMailSystem');
+  $config->set('uc_stock', 'UbercartMailSystem');
+  $config->set('uc_store', 'UbercartMailSystem');
+  $config->save();
+
 
   // Set the default store date format.
   config_set('uc_store.settings', 'date_format_uc_store', 'm/d/Y');
@@ -201,6 +197,16 @@ function uc_store_uninstall() {
   unset($mail_system['uc_store']);
   // TODO This variable was probably removed in Backdrop without replacement.
   variable_set('mail_system', $mail_system);
+
+  // Unset mail handler for all Ubercart modules
+  $config = config('system.mail');
+  $config->clear('uc_cart');
+  $config->clear('uc_order');
+  $config->clear('uc_file');
+  $config->clear('uc_roles');
+  $config->clear('uc_stock');
+  $config->clear('uc_store');
+  $config->save();
 }
 
 /*
