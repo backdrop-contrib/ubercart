@@ -222,24 +222,11 @@ function uc_store_update_last_removed() {
 }
 
 /**
- * Implements hook_update_N().
+ * Upgrade configuration from Drupal 7 ubercart module.
  */
-function uc_store_update_1001() {
-  // Revise mail settings for all Ubercart modules
-  $config = config('system.mail');
-  // Clear settings made in initial rele.ase
-  $config->clear('mail_system');
-  // Add revised settings.
-  $config->set('uc_cart', 'UbercartMailSystem');
-  $config->set('uc_order', 'UbercartMailSystem');
-  $config->set('uc_file', 'UbercartMailSystem');
-  $config->set('uc_roles', 'UbercartMailSystem');
-  $config->set('uc_stock', 'UbercartMailSystem');
-  $config->set('uc_store', 'UbercartMailSystem');
-  $config->save();
-}
 
-function uc_store_update_1000() {
+function uc_store_update_1000()
+{
   $config = config('uc_store.settings');
 
   //migrate variables
@@ -291,10 +278,10 @@ function uc_store_update_1000() {
   $config->set('uc_field_email', update_variable_get('uc_field_email', 'E-mail'));
   $quotes_defaults = backdrop_map_assoc(array('payment-pane', 'quotes-pane'));
   $config->set('uc_ajax_checkout', update_variable_get('uc_ajax_checkout',
-    array('panes][delivery][address][delivery_country' => $quotes_defaults,
-      'panes][delivery][address][delivery_postal_code' => $quotes_defaults,
-      'panes][delivery][select_address' => $quotes_defaults,
-      'panes][billing][address][billing_country' => array('payment-pane' => 'payment-pane'),
+      array('panes][delivery][address][delivery_country' => $quotes_defaults,
+        'panes][delivery][address][delivery_postal_code' => $quotes_defaults,
+        'panes][delivery][select_address' => $quotes_defaults,
+        'panes][billing][address][billing_country' => array('payment-pane' => 'payment-pane'),
       )
     )
   );
@@ -351,4 +338,25 @@ function uc_store_update_1000() {
   update_variable_del('uc_field_email');
   update_variable_del('uc_ajax_checkout');
 
+}
+
+
+/**
+ * replace the settings previously added to core's system.mail
+ * with the correct values for UbercartMailSystem.
+ */
+
+function uc_store_update_1001() {
+  // Revise mail settings for all Ubercart modules
+  $config = config('system.mail');
+  // Clear settings made in initial release
+  $config->clear('mail_system');
+  // Add revised settings.
+  $config->set('uc_cart', 'UbercartMailSystem');
+  $config->set('uc_order', 'UbercartMailSystem');
+  $config->set('uc_file', 'UbercartMailSystem');
+  $config->set('uc_roles', 'UbercartMailSystem');
+  $config->set('uc_stock', 'UbercartMailSystem');
+  $config->set('uc_store', 'UbercartMailSystem');
+  $config->save();
 }
