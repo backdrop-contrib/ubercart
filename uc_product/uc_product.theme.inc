@@ -187,7 +187,7 @@ function theme_uc_product_image($variables) {
   $output .= '>';
   $output .= theme('image_style', array(
     'style_name' => 'uc_product',
-    'path' => $first['uri'],
+    'uri' => $first['uri'],
     'alt' => $first['alt'],
     'title' => $first['title'],
   ));
@@ -207,7 +207,7 @@ function theme_uc_product_image($variables) {
       $output .= '>';
       $output .= theme('image_style', array(
         'style_name' => 'uc_thumbnail',
-        'path' => $thumbnail['uri'],
+        'uri' => $thumbnail['uri'],
         'alt' => $thumbnail['alt'],
         'title' => $thumbnail['title'],
       ));
