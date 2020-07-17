@@ -277,30 +277,39 @@ function uc_product_update_last_removed() {
  */
 function uc_product_update_1000() {
   $config = config('uc_product.settings');
-  $config->set('uc_product_image_widget', update_variable_get('uc_product_image_widget', 'NULL'));
-  $config->set('uc_product_add_to_cart_qty', update_variable_get('uc_product_add_to_cart_qty', 'FALSE'));
-  $config->set('uc_product_update_node_view', update_variable_get('uc_product_update_node_view', 'FALSE'));
-  $config->set('uc_product_shippable_nodetype', update_variable_get('uc_product_shippable_nodetype', 'dynamic variable in file /ubercart/uc_product/uc_product.module line 1105'));
-  $config->set('uc_product_shippable_typetype', update_variable_get('uc_product_shippable_typetype', 'dynamic variable in file /ubercart/uc_product/uc_product.module line 900'));
-  $config->set('uc_product_shippable_product', update_variable_get('uc_product_shippable_product', '1'));
+  $config->set('uc_product_image_widget', update_variable_get('uc_product_image_widget', NULL));
+  $config->set('uc_product_add_to_cart_qty', update_variable_get('uc_product_add_to_cart_qty', 0));
+  $config->set('uc_product_update_node_view', update_variable_get('uc_product_update_node_view', 0));
+  $config->set('uc_product_shippable_product', update_variable_get('uc_product_shippable_product', 1));
 
   $config->save();
 
   update_variable_del('uc_product_image_widget');
   update_variable_del('uc_product_add_to_cart_qty');
   update_variable_del('uc_product_update_node_view');
-  update_variable_del('uc_product_shippable_nodetype');
-  update_variable_del('uc_product_shippable_typetype');
   update_variable_del('uc_product_shippable_product');
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Clears unused config setting and sets 'uc_product_shippable' correctly for all node types.
+ */
+function uc_product_update_1001() {
+  $config = config('uc_product.settings');
+  $config->clear('uc_product_shippable_typetype');
+  $config->clear('uc_product_shippable_nodetype');
+  foreach (node_type_get_types() as $type) {
+    $config->set('uc_product_shippable_' . $type->type, update_variable_get('uc_product_shippable_' . $type->type, 1));
+    update_variable_del('uc_product_shippable_' . $type->type);
+  }
+  $config->save();
 }
 
 /**
  * Implements hook_install().
  */
 function uc_product_install() {
-  // Dynamically generated variable data was detected.
-  // /ubercart/uc_product/uc_product.module line 1105
-  // /ubercart/uc_product/uc_product.module line 900
   _uc_product_type_create();
 }
 
