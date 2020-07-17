@@ -132,7 +132,7 @@ function _uc_line_item_list($action = NULL) {
 
   $config = config('uc_order.settings');
 
-  if (count($items) > 0 && $action !== 'rebuild') {
+  if ($items && count($items) > 0 && $action !== 'rebuild') {
     return $items;
   }
 
