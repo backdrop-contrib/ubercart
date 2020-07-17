@@ -42,6 +42,7 @@ Current Maintainers
 -------------------
 
 - Robert Garrigós (https://github.com/robertgarrigos/)
+- Laryn Kragt Bakker (https://github.com/laryn)
 
 Credits
 -------
