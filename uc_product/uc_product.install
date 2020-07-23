@@ -213,6 +213,17 @@ function uc_product_schema() {
 }
 
 /**
+ * Implements hook_disable().
+ *
+ * Disables the 'uc_products' view.
+ */
+function uc_product_disable() {
+  $config = config('views.view.uc_products');
+  $config->set('disabled', true);
+  $config->save();
+}
+
+/**
  * Implements hook_enable().
  *
  * Sets up the body and a default image field for products.
@@ -230,6 +241,11 @@ function uc_product_enable() {
   }
 
   uc_product_add_default_image_field();
+  
+  // Make sure 'uc_products' view gets enabled.
+  $config = config('views.view.uc_products');
+  $config->set('disabled', false);
+  $config->save();
 }
 
 /**
@@ -244,8 +260,10 @@ function uc_product_uninstall() {
 
   config_clear('uc_product.settings', 'uc_product_nodes_per_page');
   config_clear('uc_product.settings', 'uc_product_add_to_cart_qty');
+  
+  $config = config('views.view.uc_products');
+  $config->delete();
 }
-
 
 /**
  * Sets default display settings for product teasers.
@@ -303,6 +321,17 @@ function uc_product_update_1001() {
     $config->set('uc_product_shippable_' . $type->type, update_variable_get('uc_product_shippable_' . $type->type, 1));
     update_variable_del('uc_product_shippable_' . $type->type);
   }
+  $config->save();
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Associate the 'uc_products' view with this module.
+ */
+function uc_product_update_1002() {
+  $config = config('views.view.uc_products');
+  $config->set('module', 'uc_product');
   $config->save();
 }
 

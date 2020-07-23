@@ -703,7 +703,40 @@ function uc_order_uninstall() {
 
   config_clear('uc_order.settings', 'uc_order_capitalize_addresses');
   config_clear('uc_order.settings', 'uc_cust_order_invoice_template');
+  
+  // Remove module-specific views.
+  $config = config('views.view.uc_orders');
+  $config->delete();
+  $config = config('views.view.uc_orders_user');
+  $config->delete();
+  $config = config('views.view.uc_customers');
+  $config->delete();
 }
+
+
+/**
+ * Implements hook_disable().
+ *
+ * Disables the 'uc_order' views.
+ */
+function uc_order_disable() {
+  config_set('views.view.uc_orders', 'disabled', true);
+  config_set('views.view.uc_orders_user', 'disabled', true);
+  config_set('views.view.uc_customers', 'disabled', true);
+}
+
+/**
+ * Implements hook_enable().
+ *
+ * Enables the 'uc_order' views.
+ */
+function uc_order_enable() {
+  config_set('views.view.uc_orders', 'disabled', false);
+  config_set('views.view.uc_orders_user', 'disabled', false);
+  config_set('views.view.uc_customers', 'disabled', false);
+}
+
+
 
 /**
  * Implements hook_update_last_removed().
@@ -724,4 +757,15 @@ function uc_order_update_1000() {
 
   update_variable_del('uc_order_capitalize_addresses');
   update_variable_del('uc_cust_order_invoice_template');
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Associate the 'uc_order' views with this module.
+ */
+function uc_order_update_1001() {
+  config_set('views.view.uc_orders', 'module', 'uc_order');
+  config_set('views.view.uc_orders_user', 'module', 'uc_order');
+  config_set('views.view.uc_customers', 'module', 'uc_order');
 }
