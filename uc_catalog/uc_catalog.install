@@ -27,27 +27,6 @@ function uc_catalog_uninstall() {
 }
 
 /**
- * Implements hook_update_dependencies().
- */
-function uc_catalog_update_dependencies() {
-  $dependencies['uc_catalog'][7000] = array(
-    'system' => 7020,
-    'taxonomy' => 7002,
-  );
-  $dependencies['uc_catalog'][7001] = array(
-    'system' => 7059,
-  );
-
-  // Try to alter vocabulary machine name before taxonomy reference field is
-  // created. If dependency is honored, uc_catalog_update_7003 is a no-op.
-  $dependencies['taxonomy'][7004] = array(
-    'uc_catalog' => 7002,
-  );
-
-  return $dependencies;
-}
-
-/**
  * Implements hook_update_last_removed().
  */
 function uc_catalog_update_last_removed() {
@@ -77,6 +56,38 @@ function uc_catalog_update_1000() {
   update_variable_del('uc_catalog_expand_categories');
   update_variable_del('uc_catalog_block_nodecount');
   update_variable_del('taxonomy_maintain_index_table');
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Convert image styles to CMI.
+ */
+function uc_catalog_update_1001() {
+  // Check category image style.
+  $config = config('image.style.uc_category');
+  if (!empty($config->get('name')) && empty($config->get('module'))) {
+    $config->set('module', 'uc_catalog');
+  }
+  else {
+    $data = array(
+      "label" => "Category image",
+      "name" => "uc_category",
+      "storage" => 4,
+      "module" => "uc_catalog",
+      "effects" => array(
+          "name" => "image_scale",
+          "data" => array(
+              "width" => "100",
+              "height" => "100",
+              "upscale" => 0
+          ),
+          "weight" => 1
+      ),
+    );
+    $config->setData($data);
+    $config->save();
+  }
 }
 
 /**

@@ -209,8 +209,38 @@ function uc_cart_update_1000() {
   update_variable_del('uc_msg_order_new_user_logged_in');
   update_variable_del('uc_msg_continue_shopping');
   update_variable_del('uc_pane_cart_field_cart_weight');
+}
 
-
+/**
+ * Implements hook_update_N().
+ *
+ * Convert image styles to CMI.
+ */
+function uc_cart_update_1001() {
+  // Check cart image style.
+  $config = config('image.style.uc_cart');
+  if (!empty($config->get('name')) && empty($config->get('module'))) {
+    $config->set('module', 'uc_cart');
+  }
+  else {
+    $data = array(
+      "label" => "Product cart image",
+      "name" => "uc_cart",
+      "storage" => 4,
+      "module" => "uc_cart",
+      "effects" => array(
+          "name" => "image_scale",
+          "data" => array(
+              "width" => "50",
+              "height" => "50",
+              "upscale" => 0
+          ),
+          "weight" => 1
+      ),
+    );
+    $config->setData($data);
+    $config->save();
+  }
 }
 
 /**
