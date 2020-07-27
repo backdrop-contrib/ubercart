@@ -1,0 +1,58 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the main Ubercart module.
+ * Rather than requiring manual enabling, disabling, and uninstallation of
+ * all required core modules, we've hidden them from the UI and do all of
+ * that from the main Ubercart module invisibly to the end user to simplify.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function ubercart_enable() {
+  module_enable('uc_store');
+  module_enable('uc_product');
+  module_enable('uc_order');
+  module_enable('uc_cart');
+}
+
+/**
+ * Implements hook_disable().
+ */
+function ubercart_disable() {
+  module_disable('uc_cart');
+  module_disable('uc_order');
+  module_disable('uc_product');
+  module_disable('uc_store');
+}
+
+/**
+ * Implements hook_install().
+ */
+function ubercart_install() {
+
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function ubercart_uninstall() {
+  
+  // Ensure modules are disabled.
+  module_disable('uc_cart');
+  module_disable('uc_order');
+  module_disable('uc_product');
+  module_disable('uc_store');
+  
+  // Uninstall Ubercart dependencies.
+  $uc_dependencies = array(
+    'uc_cart',
+    'uc_order',
+    'uc_product',
+    'uc_store',
+  );
+  backdrop_uninstall_modules($uc_dependencies);
+}
+
