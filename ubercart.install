@@ -12,20 +12,16 @@
  * Implements hook_enable().
  */
 function ubercart_enable() {
-  module_enable('uc_store');
-  module_enable('uc_product');
-  module_enable('uc_order');
-  module_enable('uc_cart');
+  $uc_dependencies = _ubercart_module_dependencies('enable');
+  module_enable($uc_dependencies);
 }
 
 /**
  * Implements hook_disable().
  */
 function ubercart_disable() {
-  module_disable('uc_cart');
-  module_disable('uc_order');
-  module_disable('uc_product');
-  module_disable('uc_store');
+  $uc_dependencies = _ubercart_module_dependencies();
+  module_disable($uc_dependencies);
 }
 
 /**
@@ -39,20 +35,30 @@ function ubercart_install() {
  * Implements hook_uninstall().
  */
 function ubercart_uninstall() {
-  
+
+  $uc_dependencies = _ubercart_module_dependencies();
+
   // Ensure modules are disabled.
-  module_disable('uc_cart');
-  module_disable('uc_order');
-  module_disable('uc_product');
-  module_disable('uc_store');
+  module_disable($uc_dependencies);
   
   // Uninstall Ubercart dependencies.
+  backdrop_uninstall_modules($uc_dependencies);
+}
+
+/**
+ * Return array of module dependencies to manage. Order matters for
+ * enabling or disabling sub-modules, so the $op variable specifies whether
+ * this list will be used to 'enable' or 'disable'.
+ */
+function _ubercart_module_dependencies($op = 'disable') {
   $uc_dependencies = array(
     'uc_cart',
     'uc_order',
     'uc_product',
     'uc_store',
   );
-  backdrop_uninstall_modules($uc_dependencies);
+  if ($op == 'enable') {
+    $uc_dependencies = array_reverse($uc_dependencies);
+  }
+  return $uc_dependencies;
 }
-
