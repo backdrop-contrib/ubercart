@@ -282,7 +282,7 @@ function uc_paypal_ec_review_form($form, &$form_state, $order) {
 
     $form['shippable'] = array(
       '#type' => 'value',
-      '#value' => 'true',
+      '#value' => true,
     );
   }
 
