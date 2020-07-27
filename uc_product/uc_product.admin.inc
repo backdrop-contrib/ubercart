@@ -394,17 +394,6 @@ function uc_product_class_form_submit($form, &$form_state) {
   ))
     ->execute();
 
-  // Backdrop7 node_type table is deprecated in backdrop. Changed to save config file.
-  /*
-  db_update('node_type')
-    ->fields(array(
-    'name' => $form_state['values']['name'],
-    'description' => $form_state['values']['description'],
-  ))
-    ->condition('type', $pcid)
-    ->execute();
-  */
-
   $type = new \stdClass;
   $type->type = $pcid;
   $type->name = $form_state['values']['name'];
@@ -418,20 +407,6 @@ function uc_product_class_form_submit($form, &$form_state) {
   uc_product_node_info(TRUE);
 
   if ($result == MergeQuery::STATUS_INSERT) {
-
-    /**
-     * This has been deactivated as it doesn't look necessary now. Backdrop is dealing
-     * with config settings during node type creation
-    // TODO This variable was probably removed in Backdrop without replacement.
-    variable_set('node_options_' . $pcid, variable_get('node_options_product', array('status', 'promote')));
-
-    if (module_exists('comment')) {
-      // TODO This variable was probably removed in Backdrop without replacement.
-      // TODO This variable was probably removed in Backdrop without replacement.
-      variable_set('comment_' . $pcid, variable_get('comment_product', COMMENT_NODE_OPEN));
-    }
-    */ 
-
     module_invoke_all('uc_product_class', $pcid, 'insert');
   }
   else {
