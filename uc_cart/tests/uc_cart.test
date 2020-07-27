@@ -476,17 +476,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $order = uc_order_load($order->order_id);
     $this->assertEqual($order->order_status, 'payment_received', 'Shippable order was set to payment received.');
 
-<<<<<<< HEAD
-    // 3 e-mails: new account, customer invoice, admin invoice, role assignment
+    // 3 e-mails: new account, customer invoice, admin invoice, role assignment.
     $mails = $this->backdropGetMails();
     $this->assertEqual(count($mails), 4, '4 e-mails were sent.');
     state_del('test_email_collector');
-=======
-    // 3 e-mails: new account, customer invoice, role assignment.
-    $mails = $this->drupalGetMails();
-    $this->assertEqual(count($mails), 3, '3 e-mails were sent.');
-    variable_del('drupal_test_email_collector');
->>>>>>> upstream/7.x-3.x
 
     // Test again with an existing email address and a non-shippable order.
     $item->data = array('shippable' => FALSE);
@@ -500,31 +493,18 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $order = uc_order_load($order->order_id);
     $this->assertEqual($order->order_status, 'completed', 'Non-shippable order was set to completed.');
 
-<<<<<<< HEAD
-    // 2 e-mails: customer invoice, admin invoice, role assignment
+    // 2 e-mails: customer invoice, admin invoice, role assignment.
     $mails = $this->backdropGetMails();
     $this->assertEqual(count($mails), 3, '3 e-mails were sent.');
     state_del('test_email_collector');
-=======
-    // 2 e-mails: customer invoice, role assignment.
-    $mails = $this->drupalGetMails();
-    $this->assertEqual(count($mails), 2, '2 e-mails were sent.');
-    variable_del('drupal_test_email_collector');
->>>>>>> upstream/7.x-3.x
   }
 
   /**
    * Tests that cart orders are marked abandoned after a timeout.
    */
-<<<<<<< HEAD
-  function testCartOrderTimeout() {
+  public function testCartOrderTimeout() {
     $this->backdropPost('node/' . $this->product->nid, array(), t('Add to cart'));
     $this->backdropPost('cart', array(), 'Checkout');
-=======
-  public function testCartOrderTimeout() {
-    $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
-    $this->drupalPost('cart', array(), 'Checkout');
->>>>>>> upstream/7.x-3.x
     $this->assertText(
       t('Enter your billing address and information here.'),
       t('Viewed cart page: Billing pane has been displayed.')
@@ -560,18 +540,11 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
 
     $order_id = db_query("SELECT order_id FROM {uc_orders} WHERE delivery_first_name = :name", array(':name' => $oldname))->fetchField();
     if ($order_id) {
-<<<<<<< HEAD
-      // Go to a different page, then back to order - make sure order_id is the same.
+      // Go to a different page, then back to order - make sure
+      // order_id is the same.
       $this->backdropGet('<front>');
       $this->backdropPost('node/' . $this->product->nid, array(), t('Add to cart'));
       $this->backdropPost('cart', array(), 'Checkout');
-=======
-      // Go to a different page, then back to order to make sure
-      // order_id is the same.
-      $this->drupalGet('<front>');
-      $this->drupalPost('node/' . $this->product->nid, array(), t('Add to cart'));
-      $this->drupalPost('cart', array(), 'Checkout');
->>>>>>> upstream/7.x-3.x
       $this->assertRaw($oldname, 'Customer name was unchanged.');
       $this->backdropPost('cart/checkout', $edit, t('Review order'));
       $new_order_id = db_query("SELECT order_id FROM {uc_orders} WHERE delivery_first_name = :name", array(':name' => $edit['panes[delivery][delivery_first_name]']))->fetchField();
@@ -586,16 +559,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
         ->execute();
       $old_order = uc_order_load($order_id);
 
-<<<<<<< HEAD
-      // Go to a different page, then back to order - verify that we are using a new order.
+      // Go to a different page, then back to order - verify that we are
+      // using a new order.
       $this->backdropGet('<front>');
       $this->backdropPost('cart', array(), 'Checkout');
-=======
-      // Go to a different page, then back to order to verify that we are
-      // using a new order.
-      $this->drupalGet('<front>');
-      $this->drupalPost('cart', array(), 'Checkout');
->>>>>>> upstream/7.x-3.x
       $this->assertNoRaw($oldname, 'Customer name was cleared after timeout.');
       $newname = $this->randomName(10);
       $edit['panes[delivery][delivery_first_name]'] = $newname;
@@ -656,18 +623,12 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     );
   }
 
-<<<<<<< HEAD
-  function testAddToCartRedirect() {
-    $this->backdropLogin($this->adminUser);
-    $this->backdropGet('admin/store/settings/cart');
-=======
   /**
    * Tests add-to-cart redirection.
    */
   public function testAddToCartRedirect() {
-    $this->drupalLogin($this->adminUser);
-    $this->drupalGet('admin/store/settings/cart');
->>>>>>> upstream/7.x-3.x
+    $this->backdropLogin($this->adminUser);
+    $this->backdropGet('admin/store/settings/cart');
     $this->assertField(
       'uc_add_item_redirect',
       t('Add to cart redirect field exists')
@@ -702,18 +663,12 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     $this->assertTrue($this->getUrl() == $url, 'Add to cart no-redirect works with a query string.');
   }
 
-<<<<<<< HEAD
-  function testMinimumSubtotal() {
-    $this->backdropLogin($this->adminUser);
-    $this->backdropGet('admin/store/settings/cart');
-=======
   /**
    * Tests minimum subtotal for checkout.
    */
   public function testMinimumSubtotal() {
-    $this->drupalLogin($this->adminUser);
-    $this->drupalGet('admin/store/settings/cart');
->>>>>>> upstream/7.x-3.x
+    $this->backdropLogin($this->adminUser);
+    $this->backdropGet('admin/store/settings/cart');
     $this->assertField(
       'uc_minimum_subtotal',
       t('Minimum order subtotal field exists')
@@ -731,13 +686,8 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     $product_above_limit = $this->createProduct(array('sell_price' => $minimum_subtotal + 1));
     $this->backdropLogout();
 
-<<<<<<< HEAD
-    // Check to see if the lower priced product triggers the minimum price logic.
-    $this->backdropPost(
-=======
     // Checks if the lower priced product triggers the minimum price logic.
-    $this->drupalPost(
->>>>>>> upstream/7.x-3.x
+    $this->backdropPost(
       'node/' . $product_below_limit->nid,
       array(),
       t('Add to cart')
@@ -751,14 +701,9 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
       t('Prevented checkout below the minimum order total.')
     );
 
-<<<<<<< HEAD
-    // Add another product to the cart, and verify that we land on the checkout page.
-    $this->backdropPost(
-=======
     // Add another product to the cart, and verify that we land on
     // the checkout page.
-    $this->drupalPost(
->>>>>>> upstream/7.x-3.x
+    $this->backdropPost(
       'node/' . $product_above_limit->nid,
       array(),
       t('Add to cart')
@@ -847,18 +792,12 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     );
   }
 
-<<<<<<< HEAD
-  function testCartBreadcrumb() {
-    $this->backdropLogin($this->adminUser);
-    $this->backdropGet('admin/store/settings/cart');
-=======
   /**
    * Tests the shopping cart page breadcrumb.
    */
   public function testCartBreadcrumb() {
-    $this->drupalLogin($this->adminUser);
-    $this->drupalGet('admin/store/settings/cart');
->>>>>>> upstream/7.x-3.x
+    $this->backdropLogin($this->adminUser);
+    $this->backdropGet('admin/store/settings/cart');
     $this->assertField(
       'uc_cart_breadcrumb_text',
       t('Custom cart breadcrumb text field exists')
@@ -910,18 +849,12 @@ class UbercartCheckoutSettingsTestCase extends UbercartTestHelper {
     );
   }
 
-<<<<<<< HEAD
-  function testEnableCheckout() {
-    $this->backdropLogin($this->adminUser);
-    $this->backdropGet('admin/store/settings/checkout');
-=======
   /**
    * Tests enabling checkout functionality.
    */
   public function testEnableCheckout() {
-    $this->drupalLogin($this->adminUser);
-    $this->drupalGet('admin/store/settings/checkout');
->>>>>>> upstream/7.x-3.x
+    $this->backdropLogin($this->adminUser);
+    $this->backdropGet('admin/store/settings/checkout');
     $this->assertField(
       'uc_checkout_enabled',
       t('Enable checkout field exists')
@@ -946,18 +879,12 @@ class UbercartCheckoutSettingsTestCase extends UbercartTestHelper {
     );
   }
 
-<<<<<<< HEAD
-  function testAnonymousCheckout() {
-    $this->backdropLogin($this->adminUser);
-    $this->backdropGet('admin/store/settings/checkout');
-=======
   /**
    * Tests anonymous checkout functionality.
    */
   public function testAnonymousCheckout() {
-    $this->drupalLogin($this->adminUser);
-    $this->drupalGet('admin/store/settings/checkout');
->>>>>>> upstream/7.x-3.x
+    $this->backdropLogin($this->adminUser);
+    $this->backdropGet('admin/store/settings/checkout');
     $this->assertField(
       'uc_checkout_anonymous',
       t('Anonymous checkout field exists')
