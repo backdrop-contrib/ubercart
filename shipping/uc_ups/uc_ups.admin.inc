@@ -90,7 +90,7 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#description' => t('Select the UPS services that are available to customers.'),
   );
 
-  // Container for quote options
+  // Container for quote options.
   $form['uc_ups_quote_options'] = array(
     '#type' => 'fieldset',
     '#title' => t('Quote options'),
@@ -111,7 +111,7 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#description' => t('Indicate whether each product is quoted as shipping separately or all in one package. Orders with one kind of product will still use the package quantity to determine the number of packages needed, however.'),
   );
 
-  // Form to select package types
+  // Form to select package types.
   $form['uc_ups_quote_options']['uc_ups_pkg_type'] = array(
     '#type' => 'select',
     '#title' => t('Default Package Type'),
@@ -142,7 +142,7 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#description' => t('Is your UPS account receiving negotiated rates on shipments?'),
   );
 
-  // Form to select pickup type
+  // Form to select pickup type.
   $form['uc_ups_quote_options']['uc_ups_pickup_type'] = array(
     '#type' => 'select',
     '#title' => t('Pickup type'),
@@ -186,7 +186,7 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#description' => t('When enabled, the quotes presented to the customer will include the cost of insurance for the full sales price of all products in the order.'),
   );
 
-  // Container for markup forms
+  // Container for markup forms.
   $form['uc_ups_markups'] = array(
     '#type' => 'fieldset',
     '#title' => t('Markups'),
@@ -196,7 +196,7 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#group' => 'ups-settings',
   );
 
-  // Form to select type of rate markup
+  // Form to select type of rate markup.
   $form['uc_ups_markups']['uc_ups_rate_markup_type'] = array(
     '#type' => 'select',
     '#title' => t('Rate markup type'),
@@ -208,7 +208,7 @@ function uc_ups_admin_settings($form, &$form_state) {
     ),
   );
 
-  // Form to select rate markup amount
+  // Form to select rate markup amount.
   $form['uc_ups_markups']['uc_ups_rate_markup'] = array(
     '#type' => 'textfield',
     '#title' => t('Shipping rate markup'),
@@ -216,7 +216,7 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#description' => t('Markup shipping rate quote by currency amount, percentage, or multiplier.'),
   );
 
-  // Form to select type of weight markup
+  // Form to select type of weight markup.
   $form['uc_ups_markups']['uc_ups_weight_markup_type'] = array(
     '#type' => 'select',
     '#title' => t('Weight markup type'),
@@ -229,7 +229,7 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#disabled' => TRUE,
   );
 
-  // Form to select weight markup amount
+  // Form to select weight markup amount.
   $form['uc_ups_markups']['uc_ups_weight_markup'] = array(
     '#type' => 'textfield',
     '#title' => t('Shipping weight markup'),
@@ -238,7 +238,7 @@ function uc_ups_admin_settings($form, &$form_state) {
     '#disabled' => TRUE,
   );
 
-  // Container for label printing
+  // Container for label printing.
   $form['uc_ups_labels'] = array(
     '#type' => 'fieldset',
     '#title' => t('Label Printing'),
@@ -251,7 +251,7 @@ function uc_ups_admin_settings($form, &$form_state) {
   $period = backdrop_map_assoc(array(86400, 302400, 604800, 1209600, 2419200, 0), 'format_interval');
   $period[0] = t('Forever');
 
-  // Form to select how long labels stay on server
+  // Form to select how long labels stay on server.
   $form['uc_ups_labels']['uc_ups_label_lifetime'] = array(
     '#type' => 'select',
     '#title' => t('Label lifetime'),

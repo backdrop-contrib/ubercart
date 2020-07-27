@@ -22,7 +22,13 @@ class UbercartQuoteTestCase extends UbercartTestHelper {
    * Overrides BackdropWebTestCase::setUp().
    */
   protected function setUp($modules = array(), $permissions = array()) {
-    $modules = array('rules_admin', 'uc_payment', 'uc_payment_pack', 'uc_quote', 'uc_flatrate');
+    $modules = array(
+      'rules_admin',
+      'uc_payment',
+      'uc_payment_pack',
+      'uc_quote',
+      'uc_flatrate',
+    );
     $permissions = array('administer rules', 'bypass rules access');
     parent::setUp($modules, $permissions);
     module_load_include('inc', 'uc_flatrate', 'uc_flatrate.admin');
@@ -32,14 +38,14 @@ class UbercartQuoteTestCase extends UbercartTestHelper {
   /**
    * Creates a flat rate shipping quote with optional conditions.
    *
-   * @param $edit
+   * @param array $edit
    *   Data to use to create shipping quote, same format as the values
    *   submitted from the add flatrate method form.
-   * @param $condition
+   * @param bool $condition
    *   If specified, a RulesAnd component defining the conditions to apply
    *   for this method.
    */
-  function createQuote($edit = array(), $condition = FALSE) {
+  protected function createQuote(array $edit = array(), $condition = FALSE) {
     $edit += array(
       'title' => $this->randomName(8),
       'label' => $this->randomName(8),
@@ -67,7 +73,7 @@ class UbercartQuoteTestCase extends UbercartTestHelper {
   /**
    * Simulates selection of a delivery country on the checkout page.
    *
-   * @param $country
+   * @param string $country
    *   The text version of the country name to select, e.g. "Canada" or
    *   "United States".
    */
@@ -91,7 +97,7 @@ class UbercartQuoteTestCase extends UbercartTestHelper {
   /**
    * Simulates selection of a quote on the checkout page.
    *
-   * @param $n
+   * @param int $n
    *   The index of the quote to select.
    */
   protected function selectQuote($n) {
@@ -150,10 +156,10 @@ class UbercartQuoteTestCase extends UbercartTestHelper {
       'USES VARIABLES' => array(
         'order' => array(
           'type' => 'uc_order',
-          'label' => 'Order'
+          'label' => 'Order',
         ),
       ),
-      'AND' => array( array(
+      'AND' => array(array(
         'data_is' => array(
           'data' => array('order:delivery-address:country'),
           'value' => '840',
@@ -175,14 +181,17 @@ class UbercartQuoteTestCase extends UbercartTestHelper {
     $this->assertText($quote2->option_text, 'The second quote option is available');
     $this->assertText($quote1->total, 'Order total includes the default quote.');
 
-    // Select a different quote and ensure the total updates correctly.  Currently, we have to do this
-    // by examining the ajax return value directly (rather than the page contents) because backdropPostAjax() can
-    // only handle replacements via the 'wrapper' property, and the ajax callback may use a command with a selector.
+    // Select a different quote and ensure the total updates correctly.
+    // Currently, we have to do this by examining the ajax return value
+    // directly (rather than the page contents) because backdropPostAjax()
+    // can only handle replacements via the 'wrapper' property, and the ajax
+    // callback may use a command with a selector.
     $edit = array('panes[quotes][quotes][quote_option]' => 'flatrate_2---0');
     $result = $this->ucPostAjax(NULL, $edit, $edit);
     $this->assertText($quote2->total, 'The order total includes the selected quote.');
 
-    // Switch to a different country and ensure the ajax updates the page correctly.
+    // Switch to a different country and ensure the ajax updates the page
+    // correctly.
     $edit['panes[delivery][delivery_country]'] = 124;
     $result = $this->ucPostAjax(NULL, $edit, 'panes[delivery][delivery_country]');
     $this->assertText($quote1->option_text, 'The default quote is still available after changing the country.');
@@ -229,4 +238,5 @@ class UbercartQuoteTestCase extends UbercartTestHelper {
     }
 
   }
+
 }

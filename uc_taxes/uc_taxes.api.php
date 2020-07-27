@@ -16,7 +16,7 @@
  * @param $order
  *   An order object or an order id.
  *
- * @return
+ * @return array
  *   An array of tax line item objects keyed by a module-specific id.
  */
 function hook_uc_calculate_tax($order) {
@@ -45,7 +45,7 @@ function hook_uc_calculate_tax($order) {
 
   foreach (uc_taxes_rate_load() as $tax) {
     if ($use_same_rates) {
-      foreach ((array)$order->line_items as $old_line) {
+      foreach ((array) $order->line_items as $old_line) {
         if ($old_line['type'] == 'tax' && $old_line['data']['tax_id'] == $tax->id) {
           $tax->rate = $old_line['data']['tax_rate'];
           break;

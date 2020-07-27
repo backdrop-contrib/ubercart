@@ -2,8 +2,7 @@
 
 /**
  * @file
- * This file contains the default Rules configurations that allow conditions to
- * be applied to taxes.
+ * Default Rules configurations for uc_taxes.
  */
 
 /**

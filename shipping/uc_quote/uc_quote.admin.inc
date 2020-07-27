@@ -230,7 +230,7 @@ function theme_uc_quote_method_settings($variables) {
       'data' => t('List position'),
       'sort' => 'asc',
     ),
-    t('Operations')
+    t('Operations'),
   );
   $rows = array();
   foreach (element_children($form['methods']) as $method) {

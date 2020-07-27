@@ -5,6 +5,9 @@
  * Tests for Ubercart orders.
  */
 
+/**
+ * Tests for Ubercart orders.
+ */
 class UbercartOrderTestCase extends UbercartTestHelper {
 
   public static function getInfo() {
@@ -15,7 +18,10 @@ class UbercartOrderTestCase extends UbercartTestHelper {
     );
   }
 
-  public function testOrderAPI() {
+  /**
+   * Tests order entity API functions.
+   */
+  public function testOrderApi() {
     // Test defaults.
     $order = uc_order_new();
     $this->assertEqual($order->uid, 0, 'New order is anonymous.');
@@ -31,6 +37,9 @@ class UbercartOrderTestCase extends UbercartTestHelper {
     $this->assertFalse($deleted_order, 'Order was successfully deleted');
   }
 
+  /**
+   * Tests order CRUD operations.
+   */
   public function testOrderEntity() {
     $order = entity_create('uc_order', array());
     $this->assertEqual($order->uid, 0, 'New order is anonymous.');
@@ -56,6 +65,9 @@ class UbercartOrderTestCase extends UbercartTestHelper {
     $this->assertFalse($deleted_order, 'Order was successfully deleted');
   }
 
+  /**
+   * Tests order entity CRUD hooks.
+   */
   public function testEntityHooks() {
     module_enable(array('entity_crud_hook_test'));
 
@@ -82,6 +94,9 @@ class UbercartOrderTestCase extends UbercartTestHelper {
     $this->assertHookMessage('entity_crud_hook_test_entity_delete called for type uc_order');
   }
 
+  /**
+   * Tests admin order creation.
+   */
   public function testOrderCreation() {
     $this->backdropLogin($this->adminUser);
 
@@ -104,6 +119,9 @@ class UbercartOrderTestCase extends UbercartTestHelper {
     $this->assertText('Pending', 'New order is "Pending".');
   }
 
+  /**
+   * Tests admin editing of orders.
+   */
   public function testOrderEditing() {
     $order = $this->ucCreateOrder($this->customer);
 
@@ -131,6 +149,9 @@ class UbercartOrderTestCase extends UbercartTestHelper {
     $this->assertFieldByName('billing_last_name', $edit['billing_last_name'], 'Billing last name changed.');
   }
 
+  /**
+   * Helper function for creating an order programmatically.
+   */
   protected function ucCreateOrder($customer) {
     $order = uc_order_new($customer->uid);
     uc_order_comment_save($order->order_id, 0, t('Order created programmatically.'), 'admin');
@@ -184,10 +205,14 @@ class UbercartOrderTestCase extends UbercartTestHelper {
     return $order;
   }
 
+  /**
+   * Helper function for testing order entity CRUD hooks.
+   */
   protected function assertHookMessage($text, $message = NULL, $group = 'Other') {
     if (!isset($message)) {
       $message = $text;
     }
     return $this->assertTrue(array_search($text, $_SESSION['entity_crud_hook_test']) !== FALSE, $message, $group);
   }
+
 }

@@ -35,4 +35,5 @@ class uc_order_handler_filter_order_status extends views_handler_filter_in_opera
 
     parent::query();
   }
+
 }

@@ -8,6 +8,7 @@
  * argument's title to the username.
  */
 class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_validate_user {
+
   function option_definition() {
     $options = parent::option_definition();
 
@@ -95,4 +96,5 @@ class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_
     $this->argument->validated_title = isset($account->name) ? check_plain($account->name) : check_plain(config_get('system.core', 'anonymous'));
     return TRUE;
   }
+
 }

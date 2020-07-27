@@ -2,8 +2,7 @@
 
 /**
  * @file
- * This file contains the Rules hooks and functions necessary to
- * make the cart related entity, conditions, events, and actions work.
+ * Hooks and functions for uc_cart Rules integration.
  */
 
 /**

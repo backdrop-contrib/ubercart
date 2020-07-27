@@ -1,9 +1,10 @@
 <?php
+
 /**
  * @file
- *
  * Contains the controller for uc_cart_item entities.
  */
+
 class UcCartItemController extends EntityPlusController {
 
   /**
@@ -54,6 +55,7 @@ class UcCartItemController extends EntityPlusController {
 
     return parent::buildContent($product, $view_mode, $langcode, $content);
   }
+
 }
 
 

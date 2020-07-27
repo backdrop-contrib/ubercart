@@ -5,7 +5,6 @@
  * Implementation of i18n hooks for Ubercart orders.
  */
 
-
 /**
  * Implements hook_i18n_string_info().
  */

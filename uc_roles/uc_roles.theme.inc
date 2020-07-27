@@ -21,11 +21,11 @@ function theme_uc_roles_user_new($variables) {
   $output = backdrop_render($form['expirations']);
 
   $output .= '<div class="expiration">';
-  $output .=   backdrop_render($form['new_role']);
-  $output .=   backdrop_render($form['new_role_add']);
-  $output .=   backdrop_render($form['new_role_add_for']);
-  $output .=   backdrop_render($form['new_role_add_qty']);
-  $output .=   backdrop_render($form['new_role_add_granularity']);
+  $output .= backdrop_render($form['new_role']);
+  $output .= backdrop_render($form['new_role_add']);
+  $output .= backdrop_render($form['new_role_add_for']);
+  $output .= backdrop_render($form['new_role_add_qty']);
+  $output .= backdrop_render($form['new_role_add_granularity']);
   $output .= '</div>';
 
   return $output;

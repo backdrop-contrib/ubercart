@@ -127,7 +127,7 @@ function uc_roles_rules_action_info() {
     ),
   );
 
-  // Send an email to an order with a role expiration
+  // Send an email to an order with a role expiration.
   $actions['uc_roles_order_email'] = array(
     'label' => t('Send an order email regarding roles.'),
     'group' => t('Notification'),
@@ -140,7 +140,7 @@ function uc_roles_rules_action_info() {
     ) + $email_args,
   );
 
-  // Send an email to a user with a role expiration
+  // Send an email to a user with a role expiration.
   $actions['uc_roles_user_email'] = array(
     'label' => t('Send a user an email regarding roles.'),
     'group' => t('Notification'),
@@ -242,7 +242,7 @@ function uc_roles_action_order_email($order, $role_expiration, $from, $addresses
     'message' => $message,
     'format' => $format,
   );
-  // Token replacements for the subject and body
+  // Token replacements for the subject and body.
   $settings['replacements'] = array(
     'uc_order' => $order,
     'uc_role' => $role_expiration,
@@ -253,7 +253,7 @@ function uc_roles_action_order_email($order, $role_expiration, $from, $addresses
   $addresses = token_replace($settings['addresses'], $settings['replacements']);
   foreach (explode("\n", $addresses) as $address) {
     $address = trim($address);
-    // Remove blank lines
+    // Remove blank lines.
     if (!empty($address)) {
       $recipients[] = $address;
     }
@@ -284,7 +284,7 @@ function uc_roles_action_user_email($account, $role_expiration, $from, $addresse
     'message' => $message,
     'format' => $format,
   );
-  // Token replacements for the subject and body
+  // Token replacements for the subject and body.
   $settings['replacements'] = array(
     'user' => $account,
     'uc_role' => $role_expiration,
@@ -295,7 +295,7 @@ function uc_roles_action_user_email($account, $role_expiration, $from, $addresse
   $addresses = token_replace($settings['addresses'], $settings['replacements']);
   foreach (explode("\n", $addresses) as $address) {
     $address = trim($address);
-    // Remove blank lines
+    // Remove blank lines.
     if (!empty($address)) {
       $recipients[] = $address;
     }
@@ -322,9 +322,9 @@ function uc_roles_action_user_email($account, $role_expiration, $from, $addresse
  * is notified in Backdrop, as well as through the email address associated with
  * the order.
  *
- * @param $order
+ * @param object $order
  *   An Ubercart order object.
- * @param $message
+ * @param bool $message
  *   If TRUE, messages will be displayed to the user about the renewal.
  */
 function uc_roles_action_order_renew($order, $message) {
@@ -365,7 +365,7 @@ function uc_roles_action_order_renew($order, $message) {
         uc_roles_grant($account, $role->role, $expiration, TRUE, !$message);
       }
 
-      // Get the new expiration (if applicable)
+      // Get the new expiration (if applicable).
       $new_expiration = db_query("SELECT * FROM {uc_roles_expirations} WHERE uid = :uid AND role = :role", array(':uid' => $account->uid, ':role' => $role->role))->fetchObject();
       if (!$new_expiration) {
         $new_expiration = new stdClass();

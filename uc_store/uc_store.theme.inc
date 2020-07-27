@@ -109,4 +109,3 @@ function theme_uc_pane_sort_table($variables) {
 
   return theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => $attributes)) . '<br />';
 }
-

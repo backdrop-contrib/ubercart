@@ -1,0 +1,118 @@
+<?php
+
+/**
+ * Implements hook_install() using the name of the country as the base of
+ * the function name.
+ */
+function bulgaria_install() {
+  // Make the entry in the country table.
+  // VALUES = Country ID, Country Name, 2-digit Code, 3-digit Code, File Version
+  db_insert('uc_countries')
+    ->fields(array(
+      'country_id' => 100,
+      'country_name' => 'Bulgaria',
+      'country_iso_code_2' => 'BG',
+      'country_iso_code_3' => 'BGR',
+      'version' => 2,
+    ))
+    ->execute();
+
+  // Insert zone codes and names.
+  $zones = array(
+    array(100, 'BL', 'Blagoevgrad'),
+    array(100, 'BR', 'Burgas'),
+    array(100, 'VN', 'Varna'),
+    array(100, 'VT', 'Veliko Tarnovo'),
+    array(100, 'VD', 'Vidin'),
+    array(100, 'VR', 'Vratsa'),
+    array(100, 'GB', 'Gabrovo'),
+    array(100, 'DO', 'Dobrich'),
+    array(100, 'KZ', 'Kardzhali'),
+    array(100, 'KY', 'Kyustendil'),
+    array(100, 'LV', 'Lovech'),
+    array(100, 'MT', 'Montana'),
+    array(100, 'PZ', 'Pazardzhik'),
+    array(100, 'PN', 'Pernik'),
+    array(100, 'PV', 'Pleven'),
+    array(100, 'PD', 'Plovdiv'),
+    array(100, 'RG', 'Razgrad'),
+    array(100, 'RS', 'Ruse'),
+    array(100, 'SI', 'Silistra'),
+    array(100, 'SL', 'Sliven'),
+    array(100, 'SM', 'Smolyan'),
+    array(100, 'SG', 'Sofia (stolitsa)'),
+    array(100, 'SF', 'Sofia'),
+    array(100, 'SZ', 'Stara Zagora'),
+    array(100, 'TU', 'Targovishte'),
+    array(100, 'KK', 'Haskovo'),
+    array(100, 'SH', 'Shumen'),
+    array(100, 'YA', 'Yambol'),
+  );
+
+  $query = db_insert('uc_zones')->fields(array('zone_country_id', 'zone_code', 'zone_name'));
+  foreach ($zones as $zone) {
+    $query->values($zone);
+  }
+  $query->execute();
+
+  // Set address format
+  uc_set_address_format(
+    100,
+    "!first_name !last_name\r\n" .
+    "!company\r\n" .
+    "!street1\r\n" .
+    "!street2\r\n" .
+    "!zone_name\r\n" .
+    "!postal_code !city !country_name_if"
+  );
+}
+
+/**
+ * Implements hook_update() with $version being the only argument.
+ * Add a new case for each version update, and be sure to always include the
+ * latest changes in the install function.
+ */
+function bulgaria_update($version) {
+  switch ($version) {
+    case '2':
+      // Update zone codes and names.
+      $zones = array(
+        array(100, 'BL', 'Blagoevgrad'),
+        array(100, 'BR', 'Burgas'),
+        array(100, 'VN', 'Varna'),
+        array(100, 'VT', 'Veliko Tarnovo'),
+        array(100, 'VD', 'Vidin'),
+        array(100, 'VR', 'Vratsa'),
+        array(100, 'GB', 'Gabrovo'),
+        array(100, 'DO', 'Dobrich'),
+        array(100, 'KZ', 'Kardzhali'),
+        array(100, 'KY', 'Kyustendil'),
+        array(100, 'LV', 'Lovech'),
+        array(100, 'MT', 'Montana'),
+        array(100, 'PZ', 'Pazardzhik'),
+        array(100, 'PN', 'Pernik'),
+        array(100, 'PV', 'Pleven'),
+        array(100, 'PD', 'Plovdiv'),
+        array(100, 'RG', 'Razgrad'),
+        array(100, 'RS', 'Ruse'),
+        array(100, 'SI', 'Silistra'),
+        array(100, 'SL', 'Sliven'),
+        array(100, 'SM', 'Smolyan'),
+        array(100, 'SG', 'Sofia (stolitsa)'),
+        array(100, 'SF', 'Sofia'),
+        array(100, 'SZ', 'Stara Zagora'),
+        array(100, 'TU', 'Targovishte'),
+        array(100, 'KK', 'Haskovo'),
+        array(100, 'SH', 'Shumen'),
+        array(100, 'YA', 'Yambol'),
+      );
+
+      $query = db_insert('uc_zones')->fields(array('zone_country_id', 'zone_code', 'zone_name'));
+      foreach ($zones as $zone) {
+        $query->values($zone);
+      }
+      $query->execute();
+
+      break;
+  }
+}

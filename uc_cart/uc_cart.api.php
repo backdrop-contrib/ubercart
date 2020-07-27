@@ -128,14 +128,13 @@ function hook_uc_cart_display($item) {
     '#markup' => node_access('view', $node) ? l($item->title, 'node/' . $node->nid) : check_plain($item->title),
   );
 
-
   $element['#total'] = $item->price * $item->qty;
   $element['data'] = array('#type' => 'hidden', '#value' => serialize($item->data));
   $element['qty'] = array(
     '#type' => 'textfield',
     '#default_value' => $item->qty,
     '#size' => 5,
-    '#maxlength' => 6
+    '#maxlength' => 6,
   );
 
   if ($description = uc_product_get_description($item)) {

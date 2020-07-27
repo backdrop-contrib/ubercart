@@ -3,8 +3,6 @@
 /**
  * @file
  * Processes payments using Authorize.net. Supports AIM and ARB.
- *
- * Development sponsored by Digital Dollhouse - http://www.digitaldollhouse.com
  */
 
 
@@ -111,7 +109,6 @@ function uc_authorizenet_settings_form($form, &$form_state) {
     '#default_value' => $config->get('uc_authnet_response_debug'),
   );
 
-
   $form['arb_settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('ARB settings'),
@@ -163,7 +160,6 @@ function uc_authorizenet_settings_form($form, &$form_state) {
     ),
     '#default_value' => $config->get('uc_authnet_cim_mode'),
   );
-
 
   return $form;
 }
@@ -530,7 +526,7 @@ function _uc_authorizenet_charge($order, $amount, $data) {
     $response[$i] = substr($response[$i], 1, strlen($response[$i]) - 2);
   }
 
-  /**
+  /*
    * Response key index:
    * 0 = Response Code
    * 2 = Response Reason Code
@@ -610,14 +606,14 @@ function _uc_authorizenet_charge($order, $amount, $data) {
 /**
  * Sends an XML API Request to Authorize.Net.
  *
- * @param $server
+ * @param string $server
  *   The name of the server to send a request to - 'production' or 'developer'.
- * @param $xml
+ * @param string $xml
  *   The XML to send to Authorize.Net.
  * @param $callback
  *   The name of the function that should process the response.
  *
- * @return
+ * @return bool
  *   TRUE or FALSE indicating the success of the API request.
  */
 function uc_authorizenet_xml_api($server, $xml) {
@@ -657,12 +653,12 @@ function uc_authorizenet_xml_api($server, $xml) {
  *
  * @param $subscription_id
  *   The ID of the subscription at Authorize.Net.
- * @param $updates
+ * @param array $updates
  *   An array of data to update using key/value pairs from the XML API for ARB;
  *   keys should be children of the subscription element in the XML.
  *   See the ARB_guide.pdf from Authorize.Net for ARBCreateSubscriptionRequests.
  *
- * @return
+ * @return bool
  *   TRUE or FALSE indicating the success of the cancellation.
  */
 function uc_authorizenet_arb_update($subscription_id, $updates, $order_id = NULL) {
@@ -704,6 +700,8 @@ function uc_authorizenet_arb_update($subscription_id, $updates, $order_id = NULL
 }
 
 /**
+ * Helper function for XML API requests.
+ *
  * Wraps XML API request child elements in the request element and includes
  * the merchant authentication information.
  */
@@ -746,39 +744,51 @@ function _uc_authorizenet_avs($code) {
     case 'A':
       $text .= t('Address (Street) matches, ZIP does not');
       break;
+
     case 'B':
       $text .= t('Address information not provided for AVS check');
       break;
+
     case 'E':
       $text .= t('AVS error');
       break;
+
     case 'G':
       $text .= t('Non-U.S. Card Issuing Bank');
       break;
+
     case 'N':
       $text .= t('No Match on Address (Street) or ZIP');
       break;
+
     case 'P':
       $text .= t('AVS not applicable for this transaction');
       break;
+
     case 'R':
       $text .= t('Retry – System unavailable or timed out');
       break;
+
     case 'S':
       $text .= t('Service not supported by issuer');
       break;
+
     case 'U':
       $text .= t('Address information is unavailable');
       break;
+
     case 'W':
       $text .= t('Nine digit ZIP matches, Address (Street) does not');
       break;
+
     case 'X':
       $text .= t('Address (Street) and nine digit ZIP match');
       break;
+
     case 'Y':
       $text .= t('Address (Street) and five digit ZIP match');
       break;
+
     case 'Z':
       $text .= t('Five digit ZIP matches, Address (Street) does not');
       break;
@@ -797,15 +807,19 @@ function _uc_authorizenet_cvv($code) {
     case 'M':
       $text .= t('Match');
       break;
+
     case 'N':
       $text .= t('No Match');
       break;
+
     case 'P':
       $text .= t('Not Processed');
       break;
+
     case 'S':
       $text .= t('Should have been present');
       break;
+
     case 'U':
       $text .= t('Issuer unable to process request');
       break;
@@ -821,14 +835,19 @@ function _uc_authorizenet_txn_type($type) {
   switch (strtoupper($type)) {
     case 'AUTH_CAPTURE':
       return t('Authorization and capture');
+
     case 'AUTH_ONLY':
       return t('Authorization only');
+
     case 'PRIOR_AUTH_CAPTURE':
       return t('Prior authorization capture');
+
     case 'CAPTURE_ONLY':
       return t('Capture only');
+
     case 'CREDIT':
       return t('Credit');
+
     case 'VOID':
       return t('Void');
   }
@@ -841,12 +860,16 @@ function _uc_authorizenet_txn_map($type) {
   switch ($type) {
     case UC_CREDIT_AUTH_ONLY:
       return 'AUTH_ONLY';
+
     case UC_CREDIT_PRIOR_AUTH_CAPTURE:
       return 'PRIOR_AUTH_CAPTURE';
+
     case UC_CREDIT_AUTH_CAPTURE:
       return 'AUTH_CAPTURE';
+
     case UC_CREDIT_CREDIT:
       return 'CREDIT';
+
     case UC_CREDIT_VOID:
       return 'VOID';
   }

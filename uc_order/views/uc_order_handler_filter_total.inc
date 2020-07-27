@@ -16,6 +16,7 @@
  * in the query with an alias like "table_field".
  */
 class uc_order_handler_filter_total extends views_handler_filter_group_by_numeric {
+
   /**
    * Overrides views_handler_filter_group_by_numeric::query().
    */
@@ -28,4 +29,5 @@ class uc_order_handler_filter_total extends views_handler_filter_group_by_numeri
       $this->{$info[$this->operator]['method']}($field);
     }
   }
+
 }

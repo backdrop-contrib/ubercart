@@ -5,12 +5,11 @@
  * Page callback for Authorize.Net's Silent POST feature.
  */
 
-
 /**
  * Receives a payment notification and handles it appropriately.
  */
 function uc_authorizenet_silent_post() {
-  // Determine if this is an ARB notification or not
+  // Determine if this is an ARB notification or not.
   $arb = (isset($_POST['x_subscription_id']) and isset($_POST['x_subscription_paynum']));
 
   // Log ARB payment notification, if enabled.

@@ -5,7 +5,6 @@
  * Payment administration menu items.
  */
 
-
 /**
  * Displays an overview of the available payment methods.
  *

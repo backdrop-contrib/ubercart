@@ -5,7 +5,6 @@
  * Entity metadata hooks for uc_cart.module.
  */
 
-
 /**
  * Implements hook_entity_property_info().
  */

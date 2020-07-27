@@ -9,6 +9,7 @@
  * Themes the catalog block.
  *
  * @see theme_uc_catalog_item()
+ *
  * @ingroup themeable
  */
 function theme_uc_catalog_block($variables) {

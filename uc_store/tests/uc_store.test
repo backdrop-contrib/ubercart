@@ -19,7 +19,6 @@ class UbercartTestHelper extends BackdropWebTestCase {
   /** Test product. */
   protected $product;
 
-
   /**
    * Overrides BackdropWebTestCase::setUp().
    *
@@ -62,7 +61,7 @@ class UbercartTestHelper extends BackdropWebTestCase {
   /**
    * Creates a new product.
    */
-  function createProduct($product = array()) {
+  protected function createProduct($product = array()) {
     // Set the default required fields.
     $weight_units = array('lb', 'kg', 'oz', 'g');
     $length_units = array('in', 'ft', 'cm', 'mm');
@@ -92,7 +91,7 @@ class UbercartTestHelper extends BackdropWebTestCase {
    *
    * Fix this after adding a proper API call for saving a product class.
    */
-  function createProductClass($data = array()) {
+  protected function createProductClass($data = array()) {
     $product_class = $data + array(
       'pcid' => $this->randomName(8),
       'name' => $this->randomName(8),
@@ -111,10 +110,10 @@ class UbercartTestHelper extends BackdropWebTestCase {
    * @param $edit
    *   The form-values array to which to add required fields.
    */
-  function populateCheckoutForm($edit = array()) {
+  protected function populateCheckoutForm($edit = array()) {
     foreach (array('billing', 'delivery') as $pane) {
       $prefix = 'panes[' . $pane . '][' . $pane;
-      $key =  $prefix . '_country]';
+      $key = $prefix . '_country]';
       $country = empty($edit[$key]) ? variable_get('uc_store_country', 840) : $edit[$key];
       $zone_id = db_query_range('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand()', 0, 1, array('country' => $country))->fetchField();
       $edit += array(
@@ -139,7 +138,7 @@ class UbercartTestHelper extends BackdropWebTestCase {
   /**
    * Executes the checkout process.
    */
-  function checkout($edit = array()) {
+  protected function checkout($edit = array()) {
     $this->backdropPost('cart', array(), 'Checkout');
     $this->assertText(
       t('Enter your billing address and information here.'),
@@ -180,7 +179,7 @@ class UbercartTestHelper extends BackdropWebTestCase {
    *   An array containing the most recently sent matching email,
    *   or FALSE if the subject line did not match anything.
    */
-  function findMail($pattern) {
+  protected function findMail($pattern) {
     foreach (array_reverse($this->backdropGetMails()) as $mail) {
       if (preg_match($pattern, $mail['subject'])) {
         $this->pass(t('E-mail found with subject matching %pattern.', array('%pattern' => $pattern)));
@@ -207,7 +206,7 @@ class UbercartTestHelper extends BackdropWebTestCase {
    *   TRUE to check only the plain-text contents of the 'data' keys of each 'insert' command (i.e. what would
    *   be inserted into the page).  FALSE to check the complete, json-encoded ajax response.
    */
-  function assertAjaxHelper($ajax, $text, $message = FALSE, $not_exists = FALSE, $plain = TRUE) {
+  protected function assertAjaxHelper($ajax, $text, $message = FALSE, $not_exists = FALSE, $plain = TRUE) {
     $content = '';
     if ($plain) {
       foreach ($ajax as $command) {
@@ -237,7 +236,7 @@ class UbercartTestHelper extends BackdropWebTestCase {
    * @param $message
    *   The assertion message.
    */
-  function assertAjaxText($ajax, $text, $message = FALSE) {
+  protected function assertAjaxText($ajax, $text, $message = FALSE) {
     $this->assertAjaxHelper($ajax, $text, $message, FALSE, TRUE);
   }
 
@@ -252,7 +251,7 @@ class UbercartTestHelper extends BackdropWebTestCase {
    * @param $message
    *   The assertion message.
    */
-  function assertNoAjaxText($ajax, $text, $message = FALSE) {
+  protected function assertNoAjaxText($ajax, $text, $message = FALSE) {
     $this->assertAjaxHelper($ajax, $text, $message, TRUE, TRUE);
   }
 
@@ -266,7 +265,7 @@ class UbercartTestHelper extends BackdropWebTestCase {
    * @param $message
    *   The assertion message.
    */
-  function assertAjaxRaw($ajax, $text, $message = FALSE) {
+  protected function assertAjaxRaw($ajax, $text, $message = FALSE) {
     $this>assertAjaxHelper($ajax, $text, $message, FALSE, FALSE);
   }
 
@@ -280,7 +279,7 @@ class UbercartTestHelper extends BackdropWebTestCase {
    * @param $message
    *   The assertion message.
    */
-  function assertNoAjaxRaw($ajax, $text, $message = FALSE) {
+  protected function assertNoAjaxRaw($ajax, $text, $message = FALSE) {
     $this>assertAjaxHelper($ajax, $text, $message, TRUE, FALSE);
   }
 
@@ -314,22 +313,27 @@ class UbercartTestHelper extends BackdropWebTestCase {
             case 'replaceWith':
               $wrapperNode->parentNode->replaceChild($newNode, $wrapperNode);
               break;
+
             case 'append':
               $wrapperNode->appendChild($newNode);
               break;
+
             case 'prepend':
               // If no firstChild, insertBefore() falls back to
               // appendChild().
               $wrapperNode->insertBefore($newNode, $wrapperNode->firstChild);
               break;
+
             case 'before':
               $wrapperNode->parentNode->insertBefore($newNode, $wrapperNode);
               break;
+
             case 'after':
               // If no nextSibling, insertBefore() falls back to
               // appendChild().
               $wrapperNode->parentNode->insertBefore($newNode, $wrapperNode->nextSibling);
               break;
+
             case 'html':
               foreach ($wrapperNode->childNodes as $childNode) {
                 $wrapperNode->removeChild($childNode);
@@ -345,6 +349,7 @@ class UbercartTestHelper extends BackdropWebTestCase {
     $this->verbose('Page content after ajax submission:<hr />' . $this->content);
     return $commands;
   }
+
 }
 
 /**
@@ -363,7 +368,7 @@ class UbercartCountryTestCase extends UbercartTestHelper {
   /**
    * Test import/enable/disable/remove of Country information files.
    */
-  function testCountries() {
+  public function testCountries() {
     $import_file = 'belgium_56_3.cif';
     $country_name = 'Belgium';
     $country_code = 'BEL';
@@ -434,4 +439,5 @@ class UbercartCountryTestCase extends UbercartTestHelper {
       t('Country does not appear in imported countries table.')
     );
   }
+
 }

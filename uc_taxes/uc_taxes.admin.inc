@@ -215,7 +215,7 @@ function uc_taxes_form_submit($form, &$form_state) {
  * Clones a tax rate.
  */
 function uc_taxes_clone($rate_id) {
-  if (!isset($_GET['token']) || !backdrop($_GET['token'], 'uc_taxes_clone')) {
+  if (!isset($_GET['token']) || !backdrop_valid_token($_GET['token'], 'uc_taxes_clone')) {
     return MENU_ACCESS_DENIED;
   }
 
