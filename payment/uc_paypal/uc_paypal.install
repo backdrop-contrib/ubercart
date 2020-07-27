@@ -167,7 +167,7 @@ function uc_paypal_update_1000() {
   $config->set('uc_paypal_wps_email', update_variable_get('uc_paypal_wps_email', ''));
   $config->set('uc_paypal_wps_currency', update_variable_get('uc_paypal_wps_currency', 'USD'));
   $config->set('uc_paypal_wps_language', update_variable_get('uc_paypal_wps_language', 'US'));
-  $config->set('uc_paypal_wps_server', update_variable_get('uc_paypal_wps_server', 'https://www.sandbox.paypal.com/cgi-bin/webscr'));
+  $config->set('uc_paypal_wps_server', update_variable_get('uc_paypal_wps_server', 'https://ipnpb.sandbox.paypal.com/cgi-bin/webscr'));
   $config->set('uc_paypal_wps_payment_action', update_variable_get('uc_paypal_wps_payment_action', 'Sale'));
   $config->set('uc_paypal_wps_cancel_return_url', update_variable_get('uc_paypal_wps_cancel_return_url', 'cart'));
   $config->set('uc_paypal_wps_submit_method', update_variable_get('uc_paypal_wps_submit_method', 'single'));
@@ -184,7 +184,7 @@ function uc_paypal_update_1000() {
   $config->set('uc_paypal_ec_review_company', update_variable_get('uc_paypal_ec_review_company', 'TRUE'));
   $config->set('uc_paypal_ec_review_phone', update_variable_get('uc_paypal_ec_review_phone', 'TRUE'));
   $config->set('uc_paypal_ec_review_comment', update_variable_get('uc_paypal_ec_review_comment', 'TRUE'));
-  $config_>save();
+  $config->save();
 
   update_variable_del('uc_paypal_wpp_currency');
   update_variable_del('uc_paypal_wpp_server');
@@ -208,4 +208,17 @@ function uc_paypal_update_1000() {
   update_variable_del('uc_paypal_ec_review_company');
   update_variable_del('uc_paypal_ec_review_phone');
   update_variable_del('uc_paypal_ec_review_comment');
+}
+
+/**
+ * Implements hook_update_N().
+ * Adjust 'uc_paypal_wps_server' config setting to new default value per 
+ * https://www.drupal.org/project/ubercart/issues/2800003.
+ */
+function uc_paypal_update_1001() {
+  $config = config('uc_paypal.settings');
+  if ($config->get('uc_paypal_wps_server') == 'https://www.sandbox.paypal.com/cgi-bin/webscr') {
+    $config->set('uc_paypal_wps_server', 'https://ipnpb.sandbox.paypal.com/cgi-bin/webscr');
+    $config->save();
+  }
 }

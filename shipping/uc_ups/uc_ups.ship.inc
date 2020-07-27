@@ -5,7 +5,6 @@
  * UPS functions for label generation.
  */
 
-
 /**
  * Shipment creation callback.
  *
@@ -45,14 +44,14 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
         }
       }
       // Create list of products and get a representative product (last one in
-      // the loop) to use for some default values
+      // the loop) to use for some default values.
       $product_list = array();
       $declared_value = 0;
       foreach ($package->products as $product) {
         $product_list[] = $product->qty . ' x ' . $product->model;
         $declared_value += $product->qty * $product->price;
       }
-      // Use last product in package to determine package type
+      // Use last product in package to determine package type.
       $ups_data = db_query("SELECT pkg_type FROM {uc_ups_products} WHERE nid = :nid", array(':nid' => $product->nid))->fetchAssoc();
       $product->ups = $ups_data;
       $pkg_form = array(
@@ -154,7 +153,7 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
     $form['destination'][$field]['#required'] = TRUE;
   }
 
-  // Determine shipping option chosen by the customer
+  // Determine shipping option chosen by the customer.
   $method  = $order->quote['method'];
   $methods = module_invoke_all('uc_shipping_method');
   if (isset($methods[$method])) {
@@ -162,14 +161,14 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
     $method   = $services[$order->quote['accessorials']];
   }
 
-  // Container for shipment data
+  // Container for shipment data.
   $form['shipment'] = array(
     '#type' => 'fieldset',
     '#title' => t('Shipment data'),
     '#collapsible' => TRUE,
   );
 
-  // Inform user of customer's shipping choice
+  // Inform user of customer's shipping choice.
   $form['shipment']['shipping_choice'] = array(
     '#type' => 'markup',
     '#prefix' => '<div>',
@@ -178,7 +177,7 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
   );
 
   // Pass shipping charge paid information on to validation function so it
-  // can be displayed alongside actual costs
+  // can be displayed alongside actual costs.
   $form['shipment']['paid'] = array(
     '#type' => 'value',
     '#value' => uc_currency_format($order->quote['rate']),
@@ -410,6 +409,7 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
         $units = 'LBS';
         $unit_name = 'Pounds';
         break;
+
       case 'cm':
         $weight_factor = uc_weight_conversion($package->weight_units, 'kg');
         $units = 'KGS';
@@ -720,14 +720,14 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
 /**
  * Constructs an XML label and pickup request.
  *
- * @param $digest
+ * @param string $digest
  *   Base-64 encoded shipment request.
- * @param $order_id
+ * @param int $order_id
  *   The order id of the shipment.
- * @param $packages
+ * @param array $packages
  *   An array of package ids to be shipped.
  *
- * @return
+ * @return string
  *   ShipmentAcceptRequest XML document to send to UPS.
  */
 function uc_ups_request_pickup($digest, $order_id = 0, $packages = array()) {

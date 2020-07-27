@@ -1,0 +1,164 @@
+<?php
+
+/**
+ * Implements hook_install() using the name of the country as the base of
+ * the function name.
+ */
+function colombia_install() {
+  // Make the entry in the country table.
+  // VALUES = Country ID, Country Name, 2-digit Code, 3-digit Code, File Version
+  db_insert('uc_countries')
+    ->fields(array(
+      'country_id' => 170,
+      'country_name' => 'Colombia',
+      'country_iso_code_2' => 'CO',
+      'country_iso_code_3' => 'COL',
+      'version' => 2,
+    ))
+    ->execute();
+
+  // Make the entries in the zones table.
+  $zones = array(
+    array(170, 'DC', 'Distrito Capital de Bogotá'),
+    array(170, 'AMA', 'Amazonas'),
+    array(170, 'ANT', 'Antioquia'),
+    array(170, 'ARA', 'Arauca'),
+    array(170, 'ATL', 'Atlántico'),
+    array(170, 'BOL', 'Bolívar'),
+    array(170, 'BOY', 'Boyacá'),
+    array(170, 'CAL', 'Caldas'),
+    array(170, 'CAQ', 'Caquetá'),
+    array(170, 'CAS', 'Casanare'),
+    array(170, 'CAU', 'Cauca'),
+    array(170, 'CES', 'Cesar'),
+    array(170, 'COR', 'Córdoba'),
+    array(170, 'CUN', 'Cundinamarca'),
+    array(170, 'CHO', 'Chocó'),
+    array(170, 'GUA', 'Guainía'),
+    array(170, 'GUV', 'Guaviare'),
+    array(170, 'HUI', 'Huila'),
+    array(170, 'LAG', 'La Guajira'),
+    array(170, 'MAG', 'Magdalena'),
+    array(170, 'MET', 'Meta'),
+    array(170, 'NAR', 'Nariño'),
+    array(170, 'NSA', 'Norte de Santander'),
+    array(170, 'PUT', 'Putumayo'),
+    array(170, 'QUI', 'Quindío'),
+    array(170, 'RIS', 'Risaralda'),
+    array(170, 'SAP', 'San Andrés, Providencia y Santa Catalina'),
+    array(170, 'SAN', 'Santander'),
+    array(170, 'SUC', 'Sucre'),
+    array(170, 'TOL', 'Tolima'),
+    array(170, 'VAC', 'Valle del Cauca'),
+    array(170, 'VAU', 'Vaupés'),
+    array(170, 'VID', 'Vichada'),
+  );
+
+  $query = db_insert('uc_zones')->fields(array('zone_country_id', 'zone_code', 'zone_name'));
+  foreach ($zones as $zone) {
+    $query->values($zone);
+  }
+  $query->execute();
+
+  // Set address format.
+  uc_set_address_format(
+    170,
+    "!company\r\n" .
+    "!first_name !last_name\r\n" .
+    "!street1\r\n" .
+    "!street2\r\n" .
+    "!city !zone_code !postal_code\r\n" .
+    "!country_name_if"
+  );
+}
+
+/**
+ * Implements hook_update() with $version being the only argument.
+ * Add a new case for each version update, and be sure to always include the
+ * latest changes in the install function.
+ */
+function colombia_update($version) {
+  switch ($version) {
+    case 2:
+      // Add missing zone.
+      $zones = array(
+        array(170, 'BOY', 'Boyacá'),
+      );
+
+      $query = db_insert('uc_zones')->fields(array('zone_country_id', 'zone_code', 'zone_name'));
+      foreach ($zones as $zone) {
+        $query->values($zone);
+      }
+      $query->execute();
+
+      // Rename zones.
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'Distrito Capital de Bogotá'))
+        ->condition('zone_country_id', 170)
+        ->condition('zone_code', 'DC')
+        ->execute();
+
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'Atlántico'))
+        ->condition('zone_country_id', 170)
+        ->condition('zone_code', 'ATL')
+        ->execute();
+
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'Bolívar'))
+        ->condition('zone_country_id', 170)
+        ->condition('zone_code', 'BOL')
+        ->execute();
+
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'Caquetá'))
+        ->condition('zone_country_id', 170)
+        ->condition('zone_code', 'CAQ')
+        ->execute();
+
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'Córdoba'))
+        ->condition('zone_country_id', 170)
+        ->condition('zone_code', 'COR')
+        ->execute();
+
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'Chocó'))
+        ->condition('zone_country_id', 170)
+        ->condition('zone_code', 'CHO')
+        ->execute();
+
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'Guainía'))
+        ->condition('zone_country_id', 170)
+        ->condition('zone_code', 'GUA')
+        ->execute();
+
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'Nariño'))
+        ->condition('zone_country_id', 170)
+        ->condition('zone_code', 'NAR')
+        ->execute();
+
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'Quindío'))
+        ->condition('zone_country_id', 170)
+        ->condition('zone_code', 'QUI')
+        ->execute();
+
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'San Andrés, Providencia y Santa Catalina'))
+        ->condition('zone_country_id', 170)
+        ->condition('zone_code', 'SAP')
+        ->execute();
+
+      db_update('uc_zones')
+        ->fields(array('zone_name' => 'Vaupés'))
+        ->condition('zone_country_id', 170)
+        ->condition('zone_code', 'VAU')
+        ->execute();
+
+      break;
+  }
+
+}

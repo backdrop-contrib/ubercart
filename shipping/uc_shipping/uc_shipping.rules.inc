@@ -54,7 +54,8 @@ function uc_shipping_rules_data_info() {
       ),
       'carrier' => array(
         'type' => 'text',
-        'label' => t('Carrier'), 'description' > t('The company making the delivery.'),
+        'label' => t('Carrier'),
+        'description' => t('The company making the delivery.'),
       ),
       'transaction_id' => array(
         'type' => 'text',

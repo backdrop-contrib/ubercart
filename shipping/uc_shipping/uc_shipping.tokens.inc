@@ -5,7 +5,6 @@
  * Token hooks for the uc_shipping module.
  */
 
-
 /**
  * Implements hook_token_info().
  */

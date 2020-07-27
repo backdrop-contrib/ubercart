@@ -8,7 +8,7 @@
 /**
  * Preprocesses a Cart Link, confirming with the user for destructive actions.
  *
- * @param $cart_actions
+ * @param string $cart_actions
  *   A Cart Link URL is structured like "/cart/add/$cart_actions".
  *
  * @see uc_cart_links_form_submit()
@@ -59,7 +59,7 @@ function uc_cart_links_form_submit($form, &$form_state) {
 /**
  * Processes a Cart Link to fiddle with the cart and redirect the user.
  *
- * @param $cart_actions
+ * @param string $cart_actions
  *   A Cart Link URL is structured like "/cart/add/$cart_actions".
  */
 function uc_cart_links_process($cart_actions) {
@@ -97,12 +97,14 @@ function uc_cart_links_process($cart_actions) {
             case 'P':
               $p['nid'] = intval(backdrop_substr($part, 1));
               break;
-              // Set the quantity to add to cart: _q2
+
+            // Set the quantity to add to cart: _q2
             case 'q':
             case 'Q':
               $p['qty'] = intval(backdrop_substr($part, 1));
               break;
-              // Set an attribute/option for the product: _a3o6
+
+            // Set an attribute/option for the product: _a3o6
             case 'a':
             case 'A':
               $attribute = intval(backdrop_substr($part, 1, stripos($part, 'o') - 1));
@@ -127,7 +129,8 @@ function uc_cart_links_process($cart_actions) {
                 }
               }
               break;
-              // Suppress the add to cart message: _s
+
+            // Suppress the add to cart message: _s
             case 's':
             case 'S':
               $msg = FALSE;

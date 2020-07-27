@@ -96,7 +96,6 @@ function uc_stock_report() {
   $query->condition('active', 1)
     ->condition('title', '', '<>');
 
-
   if (arg(4) == 'threshold') {
     $query->where('threshold >= stock');
   }

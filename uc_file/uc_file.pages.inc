@@ -43,6 +43,7 @@ define('UC_FILE_ERROR_HOOK_ERROR'             , 7);
  *     - address_limit: Integer limit on IP addresses.
  *
  * @see theme_table()
+ *
  * @ingroup themeable
  */
 function theme_uc_file_user_downloads($variables) {
@@ -168,7 +169,7 @@ function uc_file_user_downloads($account) {
       ),
     );
 
-    // Expiration set to 'never'
+    // Expiration set to 'never'.
     if ($file->expiration == FALSE) {
       $file_link = l(basename($file->filename), 'download/' . $file->fid, $onclick);
     }
@@ -372,7 +373,7 @@ function _uc_file_download_transfer($file_user, $ip) {
     $filename = preg_replace('/\./', '%2e', $filename, substr_count($filename, '.') - 1);
   }
 
-  // Check if HTTP_RANGE is sent by browser (or download manager)
+  // Check if HTTP_RANGE is sent by browser (or download manager).
   $range = NULL;
   if (isset($_SERVER['HTTP_RANGE'])) {
     if (substr($_SERVER['HTTP_RANGE'], 0, 6) == 'bytes=') {
@@ -388,7 +389,7 @@ function _uc_file_download_transfer($file_user, $ip) {
     }
   }
 
-  // Figure out download piece from range (if set)
+  // Figure out download piece from range (if set).
   if (isset($range)) {
     list($seek_start, $seek_end) = explode('-', $range, 2);
   }
@@ -404,7 +405,7 @@ function _uc_file_download_transfer($file_user, $ip) {
     backdrop_add_http_header('Status', '206 Partial Content');
   }
 
-  // Standard headers, including content-range and length
+  // Standard headers, including content-range and length.
   backdrop_add_http_header('Pragma', 'public');
   backdrop_add_http_header('Cache-Control', 'cache, must-revalidate');
   backdrop_add_http_header('Accept-Ranges', 'bytes');
@@ -413,20 +414,20 @@ function _uc_file_download_transfer($file_user, $ip) {
   backdrop_add_http_header('Content-Disposition', 'attachment; filename="' . $filename . '"');
   backdrop_add_http_header('Content-Length', $seek_end - $seek_start + 1);
 
-  // Last-Modified is required for content served dynamically
+  // Last-Modified is required for content served dynamically.
   backdrop_add_http_header('Last-Modified', gmdate("D, d M Y H:i:s", filemtime($file_user->full_path)) . " GMT");
 
-  // Etag header is required for Firefox3 and other managers
+  // Etag header is required for Firefox3 and other managers.
   backdrop_add_http_header('ETag', md5($file_user->full_path));
 
-  // Open the file and seek to starting byte
+  // Open the file and seek to starting byte.
   $fp = fopen($file_user->full_path, 'rb');
   fseek($fp, $seek_start);
 
-  // Start buffered download
+  // Start buffered download.
   while (!feof($fp)) {
 
-    // Reset time limit for large files
+    // Reset time limit for large files.
     backdrop_set_time_limit(0);
 
     // Push the data to the client.
@@ -463,7 +464,7 @@ function _uc_file_log_download($file_user, $ip) {
   // Accessed again.
   $file_user->accessed++;
 
-  // Calculate hash
+  // Calculate hash.
   $file_user->file_key = backdrop_get_token(serialize($file_user));
 
   backdrop_write_record('uc_file_users', $file_user, 'fuid');

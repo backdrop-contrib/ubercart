@@ -10,7 +10,6 @@
  * expire/need to be renewed/etc.
  */
 
-
 /**
  * Implements hook_config_info().
  */
@@ -385,7 +384,7 @@ function uc_roles_user_view($account, $view_mode) {
 function uc_roles_uc_order_product_can_ship($item) {
   $roles = db_query("SELECT * FROM {uc_roles_products} WHERE nid = :nid", array(':nid' => $item->nid));
   foreach ($roles as $role) {
-    // If the model is empty, keep looking. (Everyone needs a role model...)
+    // If the model is empty, keep looking. (Everyone needs a role model...).
     if (empty($role->model)) {
       continue;
     }
@@ -461,6 +460,7 @@ function uc_roles_uc_message() {
  *
  * @see uc_roles_feature_form_validate()
  * @see uc_roles_feature_form_submit()
+ *
  * @ingroup forms
  */
 function uc_roles_feature_form($form, &$form_state, $node, $feature) {
@@ -719,18 +719,23 @@ function uc_roles_feature_form_submit($form, &$form_state) {
         case 'never':
           $description .= t('<strong>Expiration:</strong> never<br />');
           break;
+
         case 'day':
           $description .= t('<strong>Expiration:</strong> !qty day(s)<br />', array('!qty' => $product_role['duration']));
           break;
+
         case 'week':
           $description .= t('<strong>Expiration:</strong> !qty week(s)<br />', array('!qty' => $product_role['duration']));
           break;
+
         case 'month':
           $description .= t('<strong>Expiration:</strong> !qty month(s)<br />', array('!qty' => $product_role['duration']));
           break;
+
         case 'year':
           $description .= t('<strong>Expiration:</strong> !qty year(s)<br />', array('!qty' => $product_role['duration']));
           break;
+
         default:
           break;
       }
@@ -751,7 +756,8 @@ function uc_roles_feature_form_submit($form, &$form_state) {
 
   $form_state['redirect'] = uc_product_feature_save($data);
 
-  $product_role['pfid'] = $data['pfid'];
+  // Updating the 'pfid' on $product_role and on $form_state for future use.
+  $form_state['values']['pfid'] = $product_role['pfid'] = $data['pfid'];
 
   // Insert or update uc_file_product table.
   uc_roles_product_write_record($product_role);
@@ -898,9 +904,9 @@ function uc_roles_feature_settings($form, &$form_state) {
  * Gets role name.
  *
  * @param $role
- *   The Backdrop role id number.
+ *   The Backdrop role id.
  *
- * @return
+ * @return string|false
  *   A string containing the name of the role, returns FALSE if role is invalid.
  */
 function _uc_roles_get_name($role) {
@@ -911,10 +917,10 @@ function _uc_roles_get_name($role) {
 /**
  * Gets available roles for granting on product purchase.
  *
- * @param $exclude
+ * @param array $exclude
  *   A list of role ids to exclude from the list.
  *
- * @return
+ * @return array
  *   An assoc array with key = role and value = role name.
  */
 function _uc_roles_get_choices($exclude = array()) {
@@ -941,7 +947,7 @@ function _uc_roles_get_choices($exclude = array()) {
 /**
  * Deletes all role data associated with a given product feature.
  *
- * @param $pfid
+ * @param int $pfid
  *   An Ubercart product feature ID.
  */
 function uc_roles_feature_delete($pfid) {
@@ -964,7 +970,7 @@ function uc_roles_feature_delete($pfid) {
  *   A Backdrop user object.
  * @param $role
  *   A Backdrop role ID.
- * @param $silent
+ * @param bool $silent
  *   When set to TRUE will suppress any Backdrop messages from this function.
  */
 function uc_roles_delete($account, $role = NULL, $silent = FALSE) {
@@ -999,7 +1005,7 @@ function uc_roles_delete($account, $role = NULL, $silent = FALSE) {
 }
 
 /**
- * Revokes a role on a given user
+ * Revokes a role on a given user.
  *
  * This function deletes a given role from a user's list of roles, as
  * well as removing any expiration data associated with the user/role.
@@ -1009,7 +1015,7 @@ function uc_roles_delete($account, $role = NULL, $silent = FALSE) {
  *   A Backdrop user object.
  * @param $role
  *   A Backdrop role ID.
- * @param $silent
+ * @param bool $silent
  *   When set to TRUE will suppress any Backdrop messages from this function.
  */
 function uc_roles_revoke(&$account, $role, $silent = FALSE) {
@@ -1049,7 +1055,7 @@ function uc_roles_revoke(&$account, $role, $silent = FALSE) {
 }
 
 /**
- * Grants a role to a given user
+ * Grants a role to a given user.
  *
  * This function grants a given role to a user's list of roles. If there
  * is a previous record of this user/role combination, it is first removed.
@@ -1062,12 +1068,12 @@ function uc_roles_revoke(&$account, $role, $silent = FALSE) {
  *   A Backdrop user object.
  * @param $role
  *   A Backdrop role ID.
- * @param $timestamp
+ * @param int $timestamp
  *   When this role will expire.
  * @param $save_user
  *   Optimization to prevent unnecessary user saving when calling from
  *   uc_roles_user_presave().
- * @param $silent
+ * @param bool $silent
  *   When set to TRUE will suppress any Backdrop messages from this function.
  */
 function uc_roles_grant(&$account, $role, $timestamp, $save_user = TRUE, $silent = FALSE) {
@@ -1135,9 +1141,9 @@ function uc_roles_grant(&$account, $role, $timestamp, $save_user = TRUE, $silent
  *   A Backdrop user object.
  * @param $role
  *   A Backdrop role ID.
- * @param $timestamp
+ * @param int $timestamp
  *   When this role will expire.
- * @param $silent
+ * @param bool $silent
  *   When set to TRUE will suppress any Backdrop messages from this function.
  */
 function uc_roles_renew($account, $role, $timestamp, $silent = FALSE) {
@@ -1255,7 +1261,7 @@ function _uc_roles_product_get_expiration($role_product, $quantity, $time) {
  *   (optional) The starting date for when the role will last. Defaults to
  *   the current time.
  *
- * @return
+ * @return int|null
  *   A UNIX timestamp representing the second that expiration takes place,
  *   or NULL if the expiration should never occur.
  */

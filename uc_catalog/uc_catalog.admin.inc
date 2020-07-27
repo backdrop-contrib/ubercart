@@ -5,7 +5,6 @@
  * Catalog administration menu items.
  */
 
-
 /**
  * Catalog settings form.
  *

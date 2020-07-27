@@ -25,7 +25,7 @@ class uc_order_handler_field_order_fullname extends views_handler_field {
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
 
-    $form['format'] =  array(
+    $form['format'] = array(
       '#title' => t('Format'),
       '#type' => 'select',
       '#options' => array(
@@ -55,8 +55,10 @@ class uc_order_handler_field_order_fullname extends views_handler_field {
     switch ($this->options['format']) {
       case 'last_first':
         return "$last $first";
+
       case 'last_c_first':
         return "$last, $first";
+
       case 'first_last':
         return "$first $last";
     }

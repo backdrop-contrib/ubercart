@@ -69,6 +69,7 @@ function ca_add_conditions(&$component, $conditions) {
         case 'AND':
           $sub_tree = rules_and();
           break;
+
         case 'OR':
           $sub_tree = rules_or();
           break;
@@ -151,33 +152,41 @@ function ca_add_conditions(&$component, $conditions) {
               case 'less':
                 $ops = '<';
                 break;
+
               case 'less_equal':
                 $ops = array('<', '==');
                 break;
+
               case 'only':
               case 'equal':
                 $ops = '==';
                 break;
+
               case 'not':
                 $negate = !$negate;
                 $settings['operator'] = '==';
                 break;
+
               case 'after':
               case 'greater':
                 $ops = '>';
                 break;
+
               case 'greater_equal':
                 $ops = array('>', '==');
                 break;
+
               case 'begins':
               case 'contains':
               case 'ends':
                 $settings['operator'] = 'contains';
                 break;
+
               case 'yes':
                 $settings['operator'] = '==';
                 $settings['value'] = TRUE;
                 break;
+
               case 'no':
                 $settings['operator'] = '==';
                 $settings['value'] = FALSE;
@@ -191,10 +200,12 @@ function ca_add_conditions(&$component, $conditions) {
                 case 'uid':
                   $type = 'integer';
                   break;
+
                 case 'type':
                 case 'title':
                   $type = 'text';
                   break;
+
                 case 'status':
                 case 'promote':
                 case 'sticky':
@@ -283,10 +294,12 @@ function ca_add_actions(&$rule, $actions) {
           'error' => $settings['message_type'] == 'error',
         );
         break;
+
       case 'ca_action_custom_php':
         $name = 'php_eval';
         $settings = array('code' => $settings['php']);
         break;
+
       default:
         $name = $action['#name'];
         break;

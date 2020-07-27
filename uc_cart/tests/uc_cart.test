@@ -30,7 +30,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
   /**
    * Creates a new order.
    */
-  function createOrder($fields = array()) {
+  protected function createOrder($fields = array()) {
     $order = uc_order_new();
     foreach ($fields as $key => $value) {
       $order->$key = $value;
@@ -55,7 +55,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     return $order;
   }
 
-  function testCartAPI() {
+  /**
+   * Tests cart API.
+   */
+  public function testCartApi() {
     // Test the empty cart.
     $items = uc_cart_get_contents();
     $this->assertEqual($items, array(), 'Cart is an empty array.');
@@ -99,7 +102,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     foreach ($items as $item) {
       uc_cart_remove_item($item->nid, NULL, $item->data);
     }
-    // @TODO: remove the need for this
+    // @todo Remove the need for this.
     uc_cart_get_contents(NULL, 'rebuild');
 
     $items = uc_cart_get_contents();
@@ -113,7 +116,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertEqual($items, array(), 'Cart is emptied correctly.');
   }
 
-  function testCart() {
+  /**
+   * Tests basic cart functionality.
+   */
+  public function testCart() {
     module_enable(array('uc_cart_entity_test'));
 
     // Test the empty cart.
@@ -160,7 +166,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertText('hook_uc_cart_item_delete fired');
   }
 
-  function testCartMerge() {
+  /**
+   * Tests that anonymous cart is merged into authenticated cart upon login.
+   */
+  public function testCartMerge() {
     // Add an item to the cart as an anonymous user.
     $this->backdropLogin($this->customer);
     $this->backdropPost('node/' . $this->product->nid, array(), t('Add to cart'));
@@ -178,7 +187,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertFieldByName('items[0][qty]', 2, t('The product quantity is 2.'));
   }
 
-  function testDeletedCartItem() {
+  /**
+   * Tests that cart automatically removes products that have been deleted.
+   */
+  public function testDeletedCartItem() {
     // Add a product to the cart, then delete the node.
     $this->backdropPost('node/' . $this->product->nid, array(), t('Add to cart'));
     node_delete($this->product->nid);
@@ -189,7 +201,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertEqual(uc_cart_get_total_qty(), 0, 'There are no items in the cart.');
   }
 
-  function testMaximumQuantityRule() {
+  /**
+   * Tests Rule integration for uc_cart_maximum_product_qty reaction rule.
+   */
+  public function testMaximumQuantityRule() {
     // Enable the example maximum quantity rule.
     $rule = rules_config_load('uc_cart_maximum_product_qty');
     $rule->active = TRUE;
@@ -204,8 +219,12 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertFieldByName('items[0][qty]', 10);
   }
 
-  function testCheckout() {
-    // Allow customer to specify username and password, but don't log in after checkout.
+  /**
+   * Tests the checkout process.
+   */
+  public function testCheckout() {
+    // Allow customer to specify username and password,
+    // but don't log in after checkout.
     $settings = array(
       'uc_cart_new_account_name' => TRUE,
       'uc_cart_new_account_password' => TRUE,
@@ -285,7 +304,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->backdropLogout();
     $this->backdropLogin($new_user);
 
-    // Test again with an existing email address
+    // Test again with an existing email address.
     $this->backdropLogout();
     $this->backdropPost('node/' . $this->product->nid, array(), t('Add to cart'));
     $this->checkout(array('panes[customer][primary_email]' => $this->customer->mail));
@@ -293,7 +312,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertRaw('order has been attached to the account we found');
   }
 
-  function testCheckoutNewUsername() {
+  /**
+   * Tests generating a new account at checkout.
+   */
+  public function testCheckoutNewUsername() {
     // Configure the checkout for this test.
     $this->backdropLogin($this->adminUser);
     $settings = array(
@@ -326,7 +348,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertText('A new account has been created');
   }
 
-  function testCheckoutBlockedUser() {
+  /**
+   * Tests blocked user checkout.
+   */
+  public function testCheckoutBlockedUser() {
     // Block user after checkout.
     $settings = array(
       'uc_new_customer_status_active' => FALSE,
@@ -347,7 +372,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertTrue(empty($mail), 'No unblocked user email found.');
   }
 
-  function testCheckoutLogin() {
+  /**
+   * Tests logging in the customer after checkout.
+   */
+  public function testCheckoutLogin() {
     // Log in after checkout.
     config_set('uc_cart.settings', 'uc_new_customer_login', TRUE);
 
@@ -371,7 +399,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $this->assertText('There are no products in your shopping cart.');
   }
 
-  function testCheckoutComplete() {
+  /**
+   * Tests checkout complete functioning.
+   */
+  public function testCheckoutComplete() {
     // Payment notification is received first.
     $order_data = array('primary_email' => 'simpletest@ubercart.org');
     $order = $this->createOrder($order_data);
@@ -381,7 +412,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     // Check that a new account was created.
     $this->assertTrue(strpos($output['#message'], 'new account has been created') !== FALSE, 'Checkout message mentions new account.');
 
-    // 3 e-mails: new account, customer invoice, admin invoice
+    // 3 e-mails: new account, customer invoice, admin invoice.
     $mails = $this->backdropGetMails();
     $this->assertEqual(count($mails), 3, '3 e-mails were sent.');
     state_del('test_email_collector');
@@ -397,7 +428,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $output = uc_cart_complete_sale($order, TRUE);
     uc_payment_enter($order->order_id, 'SimpleTest', $order->order_total);
 
-    // 3 e-mails: new account, customer invoice, admin invoice
+    // 3 e-mails: new account, customer invoice, admin invoice.
     $mails = $this->backdropGetMails();
     $this->assertEqual(count($mails), 3, '3 e-mails were sent.');
     state_del('test_email_collector');
@@ -415,13 +446,13 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     // Check that no new account was created.
     $this->assertTrue(strpos($output['#message'], 'order has been attached to the account') !== FALSE, 'Checkout message mentions existing account.');
 
-    // 2 e-mails: customer invoice, admin invoice
+    // 2 e-mails: customer invoice, admin invoice.
     $mails = $this->backdropGetMails();
     $this->assertEqual(count($mails), 2, '2 e-mails were sent.');
     state_del('test_email_collector');
   }
 
-  function testCheckoutRoleAssignment() {
+  public function testCheckoutRoleAssignment() {
     // Add role assignment to the test product.
     $role = $this->backdropCreateRole(array('access content'));
     $this->backdropLogin($this->adminUser);
@@ -445,7 +476,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $order = uc_order_load($order->order_id);
     $this->assertEqual($order->order_status, 'payment_received', 'Shippable order was set to payment received.');
 
-    // 3 e-mails: new account, customer invoice, admin invoice, role assignment
+    // 3 e-mails: new account, customer invoice, admin invoice, role assignment.
     $mails = $this->backdropGetMails();
     $this->assertEqual(count($mails), 4, '4 e-mails were sent.');
     state_del('test_email_collector');
@@ -462,7 +493,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     $order = uc_order_load($order->order_id);
     $this->assertEqual($order->order_status, 'completed', 'Non-shippable order was set to completed.');
 
-    // 2 e-mails: customer invoice, admin invoice, role assignment
+    // 2 e-mails: customer invoice, admin invoice, role assignment.
     $mails = $this->backdropGetMails();
     $this->assertEqual(count($mails), 3, '3 e-mails were sent.');
     state_del('test_email_collector');
@@ -471,7 +502,7 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
   /**
    * Tests that cart orders are marked abandoned after a timeout.
    */
-  function testCartOrderTimeout() {
+  public function testCartOrderTimeout() {
     $this->backdropPost('node/' . $this->product->nid, array(), t('Add to cart'));
     $this->backdropPost('cart', array(), 'Checkout');
     $this->assertText(
@@ -509,7 +540,8 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
 
     $order_id = db_query("SELECT order_id FROM {uc_orders} WHERE delivery_first_name = :name", array(':name' => $oldname))->fetchField();
     if ($order_id) {
-      // Go to a different page, then back to order - make sure order_id is the same.
+      // Go to a different page, then back to order - make sure
+      // order_id is the same.
       $this->backdropGet('<front>');
       $this->backdropPost('node/' . $this->product->nid, array(), t('Add to cart'));
       $this->backdropPost('cart', array(), 'Checkout');
@@ -527,7 +559,8 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
         ->execute();
       $old_order = uc_order_load($order_id);
 
-      // Go to a different page, then back to order - verify that we are using a new order.
+      // Go to a different page, then back to order - verify that we are
+      // using a new order.
       $this->backdropGet('<front>');
       $this->backdropPost('cart', array(), 'Checkout');
       $this->assertNoRaw($oldname, 'Customer name was cleared after timeout.');
@@ -546,7 +579,10 @@ class UbercartCartCheckoutTestCase extends UbercartTestHelper {
     }
   }
 
-  function testCustomerInformationCheckoutPane() {
+  /**
+   * Tests functioning of customer information pane on checkout page.
+   */
+  public function testCustomerInformationCheckoutPane() {
     // Log in as a customer and add an item to the cart.
     $this->backdropLogin($this->customer);
     $this->backdropPost('node/' . $this->product->nid, array(), t('Add to cart'));
@@ -587,7 +623,10 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     );
   }
 
-  function testAddToCartRedirect() {
+  /**
+   * Tests add-to-cart redirection.
+   */
+  public function testAddToCartRedirect() {
     $this->backdropLogin($this->adminUser);
     $this->backdropGet('admin/store/settings/cart');
     $this->assertField(
@@ -624,7 +663,10 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     $this->assertTrue($this->getUrl() == $url, 'Add to cart no-redirect works with a query string.');
   }
 
-  function testMinimumSubtotal() {
+  /**
+   * Tests minimum subtotal for checkout.
+   */
+  public function testMinimumSubtotal() {
     $this->backdropLogin($this->adminUser);
     $this->backdropGet('admin/store/settings/cart');
     $this->assertField(
@@ -639,12 +681,12 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
       t('Save configuration')
     );
 
-    // Create two products, one below the minimum price, and one above the minimum price.
+    // Create two products, one below the minimum price and one above.
     $product_below_limit = $this->createProduct(array('sell_price' => $minimum_subtotal - 1));
     $product_above_limit = $this->createProduct(array('sell_price' => $minimum_subtotal + 1));
     $this->backdropLogout();
 
-    // Check to see if the lower priced product triggers the minimum price logic.
+    // Checks if the lower priced product triggers the minimum price logic.
     $this->backdropPost(
       'node/' . $product_below_limit->nid,
       array(),
@@ -659,7 +701,8 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
       t('Prevented checkout below the minimum order total.')
     );
 
-    // Add another product to the cart, and verify that we land on the checkout page.
+    // Add another product to the cart, and verify that we land on
+    // the checkout page.
     $this->backdropPost(
       'node/' . $product_above_limit->nid,
       array(),
@@ -673,7 +716,7 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     $this->assertText('Enter your billing address and information here.');
   }
 
-  function testEmptyCart() {
+  public function testEmptyCart() {
     // Test that the feature is not enabled by default.
     $this->backdropPost('node/' . $this->product->nid, array(), 'Add to cart');
     $this->assertNoRaw('Empty cart');
@@ -692,7 +735,10 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     $this->assertText('There are no products in your shopping cart.');
   }
 
-  function testContinueShopping() {
+  /**
+   * Tests that continue shopping link returns customer to the correct place.
+   */
+  public function testContinueShopping() {
     // Continue shopping link should take you back to the product page.
     $this->backdropPost(
       'node/' . $this->product->nid,
@@ -746,7 +792,10 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
     );
   }
 
-  function testCartBreadcrumb() {
+  /**
+   * Tests the shopping cart page breadcrumb.
+   */
+  public function testCartBreadcrumb() {
     $this->backdropLogin($this->adminUser);
     $this->backdropGet('admin/store/settings/cart');
     $this->assertField(
@@ -784,6 +833,7 @@ class UbercartCartSettingsTestCase extends UbercartTestHelper {
       t('The breadcrumb link is set correctly.')
     );
   }
+
 }
 
 /**
@@ -799,7 +849,10 @@ class UbercartCheckoutSettingsTestCase extends UbercartTestHelper {
     );
   }
 
-  function testEnableCheckout() {
+  /**
+   * Tests enabling checkout functionality.
+   */
+  public function testEnableCheckout() {
     $this->backdropLogin($this->adminUser);
     $this->backdropGet('admin/store/settings/checkout');
     $this->assertField(
@@ -826,7 +879,10 @@ class UbercartCheckoutSettingsTestCase extends UbercartTestHelper {
     );
   }
 
-  function testAnonymousCheckout() {
+  /**
+   * Tests anonymous checkout functionality.
+   */
+  public function testAnonymousCheckout() {
     $this->backdropLogin($this->adminUser);
     $this->backdropGet('admin/store/settings/checkout');
     $this->assertField(
@@ -854,4 +910,5 @@ class UbercartCheckoutSettingsTestCase extends UbercartTestHelper {
       t('The checkout page is not displayed.')
     );
   }
+
 }

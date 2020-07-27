@@ -78,7 +78,8 @@ function hook_uc_shipment($op, $shipment) {
           $response = uc_google_checkout_send_request('request', $request);
         }
       }
-    break;
+      break;
+
     case 'delete':
       $google_order_number = uc_google_checkout_get_google_number($shipment->order_id);
       if ($google_order_number) {
@@ -100,7 +101,7 @@ function hook_uc_shipment($op, $shipment) {
         $request .= '</reset-items-shipping-information>';
       }
       $response = uc_google_checkout_send_request('request', $request);
-    break;
+      break;
   }
 }
 

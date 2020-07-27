@@ -77,6 +77,7 @@ function uc_attribute_admin() {
  * Form builder for product attributes.
  *
  * @see uc_attribute_form_submit()
+ *
  * @ingroup forms
  */
 function uc_attribute_form($form, &$form_state, $attribute = NULL) {
@@ -253,6 +254,7 @@ function uc_attribute_delete_confirm_submit($form, &$form_state) {
  *
  * @see uc_attribute_options_form_validate()
  * @see uc_attribute_options_form_submit()
+ *
  * @ingroup forms
  */
 function uc_attribute_options_form($form, &$form_state, $attribute) {
@@ -383,6 +385,7 @@ function theme_uc_attribute_options_form($variables) {
  *
  * @see uc_attribute_option_form_validate()
  * @see uc_attribute_option_form_submit()
+ *
  * @ingroup forms
  */
 function uc_attribute_option_form($form, &$form_state, $attribute, $option = NULL) {
@@ -575,6 +578,7 @@ function uc_attribute_option_delete_confirm_submit($form, &$form_state) {
  *
  * @see uc_object_attributes_form_submit()
  * @see theme_uc_object_attributes_form()
+ *
  * @ingroup forms
  */
 function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 'overview') {
@@ -588,6 +592,7 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
       backdrop_set_title($class->name);
       $attributes = uc_class_get_attributes($id);
       break;
+
     case 'product':
     default:
       $product = $object;
@@ -632,7 +637,7 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
             '#maxlength' => 255,
           ),
           'option' => array(
-            '#markup' => $option ? (check_plain($option->name) . ' (' . theme('uc_price', array('price' => $option->price)) . ')' ) : t('n/a'),
+            '#markup' => $option ? (check_plain($option->name) . ' (' . theme('uc_price', array('price' => $option->price)) . ')') : t('n/a'),
           ),
           'required' => array(
             '#type' => 'checkbox',
@@ -716,6 +721,7 @@ function uc_object_attributes_form($form, &$form_state, $object, $type, $view = 
  *   - form: A render element representing the form.
  *
  * @see uc_object_attributes_form()
+ *
  * @ingroup themeable
  */
 function theme_uc_object_attributes_form($variables) {
@@ -889,6 +895,7 @@ function uc_object_attributes_form_submit($form, &$form_state) {
  * @see uc_object_options_form_validate()
  * @see uc_object_options_form_submit()
  * @see theme_uc_object_options_form()
+ *
  * @ingroup forms
  */
 function uc_object_options_form($form, &$form_state, $object, $type) {
@@ -1040,6 +1047,7 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
  *   - form: A render element representing the form.
  *
  * @see uc_object_options_form()
+ *
  * @ingroup themeable
  */
 function theme_uc_object_options_form($variables) {
@@ -1243,6 +1251,7 @@ function uc_object_options_form_submit($form, &$form_state) {
  * Form builder: associate option combinations with a product variant's SKU.
  *
  * @see uc_product_adjustments_form_submit()
+ *
  * @ingroup forms
  */
 function uc_product_adjustments_form($form, &$form_state, $node) {
@@ -1300,7 +1309,7 @@ function uc_product_adjustments_form($form, &$form_state, $node) {
   $num_prod_attr = count($attribute_ids);
 
   if ($num_prod_attr) {
-    // Get previous values
+    // Get previous values.
     $old_vals = db_query("SELECT * FROM {uc_product_adjustments} WHERE nid = :nid", array(':nid' => $nid))->fetchAll();
 
     $result = $query->execute();

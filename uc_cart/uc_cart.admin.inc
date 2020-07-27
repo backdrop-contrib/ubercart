@@ -9,12 +9,13 @@
  * General settings for the shopping cart.
  *
  * @see uc_cart_cart_settings_form_validate()
+ *
  * @ingroup forms
  */
 function uc_cart_cart_settings_form($form, &$form_state) {
   $config = config('uc_cart.settings');
 
-  // Put fieldsets into vertical tabs
+  // Put fieldsets into vertical tabs.
   $form['#config'] = 'uc_cart.settings';
   $form['cart-settings'] = array(
     '#type' => 'vertical_tabs',
@@ -221,7 +222,7 @@ function uc_cart_cart_settings_form_validate($form, &$form_state) {
 function uc_cart_checkout_settings_form($form, &$form_state) {
   $config = config('uc_cart.settings');
 
-  // Put fieldsets into vertical tabs
+  // Put fieldsets into vertical tabs.
   $form['#config'] = 'uc_cart.settings';
   $form['checkout-settings'] = array(
     '#type' => 'vertical_tabs',

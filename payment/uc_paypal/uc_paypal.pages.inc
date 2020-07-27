@@ -70,7 +70,7 @@ function uc_paypal_ipn() {
   $req .= 'cmd=_notify-validate';
 
   if ($config->get('uc_paypal_wpp_server') == 'https://api-3t.paypal.com/nvp') {
-    $host = 'https://www.paypal.com/cgi-bin/webscr';
+    $host = 'https://ipnpb.paypal.com/cgi-bin/webscr';
   }
   else {
     $host = $config->get('uc_paypal_wps_server');

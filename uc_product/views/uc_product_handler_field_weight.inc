@@ -67,4 +67,5 @@ class uc_product_handler_field_weight extends views_handler_field_numeric {
       return uc_weight_format($values->{$this->field_alias}, $values->{$this->aliases['weight_units']});
     }
   }
+
 }
