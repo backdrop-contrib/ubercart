@@ -11,9 +11,6 @@ designed to be extended to meet any need.  Furthermore, the administrative
 interface, particularly relating to processing and fulfilling orders, has been
 designed for ease of use and efficient display of information.
 
-This is the Backdrop port of the Backdrop 7 module you can find on
-http://drupal.org/project/ubercart.
-
 Installation
 ------------
 
@@ -26,17 +23,12 @@ Installation
 Documentation
 -------------
 
-Additional documentation is located in the Wiki:
-https://github.com/backdrop-contrib/ubercart/wiki/Documentation
-
-Original documentation for the backdrop version is located in:
-http://www.ubercart.org
+Additional documentation can be found (and added) in the [Wiki](https://github.com/backdrop-contrib/ubercart/wiki).
 
 Issues
 ------
 
-Bugs and Feature requests should be reported in the Issue Queue:
-https://github.com/backdrop-contrib/ubercart/issues
+Bugs and Feature requests should be reported in the [Issue queue](https://github.com/backdrop-contrib/ubercart/issues).
 
 Current Maintainers
 -------------------
@@ -47,10 +39,9 @@ Current Maintainers
 Credits
 -------
 
-- Ported to Backdrop CMS by:
-	- Docwilmot (https://github.com/docwilmot/).
-	- Robert Garrigós (https://github.com/robertgarrigos/).
-- Originally written for Drupal by https://www.drupal.org/node/129292/committers.
+- Ported to Backdrop CMS by [Docwilmot](https://github.com/docwilmot/) and [Robert Garrigós](https://github.com/robertgarrigos/).
+- Originally written for Drupal by [many people](https://www.drupal.org/node/129292/committers)
+  and currently maintained by [TR](https://www.drupal.org/u/tr) and [longwave](https://www.drupal.org/u/longwave).
 
 License
 -------
