@@ -13,7 +13,8 @@ function uc_shipping_views_data() {
 
   // Allow base tables of shipments.
   $data['uc_shipments']['table']['base'] = array(
-    'field' => 'sid', // This is the identifier field for the view.
+  // This is the identifier field for the view.
+    'field' => 'sid',
     'title' => t('Ubercart shipments'),
     'help' => t('Ubercart shipments contain shipping information for orders and can be related to orders and packages.'),
   );
@@ -369,7 +370,8 @@ function uc_shipping_views_data() {
 
   // Allow base tables of packages.
   $data['uc_packages']['table']['base'] = array(
-    'field' => 'sid', // This is the identifier field for the view.
+  // This is the identifier field for the view.
+    'field' => 'sid',
     'title' => t('Ubercart packages'),
     'help' => t('Ubercart packages contain physical characteristics, tracking, and label information.  They can be related to their orders, shipments, and contents.'),
   );

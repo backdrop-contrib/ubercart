@@ -132,11 +132,13 @@ function uc_quote_method_settings($form, &$form_state) {
 
       // Build a list of operations links.
       $operations = isset($method['operations']) ? $method['operations'] : array();
-      $operations += array('conditions' => array(
+      $operations += array(
+        'conditions' => array(
           'title' => t('conditions'),
           'href' => 'admin/store/settings/quotes/manage/get_quote_from_' . $id,
           'weight' => 5,
-        ));
+        ),
+      );
 
       // Ensure "delete" comes towards the end of the list.
       if (isset($operations['delete'])) {

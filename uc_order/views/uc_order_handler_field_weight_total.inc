@@ -13,7 +13,7 @@ class uc_order_handler_field_weight_total extends uc_product_handler_field_weigh
   /**
    * Overrides views_handler_field::query().
    */
-  function query() {
+  public function query() {
     $this->ensure_my_table();
 
     $table = $this->table_alias;

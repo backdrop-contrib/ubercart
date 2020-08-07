@@ -22,7 +22,7 @@ function theme_uc_ups_option_label($variables) {
   $packages = $variables['packages'];
 
   // Start with logo as required by the UPS terms of service.
-  $output  = theme('image', array(
+  $output = theme('image', array(
     'path' => backdrop_get_path('module', 'uc_ups') . '/uc_ups_logo.gif',
     'alt' => t('UPS logo'),
     'attributes' => array('class' => 'ups-logo'),

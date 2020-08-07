@@ -7,6 +7,5 @@
  *
  * @ingroup views_templates
  */
-
 ?>
 <?php print $invoice ?>

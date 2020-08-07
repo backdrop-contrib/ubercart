@@ -227,7 +227,8 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
     if ($pane['enabled'] && empty($form_state['storage']['panes'][$id]['prepared']) && isset($pane['callback']) && function_exists($pane['callback'])) {
       $pane['callback']('prepare', $order, $form, $form_state);
       $form_state['storage']['panes'][$id]['prepared'] = TRUE;
-      $processed = FALSE; // Make sure we save the updated order.
+      // Make sure we save the updated order.
+      $processed = FALSE;
     }
   }
 
@@ -296,7 +297,8 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
   $form['actions']['cancel'] = array(
     '#type' => 'submit',
     '#value' => t('Cancel'),
-    '#validate' => array(), // Disable validation to prevent a new order
+  // Disable validation to prevent a new order
+    '#validate' => array(),
     // from being created.
     '#limit_validation_errors' => array(),
     '#submit' => array('uc_cart_checkout_form_cancel'),

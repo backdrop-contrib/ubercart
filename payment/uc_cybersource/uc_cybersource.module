@@ -161,16 +161,16 @@ function uc_cybersource_hop_post() {
       }
       db_insert('uc_payment_cybersource_hop_post')
         ->fields(array(
-        'order_id' => $order_id,
-        'request_id' => $request_id,
-        'request_token' => $request_token,
-        'reconciliation_id' => $reconciliation_id,
-        'gross' => $payment_amount,
-        'decision' => $decision,
-        'reason_code' => $reason_code,
-        'payer_email' => $payer_email,
-        'received' => REQUEST_TIME,
-      ))
+          'order_id' => $order_id,
+          'request_id' => $request_id,
+          'request_token' => $request_token,
+          'reconciliation_id' => $reconciliation_id,
+          'gross' => $payment_amount,
+          'decision' => $decision,
+          'reason_code' => $reason_code,
+          'payer_email' => $payer_email,
+          'received' => REQUEST_TIME,
+        ))
         ->execute();
 
       $comment = t('CyberSource request ID: @txn_id', array('@txn_id' => $request_id));
@@ -204,7 +204,7 @@ function uc_cybersource_hop_include() {
   // located.
   foreach ($hop_paths as $key => $path) {
     if (file_exists($path)) {
-      require_once($path);
+      require_once $path;
       return TRUE;
     }
   }
@@ -493,13 +493,13 @@ function uc_cybersource_hop_form($form, $form_state, $order) {
   $data['merchantID'] = $merchantID;
   $data['orderNumber'] = $order->order_id;
   $data['orderPage_timestamp'] = $timestamp;
-  $data['orderPage_ignoreAVS'] = $config->get('uc_cybersource_hop_avs') == true ? false : true;
+  $data['orderPage_ignoreAVS'] = $config->get('uc_cybersource_hop_avs') == TRUE ? FALSE : TRUE;
   $data['orderPage_signaturePublic'] = $pub_digest;
   $data['orderPage_version'] = '4';
   $data['orderPage_serialNumber'] = $serialNumber;
   $data['orderPage_transactionType'] = $config->get('uc_cybersource_hop_transaction_type');
   $data['orderPage_sendMerchantReceiptEmail'] = $config->get('uc_cybersource_hop_merchant_receipt_email');
-  $data['orderPage_sendMerchantURLPost'] = true;
+  $data['orderPage_sendMerchantURLPost'] = TRUE;
   // CyberSource posts payment confirmation to this URL.
   $data['orderPage_merchantURLPostAddress'] = url('cybersource/hop-post', array('absolute' => TRUE));
   $data['orderPage_buyButtonText'] = t('Checkout');
@@ -591,7 +591,7 @@ function uc_cybersource_charge($order_id, $amount, $data) {
     case 'post':
       return _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country);
 
-      // Support for the SOAP Toolkit API.
+    // Support for the SOAP Toolkit API.
     case 'soap':
       // TODO: Refactor to use separate function for each API type.
       // - i.e. _uc_cybersource_charge_request_soap($order, $amount, $data);
@@ -601,12 +601,12 @@ function uc_cybersource_charge($order_id, $amount, $data) {
     case 'api':
       $config = cybs_load_config('cybs.ini');
       if ($config->get('uc_cybersource_server') == 'test') {
-        $config['sendToProduction'] = false;
+        $config['sendToProduction'] = FALSE;
       }
 
-      $request['ccAuthService_run'] = true;
+      $request['ccAuthService_run'] = TRUE;
       if ($config->get('uc_cybersource_hop_transaction_type') == 'sale') {
-        $request['ccCaptureService_run'] = true;
+        $request['ccCaptureService_run'] = TRUE;
       }
       $request['merchantReferenceCode'] = $order_id;
       $request['purchaseTotals_currency'] = 'USD';
@@ -662,7 +662,7 @@ function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country)
   $request['merchantID'] = $merchantID;
   $request['orderNumber'] = $order->order_id;
   $request['orderPage_timestamp'] = $timestamp;
-  $request['orderPage_ignoreAVS'] = $config->get('uc_cybersource_avs') == true ? false : true;
+  $request['orderPage_ignoreAVS'] = $config->get('uc_cybersource_avs') == TRUE ? FALSE : TRUE;
   $request['orderPage_signaturePublic'] = $pub_digest;
   $request['orderPage_version'] = '4';
   $request['orderPage_serialNumber'] = $serialNumber;
@@ -789,14 +789,14 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
     // Add the credit card authorization service.
     if (in_array($data['txn_type'], array(UC_CREDIT_AUTH_ONLY, UC_CREDIT_AUTH_CAPTURE, UC_CREDIT_REFERENCE_TXN))) {
       $ccAuthService = new stdClass();
-      $ccAuthService->run = true;
+      $ccAuthService->run = TRUE;
       $request->ccAuthService = $ccAuthService;
     }
 
     // Add the credit card capture service.
     if (in_array($data['txn_type'], array(UC_CREDIT_PRIOR_AUTH_CAPTURE, UC_CREDIT_AUTH_CAPTURE, UC_CREDIT_REFERENCE_TXN))) {
       $ccCaptureService = new stdClass();
-      $ccCaptureService->run = true;
+      $ccCaptureService->run = TRUE;
 
       // Add the values for prior authorization capture.
       if ($data['txn_type'] == UC_CREDIT_PRIOR_AUTH_CAPTURE) {
@@ -826,7 +826,7 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
         $request->recurringSubscriptionInfo = $recurringSubscriptionInfo;
 
         $paySubscriptionCreateService = new stdClass();
-        $paySubscriptionCreateService->run = true;
+        $paySubscriptionCreateService->run = TRUE;
         $request->paySubscriptionCreateService = $paySubscriptionCreateService;
       }
     }
@@ -918,7 +918,7 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
 
     // Add business rules.
     $business = new stdClass();
-    $business->ignoreAVSResult = $config->get('uc_cybersource_avs') == true ? false : true;
+    $business->ignoreAVSResult = $config->get('uc_cybersource_avs') == TRUE ? FALSE : TRUE;
     $request->businessRules = $business;
 
     // Send the request to CyberSource and get the reply.
@@ -1158,7 +1158,7 @@ function uc_cybersource_uc_calculate_tax($order) {
     $taxService->orderOriginState = $taxService->orderAcceptanceState = $shipFrom->state;
     $taxService->orderOriginPostalCode = $taxService->orderAcceptancePostalCode = $shipFrom->postalCode;
     $taxService->sellerRegistration = 'XXX TODO';
-    $taxService->run = true;
+    $taxService->run = TRUE;
     $request->taxService = $taxService;
 
     // Add the order total information.
@@ -1335,21 +1335,30 @@ function _uc_cybersource_card_type($cc_number) {
   switch (substr(strval($cc_number), 0, 1)) {
     case '3':
       if (strlen($cc_number) == 14) {
-        return '005'; // Diners Club
+        // Diners Club
+        return '005';
       }
       elseif (strlen($cc_number) == 15) {
-        return '003'; // AmEx
+        // AmEx
+        return '003';
       }
       else {
-        return '007'; // JCB
+        // JCB
+        return '007';
       }
 
     case '4':
-      return '001'; // Visa
+      // Visa
+      return '001';
+
     case '5':
-      return '002'; // MasterCard
+      // MasterCard
+      return '002';
+
     case '6':
-      return '004'; // Discover
+      // Discover
+      return '004';
+
   }
 
   return FALSE;

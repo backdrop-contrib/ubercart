@@ -67,8 +67,8 @@ function uc_product_classes_features_revert($module) {
           foreach ($deleted_fields as $field_name) {
             db_update(content_instance_tablename())
               ->fields(array(
-              'widget_active' => 0,
-            ))
+                'widget_active' => 0,
+              ))
               ->condition('field_name', $field_name)
               ->condition('type_name', $type_name)
               ->execute();

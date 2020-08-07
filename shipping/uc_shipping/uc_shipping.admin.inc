@@ -11,9 +11,10 @@
 function uc_shipping_order_packages($order) {
   $shipping_type_options = uc_quote_shipping_type_options();
   $header = array(t('Package ID'), t('Products'), t('Shipping type'), t('Package type'), t('Shipment ID'), t('Tracking number'), t('Labels'), array(
-      'data' => t('Actions'),
-      'colspan' => 4,
-    ));
+    'data' => t('Actions'),
+    'colspan' => 4,
+  ),
+  );
   $rows = array();
   $result = db_query("SELECT * FROM {uc_packages} WHERE order_id = :id", array(':id' => $order->order_id));
   foreach ($result as $package) {
@@ -44,11 +45,11 @@ function uc_shipping_order_packages($order) {
       $method = db_query("SELECT shipping_method FROM {uc_shipments} WHERE sid = :sid", array(':sid' => $package->sid))->fetchField();
       $row[] = l(
         theme('image_style', array(
-        'style_name' => 'uc_thumbnail',
-        'uri' => $package->label_image->uri,
-        'alt' => t('Shipping label'),
-        'title' => t('Shipping label'),
-      )),
+          'style_name' => 'uc_thumbnail',
+          'uri' => $package->label_image->uri,
+          'alt' => t('Shipping label'),
+          'title' => t('Shipping label'),
+        )),
         'admin/store/orders/' . $order->order_id . '/shipments/labels/' . $method . '/' . $package->label_image->uri,
         array('html' => TRUE)
       );
@@ -115,8 +116,8 @@ function uc_shipping_new_package($form, &$form_state, $order) {
     $form['shipping_types'][$shipping_type] = array(
       '#type' => 'fieldset',
       '#title' => isset($shipping_type_options[$shipping_type]) ?
-                        $shipping_type_options[$shipping_type]        :
-                        ucwords(str_replace('_', ' ', $shipping_type)),
+      $shipping_type_options[$shipping_type] :
+      ucwords(str_replace('_', ' ', $shipping_type)),
       '#collapsible' => TRUE,
       '#collapsed' => FALSE,
       '#weight' => isset($shipping_type_weights[$shipping_type]) ? $shipping_type_weights[$shipping_type] : 0,
@@ -463,10 +464,10 @@ function uc_shipping_package_cancel_confirm_submit($form, &$form_state) {
     if ($result) {
       db_update('uc_packages')
         ->fields(array(
-        'sid' => NULL,
-        'label_image' => NULL,
-        'tracking_number' => NULL,
-      ))
+          'sid' => NULL,
+          'label_image' => NULL,
+          'tracking_number' => NULL,
+        ))
         ->condition('package_id', $package->package_id)
         ->execute();
 
@@ -525,9 +526,10 @@ function uc_shipping_package_delete_confirm_submit($form, &$form_state) {
 function uc_shipping_order_shipments($order) {
   $result = db_query("SELECT * FROM {uc_shipments} WHERE order_id = :id", array(':id' => $order->order_id));
   $header = array(t('Shipment ID'), t('Name'), t('Company'), t('Destination'), t('Ship date'), t('Estimated delivery'), t('Tracking number'), array(
-      'data' => t('Actions'),
-      'colspan' => 5,
-    ));
+    'data' => t('Actions'),
+    'colspan' => 5,
+  ),
+  );
   $rows = array();
 
   foreach ($result as $shipment) {
@@ -758,10 +760,13 @@ function uc_shipping_shipment_view($order, $shipment) {
     $rows[] = array(t('Services:'), $shipment->accessorials);
   }
 
-  $rows[] = array(t('Cost:'), array('data' => array(
-        '#theme' => 'uc_price',
-        '#price' => $shipment->cost,
-      )));
+  $rows[] = array(t('Cost:'), array(
+    'data' => array(
+      '#theme' => 'uc_price',
+      '#price' => $shipment->cost,
+    ),
+  ),
+  );
 
   $build['details'] = array(
     '#theme' => 'table',
@@ -882,8 +887,8 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
         'g' => t('Grams'),
       ),
       '#default_value' => isset($package->weight_units) ?
-                          $package->weight_units        :
-                          config_get('uc_store.settings', 'uc_weight_unit'),
+      $package->weight_units :
+      config_get('uc_store.settings', 'uc_weight_unit'),
     );
     $pkg_form['dimensions'] = array(
       '#type' => 'container',
@@ -920,8 +925,8 @@ function uc_shipping_shipment_edit($form, &$form_state, $order, $shipment) {
         'mm' => t('Millimeters'),
       ),
       '#default_value' => isset($package->length_units) ?
-                          $package->length_units :
-                          config_get('uc_store.settings', 'uc_length_unit'),
+      $package->length_units :
+      config_get('uc_store.settings', 'uc_length_unit'),
     );
     $pkg_form['tracking_number'] = array(
       '#type' => 'textfield',
@@ -1224,7 +1229,7 @@ function uc_shipping_make_shipment($order) {
       if (isset($method['ship']['file'])) {
         $inc_file = backdrop_get_path('module', $method['module']) . '/' . $method['ship']['file'];
         if (is_file($inc_file)) {
-          require_once($inc_file);
+          require_once $inc_file;
         }
       }
       return backdrop_get_form($method['ship']['callback'], $order, $package_ids);

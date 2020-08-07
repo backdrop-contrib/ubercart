@@ -85,11 +85,11 @@ function uc_stock_report() {
     ->orderByHeader($header)
     ->limit($page_size)
     ->fields('s', array(
-    'nid',
-    'sku',
-    'stock',
-    'threshold',
-  ));
+      'nid',
+      'sku',
+      'stock',
+      'threshold',
+    ));
 
   $query->leftJoin('node', 'n', 's.nid = n.nid');
   $query->addField('n', 'title');
@@ -286,17 +286,17 @@ function uc_stock_edit_form_submit($form, &$form_state) {
     db_merge('uc_product_stock')
       ->key(array('sku' => $stock['sku']))
       ->updateFields(array(
-      'active' => $stock['active'],
-      'stock' => $stock['stock'],
-      'threshold' => $stock['threshold'],
-    ))
+        'active' => $stock['active'],
+        'stock' => $stock['stock'],
+        'threshold' => $stock['threshold'],
+      ))
       ->insertFields(array(
-      'sku' => $stock['sku'],
-      'active' => $stock['active'],
-      'stock' => $stock['stock'],
-      'threshold' => $stock['threshold'],
-      'nid' => $form_state['values']['nid'],
-    ))
+        'sku' => $stock['sku'],
+        'active' => $stock['active'],
+        'stock' => $stock['stock'],
+        'threshold' => $stock['threshold'],
+        'nid' => $form_state['values']['nid'],
+      ))
       ->execute();
   }
 

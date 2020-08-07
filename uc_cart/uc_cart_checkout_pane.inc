@@ -41,7 +41,8 @@ function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NUL
     case 'view':
       if ($user->uid) {
         $email = $user->mail;
-        $description = t('Order information will be sent to your account e-mail listed below.'); // . '<br />'
+        // . '<br />'
+        $description = t('Order information will be sent to your account e-mail listed below.');
         $contents['primary_email'] = array(
           '#type' => 'hidden',
           '#value' => $email,

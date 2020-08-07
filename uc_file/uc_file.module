@@ -404,7 +404,7 @@ function uc_file_user_view($account, $view_mode) {
  */
 function _uc_file_download_table_behavior($id, $fid) {
 
-  backdrop_add_js( "
+  backdrop_add_js("
 Backdrop.behaviors.ucUserAccountFileDownload" . $id . " = {
   attach: function(context) {
     jQuery('#edit-file-download-" . $fid . "-time-granularity:not(.ucUserAccountFileDownload-processed)', context).addClass('ucUserAccountFileDownload-processed').change(
@@ -469,21 +469,22 @@ function uc_file_uc_add_to_cart($nid, $qty, $data) {
         // But still show the message if it does.
         backdrop_set_message(t('You already have privileges to <a href="!url">download %file</a>. If you complete the purchase of this item, your new download limit will be %download_limit, your access location limit will be %address_limit, and your new expiration time will be %expiration.',
           array(
-          '!url' => $user->uid ? url('user/' . $user->uid . '/purchased-files') : url('user/login'),
-          '%file' => $product_feature->filename,
-          '%download_limit' => $file_user['download_limit'] ? $file_user['download_limit'] : t('unlimited'),
-          '%address_limit' => $file_user['address_limit'] ? $file_user['address_limit'] : t('unlimited'),
-          '%expiration' => $file_user['expiration'    ] ? format_date($file_user['expiration'], 'small') : t('never'),
-        )), 'warning');
+            '!url' => $user->uid ? url('user/' . $user->uid . '/purchased-files') : url('user/login'),
+            '%file' => $product_feature->filename,
+            '%download_limit' => $file_user['download_limit'] ? $file_user['download_limit'] : t('unlimited'),
+            '%address_limit' => $file_user['address_limit'] ? $file_user['address_limit'] : t('unlimited'),
+            '%expiration' => $file_user['expiration'] ? format_date($file_user['expiration'], 'small') : t('never'),
+          )), 'warning');
       }
       else {
         return array(array(
-            'success' => FALSE,
-            'message' => t('You already have privileges to <a href="!url">download %file</a>.', array(
-              '!url' => $user->uid ? url('user/' . $user->uid . '/purchased-files') : url('user/login'),
-              '%file' => $product_feature->filename,
-            )),
-          ));
+          'success' => FALSE,
+          'message' => t('You already have privileges to <a href="!url">download %file</a>.', array(
+            '!url' => $user->uid ? url('user/' . $user->uid . '/purchased-files') : url('user/login'),
+            '%file' => $product_feature->filename,
+          )),
+        ),
+        );
       }
     }
   }
@@ -599,9 +600,9 @@ function uc_file_feature_form($form, &$form_state, $node, $feature) {
 
   // Use the feature's values to fill the form, if they exist.
   if (!empty($feature)) {
-    $file_product        = db_query("SELECT * FROM {uc_file_products} p LEFT JOIN {uc_files} f ON p.fid = f.fid WHERE pfid = :pfid", array(':pfid' => $feature['pfid']))->fetchObject();
+    $file_product = db_query("SELECT * FROM {uc_file_products} p LEFT JOIN {uc_files} f ON p.fid = f.fid WHERE pfid = :pfid", array(':pfid' => $feature['pfid']))->fetchObject();
 
-    $default_feature     = $feature['pfid'];
+    $default_feature = $feature['pfid'];
 
     $default_model       = $file_product->model;
     $default_filename    = $file_product->filename;
@@ -619,9 +620,9 @@ function uc_file_feature_form($form, &$form_state, $node, $feature) {
     $granularity_value   = $time_status ? $file_product->time_granularity : 'never';
   }
   else {
-    $file_product      = FALSE;
+    $file_product = FALSE;
 
-    $default_feature   = NULL;
+    $default_feature = NULL;
 
     $default_model       = '';
     $default_filename    = '';
@@ -805,10 +806,10 @@ function uc_file_feature_form_submit($form, &$form_state) {
     'description' => $form_state['values']['uc_file_description'],
     'shippable' => $form_state['values']['uc_file_shippable'],
     // Local limitations... set them if there's an override.
-    'download_limit' => $form_state['values']['download_override'] ? $form_state['values']['download_limit_number'              ] : UC_FILE_LIMIT_SENTINEL,
-    'address_limit' => $form_state['values']['location_override'] ? $form_state['values']['download_limit_addresses'           ] : UC_FILE_LIMIT_SENTINEL,
-    'time_granularity' => $form_state['values']['time_override'    ] ? $form_state['values']['download_limit_duration_granularity'] : UC_FILE_LIMIT_SENTINEL,
-    'time_quantity' => $form_state['values']['time_override'    ] ? $form_state['values']['download_limit_duration_qty'        ] : UC_FILE_LIMIT_SENTINEL,
+    'download_limit' => $form_state['values']['download_override'] ? $form_state['values']['download_limit_number'] : UC_FILE_LIMIT_SENTINEL,
+    'address_limit' => $form_state['values']['location_override'] ? $form_state['values']['download_limit_addresses'] : UC_FILE_LIMIT_SENTINEL,
+    'time_granularity' => $form_state['values']['time_override'] ? $form_state['values']['download_limit_duration_granularity'] : UC_FILE_LIMIT_SENTINEL,
+    'time_quantity' => $form_state['values']['time_override'] ? $form_state['values']['download_limit_duration_qty'] : UC_FILE_LIMIT_SENTINEL,
   );
 
   // Build product feature descriptions.
@@ -1781,6 +1782,5 @@ function uc_file_get_time_limit($file) {
  * Implements hook_autoload_info().
  */
 function uc_file_autoload_info() {
-  return array(
-  );
+  return array();
 }

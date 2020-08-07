@@ -13,7 +13,7 @@ class uc_order_handler_field_order_id extends views_handler_field {
   /**
    * Override init function to provide generic option to link to user.
    */
-  function init(&$view, &$data) {
+  public function init(&$view, &$data) {
     parent::init($view, $data);
     if (!empty($this->options['link_to_order'])) {
       $this->additional_fields['order_id'] = array(
@@ -30,7 +30,7 @@ class uc_order_handler_field_order_id extends views_handler_field {
   /**
    * Overrides views_handler::option_definition().
    */
-  function option_definition() {
+  public function option_definition() {
     $options = parent::option_definition();
     $options['link_to_order'] = array('default' => FALSE);
     return $options;
@@ -41,7 +41,7 @@ class uc_order_handler_field_order_id extends views_handler_field {
    *
    * Provides link to order administration page.
    */
-  function options_form(&$form, &$form_state) {
+  public function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
     $form['link_to_order'] = array(
       '#title' => t('Link this field to the order view page'),
@@ -56,7 +56,7 @@ class uc_order_handler_field_order_id extends views_handler_field {
    *
    * Data should be made XSS safe prior to calling this function.
    */
-  function render_link($data, $values) {
+  public function render_link($data, $values) {
     if (!empty($this->options['link_to_order'])) {
       $this->options['alter']['make_link'] = FALSE;
 
@@ -81,7 +81,7 @@ class uc_order_handler_field_order_id extends views_handler_field {
   /**
    * Overrides views_handler_field::render().
    */
-  function render($values) {
+  public function render($values) {
     return $this->render_link(check_plain($values->{$this->field_alias}), $values);
   }
 

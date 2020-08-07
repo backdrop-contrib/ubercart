@@ -133,22 +133,22 @@ function uc_roles_deletion_form($form, &$form_state, $account, $role) {
     $form = confirm_form(
       $form,
       t('Delete expiration of %role_name role for the user !user?', array(
-      '!user' => theme('username', array(
-        'account' => $account,
-        'name' => check_plain(user_format_name($account)),
-        'link_path' => 'user/' . $account->uid,
+        '!user' => theme('username', array(
+          'account' => $account,
+          'name' => check_plain(user_format_name($account)),
+          'link_path' => 'user/' . $account->uid,
+        )),
+        '%role_name' => $role_name,
       )),
-      '%role_name' => $role_name,
-    )),
       'admin/people/expiration',
       t('Deleting the expiration will give !user privileges set by the %role_name role indefinitely unless manually removed.', array(
-      '!user' => theme('username', array(
-        'account' => $account,
-        'name' => check_plain(user_format_name($account)),
-        'link_path' => 'user/' . $account->uid,
+        '!user' => theme('username', array(
+          'account' => $account,
+          'name' => check_plain(user_format_name($account)),
+          'link_path' => 'user/' . $account->uid,
+        )),
+        '%role_name' => $role_name,
       )),
-      '%role_name' => $role_name,
-    )),
       t('Yes'),
       t('No')
     );

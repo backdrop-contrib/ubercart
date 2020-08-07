@@ -95,8 +95,10 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
 
     // Ensure the price is displayed tax-inclusively on the add-to-cart form.
     $this->backdropGet('node/' . $kit->nid);
-    $this->assertText('$10.80' . $rate->inclusion_text, 'Tax inclusive price on node-view form is accurate.'); // $10.80 = $9.00 + 20%
-    $this->assertRaw($option->name . ', +$6.00</option>', 'Tax inclusive option price on node view form is accurate.'); // $6.00 = $5.00 + 20%
+    // $10.80 = $9.00 + 20%
+    $this->assertText('$10.80' . $rate->inclusion_text, 'Tax inclusive price on node-view form is accurate.');
+    // $6.00 = $5.00 + 20%
+    $this->assertRaw($option->name . ', +$6.00</option>', 'Tax inclusive option price on node view form is accurate.');
 
     // Add the product kit to the cart, selecting the option.
     $attribute_key = 'products[' . $product->nid . '][attributes][' . $attribute->aid . ']';
@@ -297,7 +299,8 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
     // Create a tax rate.
     $tax = $this->randomName(8);
     $rate = (object) array(
-      'id' => 0, // TODO: should not have to set this
+    // TODO: should not have to set this
+      'id' => 0,
       'name' => $tax,
       'rate' => rand(1, 20) / 10,
       'taxed_product_types' => array($type),
@@ -313,12 +316,12 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
     $this->backdropGet('cart/checkout');
     $this->assertText($tax, 'Tax line item displayed.');
 
-  /* We cant change product class machine names in Backdrop.
+    /* We cant change product class machine names in Backdrop.
     // Change the machine name of the product class.
     $new_type = strtolower($this->randomName(12));
     $edit = array(
-      'name' => $new_type,
-      'type' => $new_type,
+    'name' => $new_type,
+    'type' => $new_type,
     );
     $this->backdropPost('admin/structure/types/manage/' . $type, $edit, t('Save content type'));
 
@@ -327,7 +330,7 @@ class UbercartTaxesTestCase extends UbercartTestHelper {
     $this->backdropPost('node/' . $product->nid, array(), t('Add to cart'));
     $this->backdropGet('cart/checkout');
     $this->assertText($tax, 'Tax line item displayed after changing product class node type.');
-  */
+     */
   }
 
 }

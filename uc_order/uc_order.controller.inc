@@ -10,7 +10,7 @@
  */
 class UcOrderController extends EntityDatabaseStorageController {
 
-  function attachLoad(&$orders, $revision_id = FALSE) {
+  public function attachLoad(&$orders, $revision_id = FALSE) {
     foreach ($orders as &$order) {
       $order->data = unserialize($order->data);
       $efq = new EntityFieldQuery();

@@ -213,9 +213,9 @@ function hook_uc_cart_item_delete($entity) {
  *     - type: array
  *     - value: The body of the pane to be rendered on the cart view screen.
  *
- * The body gets printed to the screen if it is on the cart view page.  For the
- * settings page, the body field is ignored.  You may want your function to
- * check for a NULL argument before processing any queries or foreach() loops.
+ *   The body gets printed to the screen if it is on the cart view page.  For the
+ *   settings page, the body field is ignored.  You may want your function to
+ *   check for a NULL argument before processing any queries or foreach() loops.
  */
 function hook_uc_cart_pane($items) {
   $body = array();
@@ -453,7 +453,9 @@ function hook_uc_checkout_pane_alter(&$panes) {
  *   should be retrieved with uc_cart_get_id().
  */
 function hook_uc_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
-  if (!$nid) return NULL;
+  if (!$nid) {
+    return NULL;
+  }
   $cid = !(is_null($cid) || empty($cid)) ? $cid : uc_cart_get_id();
   if ($qty < 1) {
     uc_cart_remove_item($nid, $cid, $data);

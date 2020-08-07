@@ -323,12 +323,12 @@ function uc_order_status_create_form_validate($form, &$form_state) {
 function uc_order_status_create_form_submit($form, &$form_state) {
   db_insert('uc_order_statuses')
     ->fields(array(
-    'order_status_id' => $form_state['values']['status_id'],
-    'title' => $form_state['values']['status_title'],
-    'state' => $form_state['values']['status_state'],
-    'weight' => $form_state['values']['status_weight'],
-    'locked' => 0,
-  ))
+      'order_status_id' => $form_state['values']['status_id'],
+      'title' => $form_state['values']['status_title'],
+      'state' => $form_state['values']['status_state'],
+      'weight' => $form_state['values']['status_weight'],
+      'locked' => 0,
+    ))
     ->execute();
 
   backdrop_set_message(t('Custom order status created.'));
@@ -756,9 +756,9 @@ function uc_order_select_customer($email = NULL) {
 
       $build['result'] = array(
         '#markup' => '<strong>' . t('Use this account now?') . '</strong><br />'
-          . t('User @uid - @mail', array('@uid' => $account->uid, '@mail' => $account->mail)) . ' <input type="button" '
-          . 'onclick="select_existing_customer(' . $account->uid . ', \''
-          . $account->mail . '\');" value="' . t('Apply') . '" /><br /><br /><hr /><br/>',
+        . t('User @uid - @mail', array('@uid' => $account->uid, '@mail' => $account->mail)) . ' <input type="button" '
+        . 'onclick="select_existing_customer(' . $account->uid . ', \''
+        . $account->mail . '\');" value="' . t('Apply') . '" /><br /><br /><hr /><br/>',
       );
     }
   }
@@ -780,9 +780,9 @@ function uc_order_select_customer_form($form, &$form_state, $options = NULL) {
   if (is_null(arg(4))) {
     $form['desc'] = array(
       '#markup' => '<div>' . t('Search for a customer based on these fields.')
-                 . '<br />' . t('Use * as a wildcard to match any character.') . '<br />'
-                 . '(<em>' . t('Leave a field empty to ignore it in the search.')
-                 . '</em>)</div>',
+      . '<br />' . t('Use * as a wildcard to match any character.') . '<br />'
+      . '(<em>' . t('Leave a field empty to ignore it in the search.')
+      . '</em>)</div>',
     );
 
     $form['first_name'] = array(

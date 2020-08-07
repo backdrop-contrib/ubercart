@@ -21,11 +21,11 @@ function theme_uc_file_hook_user_file_downloads($variables) {
   $form = $variables['form'];
 
   $header = array(
-    array('data' => t('Remove'    )),
-    array('data' => t('Filename'  )),
+    array('data' => t('Remove')),
+    array('data' => t('Filename')),
     array('data' => t('Expiration')),
-    array('data' => t('Downloads' )),
-    array('data' => t('Addresses' )),
+    array('data' => t('Downloads')),
+    array('data' => t('Addresses')),
   );
   $rows = array();
   $output = '';
@@ -45,21 +45,21 @@ function theme_uc_file_hook_user_file_downloads($variables) {
         array(
           'data' => backdrop_render($file_download['expires']) . ' <br />' .
 
-            '<div class="duration">' .
-              backdrop_render($file_download['time_polarity']) .
-              backdrop_render($file_download['time_quantity']) .
-              backdrop_render($file_download['time_granularity']) .
-            '</div>',
+          '<div class="duration">' .
+          backdrop_render($file_download['time_polarity']) .
+          backdrop_render($file_download['time_quantity']) .
+          backdrop_render($file_download['time_granularity']) .
+          '</div>',
         ),
         array(
           'data' => '<div class="download-table-index">' .
-              backdrop_render($file_download['downloads_in']) . '/' . backdrop_render($file_download['download_limit']) .
-            '</div>',
+          backdrop_render($file_download['downloads_in']) . '/' . backdrop_render($file_download['download_limit']) .
+          '</div>',
         ),
         array(
           'data' => '<div class="download-table-index">' .
-              backdrop_render($file_download['addresses_in']) . '/' . backdrop_render($file_download['address_limit']) .
-            '</div>',
+          backdrop_render($file_download['addresses_in']) . '/' . backdrop_render($file_download['address_limit']) .
+          '</div>',
         ),
       ),
       'class' => array('download-table-row'),

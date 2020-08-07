@@ -63,9 +63,9 @@ function uc_payment_pack_receive_check_form_submit($form, &$form_state) {
 
   db_insert('uc_payment_check')
     ->fields(array(
-    'order_id' => $form_state['values']['order_id'],
-    'clear_date' => mktime(12, 0, 0, $form_state['values']['clear_month'], $form_state['values']['clear_day'], $form_state['values']['clear_year']),
-  ))
+      'order_id' => $form_state['values']['order_id'],
+      'clear_date' => mktime(12, 0, 0, $form_state['values']['clear_month'], $form_state['values']['clear_day'], $form_state['values']['clear_year']),
+    ))
     ->execute();
 
   backdrop_set_message(t('Check received, expected clear date of @date.', array('@date' => uc_date_format($form_state['values']['clear_month'], $form_state['values']['clear_day'], $form_state['values']['clear_year']))));

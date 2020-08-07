@@ -321,8 +321,8 @@ function uc_attribute_options_form_submit($form, &$form_state) {
   foreach ($form_state['values']['options'] as $oid => $option) {
     db_update('uc_attribute_options')
       ->fields(array(
-      'ordering' => $option['ordering'],
-    ))
+        'ordering' => $option['ordering'],
+      ))
       ->condition('oid', $oid)
       ->execute();
   }
@@ -343,12 +343,13 @@ function theme_uc_attribute_options_form($variables) {
   $form = $variables['form'];
 
   $header = array(t('Name'), t('Default cost'), t('Default price'), t('Default weight'), array(
-      'data' => t('List position'),
-      'sort' => 'asc',
-    ), array(
-      'data' => t('Operations'),
-      'colspan' => 2,
-    ));
+    'data' => t('List position'),
+    'sort' => 'asc',
+  ), array(
+    'data' => t('Operations'),
+    'colspan' => 2,
+  ),
+  );
 
   $rows = array();
   foreach (element_children($form['options']) as $oid) {
@@ -938,10 +939,10 @@ function uc_object_options_form($form, &$form_state, $object, $type) {
 
       $query = db_select('uc_attribute_options', 'ao')
         ->fields('ao', array(
-        'aid',
-        'oid',
-        'name',
-      ));
+          'aid',
+          'oid',
+          'name',
+        ));
       $query->leftJoin($table, 'po', "ao.oid = po.oid AND po.$id_type = :id", array(':id' => $id));
 
       $query->addField('ao', 'cost', 'default_cost');
@@ -1056,9 +1057,10 @@ function theme_uc_object_options_form($variables) {
 
   backdrop_add_js('core/misc/tableselect.js');
   $header = array(array(
-      'data' => '&nbsp;&nbsp;' . t('Options'),
-      'class' => array('select-all'),
-    ), t('Default'), t('Cost'), t('Price'), t('Weight'), t('List position'));
+    'data' => '&nbsp;&nbsp;' . t('Options'),
+    'class' => array('select-all'),
+  ), t('Default'), t('Cost'), t('Price'), t('Weight'), t('List position'),
+  );
   $tables = 0;
 
   if (isset($form['attributes'])) {
@@ -1207,8 +1209,8 @@ function uc_object_options_form_submit($form, &$form_state) {
     if (isset($attribute['default'])) {
       db_update($attr_table)
         ->fields(array(
-        'default_option' => $attribute['default'],
-      ))
+          'default_option' => $attribute['default'],
+        ))
         ->condition($id, $form_state['values']['id'])
         ->condition('aid', $attribute['aid'])
         ->execute();
@@ -1409,12 +1411,12 @@ function uc_product_adjustments_form_submit($form, &$form_state) {
     if (!empty($value['model']) && $value['model'] != $form_state['values']['default']) {
       db_merge('uc_product_adjustments')
         ->key(array(
-        'nid' => $form_state['values']['nid'],
-        'combination' => $value['combo_array'],
-      ))
+          'nid' => $form_state['values']['nid'],
+          'combination' => $value['combo_array'],
+        ))
         ->fields(array(
-        'model' => $value['model'],
-      ))
+          'model' => $value['model'],
+        ))
         ->execute();
     }
     else {

@@ -41,7 +41,7 @@ class UcTreeNode {
       $this->children[] = $child;
     }
     else {
-      $last_child = &$this->children[count($this->children) -1];
+      $last_child = &$this->children[count($this->children) - 1];
       $last_child->add_child($child);
     }
   }

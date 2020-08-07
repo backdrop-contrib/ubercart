@@ -65,10 +65,12 @@ function theme_uc_roles_user_expiration($variables) {
       array('data' => check_plain($data['name']['#value'])),
       array('data' => format_date($data['expiration']['#value'], 'short')),
       // Options to adjust the expiration.
-      array('data' => '<a name="role-expiration-' . $role . '">' .
-                      '<div class="expiration">' .
-                        backdrop_render($polarity) . backdrop_render($qty) . backdrop_render($granularity) .
-                      '</div></a>'),
+      array(
+        'data' => '<a name="role-expiration-' . $role . '">' .
+        '<div class="expiration">' .
+        backdrop_render($polarity) . backdrop_render($qty) . backdrop_render($granularity) .
+        '</div></a>',
+      ),
     );
     unset($form['table'][$role]);
   }

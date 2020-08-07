@@ -56,8 +56,11 @@ class UcOrder extends Entity {
    * @param $state
    *   The initial order state.
    */
-  // function __construct($uid = 0, $state = 'in_checkout') {
-  function __construct(array $values) {
+
+  /**
+   * function __construct($uid = 0, $state = 'in_checkout') {
+   */
+  public function __construct(array $values) {
     parent::__construct($values);
     if ($this->isNew()) {
       $uid = isset($values['uid']) ? $values['uid'] : 0;
@@ -86,24 +89,29 @@ class UcOrder extends Entity {
   public function id() {
     return $this->order_id;
   }
+
   /**
    * Implements EntityInterface::entityType().
    */
   public function entityType() {
     return 'uc_order';
   }
+
   /**
    * Implements EntityInterface::bundle().
    */
   public function bundle() {}
+
   /**
    * Implements EntityInterface::label().
    */
   public function label() {}
+
   /**
    * Implements EntityInterface::uri().
    */
   public function uri() {}
+
 }
 
 
@@ -111,7 +119,7 @@ class UcOrder extends Entity {
  * UcOrderProduct extends Entity.
  *
  * A subclass of Entity is a requirement for creating a custom entity. It is
- * also a minimum requirement to define the methods included here, even as 
+ * also a minimum requirement to define the methods included here, even as
  * empty functions.
  */
 class UcOrderProduct extends Entity {
@@ -129,32 +137,38 @@ class UcOrderProduct extends Entity {
    * @var integer
    */
   public $title;
+
   /**
    * Implements EntityInterface::id().
    */
   public function id() {
-    return isset($this->order_product_id ) ? $this->order_product_id  : NULL;
+    return isset($this->order_product_id) ? $this->order_product_id : NULL;
   }
+
   /**
    * Implements EntityInterface::entityType().
    */
   public function entityType() {
     return 'uc_order_product';
   }
+
   /**
    * Implements EntityInterface::bundle().
    */
   public function bundle() {
     // return $this->type;
   }
+
   /**
    * Implements EntityInterface::label().
    */
   public function label() {
     return $this->title;
   }
+
   /**
    * Implements EntityInterface::uri().
    */
   public function uri() {}
+
 }

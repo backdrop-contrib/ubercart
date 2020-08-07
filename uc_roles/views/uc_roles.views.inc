@@ -9,7 +9,7 @@
  * Implements hook_views_data().
  */
 function uc_roles_views_data() {
-  $data['uc_roles_expirations']['table']['group']  = t('User');
+  $data['uc_roles_expirations']['table']['group'] = t('User');
 
   $data['uc_roles_expirations']['table']['join'] = array(
     'users' => array(
@@ -46,7 +46,8 @@ function uc_roles_views_data() {
     // Information for accepting a role as an argument.
     'argument' => array(
       'handler' => 'views_handler_argument_users_roles_rid',
-      'name field' => 'title', // The field to display in the summary.
+  // The field to display in the summary.
+      'name field' => 'title',
       'numeric' => TRUE,
       'validate type' => 'role',
     ),

@@ -10,37 +10,48 @@
  */
 class UcAddress {
 
-  /** Given name. */
+  /**
+   * Given name. */
   public $first_name = '';
 
-  /** Surname. */
+  /**
+   * Surname. */
   public $last_name = '';
 
-  /** Company or organization. */
+  /**
+   * Company or organization. */
   public $company = '';
 
-  /** First line of street address. */
+  /**
+   * First line of street address. */
   public $street1 = '';
 
-  /** Second line of street address. */
+  /**
+   * Second line of street address. */
   public $street2 = '';
 
-  /** City name. */
+  /**
+   * City name. */
   public $city = '';
 
-  /** State, provence, or region id. */
+  /**
+   * State, provence, or region id. */
   public $zone = 0;
 
-  /** ISO 3166-1 3-digit numeric country code. */
+  /**
+   * ISO 3166-1 3-digit numeric country code. */
   public $country = 0;
 
-  /** Postal code. */
+  /**
+   * Postal code. */
   public $postal_code = '';
 
-  /** Telephone number. */
+  /**
+   * Telephone number. */
   public $phone = '';
 
-  /** Email address. */
+  /**
+   * Email address. */
   public $email = '';
 
   /**
@@ -83,8 +94,8 @@ class UcAddress {
 
     foreach ($physicalProperty as $property) {
       // Canonicalize properties before comparing.
-      if (UcAddress::makeCanonical($this->$property)   !=
-          UcAddress::makeCanonical($address->$property)  ) {
+      if (UcAddress::makeCanonical($this->$property) !=
+          UcAddress::makeCanonical($address->$property)) {
         return FALSE;
       }
     }

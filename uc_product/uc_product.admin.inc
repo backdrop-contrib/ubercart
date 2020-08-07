@@ -389,12 +389,12 @@ function uc_product_class_form_submit($form, &$form_state) {
   $result = db_merge('uc_product_classes')
     ->key(array('pcid' => $pcid))
     ->fields(array(
-    'name' => $form_state['values']['name'],
-    'description' => $form_state['values']['description'],
-  ))
+      'name' => $form_state['values']['name'],
+      'description' => $form_state['values']['description'],
+    ))
     ->execute();
 
-  $type = new \stdClass;
+  $type = new \stdClass();
   $type->type = $pcid;
   $type->name = $form_state['values']['name'];
   $type->base = 'uc_product';
@@ -402,7 +402,6 @@ function uc_product_class_form_submit($form, &$form_state) {
   $type->description = $form_state['values']['description'];
   $type = node_type_set_defaults($type);
   node_type_save($type);
-
 
   uc_product_node_info(TRUE);
 

@@ -100,15 +100,15 @@ function uc_paypal_ipn() {
 
     db_insert('uc_payment_paypal_ipn')
       ->fields(array(
-      'order_id' => $order_id,
-      'txn_id' => $txn_id,
-      'txn_type' => $txn_type,
-      'mc_gross' => $payment_amount,
-      'status' => $payment_status,
-      'receiver_email' => $receiver_email,
-      'payer_email' => $payer_email,
-      'received' => REQUEST_TIME,
-    ))
+        'order_id' => $order_id,
+        'txn_id' => $txn_id,
+        'txn_type' => $txn_type,
+        'mc_gross' => $payment_amount,
+        'status' => $payment_status,
+        'receiver_email' => $receiver_email,
+        'payer_email' => $payer_email,
+        'received' => REQUEST_TIME,
+      ))
       ->execute();
 
     switch ($payment_status) {
@@ -143,7 +143,7 @@ function uc_paypal_ipn() {
         uc_order_comment_save($order_id, 0, t('Payment is pending at PayPal: @reason', array('@reason' => _uc_paypal_pending_message(check_plain($_POST['pending_reason'])))), 'admin');
         break;
 
-        // You, the merchant, refunded the payment.
+      // You, the merchant, refunded the payment.
       case 'Refunded':
         $comment = t('PayPal transaction ID: @txn_id', array('@txn_id' => $txn_id));
         uc_payment_enter($order_id, 'paypal_wps', $payment_amount, $order->uid, NULL, $comment);
@@ -282,7 +282,7 @@ function uc_paypal_ec_review_form($form, &$form_state, $order) {
 
     $form['shippable'] = array(
       '#type' => 'value',
-      '#value' => true,
+      '#value' => TRUE,
     );
   }
 

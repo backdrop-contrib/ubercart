@@ -211,7 +211,8 @@
                     </tr>
 
                     <?php foreach ($line_items as $item): ?>
-                    <?php if ($item['type'] == 'subtotal' || $item['type'] == 'total')  continue; ?>
+                    <?php if ($item['type'] == 'subtotal' || $item['type'] == 'total') {continue;
+                    } ?>
 
                     <tr>
                       <td nowrap="nowrap">

@@ -77,7 +77,7 @@ function uc_cart_links_process($cart_actions) {
         $id = backdrop_substr($action, 1, 32);
         break;
 
-        // Add a product to the cart.
+      // Add a product to the cart.
       case 'p':
       case 'P':
         // Set the default product variables.
@@ -161,7 +161,7 @@ function uc_cart_links_process($cart_actions) {
         }
         break;
 
-        // Empty the shopping cart.
+      // Empty the shopping cart.
       case 'e':
       case 'E':
         if ($config->get('uc_cart_links_empty')) {
@@ -169,7 +169,7 @@ function uc_cart_links_process($cart_actions) {
         }
         break;
 
-        // Display a pre-configured message.
+      // Display a pre-configured message.
       case 'm':
       case 'M':
         // Load the messages if they haven't been loaded yet.
@@ -203,9 +203,9 @@ function uc_cart_links_process($cart_actions) {
     db_merge('uc_cart_link_clicks')
       ->key(array('cart_link_id' => (string) $id))
       ->fields(array(
-      'clicks' => 1,
-      'last_click' => REQUEST_TIME,
-    ))
+        'clicks' => 1,
+        'last_click' => REQUEST_TIME,
+      ))
       ->expression('clicks', 'clicks + :i', array(':i' => 1))
       ->execute();
   }

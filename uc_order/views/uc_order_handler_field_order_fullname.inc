@@ -13,7 +13,7 @@ class uc_order_handler_field_order_fullname extends views_handler_field {
   /**
    * Overrides views_handler::option_definition().
    */
-  function option_definition() {
+  public function option_definition() {
     $options = parent::option_definition();
     $options['format'] = array('default' => 'first_last');
     return $options;
@@ -22,7 +22,7 @@ class uc_order_handler_field_order_fullname extends views_handler_field {
   /**
    * Overrides views_handler::options_form().
    */
-  function options_form(&$form, &$form_state) {
+  public function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
 
     $form['format'] = array(
@@ -40,7 +40,7 @@ class uc_order_handler_field_order_fullname extends views_handler_field {
   /**
    * Overrides views_handler_field::query().
    */
-  function query() {
+  public function query() {
     $this->ensure_my_table();
     $this->add_additional_fields();
   }
@@ -48,7 +48,7 @@ class uc_order_handler_field_order_fullname extends views_handler_field {
   /**
    * Overrides views_handler_field::render().
    */
-  function render($values) {
+  public function render($values) {
     $prefix = $this->definition['prefix'];
     $first = check_plain($values->{$this->aliases[$prefix . '_first_name']});
     $last = check_plain($values->{$this->aliases[$prefix . '_last_name']});

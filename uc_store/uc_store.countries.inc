@@ -208,8 +208,8 @@ function uc_country_disable($country_id) {
     if ($country->version > 0) {
       db_update('uc_countries')
         ->fields(array(
-        'version' => -$country->version,
-      ))
+          'version' => -$country->version,
+        ))
         ->condition('country_id', $country_id)
         ->execute();
       backdrop_set_message(t('@country disabled.', array('@country' => t($country->country_name))));
@@ -236,8 +236,8 @@ function uc_country_enable($country_id) {
     if ($country->version < 0) {
       db_update('uc_countries')
         ->fields(array(
-        'version' => abs($country->version),
-      ))
+          'version' => abs($country->version),
+        ))
         ->condition('country_id', $country_id)
         ->execute();
       backdrop_set_message(t('@country enabled.', array('@country' => t($country->country_name))));
@@ -348,8 +348,8 @@ function uc_country_update($country_id, $version) {
 
     db_update('uc_countries')
       ->fields(array(
-      'version' => $version,
-    ))
+        'version' => $version,
+      ))
       ->condition('country_id', $country_id)
       ->execute();
     backdrop_set_message(t('Country update complete.'));
@@ -371,7 +371,7 @@ function uc_country_update($country_id, $version) {
  *   TRUE or FALSE indicating whether or not the country was imported.
  */
 function uc_country_import($file) {
-  require_once(backdrop_get_path('module', 'uc_store') . '/countries/' . $file);
+  require_once backdrop_get_path('module', 'uc_store') . '/countries/' . $file;
 
   $pieces = explode('_', substr($file, 0, strlen($file) - 4));
 
@@ -412,7 +412,7 @@ function _uc_country_import_include($country_id, $version) {
         switch (filetype($dir . $file)) {
           case 'file':
             if (substr($file, -$matchlen) == $match) {
-              require_once($dir . $file);
+              require_once $dir . $file;
               return substr($file, 0, strlen($file) - $matchlen);
             }
             break;

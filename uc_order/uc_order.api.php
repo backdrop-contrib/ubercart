@@ -159,12 +159,12 @@ function hook_uc_line_item_data_alter(&$items) {
  *     a failure message if the payment failed.
  *     To prevent an order from passing through, you must return an array
  *     resembling the following one with the failure message:
- *     @code
+ * @code
  *       return array(array(
  *         'pass' => FALSE,
  *         'message' => t('We were unable to process your credit card.'),
  *       ));
- *     @endcode
+ * @endcode
  *   - can_update: Called before an order's status is changed to make sure the
  *     order can be updated. $order is the order object with the old order
  *     status ID ($order->order_status), and $arg2 is simply the new order

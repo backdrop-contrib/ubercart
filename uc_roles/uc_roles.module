@@ -704,11 +704,11 @@ function uc_roles_feature_form_submit($form, &$form_state) {
     'shippable' => $form_state['values']['uc_roles_shippable'],
     // We should be setting NULL, but backdrop_write_record() ...
     'end_override' => $form_state['values']['end_override'],
-    'end_time' => $form_state['values']['expiration'  ] === 'abs' ? $form_state['values']['uc_roles_expire_absolute'] : NULL,
+    'end_time' => $form_state['values']['expiration'] === 'abs' ? $form_state['values']['uc_roles_expire_absolute'] : NULL,
   );
 
   $description = empty($product_role['model']) ? t('<strong>SKU:</strong> Any<br />') : t('<strong>SKU:</strong> !sku<br />', array('!sku' => $product_role['model']));
-  $description .=  t('<strong>Role:</strong> @role_name<br />', array('@role_name' => _uc_roles_get_name($product_role['role'])));
+  $description .= t('<strong>Role:</strong> @role_name<br />', array('@role_name' => _uc_roles_get_name($product_role['role'])));
 
   if ($product_role['end_override']) {
     if ($product_role['end_time']) {
@@ -1025,10 +1025,10 @@ function uc_roles_revoke(&$account, $role, $silent = FALSE) {
   $roles_list = $account->roles;
 
   $key = array_search($role, $roles_list);
-  if ($key!==false) {
+  if ($key !== FALSE) {
     unset($roles_list[$key]);
   }
-  
+
   $account->roles = $roles_list;
   $account->save();
 
@@ -1091,10 +1091,10 @@ function uc_roles_grant(&$account, $role, $timestamp, $save_user = TRUE, $silent
   if (!is_null($timestamp)) {
     db_insert('uc_roles_expirations')
       ->fields(array(
-      'uid' => $account->uid,
-      'role' => $role,
-      'expiration' => $timestamp,
-    ))
+        'uid' => $account->uid,
+        'role' => $role,
+        'expiration' => $timestamp,
+      ))
       ->execute();
   }
 
@@ -1160,9 +1160,9 @@ function uc_roles_renew($account, $role, $timestamp, $silent = FALSE) {
   // Update the expiration date and reset the notified flag.
   db_update('uc_roles_expirations')
     ->fields(array(
-    'expiration' => $timestamp,
-    'notified' => NULL,
-  ))
+      'expiration' => $timestamp,
+      'notified' => NULL,
+    ))
     ->condition('uid', $account->uid)
     ->condition('role', $role)
     ->execute();

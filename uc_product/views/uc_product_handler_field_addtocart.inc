@@ -13,7 +13,7 @@ class uc_product_handler_field_addtocart extends views_handler_field {
   /**
    * Overrides views_handler_field::query().
    */
-  function query() {
+  public function query() {
     $this->ensure_my_table();
     $this->add_additional_fields();
   }
@@ -21,7 +21,7 @@ class uc_product_handler_field_addtocart extends views_handler_field {
   /**
    * Overrides views_handler_field::render().
    */
-  function render($values) {
+  public function render($values) {
     if (uc_product_is_product($values->{$this->aliases['type']})) {
       $type = node_type_get_type($values->{$this->aliases['type']});
       $base = $type->base;

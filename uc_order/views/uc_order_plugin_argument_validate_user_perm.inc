@@ -9,7 +9,7 @@
  */
 class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_validate_user {
 
-  function option_definition() {
+  public function option_definition() {
     $options = parent::option_definition();
 
     $options['perm'] = array('default' => 'view all orders');
@@ -17,7 +17,7 @@ class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_
     return $options;
   }
 
-  function options_form(&$form, &$form_state) {
+  public function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
 
     $form['restrict_roles']['#access'] = FALSE;
@@ -45,7 +45,7 @@ class uc_order_plugin_argument_validate_user_perm extends views_plugin_argument_
     );
   }
 
-  function validate_argument($argument) {
+  public function validate_argument($argument) {
     $config = config('uc_order.settings');
     $type = $this->options['type'];
     // is_numeric() can return false positives, so we ensure it's an integer.

@@ -16,7 +16,7 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
   /**
    * Overrides init function to provide generic option to link to user.
    */
-  function init(&$view, &$data) {
+  public function init(&$view, &$data) {
     parent::init($view, $data);
     if (!empty($this->options['link_to_user'])) {
       $this->additional_fields['cart_id'] = 'cart_id';
@@ -26,7 +26,7 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
   /**
    * Overrides views_handler::option_definition().
    */
-  function option_definition() {
+  public function option_definition() {
     $options = parent::option_definition();
     $options['link_to_user'] = array('default' => TRUE);
     $options['overwrite_anonymous'] = array('default' => TRUE);
@@ -42,7 +42,7 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
    *
    * Provides link to node option.
    */
-  function options_form(&$form, &$form_state) {
+  public function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
     $form['link_to_user'] = array(
       '#title' => t('Link this field to its user'),
@@ -69,7 +69,7 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
   /**
    *
    */
-  function render_link($data, $values) {
+  public function render_link($data, $values) {
     if (!empty($this->options['link_to_user']) &&
         user_access('access user profiles') &&
         $values->{$this->aliases['cart_id']} &&
@@ -84,7 +84,7 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
   /**
    * Overrides views_handler_field::render().
    */
-  function render($values) {
+  public function render($values) {
     $result = db_query('SELECT name FROM {users} u WHERE u.uid = :uid', array(':uid' => $values->{$this->field_alias}))->fetchField();
     if ($result) {
       return $this->render_link($result, $values);

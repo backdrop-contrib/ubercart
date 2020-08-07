@@ -18,14 +18,14 @@ define('UC_FILE_BYTE_SIZE', 8192);
 /**
  * Download statuses.
  */
-define('UC_FILE_ERROR_OK'                     , 0);
-define('UC_FILE_ERROR_NOT_A_FILE'             , 1);
+define('UC_FILE_ERROR_OK', 0);
+define('UC_FILE_ERROR_NOT_A_FILE', 1);
 define('UC_FILE_ERROR_TOO_MANY_BOGUS_REQUESTS', 2);
-define('UC_FILE_ERROR_INVALID_DOWNLOAD'       , 3);
-define('UC_FILE_ERROR_TOO_MANY_LOCATIONS'     , 4);
-define('UC_FILE_ERROR_TOO_MANY_DOWNLOADS'     , 5);
-define('UC_FILE_ERROR_EXPIRED'                , 6);
-define('UC_FILE_ERROR_HOOK_ERROR'             , 7);
+define('UC_FILE_ERROR_INVALID_DOWNLOAD', 3);
+define('UC_FILE_ERROR_TOO_MANY_LOCATIONS', 4);
+define('UC_FILE_ERROR_TOO_MANY_DOWNLOADS', 5);
+define('UC_FILE_ERROR_EXPIRED', 6);
+define('UC_FILE_ERROR_HOOK_ERROR', 7);
 
 /**
  * Themes user file downloads page.
@@ -104,12 +104,12 @@ function uc_file_user_downloads($account) {
   // Create a header and the pager it belongs to.
   $header = array(
     array(
-      'data' => t('Purchased'  ),
+      'data' => t('Purchased'),
       'field' => 'u.granted',
       'sort' => 'desc',
     ),
     array(
-      'data' => t('Filename'   ),
+      'data' => t('Filename'),
       'field' => 'f.filename',
     ),
     array(
@@ -117,10 +117,10 @@ function uc_file_user_downloads($account) {
       'field' => 'p.description',
     ),
     array(
-      'data' => t('Downloads'  ),
+      'data' => t('Downloads'),
       'field' => 'u.accessed',
     ),
-    array('data' => t('Addresses'  )),
+    array('data' => t('Addresses')),
   );
 
   backdrop_set_title(t('File downloads'));
@@ -143,9 +143,9 @@ function uc_file_user_downloads($account) {
     'expiration',
   ))
     ->fields('f', array(
-    'filename',
-    'fid',
-  ))
+      'filename',
+      'fid',
+    ))
     ->fields('p', array('description'));
 
   $count_query = db_select('uc_file_users')

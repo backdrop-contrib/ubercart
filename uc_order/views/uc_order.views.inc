@@ -717,7 +717,8 @@ function uc_order_views_plugins() {
         'handler' => 'uc_order_plugin_row_invoice',
         'theme' => 'uc_order_view_row_invoice',
         'theme path' => backdrop_get_path('module', 'uc_order') . '/views',
-        'base' => array('uc_orders'), // only works with 'uc_orders' as base.
+  // only works with 'uc_orders' as base.
+        'base' => array('uc_orders'),
         'type' => 'normal',
       ),
     ),

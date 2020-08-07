@@ -20,7 +20,7 @@ class uc_order_handler_filter_total extends views_handler_filter_group_by_numeri
   /**
    * Overrides views_handler_filter_group_by_numeric::query().
    */
-  function query() {
+  public function query() {
     $this->ensure_my_table();
     $field = $this->table . '_' . $this->field;
 

@@ -18,14 +18,14 @@ class uc_shipping_handler_field_package_weight extends uc_product_handler_field_
    *
    * Disables aggregation for this field.
    */
-  function use_group_by() {
+  public function use_group_by() {
     return FALSE;
   }
 
   /**
    * Overrides uc_product_handler_field_weight::query().
    */
-  function query() {
+  public function query() {
     $this->ensure_my_table();
     $this->add_additional_fields();
   }
@@ -33,7 +33,7 @@ class uc_shipping_handler_field_package_weight extends uc_product_handler_field_
   /**
    * Overrides uc_product_handler_field_weight::render().
    */
-  function render($values) {
+  public function render($values) {
     $package = uc_shipping_package_load($values->{$this->aliases['package_id']});
 
     if ($this->options['format'] == 'numeric') {

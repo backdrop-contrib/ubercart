@@ -38,14 +38,14 @@
  *     - accessorials: This array represents the different options the customer
  *       may choose for their shipment. The callback function should generate a
  *       quote for each option in accessorials and return them via an array.
- *       @code
+ * @code
  *       return array(
  *         '03' => array('rate' => 15.75,  'option_label' => t('UPS Ground'),
  *                       'error' => 'Additional handling charge applied.'),
  *         '14' => array('error' => 'Invalid package type.'),
  *         '59' => array('rate' => 26.03, 'option_label' => t('UPS 2nd Day'))
  *       );
- *       @endcode
+ * @endcode
  *     - pkg_types: The list of package types that the shipping method can
  *       handle. This should be an associative array that can be used as the
  *       #options of a select form element. It is recommended that a function

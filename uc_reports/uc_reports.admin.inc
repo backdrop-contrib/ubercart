@@ -56,9 +56,9 @@ function uc_reports_customers() {
     'name',
   ))
     ->fields('ou', array(
-    $first_name,
-    $last_name,
-  ))
+      $first_name,
+      $last_name,
+    ))
     ->condition('u.uid', 0, '>')
     ->groupBy('u.uid');
   $query->addExpression("(SELECT COUNT(DISTINCT(order_id)) FROM {uc_orders} o WHERE o.uid = u.uid AND o.order_status IN (:statuses))", 'orders', array(':statuses' => $order_statuses));
@@ -402,9 +402,9 @@ function uc_reports_products_custom() {
     ->extend('TableSort')
     ->limit($page_size)
     ->fields('n', array(
-    'nid',
-    'title',
-  ))
+      'nid',
+      'title',
+    ))
     ->condition('type', $product_types, 'IN')
     ->groupBy('n.nid');
 
@@ -723,10 +723,11 @@ function theme_uc_reports_product_table($variables) {
       }
     }
     $rows[] = array(array(
-        'data' => $empty,
-        'colspan' => $header_count,
-        'class' => array('empty', 'message'),
-      ));
+      'data' => $empty,
+      'colspan' => $header_count,
+      'class' => array('empty', 'message'),
+    ),
+    );
   }
 
   // Format the table header:
@@ -819,14 +820,18 @@ function uc_reports_sales_summary() {
   $rows[] = array(
     l(t('Today, !date', array('!date' => format_date($today_start, 'uc_store'))), 'admin/store/orders/search/results/0/0/0/0/0/0/' . $today_start . '/' . $today_end),
     $today['total'],
-    array('data' => array(
+    array(
+      'data' => array(
         '#theme' => 'uc_price',
         '#price' => $today['income'],
-      )),
-    array('data' => array(
+      ),
+    ),
+    array(
+      'data' => array(
         '#theme' => 'uc_price',
         '#price' => $today['average'],
-      )),
+      ),
+    ),
   );
 
   // Calculate and add yesterday's sales summary to the report table.
@@ -835,14 +840,18 @@ function uc_reports_sales_summary() {
   $rows[] = array(
     l(t('Yesterday, !date', array('!date' => format_date($today_start - 86400, 'uc_store'))), 'admin/store/orders/search/results/0/0/0/0/0/0/' . ($today_start - 86400) . '/' . ($today_end - 86400)),
     $yesterday['total'],
-    array('data' => array(
+    array(
+      'data' => array(
         '#theme' => 'uc_price',
         '#price' => $yesterday['income'],
-      )),
-    array('data' => array(
+      ),
+    ),
+    array(
+      'data' => array(
         '#theme' => 'uc_price',
         '#price' => $yesterday['average'],
-      )),
+      ),
+    ),
   );
 
   // Get the sales report for the month.
@@ -853,14 +862,18 @@ function uc_reports_sales_summary() {
   $rows[] = array(
     l(t('Month-to-date, @month', array('@month' => $month_title)), 'admin/store/orders/search/results/0/0/0/0/0/0/' . $month_start . '/' . $month_end),
     $month['total'],
-    array('data' => array(
+    array(
+      'data' => array(
         '#theme' => 'uc_price',
         '#price' => $month['income'],
-      )),
-    array('data' => array(
+      ),
+    ),
+    array(
+      'data' => array(
         '#theme' => 'uc_price',
         '#price' => $month['average'],
-      )),
+      ),
+    ),
   );
 
   // Calculate the daily averages for the month.
@@ -878,10 +891,12 @@ function uc_reports_sales_summary() {
   $rows[] = array(
     t('Daily average for @month', array('@month' => $month_title)),
     $daily_orders,
-    array('data' => array(
+    array(
+      'data' => array(
         '#theme' => 'uc_price',
         '#price' => $daily_revenue,
-      )),
+      ),
+    ),
     '',
   );
 
@@ -892,10 +907,12 @@ function uc_reports_sales_summary() {
   $rows[] = array(
     t('Projected totals for @date', array('@date' => $month_title)),
     round($month['total'] + ($daily_orders * $remaining_days), 2),
-    array('data' => array(
+    array(
+      'data' => array(
         '#theme' => 'uc_price',
         '#price' => round($month['income'] + ($daily_revenue * $remaining_days), 2),
-      )),
+      ),
+    ),
     '',
   );
 
@@ -909,15 +926,19 @@ function uc_reports_sales_summary() {
 
   // Build the header statistics table header.
   $header = array(array(
-      'data' => t('Statistics'),
-      'width' => '50%',
-    ), '');
+    'data' => t('Statistics'),
+    'width' => '50%',
+  ), '',
+  );
 
   $rows = array(
-    array(array('data' => t('Grand total sales')), array('data' => array(
-          '#theme' => 'uc_price',
-          '#price' => db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField(),
-        ))),
+    array(array('data' => t('Grand total sales')), array(
+      'data' => array(
+        '#theme' => 'uc_price',
+        '#price' => db_query("SELECT SUM(order_total) FROM {uc_orders} WHERE order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField(),
+      ),
+    ),
+    ),
     array(array('data' => t('Customers total')), array('data' => db_query("SELECT COUNT(DISTINCT uid) FROM {uc_orders} WHERE order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField())),
     array(array('data' => t('New customers today')), array('data' => db_query("SELECT COUNT(DISTINCT uid) FROM {uc_orders} WHERE order_status IN (:statuses) AND :start <= created AND created <= :end", array(':statuses' => $order_statuses, ':start' => $today_start, ':end' => $today_end))->fetchField())),
     array(array('data' => t('Online customers')), array('data' => db_query("SELECT COUNT(DISTINCT s.uid) FROM {sessions} s LEFT JOIN {uc_orders} o ON s.uid = o.uid WHERE s.uid > 0 AND o.order_status IN (:statuses)", array(':statuses' => $order_statuses))->fetchField())),
@@ -936,9 +957,10 @@ function uc_reports_sales_summary() {
 
   // Build the total orders by status table header.
   $header = array(array(
-      'data' => t('Total orders by status'),
-      'width' => '50%',
-    ), '');
+    'data' => t('Total orders by status'),
+    'width' => '50%',
+  ), '',
+  );
   $rows = array();
   $unknown = 0;
 

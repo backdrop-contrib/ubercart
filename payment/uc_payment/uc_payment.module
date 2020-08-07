@@ -279,9 +279,10 @@ function uc_payment_method_free_order($op, &$order) {
     case 'order-submit':
       if ($order->order_total >= 0.01) {
         return array(array(
-            'pass' => FALSE,
-            'message' => t('We cannot process your order without payment.'),
-          ));
+          'pass' => FALSE,
+          'message' => t('We cannot process your order without payment.'),
+        ),
+        );
       }
 
       uc_payment_enter($order->order_id, 'free_order', 0, 0, NULL, t('Checkout completed for a free order.'));
@@ -509,14 +510,14 @@ function uc_payment_enter($order_id, $method, $amount, $uid = 0, $data = NULL, $
 
   $receipt_id = db_insert('uc_payment_receipts')
     ->fields(array(
-    'order_id' => $order_id,
-    'method' => $method_name,
-    'amount' => $amount,
-    'uid' => $uid,
-    'data' => $data,
-    'comment' => $comment,
-    'received' => $received,
-  ))
+      'order_id' => $order_id,
+      'method' => $method_name,
+      'amount' => $amount,
+      'uid' => $uid,
+      'data' => $data,
+      'comment' => $comment,
+      'received' => $received,
+    ))
     ->execute();
 
   $order = uc_order_load($order_id, TRUE);
@@ -648,7 +649,7 @@ function uc_payment_modules_installed($modules) {
   foreach ($modules as $module) {
     if ($gateways = module_invoke($module, 'uc_payment_gateway')) {
       foreach ($gateways as $id => $gateway) {
-        config_set('uc_payment.settings', 'uc_pg_' . $id . '_enabled', true);
+        config_set('uc_payment.settings', 'uc_pg_' . $id . '_enabled', TRUE);
       }
     }
     if ($payment_methods = module_invoke($module, 'uc_payment_method')) {
@@ -670,7 +671,7 @@ function _uc_payment_gateway_list($filter = NULL, $enabled_only = FALSE) {
     if (is_numeric($id)) {
       $id = $gateway['id'];
     }
-    
+
     $gateways[$id] = array_merge($gateway, array(
       'id' => $id,
       'enabled' => config_get('uc_payment.settings', 'uc_pg_' . $id . '_enabled'),
@@ -734,6 +735,5 @@ function uc_payment_views_api() {
  * Implements hook_autoload_info().
  */
 function uc_payment_autoload_info() {
-  return array(
-  );
+  return array();
 }

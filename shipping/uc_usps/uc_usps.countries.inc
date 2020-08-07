@@ -22,7 +22,8 @@
 function uc_usps_country_map($code = NULL) {
   $countries = array(
     248 => 'Aland Island (Finland)',
-    334 => 'Australia', // Heard Island and McDonald Islands
+  // Heard Island and McDonald Islands
+    334 => 'Australia',
     68 => 'Bolivia',
     535 => 'Bonaire (Netherlands Antilles)',
     92 => 'British Virgin Islands',
@@ -33,20 +34,27 @@ function uc_usps_country_map($code = NULL) {
     384 => "Cote d'Ivoire",
     626 => 'East Timor (Indonesia)',
     238 => 'Falkland Islands',
-    260 => 'France', // French Southern Territories
+  // French Southern Territories
+    260 => 'France',
     268 => 'Georgia, Republic of',
     826 => 'Great Britain and Northern Ireland',
-    86 => 'Great Britain and Northern Ireland', // British Indian Ocean Territory
-    239 => 'Great Britain and Northern Ireland', // South Georgia and the
+  // British Indian Ocean Territory
+    86 => 'Great Britain and Northern Ireland',
+  // South Georgia and the
+    239 => 'Great Britain and Northern Ireland',
     // South Sandwich Islands
     364 => 'Iran',
-    275 => 'Israel', // Palestinian Territory, Occupied
+  // Palestinian Territory, Occupied
+    275 => 'Israel',
     833 => 'Isle of Man (Great Britain and Northern Ireland)',
     498 => 'Moldova',
-    732 => 'Morocco', // Western Sahara
+  // Western Sahara
+    732 => 'Morocco',
     408 => "Korea, Democratic People's Republic of (North Korea)",
-    74 => 'Norway', // Bouvet Island
-    744 => 'Norway', // Svalbard and Jan Mayen
+  // Bouvet Island
+    74 => 'Norway',
+  // Svalbard and Jan Mayen
+    744 => 'Norway',
     410 => 'Korea, Republic of (South Korea)',
     418 => 'Laos',
     492 => 'Monaco (France)',

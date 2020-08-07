@@ -13,7 +13,7 @@ class uc_roles_handler_field_rid extends views_handler_field {
   /**
    * Overrides views_handler_field::pre_render().
    */
-  function pre_render(&$values) {
+  public function pre_render(&$values) {
     $roles = array();
     $this->items = array();
 
@@ -37,7 +37,7 @@ class uc_roles_handler_field_rid extends views_handler_field {
   /**
    * Overrides views_handler_field::render().
    */
-  function render($values) {
+  public function render($values) {
     // Return the role name corresponding to the role ID.
     // @todo: Should we be using this->get_value() here?
     $role = $values->uc_roles_expirations_rid;

@@ -149,7 +149,7 @@ function _uc_line_item_list($action = NULL) {
       'enabled' => TRUE,
       'weight' => 1,
     );
-    
+
     $config->set('uc_li_' . $id . '_enabled', $item['enabled']);
     $config->set('uc_li_' . $id . '_weight', $item['weight']);
 

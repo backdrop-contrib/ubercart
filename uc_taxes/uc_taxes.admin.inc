@@ -10,9 +10,10 @@
  */
 function uc_taxes_admin_settings() {
   $header = array(t('Name'), t('Rate'), t('Taxed products'), t('Taxed product types'), t('Taxed line items'), t('Weight'), array(
-      'data' => t('Operations'),
-      'colspan' => 4,
-    ));
+    'data' => t('Operations'),
+    'colspan' => 4,
+  ),
+  );
 
   $rows = array();
   $options = array('query' => array('token' => backdrop_get_token('uc_taxes_clone')));

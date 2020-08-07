@@ -492,8 +492,8 @@ function uc_order_pane_products_select($form, &$form_state) {
     $search = strtolower(str_replace('*', '%', $form_state['values']['product_controls']['product_search']));
     $query->leftJoin('uc_products', 'p', 'n.nid = p.nid');
     $query->condition(db_or()
-            ->condition('n.title', $search, 'LIKE')
-            ->condition('p.model', $search, 'LIKE')
+      ->condition('n.title', $search, 'LIKE')
+      ->condition('p.model', $search, 'LIKE')
           );
   }
 

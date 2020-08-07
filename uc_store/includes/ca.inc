@@ -43,7 +43,7 @@ function ca_convert_predicate($predicate) {
  *   The name to give the Rules component.
  */
 function ca_extract_conditions($predicate, $name) {
-  $component = rules_and(array('order' => array('uc_order','label' => t('Order'))));
+  $component = rules_and(array('order' => array('uc_order', 'label' => t('Order'))));
   $component->name = $name;
   $component->label = t('@title conditions', array('@title' => $predicate->title));
 
@@ -314,7 +314,8 @@ function ca_add_actions(&$rule, $actions) {
 function ca_data_map() {
   return array(
     'ca_condition_date' => array(
-      'data' => 'system:date', // @todo: use the correct selector
+  // @todo: use the correct selector
+      'data' => 'system:date',
       'op' => 'operator',
       'value' => 'date',
       '#info' => array(

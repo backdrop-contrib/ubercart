@@ -32,7 +32,8 @@ function uc_quote_assemble_quotes($order) {
   // Use the most prominent shipping type (highest weight).
   // In theory, you can ship lighter products with heavier by the same
   // method, but not vice versa.
-  $type_weight = -1000; // arbitrary low number
+  // arbitrary low number
+  $type_weight = -1000;
   foreach ($shipping_types as $type) {
     if ($all_types[$type]['weight'] > $type_weight) {
       $shipping_type = $all_types[$type]['id'];
@@ -87,7 +88,7 @@ function uc_quote_action_get_quote($order, $method) {
   if (isset($method['quote']['file'])) {
     $inc_file = backdrop_get_path('module', $method['module']) . '/' . $method['quote']['file'];
     if (is_file($inc_file)) {
-      require_once($inc_file);
+      require_once $inc_file;
     }
   }
 

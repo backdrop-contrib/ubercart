@@ -13,7 +13,7 @@ class uc_order_handler_field_order_cost extends uc_order_handler_field_money_amo
   /**
    * Constructor.
    */
-  function construct() {
+  public function construct() {
     parent::construct();
     $this->additional_fields['order_id'] = 'order_id';
   }
@@ -21,7 +21,7 @@ class uc_order_handler_field_order_cost extends uc_order_handler_field_money_amo
   /**
    * Overrides views_handler_field::query().
    */
-  function query() {
+  public function query() {
     $this->ensure_my_table();
     $this->add_additional_fields();
     // Do nothing else with the query, we'll be retrieving the information directly.
@@ -30,7 +30,7 @@ class uc_order_handler_field_order_cost extends uc_order_handler_field_money_amo
   /**
    * Overrides views_handler_field::render().
    */
-  function render($values) {
+  public function render($values) {
     $this->field_alias = 'order_cost';
     $cost = db_query("SELECT SUM(cost * qty) FROM {uc_order_products} WHERE order_id = :oid", array(':oid' => $values->{$this->aliases['order_id']}))->fetchField();
     $values->{$this->field_alias} = $cost;

@@ -13,7 +13,7 @@ class uc_order_handler_field_money_amount extends uc_product_handler_field_price
   /**
    * Overrides views_handler_field::render().
    */
-  function render($values) {
+  public function render($values) {
     if ($this->options['format'] == 'numeric') {
       return parent::render($values);
     }

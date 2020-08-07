@@ -13,7 +13,7 @@ class uc_product_kit_handler_filter_product_kit_item extends views_handler_filte
   /**
    * Overrides views_handler_field::query().
    */
-  function query() {
+  public function query() {
     $this->query->add_field('node', 'nid');
     $this->query->add_where($this->options['group'], "node.nid " . (empty($this->value) ? "NOT " : "") . "IN (SELECT product_id FROM {uc_product_kits})");
   }

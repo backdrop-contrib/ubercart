@@ -553,7 +553,7 @@ function uc_order_mail($key, &$message, $params) {
       $message['body'][] = theme('uc_order', array('order' => $params['order'], 'op' => 'admin-mail', 'template' => config_get('uc_order.settings', 'uc_cust_order_invoice_template')));
       break;
 
-      // Setup a custom e-mail defined by an action on a predicate.
+    // Setup a custom e-mail defined by an action on a predicate.
     case 'action-mail':
       // Assemble an email message from the conditional actions settings.
       $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
@@ -1237,7 +1237,7 @@ function uc_order_view_invoice($order, $print = FALSE) {
   $build = array(
     '#attached' => array(
       'css' => array(backdrop_get_path('module', 'uc_order') . '/uc_order-invoice.css'),
-      ),
+    ),
     '#theme' => 'uc_order',
     '#order' => $order,
     '#op' => $print ? 'print' : 'view',
@@ -1310,23 +1310,23 @@ function uc_order_comment_save($order_id, $uid, $message, $type = 'admin', $stat
   if ($type == 'admin') {
     db_insert('uc_order_admin_comments')
       ->fields(array(
-      'order_id' => $order_id,
-      'uid' => $uid,
-      'message' => $message,
-      'created' => REQUEST_TIME,
-    ))
+        'order_id' => $order_id,
+        'uid' => $uid,
+        'message' => $message,
+        'created' => REQUEST_TIME,
+      ))
       ->execute();
   }
   elseif ($type == 'order') {
     db_insert('uc_order_comments')
       ->fields(array(
-      'order_id' => $order_id,
-      'uid' => $uid,
-      'message' => $message,
-      'order_status' => $status,
-      'notified' => $notify ? 1 : 0,
-      'created' => REQUEST_TIME,
-    ))
+        'order_id' => $order_id,
+        'uid' => $uid,
+        'message' => $message,
+        'order_status' => $status,
+        'notified' => $notify ? 1 : 0,
+        'created' => REQUEST_TIME,
+      ))
       ->execute();
   }
 }
@@ -1478,17 +1478,19 @@ function uc_order_update_status($order_id, $status) {
     // Otherwise perform the update and log the changes.
     db_update('uc_orders')
       ->fields(array(
-      'order_status' => $status,
-      'modified' => REQUEST_TIME,
-    ))
+        'order_status' => $status,
+        'modified' => REQUEST_TIME,
+      ))
       ->condition('order_id', $order_id)
       ->execute();
     uc_order_module_invoke('update', $order, $status);
 
-    $change = array(t('Order status') => array(
+    $change = array(
+      t('Order status') => array(
         'old' => uc_order_status_data($order->order_status, 'title'),
         'new' => uc_order_status_data($status, 'title'),
-      ));
+      ),
+    );
     uc_order_log_changes($order->order_id, $change);
 
     $updated = uc_order_load($order_id, TRUE);
@@ -1536,11 +1538,11 @@ function uc_order_log_changes($order_id, $changes) {
 
   db_insert('uc_order_log')
     ->fields(array(
-    'order_id' => $order_id,
-    'uid' => $user->uid,
-    'changes' => theme('item_list', array('items' => $items)),
-    'created' => REQUEST_TIME,
-  ))
+      'order_id' => $order_id,
+      'uid' => $user->uid,
+      'changes' => theme('item_list', array('items' => $items)),
+      'created' => REQUEST_TIME,
+    ))
     ->execute();
 
   return TRUE;

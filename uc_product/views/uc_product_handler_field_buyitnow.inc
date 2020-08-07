@@ -13,7 +13,7 @@ class uc_product_handler_field_buyitnow extends views_handler_field {
   /**
    * Overrides views_handler_field::query().
    */
-  function query() {
+  public function query() {
     $this->ensure_my_table();
     $this->add_additional_fields();
   }
@@ -21,7 +21,7 @@ class uc_product_handler_field_buyitnow extends views_handler_field {
   /**
    * Overrides views_handler_field::render().
    */
-  function render($values) {
+  public function render($values) {
     $product = node_load($values->{$this->aliases['nid']});
     if (uc_product_is_product($product)) {
       $form = backdrop_get_form('uc_catalog_buy_it_now_form_' . $values->{$this->aliases['nid']}, $product);

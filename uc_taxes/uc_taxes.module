@@ -243,8 +243,8 @@ function uc_taxes_node_type_update($info) {
 
   db_update('uc_taxed_product_types')
     ->fields(array(
-    'type' => $info->type,
-  ))
+      'type' => $info->type,
+    ))
     ->condition('type', $existing_type)
     ->execute();
 }
@@ -326,11 +326,12 @@ function uc_line_item_tax_subtotal($op, $order) {
 
       if ($different && $has_taxes) {
         return array(array(
-            'id' => 'tax_subtotal',
-            'title' => t('Subtotal excluding taxes'),
-            'amount' => $amount,
-            'weight' => config_get('uc_taxes.settings', 'uc_li_tax_subtotal_weight'),
-          ));
+          'id' => 'tax_subtotal',
+          'title' => t('Subtotal excluding taxes'),
+          'amount' => $amount,
+          'weight' => config_get('uc_taxes.settings', 'uc_li_tax_subtotal_weight'),
+        ),
+        );
       }
       break;
   }
@@ -561,31 +562,39 @@ function uc_taxes_uc_calculate_tax($order) {
  */
 function uc_taxes_apply_item_tax($item, $tax) {
   // Determine the product type.
-  if (is_array($item->data) && isset($item->data['type'])) { // Saved in the order product data array.
+  // Saved in the order product data array.
+  if (is_array($item->data) && isset($item->data['type'])) {
     $type = $item->data['type'];
   }
-  elseif (empty($item->nid)) { // "Blank-line" product.
+  // "Blank-line" product.
+  elseif (empty($item->nid)) {
     $type = 'blank-line';
   }
-  elseif ($node = node_load($item->nid)) { // Use type of current node, if it exists.
+  // Use type of current node, if it exists.
+  elseif ($node = node_load($item->nid)) {
     $type = $node->type;
   }
-  else { // Default to generic product.
+  // Default to generic product.
+  else {
     $type = 'product';
   }
 
   // Determine whether this is a shippable product.
-  if (is_array($item->data) && isset($item->data['shippable'])) { // Saved in the order product data array.
+  // Saved in the order product data array.
+  if (is_array($item->data) && isset($item->data['shippable'])) {
     $shippable = $item->data['shippable'];
   }
-  elseif (empty($item->nid)) { // "Blank line" product.
+  // "Blank line" product.
+  elseif (empty($item->nid)) {
     $shippable = $item->weight > 0;
   }
-  elseif ($node = node_load($item->nid)) { // Use current node.
+  // Use current node.
+  elseif ($node = node_load($item->nid)) {
     $shippable = $node->shippable;
   }
   else {
-    $shippable = config_get('uc_product.settings', 'uc_product_shippable_' . $type); // Use default for this node type.
+    // Use default for this node type.
+    $shippable = config_get('uc_product.settings', 'uc_product_shippable_' . $type);
   }
 
   // Tax products if they are of a taxed type and if it is shippable if
@@ -686,8 +695,7 @@ function uc_taxes_get_included_tax($product, $order = NULL) {
  * Implements hook_autoload_info().
  */
 function uc_taxes_autoload_info() {
-  return array(
-  );
+  return array();
 }
 
 /**

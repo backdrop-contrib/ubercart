@@ -337,10 +337,11 @@ function uc_catalog_uc_store_status() {
   $field = field_info_field('taxonomy_catalog');
   if (!$field) {
     return array(array(
-        'status' => 'error',
-        'title' => t('Catalog field'),
-        'desc' => t('The catalog taxonomy reference field is missing. <a href="!url">Click here to create it</a>.', array('!url' => url('admin/store/settings/catalog/repair'))),
-      ));
+      'status' => 'error',
+      'title' => t('Catalog field'),
+      'desc' => t('The catalog taxonomy reference field is missing. <a href="!url">Click here to create it</a>.', array('!url' => url('admin/store/settings/catalog/repair'))),
+    ),
+    );
   }
 
   $statuses = array();
@@ -450,7 +451,8 @@ function _uc_catalog_navigation($branch) {
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'node')
     ->entityCondition('bundle', $types)
-    ->propertyCondition('status', 1) // Don't include unpublished products.
+  // Don't include unpublished products.
+    ->propertyCondition('status', 1)
     ->fieldCondition('taxonomy_catalog', 'tid', $branch->tid)
     ->count();
   $num = $query->execute();
@@ -460,7 +462,7 @@ function _uc_catalog_navigation($branch) {
     $breadcrumb = backdrop_get_breadcrumb();
   }
   $vocabulary_name = $config->get('uc_catalog_vocabulary');
-  if ($_GET['q'] ==  $branch_path) {
+  if ($_GET['q'] == $branch_path) {
     // The URL points to this term.
     $here = TRUE;
   }
@@ -539,7 +541,6 @@ function uc_catalog_path($term) {
  */
 function uc_catalog_add_node_type($type) {
   $vocabulary_name = config_get('uc_catalog.settings', 'uc_catalog_vocabulary');
-
 
   if ($vocabulary_name == '') {
     $vocabulary = new TaxonomyVocabulary();

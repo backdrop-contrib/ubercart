@@ -5,7 +5,6 @@
  * Catalog administration menu items.
  */
 
-
 /**
  * Implements hook_views_data_alter().
  */

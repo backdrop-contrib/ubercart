@@ -10,13 +10,13 @@
  */
 class uc_order_handler_field_order_weight_total extends uc_product_handler_field_weight {
 
-  function option_definition() {
+  public function option_definition() {
     $options = parent::option_definition();
     $options['weight_units'] = array('default' => config_get('uc_store.settings', 'uc_weight_unit'));
     return $options;
   }
 
-  function options_form(&$form, &$form_state) {
+  public function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
 
     $form['weight_units'] = array(
@@ -35,7 +35,7 @@ class uc_order_handler_field_order_weight_total extends uc_product_handler_field
   /**
    * Overrides views_handler_field::query().
    */
-  function query() {
+  public function query() {
     $this->ensure_my_table();
     $this->add_additional_fields();
   }
@@ -43,7 +43,7 @@ class uc_order_handler_field_order_weight_total extends uc_product_handler_field
   /**
    * Overrides views_handler_field::render().
    */
-  function render($values) {
+  public function render($values) {
     $oid = $values->{$this->aliases['order_id']};
     $order = uc_order_load($oid);
     $total = 0;

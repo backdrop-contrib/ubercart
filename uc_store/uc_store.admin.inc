@@ -56,10 +56,12 @@ function uc_store_admin() {
           $status = t('Warning');
           $class = 'report-warning';
           break;
+
         case 'error':
           $status = t('Error');
           $class = 'report-error';
           break;
+
         default:
           $status = t('OK');
           $class = 'report-status';
@@ -71,7 +73,7 @@ function uc_store_admin() {
           array('data' => $status_html, 'class' => 'report-icon'),
           array('data' => $message['title'], 'class' => array('title')),
           array('data' => $message['desc'], 'class' => array('message')),
-          ),
+        ),
         'class' => array($class),
       );
     }
@@ -143,7 +145,7 @@ function uc_store_address_fields_form($form, &$form_state) {
     'postal_code' => t('Postal code'),
     'phone' => t('Phone number'),
   );
-  $current = config_get('uc_store.settings','uc_address_fields');
+  $current = config_get('uc_store.settings', 'uc_address_fields');
   $required = config_get('uc_store.settings', 'uc_address_fields_required');
   $weight = uc_store_address_field_weights();
   foreach ($fields as $field => $label) {
