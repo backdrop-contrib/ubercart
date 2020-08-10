@@ -16,7 +16,7 @@ function uc_cart_entity_property_info() {
     'type' => 'integer',
     'label' => t('Cart item ID'),
     'description' => t('The unique ID of the cart item.'),
-    'validation callback' => 'entity_metadata_validate_integer_positive',
+    'validation callback' => 'entity_plus_property_validate_integer_positive',
     'schema field' => 'cart_item_id',
   );
   $properties['cart_id'] = array(
@@ -29,7 +29,7 @@ function uc_cart_entity_property_info() {
     'type' => 'integer',
     'label' => t('Node ID'),
     'description' => t('The node ID of the cart item.'),
-    'validation callback' => 'entity_metadata_validate_integer_positive',
+    'validation callback' => 'entity_plus_property_validate_integer_positive',
     'schema field' => 'nid',
   );
   $properties['qty'] = array(

@@ -434,7 +434,7 @@ function hook_uc_order_product_load(array $order_products) {
 function hook_uc_order_product_insert(object $order_product) {
   db_insert('mytable')
     ->fields(array(
-      'id' => entity_id('uc_order_product', $order_product),
+      'id' => entity_plus_id('uc_order_product', $order_product),
       'extra' => print_r($order_product, TRUE),
     ))
     ->execute();
@@ -467,7 +467,7 @@ function hook_uc_order_product_presave(object $order_product) {
 function hook_uc_order_product_update(object $order_product) {
   db_update('mytable')
     ->fields(array('extra' => print_r($order_product, TRUE)))
-    ->condition('opid', entity_id('uc_order_product', $order_product))
+    ->condition('opid', entity_plus_id('uc_order_product', $order_product))
     ->execute();
 }
 
@@ -485,7 +485,7 @@ function hook_uc_order_product_update(object $order_product) {
  */
 function hook_uc_order_product_delete(object $order_product) {
   db_delete('mytable')
-    ->condition('opid', entity_id('uc_order_product', $order_product))
+    ->condition('opid', entity_plus_id('uc_order_product', $order_product))
     ->execute();
 }
 

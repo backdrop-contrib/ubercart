@@ -334,7 +334,7 @@ function ca_data_map() {
         'parameter' => array(
           'value' => array(
             'type' => 'list<integer>',
-            'options list' => 'entity_metadata_user_roles',
+            'options list' => 'entity_plus_metadata_user_roles',
           ),
         ),
       ),
@@ -545,7 +545,7 @@ function ca_data_map() {
         'parameter' => array(
           'value' => array(
             'type' => 'list<integer>',
-            'options list' => 'entity_metadata_user_roles',
+            'options list' => 'entity_plus_metadata_user_roles',
           ),
         ),
       ),

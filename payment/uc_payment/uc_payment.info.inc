@@ -17,7 +17,7 @@ function uc_payment_entity_property_info() {
           'label' => t('Balance'),
           'description' => t('The total amount remaining for the order.'),
           'getter callback' => 'uc_payment_balance',
-          'query callback' => 'entity_metadata_table_query',
+          'query callback' => 'entity_plus_metadata_table_query',
         ),
       ),
     ),
