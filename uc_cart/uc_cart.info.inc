@@ -36,7 +36,7 @@ function uc_cart_entity_property_info() {
     'type' => 'integer',
     'label' => t('Quantity'),
     'description' => t('The number of this product in the cart.'),
-    'setter callback' => 'entity_property_verbatim_set',
+    'setter callback' => 'entity_plus_property_verbatim_set',
     'schema field' => 'qty',
   );
   $properties['changed'] = array(
