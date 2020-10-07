@@ -35,6 +35,21 @@ function uc_order_rules_data_info() {
  * Implements hook_rules_event_info().
  */
 function uc_order_rules_event_info() {
+  $events['uc_order_product_updated'] = array(
+    'label' => t('A product within an order changes qty'),
+    'group' => t('Order'),
+    'variables' => array(
+      'order' => array(
+        'type' => 'uc_order',
+        'label' => t('Original order'),
+      ),
+      'product' => array(
+        'type' => 'uc_order_product',
+        'label' => t('Updated product with change in qty'),
+      ),
+    ),
+  );
+
   $events['uc_order_status_update'] = array(
     'label' => t('Order status gets updated'),
     'group' => t('Order'),

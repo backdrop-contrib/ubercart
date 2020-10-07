@@ -1103,11 +1103,9 @@ function uc_order_edit_form_submit($form, &$form_state) {
     }
   }
 
-  if (module_exists('uc_stock')) {
-    $qtys = array();
-    foreach ($order->products as $product) {
-      $qtys[$product->order_product_id] = $product->qty;
-    }
+  $qtys = array();
+  foreach ($order->products as $product) {
+    $qtys[$product->order_product_id] = $product->qty;
   }
 
   $order->products = array();
@@ -1118,12 +1116,10 @@ function uc_order_edit_form_submit($form, &$form_state) {
         $product = (object) $product;
         $order->products[] = $product;
 
-        if (module_exists('uc_stock')) {
-          $temp = $product->qty;
-          $product->qty = $product->qty - $qtys[$product->order_product_id];
-          uc_stock_adjust_product_stock($product, 0, $order);
-          $product->qty = $temp;
-        }
+        $restore_qty = $product->qty;
+        $product->qty = $product->qty - $qtys[$product->order_product_id];
+        rules_invoke_event('uc_order_product_updated', $order, $product);
+        $product->qty = $restore_qty;
       }
       else {
         $log['remove_' . $product['nid']] = $product['title'] . ' removed from order.';

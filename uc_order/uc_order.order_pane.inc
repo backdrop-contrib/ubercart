@@ -571,10 +571,7 @@ function uc_order_edit_products_add($form, &$form_state) {
 
   uc_order_log_changes($order->order_id, array('add' => t('Added (@qty) @title to order.', array('@qty' => $product->qty, '@title' => $product->title))));
 
-  // Decrement stock.
-  if (module_exists('uc_stock')) {
-    uc_stock_adjust_product_stock($product, 0, $order);
-  }
+  rules_invoke_event('uc_order_product_updated', $order, $product);
 
   // Add this product to the form values for accurate tax calculations.
   $form_state['values']['products'][] = (array) $product;
@@ -587,22 +584,15 @@ function uc_order_edit_products_remove($form, &$form_state) {
   $form_state['refresh_products'] = TRUE;
 
   $order_product_id = intval($form_state['triggering_element']['#return_value']);
+  $order = $form_state['build_info']['args'][0];
+  $product = db_query("SELECT model, qty, title FROM {uc_order_products} WHERE order_product_id = :id", array(':id' => $order_product_id))->fetchObject();
+  $product->qty = -($product->qty);
 
-  if (module_exists('uc_stock')) {
-    // Replace stock immediately.
-    $product = uc_order_product_load($order_product_id);
-    uc_stock_adjust($product->model, $product->qty);
-  }
+  uc_order_log_changes($order->order_id, array('add' => t('Removed (@qty) @title from order.', array('@qty' => $product->qty, '@title' => $product->title))));
+
+  rules_invoke_event('uc_order_product_updated', $order, $product);
 
   uc_order_product_delete($order_product_id);
-
-  $order = $form_state['build_info']['args'][0];
-  $matches = array();
-  preg_match('/products\[(\d+)\]/', $form_state['triggering_element']['#name'], $matches);
-  $key = $matches[1];
-
-  unset($order->products[$key]);
-  $order->products = array_values($order->products);
 }
 
 /**
