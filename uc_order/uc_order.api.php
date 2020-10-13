@@ -297,7 +297,7 @@ function hook_uc_order_actions_alter(&$actions, $order) {
  *       "invoice", and "customer" are possible values.
  *
  * @see uc_order_pane_callback()
- * @see http://www.ubercart.org/docs/developer/245/checkout
+ * @see https://github.com/backdrop-contrib/ubercart/wiki/Checkout
  */
 function hook_uc_order_pane() {
   $panes['admin_comments'] = array(

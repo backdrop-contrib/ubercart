@@ -45,7 +45,6 @@ function hook_uc_payment_entered($order, $method, $amount, $account, $data, $com
  * Payment gateways handle credit card payments directly, without needing to
  * redirect off-site.
  *
- * @see http://www.ubercart.org/docs/api/hook_uc_payment_gateway
  * @see hook_uc_payment_gateway_charge()
  *
  * @return

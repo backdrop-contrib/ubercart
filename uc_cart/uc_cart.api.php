@@ -349,7 +349,7 @@ function hook_uc_cart_checkout_start($order) {
  *     - value: Optional. If TRUE, the pane is only shown if the cart is
  *       shippable. Defaults to NULL.
  *
- * @see http://www.ubercart.org/docs/developer/245/checkout
+ * @see https://github.com/backdrop-contrib/ubercart/wiki/Checkout
  */
 function hook_uc_checkout_pane() {
   $panes['cart'] = array(

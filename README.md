@@ -14,27 +14,25 @@ designed for ease of use and efficient display of information.
 Installation
 ------------
 
-- Install this module using the official Backdrop CMS instructions at
-  https://backdropcms.org/guide/modules
+- Install this module using the [official Backdrop CMS instructions](https://backdropcms.org/guide/modules).
 
-- Visit the configuration page under Administration > Store
-  (admin/store).
+- Visit the configuration page under **Store** (**admin/store**).
 
 Documentation
 -------------
 
-Additional documentation can be found (and added) in the [Wiki](https://github.com/backdrop-contrib/ubercart/wiki).
+ - Additional documentation can be found (and added) in the [Wiki](https://github.com/backdrop-contrib/ubercart/wiki).
 
 Issues
 ------
 
-Bugs and Feature requests should be reported in the [Issue queue](https://github.com/backdrop-contrib/ubercart/issues).
+ - Bugs and Feature requests should be reported in the [Issue queue](https://github.com/backdrop-contrib/ubercart/issues).
 
 Current Maintainers
 -------------------
 
-- Robert Garrigós (https://github.com/robertgarrigos/)
-- Laryn Kragt Bakker (https://github.com/laryn)
+ - [Robert Garrigós](https://github.com/robertgarrigos/)
+ - [Laryn Kragt Bakker](https://github.com/laryn) - [CEDC.org](https://cedc.org)
 
 Credits
 -------
