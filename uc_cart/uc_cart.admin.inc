@@ -425,7 +425,7 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
   $form['completion_messages']['uc_msg_order_new_user_logged_in'] = array(
     '#type' => 'textarea',
     '#title' => t('New logged in users'),
-    '#description' => t('Message displayed upon checkout for a new user whose account was just created and also <em>"Login users when new customer accounts are created at checkout."</em> is set on the <a href="!user_login_setting_ur">checkout settings</a>.', array('!user_login_setting_ur' => 'admin/store/settings/checkout')),
+    '#description' => t('Message displayed upon checkout for a new user whose account was just created if <em>"Log in new customers after checkout"</em> is set in the "Anonymous checkout" tab on this page</a>.'),
     '#default_value' => $config->get('uc_msg_order_new_user_logged_in'),
     '#rows' => 3,
     '#states' => $anon_state,
