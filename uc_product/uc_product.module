@@ -901,7 +901,6 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
   if (!uc_product_is_product($type->type)) {
     return;
   }
-
   $form['uc_product'] = array(
     '#type' => 'fieldset',
     '#title' => t('Ubercart product settings'),
@@ -935,7 +934,6 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
     }
   }
 
-  // TODO This variable was probably removed in Backdrop without replacement.
   $form['uc_product']['uc_image'] = array(
     '#type' => 'select',
     '#title' => t('Product image field'),
@@ -944,6 +942,18 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
     '#description' => t('The selected field will be used on Ubercart pages to represent the products of this content type.'),
     '#weight' => -4,
   );
+  $form['#submit'][] = 'uc_product_form_node_type_form_submit';
+}
+
+/**
+ * Submit handler for the UC Product values in the node type form.
+ */
+function uc_product_form_node_type_form_submit(&$form, &$form_state) {
+  $type = $form['#node_type'];
+  $config = config('uc_product.settings');
+  $config->set('uc_product_shippable_' . $type->type, $form_state['values']['uc_product_shippable']);
+  $config->set('uc_image_' . $type->type, $form_state['values']['uc_image']);
+  $config->save();
 }
 
 /**
