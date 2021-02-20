@@ -169,18 +169,6 @@ function uc_roles_schema() {
 }
 
 /**
- * Implements hook_uninstall().
- */
-function uc_roles_uninstall() {
-  db_delete('uc_product_features')
-    ->condition('fid', 'role')
-    ->execute();
-  db_delete('variable')
-    ->condition('name', 'uc_roles_%', 'LIKE')
-    ->execute();
-}
-
-/**
  * Implements hook_update_last_removed().
  */
 function uc_roles_update_last_removed() {
@@ -188,7 +176,7 @@ function uc_roles_update_last_removed() {
 }
 
 /**
- * Implements hook_update_N().
+ * Convert Ubercart Roles settings to config.
  */
 function uc_roles_update_1000() {
   $config = config('uc_roles.settings');
@@ -217,10 +205,9 @@ function uc_roles_update_1000() {
 }
 
 /**
- * Implements hook_update_N().
+ * Change column rid (int) to role (varchar) in uc_roles tables.
  */
 function uc_roles_update_1001() {
-  // Change column rid (int) to role (varchar).
   foreach (array('uc_roles_products', 'uc_roles_expirations') as $table) {
     if (db_field_exists($table, 'rid')) {
       db_drop_index($table, 'rid');
@@ -245,10 +232,10 @@ function uc_roles_update_1001() {
 }
 
 /**
- * Implements hook_install().
+ * Implements hook_uninstall().
  */
-function uc_roles_install() {
-  // Dynamically generated variable data was detected.
-  // /ubercart/uc_roles/uc_roles.module line 943
-  config_set('uc_roles.settings', 'uc_roles_default_role_choices', array());
+function uc_roles_uninstall() {
+  db_delete('uc_product_features')
+    ->condition('fid', 'role')
+    ->execute();
 }
