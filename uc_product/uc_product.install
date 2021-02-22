@@ -249,23 +249,6 @@ function uc_product_enable() {
 }
 
 /**
- * Implements hook_uninstall().
- */
-function uc_product_uninstall() {
-  db_delete('variable')
-    ->condition(db_or()
-      ->condition('name', 'uc_product_shippable_%', 'LIKE')
-      ->condition('name', 'uc_image_%', 'LIKE'))
-    ->execute();
-
-  config_clear('uc_product.settings', 'uc_product_nodes_per_page');
-  config_clear('uc_product.settings', 'uc_product_add_to_cart_qty');
-
-  $config = config('views.view.uc_products');
-  $config->delete();
-}
-
-/**
  * Sets default display settings for product teasers.
  */
 function uc_product_set_teaser_display($type) {
@@ -291,7 +274,7 @@ function uc_product_update_last_removed() {
 }
 
 /**
- * Implements hook_update_N().
+ * Convert Ubercart Product settings to config.
  */
 function uc_product_update_1000() {
   $config = config('uc_product.settings');
@@ -309,9 +292,7 @@ function uc_product_update_1000() {
 }
 
 /**
- * Implements hook_update_N().
- *
- * Clears unused config setting and sets 'uc_product_shippable' correctly for all node types.
+ * Clear unused config setting and sets 'uc_product_shippable' correctly for all node types.
  */
 function uc_product_update_1001() {
   $config = config('uc_product.settings');
@@ -325,8 +306,6 @@ function uc_product_update_1001() {
 }
 
 /**
- * Implements hook_update_N().
- *
  * Associate the 'uc_products' view with this module.
  */
 function uc_product_update_1002() {
@@ -336,8 +315,6 @@ function uc_product_update_1002() {
 }
 
 /**
- * Implements hook_update_N().
- *
  * Set default 'uc_image_product' field value.
  */
 function uc_product_update_1003() {
@@ -349,9 +326,7 @@ function uc_product_update_1003() {
 }
 
 /**
- * Implements hook_update_N().
- *
- * Convert image styles to CMI.
+ * Convert product image styles to CMI.
  */
 function uc_product_update_1004() {
   // Check thumbnail image style.

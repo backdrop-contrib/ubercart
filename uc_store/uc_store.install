@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Install, update, and uninstall functions for the uc_store module.
@@ -143,9 +142,6 @@ function uc_store_install() {
   $config->set('uc_store', 'UbercartMailSystem');
   $config->save();
 
-  // Set the default store date format.
-  config_set('uc_store.settings', 'date_format_uc_store', 'm/d/Y');
-
   // Install United States and Canada by default.
   $path = backdrop_get_path('module', 'uc_store');
   require_once $path . '/countries/united_states_840_1.cif';
@@ -157,62 +153,6 @@ function uc_store_install() {
 }
 
 /**
- * Implements hook_uninstall().
- */
-function uc_store_uninstall() {
-  db_delete('variable')
-    ->condition(db_or()
-      ->condition('name', 'uc_address_format_%', 'LIKE')
-      ->condition('name', 'uc_currency_%', 'LIKE')
-      ->condition('name', 'uc_store_%', 'LIKE')
-      ->condition('name', 'uc_weight_%', 'LIKE')
-      ->condition('name', 'uc_length_%', 'LIKE')
-      ->condition('name', 'uc_field_%', 'LIKE')
-    )
-    ->execute();
-
-  // TODO This variable was probably removed in Backdrop without replacement.
-  variable_del('uc_customer_list_address');
-  // TODO This variable was probably removed in Backdrop without replacement.
-  variable_del('uc_sign_after_amount');
-  config_clear('uc_store.settings', 'date_format_uc_store');
-  // TODO This variable was probably removed in Backdrop without replacement.
-  variable_del('uc_address_fields');
-  // TODO This variable was probably removed in Backdrop without replacement.
-  variable_del('uc_address_fields_required');
-  // TODO This variable was probably removed in Backdrop without replacement.
-  variable_del('uc_address_fields_weight');
-  // TODO This variable was probably removed in Backdrop without replacement.
-  variable_del('uc_footer_message');
-
-  // Unset mail Ubercart hander in variable mail_system
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $mail_system = variable_get('mail_system', array('default-system' => 'DefaultMailSystem'));
-  unset($mail_system['uc_cart']);
-  unset($mail_system['uc_order']);
-  unset($mail_system['uc_file']);
-  unset($mail_system['uc_roles']);
-  unset($mail_system['uc_stock']);
-  unset($mail_system['uc_store']);
-  // TODO This variable was probably removed in Backdrop without replacement.
-  variable_set('mail_system', $mail_system);
-
-  // Unset mail handler for all Ubercart modules
-  $config = config('system.mail');
-  $config->clear('uc_cart');
-  $config->clear('uc_order');
-  $config->clear('uc_file');
-  $config->clear('uc_roles');
-  $config->clear('uc_stock');
-  $config->clear('uc_store');
-  $config->save();
-}
-
-/*
- * Removed update 7000.
- */
-
-/**
  * Implements hook_update_last_removed().
  */
 function uc_store_update_last_removed() {
@@ -220,12 +160,13 @@ function uc_store_update_last_removed() {
 }
 
 /**
- * Upgrade configuration from Drupal 7 ubercart module.
+ * Convert Ubercart Store settings to config.
  */
 function uc_store_update_1000() {
   $config = config('uc_store.settings');
 
   //migrate variables
+  $config->set('date_format_uc_store', update_variable_get('date_format_uc_store', 'm/d/Y'));
   $config->set('uc_store_country', update_variable_get('uc_store_country', '840'));
   $config->set('uc_store_owner', update_variable_get('uc_store_owner', ''));
   $config->set('uc_store_email_include_name', update_variable_get('uc_store_email_include_name', TRUE));
@@ -286,6 +227,7 @@ function uc_store_update_1000() {
   $config->save();
 
   //delete variables
+  update_variable_del('date_format_uc_store');
   update_variable_del('uc_store_country');
   update_variable_del('uc_store_owner');
   update_variable_del('uc_store_email_include_name');
@@ -337,13 +279,12 @@ function uc_store_update_1000() {
 }
 
 /**
- * replace the settings previously added to core's system.mail
- * with the correct values for UbercartMailSystem.
+ * Replace the settings previously added to core's system.mail with the correct values for UbercartMailSystem.
  */
 function uc_store_update_1001() {
-  // Revise mail settings for all Ubercart modules
+  // Revise mail settings for all Ubercart modules.
   $config = config('system.mail');
-  // Clear settings made in initial release
+  // Clear settings made in initial release.
   $config->clear('mail_system');
   // Add revised settings.
   $config->set('uc_cart', 'UbercartMailSystem');
@@ -352,5 +293,20 @@ function uc_store_update_1001() {
   $config->set('uc_roles', 'UbercartMailSystem');
   $config->set('uc_stock', 'UbercartMailSystem');
   $config->set('uc_store', 'UbercartMailSystem');
+  $config->save();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function uc_store_uninstall() {
+  // Unset mail handler for all Ubercart modules.
+  $config = config('system.mail');
+  $config->clear('uc_cart');
+  $config->clear('uc_order');
+  $config->clear('uc_file');
+  $config->clear('uc_roles');
+  $config->clear('uc_stock');
+  $config->clear('uc_store');
   $config->save();
 }

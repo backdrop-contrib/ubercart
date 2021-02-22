@@ -694,26 +694,6 @@ function uc_order_install() {
 }
 
 /**
- * Implements hook_uninstall().
- */
-function uc_order_uninstall() {
-  db_delete('variable')
-    ->condition('name', 'uc_state_%', 'LIKE')
-    ->execute();
-
-  config_clear('uc_order.settings', 'uc_order_capitalize_addresses');
-  config_clear('uc_order.settings', 'uc_cust_order_invoice_template');
-
-  // Remove module-specific views.
-  $config = config('views.view.uc_orders');
-  $config->delete();
-  $config = config('views.view.uc_orders_user');
-  $config->delete();
-  $config = config('views.view.uc_customers');
-  $config->delete();
-}
-
-/**
  * Implements hook_disable().
  *
  * Disables the 'uc_order' views.
@@ -743,7 +723,7 @@ function uc_order_update_last_removed() {
 }
 
 /**
- * Implements hook_update_N().
+ * Convert Ubercart Order settings to config.
  */
 function uc_order_update_1000() {
   $config = config('uc_order.settings');
@@ -757,9 +737,7 @@ function uc_order_update_1000() {
 }
 
 /**
- * Implements hook_update_N().
- *
- * Associate the 'uc_order' views with this module.
+ * Associate the 'uc_order' views with the 'uc_order' module if needed.
  */
 function uc_order_update_1001() {
   config_set('views.view.uc_orders', 'module', 'uc_order');

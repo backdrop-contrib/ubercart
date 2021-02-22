@@ -132,22 +132,6 @@ function uc_paypal_install() {
 }
 
 /**
- * Implements hook_uninstall().
- */
-function uc_paypal_uninstall() {
-  db_update('uc_order_statuses')
-    ->fields(array(
-      'locked' => 0,
-    ))
-    ->condition('order_status_id', 'paypal_pending')
-    ->execute();
-
-  db_delete('variable')
-    ->condition('name', 'uc_paypal_%', 'LIKE')
-    ->execute();
-}
-
-/**
  * Implements hook_update_last_removed().
  */
 function uc_paypal_update_last_removed() {
@@ -155,7 +139,7 @@ function uc_paypal_update_last_removed() {
 }
 
 /**
- * Implements hook_update_N().
+ * Convert Ubercart PayPal settings to config.
  */
 function uc_paypal_update_1000() {
   $config = config('uc_paypal.settings');
@@ -208,7 +192,6 @@ function uc_paypal_update_1000() {
 }
 
 /**
- * Implements hook_update_N().
  * Adjust 'uc_paypal_wps_server' config setting to new default value per
  * https://www.drupal.org/project/ubercart/issues/2800003.
  */
@@ -217,8 +200,8 @@ function uc_paypal_update_1001() {
 }
 
 /**
- * Implements hook_update_N().
- * Revert adjustment of  'uc_paypal_wps_server' config setting to new default value per
+ * Revert adjustment of 'uc_paypal_wps_server' config setting to new default value per
+ * https://www.drupal.org/project/ubercart/issues/2800003.
  */
 function uc_paypal_update_1002() {
   $config = config('uc_paypal.settings');
@@ -226,4 +209,16 @@ function uc_paypal_update_1002() {
     $config->set('uc_paypal_wps_server', 'https://www.sandbox.paypal.com/cgi-bin/webscr');
     $config->save();
   }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function uc_paypal_uninstall() {
+  db_update('uc_order_statuses')
+    ->fields(array(
+      'locked' => 0,
+    ))
+    ->condition('order_status_id', 'paypal_pending')
+    ->execute();
 }
