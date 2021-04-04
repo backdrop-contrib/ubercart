@@ -1314,23 +1314,28 @@ function uc_product_add_to_cart_form_submit($form, &$form_state) {
  * Returns an array of product node types.
  */
 function uc_product_types() {
-  return module_invoke_all('uc_product_types');
+  $types = &backdrop_static(__FUNCTION__);
+  if (isset($types)) {
+    return $types;
+  }
+  $types = module_invoke_all('uc_product_types');
+  return $types;
 }
 
 /**
  * Returns an associative array of product node type names keyed by ID.
  */
 function uc_product_type_names() {
-  $names = array();
-
-  // Get all the node meta data.
-  $node_info = module_invoke_all('node_info');
-
-  // Loop through each product node type.
-  foreach (uc_product_types() as $type) {
-    $names[$type] = $node_info[$type]['name'];
+  $names = &backdrop_static(__FUNCTION__);
+  if (isset($names)) {
+    return $names;
   }
-
+  $names = array();
+  $product_types = uc_product_types();
+  $node_types = node_type_get_types();
+  foreach ($product_types as $type) {
+    $names[$type] = $node_types[$type]->name;
+  }
   return $names;
 }
 
