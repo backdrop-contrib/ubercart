@@ -31,8 +31,9 @@ Issues
 Current Maintainers
 -------------------
 
- - [Robert Garrigós](https://github.com/robertgarrigos/)
+ - [Robert Garrigós](https://github.com/robertgarrigos)
  - [Laryn Kragt Bakker](https://github.com/laryn) - [CEDC.org](https://cedc.org)
+ - [Robert J. Lang](https://github.com/bugfolder)
 
 Credits
 -------
