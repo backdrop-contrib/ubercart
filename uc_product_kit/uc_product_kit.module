@@ -1130,15 +1130,28 @@ function uc_product_kit_uc_cart_display($item) {
       );
     }
 
-    $node = node_load($item->nid);
-    // Build the kit item product variant.
-    if (!isset($item->type)) {
-      $item->type = $node->type;
-    }
-    $build = node_view($node);
+    // Build the kit item product variant to get the price reflecting
+    // adjustments, taxes, and so forth. We can't do this the same way that D7
+    // does it, because $item is now a UcCartItem, not a Node. Instead, we make
+    // a copy, change its module to uc_product, then build the content the same
+    // way that EntityPlusController::view() does it as if the product were
+    // included in the cart directly.
+    $temp_item = clone $item;
+    $temp_item->data['module'] = 'uc_product';
+    $entity_type = 'uc_cart_item';
+    $temp_build = entity_plus_build_content($entity_type, $temp_item, 'cart', $item->langcode);
+    $temp_build += array(
+      '#theme' => 'entity_plus',
+      '#entity_plus_type' => $entity_type,
+      '#entity' => $temp_item,
+      '#view_mode' => 'cart',
+      '#language' => $item->langcode,
+      '#page' => TRUE,
+    );
+    backdrop_alter(array($entity_type . '_view', 'entity_plus_view'), $temp_build, $entity_type);
 
-    $elements[$unique_id]['#total'] += $build['display_price']['#value'] * $item->qty;
-    $elements[$unique_id]['#suffixes'] += $build['display_price']['#suffixes'];
+    $elements[$unique_id]['#total'] += $temp_build['#total'];
+    $elements[$unique_id]['#suffixes'] += $temp_build['#suffixes'];
     $elements[$unique_id]['data'][$item->nid] = $item;
     $products[$unique_id][] = $item->nid;
 
