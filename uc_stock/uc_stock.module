@@ -114,6 +114,73 @@ function uc_stock_uc_message() {
 }
 
 /**
+ * Implements hook_entity_delete().
+ *
+ * Clean stock table when node has been deleted.
+ */
+function uc_stock_entity_delete($entity, $type) {
+  if ($type == 'node' && in_array($entity->type, uc_product_types())) {
+    db_delete('uc_product_stock')
+      ->condition('nid', $entity->nid)
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function uc_stock_entity_update($entity, $type) {
+  if ($type == 'node' && in_array($entity->type, uc_product_types())) {
+    $old_model = $entity->original->model;
+    $new_model = $entity->model;
+    if($old_model != $new_model) {
+      db_update('uc_product_stock')
+        ->fields(array('sku' => $new_model))
+        ->condition('sku', $old_model)
+        ->execute();
+      backdrop_set_message(t('Stock table updated: changed SKU @old_model to @new_model.', array('%title' => $entity->title, '@old_model' => $old_model, '@new_model' => $new_model)));
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for uc_product_adjustments_form().
+ *
+ * Save a copy of the original form values and insert our own submission
+ * function for product adjustments so we can update stock when model is changed
+ * for an attribute.
+ */
+function uc_stock_form_uc_product_adjustments_form_alter(&$form, &$form_state, $form_id) {
+  $form['original_body'] = array(
+    '#type' => 'value',
+    '#value' => $form['table']['body'],
+  );
+  $form['#submit'][] = 'uc_stock_form_uc_product_adjustments_form_submit';
+}
+
+/**
+ * Submission function for uc_product_adjustments_form().
+ *
+ * Update the stock table if the model number has changed for the variant.
+ *
+ * @see uc_product_adjustments_form_submit()
+ */
+function uc_stock_form_uc_product_adjustments_form_submit($form, &$form_state) {
+  foreach ($form_state['values']['body'] as $key => $value) {
+    $default_model = $form_state['values']['default'];
+    $old_model = !empty($form_state['values']['original_body'][$key]['model']) ? $form_state['values']['original_body'][$key]['model']['#default_value'] : '';
+    $new_model = !empty($value['model']) ? $value['model'] : '';
+    if ($old_model != $new_model) {
+      db_update('uc_product_stock')
+        ->fields(array('sku' => $new_model))
+        ->condition('sku', $old_model)
+        ->execute();
+      backdrop_set_message(t('Stock table updated: changed sku @old_model to @new_model', array('@old_model' => $old_model, '@new_model' => $new_model)));
+    }
+  }
+}
+
+/**
  * Adjusts the product stock level by a set amount.
  *
  * @param $sku
