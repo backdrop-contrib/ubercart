@@ -150,7 +150,7 @@
                   <label><?php print t('Payment Method:'); ?></label>
                 </td>
                 <td width="98%">
-                  <?php print $order_payment_method; ?>
+                  <?php if (isset($order_payment_method)) { print $order_payment_method; } ?>
                 </td>
               </tr>
 

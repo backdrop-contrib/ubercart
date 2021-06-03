@@ -1236,7 +1236,13 @@ function _uc_roles_product_get_expiration($role_product, $quantity, $time) {
   else {
     // Relative...
     if ($config->get('uc_roles_default_end_expiration') === 'rel') {
-      $length = $config->get('uc_roles_default_length') * ($role_product->by_quantity ? $quantity : 1);
+      $default_length = $config->get('uc_roles_default_length');
+      if (!is_numeric($default_length)) {
+        $length = 0;  // $default_length could be blank
+      }
+      else {
+        $length = $default_length * ($role_product->by_quantity ? $quantity : 1);
+      }
       return _uc_roles_get_expiration($length, $config->get('uc_roles_default_granularity'), $time);
     }
 
