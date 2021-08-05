@@ -53,7 +53,7 @@ function uc_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NUL
       }
       else {
         $email = $order->primary_email;
-        $description = t('Enter a valid email address for this order or <a href="!url">click here</a> to login with an existing account and return to checkout.', array('!url' => url('user/login', array('query' => backdrop_get_destination()))));
+        $description = t('Enter a valid email address for this order or <a href="!url">login with an existing account and return to checkout</a>.', array('!url' => url('user/login', array('query' => backdrop_get_destination()))));
         $contents['primary_email'] = uc_textfield(t('E-mail address'), $email, TRUE, NULL, 64);
       }
 
