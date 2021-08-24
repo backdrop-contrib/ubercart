@@ -264,7 +264,7 @@ function hook_uc_order_actions_alter(&$actions, $order) {
  * The real meat of an order pane is its callback function (which is specified
  * in the hook). The callback function handles what gets displayed on which
  * screen and what data can be manipulated. That is all somewhat out of the
- * scope of this API page, so you'll have to click here to read more about what
+ * scope of this API page, so you'll have to read the Wiki for more about what
  * a callback function should contain.
  *
  * @return
