@@ -132,6 +132,35 @@ function uc_product_kit_update_1000() {
 }
 
 /**
+ * Clean up misconfigured uc_product_kit config variables.
+ */
+function uc_product_kit_update_1001() {
+  $config = config('uc_product_kit.settings');
+
+  // These are config values that might have ended up stored in
+  // uc_product_kit.settings by mistake. See
+  // https://github.com/backdrop-contrib/ubercart/issues/286.
+  $misplaced_values = array(
+    'uc_product_image_widget',
+    'uc_product_add_to_cart_qty',
+    'uc_product_update_node_view',
+  );
+  foreach ($misplaced_values as $pk_value) {
+    if ($config->get($pk_value) !== NULL) {
+      // Move to uc_product.settings config unless there's already a stored value.
+      $p_value = config_get('uc_product.settings', $pk_value);
+      if ($p_value !== NULL) {
+        config_set('uc_product.settings', $pk_value, $p_value);
+      }
+      $config->clear($pk_value);
+    }
+  }
+  // This one should never have been stored in the first place.
+  $config->clear('product-settings__active_tab');
+  $config->save();
+}
+
+/**
  * Implements hook_install().
  */
 function uc_product_kit_install() {
