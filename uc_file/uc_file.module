@@ -19,14 +19,6 @@ define('UC_FILE_PAGER_SIZE', 50);
 define('UC_FILE_LIMIT_SENTINEL', -1);
 
 /**
- * Implements hook_form_FORM_ID_alter() for uc_product_feature_settings_form().
- */
-function uc_file_form_uc_product_feature_settings_form_alter(&$form, &$form_state) {
-  $form['#submit'][] = 'uc_file_feature_settings_submit';
-  $form['#validate'][] = 'uc_file_feature_settings_validate';
-}
-
-/**
  * Implements hook_menu().
  */
 function uc_file_menu() {
@@ -852,6 +844,14 @@ function _uc_file_get_fpid($pfid) {
 }
 
 /**
+ * Implements hook_form_FORM_ID_alter() for uc_product_feature_settings_form().
+ */
+function uc_file_form_uc_product_feature_settings_form_alter(&$form, &$form_state) {
+  $form['#submit'][] = 'uc_file_feature_settings_submit';
+  $form['#validate'][] = 'uc_file_feature_settings_validate';
+}
+
+/**
  * Form builder for file settings.
  *
  * @see uc_file_feature_settings_validate()
@@ -865,12 +865,17 @@ function uc_file_feature_settings($form, &$form_state) {
     $statuses[$status['id']] = $status['title'];
   }
 
-  $form['#config'] = 'uc_file.settings';
   $form['uc_file_base_dir'] = array(
     '#type' => 'textfield',
     '#title' => t('Files path'),
     '#description' => t('The absolute path (or relative to Backdrop root) where files used for file downloads are located. For security reasons, it is recommended to choose a path outside the web root.'),
     '#default_value' => $config->get('uc_file_base_dir'),
+  );
+  $form['uc_file_file_mask'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Files mask'),
+    '#description' => t('A regex that limits which files in the download directory can be set as a file download. Use "/.*/" to allow all files.'),
+    '#default_value' => $config->get('uc_file_file_mask'),
   );
   $form['uc_file_duplicate_warning'] = array(
     '#type' => 'checkbox',
@@ -975,6 +980,17 @@ function uc_file_feature_settings_submit($form, &$form_state) {
   else {
     uc_file_refresh();
   }
+
+  // Save submitted values.
+  $config = config('uc_file.settings');
+  $config->set('uc_file_base_dir', $form_state['values']['uc_file_base_dir']);
+  $config->set('uc_file_file_mask', $form_state['values']['uc_file_file_mask']);
+  $config->set('uc_file_duplicate_warning', $form_state['values']['uc_file_duplicate_warning']);
+  $config->set('uc_file_download_limit_number', $form_state['values']['uc_file_download_limit_number']);
+  $config->set('uc_file_download_limit_addresses', $form_state['values']['uc_file_download_limit_addresses']);
+  $config->set('uc_file_download_limit_duration_qty', $form_state['values']['uc_file_download_limit_duration_qty']);
+  $config->set('uc_file_download_limit_duration_granularity', $form_state['values']['uc_file_download_limit_duration_granularity']);
+  $config->save();
 }
 
 /**
