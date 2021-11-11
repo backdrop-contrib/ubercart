@@ -34,6 +34,7 @@ function uc_file_menu() {
 
   $items['_autocomplete_file'] = array(
     'page callback' => '_uc_file_autocomplete_filename',
+    'access callback' => 'user_access',
     'access arguments' => array('administer product features'),
     'type' => MENU_CALLBACK,
   );
@@ -1067,16 +1068,17 @@ function _uc_file_accumulate_limits(&$file_user, $file_limits, $force_overwrite)
  * @return
  *   Sends string containing javascript array of matched files.
  */
-function _uc_file_autocomplete_filename() {
+function _uc_file_autocomplete_filename($string = '') {
   $matches = array();
 
-  // Catch "/" characters that backdrop autocomplete doesn't escape.
-  $url = explode('_autocomplete_file/', request_uri());
-  $string = $url[1];
-
-  $files = db_query("SELECT filename FROM {uc_files} WHERE filename LIKE :name ORDER BY filename ASC", array(':name' => '%' . db_like($url[1]) . '%'));
-  while ($filename = $files->fetchField()) {
-    $matches[$filename] = $filename;
+  $results = db_select('uc_files')
+    ->fields('uc_files', array('filename'))
+    ->condition('filename', '%' . db_like($string) . '%', 'LIKE')
+    ->orderBy('filename', 'ASC')
+    ->execute();
+  foreach ($results as $result) {
+    $match = '<span class="autocomplete-suggestion">' . $result->filename . '</span>';
+    $matches[$filename] = $match;
   }
 
   backdrop_json_output($matches);
