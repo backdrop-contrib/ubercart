@@ -1501,21 +1501,32 @@ function uc_file_remove_user_file_by_id($user, $fid) {
 }
 
 /**
- * Central cache for all file data.
+ * Central static cache for all file data.
  */
 function &_uc_file_get_cache() {
-  static $cache = array();
+  static $cache = array(
+    'key' => array(),
+    'fid' => array(),
+    'uid' => array(),
+    'filename' => array(),
+  );
 
   return $cache;
 }
 
 /**
- * Flush our cache.
+ * Flush our static cache. This isn't used within uc_file, but we provide it
+ * in case client modules might need it.
  */
 function _uc_file_flush_cache() {
   $cache = _uc_file_get_cache();
 
-  $cache = array();
+  $cache = array(
+    'key' => array(),
+    'fid' => array(),
+    'uid' => array(),
+    'filename' => array(),
+  );
 }
 
 /**
@@ -1530,11 +1541,11 @@ function _uc_file_flush_cache() {
 function &uc_file_get_by_name($filename) {
   $cache = _uc_file_get_cache();
 
-  if (!isset($cache[$filename])) {
-    $cache[$filename] = db_query("SELECT * FROM {uc_files} WHERE filename = :name", array(':name' => $filename))->fetchObject();
+  if (!isset($cache['filename'][$filename])) {
+    $cache['filename'][$filename] = db_query("SELECT * FROM {uc_files} WHERE filename = :name", array(':name' => $filename))->fetchObject();
   }
 
-  return $cache[$filename];
+  return $cache['filename'][$filename];
 }
 
 /**
@@ -1549,11 +1560,11 @@ function &uc_file_get_by_name($filename) {
 function &uc_file_get_by_id($fid) {
   $cache = _uc_file_get_cache();
 
-  if (!isset($cache[$fid])) {
-    $cache[$fid] = db_query("SELECT * FROM {uc_files} WHERE fid = :fid", array(':fid' => $fid))->fetchObject();
+  if (!isset($cache['fid'][$fid])) {
+    $cache['fid'][$fid] = db_query("SELECT * FROM {uc_files} WHERE fid = :fid", array(':fid' => $fid))->fetchObject();
   }
 
-  return $cache[$fid];
+  return $cache['fid'][$fid];
 }
 
 /**
@@ -1568,14 +1579,14 @@ function &uc_file_get_by_id($fid) {
 function &uc_file_get_by_key($key) {
   $cache = _uc_file_get_cache();
 
-  if (!isset($cache[$key])) {
-    $cache[$key] = db_query("SELECT * FROM {uc_file_users} ufu " .
+  if (!isset($cache['key'][$key])) {
+    $cache['key'][$key] = db_query("SELECT * FROM {uc_file_users} ufu " .
       "LEFT JOIN {uc_files} uf ON uf.fid = ufu.fid " .
       "WHERE ufu.file_key = :key", array(':key' => $key))->fetchObject();
-    $cache[$key]->addresses = unserialize($cache[$key]->addresses);
+    $cache['key'][$key]->addresses = unserialize($cache['key'][$key]->addresses);
   }
 
-  return $cache[$key];
+  return $cache['key'][$key];
 }
 
 /**
@@ -1592,16 +1603,16 @@ function &uc_file_get_by_key($key) {
 function &uc_file_get_by_uid($uid, $fid) {
   $cache = _uc_file_get_cache();
 
-  if (!isset($cache[$uid][$fid])) {
-    $cache[$uid][$fid] = db_query("SELECT * FROM {uc_file_users} ufu " .
+  if (!isset($cache['uid'][$uid][$fid])) {
+    $cache['uid'][$uid][$fid] = db_query("SELECT * FROM {uc_file_users} ufu " .
       "LEFT JOIN {uc_files} uf ON uf.fid = ufu.fid " .
       "WHERE ufu.fid = :fid AND ufu.uid = :uid", array(':uid' => $uid, ':fid' => $fid))->fetchObject();
-    if ($cache[$uid][$fid]) {
-      $cache[$uid][$fid]->addresses = unserialize($cache[$uid][$fid]->addresses);
+    if ($cache['uid'][$uid][$fid]) {
+      $cache['uid'][$uid][$fid]->addresses = unserialize($cache['uid'][$uid][$fid]->addresses);
     }
   }
 
-  return $cache[$uid][$fid];
+  return $cache['uid'][$uid][$fid];
 }
 
 /**

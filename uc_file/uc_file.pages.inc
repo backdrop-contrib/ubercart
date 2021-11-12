@@ -235,6 +235,10 @@ function _uc_file_download($fid) {
   );
 
   $ip = ip_address();
+
+  // For ordinary users, get the file and information about the user for
+  // logging. For users with admin permissions, just get the file; we won't log
+  // their downloads.
   if (user_access('view all downloads')) {
     $file_download = uc_file_get_by_id($fid);
   }
@@ -347,7 +351,8 @@ function _uc_file_download_validate($file_download, &$user, $ip) {
  * Sends the file's binary data to a user via HTTP and updates the database.
  *
  * @param $file_user
- *   The file_user object from the uc_file_users.
+ *   The file_user object from the uc_file_users (if downloaded by an ordinary
+ *   user) or a partial object (if downloaded by a privileged user).
  * @param $ip
  *   The string containing the IP address the download is going to.
  */
@@ -441,16 +446,16 @@ function _uc_file_download_transfer($file_user, $ip) {
     @ob_flush();
   }
 
-  // Finished serving the file, close the stream and log the download
-  // to the user table.
+  // Finished serving the file. Close the stream and, if appropriate, log the
+  // download to the user table.
   fclose($fp);
-
-  _uc_file_log_download($file_user, $ip);
-
+  if (isset($file_user->uid)) {
+    _uc_file_log_download($file_user, $ip);
+  }
 }
 
 /**
- * Processes a file download.
+ * Log a file download. Needs a fully constructed $file_user object.
  */
 function _uc_file_log_download($file_user, $ip) {
 
