@@ -474,7 +474,8 @@ function uc_order_create_form($form, &$form_state) {
       else {
         // No search results found.
         $form['customer']['uid'] += array(
-          '#markup' => '<p>' . t('Search returned no results.') . '</p>',
+          '#type' => 'help',
+          '#markup' => t('Search returned no results.'),
         );
       }
     }
@@ -708,7 +709,10 @@ function uc_order_select_customer($email = NULL) {
     }
 
     if (count($options) == 0) {
-      $build['description'] = array('#markup' => '<p>' . t('Search returned no results.') . '</p>');
+      $build['description'] = array(
+        '#type' => 'help',
+        '#markup' => t('Search returned no results.'),
+      );
       $options = NULL;
     }
     else {

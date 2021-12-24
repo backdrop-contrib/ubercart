@@ -68,7 +68,8 @@ function uc_country_import_form($form, &$form_state) {
     );
 
     $form['country_import']['text'] = array(
-      '#markup' => '<p>' . t('To import new country data, select it in the list and click the import button. If you are using a custom or contributed import file, it must be placed in the Ubercart folder uc_store/countries.') . '</p>',
+      '#type' => 'help',
+      '#markup' => t('To import new country data, select it in the list and click the import button. If you are using a custom or contributed import file, it must be placed in the Ubercart folder uc_store/countries.'),
     );
     $form['country_import']['import_file'] = array(
       '#type' => 'select',
