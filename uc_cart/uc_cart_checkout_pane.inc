@@ -523,7 +523,14 @@ function theme_uc_cart_review_table($variables) {
   );
 
   // Set up table rows.
-  $display_items = uc_order_product_view_multiple($items);
+  // The following three lines load the full order with the 
+  // UcOrderProduct array needed for correctly generating 
+  // a render array with uc_order_product_view_multiple.
+  // @see https://github.com/backdrop-contrib/ubercart/issues/302  
+  $item = reset($items);
+  $order = uc_order_load($item->order_id);
+  $products = $order->products;
+  $display_items = uc_order_product_view_multiple($products);
   if (!empty($display_items['uc_order_product'])) {
     foreach (element_children($display_items['uc_order_product']) as $key) {
       $display_item = $display_items['uc_order_product'][$key];
