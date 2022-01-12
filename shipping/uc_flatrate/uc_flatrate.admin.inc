@@ -139,7 +139,7 @@ function uc_flatrate_admin_method_confirm_delete_submit($form, &$form_state) {
     ->condition('mid', $mid)
     ->execute();
 
-  rules_config_delete(array('get_quote_from_flatrate_' . $mid));
+  rules_configuration_delete(array('get_quote_from_flatrate_' . $mid));
 
   backdrop_set_message(t('Flat rate shipping method deleted.'));
   $form_state['redirect'] = 'admin/store/settings/quotes/methods';
