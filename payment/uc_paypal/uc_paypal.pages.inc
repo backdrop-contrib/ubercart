@@ -415,7 +415,10 @@ function uc_paypal_ec_submit() {
 
   $build['line_items'] = uc_order_pane_line_items('customer', $order);
 
-  $build['instructions'] = array('#markup' => '<p>' . t("Your order is not complete until you click the 'Submit order' button below. Your PayPal account will be charged for the amount shown above once your order is placed. You will receive confirmation once your payment is complete.") . '</p>');
+  $build['instructions'] = array(
+    '#type' => 'help',
+    '#markup' => t("Your order is not complete until you click the 'Submit order' button below. Your PayPal account will be charged for the amount shown above once your order is placed. You will receive confirmation once your payment is complete."),
+    );
 
   $build['submit_form'] = backdrop_get_form('uc_paypal_ec_submit_form');
 

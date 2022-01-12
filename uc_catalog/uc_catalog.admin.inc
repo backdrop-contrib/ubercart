@@ -35,7 +35,8 @@ function uc_catalog_settings_form($form, &$form_state) {
     $catalog = taxonomy_vocabulary_load($vocabulary);
 
     $form['catalog_vocabulary'] = array(
-      '#markup' => '<p>' . t('The taxonomy vocabulary <a href="!edit-url">%name</a> is set as the product catalog.', array('!edit-url' => url('admin/structure/taxonomy/' . $catalog->machine_name), '%name' => $catalog->name)) . '</p>',
+      '#type' => 'help',
+      '#markup' => t('The taxonomy vocabulary <a href="!edit-url">%name</a> is set as the product catalog.', array('!edit-url' => url('admin/structure/taxonomy/' . $catalog->machine_name), '%name' => $catalog->name)),
     );
   }
 
@@ -86,17 +87,15 @@ function uc_catalog_orphaned_products() {
     }
     else {
       $build['orphans'] = array(
+        '#type' => 'help',
         '#markup' => t('All products are currently listed in the catalog.'),
-        '#prefix' => '<p>',
-        '#suffix' => '</p>',
       );
     }
   }
   else {
     $build['orphans'] = array(
+      '#type' => 'help',
       '#markup' => t('The node terms index is not being maintained, so Ubercart can not determine which products are not entered into the catalog.'),
-      '#prefix' => '<p>',
-      '#suffix' => '</p>',
     );
   }
 

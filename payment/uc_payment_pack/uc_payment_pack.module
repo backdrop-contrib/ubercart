@@ -114,12 +114,14 @@ function uc_payment_method_cod($op, &$order, $form = NULL, $form_state = NULL) {
   switch ($op) {
     case 'cart-details':
       $build['policy'] = array(
-        '#markup' => '<p>' . $config->get('uc_cod_policy') . '</p>',
+        '#type' => 'help',
+        '#markup' => $config->get('uc_cod_policy'),
       );
 
       if (($max = $config->get('uc_cod_max_order')) > 0 && is_numeric($max)) {
         $build['eligibility'] = array(
-          '#markup' => '<p>' . t('Orders totalling more than !number are <b>not eligible</b> for COD.', array('!number' => uc_currency_format($max))) . '</p>',
+          '#type' => 'help',
+          '#markup' => t('Orders totalling more than !number are <b>not eligible</b> for COD.', array('!number' => uc_currency_format($max))),
         );
       }
 
@@ -275,6 +277,7 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
       if (!config_get('uc_payment_pack.settings', 'uc_check_mailing_street1')) {
         $config = config('uc_store.settings');
         $build['address'] = array(
+          '#type' => 'help',
           '#markup' => uc_address_format(
             uc_store_name(),
             NULL,
@@ -286,13 +289,12 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
             $config->get('uc_store_postal_code'),
             $config->get('uc_store_country')
           ),
-          '#prefix' => '<p>',
-          '#suffix' => '</p>',
         );
       }
       else {
         $config = config('uc_payment_pack.settings');
         $build['address'] = array(
+          '#type' => 'help',
           '#markup' => uc_address_format(
             $config->get('uc_check_mailing_name'),
             NULL,
@@ -304,13 +306,12 @@ function uc_payment_method_check($op, &$order, $form = NULL, &$form_state = NULL
             $config->get('uc_check_mailing_postal_code'),
             $config->get('uc_check_mailing_country')
           ),
-          '#prefix' => '<p>',
-          '#suffix' => '</p>',
         );
       }
 
       $build['policy'] = array(
-        '#markup' => '<p>' . config_get('uc_payment_pack.settings', 'uc_check_policy') . '</p>',
+        '#type' => 'help',
+        '#markup' => config_get('uc_payment_pack.settings', 'uc_check_policy'),
       );
       return $build;
 
