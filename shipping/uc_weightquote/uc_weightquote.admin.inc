@@ -140,7 +140,7 @@ function uc_weightquote_admin_method_confirm_delete_submit($form, &$form_state) 
     ->condition('mid', $mid)
     ->execute();
 
-  rules_config_delete(array('get_quote_from_weightquote_' . $mid));
+  rules_configuration_delete(array('get_quote_from_weightquote_' . $mid));
 
   backdrop_set_message(t('Weight quote shipping method deleted.'));
   $form_state['redirect'] = 'admin/store/settings/quotes/methods';
