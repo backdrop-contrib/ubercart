@@ -43,13 +43,22 @@ function uc_product_class_default() {
 /**
  * Form to change product settings.
  *
+ * Note that modules that alter this form to store their own settings on this
+ * page (like uc_attribute and uc_product_kit) should store their settings in
+ * their own config file.
+ *
  * @ingroup forms
  */
 function uc_product_settings_form($form, &$form_state) {
   $config = config('uc_product.settings');
 
+  // Other modules, including uc_attribute and uc_product_kit, add their own
+  // settings to this form via hook_form_FORM_ID_alter(). For this reason, we
+  // don't set $form['#config'] and use our own submission function rather than
+  // system_settings_form_submit() to avoid stuffing everything into
+  // uc_product.settings config.
+
   // Put fieldsets into vertical tabs
-  $form['#config'] = 'uc_product.settings';
   $form['product-settings'] = array('#type' => 'vertical_tabs');
 
   $form['product'] = array(
@@ -95,8 +104,7 @@ function uc_product_settings_form($form, &$form_state) {
   }
 
   foreach (module_invoke_all('uc_product_feature') as $feature) {
-    if (isset($feature['settings']) &&
-        function_exists($feature['settings'])) {
+    if (isset($feature['settings']) && function_exists($feature['settings'])) {
       $form[$feature['id']] = array(
         '#type' => 'fieldset',
         '#title' => t('@feature settings', array('@feature' => $feature['title'])),
@@ -113,7 +121,35 @@ function uc_product_settings_form($form, &$form_state) {
     }
   }
 
-  return system_settings_form($form);
+  $form = system_settings_form($form);
+
+  // Swap in our own form submission function for the default system settings
+  // form submisison handler. Ours should run before any other submission
+  // functions because it cleans the form values for client modules to extract
+  // and store their own settings.
+
+  unset($form['#submit'][array_search('system_settings_form_submit', $form['#submit'])]);
+  array_unshift($form['#submit'], 'uc_product_settings_form_submit');
+  return $form;
+}
+
+/**
+ * Submission function for product settings.
+ *
+ * @see system_settings_form_submit()
+ */
+function uc_product_settings_form_submit($form, &$form_state) {
+  form_state_values_clean($form_state);
+
+  $config = config('uc_product.settings');
+  $config->set('uc_product_image_widget', $form_state['values']['uc_product_image_widget']);
+  if (module_exists('uc_cart')) {
+    $config->set('uc_product_add_to_cart_qty', $form_state['values']['uc_product_add_to_cart_qty']);
+    $config->set('uc_product_update_node_view', $form_state['values']['uc_product_update_node_view']);
+  }
+  $config->save();
+
+  backdrop_set_message(t('The configuration options have been saved.'));
 }
 
 /**

@@ -267,7 +267,6 @@ function uc_attribute_form_uc_product_settings_form_alter(&$form, &$form_state) 
     '#group' => 'product-settings',
     '#weight' => -3,
   );
-  $form['attributes']['#config'] = 'uc_attribute.settings';
   $form['attributes']['uc_attribute_option_price_format'] = array(
     '#type' => 'radios',
     '#title' => t('Option price format'),
@@ -279,6 +278,14 @@ function uc_attribute_form_uc_product_settings_form_alter(&$form, &$form_state) 
     ),
     '#description' => t('Determines how price variations are displayed to the customer. Prices may be displayed directly next to each attribute option in the attribute selection form either as a total price for the product with that option or as an adjustment (+ or -) showing how that option affects the product base price. Note that the price will always be displayed as an adjustment for attributes that can have multiple options (using checkboxes).'),
   );
+  $form['#submit'][] = 'uc_attribute_form_uc_product_settings_form_submit';
+}
+
+/**
+ * Submission function for our alterations to uc_product_settings_form().
+ */
+function uc_attribute_form_uc_product_settings_form_submit($form, &$form_state) {
+  config_set('uc_attribute.settings', 'uc_attribute_option_price_format', $form_state['values']['uc_attribute_option_price_format']);
 }
 
 /**

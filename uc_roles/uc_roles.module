@@ -763,6 +763,13 @@ function uc_roles_feature_form_submit($form, &$form_state) {
 }
 
 /**
+ * Implements hook_form_FORM_ID_alter() for uc_product_feature_settings_form().
+ */
+function uc_roles_form_uc_product_feature_settings_form_alter(&$form, &$form_state) {
+  $form['#submit'][] = 'uc_roles_feature_settings_submit';
+}
+
+/**
  * Form builder for role settings.
  *
  * @ingroup forms
@@ -896,6 +903,27 @@ function uc_roles_feature_settings($form, &$form_state) {
     '#description' => t('If users have any role expirations they will be displayed on their account page.'),
   );
   return $form;
+}
+
+/**
+ * Form submission handler for uc_roles_feature_settings().
+ *
+ * @see uc_roles_feature_settings()
+ */
+function uc_roles_feature_settings_submit($form, &$form_state) {
+  // Save submitted values.
+  $config = config('uc_roles.settings');
+  $config->set('uc_roles_default_role', $form_state['values']['uc_roles_default_role']);
+  $config->set('uc_roles_default_role_choices', $form_state['values']['uc_roles_default_role_choices']);
+  $config->set('uc_roles_default_end_expiration', $form_state['values']['uc_roles_default_end_expiration']);
+  $config->set('uc_roles_default_length', $form_state['values']['uc_roles_default_length']);
+  $config->set('uc_roles_default_granularity', $form_state['values']['uc_roles_default_granularity']);
+  $config->set('uc_roles_default_end_time', $form_state['values']['uc_roles_default_end_time']);
+  $config->set('uc_roles_default_by_quantity', $form_state['values']['uc_roles_default_by_quantity']);
+  $config->set('uc_roles_reminder_length', $form_state['values']['uc_roles_reminder_length']);
+  $config->set('uc_roles_reminder_granularity', $form_state['values']['uc_roles_reminder_granularity']);
+  $config->set('uc_roles_default_show_expiration', $form_state['values']['uc_roles_default_show_expiration']);
+  $config->save();
 }
 
 /**
