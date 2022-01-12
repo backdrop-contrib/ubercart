@@ -1,9 +1,39 @@
 <?php
-
 /**
  * @file
  * Reports administration menu items.
  */
+
+ /**
+ * Settings form for uc_reports.
+ */
+function uc_reports_settings_form($form, &$form_state) {
+  $config = config('uc_reports.settings');
+  $form['#config'] = 'uc_reports.settings';
+
+  $form['uc_reports_table_size'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Number of rows to show in reports'),
+    '#description' => t('The maximum number of rows displayed on one page for a report table.'),
+    '#default_value' => $config->get('uc_reports_table_size'),
+    '#size' => 5,
+  );
+
+  $options = array();
+  foreach (uc_order_status_list() as $status) {
+    $options[$status['id']] = $status['title'];
+  }
+  $form['uc_reports_reported_statuses'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Reported statuses'),
+    '#description' => t('Only orders with selected statuses will be included in reports.'),
+    '#options' => $options,
+    '#default_value' => $config->get('uc_reports_reported_statuses'),
+    '#multiple' => TRUE,
+  );
+
+  return system_settings_form($form);
+}
 
 /**
  * Displays the customer report.

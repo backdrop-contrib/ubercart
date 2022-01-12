@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Displays reports on sales, customers, and products to store admin.
@@ -21,6 +20,20 @@ define('UC_REPORTS_MAX_RECORDS', PHP_INT_MAX);
 function uc_reports_menu() {
   global $user;
   $items = array();
+
+  // Settings
+
+  $items['admin/store/settings/reports'] = array(
+    'title' => 'Reports',
+    'description' => 'Configure reports settings.',
+    'page callback' => 'backdrop_get_form',
+    'page arguments' => array('uc_reports_settings_form'),
+    'access arguments' => array('administer store'),
+    'file' => 'uc_reports.admin.inc',
+//    'weight' => -1,
+  );
+
+  // Reports
 
   $items['admin/store/reports/customers'] = array(
     'title' => 'Customer reports',
@@ -135,39 +148,6 @@ function uc_reports_config_info() {
   );
 
   return $prefixes;
-}
-
-/**
- * Implements hook_form_FORM_ID_alter() for uc_store_settings_form().
- */
-function uc_reports_form_uc_store_settings_form_alter(&$form, &$form_state) {
-  $config = config('uc_reports.settings');
-  $form['reports'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Report settings'),
-    '#group' => 'store',
-  );
-  $form['reports']['uc_reports_table_size'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Number of rows to show in reports'),
-    '#description' => t('The maximum number of rows displayed on one page for a report table.'),
-    '#default_value' => $config->get('uc_reports_table_size'),
-    '#size' => 5,
-  );
-
-  $options = array();
-  foreach (uc_order_status_list() as $status) {
-    $options[$status['id']] = $status['title'];
-  }
-
-  $form['reports']['uc_reports_reported_statuses'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Reported statuses'),
-    '#description' => t('Only orders with selected statuses will be included in reports.'),
-    '#options' => $options,
-    '#default_value' => $config->get('uc_reports_reported_statuses'),
-    '#multiple' => TRUE,
-  );
 }
 
 /**
