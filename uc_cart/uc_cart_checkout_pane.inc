@@ -523,7 +523,15 @@ function theme_uc_cart_review_table($variables) {
   );
 
   // Set up table rows.
-  $display_items = uc_order_product_view_multiple($items);
+  // The following three lines transform the passed items
+  // into vanilla stdClass objects. This is done to avoid
+  // passing the wrong entity types to uc_order_product_view_multiple.
+  // @see https://github.com/backdrop-contrib/ubercart/issues/302
+  $temp_products = array();
+  foreach ($items as $id => $item) {
+    $temp_products[$id] = (object) (array) $item;
+  }
+  $display_items = uc_order_product_view_multiple($temp_products);
   if (!empty($display_items['uc_order_product'])) {
     foreach (element_children($display_items['uc_order_product']) as $key) {
       $display_item = $display_items['uc_order_product'][$key];
