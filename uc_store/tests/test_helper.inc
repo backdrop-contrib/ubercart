@@ -36,13 +36,6 @@ class UbercartTestHelper extends BackdropWebTestCase {
     $modules = array_merge(array('entity_ui', 'entity_plus', 'uc_store', 'rules', 'uc_order', 'uc_product', 'uc_cart'), $modules);
     parent::setUp($modules, $permissions);
 
-
-
-// DEBUGGING: disable the path module allows Ajax functionality to run successfully. Why? It should be able to run with or without path module.
-module_disable(array('path'));
-
-
-
     // Create a store administrator user account.
     $this->adminUser = $this->backdropCreateUser(array_merge($permissions, array(
       'administer store',
@@ -285,7 +278,7 @@ module_disable(array('path'));
    *   The assertion message.
    */
   protected function assertAjaxRaw($ajax, $text, $message = FALSE) {
-    $this > assertAjaxHelper($ajax, $text, $message, FALSE, FALSE);
+    $this->assertAjaxHelper($ajax, $text, $message, FALSE, FALSE);
   }
 
   /**
@@ -299,7 +292,7 @@ module_disable(array('path'));
    *   The assertion message.
    */
   protected function assertNoAjaxRaw($ajax, $text, $message = FALSE) {
-    $this > assertAjaxHelper($ajax, $text, $message, TRUE, FALSE);
+    $this->assertAjaxHelper($ajax, $text, $message, TRUE, FALSE);
   }
 
   /**
