@@ -103,8 +103,8 @@ class UcCartItem extends Entity {
    */
   public function uri() {
     return array(
-      // Since uc_cart_item entities are derived from 
-      // nodes, we return the uri its "parent" node. 
+      // Since uc_cart_item entities are derived from
+      // nodes, we return the uri its "parent" node.
       'path' => 'node/' . $this->nid,
       'options' => array(),
     );
