@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Total package weight field handler.

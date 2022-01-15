@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Hooks and functions for uc_order Rules integration.

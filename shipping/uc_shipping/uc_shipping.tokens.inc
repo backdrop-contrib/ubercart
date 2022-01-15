@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Token hooks for the uc_shipping module.

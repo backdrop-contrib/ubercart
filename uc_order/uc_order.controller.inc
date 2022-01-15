@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Contains controller classes for uc_order and uc_order_product entities.

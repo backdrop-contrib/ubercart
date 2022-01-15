@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Views handler: Full name field handler (first and last).

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Validate whether an argument is the current user or has a permission.
  *

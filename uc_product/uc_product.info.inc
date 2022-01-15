@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Entity metadata hooks for uc_product.module.

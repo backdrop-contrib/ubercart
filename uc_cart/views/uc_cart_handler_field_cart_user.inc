@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Views field handler.

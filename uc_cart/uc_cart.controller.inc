@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Contains the controller for uc_cart_item entities.
@@ -103,8 +102,8 @@ class UcCartItem extends Entity {
    */
   public function uri() {
     return array(
-      // Since uc_cart_item entities are derived from 
-      // nodes, we return the uri its "parent" node. 
+      // Since uc_cart_item entities are derived from
+      // nodes, we return the uri its "parent" node.
       'path' => 'node/' . $this->nid,
       'options' => array(),
     );

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * This file is the default customer invoice template for Ubercart.

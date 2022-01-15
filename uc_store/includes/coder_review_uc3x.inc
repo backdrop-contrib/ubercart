@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Implements Coder Upgrade functionality for Ubercart 6.x -> 7.x upgrades.

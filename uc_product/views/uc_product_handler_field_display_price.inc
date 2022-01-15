@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Views handler: Product price field.

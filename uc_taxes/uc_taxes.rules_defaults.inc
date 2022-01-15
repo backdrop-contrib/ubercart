@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Default Rules configurations for uc_taxes.

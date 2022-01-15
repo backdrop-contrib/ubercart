@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Hooks provided by the Google Analytics for Ubercart module.

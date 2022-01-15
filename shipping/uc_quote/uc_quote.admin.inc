@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Shipping quotes administration menu items.

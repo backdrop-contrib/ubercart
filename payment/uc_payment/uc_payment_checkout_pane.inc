@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Checkout pane functions for uc_payment.module.

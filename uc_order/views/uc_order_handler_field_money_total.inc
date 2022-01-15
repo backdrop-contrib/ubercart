@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Total price field handler.

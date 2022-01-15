@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Cart Links menu items.

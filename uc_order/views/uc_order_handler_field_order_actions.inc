@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Views handler: Return actions for order id.

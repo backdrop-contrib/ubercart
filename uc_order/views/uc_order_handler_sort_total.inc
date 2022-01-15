@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Contains uc_order_handler_sort_total.

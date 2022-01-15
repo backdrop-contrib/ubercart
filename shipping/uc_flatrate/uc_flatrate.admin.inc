@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Flat rate shipping method administration menu items.

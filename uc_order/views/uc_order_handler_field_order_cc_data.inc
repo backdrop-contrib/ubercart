@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Credit card data views field handler.

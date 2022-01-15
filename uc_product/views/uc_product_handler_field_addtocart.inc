@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Views handler: "Add to cart" form as a field.

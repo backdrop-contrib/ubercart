@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Rules default configurations for uc_stock.module.

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Rules configurations for uc_usps module.

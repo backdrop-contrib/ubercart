@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Callbacks for the default Ubercart checkout panes plus helper functions.

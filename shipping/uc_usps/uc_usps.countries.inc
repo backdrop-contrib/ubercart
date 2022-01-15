@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Contains the map of ISO country codes to USPS Individual Country Listings.

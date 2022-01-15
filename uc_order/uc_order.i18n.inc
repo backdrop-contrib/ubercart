@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Implementation of i18n hooks for Ubercart orders.

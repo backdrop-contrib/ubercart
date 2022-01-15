@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Rules hooks and functions for uc_file.module.

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Cart administration menu items.

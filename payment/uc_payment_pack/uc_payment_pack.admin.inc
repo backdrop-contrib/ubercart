@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Payment pack administration menu items.
