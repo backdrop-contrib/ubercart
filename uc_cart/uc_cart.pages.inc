@@ -571,7 +571,7 @@ function uc_cart_checkout_review_form_submit($form, &$form_state) {
       $result = $function('submit', $order, NULL);
 
       $msg_type = 'status';
-      if ($result[0]['pass'] === FALSE) {
+      if (isset($result[0]['pass']) && $result[0]['pass'] === FALSE) {
         $error = TRUE;
         $msg_type = 'error';
       }
