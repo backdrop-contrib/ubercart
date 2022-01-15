@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Contains the callbacks for the payment order pane supplied with

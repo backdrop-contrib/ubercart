@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Contains the TAPIr code rolled into Ubercart core from Backdrop contrib.

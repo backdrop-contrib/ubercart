@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Menu callbacks for shipping quotes requested through AJAX.

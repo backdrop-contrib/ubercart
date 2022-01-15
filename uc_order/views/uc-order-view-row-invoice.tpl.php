@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file uc-order-view-row-invoice.tpl.php
  *

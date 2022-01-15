@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Defines a class used for communicating with CyberSource via SOAP.

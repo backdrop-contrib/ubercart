@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Entity Metadata hooks.

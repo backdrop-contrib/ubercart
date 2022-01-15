@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Views handler: Filter on comparison of stock level to threshold.

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * UcAddress utility class definition.

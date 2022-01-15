@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Page callback for Authorize.Net's Silent POST feature.

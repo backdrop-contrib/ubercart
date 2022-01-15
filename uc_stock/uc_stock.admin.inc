@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Stock administration menu items.

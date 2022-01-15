@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Credit menu items.

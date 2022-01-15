@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Order total cost field handler.

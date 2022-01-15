@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * The shipment packing slip template.

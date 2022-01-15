@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Roles administration menu items.

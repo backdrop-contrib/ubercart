@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Taxes administration menu items.

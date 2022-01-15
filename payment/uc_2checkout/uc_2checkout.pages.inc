@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * 2Checkout menu items.

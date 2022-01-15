@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Payment method views field handler.

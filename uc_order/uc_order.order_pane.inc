@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * This file contains the callbacks for the default order panes supplied with

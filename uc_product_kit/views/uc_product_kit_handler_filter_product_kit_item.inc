@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Views handler: Node filter on "product-kit-part-ness".

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Theme functions for the uc_quote module.

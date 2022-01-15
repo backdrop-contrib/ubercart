@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Weight quote shipping method administration menu items.

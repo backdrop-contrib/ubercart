@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Rules hooks for uc_stock.module.

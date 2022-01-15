@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Contains the callbacks for the default line items for orders and

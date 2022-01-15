@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Displays sales tax report.

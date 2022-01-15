@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Store administration forms for country and address handling.

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Views handler: Returns payment method name for payment method id.

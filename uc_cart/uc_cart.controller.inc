@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Contains the controller for uc_cart_item entities.

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Attribute administration menu items.

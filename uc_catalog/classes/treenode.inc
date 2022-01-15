@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Utility classes for catalog module.

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Views hooks for Ubercart product kits.

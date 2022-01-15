@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Catalog administration menu items.

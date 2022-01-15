@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Features integration for Ubercart product classes.

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Total weight field handler.

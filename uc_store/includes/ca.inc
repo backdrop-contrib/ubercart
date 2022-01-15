@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Helper functions for upgrade from Ubercart 2.x to Ubercart 3.x.
