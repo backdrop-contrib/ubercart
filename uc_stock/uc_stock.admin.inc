@@ -53,8 +53,7 @@ function uc_stock_settings_form($form, &$form_state) {
  * Displays a stock report for products with stock tracking enabled.
  */
 function uc_stock_report() {
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $page_size = (isset($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : variable_get('uc_reports_table_size', 30);
+  $page_size = (isset($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : config_get('uc_reports.settings', 'uc_reports_table_size');
   $csv_rows = array();
   $rows = array();
 

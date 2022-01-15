@@ -126,7 +126,15 @@ class UbercartTestHelper extends BackdropWebTestCase {
     foreach (array('billing', 'delivery') as $pane) {
       $prefix = 'panes[' . $pane . '][' . $pane;
       $key = $prefix . '_country]';
-      $country = empty($edit[$key]) ? variable_get('uc_store_country', 840) : $edit[$key];
+      if (empty($edit[$key])) {
+        $country = config_get('uc_store.settings', 'uc_store_country');
+        if (!$country) {
+          $country = 840;
+        }
+      }
+      else {
+        $country = $edit[$key];
+      }
       $zone_id = db_query_range('SELECT zone_id FROM {uc_zones} WHERE zone_country_id = :country ORDER BY rand()', 0, 1, array('country' => $country))->fetchField();
       $edit += array(
         $prefix . '_first_name]' => $this->randomName(10),
