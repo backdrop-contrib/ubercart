@@ -34,6 +34,7 @@ Current Maintainers
  - [Robert Garrigós](https://github.com/robertgarrigos)
  - [Laryn Kragt Bakker](https://github.com/laryn) - [CEDC.org](https://cedc.org)
  - [Robert J. Lang](https://github.com/bugfolder)
+ - [Alejandro Cremaschi](https://github.com/argiepiano)
 
 Credits
 -------
