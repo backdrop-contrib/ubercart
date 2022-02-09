@@ -43,7 +43,7 @@ class UcCartItemController extends EntityPlusController {
   /**
    * Overrides EntityAPIController::buildContent().
    */
-  public function buildContent($product, $view_mode = 'full', $langcode = NULL, $content = array()) {
+  public function buildContent(EntityInterface $product, $view_mode = 'full', $langcode = NULL, $content = array()) {
     $content += module_invoke($product->data['module'], 'uc_cart_display', $product);
     if (!empty($content)) {
       $content['cart_item_id'] = array(
