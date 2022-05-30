@@ -97,5 +97,6 @@ class UcCartItem extends Entity {
     return array(
        'path' => 'node/' . $this->nid,
        'options' => array(),
-     );
+    );
+  }
 }
