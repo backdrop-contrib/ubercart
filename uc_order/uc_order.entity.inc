@@ -167,7 +167,7 @@ class UcOrderProduct extends Entity {
     // Since uc_order_product entities are derived from nodes, we return the uri
     // of its "parent" node.
     return array(
-      'path' => 'node/' . $this->order_product_id,
+      'path' => 'node/' . $this->nid,
       'options' => array(),
     );
   }

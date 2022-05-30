@@ -92,7 +92,10 @@ class UcCartItem extends Entity {
    * Implements EntityInterface::uri().
    */
   public function uri() {
-    // There is no way to view an individual cart item as a standalone page.
-    return NULL;
-  }
+    // Since uc_order_product entities are derived from nodes, we return the uri
+    // of its "parent" node.
+    return array(
+       'path' => 'node/' . $this->nid,
+       'options' => array(),
+     );
 }
