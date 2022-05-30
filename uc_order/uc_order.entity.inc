@@ -149,15 +149,7 @@ class UcOrderProduct extends Entity {
    * Implements EntityInterface::label().
    */
   public function label() {
-    // Since uc_order_product entities are derived from nodes, we return the
-    // title of its "parent" node.
-    $node = node_load($this->order_product_id);
-    if ($node) {
-    return $node->title;
-    }
-    else {
-      return '';
-    }
+    return $this->title;
   }
 
   /**
