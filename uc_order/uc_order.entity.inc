@@ -56,10 +56,6 @@ class UcOrder extends Entity {
    * @param $state
    *   The initial order state.
    */
-
-  /**
-   * function __construct($uid = 0, $state = 'in_checkout') {
-   */
   public function __construct(array $values) {
     parent::__construct($values);
     if ($this->isNew()) {
@@ -98,29 +94,26 @@ class UcOrder extends Entity {
   }
 
   /**
-   * Implements EntityInterface::bundle().
-   */
-  public function bundle() {}
-
-  /**
    * Implements EntityInterface::label().
    */
-  public function label() {}
+  public function label() {
+    return t('Order @id', array('@id' => $this->order_id));
+  }
 
   /**
    * Implements EntityInterface::uri().
    */
-  public function uri() {}
-
+  public function uri() {
+    // return the admin page for the order.
+    return array(
+      'path' => '/admin/store/orders/' . $this->order_id,
+      'options' => array(),
+    );
+  }
 }
 
-
 /**
- * UcOrderProduct extends Entity.
- *
- * A subclass of Entity is a requirement for creating a custom entity. It is
- * also a minimum requirement to define the methods included here, even as
- * empty functions.
+ * Defines an individual product object within an order.
  */
 class UcOrderProduct extends Entity {
 
@@ -153,27 +146,28 @@ class UcOrderProduct extends Entity {
   }
 
   /**
-   * Implements EntityInterface::bundle().
-   */
-  public function bundle() {
-    // return $this->type;
-  }
-
-  /**
    * Implements EntityInterface::label().
    */
   public function label() {
-    return $this->title;
+    // Since uc_order_product entities are derived from nodes, we return the
+    // title of its "parent" node.
+    $node = node_load($this->order_product_id);
+    if ($node) {
+    return $node->title;
+    }
+    else {
+      return '';
+    }
   }
 
   /**
    * Implements EntityInterface::uri().
    */
   public function uri() {
+    // Since uc_order_product entities are derived from nodes, we return the uri
+    // of its "parent" node.
     return array(
-      // Since uc_order_product entities are derived from
-      // nodes, we return the uri its "parent" node.
-      'path' => 'node/' . $this->nid,
+      'path' => 'node/' . $this->order_product_id,
       'options' => array(),
     );
   }

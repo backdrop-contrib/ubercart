@@ -54,16 +54,10 @@ class UcCartItemController extends EntityPlusController {
 
     return parent::buildContent($product, $view_mode, $langcode, $content);
   }
-
 }
 
-
 /**
- * UcCartItem extends Entity.
- *
- * A subclass of Entity is a requirement for creating a custom entity. It is
- * also a minimum requirement to define the methods included here, even as
- * empty functions.
+ * Defines an item in the user's shopping cart and/or order.
  */
 class UcCartItem extends Entity {
   /**
@@ -88,24 +82,17 @@ class UcCartItem extends Entity {
   }
 
   /**
-   * Implements EntityInterface::bundle().
-   */
-  public function bundle() {}
-
-  /**
    * Implements EntityInterface::label().
    */
-  public function label() {}
+  public function label() {
+    return t('Cart item @id', array('@id' => $this->cart_item_id));
+  }
 
   /**
    * Implements EntityInterface::uri().
    */
   public function uri() {
-    return array(
-      // Since uc_cart_item entities are derived from
-      // nodes, we return the uri its "parent" node.
-      'path' => 'node/' . $this->nid,
-      'options' => array(),
-    );
+    // There is no way to view an individual cart item as a standalone page.
+    return NULL;
   }
 }
