@@ -45,7 +45,7 @@
         <?php if ($business_header): ?>
         <tr valign="top">
           <td>
-            <table" width="100%">
+            <table width="100%">
               <tr>
                 <?php if ($site_logo): ?>
                   <td class="uc-order-customer-logo">
