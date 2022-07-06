@@ -32,7 +32,7 @@ class UbercartMailSystem implements MailSystemInterface {
    public function mail(array $message) {
     $mailsystem_name = config_get('system.mail', 'default-system');
     // Don't allow circular references; fall back to the core default instead.
-    if ($mailsystem_name == 'UbercartMailSystem') {
+    if ($mailsystem_name == 'UbercartMailSystem' || is_subclass_of($mailsystem_name, 'UbercartMailSystem') {
       $mailsystem_name = 'DefaultMailSystem';
     }
     $mailsystem = new $mailsystem_name();
