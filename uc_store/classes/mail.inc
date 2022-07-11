@@ -5,9 +5,9 @@
  */
 
 /**
- * Modifies the Backdrop mail system to send HTML emails.
+ * Modifies the Backdrop mail system to allow sending of HTML emails.
  */
-class UbercartMailSystem extends DefaultMailSystem {
+class UbercartMailSystem implements MailSystemInterface {
 
   /**
    * Concatenates and wraps the e-mail body for plain-text mails.
@@ -23,4 +23,19 @@ class UbercartMailSystem extends DefaultMailSystem {
     return $message;
   }
 
+  /**
+   * Implements MailSystemInterface::mail().
+   *
+   * Retrieve the configured class responsible for delivering a message
+   * defined by system.mail. Forwards the call to that class.
+   */
+   public function mail(array $message) {
+    $mailsystem_name = config_get('system.mail', 'default-system');
+    // Don't allow circular references; fall back to the core default instead.
+    if ($mailsystem_name == 'UbercartMailSystem' || is_subclass_of($mailsystem_name, 'UbercartMailSystem') {
+      $mailsystem_name = 'DefaultMailSystem';
+    }
+    $mailsystem = new $mailsystem_name();
+    return $mailsystem->mail($message);
+  }
 }
