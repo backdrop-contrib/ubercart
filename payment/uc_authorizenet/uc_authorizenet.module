@@ -502,7 +502,13 @@ function _uc_authorizenet_charge($order, $amount, $data) {
   // Translate the data array into a string we can POST.
   $post_fields = array();
   foreach ($submit_data as $key => $value) {
-    $post_fields[] = $key . '=' . urlencode($value);
+    if (is_bool($value)) {
+      $encoded_value = $value ? 'TRUE' : 'FALSE';
+    }
+    else {
+      $encoded_value = urlencode($value);
+    }
+    $post_fields[] = $key . '=' . $encoded_value;
   }
 
   // Setup the cURL request.
