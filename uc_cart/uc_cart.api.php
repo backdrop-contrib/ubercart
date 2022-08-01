@@ -443,7 +443,7 @@ function hook_uc_checkout_pane_alter(&$panes) {
  *
  * @param $nid
  *   Node id of the cart item.
- * @param $data
+ * @param array $data
  *   Array of extra information about the item.
  * @param $qty
  *   The quantity of this item in the cart.
@@ -451,7 +451,7 @@ function hook_uc_checkout_pane_alter(&$panes) {
  *   The cart id. Defaults to NULL, which indicates that the current user's cart
  *   should be retrieved with uc_cart_get_id().
  */
-function hook_uc_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
+function hook_uc_update_cart_item($nid, $data, $qty, $cid = NULL) {
   if (!$nid) {
     return NULL;
   }
