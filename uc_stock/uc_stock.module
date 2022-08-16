@@ -130,14 +130,16 @@ function uc_stock_entity_delete($entity, $type) {
  */
 function uc_stock_entity_update($entity, $type) {
   if ($type == 'node' && in_array($entity->type, uc_product_types())) {
-    $old_model = $entity->original->model;
-    $new_model = $entity->model;
-    if($old_model != $new_model) {
-      db_update('uc_product_stock')
-        ->fields(array('sku' => $new_model))
-        ->condition('sku', $old_model)
-        ->execute();
-      backdrop_set_message(t('Stock table updated: changed SKU @old_model to @new_model.', array('%title' => $entity->title, '@old_model' => $old_model, '@new_model' => $new_model)));
+    if (isset($entity->original->model)) {
+      $old_model = $entity->original->model;
+      $new_model = $entity->model;
+      if($old_model != $new_model) {
+        db_update('uc_product_stock')
+          ->fields(array('sku' => $new_model))
+          ->condition('sku', $old_model)
+          ->execute();
+        backdrop_set_message(t('Stock table updated: changed SKU @old_model to @new_model.', array('%title' => $entity->title, '@old_model' => $old_model, '@new_model' => $new_model)));
+      }
     }
   }
 }
