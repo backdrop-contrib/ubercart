@@ -384,7 +384,8 @@ function _uc_file_download_transfer($file_user, $ip) {
       // Multiple ranges could be specified at the same time,
       // but for simplicity only serve the first range
       // See http://tools.ietf.org/id/draft-ietf-http-range-retrieval-00.txt
-      list($range, $extra_ranges) = explode(',', substr($_SERVER['HTTP_RANGE'], 6), 2);
+      $all_ranges = explode(',', substr($_SERVER['HTTP_RANGE'], 6), 2);
+      $range = $all_ranges[0];
     }
     else {
       backdrop_add_http_header('Status', '416 Requested Range Not Satisfiable');
