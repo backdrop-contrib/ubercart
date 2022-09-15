@@ -161,7 +161,7 @@ function uc_quote_node_load($nodes, $types) {
       unset($node->shipping_address['nid']);
     }
     else {
-      $node->shipping_address = (array) config_get('uc_quote.settings', 'uc_quote_store_default_address');
+      $node->shipping_address = config_get('uc_quote.settings', 'uc_quote_store_default_address');
     }
   }
 }
@@ -450,9 +450,7 @@ function uc_quote_get_default_shipping_address($nid) {
   $address = db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid = :nid", array(':nid' => $nid))->fetchObject('UcAddress');
 
   if (empty($address)) {
-    $address_array = config_get('uc_quote.settings', 'uc_quote_store_default_address');
-    $address = new UcAddress();
-    $address->__set_state($address_array);
+    $address = UcAddress::__set_state(config_get('uc_quote.settings', 'uc_quote_store_default_address'));
   }
 
   return $address;
