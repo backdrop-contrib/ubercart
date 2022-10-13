@@ -21,6 +21,10 @@ Installation
 Documentation
 -------------
 
+- See [the Drupal Ubercart documentation](https://www.drupal.org/docs/7/modules/ubercart) for a detailed description of how to configure your store, various how-to's, and tutorials.
+
+- Find Backdrop-specific Ubercart modules at [BackdropCMS.org](https://backdropcms.org/modules?s=ubercart).
+
  - Additional documentation can be found (and added) in the [Wiki](https://github.com/backdrop-contrib/ubercart/wiki).
 
 Issues
