@@ -12,15 +12,25 @@ function uc_product_class_default() {
   $header = array(t('Class ID'), t('Name'), t('Description'), t('Operations'));
   $rows = array();
   foreach ($classes as $class) {
-    $ops = array(l(t('edit'), 'admin/store/products/classes/' . $class->pcid . '/edit'));
+    $links[] = array(
+      'title' => t('edit'),
+      'href' => 'admin/store/products/classes/' . $class->pcid . '/edit',
+    );
     if (empty($class->locked)) {
-      $ops[] = l(t('delete'), 'admin/store/products/classes/' . $class->pcid . '/delete');
+      $links[] = array(
+        'title' => t('delete'),
+        'href' => 'admin/store/products/classes/' . $class->pcid . '/delete',
+      );
     }
+    $operations = array(
+      '#type' => 'operations',
+      '#links' => $links,
+    );
     $rows[] = array(
       check_plain($class->pcid),
       check_plain($class->name),
       filter_xss_admin($class->description),
-      implode(' ', $ops),
+      backdrop_render($operations),
     );
   }
 
@@ -162,7 +172,7 @@ function uc_product_features($node, $fid = NULL, $pfid = NULL) {
 
   $features = uc_product_feature_load_multiple($node->nid);
   foreach ($features as $feature) {
-    $operations = array(
+    $links = array(
       'edit' => array(
         'title' => t('edit'),
         'href' => 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid,
@@ -172,13 +182,14 @@ function uc_product_features($node, $fid = NULL, $pfid = NULL) {
         'href' => 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid . '/delete',
       ),
     );
+    $operations = array(
+      '#type' => 'operations',
+      '#links' => $links,
+    );
     $rows[] = array(
       array('data' => uc_product_feature_data($feature->fid, 'title')),
       array('data' => $feature->description),
-      theme('links', array(
-        'links' => $operations,
-        'attributes' => array('class' => array('links', 'inline')),
-      )),
+      backdrop_render($operations),
     );
   }
 

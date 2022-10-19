@@ -22,7 +22,7 @@ function uc_country_import_form($form, &$form_state) {
   $header = array(t('Country'), t('Code'), t('Version'), t('Operations'));
   $rows = array();
   if (is_array($countries)) {
-    $link_ops = array('query' => array('token' => backdrop_get_token('uc_country_op_link')));
+    $query = array('token' => backdrop_get_token('uc_country_op_link'));
     foreach ($countries as $country) {
       $row = array(
         t($country->country_name),
@@ -33,18 +33,37 @@ function uc_country_import_form($form, &$form_state) {
         ),
       );
 
-      $ops = array();
+      $links = array();
       if ($country->version < 0) {
-        $ops[] = l(t('enable'), 'admin/store/settings/countries/' . $country->country_id . '/enable', $link_ops);
+        $links[] = array(
+          'title' => t('enable'),
+          'href' => 'admin/store/settings/countries/' . $country->country_id . '/enable',
+          'query' => $query,
+        );
       }
       else {
-        $ops[] = l(t('disable'), 'admin/store/settings/countries/' . $country->country_id . '/disable', $link_ops);
+        $links[] = array(
+          'title' => t('disable'),
+          'href' => 'admin/store/settings/countries/' . $country->country_id . '/disable',
+          'query' => $query,
+        );
       }
       if ($country->version < $files[$country->country_id]['version'] && $country->version > 0) {
-        $ops[] = l(t('update'), 'admin/store/settings/countries/' . $country->country_id . '/update/' . $files[$country->country_id]['version'], $link_ops);
+        $links[] = array(
+          'title' => t('update'),
+          'href' => 'admin/store/settings/countries/' . $country->country_id . '/update/' . $files[$country->country_id]['version'],
+          'query' => $query,
+        );
       }
-      $ops[] = l(t('remove'), 'admin/store/settings/countries/' . $country->country_id . '/remove');
-      $row[] = implode(' ', $ops);
+      $links[] = array(
+        'title' => t('remove'),
+        'href' => 'admin/store/settings/countries/' . $country->country_id . '/remove',
+      );
+      $operations = array(
+        '#type' => 'operations',
+        '#links' => $links,
+      );
+      $row[] = backdrop_render($operations);
 
       $rows[] = $row;
       unset($files[$country->country_id]);

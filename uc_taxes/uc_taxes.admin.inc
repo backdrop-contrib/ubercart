@@ -9,14 +9,34 @@
  */
 function uc_taxes_admin_settings() {
   $header = array(t('Name'), t('Rate'), t('Taxed products'), t('Taxed product types'), t('Taxed line items'), t('Weight'), array(
-    'data' => t('Operations'),
-    'colspan' => 4,
-  ),
+      'data' => t('Operations'),
+    ),
   );
 
   $rows = array();
-  $options = array('query' => array('token' => backdrop_get_token('uc_taxes_clone')));
   foreach (uc_taxes_rate_load() as $rate_id => $rate) {
+    $operations = array(
+      '#type' => 'operations',
+      '#links' => array(
+        array(
+          'title' => t('edit'),
+          'href' => 'admin/store/settings/taxes/' . $rate_id . '/edit',
+        ),
+        array(
+          'title' => t('conditions'),
+          'href' => 'admin/store/settings/taxes/manage/uc_taxes_' . $rate_id,
+        ),
+        array(
+          'title' => t('clone'),
+          'href' => 'admin/store/settings/taxes/' . $rate_id . '/clone',
+          'query' => array('token' => backdrop_get_token('uc_taxes_clone')),
+        ),
+        array(
+          'title' => t('delete'),
+          'href' => 'admin/store/settings/taxes/' . $rate_id . '/delete',
+        ),
+      ),
+    );
     $rows[] = array(
       check_plain($rate->name),
       $rate->rate * 100 . '%',
@@ -24,10 +44,7 @@ function uc_taxes_admin_settings() {
       implode(', ', $rate->taxed_product_types),
       implode(', ', $rate->taxed_line_items),
       $rate->weight,
-      l(t('edit'), 'admin/store/settings/taxes/' . $rate_id . '/edit'),
-      l(t('conditions'), 'admin/store/settings/taxes/manage/uc_taxes_' . $rate_id),
-      l(t('clone'), 'admin/store/settings/taxes/' . $rate_id . '/clone', $options),
-      l(t('delete'), 'admin/store/settings/taxes/' . $rate_id . '/delete'),
+      backdrop_render($operations),
     );
   }
 

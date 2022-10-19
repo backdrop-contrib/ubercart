@@ -100,10 +100,18 @@ function uc_stock_report() {
 
   $result = $query->execute();
   foreach ($result as $stock) {
-    $op = array();
+    $links = array();
     if (user_access('administer product stock')) {
-      $op[] = l(t('edit'), 'node/' . $stock->nid . '/edit/stock', $options = array('query' => array('destination' => 'admin/store/reports/stock')));
+      $links[] = array(
+        'title' => t('edit'),
+        'href' => 'node/' . $stock->nid . '/edit/stock',
+        'query' => array('destination' => 'admin/store/reports/stock'),
+      );
     }
+    $operations = array(
+      '#type' => 'operations',
+      '#links' => $links,
+    );
 
     // Add the data to a table row for display.
     $rows[] = array(
@@ -112,7 +120,7 @@ function uc_stock_report() {
         array('data' => l($stock->title, 'node/' . $stock->nid)),
         array('data' => $stock->stock),
         array('data' => $stock->threshold),
-        array('data' => implode(' ', $op)),
+        array('data' => backdrop_render($operations)),
       ),
       'class' => array(($stock->threshold >= $stock->stock) ? 'uc-stock-below-threshold' : 'uc-stock-above-threshold'),
     );
