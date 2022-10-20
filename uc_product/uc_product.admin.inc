@@ -80,10 +80,27 @@ function uc_product_settings_form($form, &$form_state) {
     $options['none'] = t("Don't use any image widgets.");
   }
 
+  $additional_widgets = array();
+  if (!isset($options['colorbox'])) {
+    $additional_widgets['colorbox'] = l(t('Colorbox'), 'https://backdropcms.org/project/colorbox');
+  }
+/* These two modules are not yet ported to Backdrop CMS, although uc_store_uc_image_widget checks for them.
+  if (!isset($options['thickbox'])) {
+    $additional_widgets['thickbox'] = l(t('Thickbox'), 'https://backdropcms.org/project/thickbox');
+  }
+  if (!isset($options['lightbox2'])) {
+    $additional_widgets['lightbox2'] = l(t('Lightbox2'), 'https://backdropcms.org/project/lightbox2');
+  }
+*/
+  $additional_widgets_text = ' ';
+  if (!empty($additional_widgets)) {
+    $additional_widgets_text .= t('You can choose from additional widgets by installing one or more of these modules:');
+    $additional_widgets_text .= theme('item_list', array('items' => $additional_widgets));
+  }
   $form['product']['uc_product_image_widget'] = array(
     '#type' => 'radios',
     '#title' => t('Product image widget'),
-    '#description' => t('The selected widget will be used to display a zoomed version of product images when they are clicked.'),
+    '#description' => t('The selected widget will be used to display a zoomed version of product images when they are clicked.') . $additional_widgets_text,
     '#options' => $options,
     '#default_value' => $config->get('uc_product_image_widget'),
   );
