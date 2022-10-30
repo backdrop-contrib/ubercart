@@ -80,7 +80,7 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
       );
 
       $func = _uc_payment_method_data($order->payment_method, 'callback');
-      if (function_exists($func) && $details = $func('cart-details', $order, $form, $form_state)) {
+      if (!is_null($func) && function_exists($func) && $details = $func('cart-details', $order, $form, $form_state)) {
         unset($contents['details']['#markup']);
         $contents['details'] += $details;
       }
@@ -94,7 +94,7 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
       }
       $order->payment_method = $form_state['values']['panes']['payment']['payment_method'];
       $func = _uc_payment_method_data($order->payment_method, 'callback');
-      if (function_exists($func)) {
+      if (!is_null($func) && function_exists($func)) {
         $result = $func('cart-process', $order, $form, $form_state);
         if ($result === FALSE) {
           return FALSE;
@@ -120,7 +120,7 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
         'data' => $review_data,
       );
       $func = _uc_payment_method_data($order->payment_method, 'callback');
-      if (function_exists($func)) {
+      if (!is_null($func) && function_exists($func)) {
         $result = $func('cart-review', $order);
         if (is_array($result)) {
           $review = array_merge($review, $result);
