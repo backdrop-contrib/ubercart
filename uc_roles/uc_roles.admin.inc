@@ -21,7 +21,6 @@ function _uc_roles_expiration_header() {
     ),
     array(
       'data' => t('Operations'),
-      'colspan' => 2,
     ),
   );
 }
@@ -55,8 +54,21 @@ function uc_roles_expiration($form, &$form_state) {
     );
     $form['role'][$row->uid . ' ' . $row->role] = array('#markup' => check_plain(_uc_roles_get_name($row->role)));
     $form['expiration'][$row->uid . ' ' . $row->role] = array('#markup' => format_date($row->expiration, 'short'));
-    $form['edit'][$row->uid . ' ' . $row->role] = array('#markup' => l(t('edit'), 'user/' . $row->uid . '/edit', array('fragment' => 'role-expiration-' . $row->role, 'query' => array('destination' => 'admin/people/expiration'))));
-    $form['delete'][$row->uid . ' ' . $row->role] = array('#markup' => l(t('delete'), 'admin/people/expiration/delete/' . $row->uid . '/' . $row->role));
+    $form['operations'][$row->uid . ' ' . $row->role] = array(
+      '#type' => 'operations',
+      '#links' => array(
+        array(
+          'title' => t('edit'),
+          'href' => 'user/' . $row->uid . '/edit',
+          'fragment' => 'role-expiration-' . $row->role,
+          'query' => array('destination' => 'admin/people/expiration'),
+        ),
+        array(
+          'title' => t('delete'),
+          'href' => 'admin/people/expiration/delete/' . $row->uid . '/' . $row->role,
+        ),
+      ),
+    );
   }
 
   return $form;
@@ -76,15 +88,13 @@ function theme_uc_roles_expiration($variables) {
 
   $header = _uc_roles_expiration_header();
   $rows = array();
-
   if (isset($form['name'])) {
     foreach (element_children($form['name']) as $key) {
       $rows[] = array(
         backdrop_render($form['name'][$key]),
         backdrop_render($form['role'][$key]),
         backdrop_render($form['expiration'][$key]),
-        backdrop_render($form['edit'][$key]),
-        backdrop_render($form['delete'][$key]),
+        backdrop_render($form['operations'][$key]),
       );
     }
   }
