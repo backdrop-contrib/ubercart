@@ -404,17 +404,8 @@ function uc_reports_products_custom() {
   $rows = array();
   $csv_rows = array();
 
-  // Hard code the ignore of the product kit for this report.
-  $ignored_types = array('product_kit');
-
-  // Build an array of valid product types to include on the report.
-  $product_types = array();
-  foreach (uc_product_types() as $type) {
-    // Pass over any ignored types.
-    if (!in_array($type, $ignored_types)) {
-      $product_types[] = $type;
-    }
-  }
+  $product_type_names = uc_product_type_names();
+  unset($product_type_names['product_kit']);
 
   // Use default report parameters if we don't detect values in the URL.
   if (arg(5) == '') {
@@ -422,14 +413,36 @@ function uc_reports_products_custom() {
       'start_date' => mktime(0, 0, 0, date('n'), 1, date('Y') - 1),
       'end_date' => REQUEST_TIME,
       'status' => uc_reports_order_statuses(),
+      'types' => array_keys($product_type_names),
+      'sold_only' => FALSE,
     );
+    if (module_exists('uc_stock')) {
+      $args['stock_tracking'] = 'all';
+    }
   }
   else {
     $args = array(
       'start_date' => arg(5),
       'end_date' => arg(6),
       'status' => explode(',', arg(7)),
+      'types' => explode(',', arg(8)),
+      'sold_only' => arg(9),
     );
+    if (module_exists('uc_stock')) {
+      $args['stock_tracking'] = arg(10);
+    }
+  }
+
+  // Hard code the ignore of the product kit for this report.
+  $ignored_types = array('product_kit');
+
+  // Build an array of valid product types to include on the report.
+  $product_types = array();
+  foreach (uc_product_types() as $type) {
+    // Pass over any ignored types.
+    if (!in_array($type, $ignored_types) && in_array($type, $args['types'])) {
+      $product_types[] = $type;
+    }
   }
 
   $query = db_select('node', 'n', array('fetch' => PDO::FETCH_ASSOC))
@@ -484,8 +497,30 @@ function uc_reports_products_custom() {
     $query->addField('c', 'totalcount');
   }
 
+  if (module_exists('uc_stock')) {
+    $query->leftJoin('uc_product_stock', 's', 'n.nid = s.nid');
+    switch ($args['stock_tracking']) {
+      case 'tracked':
+        $query->condition('s.active', 1);
+        break;
+
+      case 'untracked':
+        $query->condition('s.active', 1, '!=');
+        break;
+
+      default:
+        // No condition for 'all' or no selection.
+    }
+  }
+
   $products = $query->execute();
   foreach ($products as $product) {
+    if ($args['sold_only']) {
+      //Throw away rows that don't qualify.
+      if (empty($product['sold'])) {
+        continue;
+      }
+    }
     $row_cell = ($page * $config->get('uc_reports_table_size')) + count($rows) + 1;
     $product_cell = l($product['title'], 'node/' . $product['nid']);
     $product_csv = $product['title'];
@@ -647,6 +682,38 @@ function uc_reports_products_custom_form($form, &$form_state, $values) {
     '#default_value' => $values['status'],
   );
 
+  $product_type_names = uc_product_type_names();
+  unset($product_type_names['product_kit']);
+
+  $form['search']['types'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Product types'),
+    '#description' => t('Only products of the selected type will be included in the report.'),
+    '#options' => $product_type_names,
+    '#default_value' => $values['types'],
+  );
+
+  $form['search']['sold_only'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Sold only'),
+    '#description' => t('If checked, only products that sold during the period will be included in the report.'),
+    '#default_value' => $values['sold_only'],
+  );
+
+  if (module_exists('uc_stock')) {
+    $form['search']['stock_tracking'] = array(
+      '#type' => 'radios',
+      '#title' => t('Stock tracking'),
+      '#description' => t('Select whether to show tracked, untracked, or all products.'),
+      '#default_value' => $values['stock_tracking'],
+      '#options' => array(
+        'all' => t('All products'),
+        'tracked' => t('Tracked products only'),
+        'untracked' => t('Untracked products only'),
+      ),
+    );
+  }
+
   $form['search']['actions'] = array('#type' => 'actions');
   $form['search']['actions']['submit'] = array(
     '#type' => 'submit',
@@ -663,8 +730,13 @@ function uc_reports_products_custom_form($form, &$form_state, $values) {
  * @see uc_reports_products_custom_form_submit()
  */
 function uc_reports_products_custom_form_validate($form, &$form_state) {
-  if (empty($form_state['values']['status'])) {
+  $statuses = array_filter($form_state['values']['status']);
+  if (empty($statuses)) {
     form_set_error('status', t('You must select at least one order status.'));
+  }
+  $types = array_filter($form_state['values']['types']);
+  if (empty($types)) {
+    form_set_error('types', t('You must select at least one product type.'));
   }
 }
 
@@ -682,7 +754,12 @@ function uc_reports_products_custom_form_submit($form, &$form_state) {
     $start_date,
     $end_date,
     implode(',', array_keys(array_filter($form_state['values']['status']))),
+    implode(',', array_keys(array_filter($form_state['values']['types']))),
+    $form_state['values']['sold_only'],
   );
+  if (module_exists('uc_stock')) {
+    $args[] = $form_state['values']['stock_tracking'];
+  }
 
   $form_state['redirect'] = array('admin/store/reports/products/custom/' . implode('/', $args));
 }
