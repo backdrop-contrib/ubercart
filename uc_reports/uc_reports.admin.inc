@@ -706,7 +706,7 @@ function theme_uc_reports_product_table($variables) {
 
   // Add sticky headers, if applicable.
   if (count($header) && $sticky) {
-    backdrop_add_js('misc/tableheader.js');
+    backdrop_add_js('core/misc/tableheader.js');
     // Add 'sticky-enabled' class to the table to identify it for JS.
     // This is needed to target tables constructed by this function.
     $attributes['class'][] = 'sticky-enabled';
