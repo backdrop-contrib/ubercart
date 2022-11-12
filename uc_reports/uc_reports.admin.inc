@@ -515,11 +515,9 @@ function uc_reports_products_custom() {
 
   $products = $query->execute();
   foreach ($products as $product) {
-    if ($args['sold_only']) {
-      //Throw away rows that don't qualify.
-      if (empty($product['sold'])) {
-        continue;
-      }
+    // Throw away rows that don't qualify.
+    if ($args['sold_only'] && empty($product['sold'])) {
+      continue;
     }
     $row_cell = ($page * $config->get('uc_reports_table_size')) + count($rows) + 1;
     $product_cell = l($product['title'], 'node/' . $product['nid']);
@@ -637,7 +635,6 @@ function uc_reports_products_custom() {
 /**
  * Form builder for the custom product report.
  *
- * @see uc_reports_products_custom_form_validate()
  * @see uc_reports_products_custom_form_submit()
  * @ingroup forms
  */
@@ -680,6 +677,7 @@ function uc_reports_products_custom_form($form, &$form_state, $values) {
     '#description' => t('Only orders with selected statuses will be included in the report.'),
     '#options' => $options,
     '#default_value' => $values['status'],
+    '#required' => TRUE,
   );
 
   $product_type_names = uc_product_type_names();
@@ -691,6 +689,7 @@ function uc_reports_products_custom_form($form, &$form_state, $values) {
     '#description' => t('Only products of the selected type will be included in the report.'),
     '#options' => $product_type_names,
     '#default_value' => $values['types'],
+    '#required' => TRUE,
   );
 
   $form['search']['sold_only'] = array(
@@ -721,23 +720,6 @@ function uc_reports_products_custom_form($form, &$form_state, $values) {
   );
 
   return $form;
-}
-
-/**
- * Validation handler for the custom product report.
- *
- * @see uc_reports_products_custom_form()
- * @see uc_reports_products_custom_form_submit()
- */
-function uc_reports_products_custom_form_validate($form, &$form_state) {
-  $statuses = array_filter($form_state['values']['status']);
-  if (empty($statuses)) {
-    form_set_error('status', t('You must select at least one order status.'));
-  }
-  $types = array_filter($form_state['values']['types']);
-  if (empty($types)) {
-    form_set_error('types', t('You must select at least one product type.'));
-  }
 }
 
 /**
