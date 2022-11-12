@@ -48,7 +48,8 @@ function uc_paypal_ipn() {
     $receiver_email = check_plain($_POST['receiver_email']);
   }
   $txn_id = check_plain($_POST['txn_id']);
-  $txn_type = check_plain($_POST['txn_type']);
+  // txn_type is empty for refunds
+  $txn_type = isset($_POST['txn_type']) ? check_plain($_POST['txn_type']) : '';
   $payer_email = check_plain($_POST['payer_email']);
 
   // Express Checkout IPNs may not have the WPS email stored. But if it is,
