@@ -196,7 +196,7 @@ function uc_shipping_new_package($form, &$form_state, $order) {
  */
 function theme_uc_shipping_new_package_fieldset($variables) {
   $fieldset = $variables['fieldset'];
-  backdrop_add_js('misc/tableselect.js');
+  backdrop_add_js('core/misc/tableselect.js');
 
   $output = '';
   $header = array(array('class' => array('select-all')), t('SKU'), t('Title'), theme('uc_qty_label'), t('Package'));
@@ -387,7 +387,7 @@ function uc_shipping_package_edit($form, &$form_state, $order, $package) {
  */
 function theme_uc_shipping_edit_package_fieldset($variables) {
   $fieldset = $variables['fieldset'];
-  backdrop_add_js('misc/tableselect.js');
+  backdrop_add_js('core/misc/tableselect.js');
 
   $output = '';
   $header = array(array('class' => array('select-all')), t('SKU'), t('Title'), theme('uc_qty_label'));
@@ -666,7 +666,7 @@ function uc_shipping_new_shipment($form, &$form_state, $order) {
  */
 function theme_uc_shipping_new_shipment($variables) {
   $form = $variables['form'];
-  backdrop_add_js('misc/tableselect.js');
+  backdrop_add_js('core/misc/tableselect.js');
 
   $output = '';
   $header = array(array('class' => array('select-all')), t('Package'), t('Products'), t('Weight'));
