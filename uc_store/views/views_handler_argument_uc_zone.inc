@@ -66,12 +66,10 @@ class views_handler_argument_uc_zone extends views_handler_argument {
           'type' => 'LEFT',
         );
         $join->construct();
-        $table_alias = $this->table_alias . '__uc_zones';
-        $this->query->add_relationship($table_alias, $join, 'uc_zones');
-        $this->field_alias = $this->query->add_field($table_alias, $zone_format);
+        $table_alias = $this->query->add_relationship("{$this->table_alias}__uc_zones", $join, 'uc_zones');
         $field = $zone_format;
         break;
     }
-    $this->query->add_where_expression(0, 'LOWER(' . $table_alias . '.' . $field . ")='" . $argument . "'");
+    $this->query->add_where_expression(0, "LOWER({$table_alias}.{$field}) = '{$argument}'");
   }
 }

@@ -58,8 +58,7 @@ class views_handler_sort_uc_country extends views_handler_sort {
         'type' => 'LEFT',
       );
       $join->construct();
-      $table_alias = $this->table_alias . '__uc_countries';
-      $this->query->add_relationship($table_alias, $join, 'uc_countries');
+      $table_alias = $this->query->add_relationship("{$this->table_alias}__uc_countries", $join, 'uc_countries');
       $field_alias = $this->query->add_field($table_alias, $country_sort);
       $this->query->add_orderby($table_alias, NULL, $this->options['order'], $field_alias);
     }
