@@ -92,11 +92,7 @@ class UcCartItem extends Entity {
    * Implements EntityInterface::uri().
    */
   public function uri() {
-    // Since uc_order_product entities are derived from nodes, we return the uri
-    // of its "parent" node.
-    return array(
-       'path' => 'node/' . $this->nid,
-       'options' => array(),
-    );
+    // Only used internally, so doesn't have a URI.
+    return NULL;
   }
 }
