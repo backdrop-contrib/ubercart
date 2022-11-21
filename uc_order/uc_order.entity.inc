@@ -118,6 +118,17 @@ class UcOrder extends Entity {
 class UcOrderProduct extends Entity {
 
   /**
+   * Constructor.
+   */
+  public function __construct(array $values) {
+    parent::__construct($values);
+
+    // UcOrderProduct should not have a path set; if it does, pathauto tries to
+    // update an alias for the entity.
+    unset($this->path);
+  }
+
+  /**
    * The node ID.
    *
    * @var integer
@@ -156,11 +167,7 @@ class UcOrderProduct extends Entity {
    * Implements EntityInterface::uri().
    */
   public function uri() {
-    // Since uc_order_product entities are derived from nodes, we return the uri
-    // of its "parent" node.
-    return array(
-      'path' => 'node/' . $this->nid,
-      'options' => array(),
-    );
+    // UcOrderProduct is only used internally, so doesn't have a URI.
+    return NULL;
   }
 }
