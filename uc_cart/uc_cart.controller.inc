@@ -17,6 +17,9 @@ class UcCartItemController extends EntityPlusController {
         foreach ($product as $key => $value) {
           $item->$key = $value;
         }
+        // UcCartItem should not have a path (inherited from the node) so that
+        // path module doesn't try to update the node's alias.
+        unset($item->path);
       }
       $item->module = $item->data['module'];
     }
@@ -35,10 +38,6 @@ class UcCartItemController extends EntityPlusController {
       }
     }
     else {
-      // UcCartItem should not have a path (inherited from the node) so that
-      // path module doesn't try to update the node's alias.
-      unset($item->path);
-
       $item->changed = REQUEST_TIME;
       parent::save($item, $transaction);
     }
@@ -70,6 +69,11 @@ class UcCartItem extends Entity {
    * @var integer
    */
   public $cart_item_id;
+
+  function __construct(array $values = array()) {
+    parent::__construct($values);
+    unset($this->path);
+  }
 
   /**
    * Implements EntityInterface::id().

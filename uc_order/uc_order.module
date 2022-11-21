@@ -1040,6 +1040,12 @@ function uc_order_product_save($order_id, $product) {
     $product->is_new = TRUE;
   }
 
+  // It's possible that a contrib or custom module updated the order's products
+  // and assigned the product's path variable from the node. In case that
+  // happened, we'll unset it here so that path module doesn't try to update the
+  // node's alias via path_entity_update().
+  unset($product->path);
+
   // Note that $product can be a UcOrderProduct or a UcCartItem, but we use
   // the UcOrderProductController class in either case.
   return entity_get_controller('uc_order_product')->save($product);
@@ -1186,6 +1192,9 @@ function uc_order_product_revive($products, $published = TRUE) {
           $product->$key = $value;
         }
       }
+      // uc_order_product entities should not have a path (inherited from the
+      // node) so that path module doesn't try to update the node's alias.
+      unset($product->path);
       // Order products are always variants.
       $product->variant = TRUE;
     }

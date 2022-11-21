@@ -125,11 +125,6 @@ class UcOrderProductController extends EntityPlusController {
         $product->weight_units = empty($units) ? config_get('uc_store.settings', 'uc_weight_unit') : $units;
       }
     }
-
-    // Both UcOrderProduct and UcCartItem should not have a path set; if they
-    // do, then pathauto attempts to update the path alias.
-    unset($product->path);
-
     return parent::save($product, $transaction = NULL);
   }
 
