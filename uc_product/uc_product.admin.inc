@@ -501,6 +501,7 @@ function uc_product_class_delete_confirm($form, &$form_state, $class) {
 function uc_product_class_delete_confirm_submit($form, &$form_state) {
   $type = node_type_get_type($form_state['values']['pcid']);
   $type->base = 'node_content';
+  $type->module = 'node';
   $type->custom = 1;
   node_type_save($type);
 
@@ -508,7 +509,7 @@ function uc_product_class_delete_confirm_submit($form, &$form_state) {
     ->condition('pcid', $form_state['values']['pcid'])
     ->execute();
   module_invoke_all('uc_product_class', $form_state['values']['pcid'], 'delete');
-  // TODO migrate This nedded?
+  // TODO migrate This needed?
   uc_product_node_info(TRUE);
   node_types_rebuild();
   menu_rebuild();
