@@ -57,8 +57,7 @@ class views_handler_sort_uc_zone extends views_handler_sort {
         'type' => 'LEFT',
       );
       $join->construct();
-      $table_alias = $this->table_alias . '__uc_zones';
-      $this->query->add_relationship($table_alias, $join, 'uc_zones');
+      $table_alias = $this->query->add_relationship("{$this->table_alias}__uc_zones", $join, 'uc_zones');
       $field_alias = $this->query->add_field($table_alias, $zone_sort);
       $this->query->add_orderby($table_alias, NULL, $this->options['order'], $field_alias);
     }
