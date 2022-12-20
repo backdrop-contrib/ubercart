@@ -202,7 +202,7 @@ function theme_uc_store_address_fields_form($variables) {
   $header = array(t('Field'), t('Title'), t('Enabled'), t('Required'), t('List position'));
 
   // Sort fields by weight
-  uasort($form['fields'], 'element_sort');
+  backdrop_sort($form['fields'], array('#weight'));
 
   foreach (element_children($form['fields']) as $field) {
     $row = array(
