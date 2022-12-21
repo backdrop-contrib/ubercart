@@ -12,7 +12,7 @@ function uc_attribute_views_data() {
   $data = array();
 
   // Create a field for each option value for each product, they could be null.
-  $result = db_query("SELECT * FROM {uc_attribute_options}");
+  $result = db_query("SELECT aid, oid FROM {uc_attribute_options}");
   foreach ($result as $row) {
     $attr = uc_attribute_load($row->aid);
     $option = uc_attribute_option_load($row->oid);
