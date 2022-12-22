@@ -22,7 +22,7 @@ class UcAttributeHandlerFieldOrderProductAttribute extends views_handler_field {
   public function render($values) {
     $data = unserialize($values->{$this->field_alias});
     $result = "";
-    if (is_array($data['attributes'])) {
+    if (!empty($data['attributes'])) {
       $result = '';
       $rows = array();
       foreach ($data['attributes'] as $attribute => $option) {

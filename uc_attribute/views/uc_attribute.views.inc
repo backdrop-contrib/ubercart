@@ -98,7 +98,7 @@ function uc_attribute_views_data() {
 
   $data['uc_product_adjustments']['table']['group'] = t('Product adjustments');
 
-  $uc_product_adjustments = drupal_get_schema_unprocessed('uc_attribute', 'uc_product_adjustments');
+  $uc_product_adjustments = backdrop_get_schema_unprocessed('uc_attribute', 'uc_product_adjustments');
 
   $data['uc_product_adjustments']['table']['join']['node'] = array(
     'left_field' => 'nid',
