@@ -11,8 +11,6 @@ class UcAttributeHandlerFieldCombination extends views_handler_field {
    * Attempts to create a matrix of all possible combinations of
    * attribute/options when there's no adjustments.
    *
-   * I think think this is very useful, probably worth removing.
-   *
    * @param int $nid
    *   Node ID.
    *
@@ -144,11 +142,18 @@ class UcAttributeHandlerFieldCombination extends views_handler_field {
     $items = array();
     $combination = $values->{$this->field_alias};
     if (is_string($combination)) {
+      $static_attributes = &backdrop_static(__METHOD__ . '_attributes');
       $combination = unserialize($combination);
       $attributes = array();
       foreach ($combination as $aid => $oid) {
-        $attribute = uc_attribute_load($aid);
-        $option = uc_attribute_option_load($oid);
+        if (!isset($static_attributes[$aid])) {
+          $attribute = uc_attribute_load($aid);
+          $static_attributes[$aid] = $attribute;
+        }
+        else {
+          $attribute = $static_attributes[$aid];
+        }
+        $option = $attribute->options[$oid];
         $attributes[] = "$attribute->name: $option->name";
       }
       $items[] = implode($attributes, ', ');

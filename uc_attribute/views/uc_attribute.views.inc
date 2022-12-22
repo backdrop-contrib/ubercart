@@ -11,11 +11,19 @@
 function uc_attribute_views_data() {
   $data = array();
 
-  // Create a field for each option value for each product, they could be null.
-  $result = db_query("SELECT aid, oid FROM {uc_attribute_options}");
+  // Create a field for each option value for each product; they could be null.
+  $result = db_query('
+    SELECT
+      o.aid,
+      o.oid,
+      o.name AS option_name,
+      a.name AS attr_name,
+      a.label AS label
+    FROM {uc_attribute_options} o
+    LEFT JOIN {uc_attributes} a ON a.aid = o.aid
+    ');
+
   foreach ($result as $row) {
-    $attr = uc_attribute_load($row->aid);
-    $option = uc_attribute_option_load($row->oid);
     $data['uc_product_options_' . $row->aid . '_' . $row->oid]['table']['group'] = t('Product attributes');
     $data['uc_product_options_' . $row->aid . '_' . $row->oid]['table']['join']['node'] = array(
       'table' => 'uc_product_options',
@@ -30,7 +38,7 @@ function uc_attribute_views_data() {
     );
     $data['uc_product_options_' . $row->aid . '_' . $row->oid]['table']['group'] = t('Product attributes');
     $data['uc_product_options_' . $row->aid . '_' . $row->oid]['price'] = array(
-      'title' => t('Price for !aid/!oid', array('!aid' => $attr->label ? $attr->label : $attr->name, '!oid' => $option->name)),
+      'title' => t('Price for !aid/!oid', array('!aid' => $row->label ? $row->label : $row->attr_name, '!oid' => $row->option_name)),
       'help' => 'Price of the product with the selected option.',
       'field' => array(
         'handler' => 'uc_product_handler_field_price',
@@ -39,7 +47,7 @@ function uc_attribute_views_data() {
       ),
     );
     $data['uc_product_options_' . $row->aid . '_' . $row->oid]['cost'] = array(
-      'title' => t('Cost for !aid/!oid', array('!aid' => $attr->label ? $attr->label : $attr->name, '!oid' => $option->name)),
+      'title' => t('Cost for !aid/!oid', array('!aid' => $row->label ? $row->label : $row->attr_name, '!oid' => $row->option_name)),
       'help' => 'Cost of the product with the selected option.',
       'field' => array(
         'handler' => 'uc_product_handler_field_price',
@@ -48,7 +56,7 @@ function uc_attribute_views_data() {
       ),
     );
     $data['uc_product_options_' . $row->aid . '_' . $row->oid]['weight'] = array(
-      'title' => t('Weight for !aid/!oid', array('!aid' => $attr->label ? $attr->label : $attr->name, '!oid' => $option->name)),
+      'title' => t('Weight for !aid/!oid', array('!aid' => $row->label ? $row->label : $row->attr_name, '!oid' => $row->option_name)),
       'help' => 'Weight of the product with the selected option.',
       'field' => array(
         'additional fields' => array(

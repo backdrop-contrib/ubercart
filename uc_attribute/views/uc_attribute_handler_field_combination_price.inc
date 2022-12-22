@@ -37,14 +37,27 @@ class UcAttributeHandlerFieldCombinationPrice extends uc_product_handler_field_p
     // I did try to add it through
     // additional_fields => array('product_price' => array('table' => 'uc_products', 'field' => 'sell_price'))
     // but it didn't work.
-    $price = db_query("SELECT $uc_products_field FROM {uc_products} WHERE nid = :nid AND vid = :vid", array('nid' => $values->nid, 'vid' => $values->{$this->aliases['vid']}))->fetchField();
+    $price = db_query("
+      SELECT $uc_products_field
+      FROM {uc_products}
+      WHERE nid = :nid
+      AND vid = :vid
+      ", array(
+        'nid' => $values->nid, 'vid' => $values->{$this->aliases['vid']}))
+      ->fetchField();
     $offset_total = 0;
 
     $combination = $values->{$this->aliases['combination']};
     if ($combination) {
       $combination = unserialize($combination);
       foreach ($combination as $aid => $oid) {
-        $offset = db_query("SELECT $uc_product_options_field FROM {uc_product_options} WHERE nid = :nid AND oid = :oid", array('nid' => $values->nid, 'oid' => $oid))->fetchField();
+        $offset = db_query("
+          SELECT $uc_product_options_field
+          FROM {uc_product_options}
+          WHERE nid = :nid
+          AND oid = :oid
+          ", array('nid' => $values->nid, 'oid' => $oid))
+        ->fetchField();
         $offset_total += $offset;
       }
     }
