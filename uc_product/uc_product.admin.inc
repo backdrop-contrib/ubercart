@@ -458,7 +458,6 @@ function uc_product_class_form_submit($form, &$form_state) {
     module_invoke_all('uc_product_class', $pcid, 'update');
   }
 
-  node_types_rebuild();
   if ($is_new) {
     $type = node_type_get_type($pcid);
     node_add_body_field($type, t('Description'));
@@ -511,7 +510,6 @@ function uc_product_class_delete_confirm_submit($form, &$form_state) {
   module_invoke_all('uc_product_class', $form_state['values']['pcid'], 'delete');
   // TODO migrate This needed?
   uc_product_node_info(TRUE);
-  node_types_rebuild();
   menu_rebuild();
 
   backdrop_set_message(t('Product class %type deleted.', array('%type' => $form_state['values']['pcid'])));
