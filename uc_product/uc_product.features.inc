@@ -88,6 +88,7 @@ function uc_product_classes_features_revert($module) {
     }
     // TODO migrate this
     uc_product_node_info(TRUE);
+    node_type_cache_reset();
     menu_rebuild();
   }
 }
