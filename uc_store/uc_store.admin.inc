@@ -409,10 +409,11 @@ function uc_store_settings_form($form, &$form_state) {
   $form['display']['uc_footer_message'] = array(
     '#type' => 'radios',
     '#title' => t('Footer message for store pages'),
+    '#description' => t('The message selected here will appear in a block titled "Ubercart footer". You can place this block in the footer of your layouts, using the visibility condition "Ubercart page" to restrict it to show only on store pages.'),
     '#options' => array_merge(
-      array(0 => t('Randomly select a message from the list below.')),
+      array(0 => t('Randomly select a message from the next four options.')),
       _uc_store_footer_options(),
-      array('none' => t('(Do not display a message in the footer.)'))
+      array('none' => t('Do not display a message in the footer.'))
     ),
     '#default_value' => $config->get('uc_footer_message'),
     '#weight' => 10,
