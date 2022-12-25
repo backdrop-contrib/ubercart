@@ -1196,6 +1196,22 @@ function uc_order_product_revive($products, $published = TRUE) {
   return $return;
 }
 
+/** 
+ * Convert cart items or node products to uc_order_product entities when needed.
+ *
+ * @param array $items
+ *   An array of cart item or product node entities.
+ */
+function _uc_order_cart_items_to_products(array &$items) {
+  foreach ($items as $index => $item) {
+    $item = (object) $item;
+    if (!method_exists($item, 'entityType') || method_exists($item, 'entityType') && $item->entityType() != 'uc_order_product') {
+      $properties = get_object_vars($item);
+      $items[$index] = new UcOrderProduct($properties);
+    }
+  }
+}
+
 /**
  * Displays the order view screen, constructed via hook_uc_order_pane().
  */
