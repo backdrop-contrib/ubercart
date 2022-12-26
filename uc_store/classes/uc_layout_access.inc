@@ -37,7 +37,7 @@ class UbercartLayoutAccess extends LayoutAccess {
     $parts = explode('/', $path);
 
     // Check whether the page is governed by Ubercart.
-    $page_match == FALSE;
+    $page_match = FALSE;
     switch ($parts[0]) {
       case 'admin':
         // No footer on /admin or /admin/*, but add a footer on /admin/store and
