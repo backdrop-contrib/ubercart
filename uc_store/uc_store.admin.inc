@@ -393,7 +393,7 @@ function uc_store_settings_form($form, &$form_state) {
 
   $form['display'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Display settings'),
+    '#title' => t('Address display'),
     '#group' => 'store',
   );
   $form['display']['uc_customer_list_address'] = array(
@@ -406,16 +406,15 @@ function uc_store_settings_form($form, &$form_state) {
     ),
     '#default_value' => $config->get('uc_customer_list_address'),
   );
-  $form['display']['uc_footer_message'] = array(
-    '#type' => 'radios',
-    '#title' => t('Footer message for store pages'),
-    '#description' => t('The message selected here will appear in a block titled "Ubercart footer". You can place this block in the footer of your layouts, using the visibility condition "Ubercart page" to restrict it to show only on store pages.'),
-    '#options' => array_merge(
-      array(0 => t('Randomly select a message from the next four options.')),
-      _uc_store_footer_options(),
-      array('none' => t('Do not display a message in the footer.'))
-    ),
-    '#default_value' => $config->get('uc_footer_message'),
+
+  $form['footer'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Footer'),
+    '#group' => 'store',
+  );
+  $form['footer']['help'] = array(
+    '#type' => 'help',
+    '#markup' => t('Ubercart provides a footer block titled "Ubercart store footer" that is by default placed at the bottom of all layouts with a visibility condition ("Ubercart page") that restricts it to site pages governed by Ubercart (product, cart, checkout, and administration pages). You can disable or remove this block from your layouts or change the displayed credit message in the <a href="!link">layout administration</a>.', array('!link' => url('admin/structure/layouts'))),
     '#weight' => 10,
   );
 

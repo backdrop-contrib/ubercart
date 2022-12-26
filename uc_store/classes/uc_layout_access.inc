@@ -6,7 +6,7 @@
  *
  * @see PathLayoutAccess.
  */
-class UbercartLayoutAccess extends LayoutAccess {
+class UcLayoutAccess extends LayoutAccess {
   /**
    * Constructor for a Layout access rule.
    */

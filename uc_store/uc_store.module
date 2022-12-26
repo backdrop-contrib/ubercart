@@ -298,7 +298,7 @@ function uc_store_layout_access_info() {
   $info['uc_store_path'] = array(
     'title' => t('Ubercart page'),
     'description' => t('Control access by whether the current page is an Ubercart page.'),
-    'class' => 'UbercartLayoutAccess',
+    'class' => 'UcLayoutAccess',
   );
   return $info;
 }
@@ -663,33 +663,9 @@ function uc_store_block_info() {
   $blocks['uc_store_footer'] = array(
     'info' => t('Ubercart store footer'),
     'description' => t('Displays a footer for Ubercart store pages.'),
+    'class' => 'UcBlockFooter',
   );
   return $blocks;
-}
-
-/**
- * Implements hook_block_view().
- */
-function uc_store_block_view($delta = '', $settings = array(), $contexts = array()) {
-  if ($delta != 'uc_store_footer') {
-    return;
-  }
-  $messages = _uc_store_footer_options();
-  $id = config_get('uc_store.settings', 'uc_footer_message');
-  if ($id == 0) {
-    // Pseudorandom number based on the hash of the path and the site's private
-    // key, so messages are consistent between pages on the same site, but
-    // different on the same pages on different sites.
-    $path = backdrop_get_normal_path($_GET['q']);
-    $id = (hexdec(substr(md5($path . backdrop_get_private_key()), 0, 2)) % count($messages)) + 1;
-  }
-  return array(
-    'subject' => NULL,
-    'content' => array(
-      '#theme' => 'uc_store_footer',
-      '#message' => $messages[$id],
-    ),
-  );
 }
 
 /**
@@ -1905,7 +1881,10 @@ function uc_store_autoload_info() {
     'UcAddress' => 'classes/address.inc',
     'UbercartEncryption' => 'classes/encrypt.inc',
     'UbercartMailSystem' => 'classes/mail.inc',
-    'UbercartLayoutAccess' => 'classes/uc_layout_access.inc',
+    'UcLayoutAccess' => 'classes/uc_layout_access.inc',
+    'UcBlockFooter' => 'classes/uc_block_footer.inc',
+
+    // Test helper class
     'UbercartTestHelper' => 'tests/uc_store.test',
 
     // Views handlers
