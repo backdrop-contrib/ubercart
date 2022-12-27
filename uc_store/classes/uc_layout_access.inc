@@ -14,6 +14,7 @@ class UcLayoutAccess extends LayoutAccess {
     parent::__construct($plugin_name, $data);
     $this->settings += array(
       'visibility_setting' => 1,
+      'paths' => '',
     );
   }
 
@@ -33,10 +34,11 @@ class UcLayoutAccess extends LayoutAccess {
    * {@inheritdoc}
    */
   function checkAccess() {
-    $path = backdrop_get_normal_path($_GET['q']);
-    $parts = explode('/', $path);
+    $base_path = $_GET['q'];
+    $normal_path = backdrop_get_normal_path($base_path);
+    $parts = explode('/', $normal_path);
 
-    // Check whether the page is governed by Ubercart.
+    // Check whether the page is at a path known to be governed by Ubercart.
     $page_match = FALSE;
     switch ($parts[0]) {
       case 'admin':
@@ -59,6 +61,16 @@ class UcLayoutAccess extends LayoutAccess {
         break;
 
       default:
+    }
+
+    // Check whether the page is one of the additional paths.
+    $alias_path = backdrop_get_path_alias($base_path);
+    $page_match |= backdrop_match_path($alias_path, $this->settings['paths']);
+
+    // If there's a URL alias, we may still be at the un-aliased path so check
+    // that as well.
+    if ($alias_path !== $base_path) {
+      $page_match |= backdrop_match_path($base_path, $this->settings['paths']);
     }
 
     // When $this->settings['visibility_setting'] has a value of 0, the block is
@@ -84,6 +96,17 @@ class UcLayoutAccess extends LayoutAccess {
         0 => t('Allow access on all pages except Ubercart pages'),
       ),
       '#default_value' => $this->settings['visibility_setting'],
+    );
+    $form['help'] = array(
+      '#type' => 'help',
+      '#markup' => t('Default Ubercart pages are store admin pages, the cart, checkout, catalog, and product pages.'),
+    );
+    $form['paths'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Additional paths'),
+      '#default_value' => $this->settings['paths'],
+      '#description' => t('Enter additional paths that should also be considered Ubercart pages, one path per line. The "*" character is a wildcard. Example paths are "node/1" for an individual piece of content or "node/*" for every piece of content. "@front" is the home page.', array('@front' => '<front>')),
+      '#required' => TRUE,
     );
   }
 }

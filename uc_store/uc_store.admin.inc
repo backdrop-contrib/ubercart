@@ -414,7 +414,7 @@ function uc_store_settings_form($form, &$form_state) {
   );
   $form['footer']['help'] = array(
     '#type' => 'help',
-    '#markup' => t('Ubercart provides a footer block titled "Ubercart store footer" that is by default placed at the bottom of all layouts with a visibility condition ("Ubercart page") that restricts it to site pages governed by Ubercart (product, cart, checkout, and administration pages). You can disable or remove this block from your layouts or change the displayed credit message in the <a href="!link">layout administration</a>.', array('!link' => url('admin/structure/layouts'))),
+    '#markup' => t('Ubercart provides a footer block titled "Ubercart store footer" that is by default placed at the bottom of several layouts along with a visibility condition ("Ubercart page") that restricts it to site pages governed by Ubercart (product, cart, checkout, and administration pages). You can add, move, disable or remove this block from your layouts or change the displayed credit message in the <a href="!link">layout administration</a>.', array('!link' => url('admin/structure/layouts'))),
     '#weight' => 10,
   );
 

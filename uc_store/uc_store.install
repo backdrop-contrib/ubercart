@@ -302,7 +302,7 @@ function uc_store_update_1001() {
 }
 
 /**
- * Add the footer block to all existing layouts with the layout message stored
+ * Add the footer block to existing layouts using the layout message stored
  * in config (which may have been migrated from the D7 variables table).
  */
 function uc_store_update_1002() {
@@ -313,6 +313,7 @@ function uc_store_update_1002() {
     return;
   }
   _uc_store_add_footer_blocks($footer_message);
+  config_clear('uc_store.settings', 'uc_footer_message');
 }
 
 /**
@@ -334,12 +335,18 @@ function uc_store_uninstall() {
 }
 
 /**
- * Add the Ubercart footer block to the bottom of all layouts using the
+ * Add the Ubercart footer block to the bottom of relevant layouts using the
  * specified footer message.
  */
 function _uc_store_add_footer_blocks($footer_message = 0) {
   $layouts = layout_load_all();
-  foreach ($layouts as $layout) {
+  foreach ($layouts as $name => $layout) {
+    // Only consider default layouts and any layout whose path is 'node/%'
+    // (which could be a product node).
+    if (!in_array($name, array('default', 'admin_default')) && $layout->getPath() != 'node/%') {
+      continue;
+    }
+
     // Try to find the appropriate region for each layout. If there's no footer
     // or bottom region, then skip this layout.
     $regions = $layout->positions;
@@ -352,6 +359,7 @@ function _uc_store_add_footer_blocks($footer_message = 0) {
     else {
       continue;
     }
+
     // Check whether there's already a UcBlockFooter in this layout. If there
     // is, then we won't add another one.
     foreach ($layout->content as $block) {
@@ -368,7 +376,6 @@ function _uc_store_add_footer_blocks($footer_message = 0) {
     $handler = layout_create_handler('layout_access', 'uc_store_path');
     $block->conditions[] = $handler;
 
-    // Save the layout
     $layout->save();
   }
 }
