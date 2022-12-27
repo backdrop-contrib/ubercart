@@ -54,6 +54,7 @@ class UcLayoutAccess extends LayoutAccess {
           $node = node_load($parts[1]);
           $page_match = !empty($node) && uc_product_is_product($node->type);
         }
+        break;
 
       case 'catalog':
       case 'cart':
@@ -106,7 +107,6 @@ class UcLayoutAccess extends LayoutAccess {
       '#title' => t('Additional paths'),
       '#default_value' => $this->settings['paths'],
       '#description' => t('Enter additional paths that should also be considered Ubercart pages, one path per line. The "*" character is a wildcard. Example paths are "node/1" for an individual piece of content or "node/*" for every piece of content. "@front" is the home page.', array('@front' => '<front>')),
-      '#required' => TRUE,
     );
   }
 }
