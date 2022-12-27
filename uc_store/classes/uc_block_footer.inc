@@ -11,7 +11,7 @@ class UcBlockFooter extends Block {
     parent::__construct($plugin_name, $data);
 
     $this->settings += array(
-      'uc_footer_message' => 1,
+      'uc_footer_message' => 0,
     );
   }
 
