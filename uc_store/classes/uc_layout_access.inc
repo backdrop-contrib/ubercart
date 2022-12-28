@@ -22,11 +22,22 @@ class UcLayoutAccess extends LayoutAccess {
    * {@inheritdoc}
    */
   function summary() {
+    $paths = implode(", ", array_map('trim', explode("\n", trim($this->settings['paths']))));
     if ($this->settings['visibility_setting']) {
-      return t('Current page is an Ubercart page.');
+      if (empty($paths)) {
+        return t('Current page is an Ubercart page.');
+      }
+      else {
+        return t('Current page is an Ubercart page (including additional paths @paths).', array('@paths' => $paths));
+      }
     }
     else {
-      return t('Current page is not an Ubercart page.');
+      if (empty($paths)) {
+        return t('Current page is not an Ubercart page.');
+      }
+      else {
+        return t('Current page is not an Ubercart page (including additional paths @paths).', array('@paths' => $paths));
+      }
     }
   }
 
