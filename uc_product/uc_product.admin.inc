@@ -91,10 +91,7 @@ function uc_product_settings_form($form, &$form_state) {
   if (!isset($options['featherlight'])) {
     $additional_widgets['featherlight'] = l(t('Featherlight'), 'https://backdropcms.org/project/featherlight');
   }
-/* These two modules are not yet ported to Backdrop CMS, although uc_store_uc_image_widget checks for them.
-  if (!isset($options['thickbox'])) {
-    $additional_widgets['thickbox'] = l(t('Thickbox'), 'https://backdropcms.org/project/thickbox');
-  }
+/* This module is not yet ported to Backdrop CMS, although uc_store_uc_image_widget checks for it.
   if (!isset($options['lightbox2'])) {
     $additional_widgets['lightbox2'] = l(t('Lightbox2'), 'https://backdropcms.org/project/lightbox2');
   }
