@@ -68,6 +68,7 @@ function uc_product_settings_form($form, &$form_state) {
   );
 
   // Loop through all the integrated image widgets and build an options array.
+  // See uc_store_uc_image_widget() and associated callbacks.
   $options = array();
   foreach (module_invoke_all('uc_image_widget') as $key => $widget) {
     $options[$key] = check_plain($widget['name']);
@@ -83,6 +84,12 @@ function uc_product_settings_form($form, &$form_state) {
   $additional_widgets = array();
   if (!isset($options['colorbox'])) {
     $additional_widgets['colorbox'] = l(t('Colorbox'), 'https://backdropcms.org/project/colorbox');
+  }
+  if (!isset($options['glightbox'])) {
+    $additional_widgets['glightbox'] = l(t('GLightbox'), 'https://backdropcms.org/project/glightbox');
+  }
+  if (!isset($options['featherlight'])) {
+    $additional_widgets['featherlight'] = l(t('Featherlight'), 'https://backdropcms.org/project/featherlight');
   }
 /* These two modules are not yet ported to Backdrop CMS, although uc_store_uc_image_widget checks for them.
   if (!isset($options['thickbox'])) {

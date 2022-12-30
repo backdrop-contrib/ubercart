@@ -1785,7 +1785,11 @@ function uc_store_get_image_widgets() {
 /**
  * Implements hook_uc_image_widget().
  *
- * Built-in support for Colorbox, Thickbox and Lightbox2.
+ * Built-in support for Colorbox, GLightbox, and Featherlight.
+ * Thickbox and Lightbox2 were supported in D7, so leaving this code in place
+ * for the event that those modules get ported.
+ *
+ * @see uc_product_settings_form()
  */
 function uc_store_uc_image_widget() {
   $widgets = array();
@@ -1794,6 +1798,18 @@ function uc_store_uc_image_widget() {
     $widgets['colorbox'] = array(
       'name' => t('Colorbox'),
       'callback' => 'uc_store_image_widget_colorbox',
+    );
+  }
+  if (module_exists('glightbox')) {
+    $widgets['glightbox'] = array(
+      'name' => t('GLightbox'),
+      'callback' => 'uc_store_image_widget_glightbox',
+    );
+  }
+  if (module_exists('featherlight')) {
+    $widgets['featherlight'] = array(
+      'name' => t('Featherlight'),
+      'callback' => 'uc_store_image_widget_featherlight',
     );
   }
   if (module_exists('thickbox')) {
@@ -1826,7 +1842,34 @@ function uc_store_image_widget_colorbox($rel_count) {
 }
 
 /**
+ * Generates the GLightbox-specific HTML attributes.
+ */
+function uc_store_image_widget_glightbox($rel_count) {
+  if (!is_null($rel_count)) {
+    $img_index = 'uc_image_' . $rel_count;
+  }
+  else {
+    $img_index = 'uc_image';
+  }
+  return ' class="glightbox" rel="' . $img_index . '" data-gallery="single-image"';
+}
+
+/**
+ * Generates the Featherlight-specific HTML attributes.
+ */
+function uc_store_image_widget_featherlight($rel_count) {
+  if (!is_null($rel_count)) {
+    $img_index = 'uc_image_' . $rel_count;
+  }
+  else {
+    $img_index = 'uc_image';
+  }
+  return ' data-featherlight="image" rel="' . $img_index . '"';
+}
+
+/**
  * Generates the Thickbox-specific HTML attributes.
+ * Thickbox is not yet ported to Backdrop.
  */
 function uc_store_image_widget_thickbox($rel_count) {
   if (!is_null($rel_count)) {
@@ -1840,6 +1883,7 @@ function uc_store_image_widget_thickbox($rel_count) {
 
 /**
  * Generates the Lightbox2-specific HTML attributes.
+ * Lightbox2 is not yet ported to Backdrop.
  */
 function uc_store_image_widget_lightbox2($rel_count) {
   if (!is_null($rel_count)) {
