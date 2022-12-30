@@ -21,9 +21,15 @@ Installation
 Documentation
 -------------
 
+- Backdrop Ubercart is an upgraded version of the Drupal 7 version of Ubercart, so existing D7 documentation and tutorials will be (mostly) applicable.
+
 - See [the Drupal Ubercart documentation](https://www.drupal.org/docs/7/modules/ubercart) for a detailed description of how to configure your store, various how-to's, and tutorials.
 
+- A Backdrop-specific version of the documentation pages is under development at [http://ubercart.dev](http://ubercart.dev).
+
 - Find Backdrop-specific Ubercart modules at [BackdropCMS.org](https://backdropcms.org/modules?s=ubercart).
+
+- Find questions and answers about Ubercart in [the Backdrop Forum](https://forum.backdropcms.org/search/node/ubercart).
 
  - Additional documentation can be found (and added) in the [Wiki](https://github.com/backdrop-contrib/ubercart/wiki).
 
@@ -37,7 +43,7 @@ Current Maintainers
 
  - [Robert Garrigós](https://github.com/robertgarrigos)
  - [Laryn Kragt Bakker](https://github.com/laryn) - [CEDC.org](https://cedc.org)
- - [Robert J. Lang](https://github.com/bugfolder)
+ - [Robert J. Lang (bugfolder)](https://github.com/bugfolder)
  - [Alejandro Cremaschi](https://github.com/argiepiano)
 
 Credits
