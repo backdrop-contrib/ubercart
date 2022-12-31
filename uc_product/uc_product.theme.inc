@@ -179,20 +179,6 @@ function theme_uc_product_image($variables) {
   // Get the current product image widget.
   $image_widget = uc_product_get_image_widget();
 
-  // If it's GLightbox, we'll have to load the JS/CSS library from the module.
-  // See theme_glightbox().
-  if ($image_widget['name'] == 'GLightbox' && module_exists('glightbox')) {
-    $glightbox_loaded = &backdrop_static(__FUNCTION__);
-    if (!isset($glightbox_loaded)) {
-      $module_path = backdrop_get_path('module', 'glightbox');
-      backdrop_add_library('glightbox', 'glightbox', FALSE);
-      backdrop_add_js(array('glightbox' => config_get('glightbox.settings')), 'setting');
-      backdrop_add_js($module_path . '/js/glightbox.js');
-      backdrop_add_css($module_path . '/css/glightbox.css');
-      $glightbox_loaded = TRUE;
-    }
-  }
-
   $first = array_shift($images);
 
   $output = '<div class="product-image"><div class="main-product-image">';

@@ -162,6 +162,23 @@ function uc_product_feature_access($node) {
 }
 
 /**
+ * Implements hook_init().
+ */
+function uc_product_init() {
+  // If the image widget is GLightbox, we'll have to load the JS/CSS library
+  // from the module. See theme_glightbox(). Note that callbacks and rendering
+  // are in uc_store module.
+  if (config_get('uc_product.settings', 'uc_product_image_widget') == 'glightbox' && module_exists('glightbox')) {
+      $module_path = backdrop_get_path('module', 'glightbox');
+      backdrop_add_library('glightbox', 'glightbox', FALSE);
+      backdrop_add_js(array('glightbox' => config_get('glightbox.settings')), 'setting');
+      backdrop_add_js($module_path . '/js/glightbox.js');
+      backdrop_add_css($module_path . '/css/glightbox.css');
+      $glightbox_loaded = TRUE;
+  }
+}
+
+/**
  * Implements hook_theme().
  */
 function uc_product_theme() {
