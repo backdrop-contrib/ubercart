@@ -173,13 +173,6 @@ function uc_store_address_fields_form($form, &$form_state) {
   }
 
   $form['#submit'][] = 'uc_store_address_fields_form_submit';
-  if (function_exists('i18n_variable_form_alter_settings')) {
-    if ($i18n_variables = i18n_variable_form_alter_settings($form, i18n_variable_list())) {
-      $form['#submit'][] = 'i18n_variable_form_submit';
-      $form['#i18n_variables'] = $i18n_variables;
-      $form += i18n_variable_form_selector();
-    }
-  }
   $form = system_settings_form($form);
   unset($form['#theme']);
 
