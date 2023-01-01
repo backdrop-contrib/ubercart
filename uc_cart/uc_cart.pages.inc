@@ -340,6 +340,13 @@ function theme_uc_cart_checkout_form($variables) {
 function uc_cart_checkout_form_validate($form, &$form_state) {
   $order = $form_state['storage']['order'];
 
+  // Exit out if the order is no longer in_checkout
+  $order_reloaded = uc_order_load($order->order_id, TRUE);
+  if($order_reloaded->order_status != 'in_checkout') {
+    $form_state['checkout_valid'] = FALSE;
+    return '';
+  }
+
   // Update the order "modified" time to prevent timeout on ajax requests.
   $order->modified = REQUEST_TIME;
 
