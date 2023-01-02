@@ -242,6 +242,11 @@ function uc_quote_form_alter(&$form, &$form_state, $form_id) {
       '#empty_option' => t('- Store default -'),
       '#default_value' => isset($form['#node']->nid) ? uc_quote_get_shipping_type('product', $form['#node']->nid) : '',
       '#options' => uc_quote_shipping_type_options(),
+      '#states' => array(
+        'visible' => array(
+          '#edit-shippable' => array('checked' => TRUE),
+        ),
+      ),
       '#weight' => -7,
     );
 
@@ -249,10 +254,15 @@ function uc_quote_form_alter(&$form, &$form_state, $form_id) {
     $form['shipping']['shipping_address'] = array(
       '#type' => 'fieldset',
       '#title' => t('Product pickup address'),
-      '#description' => t('When delivering products to customers, the original location of the product must be known in order to accurately quote the shipping cost and set up a delivery. If this pickup address is left blank, this product will default to the <a href="!url">store pickup address</a>.', array('!url' => url('admin/store/settings/quotes/settings'))),
+      '#description' => t('When delivering products to customers, the original location of the product must be known in order to accurately quote the shipping cost and set up a delivery. If the first line of the street address is left blank, this product will default to the <a href="!url">store pickup address</a>.', array('!url' => url('admin/store/settings/quotes/settings'))),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
+      '#states' => array(
+        'visible' => array(
+          '#edit-shippable' => array('checked' => TRUE),
+        ),
       '#weight' => -6,
+      ),
     );
     $form['shipping']['shipping_address']['#tree'] = TRUE;
     $form['shipping']['shipping_address']['address'] = array(
