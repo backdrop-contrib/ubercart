@@ -442,6 +442,20 @@ function uc_product_update_1005() {
 }
 
 /**
+ * Remove any extraneous js file after moving js files into their own directory.
+ */
+function uc_product_update_1006() {
+  // Crufty file that may have been left behind after PR 423.
+  // @see https://github.com/backdrop-contrib/ubercart/issues/421.
+  $filename = BACKDROP_ROOT . '/' . backdrop_get_path('module', 'uc_product') . '/uc_product.js';
+  if (file_exists($filename)) {
+    if (!unlink($filename)) {
+      backdrop_set_message(t('Unable to remove file %filename, which is no longer used in its current location. Please remove it from the file system.', array('filename' => $filename)), 'warning');
+    }
+  }
+}
+
+/**
  * Implements hook_install().
  */
 function uc_product_install() {
