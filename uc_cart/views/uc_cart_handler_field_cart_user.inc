@@ -59,8 +59,10 @@ class uc_cart_handler_field_cart_user extends views_handler_field {
       '#title' => t('Text to display for anonymous users'),
       '#type' => 'textfield',
       '#default_value' => $this->options['anonymous_text'],
-      '#dependency' => array(
-        'edit-options-overwrite-anonymous' => array(1),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="options[overwrite_anonymous]"]' => array('checked' => TRUE),
+        ),
       ),
     );
   }
