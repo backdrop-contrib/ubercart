@@ -289,6 +289,18 @@ function uc_store_init() {
 }
 
 /**
+ * Implements hook_layout_access_info().
+ */
+function uc_store_layout_access_info() {
+  $info['uc_store_path'] = array(
+    'title' => t('Ubercart page'),
+    'description' => t('Control access by whether the current page is an Ubercart page.'),
+    'class' => 'UcLayoutAccess',
+  );
+  return $info;
+}
+
+/**
  * Implements hook_element_info().
  */
 function uc_store_element_info() {
@@ -641,65 +653,16 @@ function uc_store_date_format_types() {
 }
 
 /**
- * Implements hook_page_alter().
+ * Implements hook_block_info().
  */
-function uc_store_page_alter(&$page) {
-  $id = config_get('uc_store.settings', 'uc_footer_message');
-
-  // Exit if the store footer is turned off.
-  if ($id === 'none') {
-    return;
-  }
-
-  // Figure out what page is being viewed.
-  $path = backdrop_get_normal_path($_GET['q']);
-  $parts = explode('/', $path);
-
-  // Exit if the page isn't governed by Ubercart.
-  switch ($parts[0]) {
-    case 'admin':
-      // No footer on /admin or /admin/*.
-      // But add a footer on /admin/store and /admin/store/*.
-      if (!isset($parts[1]) || $parts[1] != 'store') {
-        return;
-      }
-      break;
-
-    case 'node':
-      // No footer on /node or /node/[type]/add.
-      // Only add a footer on /node/[nid] if that node is a product.
-      if (count($parts) != 2 || intval($parts[1]) == 0) {
-        return;
-      }
-      else {
-        $node = node_load($parts[1]);
-        if ($node == FALSE || !function_exists('uc_product_node_info') || !uc_product_is_product($node->type)) {
-          return;
-        }
-      }
-      break;
-
-    case 'catalog':
-    case 'cart':
-      break;
-
-    default:
-      return;
-  }
-
-  $messages = _uc_store_footer_options();
-
-  if ($id == 0) {
-    // Pseudorandom number based on the hash of the path and the site's private
-    // key, so messages are consistent between pages on the same site, but
-    // different on the same pages on different sites.
-    $id = (hexdec(substr(md5($path . backdrop_get_private_key()), 0, 2)) % count($messages)) + 1;
-  }
-
-  $page['page_bottom']['ubercart_footer'] = array(
-    '#theme' => 'uc_store_footer',
-    '#message' => $messages[$id],
+function uc_store_block_info() {
+  $blocks = array();
+  $blocks['uc_store_footer'] = array(
+    'info' => t('Ubercart store footer'),
+    'description' => t('Displays a footer for Ubercart store pages.'),
+    'class' => 'UcBlockFooter',
   );
+  return $blocks;
 }
 
 /**
@@ -732,10 +695,10 @@ function uc_store_reviews() {
 function _uc_store_footer_options() {
   $url = array('!url' => 'https://backdropcms.org/project/ubercart');
   return array(
-    1 => t('<a href="!url">Powered by Ubercart</a>', $url),
-    2 => t('<a href="!url">Backdrop e-commerce</a> provided by Ubercart.', $url),
-    3 => t('Supported by Ubercart, an <a href="!url">open source e-commerce suite</a>.', $url),
-    4 => t('Powered by Ubercart, the <a href="!url">free shopping cart software</a>.', $url),
+    1 => t('Powered by <a href="!url">Ubercart</a>', $url),
+    2 => t('Backdrop e-commerce provided by <a href="!url">Ubercart</a>.', $url),
+    3 => t('Supported by <a href="!url">Ubercart</a>, an open source e-commerce suite.', $url),
+    4 => t('Powered by <a href="!url">Ubercart</a>, the free shopping cart software.', $url),
   );
 }
 
@@ -1915,6 +1878,10 @@ function uc_store_autoload_info() {
     'UcAddress' => 'classes/address.inc',
     'UbercartEncryption' => 'classes/encrypt.inc',
     'UbercartMailSystem' => 'classes/mail.inc',
+    'UcLayoutAccess' => 'classes/uc_layout_access.inc',
+    'UcBlockFooter' => 'classes/uc_block_footer.inc',
+
+    // Test helper class
     'UbercartTestHelper' => 'tests/uc_store.test',
 
     // Views handlers

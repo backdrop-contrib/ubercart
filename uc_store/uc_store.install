@@ -149,7 +149,11 @@ function uc_store_install() {
   united_states_install();
   canada_install();
 
+  // Initialize the store name from the site name.
   config_set('uc_store.settings', 'uc_store_name', config_get('system.core', 'site_name'));
+
+  // Add the footer to existing layouts using the default message.
+  _uc_store_add_footer_blocks();
 }
 
 /**
@@ -279,7 +283,8 @@ function uc_store_update_1000() {
 }
 
 /**
- * Replace the settings previously added to core's system.mail with the correct values for UbercartMailSystem.
+ * Replace the settings previously added to core's system.mail with the correct
+ * values for UbercartMailSystem.
  */
 function uc_store_update_1001() {
   // Revise mail settings for all Ubercart modules.
@@ -297,6 +302,29 @@ function uc_store_update_1001() {
 }
 
 /**
+ * Add the footer block to existing layouts using the layout message stored
+ * in config (which may have been migrated from the D7 variables table).
+ */
+function uc_store_update_1002() {
+  $footer_message = config_get('uc_store.settings', 'uc_footer_message');
+  if ($footer_message == 'none') {
+    // If the site had previously had this set to 'none', then we won't place
+    // the footer block on any layouts.
+    return;
+  }
+  _uc_store_add_footer_blocks($footer_message);
+  config_clear('uc_store.settings', 'uc_footer_message');
+}
+
+/**
+ * Implements hook_disable().
+ */
+function uc_store_disable() {
+  // Remove the footer block from all existing layouts.
+  _uc_store_remove_footer_blocks();
+}
+
+/**
  * Implements hook_uninstall().
  */
 function uc_store_uninstall() {
@@ -309,4 +337,65 @@ function uc_store_uninstall() {
   $config->clear('uc_stock');
   $config->clear('uc_store');
   $config->save();
+}
+
+/**
+ * Add the Ubercart footer block to the bottom of relevant layouts using the
+ * specified footer message.
+ */
+function _uc_store_add_footer_blocks($footer_message = 0) {
+  $layouts = layout_load_all();
+  foreach ($layouts as $name => $layout) {
+    // Only consider default layouts and any layout whose path is 'node/%'
+    // (which could be a product node).
+    if (!in_array($name, array('default', 'admin_default')) && $layout->getPath() != 'node/%') {
+      continue;
+    }
+
+    // Try to find the appropriate region for each layout. If there's no footer
+    // or bottom region, then skip this layout.
+    $regions = $layout->positions;
+    if (isset($regions['footer'])) {
+      $region = 'footer';
+    }
+    elseif (isset($regions['bottom'])) {
+      $region = 'bottom';
+    }
+    else {
+      continue;
+    }
+
+    // Check whether there's already a UcBlockFooter in this layout. If there
+    // is, then we won't add another one.
+    foreach ($layout->content as $block) {
+      if (get_class($block) == 'UcBlockFooter') {
+        continue 2;
+      }
+    }
+
+    // Add our block to the layout.
+    $block = $layout->addBlock('uc_store', 'uc_store_footer', $region);
+    $block->settings['uc_footer_message'] = $footer_message;
+
+    // Add our visibility condition to the block.
+    $handler = layout_create_handler('layout_access', 'uc_store_path');
+    $block->conditions[] = $handler;
+
+    $layout->save();
+  }
+}
+
+/**
+ * Remove the Ubercart footer block from all layouts.
+ */
+function _uc_store_remove_footer_blocks() {
+  $layouts = layout_load_all();
+  foreach ($layouts as $layout) {
+    foreach ($layout->content as $uuid => $block) {
+      if (get_class($block) == 'UcBlockFooter') {
+        $layout->removeBlock($uuid);
+      }
+    }
+    $layout->save();
+  }
 }
