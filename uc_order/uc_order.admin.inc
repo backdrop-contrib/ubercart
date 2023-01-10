@@ -880,11 +880,11 @@ function uc_order_select_customer_form($form, &$form_state, $options = NULL) {
  *
  * This function is deprecated; this listing is now provided by Views.
  *
- * @param $uid
- *   The user ID whose orders you wish to list.
+ * @param $account
+ *   The user whose orders you wish to list.
  */
-function uc_order_history($user) {
-  backdrop_set_title(t('My order history'));
+function uc_order_history($account) {
+  backdrop_set_title(t('@name: order history', array('@name' => $account->name)));
 
   $header = array(
     array(
@@ -919,7 +919,7 @@ function uc_order_history($user) {
   $o_total = $query->addField('o', 'order_total');
   $o_uid = $query->addField('o', 'uid');
 
-  $query->condition($o_uid, $user->uid)
+  $query->condition($o_uid, $account->uid)
     ->condition($o_status, uc_order_status_list('general', TRUE), 'IN');
 
   $count_query = $query->countQuery();
@@ -945,7 +945,7 @@ function uc_order_history($user) {
 
   // Build a table based on the customer's orders.
   foreach ($result as $order) {
-    $link = l($order->order_id, 'user/' . $user->uid . '/orders/' . $order->order_id);
+    $link = l($order->order_id, 'user/' . $account->uid . '/orders/' . $order->order_id);
 
     if (user_access('view all orders')) {
       $link .= '<span class="order-admin-icons">' . uc_order_actions($order, TRUE) . '</span>';
