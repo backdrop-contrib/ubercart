@@ -110,6 +110,19 @@ class UcOrder extends Entity {
       'options' => array(),
     );
   }
+
+  /** 
+   * Adds products to the order. 
+   * 
+   * @param array $items
+   *   An array of products or cart items.
+   */
+  public function setProducts($items) {
+    // Assure all items are uc_order_product entities.
+    _uc_order_cart_items_to_products($items);
+    $this->products = $items;
+  }
+
 }
 
 /**

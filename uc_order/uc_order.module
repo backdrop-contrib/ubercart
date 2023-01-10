@@ -1144,17 +1144,10 @@ function uc_order_product_load_multiple($opids = FALSE, $reset = FALSE) {
  *   there is no information on how to view an entity, FALSE is returned.
  */
 function uc_order_product_view_multiple($order_products, $view_mode = 'full', $langcode = NULL, $page = NULL) {
-  $order_product_entities = array();
-  // Ensure we pass entities of the correct type to entity_plus_view.
-  // @see https://github.com/backdrop-contrib/ubercart/issues/309
-  foreach ($order_products as $id => $item) {
-    if (!is_a($item, 'Entity') || $item->entityType() !== 'uc_order_product') {
-      $order_product_entities[$id] = entity_create('uc_order_product', (array) $item);
-    } else {
-      $order_product_entities[$id] = $item;
-    }
-  }
-  return entity_plus_view('uc_order_product', $order_product_entities, $view_mode, $langcode, $page);
+  // For backward compatibility, assure that $order_products is an array of
+  // uc_order_product entities.
+  _uc_order_cart_items_to_products($order_products);
+  return entity_plus_view('uc_order_product', $order_products, $view_mode, $langcode, $page);
 }
 
 /**
@@ -1204,6 +1197,22 @@ function uc_order_product_revive($products, $published = TRUE) {
   }
 
   return $return;
+}
+
+/** 
+ * Convert cart items or node products to uc_order_product entities when needed.
+ *
+ * @param array $items
+ *   An array of cart item or product node entities.
+ */
+function _uc_order_cart_items_to_products(array &$items) {
+  foreach ($items as $index => $item) {
+    $item = (object) $item;
+    if (!method_exists($item, 'entityType') || method_exists($item, 'entityType') && $item->entityType() != 'uc_order_product') {
+      $properties = get_object_vars($item);
+      $items[$index] = new UcOrderProduct($properties);
+    }
+  }
 }
 
 /**

@@ -1113,20 +1113,21 @@ function uc_order_edit_form_submit($form, &$form_state) {
 
   $order->products = array();
   if (isset($form_state['values']['products']) && is_array($form_state['values']['products'])) {
+    $products = array();
     foreach ($form_state['values']['products'] as $product) {
       if (!isset($product['remove']) && intval($product['qty']) > 0) {
         $product['data'] = unserialize($product['data']);
         $product = (object) $product;
-        $order->products[] = $product;
-
         $restore_qty = $product->qty;
         $product->qty = $product->qty - $qtys[$product->order_product_id];
         rules_invoke_event('uc_order_product_updated', $order, $product);
         $product->qty = $restore_qty;
+        $products[] = $product;
       }
       else {
         $log['remove_' . $product['nid']] = $product['title'] . ' removed from order.';
       }
+      $order->setProducts($products);
     }
   }
 
