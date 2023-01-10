@@ -32,13 +32,6 @@ Backdrop.behaviors.ucProductFieldsetSummaries = {
           + $('.form-item-sell-price .field-suffix', context).html());
       }
 
-      if ($('#edit-shippable', context).is(':checked')) {
-        vals.push(Backdrop.t('Shippable'));
-      }
-      else {
-        vals.push(Backdrop.t('Not shippable'));
-      }
-
       return vals.join(', ');
     });
   }

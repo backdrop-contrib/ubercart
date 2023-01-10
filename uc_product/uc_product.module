@@ -364,12 +364,12 @@ function uc_product_form($node, $form_state) {
     '#title' => t('Product information'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
-    '#weight' => -10,
+    '#weight' => -20,
     '#attributes' => array('class' => array('product-field')),
     '#group' => 'additional_settings',
     '#attached' => array(
       'js' => array(
-        'vertical-tabs' => backdrop_get_path('module', 'uc_product') . '/uc_product.js',
+        'vertical-tabs' => backdrop_get_path('module', 'uc_product') . '/js/uc_product.js',
       ),
     ),
   );
@@ -411,13 +411,6 @@ function uc_product_form($node, $form_state) {
     '#default_value' => $node->sell_price,
     '#description' => t('Customer purchase price.'),
     '#weight' => 2,
-  );
-
-  $form['base']['shippable'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Product is shippable.'),
-    '#default_value' => $node->shippable,
-    '#weight' => 10,
   );
 
   $form['base']['weight'] = array(
@@ -532,6 +525,29 @@ function uc_product_form($node, $form_state) {
     '#default_value' => $node->ordering,
     '#weight' => 30,
   );
+
+  // If we don't have uc_quote enabled, add our own additional fieldset to hold
+  // the shippable product attribute.
+  if (!module_exists('uc_quote')) {
+    $form['shipping'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Shipping settings'),
+      '#collapsible' => TRUE,
+      '#weight' => -19,
+      '#attributes' => array('class' => array('product-shipping-default')),
+      '#group' => 'additional_settings',
+      '#attached' => array(
+        'js' => array(
+          'vertical-tabs' => backdrop_get_path('module', 'uc_product') . '/js/uc_product_shipping.js',
+        ),
+      ),
+     );
+    $form['shipping']['shippable'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Product is shippable.'),
+      '#default_value' => $node->shippable,
+    );
+  }
 
   return $form;
 }
@@ -924,7 +940,7 @@ function uc_product_form_node_type_form_alter(&$form, &$form_state) {
     '#group' => 'additional_settings',
     '#attached' => array(
       'js' => array(
-        'vertical-tabs' => backdrop_get_path('module', 'uc_product') . '/uc_product.js',
+        'vertical-tabs' => backdrop_get_path('module', 'uc_product') . '/js/uc_product.js',
       ),
     ),
   );
