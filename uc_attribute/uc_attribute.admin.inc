@@ -1269,8 +1269,8 @@ function uc_object_options_form_submit($form, &$form_state) {
   backdrop_set_message(t('The @type options have been saved.', array('@type' => $form_state['values']['type'] == 'product' ? t('product') : t('product class'))));
 
   if ($form_state['values']['type'] == 'product') {
-    // Clear the page and block caches.
-    cache_clear_all();
+    // Clear the node cache.
+    cache_clear_all($form_state['values']['id'], 'cache_entity_node');
   }
 }
 
