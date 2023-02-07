@@ -39,17 +39,10 @@ class uc_product_handler_field_price extends views_handler_field_numeric {
       '#weight' => 1,
     );
 
-    // Change weight and dependency of the previous field on the parent numeric ones
+    // Change weight and states of the previous field on the parent numeric ones
     $weight = 2;
     foreach (array('set_precision', 'precision', 'decimal', 'separator', 'prefix', 'suffix') as $field) {
-      if (isset($form[$field]['#dependency'])) {
-        $form[$field]['#dependency'] += array('radio:options[format]' => array('numeric'));
-        $form[$field]['#dependency_count'] = count($form[$field]['#dependency']);
-      }
-      else {
-        $form[$field]['#dependency'] = array('radio:options[format]' => array('numeric'));
-      }
-
+      $form[$field]['#states']['visible'][':input[name="options[format]"]'] = array('value' => 'numeric');
       $form[$field]['#weight'] = ++$weight;
     }
   }
