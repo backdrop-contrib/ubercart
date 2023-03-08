@@ -432,7 +432,7 @@ function uc_roles_uc_store_status() {
     $message[] = array(
       'status' => 'ok',
       'title' => t('Roles'),
-      'desc' => t('The role(s) %roles are set to be used with the Role Assignment product feature.', array('%roles' => implode(', ', $role_choices))),
+      'desc' => format_plural(count($role_choices), 'The role %roles is set to be used with the Role Assignment product feature.', 'The roles %roles are set to be used with the Role Assignment product feature.', array('%roles' => implode(', ', $role_choices))),
     );
   }
   return $message;
@@ -958,8 +958,8 @@ function _uc_roles_get_choices($exclude = array()) {
   // User set specific roles that we must use?
   $selected = config_get('uc_roles.settings', 'uc_roles_default_role_choices');
 
-  // If there's none, or if none are checked, use all of em.
-  $default = empty($selected) || array_sum($selected) == 0;
+  // If there's none, or if none are checked, use all roles.
+  $default = empty(array_filter($selected));
   foreach ($roles as $role => $name) {
     if ($default || (!empty($selected[$role]) && !in_array($role, $exclude))) {
       $output[$role] = $roles[$role];
