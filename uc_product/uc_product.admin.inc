@@ -84,6 +84,9 @@ function uc_product_settings_form($form, &$form_state) {
   else {
     $default_product_image_field = $config->get('uc_image_product');
   }
+  if (is_null($default_product_image_field)) {
+    $default_product_image_field = 0;
+  }
   if ($default_product_image_field == 'uc_product_image') {
     $instances = field_info_instances('node', 'product');
     $mismatch = !isset($instances[$default_product_image_field]);
