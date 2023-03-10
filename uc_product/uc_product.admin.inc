@@ -77,6 +77,48 @@ function uc_product_settings_form($form, &$form_state) {
     '#weight' => -10,
   );
 
+  // Setting for the product image field: default or custom (or none).
+  if (isset($form_state['values']['uc_image_product'])) {
+    $default_product_image_field = $form_state['values']['uc_image_product'];
+  }
+  else {
+    $default_product_image_field = $config->get('uc_image_product');
+  }
+  if ($default_product_image_field == 'uc_product_image') {
+    $instances = field_info_instances('node', 'product');
+    $mismatch = !isset($instances[$default_product_image_field]);
+  }
+  else {
+    $mismatch = FALSE;
+  }
+  $uc_product_image_description = t('Product image support provided by Ubercart.');
+  if ($mismatch) {
+    $uc_product_image_description .= ' ' . t('Not configured yet. <a href="!url">Automatically configure Ubercart products for core image support</a>.', array('!url' => url('admin/store/settings/products/defaults')));
+  }
+  $form['product']['uc_image_product_wrapper'] = array(
+    '#type' => 'container',
+    '#attributes' => array('id' => 'uc-image-product-wrapper'),
+  );
+  $form['product']['uc_image_product_wrapper']['uc_image_product'] = array(
+    '#type' => 'radios',
+    '#title' => t('Product image field'),
+    '#options' => array(
+      'uc_product_image' => t('Default Ubercart image field'),
+      0 => t('No images needed or other image support'),
+    ),
+    'uc_product_image' => array(
+      '#description' => $uc_product_image_description,
+    ),
+    0 => array(
+      '#description' => t('Select this option if your products do not need images or you have implemented your own image support.'),
+    ),
+    '#default_value' => $default_product_image_field,
+    '#ajax' => array(
+      'callback' => 'uc_product_settings_form_image_product_callback',
+      'wrapper' => 'uc-image-product-wrapper',
+    ),
+  );
+
   // Loop through all the integrated image widgets and build an options array.
   $options = array();
   foreach (module_invoke_all('uc_image_widget') as $key => $widget) {
@@ -89,11 +131,10 @@ function uc_product_settings_form($form, &$form_state) {
     // If we have widgets installed, add option to not use any of them
     $options['none'] = t("Don't use any image widgets.");
   }
-
   $form['product']['uc_product_image_widget'] = array(
     '#type' => 'radios',
     '#title' => t('Product image widget'),
-    '#description' => t('The selected widget will be used to display a zoomed version of product images when they are clicked.'),
+    '#description' => t('For image fields that use the "Ubercart product" field formatter, the selected widget will be used to display a zoomed version of product images when they are clicked.'),
     '#options' => $options,
     '#default_value' => $config->get('uc_product_image_widget'),
   );
@@ -143,6 +184,13 @@ function uc_product_settings_form($form, &$form_state) {
 }
 
 /**
+ * Callback for uc_product_image controls.
+ */
+function uc_product_settings_form_image_product_callback($form, &$form_state) {
+  return $form['product']['uc_image_product_wrapper'];
+}
+
+/**
  * Submission function for product settings.
  *
  * @see system_settings_form_submit()
@@ -151,6 +199,7 @@ function uc_product_settings_form_submit($form, &$form_state) {
   form_state_values_clean($form_state);
 
   $config = config('uc_product.settings');
+  $config->set('uc_image_product', $form_state['values']['uc_image_product']);
   $config->set('uc_product_image_widget', $form_state['values']['uc_product_image_widget']);
   if (module_exists('uc_cart')) {
     $config->set('uc_product_add_to_cart_qty', $form_state['values']['uc_product_add_to_cart_qty']);
@@ -337,14 +386,14 @@ function uc_product_feature_confirm_delete_submit($form, &$form_state) {
 /**
  * Sets up image field for products.
  *
- * @see uc_product_uc_store_status()
+ * @see uc_product_settings_form()
  */
 function uc_product_image_defaults() {
   uc_product_add_default_image_field();
 
   backdrop_set_message(t('Default image support configured for Ubercart products.'));
 
-  backdrop_goto('admin/store');
+  backdrop_goto('admin/store/settings/products');
 }
 
 /**
