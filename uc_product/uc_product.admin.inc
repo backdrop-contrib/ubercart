@@ -85,7 +85,7 @@ function uc_product_settings_form($form, &$form_state) {
     $default_product_image_field = $config->get('uc_image_product');
   }
   if (is_null($default_product_image_field)) {
-    $default_product_image_field = 0;
+    $default_product_image_field = '';
   }
   if ($default_product_image_field == 'uc_product_image') {
     $instances = field_info_instances('node', 'product');
@@ -107,12 +107,12 @@ function uc_product_settings_form($form, &$form_state) {
     '#title' => t('Product image field'),
     '#options' => array(
       'uc_product_image' => t('Default Ubercart image field'),
-      0 => t('No images needed or other image support'),
+      '' => t('No images needed or other image support'),
     ),
     'uc_product_image' => array(
       '#description' => $uc_product_image_description,
     ),
-    0 => array(
+    '' => array(
       '#description' => t('Select this option if your products do not need images or you have implemented your own image support.'),
     ),
     '#default_value' => $default_product_image_field,
