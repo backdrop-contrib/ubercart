@@ -96,7 +96,7 @@ function uc_product_settings_form($form, &$form_state) {
   }
   $uc_product_image_description = t('Product image support provided by Ubercart.');
   if ($mismatch) {
-    $uc_product_image_description .= ' ' . t('Not configured yet. <a href="!url">Automatically configure Ubercart products for core image support</a>.', array('!url' => url('admin/store/settings/products/defaults')));
+    $uc_product_image_description .= ' ' . t('The default image field needs to be added to products. <a href="!url">Add it now.</a>', array('!url' => url('admin/store/settings/products/defaults')));
   }
   $form['product']['uc_image_product_wrapper'] = array(
     '#type' => 'container',
