@@ -123,6 +123,7 @@ function uc_product_settings_form($form, &$form_state) {
   );
 
   // Loop through all the integrated image widgets and build an options array.
+  // See uc_store_uc_image_widget() and associated callbacks.
   $options = array();
   foreach (module_invoke_all('uc_image_widget') as $key => $widget) {
     $options[$key] = check_plain($widget['name']);
@@ -134,6 +135,7 @@ function uc_product_settings_form($form, &$form_state) {
     // If we have widgets installed, add option to not use any of them
     $options['none'] = t("Don't use any image widgets.");
   }
+  
   $form['product']['uc_product_image_widget'] = array(
     '#type' => 'radios',
     '#title' => t('Product image widget'),
