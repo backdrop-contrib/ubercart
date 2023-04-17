@@ -173,8 +173,7 @@ function uc_file_user_form($form, &$form_state, $account) {
       ),
       'time_quantity' => array(
         '#type' => 'textfield',
-        '#size' => 2,
-        '#maxlength' => 2,
+        '#size' => 6,
       ),
       'time_granularity' => array(
         '#type' => 'select',
@@ -190,15 +189,13 @@ function uc_file_user_form($form, &$form_state, $account) {
       'downloads_in' => array('#markup' => $file_download->accessed),
       'download_limit' => array(
         '#type' => 'textfield',
-        '#maxlength' => 3,
-        '#size' => 3,
+        '#size' => 6,
         '#default_value' => $file_download->download_limit ? $file_download->download_limit : NULL,
       ),
       'addresses_in' => array('#markup' => count(unserialize($file_download->addresses))),
       'address_limit' => array(
         '#type' => 'textfield',
-        '#maxlength' => 2,
-        '#size' => 2,
+        '#size' => 6,
         '#default_value' => $file_download->address_limit ? $file_download->address_limit : NULL,
       ),
     );
@@ -273,12 +270,12 @@ function uc_file_user_form_validate($form, &$form_state) {
         continue;
       }
 
-      if ($download_modification['download_limit'] < 0) {
-        form_set_error('file_download][' . $key . '][download_limit', t('A negative download limit does not make sense. Please enter a positive integer, or leave empty for no limit.'));
+      if (!uc_file_pass_positive_integer($download_modification['download_limit'])) {
+        form_set_error('file_download][' . $key . '][download_limit', t('Please enter a positive integer for "Downloads" or leave empty for no limit.'));
       }
 
-      if ($download_modification['address_limit'] < 0) {
-        form_set_error('file_download][' . $key . '][address_limit', t('A negative address limit does not make sense. Please enter a positive integer, or leave empty for no limit.'));
+      if (!uc_file_pass_positive_integer($download_modification['address_limit'])) {
+        form_set_error('file_download][' . $key . '][address_limit', t('Please enter a positive integer for "Addresses" or leave empty for no limit.'));
       }
 
       // Some expirations don't need any validation...
@@ -294,8 +291,8 @@ function uc_file_user_form_validate($form, &$form_state) {
         form_set_error('file_download][' . $key . '][time_quantity', t('The date %date has already occurred.', array('%date' => format_date($new_expiration, 'short'))));
       }
 
-      if ($download_modification['time_quantity'] < 0) {
-        form_set_error('file_download][' . $key . '][time_quantity', t('A negative expiration quantity does not make sense. Use the polarity control to determine if the time should be added or subtracted.'));
+      if (!uc_file_pass_positive_integer($download_modification['time_quantity'], FALSE)) {
+        form_set_error('file_download][' . $key . '][time_quantity', t('Please enter a positive integer for "Expiration" or leave empty for no limit. Use the polarity control to determine if the time should be added or subtracted.'));
       }
     }
   }
@@ -528,7 +525,7 @@ function uc_file_uc_store_status() {
     $message[] = array(
       'status' => 'warning',
       'title' => t('File downloads'),
-      'desc' => t('The file downloads directory is not valid or set. Set a valid directory in the <a href="!url">product settings</a> under the file download settings tab.', array('!url' => url('admin/store/settings/products'))),
+      'desc' => t('The file downloads directory is not valid or set. Set a valid directory in the <a href="!url">Product settings</a> under the "File download settings" tab.', array('!url' => url('admin/store/settings/products'))),
     );
   }
   else {
@@ -562,8 +559,9 @@ function uc_file_feature_delete($pfid) {
  */
 function uc_file_feature_form($form, &$form_state, $node, $feature) {
   $config = config('uc_file.settings');
-  if (!is_dir($config->get('uc_file_base_dir'))) {
-    backdrop_set_message(t('A file directory needs to be configured in <a href="@url">product settings</a> under the file download settings tab before a file can be selected.', array('@url' => url('admin/store/settings/products'))), 'warning');
+  $uc_file_base_dir = $config->get('uc_file_base_dir');
+  if (empty($uc_file_base_dir) || !is_dir($uc_file_base_dir)) {
+    backdrop_set_message(t('A file directory needs to be configured in <a href="@url">Product settings</a> under the "File download settings" tab before a file can be selected.', array('@url' => url('admin/store/settings/products'))), 'warning');
 
     unset($form['buttons']);
     return $form;
@@ -671,10 +669,10 @@ function uc_file_feature_form($form, &$form_state, $node, $feature) {
 
   $form['uc_file_limits'] = array(
     '#type' => 'fieldset',
+    '#title' => t('File limitations'),
     '#description' => t('Use these options to override any global download limits set at the !url.', array('!url' => l(t('Ubercart product settings page'), 'admin/store/settings/products', array('query' => array('destination' => 'node/' . $node->nid . '/edit/features/file/add'))))),
     '#collapsed' => FALSE,
     '#collapsible' => FALSE,
-    '#title' => t('File limitations'),
   );
 
   $form['uc_file_limits']['download_override'] = array(
@@ -685,10 +683,9 @@ function uc_file_feature_form($form, &$form_state, $node, $feature) {
   $form['uc_file_limits']['download_limit_number'] = array(
     '#type' => 'textfield',
     '#title' => t('Downloads'),
-    '#default_value' => $download_value,
+    '#default_value' => $download_value ? $download_value : '',
     '#description' => t("The number of times this file can be downloaded."),
-    '#maxlength' => 4,
-    '#size' => 4,
+    '#size' => 6,
     '#states' => array(
       'visible' => array('input[name="download_override"]' => array('checked' => TRUE)),
     ),
@@ -702,10 +699,9 @@ function uc_file_feature_form($form, &$form_state, $node, $feature) {
   $form['uc_file_limits']['download_limit_addresses'] = array(
     '#type' => 'textfield',
     '#title' => t('IP addresses'),
-    '#default_value' => $address_value,
+    '#default_value' => $address_value ? $address_value : '',
     '#description' => t("The number of unique IPs that a file can be downloaded from."),
-    '#maxlength' => 4,
-    '#size' => 4,
+    '#size' => 6,
     '#states' => array(
       'visible' => array('input[name="location_override"]' => array('checked' => TRUE)),
     ),
@@ -719,9 +715,8 @@ function uc_file_feature_form($form, &$form_state, $node, $feature) {
   $form['uc_file_limits']['download_limit_duration_qty'] = array(
     '#type' => 'textfield',
     '#title' => t('Time'),
-    '#default_value' => $quantity_value,
-    '#size' => 4,
-    '#maxlength' => 4,
+    '#default_value' => $quantity_value ? $quantity_value : '',
+    '#size' => 6,
     '#prefix' => '<div class="duration">',
     '#suffix' => '</div>',
     '#states' => array(
@@ -765,17 +760,17 @@ function uc_file_feature_form_validate($form, &$form_state) {
 
   // If any of our overrides are set, then we make sure they make sense.
   if ($form_state['values']['download_override'] &&
-      $form_state['values']['download_limit_number'] < 0) {
-    form_set_error('download_limit_number', t('A negative download limit does not make sense. Please enter a positive integer, or leave empty for no limit.'));
+      !uc_file_pass_positive_integer($form_state['values']['download_limit_number'])) {
+    form_set_error('download_limit_number', t('Please enter a positive integer for "Downloads" or leave empty for no limit.'));
   }
   if ($form_state['values']['location_override'] &&
-      $form_state['values']['download_limit_addresses'] < 0) {
-    form_set_error('download_limit_addresses', t('A negative IP address limit does not make sense. Please enter a positive integer, or leave empty for no limit.'));
+      !uc_file_pass_positive_integer($form_state['values']['download_limit_addresses'])) {
+    form_set_error('download_limit_addresses', t('Please enter a positive integer for "IP addresses" or leave empty for no limit.'));
   }
   if ($form_state['values']['time_override'] &&
       $form_state['values']['download_limit_duration_granularity'] != 'never' &&
-      $form_state['values']['download_limit_duration_qty'] < 1) {
-    form_set_error('download_limit_duration_qty', t('You set the granularity (%gran), but you did not set how many. Please enter a positive non-zero integer.', array('%gran' => $form_state['values']['download_limit_duration_granularity'] . '(s)')));
+      !uc_file_pass_positive_integer($form_state['values']['download_limit_duration_qty'], FALSE)) {
+    form_set_error('download_limit_duration_qty', t('You set the granularity (%gran), but you did not set how many. Please enter a positive integer for "Time."', array('%gran' => $form_state['values']['download_limit_duration_granularity'] . '(s)')));
   }
 }
 
@@ -894,23 +889,20 @@ function uc_file_feature_settings($form, &$form_state) {
     '#title' => t('Downloads'),
     '#description' => t("The number of times a file can be downloaded. Leave empty to set no limit."),
     '#default_value' => $config->get('uc_file_download_limit_number'),
-    '#maxlength' => 4,
-    '#size' => 4,
+    '#size' => 6,
   );
   $form['uc_file_download_limit']['uc_file_download_limit_addresses'] = array(
     '#type' => 'textfield',
     '#title' => t('IP addresses'),
     '#description' => t("The number of unique IPs that a file can be downloaded from. Leave empty to set no limit."),
     '#default_value' => $config->get('uc_file_download_limit_addresses'),
-    '#maxlength' => 4,
-    '#size' => 4,
+    '#size' => 6,
   );
   $form['uc_file_download_limit']['uc_file_download_limit_duration_qty'] = array(
     '#type' => 'textfield',
     '#title' => t('Time'),
     '#default_value' => $config->get('uc_file_download_limit_duration_qty'),
-    '#size' => 4,
-    '#maxlength' => 4,
+    '#size' => 6,
     '#prefix' => '<div class="duration">',
     '#suffix' => '</div>',
     '#states' => array(
@@ -943,25 +935,29 @@ function uc_file_feature_settings($form, &$form_state) {
  */
 function uc_file_feature_settings_validate($form, &$form_state) {
   // Make sure our base directory is valid.
-  if (!empty($form_state['values']['uc_file_base_dir']) && $form_state['values']['op'] == t('Save configuration') && !is_dir($form_state['values']['uc_file_base_dir'])) {
-    form_set_error('uc_file_base_dir', t('%dir is not a valid file or directory', array('%dir' => $form_state['values']['uc_file_base_dir'])));
+  $uc_file_base_dir = $form_state['values']['uc_file_base_dir'];
+  if ($form_state['values']['op'] == t('Save configuration') && empty($uc_file_base_dir)) {
+    form_set_error('uc_file_base_dir', t('You must specify a valid file or directory for "Files path" in the "File download settings" tab.'));
   }
-
-  // If the user selected a granularity, let's make sure they
-  // also selected a duration.
-  if ($form_state['values']['uc_file_download_limit_duration_granularity'] != 'never' &&
-      $form_state['values']['uc_file_download_limit_duration_qty'] < 1) {
-    form_set_error('uc_file_download_limit_duration_qty', t('You set the granularity (%gran), but you did not set how many. Please enter a positive non-zero integer.', array('%gran' => $form_state['values']['uc_file_download_limit_duration_granularity'] . '(s)')));
+  if ($form_state['values']['op'] == t('Save configuration') &&  !is_dir($uc_file_base_dir)) {
+    form_set_error('uc_file_base_dir', t('%dir is not a valid file or directory. Please set "Files path" in the "File download settings" tab.', array('%dir' => $form_state['values']['uc_file_base_dir'])));
   }
 
   // Make sure the download limit makes sense.
-  if ($form_state['values']['uc_file_download_limit_number'] < 0) {
-    form_set_error('uc_file_download_limit_number', t('A negative download limit does not make sense. Please enter a positive integer, or leave empty for no limit.'));
+  if (!uc_file_pass_positive_integer($form_state['values']['uc_file_download_limit_number'])) {
+    form_set_error('uc_file_download_limit_number', t('Please enter a positive integer for "Downloads" in the "File download settings" tab, or leave empty for no limit.'));
   }
 
   // Make sure the address limit makes sense.
-  if ($form_state['values']['uc_file_download_limit_addresses'] < 0) {
-    form_set_error('uc_file_download_limit_addresses', t('A negative IP address limit does not make sense. Please enter a positive integer, or leave empty for no limit.'));
+  if (!uc_file_pass_positive_integer($form_state['values']['uc_file_download_limit_addresses'])) {
+    form_set_error('uc_file_download_limit_addresses', t('Please enter a positive integer for "IP addresses" in the "File download settings" tab, or leave empty for no limit.'));
+  }
+
+  // If the user selected a granularity, let's make sure they also selected a
+  // duration.
+  if ($form_state['values']['uc_file_download_limit_duration_granularity'] != 'never' &&
+      !uc_file_pass_positive_integer($form_state['values']['uc_file_download_limit_duration_qty'], FALSE)) {
+    form_set_error('uc_file_download_limit_duration_qty', t('You set the granularity (%gran), but you did not set how many. Please enter a positive non-zero integer for "Time" in the "File download settings" tab.', array('%gran' => $form_state['values']['uc_file_download_limit_duration_granularity'] . '(s)')));
   }
 }
 
@@ -1803,6 +1799,25 @@ function uc_file_get_time_limit($file) {
       'time_quantity' => $file->time_quantity,
     );
   }
+}
+
+/**
+ * Utility routine for checking form entries that should be positive integers.
+ *
+ * @param string $value
+ *   The value of the form field.
+ * @param bool $blank_ok
+ *   Whether a blank value is allowed.
+ *
+ * @return
+ *   TRUE if the value is a positive integer (or blank if $blank_ok is TRUE),
+ *   FALSE otherwise.
+ */
+function uc_file_pass_positive_integer($value, $blank_ok = TRUE) {
+  if (empty($value) && $blank_ok) {
+    return TRUE;
+  }
+  return is_numeric($value) && round($value) == $value && $value > 0;
 }
 
 /**
