@@ -1073,29 +1073,23 @@ function uc_product_uc_product_types() {
  * @see uc_product_image_defaults()
  */
 function uc_product_uc_store_status() {
-  // Check for filefields on products.
-  if ($field = config_get('uc_product.settings', 'uc_image_product')) {
+  $field = config_get('uc_product.settings', 'uc_image_product');
+  if ($field == 'uc_product_image') {
     $instances = field_info_instances('node', 'product');
-    $field_check = (bool) count($instances[$field]);
+    if (isset($instances[$field])) {
+      $status = 'ok';
+      $description = t('Ubercart products are configured to use the default product image field.');
+    }
+    else {
+      $status = 'warning';
+      $description = t('Ubercart product images are not yet configured. Please <a href="!url">visit the Product settings</a>.', array('!url' => url('admin/store/settings/products')));
+    }
   }
   else {
-    $field_check = FALSE;
-  }
-
-  if ($field_check) {
     $status = 'ok';
-    $description = t('Product image support has been automatically configured by Ubercart.');
+    $description = t('Ubercart products are not configured to use the default product image field. <a href="!url">Change this.</a>', array('!url' => url('admin/store/settings/products')));
   }
-  else {
-    $status = 'warning';
-    $description = t('<a href="!url">Automatically configure the following items for core image support</a>:', array('!url' => url('admin/store/settings/products/defaults')));
-
-    $items[] = t('The Image file field has not been created for products.');
-
-    $description .= theme('item_list', array('items' => $items)) . t('(This action is not required and should not be taken if you do not need images or have implemented your own image support.)');
-  }
-
-  return array(array('status' => $status, 'title' => t('Images'), 'desc' => $description));
+  return array(array('status' => $status, 'title' => t('Product Images'), 'desc' => $description));
 }
 
 /**
