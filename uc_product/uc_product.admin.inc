@@ -78,6 +78,7 @@ function uc_product_settings_form($form, &$form_state) {
   );
 
   // Loop through all the integrated image widgets and build an options array.
+  // See uc_store_uc_image_widget() and associated callbacks.
   $options = array();
   foreach (module_invoke_all('uc_image_widget') as $key => $widget) {
     $options[$key] = check_plain($widget['name']);
@@ -90,10 +91,30 @@ function uc_product_settings_form($form, &$form_state) {
     $options['none'] = t("Don't use any image widgets.");
   }
 
+  $additional_widgets = array();
+  if (!isset($options['colorbox'])) {
+    $additional_widgets['colorbox'] = l(t('Colorbox'), 'https://backdropcms.org/project/colorbox');
+  }
+  if (!isset($options['glightbox'])) {
+    $additional_widgets['glightbox'] = l(t('GLightbox'), 'https://backdropcms.org/project/glightbox');
+  }
+  if (!isset($options['featherlight'])) {
+    $additional_widgets['featherlight'] = l(t('Featherlight'), 'https://backdropcms.org/project/featherlight');
+  }
+/* This module is not yet ported to Backdrop CMS, although uc_store_uc_image_widget checks for it.
+  if (!isset($options['lightbox2'])) {
+    $additional_widgets['lightbox2'] = l(t('Lightbox2'), 'https://backdropcms.org/project/lightbox2');
+  }
+*/
+  $additional_widgets_text = ' ';
+  if (!empty($additional_widgets)) {
+    $additional_widgets_text .= t('You can choose from additional widgets by installing one or more of these modules:');
+    $additional_widgets_text .= theme('item_list', array('items' => $additional_widgets));
+  }
   $form['product']['uc_product_image_widget'] = array(
     '#type' => 'radios',
     '#title' => t('Product image widget'),
-    '#description' => t('The selected widget will be used to display a zoomed version of product images when they are clicked.'),
+    '#description' => t('The selected widget will be used to display a zoomed version of product images when they are clicked.') . $additional_widgets_text,
     '#options' => $options,
     '#default_value' => $config->get('uc_product_image_widget'),
   );
