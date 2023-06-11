@@ -61,23 +61,18 @@ function uc_catalog_settings_form($form, &$form_state) {
 }
 
 /**
- * Displays links to all products that have not been categorized.
+ * Displays links to all published products that have not been categorized.
+ * Restricted to published products because table taxonomy_index does not
+ * contain data for unpublished nodes.
  */
 function uc_catalog_orphaned_products() {
   $build = array();
 
-  if (config_get('uc_catalog.settings', 'taxonomy_maintain_index_table')) {
-    $vocabulary = config_get('uc_catalog.settings', 'uc_catalog_vocabulary');
-    $product_types = uc_product_types();
-    $field = field_info_field('taxonomy_catalog');
-    $types = array_intersect($product_types, $field['bundles']['node']);
-    $result = db_query("SELECT DISTINCT n.nid, n.title FROM {node} n LEFT JOIN (SELECT ti.nid, td.vocabulary FROM {taxonomy_index} ti LEFT JOIN {taxonomy_term_data} td ON ti.tid = td.tid WHERE td.vocabulary = :vocabulary) txnome ON n.nid = txnome.nid WHERE n.type IN (:types) AND txnome.vocabulary IS NULL", array(':vocabulary' => $vocabulary, ':types' => $types));
-
+  if (config_get('taxonomy.settings', 'maintain_index_table')) {
     $rows = array();
-    while ($node = $result->fetchObject()) {
-      $rows[] = l($node->title, 'node/' . $node->nid . '/edit', array('query' => array('destination' => 'admin/store/products/orphans')));
+    foreach (_uc_catalog_orphaned_products() as $nid => $title) {
+      $rows[] = l($title, 'node/' . $nid . '/edit', array('query' => array('destination' => 'admin/store/products/orphans')));
     }
-
     if (count($rows) > 0) {
       $build['orphans'] = array(
         '#theme' => 'item_list',
@@ -99,6 +94,35 @@ function uc_catalog_orphaned_products() {
   }
 
   return $build;
+}
+
+/**
+ * Returns a list of node titles keyed on nid of all published products that
+ * do not have any catalog taxonomy terms. Restricted to published products
+ * because table taxonomy_index does not contain data for unpublished nodes.
+ */
+function _uc_catalog_orphaned_products() {
+  if (!config_get('taxonomy.settings', 'maintain_index_table')) {
+    return array();
+  }
+  $vocabulary = config_get('uc_catalog.settings', 'uc_catalog_vocabulary');
+  $product_types = uc_product_types();
+  $field = field_info_field('taxonomy_catalog');
+  $types = array_intersect($product_types, $field['bundles']['node']);
+  return db_query('
+    SELECT DISTINCT n.nid, n.title
+    FROM {node} n
+    LEFT JOIN (
+      SELECT ti.nid, td.vocabulary
+      FROM {taxonomy_index} ti
+      LEFT JOIN {taxonomy_term_data} td ON ti.tid = td.tid
+      WHERE td.vocabulary = :vocabulary
+    ) txnome ON n.nid = txnome.nid
+    WHERE n.type IN (:types)
+    AND n.status = 1
+    AND txnome.vocabulary IS NULL
+    ', array(':vocabulary' => $vocabulary, ':types' => $types))
+    ->fetchAllKeyed();
 }
 
 /**
