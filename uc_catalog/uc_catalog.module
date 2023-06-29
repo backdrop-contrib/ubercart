@@ -81,7 +81,11 @@ function uc_catalog_permission() {
 function uc_catalog_theme() {
   return array(
     'uc_catalog_block' => array(
-      'variables' => array('menu_tree' => NULL),
+      'variables' => array(
+        'menu_tree' => NULL,
+        'uc_catalog_expand_categories' => FALSE,
+        'uc_catalog_block_nodecount' => FALSE,
+      ),
       'file' => 'uc_catalog.theme.inc',
     ),
     'uc_catalog_item' => array(
@@ -223,78 +227,9 @@ function uc_catalog_block_info() {
   $blocks['catalog'] = array(
     'info' => t('Catalog'),
     'cache' => BACKDROP_CACHE_PER_ROLE | BACKDROP_CACHE_PER_PAGE,
+    'class' => 'UcCatalogBlock',
   );
-
   return $blocks;
-}
-
-/**
- * Implements hook_block_view().
- */
-function uc_catalog_block_view($delta = '') {
-  if ($delta == 'catalog') {
-    $block = array();
-
-    if (user_access('view catalog')) {
-      backdrop_add_css(backdrop_get_path('module', 'uc_catalog') . '/uc_catalog.css');
-
-      // Get the vocabulary tree information.
-      $vocabulary_name = config_get('uc_catalog.settings', 'uc_catalog_vocabulary');
-      $tree = taxonomy_get_tree($vocabulary_name);
-
-      // Then convert it into an actual tree structure.
-      $seq = 0;
-      $menu_tree = new UcTreeNode();
-      $level = array();
-      $curr_depth = -1;
-
-      foreach ($tree as $knot) {
-        $seq++;
-        $knot->sequence = $seq;
-        $knothole = new UcTreeNode($knot);
-        // Begin at the root of the tree and find the proper place.
-        $menu_tree->add_child($knothole);
-      }
-
-      // Now, create a structured menu, separate from Backdrop's menu.
-      $content = theme('uc_catalog_block', array('menu_tree' => $menu_tree));
-
-      $block = array(
-        'subject' => t('Catalog'),
-        'content' => $content,
-      );
-    }
-
-    return $block;
-  }
-}
-
-/**
- * Implements hook_block_configure().
- *
- * Builds the settings form used by the catalog block.
- */
-function uc_catalog_block_configure($delta = '') {
-  $config = config('uc_catalog.settings');
-  if ($delta == 'catalog') {
-    $form['uc_catalog_block_title'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Make the block title a link to the top-level catalog page.'),
-      '#default_value' => $config->get('uc_catalog_block_title'),
-    );
-    $form['uc_catalog_expand_categories'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Always expand categories.'),
-      '#default_value' => $config->get('uc_catalog_expand_categories'),
-    );
-    $form['uc_catalog_block_nodecount'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Display product counts.'),
-      '#default_value' => $config->get('uc_catalog_block_nodecount'),
-    );
-
-    return $form;
-  }
 }
 
 /**
@@ -307,16 +242,6 @@ function uc_catalog_block_save($delta = '', $edit = array()) {
     config_set('uc_catalog.settings', 'uc_catalog_block_title', $edit['uc_catalog_block_title']);
     config_set('uc_catalog.settings', 'uc_catalog_expand_categories', $edit['uc_catalog_expand_categories']);
     config_set('uc_catalog.settings', 'uc_catalog_block_nodecount', $edit['uc_catalog_block_nodecount']);
-  }
-}
-
-/**
- * Preprocesses the catalog block output.
- */
-function uc_catalog_preprocess_block(&$variables) {
-  $block = &$variables['block'];
-  if ($block->module == 'uc_catalog' && $block->delta == 'catalog' && $block->subject && config_get('uc_catalog.settings', 'uc_catalog_block_title')) {
-    $block->subject = l($block->subject, 'catalog');
   }
 }
 
@@ -436,12 +361,18 @@ function uc_catalog_browse($tid = 0) {
  *   one of its children, it still displays a link and product count, but must
  *   still be expanded. Otherwise, it is collapsed and a link.
  *
+ * @param bool $expand_categories
+ *   A flag that indicates whether to expand the child tree.
+ * 
+ * @param bool $node_count
+ *   A flag that indicates whether to include a product count for each category.
+ * 
  * @return
  *   An array whose first element is true if the treeNode is in hierarchy of
  *   the URL path. The second element is the HTML of the list item of itself
  *   and its children.
  */
-function _uc_catalog_navigation($branch) {
+function _uc_catalog_navigation($branch, $expand_categories, $node_count) {
   $config = config('uc_catalog.settings');
   static $terms;
   static $breadcrumb;
@@ -495,11 +426,10 @@ function _uc_catalog_navigation($branch) {
   }
 
   $lis = array();
-  $expand = $config->get('uc_catalog_expand_categories');
-  if ($expand || count($branch->children)) {
+  if ($expand_categories || count($branch->children)) {
     foreach ($branch->children as $twig) {
       // Expand if children are in the menu path. Capture their output.
-      list($child_in_path, $lis[], $child_num) = _uc_catalog_navigation($twig);
+      list($child_in_path, $lis[], $child_num) = _uc_catalog_navigation($twig, $expand_categories, $node_count);
       $num += $child_num;
       if ($child_in_path) {
         $inpath = $child_in_path;
@@ -514,7 +444,7 @@ function _uc_catalog_navigation($branch) {
 
   // Checks to see if node counts are desired in navigation.
   $num_text = '';
-  if ($config->get('uc_catalog_block_nodecount')) {
+  if ($node_count) {
     $num_text = ' (' . $num . ')';
   }
   $link = l($branch->name . $num_text, $branch_path);
@@ -523,7 +453,7 @@ function _uc_catalog_navigation($branch) {
     'here' => $here,
     'link' => $link,
     'lis' => $lis,
-    'expand' => $expand,
+    'expand' => $expand_categories,
     'inpath' => $inpath,
     'count_children' => count($branch->children),
   ));
@@ -643,6 +573,7 @@ function uc_catalog_autoload_info() {
   return array(
     'UcTreeNode' => 'classes/treenode.inc',
     'uc_catalog_handler_argument_term_node_tid_depth_new' => 'views/uc_catalog_handler_argument_term_node_tid_depth.inc',
+    'UcCatalogBlock' => 'classes/UcCatalogBlock.inc'
   );
 }
 
