@@ -91,6 +91,30 @@ function uc_catalog_update_1002() {
 }
 
 /**
+ * Move settings for uc_catalog blocks into the root of $block->settings.
+ */
+function uc_catalog_update_1003() {
+  $layouts = layout_load_all();
+  foreach ($layouts as $layout) {
+    $changed = FALSE;
+    foreach ($layout->content as $block) {
+      if ($block->plugin == 'uc_catalog:catalog') {
+        if (!empty($block->settings['block_settings'])) {
+          foreach ($block->settings['block_settings'] as $key => $value) {
+            $block->settings[$key] = $value;
+          }
+          unset($block->settings['block_settings']);
+          $changed = TRUE;
+        }
+      }
+    }
+    if ($changed) {
+      $layout->save();
+    }
+  }
+}
+
+/**
  * Implements hook_uninstall().
  */
 function uc_catalog_uninstall() {
