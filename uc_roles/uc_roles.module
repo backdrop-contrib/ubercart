@@ -1060,9 +1060,9 @@ function uc_roles_revoke(&$account, $role, $silent = FALSE) {
   // Remove our record of the expiration.
   uc_roles_delete($account, $role, $silent);
 
-  $role_name = db_query("SELECT name FROM {role} WHERE role = :role", array(':role' => $role))->fetchField();
-
   if (!$silent) {
+    $role_load = user_role_load($role);
+    $role_name = $role_load->label;
     if ($user->uid == $account->uid) {
       backdrop_set_message(t('Your %role role has been revoked.', array('%role' => $role_name)));
     }
@@ -1130,7 +1130,6 @@ function uc_roles_grant(&$account, $role, $timestamp, $save_user = TRUE, $silent
   if (!$silent) {
     $role_load = user_role_load($role);
     $role_name = $role_load->label;
-
     if ($user->uid == $account->uid) {
       $message = t('You have been granted the %role role.', array('%role' => $role_name));
     }
