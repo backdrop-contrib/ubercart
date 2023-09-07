@@ -261,30 +261,32 @@ function uc_catalog_uc_store_status() {
   }
 
   $statuses = array();
-  $cat_id = config_get('uc_catalog.settings', 'uc_catalog_vocabulary');
-  $catalog = taxonomy_vocabulary_load($cat_id);
+  $catalog_id = config_get('uc_catalog.settings', 'uc_catalog_vocabulary');
+  $catalog = taxonomy_vocabulary_load($catalog_id);
   if ($catalog) {
     // Don't display a status if the taxonomy_index table has no data.
-    if (config_get('uc_catalog.settings', 'taxonomy_maintain_index_table')) {
+    if (config_get('taxonomy.settings', 'maintain_index_table')) {
       $statuses[] = array(
         'status' => 'ok',
         'title' => t('Catalog vocabulary'),
-        'desc' => t('Vocabulary !name has been identified as the Ubercart catalog.', array('!name' => l($catalog->name, 'admin/structure/taxonomy/' . $catalog->machine_name))),
+        'desc' => t('Vocabulary !name has been identified as the Ubercart catalog.', array('!name' => l($catalog->name, 'admin/structure/taxonomy/' . $catalog_id))),
       );
 
-      $product_types = uc_product_types();
-      $types = array_intersect($product_types, $field['bundles']['node']);
-      $excluded = 0;
-      $result = db_query("SELECT COUNT(DISTINCT n.nid) FROM {node} n LEFT JOIN {taxonomy_index} ti ON n.nid = ti.nid LEFT JOIN {taxonomy_term_data} td ON ti.tid = td.tid WHERE n.type IN (:types) AND ti.tid IS NULL AND td.vocabulary = :vocabulary", array(':types' => $types, ':vocabulary' => $catalog->machine_name));
-      if ($excluded = $result->fetchField()) {
-        $description = format_plural($excluded, 'There is 1 product not listed in the catalog.', 'There are @count products not listed in the catalog.')
-          . t('Products are listed by assigning a category from the <a href="!cat_url">Product Catalog</a> vocabulary to them.', array('!cat_url' => url('admin/structure/taxonomy/' . $catalog->machine_name)));
-        $terms = db_query("SELECT COUNT(1) FROM {taxonomy_term_data} WHERE vocabulary = :vocabulary", array(':vocabulary' => $catalog->machine_name))->fetchField();
+      module_load_include('inc', 'uc_catalog', 'uc_catalog.admin');
+      $num_orphans = count(_uc_catalog_orphaned_products());
+      if ($num_orphans) {
+        $description = format_plural($num_orphans, 'There is 1 published product not listed in the catalog.', 'There are @count published products not listed in the catalog.') . ' ' . t('Products are listed by assigning a category from the <a href="!cat_url">Product Catalog</a> vocabulary to them.', array('!cat_url' => url('admin/structure/taxonomy/' . $catalog_id)));
+        $terms = db_query('
+          SELECT COUNT(1)
+          FROM {taxonomy_term_data}
+          WHERE vocabulary = :vocabulary
+          ', array(':vocabulary' => $catalog_id))
+          ->fetchField();
         if ($terms) {
           $description .= ' ' . l(t('Find orphaned products here.'), 'admin/store/products/orphans');
         }
         else {
-          $description .= ' ' . l(t('Add terms for the products to inhabit.'), 'admin/structure/taxonomy/' . $catalog->machine_name . '/add/term');
+          $description .= ' ' . l(t('Add terms for the products to inhabit.'), 'admin/structure/taxonomy/' . $catalog_id . '/add');
         }
         $statuses[] = array(
           'status' => 'warning',
@@ -298,7 +300,7 @@ function uc_catalog_uc_store_status() {
     $statuses[] = array(
       'status' => 'error',
       'title' => t('Catalog vocabulary'),
-      'desc' => t('No vocabulary has been recognized as the Ubercart catalog. Choose one on <a href="!admin_catalog">this page</a> or add one on the <a href="!admin_vocab">taxonomy admin page</a> first, if needed.', array('!admin_catalog' => url('admin/store/settings/catalog'), '!admin_vocab' => url('admin/structure/taxonomy'))),
+      'desc' => t('No vocabulary has been recognized as the Ubercart catalog. Choose one on <a href="!admin_catalog">this page</a> or add one on the <a href="!admin_vocab">taxonomy administration page</a> first, if needed.', array('!admin_catalog' => url('admin/store/settings/catalog'), '!admin_vocab' => url('admin/structure/taxonomy'))),
     );
   }
 
