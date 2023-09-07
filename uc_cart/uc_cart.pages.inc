@@ -96,7 +96,7 @@ function uc_cart_checkout() {
     if (config_get('system.core', 'user_register') != 0) {
       backdrop_set_message(t('If you do not have an account yet, you should <a href="!url">register now</a>.', array('!url' => url('user/register', array('query' => backdrop_get_destination())))));
     }
-    backdrop_goto('user', array('query' => backdrop_get_destination()));
+    backdrop_goto('user/login', array('query' => backdrop_get_destination()));
   }
 
   // Load an order from the session, if available.
