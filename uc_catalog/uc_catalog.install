@@ -77,9 +77,45 @@ function uc_catalog_update_1001() {
 }
 
 /**
- * Remove the unused taxonomy_maintain_index_table variable from uc_catalog config.
+ * Fix defective vocabulary filter in view uc_catalog_terms 
  */
 function uc_catalog_update_1002() {
+  $view_config = config('views.view.uc_catalog_terms');
+  $vocabulary_setting = $view_config->get('display.default.display_options.filters.vocabulary.value');
+  if (reset($vocabulary_setting) == 0) {
+    $view_config->set('display.default.display_options.filters.vocabulary.value', array('catalog' => 'catalog'));
+  }
+  $view_config->save();
+}
+
+/**
+ * Move settings for uc_catalog blocks into the root of $block->settings.
+ */
+function uc_catalog_update_1003() {
+  $layouts = layout_load_all();
+  foreach ($layouts as $layout) {
+    $changed = FALSE;
+    foreach ($layout->content as $block) {
+      if ($block->plugin == 'uc_catalog:catalog') {
+        if (!empty($block->settings['block_settings'])) {
+          foreach ($block->settings['block_settings'] as $key => $value) {
+            $block->settings[$key] = $value;
+          }
+          unset($block->settings['block_settings']);
+          $changed = TRUE;
+        }
+      }
+    }
+    if ($changed) {
+      $layout->save();
+    }
+  }
+}
+
+/**
+ * Remove the unused taxonomy_maintain_index_table variable from uc_catalog config.
+ */
+function uc_catalog_update_1004() {
   config_clear('uc_catalog.settings', 'taxonomy_maintain_index_table');
 }
 

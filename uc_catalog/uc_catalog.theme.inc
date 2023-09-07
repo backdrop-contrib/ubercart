@@ -13,11 +13,13 @@
  */
 function theme_uc_catalog_block($variables) {
   $menu_tree = $variables['menu_tree'];
+  $expand_categories = $variables['uc_catalog_expand_categories'];
+  $node_count = $variables['uc_catalog_block_nodecount'];
 
   $output = '<ul class="catalog menu">';
 
   foreach ($menu_tree->children as $branch) {
-    list($inpath, $html) = _uc_catalog_navigation($branch);
+    list($inpath, $html) = _uc_catalog_navigation($branch, $expand_categories, $node_count);
     $output .= $html;
   }
 
