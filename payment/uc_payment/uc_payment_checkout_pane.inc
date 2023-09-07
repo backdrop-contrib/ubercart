@@ -130,6 +130,7 @@ function uc_checkout_pane_payment($op, &$order, $form = NULL, &$form_state = NUL
 
     case 'settings':
       $form['uc_payment_show_order_total_preview'] = array(
+        '#config' => 'uc_payment.settings',
         '#type' => 'checkbox',
         '#title' => t('Show the order total preview on the payment pane.'),
         '#default_value' => $config->get('uc_payment_show_order_total_preview'),
