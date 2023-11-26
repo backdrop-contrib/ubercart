@@ -81,8 +81,7 @@ function uc_paypal_ipn() {
     'data' => $req,
   ));
 
-  // TODO: Change this to property_exists when we have a PHP requirement >= 5.1.
-  if (array_key_exists('error', $response)) {
+  if (property_exists($response, 'error')) {
     watchdog('uc_paypal', 'IPN failed with HTTP error @error, code @code.', array('@error' => $response->error, '@code' => $response->code), WATCHDOG_ERROR);
     return;
   }
