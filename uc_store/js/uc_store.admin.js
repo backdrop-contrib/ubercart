@@ -16,15 +16,15 @@ Backdrop.behaviors.ucStoreAdminFieldsetSummaries = {
       var ret = [];
       var val = $('#edit-uc-store-street1').val();
       if (val != null && val.length > 0) {
-        ret.push(val);
+        ret.push(Backdrop.checkPlain(val));
       }
       val = $('#edit-uc-store-street2').val();
       if (val != null && val.length > 0) {
-        ret.push(val);
+        ret.push(Backdrop.checkPlain(val));
       }
       val = $('#edit-uc-store-city').val();
       if (val != null && val.length > 0) {
-        ret.push(val);
+        ret.push(Backdrop.checkPlain(val));
       }
       val = $('#edit-uc-store-zone option:selected').text();
       if (val.length > 0) {
@@ -36,7 +36,7 @@ Backdrop.behaviors.ucStoreAdminFieldsetSummaries = {
       }
       val = $('#edit-uc-store-postal-code').val();
       if (val != null && val.length > 0) {
-        ret.push(val);
+        ret.push(Backdrop.checkPlain(val));
       }
       return ret.join('<br>');
     });
