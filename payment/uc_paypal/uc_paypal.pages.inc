@@ -407,7 +407,7 @@ function uc_paypal_ec_submit() {
     backdrop_goto('cart');
   }
 
-  backdrop_add_css(backdrop_get_path('module', 'uc_cart') . '/uc_cart.css');
+  backdrop_add_css(backdrop_get_path('module', 'uc_cart') . '/css/uc_cart.css');
 
   $build['review'] = array(
     '#theme' => 'uc_cart_review_table',

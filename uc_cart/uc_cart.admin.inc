@@ -20,7 +20,7 @@ function uc_cart_cart_settings_form($form, &$form_state) {
     '#type' => 'vertical_tabs',
     '#attached' => array(
       'js' => array(
-        'vertical-tabs' => backdrop_get_path('module', 'uc_cart') . '/uc_cart.admin.js',
+        'vertical-tabs' => backdrop_get_path('module', 'uc_cart') . '/js/uc_cart.admin.js',
       ),
     ),
   );
@@ -151,7 +151,7 @@ function uc_cart_cart_settings_form($form, &$form_state) {
 
   $form['continue_shopping'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Continue shopping element'),
+    '#title' => t('Continue shopping'),
     '#description' => t('These settings control the <em>continue shopping</em> option on the cart page.'),
     '#group' => 'cart-settings',
   );
@@ -227,7 +227,7 @@ function uc_cart_checkout_settings_form($form, &$form_state) {
     '#type' => 'vertical_tabs',
     '#attached' => array(
       'js' => array(
-        'vertical-tabs' => backdrop_get_path('module', 'uc_cart') . '/uc_cart.admin.js',
+        'vertical-tabs' => backdrop_get_path('module', 'uc_cart') . '/js/uc_cart.admin.js',
       ),
     ),
   );
