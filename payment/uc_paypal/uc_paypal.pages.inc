@@ -81,7 +81,9 @@ function uc_paypal_ipn() {
     'data' => $req,
   ));
 
-  if (property_exists($response, 'error')) {
+  // Alternate http systems might set the `error` property to NULL for no error
+  // so use empty() rather than property_exists().
+  if (!empty($response->error)) {
     watchdog('uc_paypal', 'IPN failed with HTTP error @error, code @code.', array('@error' => $response->error, '@code' => $response->code), WATCHDOG_ERROR);
     return;
   }
