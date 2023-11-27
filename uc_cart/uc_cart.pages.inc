@@ -202,8 +202,8 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
   }
 
   $form['#attributes']['class'][] = 'uc-cart-checkout-form';
-  $form['#attached']['js'][] = backdrop_get_path('module', 'uc_cart') . '/uc_cart.js';
-  $form['#attached']['css'][] = backdrop_get_path('module', 'uc_cart') . '/uc_cart.css';
+  $form['#attached']['js'][] = backdrop_get_path('module', 'uc_cart') . '/js/uc_cart.js';
+  $form['#attached']['css'][] = backdrop_get_path('module', 'uc_cart') . '/css/uc_cart.css';
 
   if ($instructions = config_get('uc_cart.settings', 'uc_checkout_instructions')) {
     $form['instructions'] = array(
@@ -411,7 +411,7 @@ function uc_cart_checkout_form_cancel($form, &$form_state) {
  * @see uc_cart_checkout_form()
  */
 function uc_cart_checkout_review() {
-  backdrop_add_js(backdrop_get_path('module', 'uc_cart') . '/uc_cart.js');
+  backdrop_add_js(backdrop_get_path('module', 'uc_cart') . '/js/uc_cart.js');
 
   if (empty($_SESSION['cart_order']) || empty($_SESSION['uc_checkout'][$_SESSION['cart_order']]['do_review'])) {
     backdrop_goto('cart/checkout');
@@ -477,7 +477,7 @@ function theme_uc_cart_checkout_review($variables) {
   $panes = $variables['panes'];
   $form = $variables['form'];
 
-  backdrop_add_css(backdrop_get_path('module', 'uc_cart') . '/uc_cart.css');
+  backdrop_add_css(backdrop_get_path('module', 'uc_cart') . '/css/uc_cart.css');
 
   $output = '<div id="review-instructions">' . filter_xss_admin(config_get('uc_cart.settings', 'uc_checkout_review_instructions')) . '</div>';
 
