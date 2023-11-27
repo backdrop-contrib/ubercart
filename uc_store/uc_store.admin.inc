@@ -244,6 +244,7 @@ function uc_store_settings_form($form, &$form_state) {
   $config = config('uc_store.settings');
   $form['#config'] = 'uc_store.settings';
   $form['store'] = array('#type' => 'vertical_tabs');
+  $form['#attached']['js'][] = backdrop_get_path('module', 'uc_store') . '/js/uc_store.admin.js';
 
   $form['basic'] = array(
     '#type' => 'fieldset',
