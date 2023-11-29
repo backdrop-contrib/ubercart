@@ -49,20 +49,80 @@ Backdrop.behaviors.ucCartAdminFieldsetSummaries = {
 
     // Checkout settings
     $('fieldset#edit-checkout', context).backdropSetSummary(function(context) {
+      var ret = [];
       if ($('#edit-uc-checkout-enabled').is(':checked')) {
-        return Backdrop.t('Checkout is enabled.');
+        ret.push(Backdrop.t('Checkout is enabled'));
       }
       else {
-        return Backdrop.t('Checkout is disabled.');
+        ret.push(Backdrop.t('Checkout is disabled'));
       }
+      return ret.join('<br>');
     });
     $('fieldset#edit-anonymous', context).backdropSetSummary(function(context) {
+      var ret = [];
       if ($('#edit-uc-checkout-anonymous').is(':checked')) {
-        return Backdrop.t('Anonymous checkout is enabled.');
+        ret.push(Backdrop.t('Anonymous checkout is enabled'));
       }
       else {
-        return Backdrop.t('Anonymous checkout is disabled.');
+        ret.push(Backdrop.t('Anonymous checkout is disabled'));
       }
+      return ret.join('<br>');
+    });
+    $('fieldset#edit-pane-customer', context).backdropSetSummary(function(context) {
+      if ($('#edit-uc-cart-new-account-details').val().length) {
+        return Backdrop.t('Help message set');
+      }
+      else {
+        return Backdrop.t('Help message empty');
+      }
+    });
+    $('fieldset#edit-pane-payment', context).backdropSetSummary(function(context) {
+      if ($('#edit-uc-payment-show-order-total-preview').is(':checked')) {
+        return Backdrop.t('Show order preview');
+      }
+      else {
+        return Backdrop.t('No order preview');
+      }
+    });
+    $('fieldset#edit-instructions', context).backdropSetSummary(function(context) {
+      var ret = [];
+      if ($('#edit-uc-checkout-instructions').val().length) {
+        ret.push(Backdrop.t('Checkout instructions set'));
+      }
+      else {
+        ret.push(Backdrop.t('No checkout instructions'));
+      }
+      if ($('#edit-uc-checkout-review-instructions').val().length) {
+        ret.push(Backdrop.t('Review instructions set'));
+      }
+      else {
+        ret.push(Backdrop.t('No review instructions'));
+      }
+      return ret.join('<br>');
+    });
+
+    $('fieldset#edit-completion-messages', context).backdropSetSummary(function(context) {
+      var ret = [];
+      var completion_page = $('#edit-uc-cart-checkout-complete-page').val();
+      var completion_text = Backdrop.t('Completion page:') + ' ';
+      if (completion_page.length) {
+        ret.push(completion_text + Backdrop.checkPlain(completion_page));
+      }
+      else {
+        ret.push(completion_text + Backdrop.t('&lt;default&gt;'));
+      }
+      var set_msgs = 0;
+      var empty_msgs = 0;
+      $('textarea', context).each(function() {
+        if ($(this).val().length) {
+          set_msgs++;
+        }
+        else {
+          empty_msgs++;
+        }
+      });
+      ret.push(set_msgs + ' ' + Backdrop.t('messages set,') + ' ' + empty_msgs + ' ' + Backdrop.t('messages empty'));
+      return ret.join('<br>');
     });
   }
 };
