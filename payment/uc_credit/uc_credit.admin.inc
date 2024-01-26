@@ -310,7 +310,7 @@ function uc_credit_settings_form_validate($form, &$form_state) {
   }
   else {
     // Directory doesn't exist.
-    form_set_error('uc_credit_encryption_path', t('You have specified a non-existent directory.'));
+    form_set_error('uc_credit_encryption_path', t('You have specified a non-existent directory for the encryption key. Please select the "Security settings" vertical tab and check the "Encryption key directory".'));
   }
 
   // If validation succeeds, save result of trim() back into $form_state.
