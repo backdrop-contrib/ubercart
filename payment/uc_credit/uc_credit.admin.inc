@@ -246,7 +246,7 @@ function uc_credit_settings_form_validate($form, &$form_state) {
 
   // Test to see if a path was entered.
   if (empty($key_path)) {
-    form_set_error('uc_credit_encryption_path', t('Key path must be specified in security settings tab.'));
+    form_set_error('uc_credit_encryption_path', t('A key path must be specified in the "Security settings" tab.'));
   }
 
   // Construct complete key file path.
@@ -259,7 +259,7 @@ function uc_credit_settings_form_validate($form, &$form_state) {
       $key = uc_credit_encryption_key();
       if ($key) {
         if (!preg_match("([0-9a-fA-F]{32})", $key)) {
-          form_set_error('uc_credit_encryption_path', t('Key file already exists in directory, but it contains an invalid key.'));
+          form_set_error('uc_credit_encryption_path', t('Key file already exists in the encryption key directory, but it contains an invalid key.'));
         }
         else {
           // Key file exists and is valid, save result of trim() back into
@@ -270,7 +270,7 @@ function uc_credit_settings_form_validate($form, &$form_state) {
       }
     }
     else {
-      form_set_error('uc_credit_encryption_path', t('Key file already exists in directory, but is not readable. Please verify the file permissions.'));
+      form_set_error('uc_credit_encryption_path', t('Key file already exists in the encryption key directory, but is not readable. Please verify the file permissions.'));
     }
   }
 
@@ -283,13 +283,13 @@ function uc_credit_settings_form_validate($form, &$form_state) {
     // Can we open for writing?
     $file = @fopen($key_path . '/encrypt.test', 'w');
     if ($file === FALSE) {
-      form_set_error('uc_credit_encryption_path', t('Cannot write to directory, please verify the directory permissions.'));
+      form_set_error('uc_credit_encryption_path', t('Cannot write to the encryption key directory, please verify the directory permissions.'));
       unset($form_state['uc_credit']['update_cc_encrypt_dir']);
     }
     else {
       // Can we actually write?
       if (@fwrite($file, '0123456789') === FALSE) {
-        form_set_error('uc_credit_encryption_path', t('Cannot write to directory, please verify the directory permissions.'));
+        form_set_error('uc_credit_encryption_path', t('Cannot write to the encryption key directory, please verify the directory permissions.'));
         unset($form_state['uc_credit']['update_cc_encrypt_dir']);
         fclose($file);
       }
@@ -298,7 +298,7 @@ function uc_credit_settings_form_validate($form, &$form_state) {
         fclose($file);
         $file = @fopen($key_path . '/encrypt.test', 'r');
         if ($file === FALSE) {
-          form_set_error('uc_credit_encryption_path', t('Cannot read from directory, please verify the directory permissions.'));
+          form_set_error('uc_credit_encryption_path', t('Cannot read from the encryption key directory, please verify the directory permissions.'));
           unset($form_state['uc_credit']['update_cc_encrypt_dir']);
         }
         else {
