@@ -20,6 +20,7 @@ function hong_kong_install() {
   // Make the entries in the zones table.
   $zones = array(
     array(344, 'HK', 'Hong Kong'),
+    array(344, 'KLN', 'Kowloon'),
     array(344, 'NT', 'New Territories'),
   );
 
@@ -38,4 +39,20 @@ function hong_kong_install() {
     "!street2\r\n" .
     "!zone_name, !country_name"
   );
+}
+
+/**
+ * Implements hook_update() with $version being the only argument.
+ * Add a new case for each version update, and be sure to always include the
+ * latest changes in the install function.
+ */
+function hong_kong_update($version) {
+  switch ($version) {
+    case 2:
+      // Add new zone for Kowloon.
+      $query = db_insert('uc_zones')->fields(array('zone_country_id', 'zone_code', 'zone_name'));
+      $query->values(array(344, 'KLN', 'Kowloon'));
+      $query->execute();
+      break;
+  }
 }
