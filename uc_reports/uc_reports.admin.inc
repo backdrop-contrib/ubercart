@@ -1521,7 +1521,7 @@ function uc_reports_store_csv($report_id, $rows) {
   $user_id = empty($user->uid) ? session_id() : $user->uid;
   foreach ($rows as $row) {
     foreach ($row as $index => $column) {
-      $row[$index] = '"' . str_replace('"', '""', $column) . '"';
+      $row[$index] = is_null($column) ? '""' : '"' . str_replace('"', '""', $column) . '"';
     }
     $csv_output .= implode(',', $row) . "\n";
   }
