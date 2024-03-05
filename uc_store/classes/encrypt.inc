@@ -205,7 +205,7 @@ class UbercartEncryption {
     $fudgefactor[] = $fudge;
 
     if (!empty($this->mod)) {
-      if ($fudge % $this->mod == 0) {
+      if (((int) $fudge) % $this->mod == 0) {
         $fudge = $fudge * -1;
       }
     }
