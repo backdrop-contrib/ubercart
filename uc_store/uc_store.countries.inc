@@ -34,6 +34,15 @@ function uc_country_import_form($form, &$form_state) {
       );
 
       $links = array();
+      if ($country->version < $files[$country->country_id]['version'] && $country->version > 0) {
+        $links[] = array(
+          'title' => t('update'),
+          'href' => 'admin/store/settings/countries/' . $country->country_id . '/update/' . $files[$country->country_id]['version'],
+          'query' => $query,
+        );
+        // Also add an icon to the country name for emphasis.
+        $row[0] .= ' <span class = "country-needs-update">' . "\u{26A0}" . '</span>';
+      }
       if ($country->version < 0) {
         $links[] = array(
           'title' => t('enable'),
@@ -45,13 +54,6 @@ function uc_country_import_form($form, &$form_state) {
         $links[] = array(
           'title' => t('disable'),
           'href' => 'admin/store/settings/countries/' . $country->country_id . '/disable',
-          'query' => $query,
-        );
-      }
-      if ($country->version < $files[$country->country_id]['version'] && $country->version > 0) {
-        $links[] = array(
-          'title' => t('update'),
-          'href' => 'admin/store/settings/countries/' . $country->country_id . '/update/' . $files[$country->country_id]['version'],
           'query' => $query,
         );
       }
@@ -321,8 +323,7 @@ function uc_country_remove_form_submit($form, &$form_state) {
   db_delete('uc_zones')
     ->condition('zone_country_id', $country_id)
     ->execute();
-  // TODO This variable was probably removed in Backdrop without replacement.
-  variable_del('uc_address_format_' . $country_id);
+  config_clear('uc_store.settings', 'uc_address_format_' . $country_id);
 
   $func_base = _uc_country_import_include($country_id, $country->version);
   if ($func_base !== FALSE) {
