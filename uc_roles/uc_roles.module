@@ -46,7 +46,7 @@ function uc_roles_cron() {
     $account = user_load($expiration->uid);
 
     // Cleanup if user or role was deleted already.
-    if (!$account || !in_array($expiration->role, array_keys($account->roles))) {
+    if (!$account || !in_array($expiration->role, $account->roles)) {
       uc_roles_delete($expiration, $expiration->role, TRUE);
     }
 
@@ -138,7 +138,7 @@ function uc_roles_form_user_profile_form_alter(&$form, &$form_state) {
     return;
   }
 
-  $role_choices = _uc_roles_get_choices(array_keys($account->roles));
+  $role_choices = _uc_roles_get_choices($account->roles);
 
   $polarity_widget = array(
     '#type' => 'select',
