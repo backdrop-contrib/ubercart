@@ -73,7 +73,7 @@ function uc_ups_admin_settings($form, &$form_state) {
 
   $form['services']['uc_ups_services'] = array(
     '#type' => 'checkboxes',
-    '#title' => t('UPS sServices'),
+    '#title' => t('UPS Services'),
     '#default_value' => $config->get('uc_ups_services'),
     '#options' => _uc_ups_service_list(),
     '#description' => t('Select the UPS services that are available to customers.'),
@@ -168,8 +168,6 @@ function uc_ups_admin_settings_submit($form, &$form_state) {
   if (!empty($client_secret)) {
     config_set('uc_ups.settings', 'uc_ups_client_secret', $client_secret);
   }
-
-//  module_load_include('module', 'uc_ups', 'uc_ups'); // @TODO: unnecessary?
 
   // Check token expiration
   $expires_in = config_get('uc_ups.settings', 'uc_ups_token_expiry');
