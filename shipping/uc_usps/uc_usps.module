@@ -827,9 +827,23 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
   $dimensions = array_reverse($dimensions);
 
   if ($domestic) { // Domestic
+    // Get extra services for domestic.
+    $extra_services = array();
+    if ($config->get('uc_usps_insurance')) {
+      if ($package->price <= 500.0) {
+        $extra_services[] = 930; // Insurance <= $500
+      }
+      else {
+        $extra_services[] = 931; // Insurance > $500
+      }
+    }
+    if ($config->get('uc_usps_signature_confirmation')) {
+      $extra_services[] = 921; // Signature Confirmation
+    }
+
     // Always do a parcel quote because flat-rate envelopes will only show up
     // here.
-    $connection_url = $config->get('uc_usps_connection_address') . '/prices/v3/base-rates-list/search';
+    $connection_url = $config->get('uc_usps_connection_address') . '/prices/v3/total-rates/search';
     $request = array(
       'originZIPCode' => substr(trim($origin->postal_code), 0, 5),
       'destinationZIPCode' => substr(trim($destination->postal_code), 0, 5),
@@ -840,6 +854,7 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       'mailClasses' => [ 'ALL' ],
       'priceType' => $price_type,
       'mailingDate' => $mailing_date,
+      'extraServices' => $extra_services,
     );
     $request_data = backdrop_json_encode($request);
     $result = backdrop_http_request($connection_url, array(
@@ -915,7 +930,7 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
   }
   else { // International
     // Parcel quote
-    $connection_url = $config->get('uc_usps_connection_address') . '/international-prices/v3/base-rates-list/search';
+    $connection_url = $config->get('uc_usps_connection_address') . '/international-prices/v3/total-rates/search';
 
     // New API requires 2-letter ISO country codes.
     $country_code = db_query('
@@ -936,6 +951,7 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       'mailClass' => 'ALL',
       'priceType' => $price_type,
       'mailingDate' => $mailing_date,
+      'extraServices' => [],
     );
     $request_data = backdrop_json_encode($request);
     $result = backdrop_http_request($connection_url, array(

@@ -54,7 +54,7 @@ function uc_usps_newapi_sample_quote($region, $price_type, $mail_class, $extras 
   if ($region == 'dom') { // domestic
     switch ($mail_class) {
       case 'ALL':
-        $rate_search = '/base-rates-list/search';
+        $rate_search = '/total-rates/search';
         $request = array(
           'originZIPCode' => '22407',
           'destinationZIPCode' => '63118',
@@ -124,7 +124,7 @@ function uc_usps_newapi_sample_quote($region, $price_type, $mail_class, $extras 
   else { // internatioal
     switch ($mail_class) {
       case 'ALL':
-        $rate_search = '/base-rates-list/search';
+        $rate_search = '/total-rates/search';
         $request = array(
           'originZIPCode' => '22407',
           'foreignPostalCode' => 'WC2H 0EB',
@@ -265,6 +265,23 @@ function uc_usps_newapi_sample_quote($region, $price_type, $mail_class, $extras 
     $result = file_put_contents($csv_file, $csv_data['csv']);
   }
   return $rate_info;
+}
+
+/**
+ * Write CSV files of all possible combinations of base rate settings, but not
+ * including any extras.
+ */
+function uc_usps_newapi_sample_quotes_all($csv_dir) {
+  if (empty($csv_dir)) {
+    return;
+  }
+  foreach (array('dom', 'intl') as $region) {
+    foreach (array('RETAIL', 'COMMERCIAL', 'CONTRACT') as $price_type) {
+      foreach (array('ALL', 'LETTERS', 'CARDS', 'FLATS') as $mail_class) {
+        uc_usps_newapi_sample_quote($region, $price_type, $mail_class, [], $csv_dir);
+      }
+    }
+  }
 }
 
 /**

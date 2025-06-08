@@ -245,58 +245,45 @@ function uc_usps_admin_settings($form, &$form_state) {
     ),
     '#description' => t('Indicate whether each product is quoted as shipping separately or all in one package. Orders with one kind of product will still use the package quantity to determine the number of packages needed, however.'),
   );
-
-  // Legacy quote options
-  $form['uc_usps_quote_options']['legacy'] = array(
-    '#type' => 'fieldset',
-    '#states' => array(
-      'visible' => array(
-        ':input[name="uc_usps_authorization_method"]' => array('value' => 'legacy'),
-      ),
-    ),
-  );
-  // Insurance.
-  $form['uc_usps_quote_options']['legacy']['uc_usps_insurance'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Package insurance'),
-    '#default_value' => $config->get('uc_usps_insurance'),
-    '#description' => t('When enabled, the quotes presented to the customer will include the cost of insurance for the full sales price of all products in the order.'),
-    '#disabled' => TRUE,
-  );
-  // Delivery Confirmation.
-  $form['uc_usps_quote_options']['legacy']['uc_usps_delivery_confirmation'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Delivery confirmation'),
-    '#default_value' => $config->get('uc_usps_delivery_confirmation'),
-    '#description' => t('When enabled, the quotes presented to the customer will include the cost of delivery confirmation for all packages in the order.'),
-    '#disabled' => TRUE,
-  );
-  // Signature Confirmation.
-  $form['uc_usps_quote_options']['legacy']['uc_usps_signature_confirmation'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Signature confirmation'),
-    '#default_value' => $config->get('uc_usps_signature_confirmation'),
-    '#description' => t('When enabled, the quotes presented to the customer will include the cost of signature confirmation for all packages in the order.'),
-    '#disabled' => TRUE,
-  );
-  // New API quote options
-  $form['uc_usps_quote_options']['newapi'] = array(
-    '#type' => 'fieldset',
+  // Price type (New API only).
+  $form['uc_usps_quote_options']['uc_usps_price_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Price type'),
+    '#description' => t('Select the price type for the price quote from USPS.'),
+    '#default_value' => $config->get('uc_usps_price_type'),
+    '#options' => _uc_usps_newapi_price_types(),
     '#states' => array(
       'visible' => array(
         ':input[name="uc_usps_authorization_method"]' => array('value' => 'newapi'),
       ),
     ),
   );
-  // Price type
-  $form['uc_usps_quote_options']['newapi']['uc_usps_price_type'] = array(
-    '#type' => 'select',
-    '#title' => t('Price type'),
-    '#description' => t('Select the price type for the price quote from USPS.'),
-    '#default_value' => $config->get('uc_usps_price_type'),
-    '#options' => _uc_usps_newapi_price_types(),
+  // Insurance.
+  $form['uc_usps_quote_options']['uc_usps_insurance'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Package insurance'),
+    '#default_value' => $config->get('uc_usps_insurance'),
+    '#description' => t('When enabled, the quotes presented to the customer will include the cost of insurance for the full sales price of all products in the order.'),
   );
-
+  // Delivery confirmation (legacy only)
+  $form['uc_usps_quote_options']['uc_usps_delivery_confirmation'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Delivery confirmation'),
+    '#default_value' => $config->get('uc_usps_delivery_confirmation'),
+    '#description' => t('When enabled, the quotes presented to the customer will include the cost of delivery confirmation for all packages in the order.'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="uc_usps_authorization_method"]' => array('value' => 'legacy'),
+      ),
+    ),
+  );
+  // Signature confirmation.
+  $form['uc_usps_quote_options']['uc_usps_signature_confirmation'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Signature confirmation'),
+    '#default_value' => $config->get('uc_usps_signature_confirmation'),
+    '#description' => t('When enabled, the quotes presented to the customer will include the cost of signature confirmation for all packages in the order.'),
+  );
   // Container for markup fields.
   $form['uc_usps_markups'] = array(
     '#type' => 'fieldset',

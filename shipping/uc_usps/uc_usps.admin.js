@@ -7,15 +7,17 @@
 
 Backdrop.behaviors.uspsAdminFieldsetSummaries = {
   attach: function (context) {
+    // Credentials
     $('fieldset#edit-uc-usps-credentials', context).backdropSetSummary(function(context) {
       if ($('#edit-uc-usps-authorization-method-legacy').is(':checked')) {
-        return Backdrop.t('Using legacy credentials');
+        return Backdrop.t('Using legacy API');
       }
       else {
-        return Backdrop.t('Using OAuth2 credentials');
+        return Backdrop.t('Using new API (OAuth2 credentials)');
       }
     });
 
+    // USPS Domestic
     $('fieldset#edit-domestic', context).backdropSetSummary(function(context) {
       if ($('#edit-uc-usps-authorization-method-legacy').is(':checked')) {
         if ($('#edit-uc-usps-online-rates').is(':checked')) {
@@ -42,6 +44,7 @@ Backdrop.behaviors.uspsAdminFieldsetSummaries = {
       }
     });
 
+    // USPS International
     $('fieldset#edit-international', context).backdropSetSummary(function(context) {
       if ($('#edit-uc-usps-authorization-method-legacy').is(':checked')) {
         if ($('#edit-uc-usps-online-rates').is(':checked')) {
@@ -68,6 +71,7 @@ Backdrop.behaviors.uspsAdminFieldsetSummaries = {
       }
     });
 
+    // Quote options
     $('fieldset#edit-uc-usps-quote-options', context).backdropSetSummary(function(context) {
       var options;
       if ($('#edit-uc-usps-all-in-one-0').is(':checked')) {
@@ -79,9 +83,19 @@ Backdrop.behaviors.uspsAdminFieldsetSummaries = {
       if ($('#edit-uc-usps-authorization-method-newapi').is(':checked')) {
         options += '<br> Price type: ' + $('#edit-uc-usps-price-type', context).val().toLowerCase();
       }
+      if ($('#edit-uc-usps-insurance').is(':checked')) {
+        options += '<br> ' + Backdrop.t('Package insurance');
+      }
+      if ($('#edit-uc-usps-authorization-method-legacy').is(':checked') && $('#edit-uc-usps-delivery-confirmation').is(':checked')) {
+        options += '<br> ' + Backdrop.t('Delivery confirmation');
+      }
+      if ($('#edit-uc-usps-signature-confirmation').is(':checked')) {
+        options += '<br> ' + Backdrop.t('Signature confirmation');
+      }
       return options;
     });
 
+    // Markups
     $('fieldset#edit-uc-usps-markups', context).backdropSetSummary(function(context) {
       return Backdrop.t('Rate markup') + ': '
         + $('#edit-uc-usps-rate-markup', context).val() + ' '
