@@ -172,7 +172,6 @@ function uc_store_address_fields_form($form, &$form_state) {
     $form['fields'][$field]['#weight'] = (isset($weight[$field])) ? $weight[$field] : 99;
   }
 
-  $form['#submit'][] = 'uc_store_address_fields_form_submit';
   $form = system_settings_form($form);
   unset($form['#theme']);
 
