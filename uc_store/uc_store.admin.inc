@@ -150,11 +150,11 @@ function uc_store_address_fields_form($form, &$form_state) {
   foreach ($fields as $field => $label) {
     $form['uc_address_fields'][$field] = array(
       '#type' => 'checkbox',
-      '#default_value' => $current[$field],
+      '#default_value' => !empty($current[$field]),
     );
     $form['uc_address_fields_required'][$field] = array(
       '#type' => 'checkbox',
-      '#default_value' => $required[$field],
+      '#default_value' => !empty($required[$field]),
     );
     $form['uc_address_fields_weight'][$field] = array(
       '#type' => 'weight',
