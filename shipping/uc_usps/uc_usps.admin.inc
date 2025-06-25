@@ -94,7 +94,7 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#default_value' => $config->get('uc_usps_connection_address'),
   );
   $access_token = uc_usps_access_token();
-  $token_expiry = new DateTime('@' . $config->get('uc_usps_token_expiry'));
+  $token_expiry = new DateTime('@' . state_get('uc_usps_token_expiry'));
   global $user;
   $token_expiry->setTimeZone(new DateTimeZone($user->timezone));
   $form['uc_usps_credentials']['newapi']['uc_usps_access_token'] = array(
@@ -156,7 +156,7 @@ function uc_usps_admin_settings($form, &$form_state) {
   $form['domestic']['newapi']['uc_usps_newapi_dom_env_services'] = array(
     '#type' => 'checkboxes',
     '#title' => t('USPS envelope services'),
-    '#options' => $config->get('uc_usps_newapi_dom_env_all_services'),
+    '#options' => uc_usps_newapi_dom_env_all_services(),
     '#default_value' => $config->get('uc_usps_newapi_dom_env_services'),
     '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
   );
@@ -164,7 +164,7 @@ function uc_usps_admin_settings($form, &$form_state) {
   $form['domestic']['newapi']['uc_usps_newapi_dom_parcel_services'] = array(
     '#type' => 'checkboxes',
     '#title' => t('USPS small package services'),
-    '#options' => $config->get('uc_usps_newapi_dom_parcel_all_services'),
+    '#options' => uc_usps_newapi_dom_parcel_all_services(),
     '#default_value' => $config->get('uc_usps_newapi_dom_parcel_services'),
     '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
   );
@@ -212,14 +212,14 @@ function uc_usps_admin_settings($form, &$form_state) {
   $form['international']['newapi']['uc_usps_newapi_intl_env_services'] = array(
     '#type' => 'checkboxes',
     '#title' => t('USPS international envelope services'),
-    '#options' => $config->get('uc_usps_newapi_intl_env_all_services'),
+    '#options' => uc_usps_newapi_intl_env_all_services(),
     '#default_value' => $config->get('uc_usps_newapi_intl_env_services'),
     '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
   );
   $form['international']['newapi']['uc_usps_newapi_intl_parcel_services'] = array(
     '#type' => 'checkboxes',
     '#title' => t('USPS international parcel services'),
-    '#options' => $config->get('uc_usps_newapi_intl_parcel_all_services'),
+    '#options' => uc_usps_newapi_intl_parcel_all_services(),
     '#default_value' => $config->get('uc_usps_newapi_intl_parcel_services'),
     '#description' => t('Select the USPS services that are available to customers. Be sure to include the services that the Postal Service agrees are available to you.'),
   );
@@ -246,12 +246,17 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Indicate whether each product is quoted as shipping separately or all in one package. Orders with one kind of product will still use the package quantity to determine the number of packages needed, however.'),
   );
   // Price type (New API only).
+  $options = array(
+    'RETAIL' => t('Retail'),
+    'COMMERCIAL' => t('Commercial'),
+    'CONTRACT' => t('Contract'),
+  );
   $form['uc_usps_quote_options']['uc_usps_price_type'] = array(
     '#type' => 'select',
     '#title' => t('Price type'),
     '#description' => t('Select the price type for the price quote from USPS.'),
     '#default_value' => $config->get('uc_usps_price_type'),
-    '#options' => _uc_usps_newapi_price_types(),
+    '#options' => $options,
     '#states' => array(
       'visible' => array(
         ':input[name="uc_usps_authorization_method"]' => array('value' => 'newapi'),
@@ -423,7 +428,7 @@ function uc_usps_admin_settings_submit($form, &$form_state) {
 
   // Check token expiration if we're using the new API.
   if ($form_state['values']['uc_usps_authorization_method'] == 'newapi') {
-    $token_expiry = $config->get('uc_usps_token_expiry');
+    $token_expiry = state_get('uc_usps_token_expiry');
     $request_time = REQUEST_TIME;
     $cron_interval = config_get('system.core', 'cron_safe_threshold');
     // Get a new token if the current one will expire before the next cron run

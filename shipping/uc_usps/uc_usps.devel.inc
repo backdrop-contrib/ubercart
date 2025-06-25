@@ -270,6 +270,10 @@ function uc_usps_newapi_sample_quote($region, $price_type, $mail_class, $extras 
 /**
  * Write CSV files of all possible combinations of base rate settings, but not
  * including any extras.
+ *
+ * @param string $csv_dir
+ *   A full file path to the directory in which to create the 2x3x4 different
+ *   quote files.
  */
 function uc_usps_newapi_sample_quotes_all($csv_dir) {
   if (empty($csv_dir)) {
@@ -293,13 +297,13 @@ function uc_usps_newapi_sample_quotes_all($csv_dir) {
  * config, but it might be needed in the future if USPS changes what services
  * they offer within the new API.
  *
- * @param string $config_dir
- *   If non-empty, the directory to write the PHP config command file to set the
- *   config values, used in the hook_update_N implementation.
+ * @param string $services_dir
+ *   If non-empty, the directory to write a PHP file containing the arrays for
+ *   all services. Used to construct the four newapi services functions.
  */
-function uc_usps_newapi_fetch_services($config_dir = '') {
+function uc_usps_newapi_fetch_services($services_dir = '') {
   $config = config('uc_usps.settings');
-  $write_config = !empty($config_dir);
+  $write_all_services = !empty($services_dir);
   $text = '';
 
   // Domestic envelope. Include letters, but also include some parcel services
@@ -326,9 +330,8 @@ function uc_usps_newapi_fetch_services($config_dir = '') {
     }
     $services[$info['service_key']] = $info['description'];
   }
-  $config->set('uc_usps_newapi_dom_env_all_services', $services);
-  if ($write_config) {
-    $text .= uc_usps_newapi_create_config('uc_usps_newapi_dom_env_all_services', $services);
+  if ($write_all_services) {
+    $text .= uc_usps_newapi_create_services('uc_usps_newapi_dom_env_all_services', $services);
   }
 
   // Domestic parcel. No cards or flat-rate envelopes to match legacy. But we
@@ -350,9 +353,8 @@ function uc_usps_newapi_fetch_services($config_dir = '') {
     }
     $services[$info['service_key']] = $info['description'];
   }
-  $config->set('uc_usps_newapi_dom_parcel_all_services', $services);
-  if ($write_config) {
-    $text .= uc_usps_newapi_create_config('uc_usps_newapi_dom_parcel_all_services', $services);
+  if ($write_all_services) {
+    $text .= uc_usps_newapi_create_services('uc_usps_newapi_dom_parcel_all_services', $services);
   }
 
   // International envelope. Include letters, but also include parcel services
@@ -375,9 +377,8 @@ function uc_usps_newapi_fetch_services($config_dir = '') {
     }
     $services[$info['service_key']] = $info['description'];
   }
-  $config->set('uc_usps_newapi_intl_env_all_services', $services);
-  if ($write_config) {
-    $text .= uc_usps_newapi_create_config('uc_usps_newapi_intl_env_all_services', $services);
+  if ($write_all_services) {
+    $text .= uc_usps_newapi_create_services('uc_usps_newapi_intl_env_all_services', $services);
   }
 
   // International parcel. No cards or envelopes to match legacy.
@@ -396,27 +397,36 @@ function uc_usps_newapi_fetch_services($config_dir = '') {
     }
     $services[$info['service_key']] = $info['description'];
   }
-  $config->set('uc_usps_newapi_intl_parcel_all_services', $services);
-  if ($write_config) {
-    $text .= uc_usps_newapi_create_config('uc_usps_newapi_intl_parcel_all_services', $services);
+  if ($write_all_services) {
+    $text .= uc_usps_newapi_create_services('uc_usps_newapi_intl_parcel_all_services', $services);
   }
 
   $config->save();
-  if ($write_config) {
-    $php_file = "{$config_dir}/uc_usps.services.php";
+  if ($write_all_services) {
+    $php_file = "{$services_dir}/uc_usps.services.php";
     $result = file_put_contents($php_file, "<?php\n" . $text);
   }
 }
 
 /**
- * Create a string that sets a config value from an array of services. This is
- * used to generate the PHP code in a hook_update_N() implementation.
+ * Create a string that defines an array of services. This is
+ * used to generate the PHP code that goes into the four services functions.
+ *
+ * @param string $function_name
+ *   The name of the services function being created.
+ * @param array $services
+ *   The array of services returned by the appropriate quotes.
+ *
+ * @return string
+ *   A text string that contains the array for one of the four services
+ *   functions.
  */
-function uc_usps_newapi_create_config($value, $services) {
-  $text = "  \$config->set('{$value}', array(\n";
+function uc_usps_newapi_create_services($function_name, $services) {
+  $text = "  // {$function_name}()\n";
+  $text .= "  return array(\n";
   foreach ($services as $key => $value) {
     $text .= "    '" . $key ."' => '" . $value . "',\n";
   }
-  $text .= "  ));\n";
+  $text .= "  );\n";
   return $text;
 }

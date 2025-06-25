@@ -276,7 +276,6 @@ function uc_usps_uc_shipping_method() {
   else { // authorization_method == 'newapi'
     // Use same IDs as legacy but different callback and services lists
     // (accessorials).
-    $config = config('uc_usps.settings');
     return array(
       'usps_env' => array(
         'id' => 'usps_env',
@@ -286,7 +285,7 @@ function uc_usps_uc_shipping_method() {
         'quote' => array(
           'type' => 'envelope',
           'callback' => 'uc_usps_newapi_quote',
-          'accessorials' => $config->get('uc_usps_newapi_dom_env_all_services'),
+          'accessorials' => uc_usps_newapi_dom_env_all_services(),
         ),
       ),
       'usps' => array(
@@ -297,7 +296,7 @@ function uc_usps_uc_shipping_method() {
         'quote' => array(
           'type' => 'small_package',
           'callback' => 'uc_usps_newapi_quote',
-          'accessorials' => $config->get('uc_usps_newapi_dom_parcel_all_services'),
+          'accessorials' => uc_usps_newapi_dom_parcel_all_services(),
         ),
       ),
       'usps_intl_env' => array(
@@ -308,7 +307,7 @@ function uc_usps_uc_shipping_method() {
         'quote' => array(
           'type' => 'envelope',
           'callback' => 'uc_usps_newapi_quote',
-          'accessorials' => $config->get('uc_usps_newapi_intl_env_all_services'),
+          'accessorials' => uc_usps_newapi_intl_env_all_services(),
         ),
         'weight' => 1,
       ),
@@ -320,7 +319,7 @@ function uc_usps_uc_shipping_method() {
         'quote' => array(
           'type' => 'small_package',
           'callback' => 'uc_usps_newapi_quote',
-          'accessorials' => $config->get('uc_usps_newapi_intl_parcel_all_services'),
+          'accessorials' => uc_usps_newapi_intl_parcel_all_services(),
         ),
         'weight' => 1,
       ),
@@ -1143,11 +1142,11 @@ function uc_usps_weight_markup($weight) {
  */
 function uc_usps_access_token() {
   $config = config('uc_usps.settings');
-  $token_expiry = $config->get('uc_usps_token_expiry');
+  $token_expiry = state_get('uc_usps_token_expiry');
   if ($token_expiry >= REQUEST_TIME + 60) {
     // If expiration is more than a minute away, return the currently stored
     // token. Tokens are valid for 8 hours after issuance.
-    return $config->get('uc_usps_access_token');
+    return state_get('uc_usps_access_token');
   }
   else {
     // If expiration is less than minute away, get a new token and return it.
@@ -1193,9 +1192,9 @@ function _uc_usps_fetch_access_token() {
   if ($result->code == 200) {
     $response = backdrop_json_decode($result->data);
     if (!empty($response['access_token'])) {
-      // Store token in Backdrop config.
-      config_set('uc_usps.settings', 'uc_usps_access_token', $response['access_token']);
-      config_set('uc_usps.settings', 'uc_usps_token_expiry', round($response['issued_at'] / 1000) + $response['expires_in']);
+      // Store token in Backdrop state.
+      state_set('uc_usps_access_token', $response['access_token']);
+      state_set('uc_usps_token_expiry', round($response['issued_at'] / 1000) + $response['expires_in']);
       // Debug: Confirm token storage
       watchdog('uc_usps', '✅ Successfully retrieved and stored USPS OAuth token.', [], WATCHDOG_NOTICE);
       return $response['access_token'];
@@ -1610,15 +1609,87 @@ function _uc_usps_intl_services() {
 }
 
 /**
- * Maps price types for new API rate lookups. Set in quote options.
- *
- * @return array
+ * Maps domestic envelope services to their IDs (newapi).
  */
-function _uc_usps_newapi_price_types() {
+function uc_usps_newapi_dom_env_all_services() {
   return array(
-    'RETAIL' => t('Retail'),
-    'COMMERCIAL' => t('Commercial'),
-    'CONTRACT' => t('Contract'),
+    'FCLM' => 'First Class Letter Metered',
+    'FCP' => 'First Class Postcards',
+    'FCF' => 'First Class Flats',
+    'PMFRE' => 'Priority Mail Flat Rate Envelope',
+    'PMPFRE' => 'Priority Mail Padded Flat Rate Envelope',
+    'PMLFRE' => 'Priority Mail Legal Flat Rate Envelope',
+    'PMMS' => 'Priority Mail Machinable Single-piece',
+    'PMEFRE' => 'Priority Mail Express Flat Rate Envelope',
+    'PMEPFRE' => 'Priority Mail Express Padded Flat Rate Envelope',
+    'PMELFRE' => 'Priority Mail Express Legal Flat Rate Envelope',
+    'PMELFREHD' => 'Priority Mail Express Legal Flat Rate Envelope Holiday Delivery',
+    'PMEMS' => 'Priority Mail Express Machinable Single-piece',
+    'UGAMS' => 'USPS Ground Advantage Machinable Single-piece',
+  );
+}
+
+/**
+ * Maps domestic parcel services to their IDs (newapi).
+ */
+function uc_usps_newapi_dom_parcel_all_services() {
+  return array(
+    'FCLM' => 'First Class Letter Metered',
+    'FCF' => 'First Class Flats',
+    'PMMSFRB' => 'Priority Mail Machinable Small Flat Rate Box',
+    'PMMMFRB' => 'Priority Mail Machinable Medium Flat Rate Box',
+    'PMMLFRB' => 'Priority Mail Machinable Large Flat Rate Box',
+    'PMMLFRBA' => 'Priority Mail Machinable Large Flat Rate Box APO/FPO/DPO',
+    'PMMS' => 'Priority Mail Machinable Single-piece',
+    'PMMCNPT1' => 'Priority Mail Machinable Cubic Non-Soft Pack Tier 1',
+    'PMMCSPT1' => 'Priority Mail Machinable Cubic Soft Pack Tier 1',
+    'PMEMS' => 'Priority Mail Express Machinable Single-piece',
+    'UGAMS' => 'USPS Ground Advantage Machinable Single-piece',
+    'UGAMCNPT1' => 'USPS Ground Advantage Machinable Cubic Non-Soft Pack Tier 1',
+    'UGAMCSPT1' => 'USPS Ground Advantage Machinable Cubic Soft Pack Tier 1',
+    'BPMMP' => 'Bound Printed Matter Machinable Presorted',
+    'BPMNP' => 'Bound Printed Matter Nonstandard Presorted',
+    'LMNB' => 'Library Mail Nonstandard Basic',
+    'LMM5' => 'Library Mail Machinable 5-digit',
+    'LMN5' => 'Library Mail Nonstandard 5-digit',
+    'MMNB' => 'Media Mail Nonstandard Basic',
+    'MMM5' => 'Media Mail Machinable 5-digit',
+    'MMN5' => 'Media Mail Nonstandard 5-digit',
+  );
+}
+
+/**
+ * Maps international envelope services to their IDs (newapi).
+ */
+function uc_usps_newapi_intl_env_all_services() {
+  return array(
+    'FCLM' => 'First Class Letter Metered',
+    'FCP' => 'First Class Postcards',
+    'FCF' => 'First Class Flats',
+    'FPISMIS' => 'First-Class Package International Service Machinable ISC Single-piece',
+    'PMIIFRE' => 'Priority Mail International ISC Flat Rate Envelope',
+    'PMIMIPFRE' => 'Priority Mail International Machinable ISC Padded Flat Rate Envelope',
+    'PMIIS' => 'Priority Mail International ISC Single-piece',
+    'PMIMIS' => 'Priority Mail International Machinable ISC Single-piece',
+    'PMIILFRE' => 'Priority Mail International ISC Legal Flat Rate Envelope',
+    'PMEIIFRE' => 'Priority Mail Express International ISC Flat Rate Envelope',
+    'PMEIILFRE' => 'Priority Mail Express International ISC Legal Flat Rate Envelope',
+    'PMEIIS' => 'Priority Mail Express International ISC Single-piece',
+    'PMEIIPFRE' => 'Priority Mail Express International ISC Padded Flat Rate Envelope',
+  );
+}
+
+/**
+ * Maps international parcel services to their IDs (newapi).
+ */
+function uc_usps_newapi_intl_parcel_all_services() {
+  return array(
+    'FPISMIS' => 'First-Class Package International Service Machinable ISC Single-piece',
+    'PMIMILFRB' => 'Priority Mail International Machinable ISC Large Flat Rate Box',
+    'PMIMIMFRB' => 'Priority Mail International Machinable ISC Medium Flat Rate Box',
+    'PMIIS' => 'Priority Mail International ISC Single-piece',
+    'PMIMIS' => 'Priority Mail International Machinable ISC Single-piece',
+    'PMEIIS' => 'Priority Mail Express International ISC Single-piece',
   );
 }
 
