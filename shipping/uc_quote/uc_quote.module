@@ -152,7 +152,7 @@ function uc_quote_node_load($nodes, $types) {
   $shipping_type = config_get('uc_shipping.settings', 'uc_store_shipping_type');
   $shipping_types = db_query("SELECT id, shipping_type FROM {uc_quote_shipping_types} WHERE id_type = :type AND id IN (:ids)", array(':type' => 'product', ':ids' => array_keys($nodes)))->fetchAllKeyed();
 
-  $addresses = db_query("SELECT nid, first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid IN (:nids)", array(':nids' => array_keys($nodes)), array('fetch' => 'UcAddress'))->fetchAllAssoc('nid');
+  $addresses = db_query("SELECT nid, first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid IN (:nids)", array(':nids' => array_keys($nodes)), array('fetch' => 'UcAddressQuote'))->fetchAllAssoc('nid');
 
   foreach ($nodes as $nid => &$node) {
     if (!in_array($node->type, $product_types)) {
@@ -479,10 +479,10 @@ function uc_product_get_shipping_type($product) {
  *   the store's shipping address if the product's is not set.
  */
 function uc_quote_get_default_shipping_address($nid) {
-  $address = db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid = :nid", array(':nid' => $nid))->fetchObject('UcAddress');
+  $address = db_query("SELECT first_name, last_name, company, street1, street2, city, zone, postal_code, country, phone FROM {uc_quote_product_locations} WHERE nid = :nid", array(':nid' => $nid))->fetchObject('UcAddressQuote');
 
   if (empty($address)) {
-    $address = UcAddress::__set_state(config_get('uc_quote.settings', 'uc_quote_store_default_address'));
+    $address = UcAddressQuote::__set_state(config_get('uc_quote.settings', 'uc_quote_store_default_address'));
   }
 
   return $address;
@@ -1082,5 +1082,7 @@ function uc_quote_get_shipping_types() {
  * Implements hook_autoload_info().
  */
 function uc_quote_autoload_info() {
-  return array();
+  return array(
+    'UcAddressQuote' => 'address_quote.inc',
+  );
 }

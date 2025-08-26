@@ -87,15 +87,26 @@ function uc_file_admin_files_form_show_files($form, &$form_state) {
   $query->setCountQuery($count_query);
   $result = $query->execute();
 
-  $options = array();
+  $items = array();
   foreach ($result as $file) {
-    $options[$file->fid] = array(
+    $items[$file->fid]['file'] = $file;
+    if ($file->nid) {
+      $items[$file->fid]['node'][] = l($file->title, 'node/' . $file->nid);
+    }
+    if ($file->model) {
+      $items[$file->fid]['model'][] = check_plain($file->model);
+    }
+  }
+
+  $options = array();
+  foreach ($items as $fid => $item) {
+    $options[$fid] = array(
       'filename' => array(
-        'data' => check_plain($file->filename),
-        'class' => is_dir(uc_file_qualify_file($file->filename)) ? array('uc-file-directory-view') : array(),
+        'data' => check_plain($item['file']->filename) . ' (' . $item['file']->fid . ')',
+        'class' => is_dir(uc_file_qualify_file($item['file']->filename)) ? array('uc-file-directory-view') : array(),
       ),
-      'title' => l($file->title, 'node/' . $file->nid),
-      'model' => check_plain($file->model),
+      'title' => !empty($item['node']) ? implode(', ', $item['node']) : '',
+      'model' => !empty($item['model']) ? implode(', ', $item['model']) : '',
     );
   }
 
