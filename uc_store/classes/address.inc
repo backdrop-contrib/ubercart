@@ -10,53 +10,86 @@
 class UcAddress {
 
   /**
-   * Given name. */
+   * Given name.
+   *
+   * @var string
+   */
   public $first_name = '';
 
   /**
-   * Surname. */
+   * Surname.
+   *
+   * @var string
+   */
   public $last_name = '';
 
   /**
-   * Company or organization. */
+   * Company or organization.
+   *
+   * @var string
+   */
   public $company = '';
 
   /**
-   * First line of street address. */
+   * First line of street address.
+   *
+   * @var string
+   */
   public $street1 = '';
 
   /**
-   * Second line of street address. */
+   * Second line of street address.
+   *
+   * @var string
+   */
   public $street2 = '';
 
   /**
-   * City name. */
+   * City name.
+   *
+   * @var string
+   */
   public $city = '';
 
   /**
-   * State, provence, or region id. */
+   * State, provence, or region id.
+   *
+   * @var int
+   */
   public $zone = 0;
 
   /**
-   * ISO 3166-1 3-digit numeric country code. */
+   * ISO 3166-1 3-digit numeric country code.
+   *
+   * @var int
+   */
   public $country = 0;
 
   /**
-   * Postal code. */
+   * Postal code.
+   *
+   * @var string
+   */
   public $postal_code = '';
 
   /**
-   * Telephone number. */
+   * Telephone number.
+   *
+   * @var string
+   */
   public $phone = '';
 
   /**
-   * Email address. */
+   * Email address.
+   *
+   * @var string
+   */
   public $email = '';
 
   /**
    * Constructor.
    *
-   * @param $country
+   * @param int|null $country
    *   ISO 3166-1 3-digit numeric country code.  Defaults to the value of the
    *   uc_store_country system variable if that variable is set, or 840
    *   (United States of America) if it is not set.
@@ -75,10 +108,10 @@ class UcAddress {
    * in this comparison because they don't contain information about the
    * physical location.
    *
-   * @param $address
+   * @param UcAddress $address
    *   An object of type UcAddress.
    *
-   * @return
+   * @return bool
    *   TRUE if the two addresses are the same physical location, else FALSE.
    */
   public function isSamePhysicalLocation(UcAddress $address) {
@@ -110,10 +143,10 @@ class UcAddress {
    * human would consider identical, but may be capitalized differently or
    * have different whitespace.
    *
-   * @param $string
+   * @param string $string
    *   String to make canonical.
    *
-   * @return
+   * @return string
    *   Canonical form of input string.
    */
   public static function makeCanonical($string = '') {
@@ -128,7 +161,7 @@ class UcAddress {
   /**
    * Formats the address for display based on the country's address format.
    *
-   * @return
+   * @return string
    *   A formatted string containing the address.
    */
   public function __toString() {
@@ -194,6 +227,8 @@ class UcAddress {
    *
    * @param array $data
    *   Data to import
+   *
+   * @return UcAddress
    */
   public static function __set_state($data) {
     $obj = new self;

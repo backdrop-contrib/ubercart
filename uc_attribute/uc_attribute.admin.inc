@@ -1092,6 +1092,8 @@ function theme_uc_object_options_form($variables) {
     foreach (element_children($form['attributes']) as $key) {
       $rows = array();
       foreach (element_children($form['attributes'][$key]['options']) as $oid) {
+        // Add the data attributes to the checkbox so that "check all" works.
+        $form['attributes'][$key]['options'][$oid]['select']['#attributes']['data-tableselect-id'] = implode('-', $form['attributes'][$key]['options'][$oid]['select']['#parents']);
         $rows[] = array(
           'data' => array(
             backdrop_render($form['attributes'][$key]['options'][$oid]['select']),

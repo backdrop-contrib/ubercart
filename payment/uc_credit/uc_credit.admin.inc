@@ -70,8 +70,30 @@ function uc_credit_settings_form($form, &$form_state) {
   $form['cc_security']['uc_credit_encryption_path'] = array(
     '#type' => 'textfield',
     '#title' => t('Encryption key directory'),
-    '#description' => t('The card type, expiration date and last four digits of the card number are encrypted and stored temporarily while the customer is in the process of checking out.<br /><b>You must enable encryption</b> by following the <a href="!url">encryption instructions</a> in order to accept credit card payments.<br />In short, you must enter the path of a directory outside of your document root where the encryption key may be stored.<br />Relative paths will be resolved relative to the Backdrop installation directory.<br />Once this directory is set, you should not change it.', array('!url' => 'http://drupal.org/node/1309226')),
+    '#description' => t('The card type, expiration date and last four digits of the card number are encrypted and stored temporarily while the customer is in the process of checking out.<br /><b>You must enable encryption</b> by following the <em>encryption instructions</em> in order to accept credit card payments.<br />In short, you must enter the path of a directory outside of your document root where the encryption key may be stored.<br />Relative paths will be resolved relative to the Backdrop installation directory. Alternatively, you can specify the <a href="!url">private file system</a> if it is set, for example: <code>private://</code> or <code>private://keys</code><br />Once this directory is set, you should not change it.', array('!url' => '/admin/config/media/file-system')),
     '#default_value' => uc_credit_encryption_key() ? $config->get('uc_credit_encryption_path') : t('Not configured.'),
+  );
+  $encryption_instructions = '<p>';
+  $encryption_instructions .= t('Security is extremely important for websites handling customer credit card data. You should be as careful as possible in the way you protect the data to prevent credit card fraud. Please be sure you are selecting the right options, as some choices may decrease the security of credit card data on your website and should be avoided if at all possible. Most payment gateways will require compliance with a set of security standards called the PCI DSS. When the Ubercart credit card module is used in conjunction with an SSL certificate and your site redirects to https, your site will conform to these standards.');
+  $encryption_instructions .= '</p>';
+  $encryption_instructions .= '<p>';
+  $encryption_instructions .= t('First, you must configure the encryption settings for card data during checkout. To do this, you\'ll need to fill in the filepath textfield. Here you should specify a folder that is outside of your document root (i.e. not in your www or public_html directory) where Ubercart can create a file to hold an encryption key. You can also specify the private file location, if it is set for this website, by entering something like <code>private://keys</code>. You will need to grant permissions on the folder that allow Backdrop to write to it, but you can change this once the encryption key file has been created. Relative paths will be resolved relative to the Backdrop installation directory, so if you have a directory structure like the following:');
+  $encryption_instructions .= '</p>';
+  $encryption_instructions .= '<pre>';
+  $encryption_instructions .= 'mysite
+mysite/www <-- Backdrop installed here.
+mysite/keys';
+  $encryption_instructions .= '</pre>';
+  $encryption_instructions .= '<p>';
+  $encryption_instructions .= t('You would be able to specify ../keys on Encryption key directory field and Backdrop will make sure the credit card encryption key is created in the proper directory. For security reasons, you should not use your site\'s files directory except in testing.');
+  $encryption_instructions .= '</p>';
+  $form['cc_security']['encryption_instructions'] = array(
+    '#type' => 'details',
+    '#summary' => t('Encryption instructions'),
+    '#details' => $encryption_instructions,
+    '#attributes' => array(
+      'class' => array('description'),
+    ),
   );
 
   // Form elements that deal with the type of data requested at checkout.
@@ -242,11 +264,18 @@ function uc_credit_settings_form($form, &$form_state) {
 function uc_credit_settings_form_validate($form, &$form_state) {
 
   // Trim trailing whitespace and any trailing / or \ from the key path name.
-  $key_path = rtrim(trim($form_state['values']['uc_credit_encryption_path']), '/\\');
+  $original_key_path = $key_path = rtrim(trim($form_state['values']['uc_credit_encryption_path']), '/\\');
 
   // Test to see if a path was entered.
   if (empty($key_path)) {
     form_set_error('uc_credit_encryption_path', t('A key path must be specified in the "Security settings" tab.'));
+  }
+
+  $scheme = file_uri_scheme($key_path);
+  if ($scheme == 'private') {
+    $directory_path = file_stream_wrapper_get_instance_by_uri($key_path)->getDirectoryPath();
+
+    $key_path = $directory_path . '/' . file_uri_target($key_path);
   }
 
   // Construct complete key file path.
@@ -264,7 +293,7 @@ function uc_credit_settings_form_validate($form, &$form_state) {
         else {
           // Key file exists and is valid, save result of trim() back into
           // $form_state and proceed to submit handler.
-          $form_state['values']['uc_credit_encryption_path'] = $key_path;
+          $form_state['values']['uc_credit_encryption_path'] = $original_key_path;
           return;
         }
       }
@@ -314,7 +343,7 @@ function uc_credit_settings_form_validate($form, &$form_state) {
   }
 
   // If validation succeeds, save result of trim() back into $form_state.
-  $form_state['values']['uc_credit_encryption_path'] = $key_path;
+  $form_state['values']['uc_credit_encryption_path'] = $original_key_path;
 }
 
 /**
