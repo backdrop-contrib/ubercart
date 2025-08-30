@@ -31,7 +31,7 @@ To upgrade to the new API for rate lookups, you will need to select the new API 
 
 ## Setting up OAuth2 Credentials with USPS
 
-The new USPS API uses OAuth2 validation, which you will need to set up on the [USPS Developer Portal](https://developers.usps.com). In the old API, you had a USPS User ID, which never changed and was all that was needed to do a rate lookup. With the OAuth2 API, every lookup contains an OAUth2 access token, which is time-limited and expires after several hours. The USPS module takes care of obtaining the necessary token and renewing it regularly; this is done transparently, so you don't need to worry about it. However, in order to obtain the token, you will need to obtain a Client ID and a Client Secret (which are both long strings, the latter longer than the former), and enter these into the settings.
+The new USPS API uses OAuth2 validation, which you will need to set up on the [USPS Developer Portal](https://developers.usps.com). In the old API, you had a USPS User ID, which never changed and was all that was needed to do a rate lookup. With the OAuth2 API, every lookup contains an OAUth2 access token, which is time-limited and expires after several hours. The USPS module takes care of obtaining the necessary token and renewing it regularly; this is done transparently, so you don't need to worry about it. However, in order to obtain the token, you will need to obtain a Consumer Key and a Consumer Secret (which are both long strings, the latter longer than the former), and enter these into the settings.
 
 You will do that by creating an account on the USPS site (click "Sign up" on the Developer Portal), but you may already have an account (you needed one to create the original User ID for the Web Tools API).
 
@@ -46,8 +46,8 @@ Then click "Add App." This will create the new App.
 
 When the App is created, you will see some details about it. Two are very important:
 
-* Consumer Key — this is the "Client ID" that you will need to enter into Ubercart settings.
-* Consumer Secret — this is the "Client Secret" that you will need to enter into Ubercart settings.
+* Consumer Key — this is the "Consumer Key" that you will need to enter into Ubercart settings.
+* Consumer Secret — this is the "Consumer Secret" that you will need to enter into Ubercart settings.
 
 Both of these are required for Ubercart to obtain an access token in order to do rate lookups. Copy them both, and keep them in a safe place (ideally, an encrypted safe place).
 
@@ -63,11 +63,11 @@ The configuration options can be found at Admin > Store > Configuration > Shippi
 
 The first setting in the Credentials tab is **Method**: select _New API_ to switch to the new API. When you do this, the fields below **Method* will change. (New installations of Ubercart will automatically be set to use the new API.)
 
-#### USPS client ID
+#### USPS Consumer Key
 
 Enter the "Consumer Key" from your USPS account.
 
-#### USPS client secret
+#### USPS Consumer Secret
 
 Enter the "Consumer Secret" from your USPS account. This will be saved but not displayed when you save the configuration; you shouldn't need to enter it again.
 

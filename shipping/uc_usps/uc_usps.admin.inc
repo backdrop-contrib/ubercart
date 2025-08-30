@@ -66,21 +66,21 @@ function uc_usps_admin_settings($form, &$form_state) {
       ),
     ),
   );
-  $form['uc_usps_credentials']['newapi']['uc_usps_client_id'] = array(
+  $form['uc_usps_credentials']['newapi']['uc_usps_consumer_key'] = array(
     '#type' => 'textfield',
-    '#title' => t('USPS client ID'),
-    '#description' => t('Enter your Client ID for OAuth2 authorization.'),
-    '#default_value' => $config->get('uc_usps_client_id'),
+    '#title' => t('USPS Consumer Key'),
+    '#description' => t('Enter your Consumer Key for OAuth2 authorization.'),
+    '#default_value' => $config->get('uc_usps_consumer_key'),
     '#size' => 120,
   );
-  $client_secret = $config->get('uc_usps_client_secret');
-  $form['uc_usps_credentials']['newapi']['uc_usps_client_secret'] = array(
+  $consumer_secret = $config->get('uc_usps_consumer_secret');
+  $form['uc_usps_credentials']['newapi']['uc_usps_consumer_secret'] = array(
     '#type' => 'password',
-    '#title' => t('USPS client secret'),
-    '#description' => empty($client_secret) ?
-      t('Enter your Client Secret for token generation. It will be saved when you save settings but will not be shown after saving for security purposes.') :
-      t('You can update your Client Secret here if needed, but if the previously saved value is correct, you do not have to enter anything.'),
-    '#placeholder' => empty($client_secret) ? t('Enter the client secret') : t('<previous secret saved>'),
+    '#title' => t('USPS Consumer Secret'),
+    '#description' => empty($consumer_secret) ?
+      t('Enter your Consumer Secret for token generation. It will be saved when you save settings but will not be shown after saving for security purposes.') :
+      t('You can update your Consumer Secret here if needed, but if the previously saved value is correct, you do not have to enter anything.'),
+    '#placeholder' => empty($consumer_secret) ? t('Enter the Consumer Secret') : t('<previous Consumer Secret saved>'),
     '#size' => 120,
   );
   $form['uc_usps_credentials']['newapi']['uc_usps_connection_address'] = array(
@@ -386,7 +386,7 @@ function uc_usps_admin_settings_submit($form, &$form_state) {
   $fields = array(
     'uc_usps_authorization_method',
     'uc_usps_user_id',
-    'uc_usps_client_id',
+    'uc_usps_consumer_key',
     'uc_usps_connection_address',
     'uc_usps_online_rates',
     'uc_usps_env_services',
@@ -417,9 +417,9 @@ function uc_usps_admin_settings_submit($form, &$form_state) {
   }
 
   // Update OAuth2 client secret if we entered a value.
-  $client_secret = $form_state['values']['uc_usps_client_secret'];
-  if (!empty($client_secret)) {
-    $config->set('uc_usps_client_secret', $client_secret);
+  $consumer_secret = $form_state['values']['uc_usps_consumer_secret'];
+  if (!empty($consumer_secret)) {
+    $config->set('uc_usps_consumer_secret', $consumer_secret);
   }
   // Save all config changes now because _uc_usps_fetch_access_token() will also
   // modify the config file.

@@ -75,10 +75,10 @@ Backdrop.behaviors.uspsAdminFieldsetSummaries = {
     $('fieldset#edit-uc-usps-quote-options', context).backdropSetSummary(function(context) {
       var options;
       if ($('#edit-uc-usps-all-in-one-0').is(':checked')) {
-        options = Backdrop.t('All in one');
+        options = Backdrop.t('Each in own');
       }
       else {
-        options = Backdrop.t('Each in own');
+        options = Backdrop.t('All in one');
       }
       if ($('#edit-uc-usps-authorization-method-newapi').is(':checked')) {
         options += '<br> Price type: ' + $('#edit-uc-usps-price-type', context).val().toLowerCase();
