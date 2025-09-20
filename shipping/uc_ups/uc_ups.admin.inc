@@ -47,7 +47,7 @@ function uc_ups_admin_settings($form, &$form_state) {
   $form['uc_ups_credentials']['uc_ups_access_token'] = array(
     '#type' => 'textfield',
     '#title' => t('Access Token'),
-    '#default_value' => $config->get('uc_ups_access_token'),
+    '#default_value' => state_get('uc_ups_access_token'),
     '#disabled' => TRUE,
     '#description' => t('This token is automatically retrieved via OAuth authentication.'),
   );
@@ -170,7 +170,7 @@ function uc_ups_admin_settings_submit($form, &$form_state) {
   }
 
   // Check token expiration
-  $expires_in = config_get('uc_ups.settings', 'uc_ups_token_expiry');
+  $expires_in = state_get('uc_ups_token_expiry');
   $current_time = REQUEST_TIME;
 
   if ($expires_in > $current_time + 300) {
