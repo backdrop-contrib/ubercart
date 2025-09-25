@@ -824,8 +824,7 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
     (float) $package->width,
     (float) $package->height,
   );
-  sort($dimensions);
-  $dimensions = array_reverse($dimensions);
+  rsort($dimensions);
 
   if ($domestic) { // Domestic
     // Get extra services for domestic.
@@ -1290,6 +1289,21 @@ function _uc_usps_package_products($products, &$addresses = array()) {
       $product->height = $temp->height;
       $product->length_units = $temp->length_units;
       $product->usps['container'] = isset($temp->usps['container']) ? $temp->usps['container'] : 'VARIABLE';
+
+      if (config_get('uc_usps.settings', 'uc_usps_authorization_method') == 'newapi') {
+        // Stack products of varying size to get required package dimensions to
+        // accommodate all products in the package.
+        $dimensions = array(
+          $product->length,
+          $product->width,
+          $product->height,
+        );
+        rsort($dimensions);
+        $packages[$key][0]->length = max($packages[$key][0]->length, $dimensions[0]);
+        $packages[$key][0]->width = max($packages[$key][0]->width, $dimensions[1]);
+        $packages[$key][0]->height += $dimensions[2];
+        $packages[$key][0]->girth = 2 * $packages[$key][0]->width + 2 * $packages[$key][0]->height;
+      }
 
       $packages[$key][0]->price += $product->price * $product->qty;
       $packages[$key][0]->weight += $product->weight * $product->qty * uc_weight_conversion($product->weight_units, 'lb');
