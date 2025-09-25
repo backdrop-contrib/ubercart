@@ -685,13 +685,17 @@ function uc_usps_newapi_quote($products, $details, $method) {
     return array();
   }
 
-  // Initialize $debug_data to prevent PHP notices here and in uc_quote.
+  $debug = user_access('configure quotes') && config_get('uc_quote.settings', 'uc_quote_display_debug');
+  // Initialize $debug_data, which we will fill in as we get quotes.
+  // $debug_data['debug'] is used for admin debugging; if $debug is TRUE, it
+  // will contain all requests and results formatted as a single HTML string.
+  // $debug_data['error'] will contain a list of any error messages that will be
+  // displayed to the end user. We only report the existence of errors, leaving
+  // it to admins to check the watchdog log for details.
   $debug_data = array(
     'debug' => NULL,
     'error' => array(),
   );
-  $debug = user_access('configure quotes') && config_get('uc_quote.settings', 'uc_quote_display_debug');
-  $debug_data = array();
   $services = array();
   $addresses = array(
     UcAddress::__set_state(config_get('uc_quote.settings', 'uc_quote_store_default_address')),
@@ -712,9 +716,7 @@ function uc_usps_newapi_quote($products, $details, $method) {
       // USPS new API only lets us do a rate request for one package at a
       // time so we'll have to do a rate lookup for each package and then
       // combine the results.
-
-      $errors = array();
-      $rate_info = uc_usps_newapi_package_quote($package, $origin, $destination, $method, $errors);
+      $rate_info = uc_usps_newapi_package_quote($package, $origin, $destination, $method, $debug, $debug_data);
       $num_packages++;
       foreach ($rate_info as $key => $info) {
         $rate = $info['totalBasePrice'];
@@ -732,11 +734,6 @@ function uc_usps_newapi_quote($products, $details, $method) {
         else {
           $services[$key]['rate'] += $rate;
           $services[$key]['count']++;
-        }
-      }
-      if (!empty($errors)) {
-        foreach ($errors as $error) {
-          $debug_data['error'][] = $error['code'] . ' ' . $error['message'];
         }
       }
     }
@@ -767,6 +764,10 @@ function uc_usps_newapi_quote($products, $details, $method) {
       unset($services[$service]);
     }
   }
+  if ($debug && empty($debug_data['error'])) {
+    // No errors, but no matching services. Add debugging information.
+    $debug_data['debug'] .= t('None of the recommended services match those chosen in the settings.') . "<br>\n";
+  }
 
   // Sort by price.
   uasort($services, 'uc_quote_price_sort');
@@ -789,15 +790,15 @@ function uc_usps_newapi_quote($products, $details, $method) {
  * @param UcAddress $origin - its origin address.
  * @param object $destination - its destination.
  * @param array $method - the quote method.
- * @param array $errors - a list that will be augmented with diagnostic
- * information if there are any errors.
+ * @param bool $debug - whether to record debug information in $debug_data.
+ * @param array $debug_data - diagnostic information (if requested) and errors.
  *
  * @return array
  *   An array of rate information for this package.
  *   The fields of each row are those returned by USPS and vary by mail class.
  *   Each rate has a key so that multi-package quotes can be combined by key.
  */
-function uc_usps_newapi_package_quote($package, $origin, $destination, $method, &$errors) {
+function uc_usps_newapi_package_quote($package, $origin, $destination, $method, $debug, &$debug_data) {
   if (empty($package) || empty($destination) || empty($destination->country)) {
     return array();
   }
@@ -857,6 +858,9 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       'extraServices' => $extra_services,
     );
     $request_data = backdrop_json_encode($request);
+    if ($debug) {
+      $debug_data['debug'] .= t('REQUEST') . ': ' . check_plain($request_data) . "<br />\n";
+    }
     $result = backdrop_http_request($connection_url, array(
       'method' => 'POST',
       'data' => $request_data,
@@ -865,6 +869,9 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
         'Authorization' => 'Bearer ' . $access_token,
       ),
     ));
+    if ($debug) {
+      $debug_data['debug'] .= t('RESULT') . ': ' . check_plain($result->data) . "<br />\n";
+    }
     $data = backdrop_json_decode($result->data);
     if (isset($data['error'])) {
       $errors[] = $data['error'];
@@ -1040,6 +1047,18 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       }
     }
   }
+
+  // Reformat errors as individual strings and report them.
+  if (!empty($errors)) {
+    foreach ($errors as $error) {
+      $quote_error = $error['code'] . ' ' . $error['message'];
+      // This will put the quote error into the output buffer, where it will be
+      // picked up and reported to watchdog if we're turned on error logging.
+      // See uc_quote_action_get_quote().
+      echo $quote_error;
+    }
+  }
+
   return $rate_info;
 }
 
