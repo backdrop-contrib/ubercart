@@ -858,7 +858,7 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
     );
     $request_data = backdrop_json_encode($request);
     if ($debug) {
-      $debug_data['debug'] .= t('REQUEST') . ': ' . check_plain($request_data) . "<br />\n";
+      $debug_data['debug'] .= t("REQUEST (DOM,PARCEL):\n@request<br>", array('@request' => json_encode($request, JSON_PRETTY_PRINT)));
     }
     $result = backdrop_http_request($connection_url, array(
       'method' => 'POST',
@@ -868,10 +868,10 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
         'Authorization' => 'Bearer ' . $access_token,
       ),
     ));
-    if ($debug) {
-      $debug_data['debug'] .= t('RESULT') . ': ' . check_plain($result->data) . "<br />\n";
-    }
     $data = backdrop_json_decode($result->data);
+    if ($debug) {
+      $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+    }
     if (isset($data['error'])) {
       $errors[] = $data['error'];
     }
@@ -884,14 +884,24 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
             'totalBasePrice' => $rate_option['totalBasePrice'],
           );
           // Don't include special destination facilities for domestic mail.
-          // Don't include mailClass of SA, or USPS_MARKETING_MAIL.
-          // Include NONSTANDARD processing if package is not machinable & vv.
-          if ($rate_row['destinationEntryFacilityType'] == 'NONE' &&
-            !in_array($rate_row['mailClass'], array('SA', 'USPS_MARKETING_MAIL')) &&
-            !($rate_row['processingCategory'] == 'NONSTANDARD' xor $package->machinable)) {
-            $service_key = _uc_usps_newapi_service_key($rate_row);
-            $rate_info[$service_key] = $rate_row;
+          if ($rate_row['destinationEntryFacilityType'] != 'NONE') {
+            continue;
           }
+          // Don't include mailClass of SA, or USPS_MARKETING_MAIL.
+          if (in_array($rate_row['mailClass'], array('SA', 'USPS_MARKETING_MAIL'))) {
+            continue;
+          }
+          // If package was machinable, don't include NONSTANDARD processing.
+          if ($rate_row['processingCategory'] == 'NONSTANDARD' && $package->machinable) {
+            continue;
+          }
+          // If package is not machinable, don't include MACHINABLE processing.
+          if ($rate_row['processingCategory'] == 'MACHINABLE' && !$package->machinable) {
+            continue;
+          }
+          // And if we're still here, include the rate.
+          $service_key = _uc_usps_newapi_service_key($rate_row);
+          $rate_info[$service_key] = $rate_row;
         }
       }
     }
@@ -912,6 +922,12 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       if (_uc_usps_envelope_size_qualifies($dimensions, $rate)) {
         $request['processingCategory'] = $rate;
         $request_data = backdrop_json_encode($request);
+        if ($debug) {
+          $debug_data['debug'] .= t("REQUEST (DOM,@rate):\n@request<br>", array(
+            '@rate' => $rate,
+            '@request' => json_encode($request, JSON_PRETTY_PRINT)),
+          );
+        }
         $result = backdrop_http_request($connection_url, array(
           'method' => 'POST',
           'data' => $request_data,
@@ -921,6 +937,9 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
           ),
         ));
         $data = backdrop_json_decode($result->data);
+        if ($debug) {
+          $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+        }
         if (isset($data['error'])) {
           $errors[] = $data['error'];
         }
@@ -960,6 +979,9 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       'extraServices' => [],
     );
     $request_data = backdrop_json_encode($request);
+    if ($debug) {
+      $debug_data['debug'] .= t("REQUEST (INTL,PARCEL):\n@request<br>", array('@request' => json_encode($request, JSON_PRETTY_PRINT)));
+    }
     $result = backdrop_http_request($connection_url, array(
       'method' => 'POST',
       'data' => $request_data,
@@ -969,6 +991,9 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       ),
     ));
     $data = backdrop_json_decode($result->data);
+    if ($debug) {
+      $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+    }
     if (isset($data['error'])) {
       $errors[] = $data['error'];
     }
@@ -980,12 +1005,17 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
           $rate_row = $rate_option['rates'][0] + array(
             'totalBasePrice' => $rate_option['totalBasePrice'],
           );
-          // Include NONSTANDARD processing if package is not machinable &
-          // vice-versa.
-          if (!($rate_row['processingCategory'] == 'NONSTANDARD' xor $package->machinable)) {
-            $service_key = _uc_usps_newapi_service_key($rate_row);
-            $rate_info[$service_key] = $rate_row;
+          // If package was machinable, don't include NONSTANDARD processing.
+          if ($rate_row['processingCategory'] == 'NONSTANDARD' && $package->machinable) {
+            continue;
           }
+          // If package is not machinable, don't include MACHINABLE processing.
+          if ($rate_row['processingCategory'] == 'MACHINABLE' && !$package->machinable) {
+            continue;
+          }
+          // And if we're still here, include the rate.
+          $service_key = _uc_usps_newapi_service_key($rate_row);
+          $rate_info[$service_key] = $rate_row;
         }
       }
     }
@@ -1005,6 +1035,12 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       if (_uc_usps_envelope_size_qualifies($dimensions, $rate)) {
         $request['processingCategory'] = $rate;
         $request_data = backdrop_json_encode($request);
+        if ($debug) {
+          $debug_data['debug'] .= t("REQUEST (INTL,@rate):\n@request<br>", array(
+            '@rate' => $rate,
+            '@request' => json_encode($request, JSON_PRETTY_PRINT)),
+          );
+        }
         $result = backdrop_http_request($connection_url, array(
           'method' => 'POST',
           'data' => $request_data,
@@ -1014,6 +1050,9 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
           ),
         ));
         $data = backdrop_json_decode($result->data);
+        if ($debug) {
+          $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+        }
         if (isset($data['error'])) {
           $errors[] = $data['error'];
         }
