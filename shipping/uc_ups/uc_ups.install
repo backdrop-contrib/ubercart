@@ -51,6 +51,35 @@ function uc_ups_schema() {
 }
 
 /**
+ * Implements hook_uninstall().
+ */
+function uc_ups_uninstall() {
+  config_clear('uc_ups.settings', 'uc_ups_access_license');
+  config_clear('uc_ups.settings', 'uc_ups_shipper_number');
+  config_clear('uc_ups.settings', 'uc_ups_user_id');
+  config_clear('uc_ups.settings', 'uc_ups_password');
+  config_clear('uc_ups.settings', 'uc_ups_connection_address');
+  config_clear('uc_ups.settings', 'uc_ups_services');
+  config_clear('uc_ups.settings', 'uc_ups_pickup_type');
+  config_clear('uc_ups.settings', 'uc_ups_pkg_type');
+  config_clear('uc_ups.settings', 'uc_ups_classification');
+  config_clear('uc_ups.settings', 'uc_ups_negotiated_rates');
+  config_clear('uc_ups.settings', 'uc_ups_all_in_one');
+  config_clear('uc_ups.settings', 'uc_ups_unit_system');
+  config_clear('uc_ups.settings', 'uc_ups_insurance');
+  config_clear('uc_ups.settings', 'uc_ups_rate_markup');
+  config_clear('uc_ups.settings', 'uc_ups_rate_markup_type');
+  config_clear('uc_ups.settings', 'uc_ups_weight_markup');
+  config_clear('uc_ups.settings', 'uc_ups_weight_markup_type');
+  // New variables for oauth2.
+  // @todo remove password, access_license and user_id.
+  config_clear('uc_ups.settings', 'uc_ups_client_id');
+  config_clear('uc_ups.settings', 'uc_ups_secret');
+  config_clear('uc_ups.settings', 'uc_ups_oauth2_token_production');
+  config_clear('uc_ups.settings', 'uc_ups_oauth2_token_testing');
+}
+
+/**
  * Implements hook_update_last_removed().
  */
 function uc_ups_update_last_removed() {
@@ -62,50 +91,68 @@ function uc_ups_update_last_removed() {
  */
 function uc_ups_update_1000() {
   $config = config('uc_ups.settings');
-  $config->set('uc_ups_access_license', update_variable_get('uc_ups_access_license', ''));
-  $config->set('uc_ups_shipper_number', update_variable_get('uc_ups_shipper_number', ''));
-  $config->set('uc_ups_user_id', update_variable_get('uc_ups_user_id', ''));
-  $config->set('uc_ups_password', update_variable_get('uc_ups_password', ''));
-  $config->set('uc_ups_connection_address', update_variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/ups.app/xml/'));
+  $config->set('uc_ups_client_id', update_variable_get('uc_ups_client_id', ''));
+  $config->set('uc_ups_client_secret', update_variable_get('uc_ups_client_secret', ''));
+  $config->set('uc_ups_connection_address', update_variable_get('uc_ups_connection_address', 'https://wwwcie.ups.com/'));
   $config->set('uc_ups_services', update_variable_get('uc_ups_services', array()));
-  $config->set('uc_ups_all_in_one', update_variable_get('uc_ups_all_in_one', TRUE));
-  $config->set('uc_ups_pkg_type', update_variable_get('uc_ups_pkg_type', '02'));
-  $config->set('uc_ups_classification', update_variable_get('uc_ups_classification', '04'));
-  $config->set('uc_ups_negotiated_rates', update_variable_get('uc_ups_negotiated_rates', FALSE));
-  $config->set('uc_ups_pickup_type', update_variable_get('uc_ups_pickup_type', '01'));
-  $config->set('uc_ups_residential_quotes', update_variable_get('uc_ups_residential_quotes', FALSE));
-  $config->set('uc_ups_unit_system', update_variable_get('uc_ups_unit_system', config_get('uc_store.settings', 'uc_length_unit')));
-  $config->set('uc_ups_insurance', update_variable_get('uc_ups_insurance', TRUE));
+  $config->set('uc_ups_negotiated_rates', update_variable_get('uc_ups_negotiated_rates', array()));
   $config->set('uc_ups_rate_markup_type', update_variable_get('uc_ups_rate_markup_type', 'percentage'));
   $config->set('uc_ups_rate_markup', update_variable_get('uc_ups_rate_markup', '0'));
-  $config->set('uc_ups_weight_markup_type', update_variable_get('uc_ups_weight_markup_type', 'percentage'));
-  $config->set('uc_ups_weight_markup', update_variable_get('uc_ups_weight_markup', 0));
-  $config->set('uc_ups_label_lifetime', update_variable_get('uc_ups_label_lifetime', ''));
   $config->set('uc_ups_markup', update_variable_get('uc_ups_markup', ''));
   $config->set('uc_ups_markup_type', update_variable_get('uc_ups_markup_type', ''));
+  $config->set('uc_ups_oauth_token_token_keyconnection_address', update_variable_get('uc_ups_oauth_token_token_keyconnection_address', 'dynamic variable in file /uc_ups/uc_ups.module line 65'));
+  $config->set('uc_ups_label_lifetime', update_variable_get('uc_ups_label_lifetime', '0'));
+  $config->set('uc_ups_pkg_type', update_variable_get('uc_ups_pkg_type', '02'));
+  $config->set('uc_ups_shipper_number', update_variable_get('uc_ups_shipper_number', ''));
+  $config->set('uc_ups_secret', update_variable_get('uc_ups_secret', ''));
+  $config->set('uc_ups_unit_system', update_variable_get('uc_ups_unit_system', 'dynamic value in file /uc_ups/uc_ups.ship.inc line 431'));
+  $config->set('uc_ups_insurance', update_variable_get('uc_ups_insurance', TRUE));
+  $config->set('uc_ups_pickup_type', update_variable_get('uc_ups_pickup_type', '01'));
+  $config->set('uc_ups_classification', update_variable_get('uc_ups_classification', '04'));
+  $config->set('uc_ups_residential_quotes', update_variable_get('uc_ups_residential_quotes', array()));
+  $config->set('uc_ups_all_in_one', update_variable_get('uc_ups_all_in_one', TRUE));
+  $config->set('uc_ups_weight_markup', update_variable_get('uc_ups_weight_markup', '0'));
+  $config->set('uc_ups_weight_markup_type', update_variable_get('uc_ups_weight_markup_type', 'percentage'));
   $config->save();
 
-  update_variable_del('uc_ups_access_license');
-  update_variable_del('uc_ups_shipper_number');
-  update_variable_del('uc_ups_user_id');
-  update_variable_del('uc_ups_password');
+  state_set('uc_ups_access_token', update_variable_get('uc_ups_access_token', ''));
+  state_set('uc_ups_token_expiry', update_variable_get('uc_ups_token_expiry', '0'));
+
+  update_variable_del('uc_ups_client_id');
+  update_variable_del('uc_ups_client_secret');
+  update_variable_del('uc_ups_access_token');
   update_variable_del('uc_ups_connection_address');
   update_variable_del('uc_ups_services');
-  update_variable_del('uc_ups_all_in_one');
-  update_variable_del('uc_ups_pkg_type');
-  update_variable_del('uc_ups_classification');
   update_variable_del('uc_ups_negotiated_rates');
-  update_variable_del('uc_ups_pickup_type');
-  update_variable_del('uc_ups_residential_quotes');
-  update_variable_del('uc_ups_unit_system');
-  update_variable_del('uc_ups_insurance');
   update_variable_del('uc_ups_rate_markup_type');
   update_variable_del('uc_ups_rate_markup');
-  update_variable_del('uc_ups_weight_markup_type');
-  update_variable_del('uc_ups_weight_markup');
-  update_variable_del('uc_ups_label_lifetime');
+  update_variable_del('uc_ups_token_expiry');
   update_variable_del('uc_ups_markup');
   update_variable_del('uc_ups_markup_type');
+  update_variable_del('uc_ups_oauth_token_token_keyconnection_address');
+  update_variable_del('uc_ups_label_lifetime');
+  update_variable_del('uc_ups_pkg_type');
+  update_variable_del('uc_ups_shipper_number');
+  update_variable_del('uc_ups_secret');
+  update_variable_del('uc_ups_unit_system');
+  update_variable_del('uc_ups_insurance');
+  update_variable_del('uc_ups_pickup_type');
+  update_variable_del('uc_ups_classification');
+  update_variable_del('uc_ups_residential_quotes');
+  update_variable_del('uc_ups_all_in_one');
+  update_variable_del('uc_ups_weight_markup');
+  update_variable_del('uc_ups_weight_markup_type');
+}
+
+/**
+ * Remove pre-OAuth credentials from config.
+ */
+function uc_ups_update_1001() {
+  $config = config('uc_ups.settings');
+  $config->clear('uc_ups_access_license');
+  $config->clear('uc_ups_user_id');
+  $config->clear('uc_ups_password');
+  $config->save();
 }
 
 /**

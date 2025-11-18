@@ -101,8 +101,8 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
           'g' => t('Grams'),
         ),
         '#default_value' => isset($package->weight_units) ?
-        $package->weight_units :
-        config_get('uc_store.settings', 'uc_weight_unit'),
+          $package->weight_units :
+          config_get('uc_store.settings', 'uc_weight_unit'),
       );
       $pkg_form['dimensions'] = array(
         '#type' => 'container',
@@ -138,8 +138,8 @@ function uc_ups_fulfill_order($form, &$form_state, $order, $package_ids) {
           'mm' => t('Millimeters'),
         ),
         '#default_value' => isset($package->length_units) ?
-        $package->length_units :
-        config_get('uc_store.settings', 'uc_length_unit'),
+          $package->length_units :
+          config_get('uc_store.settings', 'uc_length_unit'),
       );
 
       $form['packages'][$id] = $pkg_form;
@@ -255,7 +255,7 @@ function uc_ups_fulfill_order_validate($form, &$form_state) {
   // This is a total hack to work around changes made in the return value
   // from uc_shipping_address_form().  That function needs to be fixed, but
   // until then this should do the trick.
-  $origin        = $form_state['values']['pickup_address'];
+  $origin = $form_state['values']['pickup_address'];
   $origin->phone = $form_state['values']['phone'];
   $origin->first_name = $form_state['values']['first_name'];
   $origin->last_name = $form_state['values']['last_name'];
@@ -299,9 +299,14 @@ function uc_ups_fulfill_order_validate($form, &$form_state) {
   $_SESSION['ups']['order_id'] = $form_state['values']['order_id'];
 
   $request = uc_ups_shipment_request($_SESSION['ups']['packages'], $origin, $destination, $form_state['values']['service']);
-  $response_obj = backdrop_http_request($config->get('uc_ups_connection_address') . 'ShipConfirm', array(
+  $token_data = uc_ups_get_access_token();
+  $response_obj = backdrop_http_request($config->get('uc_ups_connection_address') . 'api/ups.app/xml/ShipConfirm', array(
     'method' => 'POST',
     'data' => $request,
+    'headers' => array(
+      'Authorization' => 'Bearer ' . $token_data['access_token'],
+      'Content-Type' => 'application/xml',
+    ),
   ));
   $response = new SimpleXMLElement($response_obj->data);
   if (isset($response->Response->Error)) {
@@ -356,21 +361,22 @@ function uc_ups_fulfill_order_submit($form, &$form_state) {
  *   ShipConfirm XML document to send to UPS.
  */
 function uc_ups_shipment_request($packages, $origin, $destination, $ups_service) {
-  $config = config('uc_ups.settings');
   $store['name'] = uc_store_name();
-  $store['owner'] = config_get('uc_store.settings', 'uc_store_owner');
+  $store_config = config('uc_store.settings');
+  $store['owner'] = $store_config->get('uc_store_owner');
   $store['email'] = uc_store_email();
   $store['email_from'] = uc_store_email();
-  $store['phone'] = config_get('uc_store.settings', 'uc_store_phone');
-  $store['fax'] = config_get('uc_store.settings', 'uc_store_fax');
-  $store['street1'] = config_get('uc_store.settings', 'uc_store_street1');
-  $store['street2'] = config_get('uc_store.settings', 'uc_store_street2');
-  $store['city'] = config_get('uc_store.settings', 'uc_store_city');
-  $store['zone'] = config_get('uc_store.settings', 'uc_store_zone');
-  $store['postal_code'] = config_get('uc_store.settings', 'uc_store_postal_code');
-  $store['country'] = config_get('uc_store.settings', 'uc_store_country');
+  $store['phone'] = $store_config->get('uc_store_phone');
+  $store['fax'] = $store_config->get('uc_store_fax');
+  $store['street1'] = $store_config->get('uc_store_street1');
+  $store['street2'] = $store_config->get('uc_store_street2');
+  $store['city'] = $store_config->get('uc_store_city');
+  $store['zone'] = $store_config->get('uc_store_zone');
+  $store['postal_code'] = $store_config->get('uc_store_postal_code');
+  $store['country'] = $store_config->get('uc_store_country');
 
-  $account = $config->get('uc_ups_shipper_number');
+  $ups_config = config('uc_ups.settings');
+  $account = $ups_config->get('uc_ups_shipper_number');
   $ua = explode(' ', $_SERVER['HTTP_USER_AGENT']);
   $user_agent = $ua[0];
 
@@ -395,13 +401,13 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
   $shipfrom_country = $shipfrom_country[0]['country_iso_code_2'];
   $shipfrom_zip = $origin->postal_code;
 
-  $ups_units = $config->get('uc_ups_unit_system');
+  $ups_units = $ups_config->get('uc_ups_unit_system');
 
   $package_schema = '';
   foreach ($packages as $package) {
     // Determine length conversion factor and weight conversion factor
     // for this shipment
-    $length_factor = uc_length_conversion($package->length_units, $config->get('uc_ups_unit_system'));
+    $length_factor = uc_length_conversion($package->length_units, $ups_config->get('uc_ups_unit_system'));
     switch ($ups_units) {
       case 'in':
         $weight_factor = uc_weight_conversion($package->weight_units, 'lb');
@@ -424,45 +430,43 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
       );
       $package_schema .= "<Package>";
       $package_schema .= "<PackagingType>";
-      $package_schema .= "<Code>" . $package_type['code'] . "</Code>";
-      $package_schema .= "</PackagingType>";
+      $package_schema .=     "<Code>" . $package_type['code'] . "</Code>";
+      $package_schema .=   "</PackagingType>";
       if ($package->pkg_type == '02' && $package->length && $package->width && $package->height) {
         if ($package->length < $package->width) {
           list($package->length, $package->width) = array($package->width, $package->length);
         }
         $package_schema .= "<Dimensions>";
-        $package_schema .= "<UnitOfMeasurement>";
-        $package_schema .= "<Code>" . strtoupper($config->get('uc_ups_unit_system')) . "</Code>";
-        $package_schema .= "</UnitOfMeasurement>";
-        $package_schema .= "<Length>" . (floor($package->length * $length_factor) + 1) . "</Length>";
-        $package_schema .= "<Width>" . (floor($package->width * $length_factor) + 1) . "</Width>";
-        $package_schema .= "<Height>" . (floor($package->height * $length_factor) + 1) . "</Height>";
+        $package_schema .=   "<UnitOfMeasurement>";
+        $package_schema .=     "<Code>" . strtoupper($ups_config->get('uc_ups_unit_system')) . "</Code>";
+        $package_schema .=   "</UnitOfMeasurement>";
+        $package_schema .=   "<Length>" . (floor($package->length * $length_factor) + 1) . "</Length>";
+        $package_schema .=   "<Width>" . (floor($package->width * $length_factor) + 1) . "</Width>";
+        $package_schema .=   "<Height>" . (floor($package->height * $length_factor) + 1) . "</Height>";
         $package_schema .= "</Dimensions>";
       }
       $size = $package->length * $length_factor + 2 * $length_factor * ($package->width + $package->height);
       $weight = max(1, $package->weight * $weight_factor);
-      $package_schema .= "<PackageWeight>";
-      $package_schema .= "<UnitOfMeasurement>";
-      $package_schema .= "<Code>" . $units . "</Code>";
-      $package_schema .= "<Description>" . $unit_name . "</Description>";
-      $package_schema .= "</UnitOfMeasurement>";
-      $package_schema .= "<Weight>" . number_format($weight, 1, '.', '') . "</Weight>";
-      $package_schema .= "</PackageWeight>";
+      $package_schema .=   "<PackageWeight>";
+      $package_schema .=     "<UnitOfMeasurement>";
+      $package_schema .=       "<Code>" . $units . "</Code>";
+      $package_schema .=       "<Description>" . $unit_name . "</Description>";
+      $package_schema .=     "</UnitOfMeasurement>";
+      $package_schema .=     "<Weight>" . number_format($weight, 1, '.', '') . "</Weight>";
+      $package_schema .=   "</PackageWeight>";
       if ($size > 130 && $size <= 165) {
         $package_schema .= "<LargePackageIndicator/>";
       }
-      $package_schema .= "<PackageServiceOptions>";
-      $package_schema .= "<InsuredValue>";
-      $package_schema .= "<CurrencyCode>" . config_get('uc_store.settings', 'uc_currency_code') . "</CurrencyCode>";
-      $package_schema .= "<MonetaryValue>" . number_format($package->value, 2, '.', '') . "</MonetaryValue>";
-      $package_schema .= "</InsuredValue>";
-      $package_schema .= "</PackageServiceOptions>";
+      $package_schema .=   "<PackageServiceOptions>";
+      $package_schema .=     "<InsuredValue>";
+      $package_schema .=       "<CurrencyCode>" . $store_config->get('uc_currency_code', 'USD') . "</CurrencyCode>";
+      $package_schema .=       "<MonetaryValue>" . number_format($package->value, 2, '.', '') . "</MonetaryValue>";
+      $package_schema .=     "</InsuredValue>";
+      $package_schema .=   "</PackageServiceOptions>";
       $package_schema .= "</Package>";
     }
   }
-
-  $schema = uc_ups_access_request() . "
-<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+  $schema = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <ShipmentConfirmRequest xml:lang=\"en-US\">
   <Request>
     <TransactionReference>
@@ -475,7 +479,7 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
   <Shipment>";
   $schema .= "<Shipper>";
   $schema .= "<Name>" . $store['name'] . "</Name>";
-  $schema .= "<ShipperNumber>" . $config->get('uc_ups_shipper_number') . "</ShipperNumber>";
+  $schema .= "<ShipperNumber>" . $ups_config->get('uc_ups_shipper_number') . "</ShipperNumber>";
   if ($store['phone']) {
     $schema .= "<PhoneNumber>" . $store['phone'] . "</PhoneNumber>";
   }
@@ -538,7 +542,7 @@ function uc_ups_shipment_request($packages, $origin, $destination, $ups_service)
   $schema .= "</BillShipper>";
   $schema .= "</Prepaid>";
   $schema .= "</PaymentInformation>";
-  if ($config->get('uc_ups_negotiated_rates')) {
+  if ($ups_config->get('uc_ups_negotiated_rates')) {
     $schema .= "<RateInformation>
           <NegotiatedRatesIndicator/>
         </RateInformation>";
@@ -646,14 +650,18 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
   $order_id = $_SESSION['ups']['order_id'];
   $packages = array_keys($_SESSION['ups']['packages']);
   $request = uc_ups_request_pickup($form_state['values']['digest'], $order_id, $packages);
-  $result = backdrop_http_request(config_get('uc_ups.settings', 'uc_ups_connection_address') . 'ShipAccept', array(
+  $token_data = uc_ups_get_access_token();
+  $result = backdrop_http_request(config_get('uc_ups.settings', 'uc_ups_connection_address') . 'api/ups.app/xml/ShipAccept', array(
     'method' => 'POST',
     'data' => $request,
+    'headers' => array(
+      'Authorization' => 'Bearer ' . $token_data['access_token'],
+      'Content-Type' => 'application/xml',
+    ),
   ));
   $response = new SimpleXMLElement($result->data);
   $code = (string) $response->Response->ResponseStatusCode;
-  // failed request
-  if ($code == 0) {
+  if ($code == 0) { // failed request
     $error = $response->Response->Error;
     $error_severity = (string) $error->ErrorSeverity;
     $error_code = (string) $error->ErrorCode;
@@ -733,8 +741,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
 function uc_ups_request_pickup($digest, $order_id = 0, $packages = array()) {
   $packages = (array) $packages;
 
-  $schema = uc_ups_access_request();
-  $schema .= "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+  $schema = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <ShipmentAcceptRequest>
   <Request>
     <RequestAction>ShipAccept</RequestAction>";
