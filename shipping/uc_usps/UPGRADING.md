@@ -21,7 +21,7 @@ You can then further set a package type for the product (labeled **Package type*
 
 That means that any _Envelope_ products can still be offered to be shipped in a box. You can't actually specify that it can _only_ be shipped in some type of envelope. However, this is useful, because if you have selected the _All in one_ option in the quote options for USPS, it will permit both _Envelope_ and _Small package_ products to be shipped in the same box.
 
-Another interesting feature of the existing USPS module is that while it offers the user a choice of several different rates, it will ship all packages via the same rate, even if it would be cheaper to ship, say, one product in an envelope and another in a box.
+Another characteristic of the existing USPS module is that while it offers the user a choice of several different rates, it will ship all packages via the same rate, even if it would be cheaper to ship, say, one product in an envelope and another in a box.
 
 (Note that there was a bug in the rendering of of the services presented to the user to choose from, which did not correctly list the number of packages being shipped. This has been fixed in the current version.)
 
@@ -31,7 +31,7 @@ To upgrade to the new API for rate lookups, you will need to select the new API 
 
 ## Setting up OAuth2 Credentials with USPS
 
-The new USPS API uses OAuth2 validation, which you will need to set up on the [USPS Developer Portal](https://developers.usps.com). In the old API, you had a USPS User ID, which never changed and was all that was needed to do a rate lookup. With the OAuth2 API, every lookup contains an OAUth2 access token, which is time-limited and expires after several hours. The USPS module takes care of obtaining the necessary token and renewing it regularly; this is done transparently, so you don't need to worry about it. However, in order to obtain the token, you will need to obtain a Consumer Key and a Consumer Secret (which are both long strings, the latter longer than the former), and enter these into the settings.
+The new USPS API uses OAuth2 validation, which you will need to set up on the [USPS Developer Portal](https://developers.usps.com). In the old API, you had a USPS User ID, which never changed and was all that was needed to do a rate lookup. With the OAuth2 API, every lookup contains an OAuth2 access token, which is time-limited and expires after several hours. The USPS module takes care of obtaining the necessary token and renewing it regularly; this is done transparently, so you don't need to worry about it. However, in order to obtain the token, you will need to obtain a Consumer Key and a Consumer Secret (which are both long strings, the latter longer than the former), and enter these into the settings.
 
 You will do that by creating an account on the USPS site (click "Sign up" on the Developer Portal), but you may already have an account (you needed one to create the original User ID for the Web Tools API).
 
@@ -61,7 +61,7 @@ The configuration options can be found at Admin > Store > Configuration > Shippi
 
 ### Credentials
 
-The first setting in the Credentials tab is **Method**: select _New API_ to switch to the new API. When you do this, the fields below **Method* will change. (New installations of Ubercart will automatically be set to use the new API.)
+The first setting in the Credentials tab is **Method**: select _New API_ to switch to the new API. When you do this, the fields below **Method** will change. (New installations of Ubercart will automatically be set to use the new API.)
 
 #### USPS Consumer Key
 
