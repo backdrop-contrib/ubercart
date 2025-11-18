@@ -854,6 +854,7 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       'mailClasses' => [ 'ALL' ],
       'priceType' => $price_type,
       'mailingDate' => $mailing_date,
+      'hasNonstandardCharacteristics' => $package->non_standard ?? FALSE,
       'extraServices' => $extra_services,
     );
     $request_data = backdrop_json_encode($request);
@@ -891,12 +892,12 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
           if (in_array($rate_row['mailClass'], array('SA', 'USPS_MARKETING_MAIL'))) {
             continue;
           }
-          // If package was machinable, don't include NONSTANDARD processing.
-          if ($rate_row['processingCategory'] == 'NONSTANDARD' && $package->machinable) {
-            continue;
-          }
           // If package is not machinable, don't include MACHINABLE processing.
           if ($rate_row['processingCategory'] == 'MACHINABLE' && !$package->machinable) {
+            continue;
+          }
+          // If package is non-standard, only include NONSTANDARD processing.
+          if ($rate_row['processingCategory'] != 'NONSTANDARD' && package->non_standard) {
             continue;
           }
           // And if we're still here, include the rate.
@@ -952,6 +953,10 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
         }
       }
     }
+    if ($debug) {
+      // Check whether any returned rates aren't in our lists of allowed rates.
+      uc_usps_check_returned_rates($rate_info, array_merge(uc_usps_newapi_dom_env_all_services(), uc_usps_newapi_dom_parcel_all_services()));
+    }
   }
   else { // International
     // Parcel quote
@@ -967,7 +972,7 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
 
     $request = array(
       'originZIPCode' => substr(trim($origin->postal_code), 0, 5),
-      'foreignPostalCode' => substr(trim($destination->postal_code), 0, 5),
+      'foreignPostalCode' => trim($destination->postal_code),
       'destinationCountryCode' => $country_code,
       'weight' => uc_usps_weight_markup($package->weight),
       'length' => $dimensions[0],
@@ -976,6 +981,7 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       'mailClass' => 'ALL',
       'priceType' => $price_type,
       'mailingDate' => $mailing_date,
+      'hasNonstandardCharacteristics' => $package->non_standard ?? FALSE,
       'extraServices' => [],
     );
     $request_data = backdrop_json_encode($request);
@@ -1005,12 +1011,12 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
           $rate_row = $rate_option['rates'][0] + array(
             'totalBasePrice' => $rate_option['totalBasePrice'],
           );
-          // If package was machinable, don't include NONSTANDARD processing.
-          if ($rate_row['processingCategory'] == 'NONSTANDARD' && $package->machinable) {
-            continue;
-          }
           // If package is not machinable, don't include MACHINABLE processing.
           if ($rate_row['processingCategory'] == 'MACHINABLE' && !$package->machinable) {
+            continue;
+          }
+          // If package is non-standard, only include NONSTANDARD processing.
+          if ($rate_row['processingCategory'] != 'NONSTANDARD' && $package->non_standard) {
             continue;
           }
           // And if we're still here, include the rate.
@@ -1065,7 +1071,12 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
         }
       }
     }
+    if ($debug) {
+      // Check whether any returned rates aren't in our lists of allowed rates.
+      uc_usps_check_returned_rates($rate_info, array_merge(uc_usps_newapi_intl_env_all_services(), uc_usps_newapi_intl_parcel_all_services()));
+    }
   }
+dpm($rate_info,'$rate_info');
 
   // In the legacy API, we passed the product packaging type to the USPS rate
   // lookup, but there is no provision for that in the new API. Instead, we
@@ -1098,6 +1109,27 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
   }
 
   return $rate_info;
+}
+
+/**
+ * Debugging utility to check whether returned rates aren't in our lists of
+ * allowed rates. If such rates are missing, post a notice in the watchdog
+ * log that contains the PHP code to add the missing rates to the appropriate
+ * list of supported rates (env or parcel, dom or intl).
+ *
+ * @param array $rate_info - The formatted rates returned by USPS.
+ * @param array $allowed_rates - The list of rates that this module supports.
+ */
+function uc_usps_check_returned_rates($rate_info, $allowed_rates) {
+  $missing = array();
+  foreach ($rate_info as $key => $data) {
+    if (!isset($allowed_rates[$key])) {
+      $missing[] = check_plain("'" . $key . "' => '" . $data['description'] . "',");
+    }
+  }
+  if (!empty($missing)) {
+    watchdog('uc_usps', "Missing rates:<br> !rates", array('!rates' => implode("<br>", $missing)), WATCHDOG_WARNING);
+  }
 }
 
 /**
@@ -1488,6 +1520,18 @@ function _uc_usps_package_products($products, &$addresses = array()) {
       }
     }
   }
+  // Certain packages are non-standard, and we'll need to supply that to the
+  // parcel quote.
+  foreach ($packages as $idx => $package_group) {
+    foreach ($package_group as $jdx => $product) {
+      if ($product->container == 'NONRECTANGULAR') {
+        $packages[$idx][$jdx]->non_standard = TRUE;
+      }
+      else {
+        $packages[$idx][$jdx]->non_standard = FALSE;
+      }
+    }
+  }
   return $packages;
 }
 
@@ -1713,10 +1757,12 @@ function uc_usps_newapi_dom_parcel_all_services() {
     'PMMLFRB' => 'Priority Mail Machinable Large Flat Rate Box',
     'PMMLFRBA' => 'Priority Mail Machinable Large Flat Rate Box APO/FPO/DPO',
     'PMMS' => 'Priority Mail Machinable Single-piece',
+    'PMNS' => 'Priority Mail Nonstandard Single-piece',
     'PMMCNPT1' => 'Priority Mail Machinable Cubic Non-Soft Pack Tier 1',
     'PMMCSPT1' => 'Priority Mail Machinable Cubic Soft Pack Tier 1',
     'PMEMS' => 'Priority Mail Express Machinable Single-piece',
     'UGAMS' => 'USPS Ground Advantage Machinable Single-piece',
+    'UGANS' => 'USPS Ground Advantage Nonstandard Single-piece',
     'UGAMCNPT1' => 'USPS Ground Advantage Machinable Cubic Non-Soft Pack Tier 1',
     'UGAMCSPT1' => 'USPS Ground Advantage Machinable Cubic Soft Pack Tier 1',
     'BPMMP' => 'Bound Printed Matter Machinable Presorted',
@@ -1765,6 +1811,7 @@ function uc_usps_newapi_intl_parcel_all_services() {
     'PMIMIMFRB' => 'Priority Mail International Machinable ISC Medium Flat Rate Box',
     'PMIIS' => 'Priority Mail International ISC Single-piece',
     'PMIMIS' => 'Priority Mail International Machinable ISC Single-piece',
+    'PMINIS' => 'Priority Mail International Nonstandard ISC Single-piece',
     'PMEIIS' => 'Priority Mail Express International ISC Single-piece',
   );
 }
