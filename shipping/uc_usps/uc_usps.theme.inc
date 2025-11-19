@@ -30,8 +30,12 @@ function theme_uc_usps_option_label($variables) {
   // Add USPS service name, removing any 'U.S.P.S.' prefix.
   $output .= preg_replace('/^U\.S\.P\.S\./', '', $service);
 
-  // Add package information
-  $output .= ' (' . format_plural(count($packages), '1 package', '@count packages') . ')';
+  // Add package information.
+  $num_packages = 0;
+  foreach ($packages as $package_group) {
+    $num_packages += count($package_group);
+  }
+  $output .= ' (' . format_plural($num_packages, '1 package', '@count packages') . ')';
 
   return $output;
 }

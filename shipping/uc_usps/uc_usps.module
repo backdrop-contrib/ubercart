@@ -4,8 +4,8 @@
  * United States Postal Service (USPS) shipping quote module.
  */
 
-/******************************************************************************
- * Backdrop Hooks                                                               *
+/*******************************************************************************
+ * Backdrop Hooks                                                              *
  ******************************************************************************/
 
 /**
@@ -119,8 +119,16 @@ function uc_usps_node_load($nodes, $types) {
   }
 
   $vids = array();
-  $shipping_type = config_get('uc_shipping', 'uc_store_shipping_type');
-  $shipping_types = db_query("SELECT id, shipping_type FROM {uc_quote_shipping_types} WHERE id_type = :type AND id IN (:ids)", array(':type' => 'product', ':ids' => array_keys($nodes)))->fetchAllKeyed();
+  $shipping_type = config_get('uc_shipping.settings', 'uc_store_shipping_type');
+  $shipping_types = db_query("
+    SELECT id, shipping_type
+    FROM {uc_quote_shipping_types}
+    WHERE id_type = :type
+    AND id IN (:ids)
+    ", array(
+      ':type' => 'product',
+      ':ids' => array_keys($nodes),
+    ))->fetchAllKeyed();
 
   foreach ($nodes as $nid => $node) {
     if (!in_array($node->type, $product_types)) {
@@ -165,6 +173,18 @@ function uc_usps_node_revision_delete($node) {
     ->execute();
 }
 
+/**
+ * Implements hook_config_info().
+ */
+function uc_usps_config_info() {
+  $prefixes['uc_usps.settings'] = array(
+    'label' => t('Ubercart USPS settings'),
+    'group' => t('Configuration'),
+  );
+
+  return $prefixes;
+}
+
 /******************************************************************************
  * Ubercart Hooks                                                             *
  ******************************************************************************/
@@ -202,73 +222,114 @@ function uc_usps_uc_shipping_method() {
     ),
   );
 
-  $methods = array(
-    'usps_env' => array(
-      'id' => 'usps_env',
-      'module' => 'uc_usps',
-      'title' => t('U.S. Postal Service (Envelope)'),
-      'operations' => $operations,
-      'quote' => array(
-        'type' => 'envelope',
-        'callback' => 'uc_usps_quote',
-        'accessorials' => _uc_usps_env_services(),
+  // Check whether we're using the legacy API or the new API.
+  if (config_get('uc_usps.settings', 'uc_usps_authorization_method') == 'legacy') {
+    return array(
+      'usps_env' => array(
+        'id' => 'usps_env',
+        'module' => 'uc_usps',
+        'title' => t('U.S. Postal Service (Envelope)'),
+        'operations' => $operations,
+        'quote' => array(
+          'type' => 'envelope',
+          'callback' => 'uc_usps_quote',
+          'accessorials' => _uc_usps_env_services(),
+        ),
       ),
-    ),
-    'usps' => array(
-      'id' => 'usps',
-      'module' => 'uc_usps',
-      'title' => t('U.S. Postal Service (Parcel)'),
-      'operations' => $operations,
-      'quote' => array(
-        'type' => 'small_package',
-        'callback' => 'uc_usps_quote',
-        'accessorials' => _uc_usps_services(),
+      'usps' => array(
+        'id' => 'usps',
+        'module' => 'uc_usps',
+        'title' => t('U.S. Postal Service (Parcel)'),
+        'operations' => $operations,
+        'quote' => array(
+          'type' => 'small_package',
+          'callback' => 'uc_usps_quote',
+          'accessorials' => _uc_usps_services(),
+        ),
       ),
-    ),
-    'usps_intl_env' => array(
-      'id' => 'usps_intl_env',
-      'module' => 'uc_usps',
-      'title' => t('U.S. Postal Service (Intl., Envelope)'),
-      'operations' => $operations,
-      'quote' => array(
-        'type' => 'envelope',
-        'callback' => 'uc_usps_quote',
-        'accessorials' => _uc_usps_intl_env_services(),
+      'usps_intl_env' => array(
+        'id' => 'usps_intl_env',
+        'module' => 'uc_usps',
+        'title' => t('U.S. Postal Service (Intl., Envelope)'),
+        'operations' => $operations,
+        'quote' => array(
+          'type' => 'envelope',
+          'callback' => 'uc_usps_quote',
+          'accessorials' => _uc_usps_intl_env_services(),
+        ),
+        'weight' => 1,
       ),
-      'weight' => 1,
-    ),
-    'usps_intl' => array(
-      'id' => 'usps_intl',
-      'module' => 'uc_usps',
-      'title' => t('U.S. Postal Service (Intl., Parcel)'),
-      'operations' => $operations,
-      'quote' => array(
-        'type' => 'small_package',
-        'callback' => 'uc_usps_quote',
-        'accessorials' => _uc_usps_intl_services(),
+      'usps_intl' => array(
+        'id' => 'usps_intl',
+        'module' => 'uc_usps',
+        'title' => t('U.S. Postal Service (Intl., Parcel)'),
+        'operations' => $operations,
+        'quote' => array(
+          'type' => 'small_package',
+          'callback' => 'uc_usps_quote',
+          'accessorials' => _uc_usps_intl_services(),
+        ),
+        'weight' => 1,
       ),
-      'weight' => 1,
-    ),
-  );
-
-  return $methods;
+    );
+  }
+  else { // authorization_method == 'newapi'
+    // Use same IDs as legacy but different callback and services lists
+    // (accessorials).
+    return array(
+      'usps_env' => array(
+        'id' => 'usps_env',
+        'module' => 'uc_usps',
+        'title' => t('U.S. Postal Service (Envelope)'),
+        'operations' => $operations,
+        'quote' => array(
+          'type' => 'envelope',
+          'callback' => 'uc_usps_newapi_quote',
+          'accessorials' => uc_usps_newapi_dom_env_all_services(),
+        ),
+      ),
+      'usps' => array(
+        'id' => 'usps',
+        'module' => 'uc_usps',
+        'title' => t('U.S. Postal Service (Parcel)'),
+        'operations' => $operations,
+        'quote' => array(
+          'type' => 'small_package',
+          'callback' => 'uc_usps_newapi_quote',
+          'accessorials' => uc_usps_newapi_dom_parcel_all_services(),
+        ),
+      ),
+      'usps_intl_env' => array(
+        'id' => 'usps_intl_env',
+        'module' => 'uc_usps',
+        'title' => t('U.S. Postal Service (Intl., Envelope)'),
+        'operations' => $operations,
+        'quote' => array(
+          'type' => 'envelope',
+          'callback' => 'uc_usps_newapi_quote',
+          'accessorials' => uc_usps_newapi_intl_env_all_services(),
+        ),
+        'weight' => 1,
+      ),
+      'usps_intl' => array(
+        'id' => 'usps_intl',
+        'module' => 'uc_usps',
+        'title' => t('U.S. Postal Service (Intl., Parcel)'),
+        'operations' => $operations,
+        'quote' => array(
+          'type' => 'small_package',
+          'callback' => 'uc_usps_newapi_quote',
+          'accessorials' => uc_usps_newapi_intl_parcel_all_services(),
+        ),
+        'weight' => 1,
+      ),
+    );
+  }
 }
 
 /******************************************************************************
  * Module Functions                                                           *
  ******************************************************************************/
-
-/**
- * Implements hook_config_info().
- */
-function uc_usps_config_info() {
-  $prefixes['uc_usps.settings'] = array(
-    'label' => t('Ubercart USPS settings'),
-    'group' => t('Configuration'),
-  );
-
-  return $prefixes;
-}
 
 /**
  * Callback for retrieving USPS shipping quote.
@@ -280,8 +341,12 @@ function uc_usps_config_info() {
  * @param $method
  *   The shipping method to create the quote.
  *
- * @return
- *   JSON object containing rate, error, and debugging information.
+ * @return array
+ *   array of services, keyed on service code, each element being an array with
+ *   the following keys:
+ *   - rate - the rate with markup for this service
+ *   - label — a text string used as the line-item label
+ *   - option_label — formatted HTML for the option presented for user choice
  */
 function uc_usps_quote($products, $details, $method) {
   // The uc_quote AJAX query can fire before the customer has completely
@@ -580,6 +645,522 @@ function uc_usps_intl_rate_request($packages, $origin, $destination) {
 }
 
 /**
+ * Callback for retrieving USPS shipping quote using the new API.
+ *
+ * @param array $products
+ *   Array of cart contents.
+ * @param array $details
+ *   Order details other than product information, which in this case is the
+ *   destination address object (UcAddress).
+ * @param array $method
+ *   The shipping method to create the quote.
+ *
+ * @return array
+ *   list of services, keyed on service_key, each element being an array with
+ *   the following keys:
+ *   - 'rate' - the rate with markup for this service
+ *   - 'label' — a text string used as the line-item label
+ *   - 'option_label' — formatted HTML for the option presented for user choice
+ *   If there are any errors, information about them will returned in an array
+ *   with the key 'data' and one or both of the following keyed elements:
+ *   - 'debug' - a string of debug information
+ *   - 'errors' - an array of strings of the individual errors received.
+ */
+function uc_usps_newapi_quote($products, $details, $method) {
+  // The uc_quote AJAX query can fire before the customer has completely
+  // filled out the destination address, so check to see whether the address
+  // has all needed fields. If not, abort.
+  $destination = (object) $details;
+
+  // Country code is always needed.
+  if (empty($destination->country)) {
+    // Skip this shipping method.
+    return array();
+  }
+
+  // Shipments to the US also need zone and postal_code.
+  if (($destination->country == 840) &&
+      (empty($destination->zone) || empty($destination->postal_code))) {
+    // Skip this shipping method.
+    return array();
+  }
+
+  $debug = user_access('configure quotes') && config_get('uc_quote.settings', 'uc_quote_display_debug');
+  // Initialize $debug_data, which we will fill in as we get quotes.
+  // $debug_data['debug'] is used for admin debugging; if $debug is TRUE, it
+  // will contain all requests and results formatted as a single HTML string.
+  // $debug_data['error'] will contain a list of any error messages that will be
+  // displayed to the end user. We only report the existence of errors, leaving
+  // it to admins to check the watchdog log for details.
+  $debug_data = array(
+    'debug' => NULL,
+    'error' => array(),
+  );
+  $services = array();
+  $addresses = array(
+    UcAddress::__set_state(config_get('uc_quote.settings', 'uc_quote_store_default_address')),
+  );
+
+  // $packages will be a structured array of packages grouped by pickup address.
+  $packages = _uc_usps_package_products($products, $addresses);
+  if (!count($packages)) {
+    return array();
+  }
+  $num_packages = 0; // The total number of packages.
+
+  foreach ($packages as $key => $ship_packages) {
+    $origin = $addresses[$key];
+    $origin->email = uc_store_email();
+
+    foreach ($ship_packages as $package) {
+      // USPS new API only lets us do a rate request for one package at a
+      // time so we'll have to do a rate lookup for each package and then
+      // combine the results.
+      $rate_info = uc_usps_newapi_package_quote($package, $origin, $destination, $method, $debug, $debug_data);
+      $num_packages++;
+      foreach ($rate_info as $key => $info) {
+        $rate = $info['totalBasePrice'];
+        if (!isset($services[$key])) {
+          $services[$key] = array(
+            'rate' => uc_usps_rate_markup((string) $rate),
+            'label' => $info['description'],
+            'option_label' => theme('uc_usps_option_label', array(
+              'service' => $info['description'],
+              'packages' => $packages,
+            )),
+            'count' => 1,
+          );
+        }
+        else {
+          $services[$key]['rate'] += $rate;
+          $services[$key]['count']++;
+        }
+      }
+    }
+  }
+
+  // USPS module ships all packages via the same rate, so filter the list to
+  // include only those services that were quoted for all packages.
+  foreach ($services as $key => $service) {
+    if ($service['count'] != $num_packages) {
+      unset($services[$key]);
+    }
+    else {
+      unset($services[$key]['count']);
+    }
+  }
+
+  // Filter the list to include only those services that were checked in the
+  // settings.
+  $method_services = array(
+    'usps_env' => 'uc_usps_newapi_dom_env_services',
+    'usps' => 'uc_usps_newapi_dom_parcel_services',
+    'usps_intl_env' => 'uc_usps_newapi_intl_env_services',
+    'usps_intl' => 'uc_usps_newapi_intl_parcel_services',
+  )[$method['id']];
+  $usps_services = array_filter(config_get('uc_usps.settings', $method_services));
+  foreach ($services as $service => $quote) {
+    if (!in_array($service, $usps_services)) {
+      unset($services[$service]);
+    }
+  }
+  if ($debug && empty($debug_data['error'])) {
+    // No errors, but no matching services. Add debugging information.
+    $debug_data['debug'] .= t('None of the recommended services match those chosen in the settings.') . "<br>\n";
+  }
+
+  // Sort by price.
+  uasort($services, 'uc_quote_price_sort');
+
+  // Merge debug data into $services.  This is necessary because $debug_data is
+  // not sortable by a 'rate' key, so it has to be kept separate from the
+  // $services data until this point.
+  if (isset($debug_data['debug']) ||
+      (isset($debug_data['error']) && count($debug_data['error']))) {
+    $services['data'] = $debug_data;
+  }
+
+  return $services;
+}
+
+/**
+ * Get a USPS quote on a single package using the new API.
+ *
+ * @param object $package - the package to be quoted.
+ * @param UcAddress $origin - its origin address.
+ * @param object $destination - its destination.
+ * @param array $method - the quote method.
+ * @param bool $debug - whether to record debug information in $debug_data.
+ * @param array $debug_data - diagnostic information (if requested) and errors.
+ *
+ * @return array
+ *   An array of rate information for this package.
+ *   The fields of each row are those returned by USPS and vary by mail class.
+ *   Each rate has a key so that multi-package quotes can be combined by key.
+ */
+function uc_usps_newapi_package_quote($package, $origin, $destination, $method, $debug, &$debug_data) {
+  if (empty($package) || empty($destination) || empty($destination->country)) {
+    return array();
+  }
+  $domestic = $destination->country == 840;
+  if ($domestic && empty($destination->postal_code)) {
+    // Domestic destinations need a ZIP code.
+    return array();
+  }
+  if ($domestic && strpos($method['id'], 'intl')) {
+    // Mismatch between destination and selected method.
+    return array();
+  }
+  $config = config('uc_usps.settings');
+  $price_type = $config->get('uc_usps_price_type');
+  $access_token = uc_usps_access_token();
+  $mailing_date = (new DateTime('@' . (REQUEST_TIME)))->format('Y-m-d');
+  $rate_info = array();
+
+  // Get dimensions and sort them into canonical order no matter how the
+  // packager might have packed products into the package.
+  $dimensions = array(
+    (float) $package->length,
+    (float) $package->width,
+    (float) $package->height,
+  );
+  rsort($dimensions);
+
+  if ($domestic) { // Domestic
+    // Get extra services for domestic.
+    $extra_services = array();
+    if ($config->get('uc_usps_insurance')) {
+      if ($package->price <= 500.0) {
+        $extra_services[] = 930; // Insurance <= $500
+      }
+      else {
+        $extra_services[] = 931; // Insurance > $500
+      }
+    }
+    if ($config->get('uc_usps_signature_confirmation')) {
+      $extra_services[] = 921; // Signature Confirmation
+    }
+
+    // Always do a parcel quote because flat-rate envelopes will only show up
+    // here.
+    $connection_url = $config->get('uc_usps_connection_address') . '/prices/v3/total-rates/search';
+    $request = array(
+      'originZIPCode' => substr(trim($origin->postal_code), 0, 5),
+      'destinationZIPCode' => substr(trim($destination->postal_code), 0, 5),
+      'weight' => uc_usps_weight_markup($package->weight),
+      'length' => $dimensions[0],
+      'width' => $dimensions[1],
+      'height' => $dimensions[2],
+      'mailClasses' => [ 'ALL' ],
+      'priceType' => $price_type,
+      'mailingDate' => $mailing_date,
+      'hasNonstandardCharacteristics' => $package->non_standard ?? FALSE,
+      'extraServices' => $extra_services,
+    );
+    $request_data = backdrop_json_encode($request);
+    if ($debug) {
+      $debug_data['debug'] .= t("REQUEST (DOM,PARCEL):\n@request<br>", array('@request' => json_encode($request, JSON_PRETTY_PRINT)));
+    }
+    $result = backdrop_http_request($connection_url, array(
+      'method' => 'POST',
+      'data' => $request_data,
+      'headers' => array(
+        'Content-Type' => 'application/json',
+        'Authorization' => 'Bearer ' . $access_token,
+      ),
+    ));
+    $data = backdrop_json_decode($result->data);
+    if ($debug) {
+      $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+    }
+    if (isset($data['error'])) {
+      $errors[] = $data['error'];
+    }
+    else {
+      // Accumulate $rate_info entries.
+      if (isset($data['rateOptions'])) {
+        foreach ($data['rateOptions'] as $rate_option) {
+          $rates = $rate_option['rates'];
+          $rate_row = $rate_option['rates'][0] + array(
+            'totalBasePrice' => $rate_option['totalBasePrice'],
+          );
+          // Don't include special destination facilities for domestic mail.
+          if ($rate_row['destinationEntryFacilityType'] != 'NONE') {
+            continue;
+          }
+          // Don't include mailClass of SA, or USPS_MARKETING_MAIL.
+          if (in_array($rate_row['mailClass'], array('SA', 'USPS_MARKETING_MAIL'))) {
+            continue;
+          }
+          // If package is not machinable, don't include MACHINABLE processing.
+          if ($rate_row['processingCategory'] == 'MACHINABLE' && !$package->machinable) {
+            continue;
+          }
+          // If package is non-standard, only include NONSTANDARD processing.
+          if ($rate_row['processingCategory'] != 'NONSTANDARD' && package->non_standard) {
+            continue;
+          }
+          // And if we're still here, include the rate.
+          $service_key = _uc_usps_newapi_service_key($rate_row);
+          $rate_info[$service_key] = $rate_row;
+        }
+      }
+    }
+    // Add first-class letter/card/flat lookups only if the size of the package
+    // qualifies for the mail class to be looked-up.
+    $connection_url = $config->get('uc_usps_connection_address') . '/prices/v3/letter-rates/search';
+    $request = array(
+      'weight' => uc_usps_weight_markup($package->weight),
+      'length' => $dimensions[0],
+      'height' => $dimensions[1],
+      'thickness' => $dimensions[2],
+      'mailingDate' => $mailing_date,
+    );
+    // Letter rates have to be requested one-by-one, so make sure that the
+    // rate is requested and the dimensions qualify to avoid unnecessary
+    // lookups.
+    foreach (array('LETTERS', 'CARDS', 'FLATS') as $rate) {
+      if (_uc_usps_envelope_size_qualifies($dimensions, $rate)) {
+        $request['processingCategory'] = $rate;
+        $request_data = backdrop_json_encode($request);
+        if ($debug) {
+          $debug_data['debug'] .= t("REQUEST (DOM,@rate):\n@request<br>", array(
+            '@rate' => $rate,
+            '@request' => json_encode($request, JSON_PRETTY_PRINT)),
+          );
+        }
+        $result = backdrop_http_request($connection_url, array(
+          'method' => 'POST',
+          'data' => $request_data,
+          'headers' => array(
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $access_token,
+          ),
+        ));
+        $data = backdrop_json_decode($result->data);
+        if ($debug) {
+          $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+        }
+        if (isset($data['error'])) {
+          $errors[] = $data['error'];
+        }
+        else {
+          if (!empty($data['rates'][0])) {
+            $rate_row = $data['rates'][0] + array('totalBasePrice' => $data['totalBasePrice']);
+            $service_key = _uc_usps_newapi_service_key($rate_row);
+            $rate_info[$service_key] = $rate_row;
+          }
+        }
+      }
+    }
+    if ($debug) {
+      // Check whether any returned rates aren't in our lists of allowed rates.
+      uc_usps_check_returned_rates($rate_info, array_merge(uc_usps_newapi_dom_env_all_services(), uc_usps_newapi_dom_parcel_all_services()));
+    }
+  }
+  else { // International
+    // Parcel quote
+    $connection_url = $config->get('uc_usps_connection_address') . '/international-prices/v3/total-rates/search';
+
+    // New API requires 2-letter ISO country codes.
+    $country_code = db_query('
+      SELECT country_iso_code_2
+      FROM {uc_countries}
+      WHERE country_id = :id
+      ', array(':id' => $destination->country))
+      ->fetchField();
+
+    $request = array(
+      'originZIPCode' => substr(trim($origin->postal_code), 0, 5),
+      'foreignPostalCode' => trim($destination->postal_code),
+      'destinationCountryCode' => $country_code,
+      'weight' => uc_usps_weight_markup($package->weight),
+      'length' => $dimensions[0],
+      'width' => $dimensions[1],
+      'height' => $dimensions[2],
+      'mailClass' => 'ALL',
+      'priceType' => $price_type,
+      'mailingDate' => $mailing_date,
+      'hasNonstandardCharacteristics' => $package->non_standard ?? FALSE,
+      'extraServices' => [],
+    );
+    $request_data = backdrop_json_encode($request);
+    if ($debug) {
+      $debug_data['debug'] .= t("REQUEST (INTL,PARCEL):\n@request<br>", array('@request' => json_encode($request, JSON_PRETTY_PRINT)));
+    }
+    $result = backdrop_http_request($connection_url, array(
+      'method' => 'POST',
+      'data' => $request_data,
+      'headers' => array(
+        'Content-Type' => 'application/json',
+        'Authorization' => 'Bearer ' . $access_token,
+      ),
+    ));
+    $data = backdrop_json_decode($result->data);
+    if ($debug) {
+      $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+    }
+    if (isset($data['error'])) {
+      $errors[] = $data['error'];
+    }
+    else {
+      // Accumulate $rate_info entries.
+      if (isset($data['rateOptions'])) {
+        foreach ($data['rateOptions'] as $rate_option) {
+          $rates = $rate_option['rates'];
+          $rate_row = $rate_option['rates'][0] + array(
+            'totalBasePrice' => $rate_option['totalBasePrice'],
+          );
+          // If package is not machinable, don't include MACHINABLE processing.
+          if ($rate_row['processingCategory'] == 'MACHINABLE' && !$package->machinable) {
+            continue;
+          }
+          // If package is non-standard, only include NONSTANDARD processing.
+          if ($rate_row['processingCategory'] != 'NONSTANDARD' && $package->non_standard) {
+            continue;
+          }
+          // And if we're still here, include the rate.
+          $service_key = _uc_usps_newapi_service_key($rate_row);
+          $rate_info[$service_key] = $rate_row;
+        }
+      }
+    }
+    // Letter/card/flat quote
+    $connection_url = $config->get('uc_usps_connection_address') . '/international-prices/v3/letter-rates/search';
+    $request = array(
+      'destinationCountryCode' => $country_code,
+      'weight' => uc_usps_weight_markup($package->weight),
+      'length' => $dimensions[0],
+      'height' => $dimensions[1],
+      'thickness' => $dimensions[2],
+      'mailingDate' => $mailing_date,
+    );
+    // Letter rates have to be requested one-by-one, so make sure that the
+    // dimensions qualify to avoid unnecessary lookups.
+    foreach (array('LETTERS', 'CARDS', 'FLATS') as $rate) {
+      if (_uc_usps_envelope_size_qualifies($dimensions, $rate)) {
+        $request['processingCategory'] = $rate;
+        $request_data = backdrop_json_encode($request);
+        if ($debug) {
+          $debug_data['debug'] .= t("REQUEST (INTL,@rate):\n@request<br>", array(
+            '@rate' => $rate,
+            '@request' => json_encode($request, JSON_PRETTY_PRINT)),
+          );
+        }
+        $result = backdrop_http_request($connection_url, array(
+          'method' => 'POST',
+          'data' => $request_data,
+          'headers' => array(
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $access_token,
+          ),
+        ));
+        $data = backdrop_json_decode($result->data);
+        if ($debug) {
+          $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+        }
+        if (isset($data['error'])) {
+          $errors[] = $data['error'];
+        }
+        else {
+          if (!empty($data['rates'][0])) {
+            $rate_row = $data['rates'][0] + array('totalBasePrice' => $data['totalBasePrice']);
+            $service_key = _uc_usps_newapi_service_key($rate_row);
+            $rate_info[$service_key] = $rate_row;
+          }
+        }
+      }
+    }
+    if ($debug) {
+      // Check whether any returned rates aren't in our lists of allowed rates.
+      uc_usps_check_returned_rates($rate_info, array_merge(uc_usps_newapi_intl_env_all_services(), uc_usps_newapi_intl_parcel_all_services()));
+    }
+  }
+
+  // In the legacy API, we passed the product packaging type to the USPS rate
+  // lookup, but there is no provision for that in the new API. Instead, we
+  // filter the rate quotes according to their description text.
+  $filter_text = _uc_usps_pkg_type_filter_text()[$package->container];
+  if ($filter_text != '*') {
+    if ($filter_text == '') {
+      // This package type is no longer supported.
+      $rate_info = array();
+    }
+    else {
+      // Particular packaging type is called for; filter description text.
+      foreach ($rate_info as $service_key => $info) {
+        if (strpos(strtolower($info['description']), $filter_text) === FALSE) {
+          unset($rate_info[$service_key]);
+        }
+      }
+    }
+  }
+
+  // Reformat errors as individual strings and report them.
+  if (!empty($errors)) {
+    foreach ($errors as $error) {
+      $quote_error = $error['code'] . ' ' . $error['message'];
+      // This will put the quote error into the output buffer, where it will be
+      // picked up and reported to watchdog if we're turned on error logging.
+      // See uc_quote_action_get_quote().
+      echo $quote_error;
+    }
+  }
+
+  return $rate_info;
+}
+
+/**
+ * Debugging utility to check whether returned rates aren't in our lists of
+ * allowed rates. If such rates are missing, post a notice in the watchdog
+ * log that contains the PHP code to add the missing rates to the appropriate
+ * list of supported rates (env or parcel, dom or intl).
+ *
+ * @param array $rate_info - The formatted rates returned by USPS.
+ * @param array $allowed_rates - The list of rates that this module supports.
+ */
+function uc_usps_check_returned_rates($rate_info, $allowed_rates) {
+  $missing = array();
+  foreach ($rate_info as $key => $data) {
+    if (!isset($allowed_rates[$key])) {
+      $missing[] = check_plain("'" . $key . "' => '" . $data['description'] . "',");
+    }
+  }
+  if (!empty($missing)) {
+    watchdog('uc_usps', "Missing rates:<br> !rates", array('!rates' => implode("<br>", $missing)), WATCHDOG_WARNING);
+  }
+}
+
+/**
+ * Utility to construct the service key from a rate_info row.
+ *
+ * The service key needs to be distinguish between all possible services
+ * returned from a rate lookup and must be constructible from the parameters
+ * returned by a rate lookup. Some of the obvious candidates don't work:
+ * 'productName' is blank for many services. 'SKU' can be the same for multiple
+ * services and can be different for the same service for different 'priceType'
+ * settings. The 'description' field exists for all lookups and is the same for
+ * the same service for different 'priceType' settings; for brevity, we create
+ * a code from the first letter of each description (which is still unique for
+ * each service).
+ *
+ * @param array $info
+ *   A single row returned from a USPS rate request via the new API.
+ *
+ * @return string
+ *   The service key, which is used as the row key for rate requests and the
+ *   list of services returned by uc_usps_newapi_quote().
+ */
+function _uc_usps_newapi_service_key($info) {
+  $ret = '';
+  $dwords = explode(' ', ucwords($info['description']));
+  foreach ($dwords as $dword) {
+    $ret .= substr($dword, 0, 1);
+  }
+  return $ret;
+}
+
+/**
  * Modifies the rate received from USPS before displaying to the customer.
  *
  * @param $rate
@@ -642,6 +1223,85 @@ function uc_usps_weight_markup($weight) {
 }
 
 /**
+ * Get a valid access token from config or, if the old one has expired, fetch
+ * a new token from the USPS server.
+ *
+ * @return string | FALSE - the token (if successful), FALSE if not.
+ */
+function uc_usps_access_token() {
+  $config = config('uc_usps.settings');
+  $token_expiry = state_get('uc_usps_token_expiry');
+  if ($token_expiry >= REQUEST_TIME + 60) {
+    // If expiration is more than a minute away, return the currently stored
+    // token. Tokens are valid for 8 hours after issuance.
+    return state_get('uc_usps_access_token');
+  }
+  else {
+    // If expiration is less than minute away, get a new token and return it.
+    // The new token will be stored and the expiration updated.
+    return _uc_usps_fetch_access_token();
+  }
+}
+
+/**
+ * Fetch an OAuth2 access token from the USPS website and store it in config.
+ *
+ * @return string|false
+ *   Return the token if successful, otherwise return FALSE.
+ *   FALSE.
+ *
+ * @see uc_ups_get_access_token()
+ */
+function _uc_usps_fetch_access_token() {
+  $config = config('uc_usps.settings');
+  $consumer_key = $config->get('uc_usps_consumer_key');
+  $consumer_secret = $config->get('uc_usps_consumer_secret');
+  $auth_url = $config->get('uc_usps_connection_address') . '/oauth2/v3/token';
+
+  if (empty($consumer_key) || empty($consumer_secret)) {
+    watchdog('uc_usps', 'ERROR: Missing USPS Consumer Key or Consumer Secret.', [], WATCHDOG_ERROR);
+    return FALSE;
+  }
+
+  $data = array(
+    'grant_type' => 'client_credentials',
+    'client_id' => $consumer_key,
+    'client_secret' => $consumer_secret,
+  );
+  $options = array(
+    'method' => 'POST',
+    'data' => backdrop_http_build_query($data),
+    'headers' => array(
+      'Content-Type' => 'application/x-www-form-urlencoded',
+    ),
+  );
+
+  $result = backdrop_http_request($auth_url, $options);
+  if ($result->code == 200) {
+    $response = backdrop_json_decode($result->data);
+    if (!empty($response['access_token'])) {
+      // Store token in Backdrop state.
+      state_set('uc_usps_access_token', $response['access_token']);
+      state_set('uc_usps_token_expiry', round($response['issued_at'] / 1000) + $response['expires_in']);
+      // Debug: Confirm token storage
+      watchdog('uc_usps', '✅ Successfully retrieved and stored USPS OAuth token.', [], WATCHDOG_NOTICE);
+      return $response['access_token'];
+    }
+    else {
+      watchdog('uc_usps', '❌ USPS OAuth response missing access token. Response: @response', ['@response' => print_r($response, TRUE)], WATCHDOG_ERROR);
+    }
+  }
+  else {
+    watchdog('uc_usps', '❌ USPS OAuth request failed with HTTP Code @code. Response: @response', [
+      '@code' => $result->code,
+      '@response' => print_r($result, TRUE),
+    ], WATCHDOG_ERROR);
+  }
+
+  return FALSE;
+}
+
+/**
  * Organizes products into packages for shipment.
  *
  * @param $products
@@ -700,6 +1360,21 @@ function _uc_usps_package_products($products, &$addresses = array()) {
       $product->length_units = $temp->length_units;
       $product->usps['container'] = isset($temp->usps['container']) ? $temp->usps['container'] : 'VARIABLE';
 
+      if (config_get('uc_usps.settings', 'uc_usps_authorization_method') == 'newapi') {
+        // Stack products of varying size to get required package dimensions to
+        // accommodate all products in the package.
+        $dimensions = array(
+          $product->length,
+          $product->width,
+          $product->height,
+        );
+        rsort($dimensions);
+        $packages[$key][0]->length = max($packages[$key][0]->length, $dimensions[0]);
+        $packages[$key][0]->width = max($packages[$key][0]->width, $dimensions[1]);
+        $packages[$key][0]->height += $dimensions[2];
+        $packages[$key][0]->girth = 2 * $packages[$key][0]->width + 2 * $packages[$key][0]->height;
+      }
+
       $packages[$key][0]->price += $product->price * $product->qty;
       $packages[$key][0]->weight += $product->weight * $product->qty * uc_weight_conversion($product->weight_units, 'lb');
     }
@@ -754,13 +1429,13 @@ function _uc_usps_package_products($products, &$addresses = array()) {
             // Convert to lb and fall through.
             $weight = $weight * KG_TO_LB;
           case 'lb':
-            $package->pounds = floor($weight);
-            $package->ounces = LB_TO_OZ * ($weight - $package->pounds);
+            $package->pounds = floor($weight); // DEPRECATED
+            $package->ounces = LB_TO_OZ * ($weight - $package->pounds); // DEPRECATED
             break;
 
           case 'oz':
-            $package->pounds = floor($weight * OZ_TO_LB);
-            $package->ounces = $weight - $package->pounds * LB_TO_OZ;
+            $package->pounds = floor($weight * OZ_TO_LB); // DEPRECATED
+            $package->ounces = $weight - $package->pounds * LB_TO_OZ; // DEPRECATED
             break;
         }
 
@@ -844,34 +1519,136 @@ function _uc_usps_package_products($products, &$addresses = array()) {
       }
     }
   }
+  // Certain packages are non-standard, and we'll need to supply that to the
+  // parcel quote.
+  foreach ($packages as $idx => $package_group) {
+    foreach ($package_group as $jdx => $product) {
+      if ($product->container == 'NONRECTANGULAR') {
+        $packages[$idx][$jdx]->non_standard = TRUE;
+      }
+      else {
+        $packages[$idx][$jdx]->non_standard = FALSE;
+      }
+    }
+  }
   return $packages;
 }
 
 /**
- * Convenience function for select form elements.
+ * Select form elements for package types, which are a setting for each product.
+ * This value is passed to rate lookup for the legacy API, but there is no
+ * equivalent value passed to the new API. We'll have to map these to the rates
+ * returned from the lookup function.
+ *
+ * @return array
  */
 function _uc_usps_pkg_types() {
+  if (config_get('uc_usps.settings', 'uc_usps_authorization_method') == 'legacy') {
+    // Return the original set of packaging types, but note which ones are no
+    // longer selectable in the new API.
+    return array(
+      'VARIABLE' => t('Variable'),
+      'FLAT RATE ENVELOPE' => t('Flat rate envelope'),
+      'PADDED FLAT RATE ENVELOPE' => t('Padded flat rate envelope'),
+      'LEGAL FLAT RATE ENVELOPE' => t('Legal flat rate envelope'),
+      'SMALL FLAT RATE ENVELOPE' => t('Small flat rate envelope (DEPRECATED)'),
+      'WINDOW FLAT RATE ENVELOPE' => t('Window flat rate envelope (DEPRECATED)'),
+      'GIFT CARD FLAT RATE BOX' => t('Gift card flat rate box (DEPRECATED)'),
+      'FLAT RATE BOX' => t('Flat rate box'),
+      'SM FLAT RATE BOX' => t('Small flat rate box'),
+      'MD FLAT RATE BOX' => t('Medium flat rate box'),
+      'LG FLAT RATE BOX' => t('Large flat rate box'),
+      'REGIONALRATEBOXA' => t('Regional rate box A (DEPRECATED)'),
+      'REGIONALRATEBOXB' => t('Regional rate box B (DEPRECATED)'),
+      'RECTANGULAR' => t('Rectangular'),
+      'NONRECTANGULAR' => t('Non-rectangular'),
+    );
+  }
+  else { // New API, only include the supported package types.
+    return array(
+      'VARIABLE' => t('Variable'),
+      'FLAT RATE ENVELOPE' => t('Flat rate envelope'),
+      'PADDED FLAT RATE ENVELOPE' => t('Padded flat rate envelope'),
+      'LEGAL FLAT RATE ENVELOPE' => t('Legal flat rate envelope'),
+      'FLAT RATE BOX' => t('Flat rate box'),
+      'SM FLAT RATE BOX' => t('Small flat rate box'),
+      'MD FLAT RATE BOX' => t('Medium flat rate box'),
+      'LG FLAT RATE BOX' => t('Large flat rate box'),
+      'RECTANGULAR' => t('Rectangular'),
+      'NONRECTANGULAR' => t('Non-rectangular'),
+    );
+  }
+}
+
+/**
+ * Return whether a set of dimensions qualifies for a letter/card/flat rate.
+ * @param array $dimensions - the array of length, width, thickness, as floats.
+ * @param string $rate - one of 'LETTERS', 'CARDS', or 'FLATS'.
+ *
+ * @return array|false
+ */
+function _uc_usps_envelope_size_qualifies($dimensions, $rate) {
+  switch ($rate) {
+    case 'LETTERS':
+      return
+        $dimensions[0] >= 5.0 && $dimensions[0] <= 11.5 &&
+        $dimensions[1] >= 2.5 && $dimensions[1] <= 6.125 &&
+        $dimensions[2] >= 0.007 && $dimensions[2] <= 0.25;
+      break;
+
+    case 'CARDS':
+      return
+        $dimensions[0] >= 5.0 && $dimensions[0] <= 6.0 &&
+        $dimensions[1] >= 3.5 && $dimensions[1] <= 4.25 &&
+        $dimensions[2] >= 0.007 && $dimensions[2] <= 0.016;
+      break;
+
+    case 'FLATS':
+      return
+        ($dimensions[0] >= 11.5 || $dimensions[1] >= 6.125 || $dimensions[2] >= 0.25) &&
+        $dimensions[0] <= 15.0 &&
+        $dimensions[1] <= 12.0 &&
+        $dimensions[2] <= 0.75;
+      break;
+
+    default:
+      return FALSE;
+  }
+}
+
+/**
+ * Returns a list of filter text for the possible package types. For each type,
+ * check the description field of the rate quote against the filter text:
+ * '*' — all descriptions are acceptable.
+ * '' — no descriptions are acceptable (this type is no longer supported).
+ * '<text>' — <text> must be present in the description, case-insensitive.
+ *
+ * @return array
+ */
+function _uc_usps_pkg_type_filter_text() {
   return array(
-    'VARIABLE' => t('Variable'),
-    'FLAT RATE ENVELOPE' => t('Flat rate envelope'),
-    'PADDED FLAT RATE ENVELOPE' => t('Padded flat rate envelope'),
-    'LEGAL FLAT RATE ENVELOPE' => t('Legal flat rate envelope'),
-    'SMALL FLAT RATE ENVELOPE' => t('Small flat rate envelope'),
-    'WINDOW FLAT RATE ENVELOPE' => t('Window flat rate envelope'),
-    'GIFT CARD FLAT RATE BOX' => t('Gift card flat rate box'),
-    'FLAT RATE BOX' => t('Flat rate box'),
-    'SM FLAT RATE BOX' => t('Small flat rate box'),
-    'MD FLAT RATE BOX' => t('Medium flat rate box'),
-    'LG FLAT RATE BOX' => t('Large flat rate box'),
-    'REGIONALRATEBOXA' => t('Regional rate box A'),
-    'REGIONALRATEBOXB' => t('Regional rate box B'),
-    'RECTANGULAR' => t('Rectangular'),
-    'NONRECTANGULAR' => t('Non-rectangular'),
+    'VARIABLE' => '*',
+    'FLAT RATE ENVELOPE' => 'flat rate envelope',
+    'PADDED FLAT RATE ENVELOPE' => 'padded flat rate envelope',
+    'LEGAL FLAT RATE ENVELOPE' => 'legal flat rate envelope',
+    'SMALL FLAT RATE ENVELOPE' => '',
+    'WINDOW FLAT RATE ENVELOPE' => '',
+    'GIFT CARD FLAT RATE BOX' => '',
+    'FLAT RATE BOX' => 'flat rate box',
+    'SM FLAT RATE BOX' => 'small flat rate box',
+    'MD FLAT RATE BOX' => 'medium flat rate box',
+    'LG FLAT RATE BOX' => 'large flat rate box',
+    'REGIONALRATEBOXA' => '',
+    'REGIONALRATEBOXB' => '',
+    'RECTANGULAR' => '*',
+    'NONRECTANGULAR' => '*',
   );
 }
 
 /**
- * Maps envelope shipment services to their IDs.
+ * Maps envelope shipment services to their IDs (legacy).
+ *
+ * @return array
  */
 function _uc_usps_env_services() {
   return array(
@@ -888,7 +1665,9 @@ function _uc_usps_env_services() {
 }
 
 /**
- * Maps parcel shipment services to their IDs.
+ * Maps parcel shipment services to their IDs (legacy).
+ *
+ * @return array
  */
 function _uc_usps_services() {
   return array(
@@ -908,7 +1687,9 @@ function _uc_usps_services() {
 }
 
 /**
- * Maps international envelope services to their IDs.
+ * Returns international envelope services to their IDs (legacy).
+ *
+ * @return array
  */
 function _uc_usps_intl_env_services() {
   return array(
@@ -924,7 +1705,9 @@ function _uc_usps_intl_env_services() {
 }
 
 /**
- * Maps international parcel services to their IDs.
+ * Maps international parcel services to their IDs (legacy).
+ *
+ * @return array
  */
 function _uc_usps_intl_services() {
   return array(
@@ -941,6 +1724,98 @@ function _uc_usps_intl_services() {
 }
 
 /**
+ * Maps domestic envelope services to their IDs (newapi).
+ */
+function uc_usps_newapi_dom_env_all_services() {
+  return array(
+    'FCLM' => 'First Class Letter Metered',
+    'FCP' => 'First Class Postcards',
+    'FCF' => 'First Class Flats',
+    'PMFRE' => 'Priority Mail Flat Rate Envelope',
+    'PMPFRE' => 'Priority Mail Padded Flat Rate Envelope',
+    'PMLFRE' => 'Priority Mail Legal Flat Rate Envelope',
+    'PMMS' => 'Priority Mail Machinable Single-piece',
+    'PMEFRE' => 'Priority Mail Express Flat Rate Envelope',
+    'PMEPFRE' => 'Priority Mail Express Padded Flat Rate Envelope',
+    'PMELFRE' => 'Priority Mail Express Legal Flat Rate Envelope',
+    'PMELFREHD' => 'Priority Mail Express Legal Flat Rate Envelope Holiday Delivery',
+    'PMEMS' => 'Priority Mail Express Machinable Single-piece',
+    'UGAMS' => 'USPS Ground Advantage Machinable Single-piece',
+  );
+}
+
+/**
+ * Maps domestic parcel services to their IDs (newapi).
+ */
+function uc_usps_newapi_dom_parcel_all_services() {
+  return array(
+    'FCLM' => 'First Class Letter Metered',
+    'FCF' => 'First Class Flats',
+    'PMMSFRB' => 'Priority Mail Machinable Small Flat Rate Box',
+    'PMMMFRB' => 'Priority Mail Machinable Medium Flat Rate Box',
+    'PMMLFRB' => 'Priority Mail Machinable Large Flat Rate Box',
+    'PMMLFRBA' => 'Priority Mail Machinable Large Flat Rate Box APO/FPO/DPO',
+    'PMMS' => 'Priority Mail Machinable Single-piece',
+    'PMNS' => 'Priority Mail Nonstandard Single-piece',
+    'PMMCNPT1' => 'Priority Mail Machinable Cubic Non-Soft Pack Tier 1',
+    'PMMCSPT1' => 'Priority Mail Machinable Cubic Soft Pack Tier 1',
+    'PMEMS' => 'Priority Mail Express Machinable Single-piece',
+    'UGAMS' => 'USPS Ground Advantage Machinable Single-piece',
+    'UGANS' => 'USPS Ground Advantage Nonstandard Single-piece',
+    'UGAMCNPT1' => 'USPS Ground Advantage Machinable Cubic Non-Soft Pack Tier 1',
+    'UGAMCSPT1' => 'USPS Ground Advantage Machinable Cubic Soft Pack Tier 1',
+    'BPMMP' => 'Bound Printed Matter Machinable Presorted',
+    'BPMNP' => 'Bound Printed Matter Nonstandard Presorted',
+    'LMNB' => 'Library Mail Nonstandard Basic',
+    'LMNS' => 'Library Mail Nonstandard Single-piece',
+    'LMMS' => 'Library Mail Machinable Single-piece',
+    'LMM5' => 'Library Mail Machinable 5-digit',
+    'LMN5' => 'Library Mail Nonstandard 5-digit',
+    'MMNB' => 'Media Mail Nonstandard Basic',
+    'MMNS' => 'Media Mail Nonstandard Single-piece',
+    'MMMS' => 'Media Mail Machinable Single-piece',
+    'MMM5' => 'Media Mail Machinable 5-digit',
+    'MMN5' => 'Media Mail Nonstandard 5-digit',
+  );
+}
+
+/**
+ * Maps international envelope services to their IDs (newapi).
+ */
+function uc_usps_newapi_intl_env_all_services() {
+  return array(
+    'FCLM' => 'First Class Letter Metered',
+    'FCP' => 'First Class Postcards',
+    'FCF' => 'First Class Flats',
+    'FPISMIS' => 'First-Class Package International Service Machinable ISC Single-piece',
+    'PMIIFRE' => 'Priority Mail International ISC Flat Rate Envelope',
+    'PMIMIPFRE' => 'Priority Mail International Machinable ISC Padded Flat Rate Envelope',
+    'PMIIS' => 'Priority Mail International ISC Single-piece',
+    'PMIMIS' => 'Priority Mail International Machinable ISC Single-piece',
+    'PMIILFRE' => 'Priority Mail International ISC Legal Flat Rate Envelope',
+    'PMEIIFRE' => 'Priority Mail Express International ISC Flat Rate Envelope',
+    'PMEIILFRE' => 'Priority Mail Express International ISC Legal Flat Rate Envelope',
+    'PMEIIS' => 'Priority Mail Express International ISC Single-piece',
+    'PMEIIPFRE' => 'Priority Mail Express International ISC Padded Flat Rate Envelope',
+  );
+}
+
+/**
+ * Maps international parcel services to their IDs (newapi).
+ */
+function uc_usps_newapi_intl_parcel_all_services() {
+  return array(
+    'FPISMIS' => 'First-Class Package International Service Machinable ISC Single-piece',
+    'PMIMILFRB' => 'Priority Mail International Machinable ISC Large Flat Rate Box',
+    'PMIMIMFRB' => 'Priority Mail International Machinable ISC Medium Flat Rate Box',
+    'PMIIS' => 'Priority Mail International ISC Single-piece',
+    'PMIMIS' => 'Priority Mail International Machinable ISC Single-piece',
+    'PMINIS' => 'Priority Mail International Nonstandard ISC Single-piece',
+    'PMEIIS' => 'Priority Mail Express International ISC Single-piece',
+  );
+}
+
+/**
  * Pseudo-constructor to set default values of a package.
  */
 function _uc_usps_new_package() {
@@ -950,6 +1825,7 @@ function _uc_usps_new_package() {
   $package->qty = 1;
   $package->pounds = 0;
   $package->ounces = 0;
+  $package->weight = 0;
   $package->container = 0;
   $package->size = 0;
   $package->machinable = TRUE;
