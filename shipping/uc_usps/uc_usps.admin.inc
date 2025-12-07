@@ -335,40 +335,42 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Markup shipping rate quote by dollar amount, percentage, or multiplier.'),
   );
 
-  if (config_get('uc_quote.settings', 'uc_quote_display_debug')) {
-    $form['uc_usps_debug'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Debugging'),
-      '#description' => t('Settings for what information to display when debugging.'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-      '#group' => 'usps-settings',
-    );
-    $form['uc_usps_debug']['uc_usps_debug_request_data'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Request data'),
-      '#description' => t('Show request data sent to USPS.'),
-      '#default_value' => $config->get('uc_usps_debug_request_data'),
-    );
-    $form['uc_usps_debug']['uc_usps_debug_return_data'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Return data'),
-      '#description' => t('Show returned data from USPS. Warning: this can be quite large. Checking "Service data" and/or "Include errors" may give sufficient information instead.'),
-      '#default_value' => $config->get('uc_usps_debug_return_data'),
-    );
-    $form['uc_usps_debug']['uc_usps_debug_service_data'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Service data'),
-      '#description' => t('Show service data (similar to returned data, but more compact).'),
-      '#default_value' => $config->get('uc_usps_debug_service_data'),
-    );
-     $form['uc_usps_debug']['uc_usps_debug_show_errors'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Include errors'),
-      '#description' => t('Show errors in debug information.'),
-      '#default_value' => $config->get('uc_usps_debug_show_errors'),
-    );
- }
+  $debug = config_get('uc_quote.settings', 'uc_quote_display_debug');
+  $form['uc_usps_debug'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Debugging'),
+    '#description' => t('These settings select what to display to admins when debugging is turned on. <a href="!url">Debugging is currently @onoff.</a>', array(
+      '!url' => url('admin/store/settings/quotes/settings'),
+      '@onoff' => $debug ? t('on') : t('off'),
+    )),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#group' => 'usps-settings',
+  );
+  $form['uc_usps_debug']['uc_usps_debug_request_data'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Request data'),
+    '#description' => t('Show request data sent to USPS.'),
+    '#default_value' => $config->get('uc_usps_debug_request_data'),
+  );
+  $form['uc_usps_debug']['uc_usps_debug_return_data'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Return data'),
+    '#description' => t('Show returned data from USPS. Warning: this can be quite large. Checking "Service data" and/or "Include errors" may give sufficient information instead.'),
+    '#default_value' => $config->get('uc_usps_debug_return_data'),
+  );
+  $form['uc_usps_debug']['uc_usps_debug_service_data'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Service data'),
+    '#description' => t('Show service data (similar to returned data, but more compact).'),
+    '#default_value' => $config->get('uc_usps_debug_service_data'),
+  );
+   $form['uc_usps_debug']['uc_usps_debug_show_errors'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Include errors'),
+    '#description' => t('Show errors in debug information.'),
+    '#default_value' => $config->get('uc_usps_debug_show_errors'),
+  );
 
   // Taken from system_settings_form(). Only, don't use its submit handler.
   $form['actions']['#type'] = 'actions';
