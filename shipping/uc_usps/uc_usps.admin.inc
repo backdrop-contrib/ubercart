@@ -335,6 +335,41 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Markup shipping rate quote by dollar amount, percentage, or multiplier.'),
   );
 
+  if (config_get('uc_quote.settings', 'uc_quote_display_debug')) {
+    $form['uc_usps_debug'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Debugging'),
+      '#description' => t('Settings for what information to display when debugging.'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#group' => 'usps-settings',
+    );
+    $form['uc_usps_debug']['uc_usps_debug_request_data'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Request data'),
+      '#description' => t('Show request data sent to USPS.'),
+      '#default_value' => $config->get('uc_usps_debug_request_data'),
+    );
+    $form['uc_usps_debug']['uc_usps_debug_return_data'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Return data'),
+      '#description' => t('Show returned data from USPS. Warning: this can be quite large. Checking "Service data" and/or "Include errors" may give sufficient information instead.'),
+      '#default_value' => $config->get('uc_usps_debug_return_data'),
+    );
+    $form['uc_usps_debug']['uc_usps_debug_service_data'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Service data'),
+      '#description' => t('Show service data (similar to returned data, but more compact).'),
+      '#default_value' => $config->get('uc_usps_debug_service_data'),
+    );
+     $form['uc_usps_debug']['uc_usps_debug_show_errors'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Include errors'),
+      '#description' => t('Show errors in debug information.'),
+      '#default_value' => $config->get('uc_usps_debug_show_errors'),
+    );
+ }
+
   // Taken from system_settings_form(). Only, don't use its submit handler.
   $form['actions']['#type'] = 'actions';
   $form['actions']['submit'] = array(
@@ -406,6 +441,10 @@ function uc_usps_admin_settings_submit($form, &$form_state) {
     'uc_usps_insurance',
     'uc_usps_delivery_confirmation',
     'uc_usps_signature_confirmation',
+    'uc_usps_debug_request_data',
+    'uc_usps_debug_return_data',
+    'uc_usps_debug_service_data',
+    'uc_usps_debug_show_errors',
   );
 
   foreach ($fields as $key) {
@@ -896,7 +935,7 @@ function uc_usps_newapi_lookup_form_submit($form, &$form_state) {
   }
   $results = '';
   if (isset($show['request'])) {
-    $results .= '<strong>' . $show_options['request'] . ':</strong>' . '<pre>' . check_plain(json_encode($request, JSON_PRETTY_PRINT)) . '</pre>';
+    $results .= '<strong>' . $show_options['request'] . ':</strong>' . '<pre>' . check_plain(var_export($request, TRUE)) . '</pre>';
   }
   $request_data = backdrop_json_encode($request);
   $access_token = _uc_usps_access_token();
@@ -964,7 +1003,7 @@ function uc_usps_newapi_lookup_form_submit($form, &$form_state) {
       $results .= '<strong>' . $show_options['rate_info_basic'] . ':</strong>' . _uc_usps_rate_info($rate_info) . '<br>';
     }
     if (isset($show['rate_info_full'])) {
-      $results .= '<strong>' . $show_options['rate_info_full'] . ':</strong><pre>' . (json_encode($rate_info, JSON_PRETTY_PRINT)) . '</pre>';
+      $results .= '<strong>' . $show_options['rate_info_full'] . ':</strong><pre>' . (var_export($rate_info, TRUE)) . '</pre>';
     }
     if (isset($show['rate_info_krumo'])) {
       $results .= '<strong>' . $show_options['rate_info_krumo'] . ':</strong><br>' . kprint_r($rate_info, TRUE, '$rate_info');

@@ -104,6 +104,24 @@ Backdrop.behaviors.uspsAdminFieldsetSummaries = {
         + $('#edit-uc-usps-weight-markup', context).val() + ' '
         + $('#edit-uc-usps-weight-markup-type', context).val();
     });
+
+    // Debugging
+    $('fieldset#edit-uc-usps-debug', context).backdropSetSummary(function(context) {
+      var debug_options = [];
+      if ($('#edit-uc-usps-debug-request-data').is(':checked')) {
+        debug_options.push(Backdrop.t('Show request data'));
+      }
+      if ($('#edit-uc-usps-debug-return-data').is(':checked')) {
+        debug_options.push(Backdrop.t('Show return data'));
+      }
+      if ($('#edit-uc-usps-debug-service-data').is(':checked')) {
+        debug_options.push(Backdrop.t('Show service data'));
+      }
+      if ($('#edit-uc-usps-debug-show-errors').is(':checked')) {
+        debug_options.push(Backdrop.t('Show errors'));
+      }
+      return debug_options.join('<br>');
+    });
   }
 };
 

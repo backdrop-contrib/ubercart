@@ -28,7 +28,7 @@ function theme_uc_usps_option_label($variables) {
   ));
 
   // Add USPS service name, removing any 'U.S.P.S.' prefix.
-  $output .= preg_replace('/^U\.S\.P\.S\./', '', $service);
+  $output .= ' ' . preg_replace('/^U\.S\.P\.S\./', '', $service);
 
   // Add package information.
   $num_packages = 0;

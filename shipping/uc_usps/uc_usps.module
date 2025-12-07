@@ -359,6 +359,11 @@ function uc_usps_uc_shipping_method() {
  *   - rate - the rate with markup for this service
  *   - label — a text string used as the line-item label
  *   - option_label — formatted HTML for the option presented for user choice
+ *   In addition to the services, the return list can contain a special key:
+ *   - data - array of data if there is debugging information or errors,
+ *     containing one or both of the following keyed elements:
+ *     - 'debug' - a string of debug information
+ *     - 'errors' - an array of strings of the individual errors received.
  */
 function uc_usps_quote($products, $details, $method) {
   // The uc_quote AJAX query can fire before the customer has completely
@@ -383,6 +388,8 @@ function uc_usps_quote($products, $details, $method) {
   $connection_url = 'https://production.shippingapis.com/ShippingAPI.dll';
 
   // Initialize $debug_data to prevent PHP notices here and in uc_quote.
+  $debug = user_access('configure quotes') && config_get('uc_quote.settings', 'uc_quote_display_debug');
+  $config = config('uc_usps.settings');
   $debug_data = array(
     'debug' => NULL,
     'error' => array(),
@@ -409,8 +416,8 @@ function uc_usps_quote($products, $details, $method) {
       $request = uc_usps_rate_request($ship_packages, $orig, $destination);
     }
 
-    if (user_access('configure quotes') && config_get('uc_quote.settings', 'uc_quote_display_debug')) {
-      $debug_data['debug'] .= htmlentities(urldecode($request)) . "<br />\n";
+    if ($debug && $config->get('uc_usps_debug_request_data')) {
+      $debug_data['debug'] .= t("REQUEST:\n@request\n\n", array('@request' => htmlentities(urldecode($request))));
     }
 
     $result = backdrop_http_request($connection_url, array(
@@ -418,8 +425,8 @@ function uc_usps_quote($products, $details, $method) {
       'data' => $request,
     ));
 
-    if (user_access('configure quotes') && config_get('uc_quote.settings', 'uc_quote_display_debug')) {
-      $debug_data['debug'] .= htmlentities($result->data) . "<br />\n";
+    if ($debug && $config->get('uc_usps_debug_return_data')) {
+      $debug_data['debug'] .= t("RETURN:\n@return\n\n", array('@return' => htmlentities($result->data)));
     }
 
     $rate_type = config_get('uc_usps.settings', 'uc_usps_online_rates');
@@ -497,6 +504,10 @@ function uc_usps_quote($products, $details, $method) {
         }
       }
     }
+  }
+
+  if ($debug && $config->get('uc_usps_debug_service_data')) {
+    $debug_data['debug'] .= t('SERVICES (before filtering)') . "\n" . var_export($services, TRUE) . "\n";
   }
 
   $method_services = 'uc_' . $method['id'] . '_services';
@@ -673,10 +684,11 @@ function uc_usps_intl_rate_request($packages, $origin, $destination) {
  *   - 'rate' - the rate with markup for this service
  *   - 'label' — a text string used as the line-item label
  *   - 'option_label' — formatted HTML for the option presented for user choice
- *   If there are any errors, information about them will returned in an array
- *   with the key 'data' and one or both of the following keyed elements:
- *   - 'debug' - a string of debug information
- *   - 'errors' - an array of strings of the individual errors received.
+ *   In addition to the services, the return list can contain a special key:
+ *   - data - array of data if there is debugging information or errors,
+ *     containing one or both of the following keyed elements:
+ *     - 'debug' - a string of debug information
+ *     - 'errors' - an array of strings of the individual errors received.
  */
 function uc_usps_newapi_quote($products, $details, $method) {
   // The uc_quote AJAX query can fire before the customer has completely
@@ -697,6 +709,7 @@ function uc_usps_newapi_quote($products, $details, $method) {
     return array();
   }
 
+  $config = config('uc_usps.settings');
   $debug = user_access('configure quotes') && config_get('uc_quote.settings', 'uc_quote_display_debug');
   // Initialize $debug_data, which we will fill in as we get quotes.
   // $debug_data['debug'] is used for admin debugging; if $debug is TRUE, it
@@ -751,6 +764,10 @@ function uc_usps_newapi_quote($products, $details, $method) {
     }
   }
 
+  if ($debug && $config->get('uc_usps_debug_service_data')) {
+    $debug_data['debug'] .= t('SERVICES (before filtering)') . "\n" . var_export($services, TRUE) . "\n\n";
+  }
+
   // USPS module ships all packages via the same rate, so filter the list to
   // include only those services that were quoted for all packages.
   foreach ($services as $key => $service) {
@@ -776,9 +793,12 @@ function uc_usps_newapi_quote($products, $details, $method) {
       unset($services[$service]);
     }
   }
-  if ($debug && empty($debug_data['error'])) {
-    // No errors, but no matching services. Add debugging information.
-    $debug_data['debug'] .= t('None of the recommended services match those chosen in the settings.') . "<br>\n";
+
+  if (empty($services)) {
+    if ($debug && $config->get('uc_usps_debug_service_data') && empty($debug_data['error'])) {
+      // No errors, but no matching services. Add debugging information.
+      $debug_data['debug'] .= t('None of the recommended services match those chosen in the settings.') . "\n";
+    }
   }
 
   // Sort by price.
@@ -870,8 +890,8 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       'extraServices' => $extra_services,
     );
     $request_data = backdrop_json_encode($request);
-    if ($debug) {
-      $debug_data['debug'] .= t("REQUEST (DOM,PARCEL):\n@request<br>", array('@request' => json_encode($request, JSON_PRETTY_PRINT)));
+    if ($debug && $config->get('uc_usps_debug_request_data')) {
+      $debug_data['debug'] .= t("REQUEST (DOM,PARCEL):\n@request\n", array('@request' => var_export($request, TRUE)));
     }
     $result = backdrop_http_request($connection_url, array(
       'method' => 'POST',
@@ -882,11 +902,14 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       ),
     ));
     $data = backdrop_json_decode($result->data);
-    if ($debug) {
-      $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+    if ($debug && $config->get('uc_usps_debug_return_data')) {
+      $debug_data['debug'] .= t("RETURN:\n@data\n", array('@data' => var_export($data, TRUE)));
     }
     if (isset($data['error'])) {
       $errors[] = $data['error'];
+      if ($debug && $config->get('uc_usps_debug_show_errors')) {
+        $debug_data['debug'] .= t("ERRORS:\n@data\n", array('@data' => var_export($data['error'], TRUE)));
+      }
     }
     else {
       // Accumulate $rate_info entries.
@@ -949,10 +972,10 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       if (_uc_usps_envelope_size_qualifies($dimensions, $rate)) {
         $request['processingCategory'] = $rate;
         $request_data = backdrop_json_encode($request);
-        if ($debug) {
-          $debug_data['debug'] .= t("REQUEST (DOM,@rate):\n@request<br>", array(
+        if ($debug && $config->get('uc_usps_debug_request_data')) {
+          $debug_data['debug'] .= t("REQUEST (DOM,@rate):\n@request\n", array(
             '@rate' => $rate,
-            '@request' => json_encode($request, JSON_PRETTY_PRINT)),
+            '@request' => var_export($request, TRUE)),
           );
         }
         $result = backdrop_http_request($connection_url, array(
@@ -964,11 +987,14 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
           ),
         ));
         $data = backdrop_json_decode($result->data);
-        if ($debug) {
-          $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+        if ($debug && $config->get('uc_usps_debug_return_data')) {
+          $debug_data['debug'] .= t("QUOTES:\n@data\n", array('@data' => var_export($data, TRUE)));
         }
         if (isset($data['error'])) {
           $errors[] = $data['error'];
+          if ($debug && $config->get('uc_usps_debug_show_errors')) {
+            $debug_data['debug'] .= t("ERRORS:\n@data\n", array('@data' => var_export($data['error'], TRUE)));
+          }
         }
         else {
           if (!empty($data['rates'][0])) {
@@ -1020,8 +1046,8 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       'extraServices' => [],
     );
     $request_data = backdrop_json_encode($request);
-    if ($debug) {
-      $debug_data['debug'] .= t("REQUEST (INTL,PARCEL):\n@request<br>", array('@request' => json_encode($request, JSON_PRETTY_PRINT)));
+    if ($debug && $config->get('uc_usps_debug_request_data')) {
+      $debug_data['debug'] .= t("REQUEST (INTL,PARCEL):\n@request\n", array('@request' => var_export($request, TRUE)));
     }
     $result = backdrop_http_request($connection_url, array(
       'method' => 'POST',
@@ -1032,11 +1058,14 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       ),
     ));
     $data = backdrop_json_decode($result->data);
-    if ($debug) {
-      $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+    if ($debug && $config->get('uc_usps_debug_return_data')) {
+      $debug_data['debug'] .= t("RETURN:\n@data\n", array('@data' => var_export($data, TRUE)));
     }
     if (isset($data['error'])) {
       $errors[] = $data['error'];
+      if ($debug && $config->get('uc_usps_debug_show_errors')) {
+        $debug_data['debug'] .= t("ERRORS:\n@data\n", array('@data' => var_export($data['error'], TRUE)));
+      }
     }
     else {
       // Accumulate $rate_info entries.
@@ -1090,10 +1119,10 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       if (_uc_usps_envelope_size_qualifies($dimensions, $rate)) {
         $request['processingCategory'] = $rate;
         $request_data = backdrop_json_encode($request);
-        if ($debug) {
-          $debug_data['debug'] .= t("REQUEST (INTL,@rate):\n@request<br>", array(
+        if ($debug && $config->get('uc_usps_debug_request_data')) {
+          $debug_data['debug'] .= t("REQUEST (INTL,@rate):\n@request\n", array(
             '@rate' => $rate,
-            '@request' => json_encode($request, JSON_PRETTY_PRINT)),
+            '@request' => var_export($request, TRUE)),
           );
         }
         $result = backdrop_http_request($connection_url, array(
@@ -1105,11 +1134,14 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
           ),
         ));
         $data = backdrop_json_decode($result->data);
-        if ($debug) {
-          $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+        if ($debug && $config->get('uc_usps_debug_return_data')) {
+          $debug_data['debug'] .= t("QUOTES:\n@data\n", array('@data' => var_export($data, TRUE)));
         }
         if (isset($data['error'])) {
           $errors[] = $data['error'];
+          if ($debug && $config->get('uc_usps_debug_show_errors')) {
+            $debug_data['debug'] .= t("ERRORS:\n@data\n", array('@data' => var_export($data['error'], TRUE)));
+          }
         }
         else {
           if (!empty($data['rates'][0])) {
