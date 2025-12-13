@@ -23,6 +23,18 @@ function uc_usps_menu() {
     'file' => 'uc_usps.admin.inc',
   );
 
+  if (module_exists('uc_reports')) {
+    $items['admin/store/reports/usps-lookup'] = array(
+      'title' => 'USPS lookup',
+      'description' => 'Lookup function for USPS quotes',
+      'page callback' => 'backdrop_get_form',
+      'page arguments' => array('uc_usps_newapi_lookup_form'),
+      'access arguments' => array('configure quotes'),
+      'type' => MENU_LOCAL_TASK,
+      'file' => 'uc_usps.admin.inc',
+    );
+  }
+
   return $items;
 }
 
@@ -347,6 +359,11 @@ function uc_usps_uc_shipping_method() {
  *   - rate - the rate with markup for this service
  *   - label — a text string used as the line-item label
  *   - option_label — formatted HTML for the option presented for user choice
+ *   In addition to the services, the return list can contain a special key:
+ *   - data - array of data if there is debugging information or errors,
+ *     containing one or both of the following keyed elements:
+ *     - 'debug' - a string of debug information
+ *     - 'errors' - an array of strings of the individual errors received.
  */
 function uc_usps_quote($products, $details, $method) {
   // The uc_quote AJAX query can fire before the customer has completely
@@ -371,6 +388,8 @@ function uc_usps_quote($products, $details, $method) {
   $connection_url = 'https://production.shippingapis.com/ShippingAPI.dll';
 
   // Initialize $debug_data to prevent PHP notices here and in uc_quote.
+  $debug = user_access('configure quotes') && config_get('uc_quote.settings', 'uc_quote_display_debug');
+  $config = config('uc_usps.settings');
   $debug_data = array(
     'debug' => NULL,
     'error' => array(),
@@ -397,8 +416,8 @@ function uc_usps_quote($products, $details, $method) {
       $request = uc_usps_rate_request($ship_packages, $orig, $destination);
     }
 
-    if (user_access('configure quotes') && config_get('uc_quote.settings', 'uc_quote_display_debug')) {
-      $debug_data['debug'] .= htmlentities(urldecode($request)) . "<br />\n";
+    if ($debug && $config->get('uc_usps_debug_request_data')) {
+      $debug_data['debug'] .= t("REQUEST:\n@request\n\n", array('@request' => htmlentities(urldecode($request))));
     }
 
     $result = backdrop_http_request($connection_url, array(
@@ -406,8 +425,8 @@ function uc_usps_quote($products, $details, $method) {
       'data' => $request,
     ));
 
-    if (user_access('configure quotes') && config_get('uc_quote.settings', 'uc_quote_display_debug')) {
-      $debug_data['debug'] .= htmlentities($result->data) . "<br />\n";
+    if ($debug && $config->get('uc_usps_debug_return_data')) {
+      $debug_data['debug'] .= t("RETURN:\n@return\n\n", array('@return' => htmlentities($result->data)));
     }
 
     $rate_type = config_get('uc_usps.settings', 'uc_usps_online_rates');
@@ -485,6 +504,10 @@ function uc_usps_quote($products, $details, $method) {
         }
       }
     }
+  }
+
+  if ($debug && $config->get('uc_usps_debug_service_data')) {
+    $debug_data['debug'] .= t('SERVICES (before filtering)') . "\n" . var_export($services, TRUE) . "\n";
   }
 
   $method_services = 'uc_' . $method['id'] . '_services';
@@ -661,10 +684,11 @@ function uc_usps_intl_rate_request($packages, $origin, $destination) {
  *   - 'rate' - the rate with markup for this service
  *   - 'label' — a text string used as the line-item label
  *   - 'option_label' — formatted HTML for the option presented for user choice
- *   If there are any errors, information about them will returned in an array
- *   with the key 'data' and one or both of the following keyed elements:
- *   - 'debug' - a string of debug information
- *   - 'errors' - an array of strings of the individual errors received.
+ *   In addition to the services, the return list can contain a special key:
+ *   - data - array of data if there is debugging information or errors,
+ *     containing one or both of the following keyed elements:
+ *     - 'debug' - a string of debug information
+ *     - 'errors' - an array of strings of the individual errors received.
  */
 function uc_usps_newapi_quote($products, $details, $method) {
   // The uc_quote AJAX query can fire before the customer has completely
@@ -685,6 +709,7 @@ function uc_usps_newapi_quote($products, $details, $method) {
     return array();
   }
 
+  $config = config('uc_usps.settings');
   $debug = user_access('configure quotes') && config_get('uc_quote.settings', 'uc_quote_display_debug');
   // Initialize $debug_data, which we will fill in as we get quotes.
   // $debug_data['debug'] is used for admin debugging; if $debug is TRUE, it
@@ -719,7 +744,7 @@ function uc_usps_newapi_quote($products, $details, $method) {
       $rate_info = uc_usps_newapi_package_quote($package, $origin, $destination, $method, $debug, $debug_data);
       $num_packages++;
       foreach ($rate_info as $key => $info) {
-        $rate = $info['totalBasePrice'];
+        $rate = $info['totalPrice'];
         if (!isset($services[$key])) {
           $services[$key] = array(
             'rate' => uc_usps_rate_markup((string) $rate),
@@ -737,6 +762,10 @@ function uc_usps_newapi_quote($products, $details, $method) {
         }
       }
     }
+  }
+
+  if ($debug && $config->get('uc_usps_debug_service_data')) {
+    $debug_data['debug'] .= t('SERVICES (before filtering)') . "\n" . var_export($services, TRUE) . "\n\n";
   }
 
   // USPS module ships all packages via the same rate, so filter the list to
@@ -764,9 +793,12 @@ function uc_usps_newapi_quote($products, $details, $method) {
       unset($services[$service]);
     }
   }
-  if ($debug && empty($debug_data['error'])) {
-    // No errors, but no matching services. Add debugging information.
-    $debug_data['debug'] .= t('None of the recommended services match those chosen in the settings.') . "<br>\n";
+
+  if (empty($services)) {
+    if ($debug && $config->get('uc_usps_debug_service_data') && empty($debug_data['error'])) {
+      // No errors, but no matching services. Add debugging information.
+      $debug_data['debug'] .= t('None of the recommended services match those chosen in the settings.') . "\n";
+    }
   }
 
   // Sort by price.
@@ -802,7 +834,7 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
   if (empty($package) || empty($destination) || empty($destination->country)) {
     return array();
   }
-  $domestic = $destination->country == 840;
+  $domestic = _uc_usps_is_domestic($destination->country);
   if ($domestic && empty($destination->postal_code)) {
     // Domestic destinations need a ZIP code.
     return array();
@@ -813,7 +845,7 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
   }
   $config = config('uc_usps.settings');
   $price_type = $config->get('uc_usps_price_type');
-  $access_token = uc_usps_access_token();
+  $access_token = _uc_usps_access_token();
   $mailing_date = (new DateTime('@' . (REQUEST_TIME)))->format('Y-m-d');
   $rate_info = array();
 
@@ -858,8 +890,8 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       'extraServices' => $extra_services,
     );
     $request_data = backdrop_json_encode($request);
-    if ($debug) {
-      $debug_data['debug'] .= t("REQUEST (DOM,PARCEL):\n@request<br>", array('@request' => json_encode($request, JSON_PRETTY_PRINT)));
+    if ($debug && $config->get('uc_usps_debug_request_data')) {
+      $debug_data['debug'] .= t("REQUEST (DOM,PARCEL):\n@request\n", array('@request' => var_export($request, TRUE)));
     }
     $result = backdrop_http_request($connection_url, array(
       'method' => 'POST',
@@ -870,20 +902,21 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       ),
     ));
     $data = backdrop_json_decode($result->data);
-    if ($debug) {
-      $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+    if ($debug && $config->get('uc_usps_debug_return_data')) {
+      $debug_data['debug'] .= t("RETURN:\n@data\n", array('@data' => var_export($data, TRUE)));
     }
     if (isset($data['error'])) {
       $errors[] = $data['error'];
+      if ($debug && $config->get('uc_usps_debug_show_errors')) {
+        $debug_data['debug'] .= t("ERRORS:\n@data\n", array('@data' => var_export($data['error'], TRUE)));
+      }
     }
     else {
       // Accumulate $rate_info entries.
       if (isset($data['rateOptions'])) {
         foreach ($data['rateOptions'] as $rate_option) {
-          $rates = $rate_option['rates'];
-          $rate_row = $rate_option['rates'][0] + array(
-            'totalBasePrice' => $rate_option['totalBasePrice'],
-          );
+          $rate_row = $rate_option['rates'][0];
+          $service_key = _uc_usps_newapi_service_key($rate_row);
           // Don't include special destination facilities for domestic mail.
           if ($rate_row['destinationEntryFacilityType'] != 'NONE') {
             continue;
@@ -892,16 +925,32 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
           if (in_array($rate_row['mailClass'], array('SA', 'USPS_MARKETING_MAIL'))) {
             continue;
           }
-          // If package is not machinable, don't include MACHINABLE processing.
-          if ($rate_row['processingCategory'] == 'MACHINABLE' && !$package->machinable) {
+          if ($package->nonstandard) {
+           // If package is non-standard, only include NONSTANDARD processing.
+           if ($rate_row['processingCategory'] != 'NONSTANDARD') {
+              continue;
+            }
+          }
+          else {
+            // Package is not nonstandard, therefore it must be machinable, so
+            // only include MACHINABLE or FLATS processing.
+            if ($rate_row['processingCategory'] != 'MACHINABLE' && $rate_row['processingCategory'] != 'FLATS') {
+              continue;
+            }
+          }
+          // For envelope rates, check whether the package fits in the envelope.
+          if (!_uc_usps_newapi_package_fits_envelope($package, $service_key)) {
             continue;
           }
-          // If package is non-standard, only include NONSTANDARD processing.
-          if ($rate_row['processingCategory'] != 'NONSTANDARD' && $package->non_standard) {
-            continue;
+          $rate_row['totalPrice'] = $rate_option['totalBasePrice'];
+          // Add extra services to the price.
+          if (isset($rate_option['extraServices'])) {
+            foreach ($rate_option['extraServices'] as $extra_service) {
+              if (in_array((float) $extra_service['extraService'], $extra_services)) {
+                $rate_row['totalPrice'] += $extra_service['price'];
+              }
+            }
           }
-          // And if we're still here, include the rate.
-          $service_key = _uc_usps_newapi_service_key($rate_row);
           $rate_info[$service_key] = $rate_row;
         }
       }
@@ -923,10 +972,10 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       if (_uc_usps_envelope_size_qualifies($dimensions, $rate)) {
         $request['processingCategory'] = $rate;
         $request_data = backdrop_json_encode($request);
-        if ($debug) {
-          $debug_data['debug'] .= t("REQUEST (DOM,@rate):\n@request<br>", array(
+        if ($debug && $config->get('uc_usps_debug_request_data')) {
+          $debug_data['debug'] .= t("REQUEST (DOM,@rate):\n@request\n", array(
             '@rate' => $rate,
-            '@request' => json_encode($request, JSON_PRETTY_PRINT)),
+            '@request' => var_export($request, TRUE)),
           );
         }
         $result = backdrop_http_request($connection_url, array(
@@ -938,16 +987,28 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
           ),
         ));
         $data = backdrop_json_decode($result->data);
-        if ($debug) {
-          $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+        if ($debug && $config->get('uc_usps_debug_return_data')) {
+          $debug_data['debug'] .= t("QUOTES:\n@data\n", array('@data' => var_export($data, TRUE)));
         }
         if (isset($data['error'])) {
           $errors[] = $data['error'];
+          if ($debug && $config->get('uc_usps_debug_show_errors')) {
+            $debug_data['debug'] .= t("ERRORS:\n@data\n", array('@data' => var_export($data['error'], TRUE)));
+          }
         }
         else {
           if (!empty($data['rates'][0])) {
-            $rate_row = $data['rates'][0] + array('totalBasePrice' => $data['totalBasePrice']);
+            $rate_row = $data['rates'][0];
             $service_key = _uc_usps_newapi_service_key($rate_row);
+            $rate_row['totalPrice'] = $data['totalBasePrice'];
+            // Add extra services to the price.
+            if (isset($rate_row['extraServices'])) {
+              foreach ($rate_row['extraServices'] as $extra_service) {
+                if (in_array((float) $extra_service['extraService'], $extra_services)) {
+                  $rate_row['totalPrice'] += $extra_service['price'];
+                }
+              }
+            }
             $rate_info[$service_key] = $rate_row;
           }
         }
@@ -985,8 +1046,8 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       'extraServices' => [],
     );
     $request_data = backdrop_json_encode($request);
-    if ($debug) {
-      $debug_data['debug'] .= t("REQUEST (INTL,PARCEL):\n@request<br>", array('@request' => json_encode($request, JSON_PRETTY_PRINT)));
+    if ($debug && $config->get('uc_usps_debug_request_data')) {
+      $debug_data['debug'] .= t("REQUEST (INTL,PARCEL):\n@request\n", array('@request' => var_export($request, TRUE)));
     }
     $result = backdrop_http_request($connection_url, array(
       'method' => 'POST',
@@ -997,30 +1058,47 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       ),
     ));
     $data = backdrop_json_decode($result->data);
-    if ($debug) {
-      $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+    if ($debug && $config->get('uc_usps_debug_return_data')) {
+      $debug_data['debug'] .= t("RETURN:\n@data\n", array('@data' => var_export($data, TRUE)));
     }
     if (isset($data['error'])) {
       $errors[] = $data['error'];
+      if ($debug && $config->get('uc_usps_debug_show_errors')) {
+        $debug_data['debug'] .= t("ERRORS:\n@data\n", array('@data' => var_export($data['error'], TRUE)));
+      }
     }
     else {
       // Accumulate $rate_info entries.
       if (isset($data['rateOptions'])) {
         foreach ($data['rateOptions'] as $rate_option) {
-          $rates = $rate_option['rates'];
-          $rate_row = $rate_option['rates'][0] + array(
-            'totalBasePrice' => $rate_option['totalBasePrice'],
-          );
-          // If package is not machinable, don't include MACHINABLE processing.
-          if ($rate_row['processingCategory'] == 'MACHINABLE' && !$package->machinable) {
-            continue;
-          }
-          // If package is non-standard, only include NONSTANDARD processing.
-          if ($rate_row['processingCategory'] != 'NONSTANDARD' && $package->non_standard) {
-            continue;
-          }
-          // And if we're still here, include the rate.
+          $rate_row = $rate_option['rates'][0];
           $service_key = _uc_usps_newapi_service_key($rate_row);
+          if ($package->nonstandard) {
+           // If package is non-standard, only include NONSTANDARD processing.
+           if ($rate_row['processingCategory'] != 'NONSTANDARD') {
+              continue;
+            }
+          }
+          else {
+            // Package is not nonstandard, therefore it must be machinable, so
+            // only include MACHINABLE and FLATS processing.
+            if ($rate_row['processingCategory'] != 'MACHINABLE' && $rate_row['processingCategory'] != 'FLATS') {
+              continue;
+            }
+          }
+          // For envelope rates, check whether the package fits in the envelope.
+          if (!_uc_usps_newapi_package_fits_envelope($package, $service_key)) {
+            continue;
+          }
+          $rate_row['totalPrice'] = $rate_option['totalBasePrice'];
+          // Add extra services to the price.
+          if (isset($rate_option['extraServices'])) {
+            foreach ($rate_option['extraServices'] as $extra_service) {
+              if (in_array((float) $extra_service['extraService'], $extra_services)) {
+                $rate_row['totalPrice'] += $extra_service['price'];
+              }
+            }
+          }
           $rate_info[$service_key] = $rate_row;
         }
       }
@@ -1041,10 +1119,10 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
       if (_uc_usps_envelope_size_qualifies($dimensions, $rate)) {
         $request['processingCategory'] = $rate;
         $request_data = backdrop_json_encode($request);
-        if ($debug) {
-          $debug_data['debug'] .= t("REQUEST (INTL,@rate):\n@request<br>", array(
+        if ($debug && $config->get('uc_usps_debug_request_data')) {
+          $debug_data['debug'] .= t("REQUEST (INTL,@rate):\n@request\n", array(
             '@rate' => $rate,
-            '@request' => json_encode($request, JSON_PRETTY_PRINT)),
+            '@request' => var_export($request, TRUE)),
           );
         }
         $result = backdrop_http_request($connection_url, array(
@@ -1056,16 +1134,28 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
           ),
         ));
         $data = backdrop_json_decode($result->data);
-        if ($debug) {
-          $debug_data['debug'] .= t("QUOTES:\n@data<br>", array('@data' => json_encode($data, JSON_PRETTY_PRINT)));
+        if ($debug && $config->get('uc_usps_debug_return_data')) {
+          $debug_data['debug'] .= t("QUOTES:\n@data\n", array('@data' => var_export($data, TRUE)));
         }
         if (isset($data['error'])) {
           $errors[] = $data['error'];
+          if ($debug && $config->get('uc_usps_debug_show_errors')) {
+            $debug_data['debug'] .= t("ERRORS:\n@data\n", array('@data' => var_export($data['error'], TRUE)));
+          }
         }
         else {
           if (!empty($data['rates'][0])) {
-            $rate_row = $data['rates'][0] + array('totalBasePrice' => $data['totalBasePrice']);
+            $rate_row = $data['rates'][0];
             $service_key = _uc_usps_newapi_service_key($rate_row);
+            $rate_row['totalPrice'] = $data['totalBasePrice'];
+            // Add extra services to the price.
+            if (isset($rate_row['extraServices'])) {
+              foreach ($rate_row['extraServices'] as $extra_service) {
+                if (in_array((float) $extra_service['extraService'], $extra_services)) {
+                  $rate_row['totalPrice'] += $extra_service['price'];
+                }
+              }
+            }
             $rate_info[$service_key] = $rate_row;
           }
         }
@@ -1228,7 +1318,7 @@ function uc_usps_weight_markup($weight) {
  *
  * @return string | FALSE - the token (if successful), FALSE if not.
  */
-function uc_usps_access_token() {
+function _uc_usps_access_token() {
   $config = config('uc_usps.settings');
   $token_expiry = state_get('uc_usps_token_expiry');
   if ($token_expiry >= REQUEST_TIME + 60) {
@@ -1383,12 +1473,6 @@ function _uc_usps_package_products($products, &$addresses = array()) {
       $packages[$key][0]->ounces = LB_TO_OZ * ($package[0]->weight - $packages[$key][0]->pounds);
       $packages[$key][0]->container = 'VARIABLE';
       $packages[$key][0]->size = 'REGULAR';
-      // Packages are "machinable" if heavier than 6oz. and less than 35lbs.
-      $packages[$key][0]->machinable = (
-        ($packages[$key][0]->pounds == 0 ? $packages[$key][0]->ounces >= 6 : TRUE) &&
-        $packages[$key][0]->pounds <= 35 &&
-        ($packages[$key][0]->pounds == 35 ? $packages[$key][0]->ounces == 0 : TRUE)
-      );
       $packages[$key][0]->qty = 1;
     }
   }
@@ -1461,14 +1545,6 @@ function _uc_usps_package_products($products, &$addresses = array()) {
         }
         $package->girth = 2 * $package->width + 2 * $package->height;
         $package->size = $package->length <= 12 ? 'REGULAR' : 'LARGE';
-        $package->machinable = (
-          $package->length >= 6 && $package->length <= 34 &&
-          $package->width >= 0.25 && $package->width <= 17 &&
-          $package->height >= 3.5 && $package->height <= 17 &&
-          ($package->pounds == 0 ? $package->ounces >= 6 : TRUE) &&
-          $package->pounds <= 35 &&
-          ($package->pounds == 35 ? $package->ounces == 0 : TRUE)
-        );
         $package->price = $product->price * $product->pkg_qty;
         $package->qty = $num_of_pkgs;
         $packages[$key][] = $package;
@@ -1505,29 +1581,25 @@ function _uc_usps_package_products($products, &$addresses = array()) {
         }
         $package->girth = 2 * $package->width + 2 * $package->height;
         $package->size = $package->length <= 12 ? 'REGULAR' : 'LARGE';
-        $package->machinable = (
-          $package->length >= 6 && $package->length <= 34 &&
-          $package->width >= 0.25 && $package->width <= 17 &&
-          $package->height >= 3.5 && $package->height <= 17 &&
-          ($package->pounds == 0 ? $package->ounces >= 6 : TRUE) &&
-          $package->pounds <= 35 &&
-        ($package->pounds == 35 ? $package->ounces == 0 : TRUE)
-        );
-        $package->price = $product->price * $remaining_qty;
+       $package->price = $product->price * $remaining_qty;
         $package->qty = 1;
         $packages[$key][] = $package;
       }
     }
   }
-  // Certain packages are non-standard, and we'll need to supply that to the
-  // parcel quote.
+  // Set machinability and nonstandard-ness for all packages.
   foreach ($packages as $idx => $package_group) {
-    foreach ($package_group as $jdx => $product) {
-      if ($product->container == 'NONRECTANGULAR') {
+    foreach ($package_group as $jdx => $package) {
+      $packages[$idx][$jdx]->machinable = (
+        $package->length <= 34 &&
+        $package->width <= 17 &&
+        $package->height <= 17 &&
+        $package->weight <= 35
+      );
+      // Nonstandard-ness is based on machinability but can also be overridden.
+      $packages[$idx][$jdx]->nonstandard = !$package->machinable;
+      if ($package->container == 'NONRECTANGULAR') {
         $packages[$idx][$jdx]->non_standard = TRUE;
-      }
-      else {
-        $packages[$idx][$jdx]->non_standard = FALSE;
       }
     }
   }
@@ -1578,6 +1650,75 @@ function _uc_usps_pkg_types() {
       'NONRECTANGULAR' => t('Non-rectangular'),
     );
   }
+}
+
+/**
+ * Returns a rendered text block that displays all rates for a $rate_info array.
+ * Useful for debugging.
+ *
+ * @param $rate_info
+ *   An array of rate information as constructed within
+ *   _uc_usps_newapi_package_quote().
+ *
+ * @return string
+ *   Rendered HTML for the array key and description for each returned service.
+ */
+function _uc_usps_rate_info($rate_info) {
+  $items = array();;
+  foreach ($rate_info as $key => $data) {
+    if (!isset($allowed_rates[$key])) {
+      $items[] = check_plain("" . $key . " — " . $data['description'] . ": " . sprintf('$%0.2f', $data['totalPrice']));
+    }
+  }
+  return theme('item_list', array('items' => $items));
+}
+
+/**
+ * Returns a rendered text block that describes details of the packaging.
+ *
+ * @param $package_quotes
+ *   Array of individual $package_quote arrays, each of which contains elements
+ *   for these keys:
+ *     label: the official name of the postal rate
+ *     rate: the rate for this particular package (including markup)
+ *     package: the package object itself.
+ **/
+function _uc_usps_package_info($package_quotes) {
+  if (!is_array($package_quotes)) {
+    return '';
+  }
+  $containers = _uc_usps_container_types();
+  $items = array();
+  foreach ($package_quotes as $key => $package_quote) {
+    $package = $package_quote['package'];
+    $product_info = array();
+    foreach ($package->products as $product) {
+      $product_info[] = $product->qty . '×' . $product->model;
+    }
+    $items[] = array(
+      'data' => 'Package ' . (1 + $key),
+      'children' => array(
+        t('Container') . ': ' . $containers[$package->container],
+        t('Shipping rate') . ': ' . $package_quote['label'],
+        t('Price with per-pkg markup') . ': ' . sprintf('$%0.2f', $package_quote['rate']),
+        t('Contents size') . ': ' .
+          $package->length . '×' .
+          $package->width . '×' .
+          $package->height . ' ' .
+          $package->length_units,
+        t('Total weight') . ': ' .
+          $package->weight . ' (' .
+          $package->pounds . ' lb, ' .
+          $package->ounces . ' oz)',
+        t('Products') . ': ' . implode(', ', $product_info),
+      ),
+    );
+  }
+  // Temporary: add "New API" to the info comment for ease of comparison.
+  if (config_get('uc_usps.settings', 'uc_usps_authorization_method') == 'newapi') {
+    array_unshift($items, t('New API'));
+  }
+  return theme('item_list', array('items' => $items));
 }
 
 /**
@@ -1643,6 +1784,89 @@ function _uc_usps_pkg_type_filter_text() {
     'RECTANGULAR' => '*',
     'NONRECTANGULAR' => '*',
   );
+}
+
+/**
+ * Returns an array of countries that qualify for domestic rates keyed on
+ * country ID. (newapi)
+ */
+function _uc_usps_domestic_countries() {
+  return array(
+    840 => t('United States'),
+    630 => t('Puerto Rico'),
+    850 => t('Virgin Islands (US)'),
+    16 => t('American Samoa'),
+    316 => t('Guam'),
+    580 => t('Northern Mariana Islands'),
+    583 => t('Federated States of Micronesia'),
+    584 => t('Marshall Islands'),
+    585 => t('Palau'),
+  );
+}
+
+/**
+ * Returns an array of countries that qualify for domestic rates keyed on ISO
+ * 2-letter codes. (newapi)
+ */
+function _uc_usps_domestic_countries_iso2() {
+  return array(
+    'US' => t('United States'),
+    'PR' => t('Puerto Rico'),
+    'VI' => t('Virgin Islands (US)'),
+    'AS' => t('American Samoa'),
+    'GU' => t('Guam'),
+    'MP' => t('Northern Mariana Islands'),
+    'FM' => t('Federated States of Micronesia'),
+    'MH' => t('Marshall Islands'),
+    'PW' => t('Palau'),
+  );
+}
+
+/**
+ * Returns TRUE if country code is domestic. (newapi)
+ */
+function _uc_usps_is_domestic($country) {
+  $countries = _uc_usps_domestic_countries();
+  return isset($countries[$country]);
+}
+
+/**
+ * Return whether package contents fit within a specified type of envelope. If
+ * the type isn't an envelope, return TRUE, because USPS automatically accounts
+ * for the size for the fixed-size boxes. (newapi)
+ *
+ * @param object $package
+ *   The package object containing the products.
+ * @param string $service_key
+ *   The service key for the rate returned by USPS, constructed from the first
+ *   letters of the rate description.
+ *
+ * @return bool
+ *   Return whether the package fits into the envelope for envelope services or
+ *   TRUE for non-envelope USPS rates.
+ */
+function _uc_usps_newapi_package_fits_envelope($package, $service_key) {
+  $legal = (strpos($service_key, 'LFRE') !== FALSE);
+  $regular = (strpos($service_key, 'FRE') !== FALSE) && !$legal;
+  if ($regular) {
+    if ($package->length <= 12.5 && $package->width <= 9.5 && $package->height <= 0.5) {
+      return TRUE;
+    }
+    if ($package->length <= 13.5 && $package->width <= 8.5 && $package->height <= 0.625) {
+      return TRUE;
+    }
+    return FALSE;
+  }
+  elseif ($legal) {
+    if ($package->length <= 11.25 && $package->width <= 9.25 && $package->height <= 0.75) {
+      return TRUE;
+    }
+    if ($package->length <= 12.5 && $package->width <= 8.5 && $package->height <= 1.0) {
+      return TRUE;
+    }
+    return FALSE;
+  }
+  return TRUE;
 }
 
 /**
@@ -1829,6 +2053,7 @@ function _uc_usps_new_package() {
   $package->container = 0;
   $package->size = 0;
   $package->machinable = TRUE;
+  $package->nonstandard = FALSE;
 
   $package->length = 0;
   $package->width = 0;

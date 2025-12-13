@@ -19,7 +19,7 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#type' => 'vertical_tabs',
     '#attached' => array(
       'js' => array(
-        'vertical-tabs' => backdrop_get_path('module', 'uc_usps') . '/uc_usps.admin.js',
+        'vertical-tabs' => backdrop_get_path('module', 'uc_usps') . '/js/uc_usps.admin.js',
       ),
     ),
   );
@@ -93,7 +93,7 @@ function uc_usps_admin_settings($form, &$form_state) {
     ),
     '#default_value' => $config->get('uc_usps_connection_address'),
   );
-  $access_token = uc_usps_access_token();
+  $access_token = _uc_usps_access_token();
   $token_expiry = new DateTime('@' . state_get('uc_usps_token_expiry'));
   global $user;
   $token_expiry->setTimeZone(new DateTimeZone($user->timezone));
@@ -335,6 +335,43 @@ function uc_usps_admin_settings($form, &$form_state) {
     '#description' => t('Markup shipping rate quote by dollar amount, percentage, or multiplier.'),
   );
 
+  $debug = config_get('uc_quote.settings', 'uc_quote_display_debug');
+  $form['uc_usps_debug'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Debugging'),
+    '#description' => t('These settings select what to display to admins when debugging is turned on. <a href="!url">Debugging is currently @onoff.</a>', array(
+      '!url' => url('admin/store/settings/quotes/settings'),
+      '@onoff' => $debug ? t('on') : t('off'),
+    )),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#group' => 'usps-settings',
+  );
+  $form['uc_usps_debug']['uc_usps_debug_request_data'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Request data'),
+    '#description' => t('Show request data sent to USPS.'),
+    '#default_value' => $config->get('uc_usps_debug_request_data'),
+  );
+  $form['uc_usps_debug']['uc_usps_debug_return_data'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Return data'),
+    '#description' => t('Show returned data from USPS. Warning: this can be quite large. Checking "Service data" and/or "Include errors" may give sufficient information instead.'),
+    '#default_value' => $config->get('uc_usps_debug_return_data'),
+  );
+  $form['uc_usps_debug']['uc_usps_debug_service_data'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Service data'),
+    '#description' => t('Show service data (similar to returned data, but more compact).'),
+    '#default_value' => $config->get('uc_usps_debug_service_data'),
+  );
+   $form['uc_usps_debug']['uc_usps_debug_show_errors'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Include errors'),
+    '#description' => t('Show errors in debug information.'),
+    '#default_value' => $config->get('uc_usps_debug_show_errors'),
+  );
+
   // Taken from system_settings_form(). Only, don't use its submit handler.
   $form['actions']['#type'] = 'actions';
   $form['actions']['submit'] = array(
@@ -406,6 +443,10 @@ function uc_usps_admin_settings_submit($form, &$form_state) {
     'uc_usps_insurance',
     'uc_usps_delivery_confirmation',
     'uc_usps_signature_confirmation',
+    'uc_usps_debug_request_data',
+    'uc_usps_debug_return_data',
+    'uc_usps_debug_service_data',
+    'uc_usps_debug_show_errors',
   );
 
   foreach ($fields as $key) {
@@ -450,4 +491,526 @@ function uc_usps_admin_settings_submit($form, &$form_state) {
 
   cache_clear_all();
   backdrop_theme_rebuild();
+}
+
+
+/**
+ * Perform a USPS lookup.
+ *
+ * @see uc_usps_newapi_lookup_form_validate()
+ * @see uc_usps_newapi_lookup_form_submit()
+ */
+function uc_usps_newapi_lookup_form($form, &$form_state) {
+  backdrop_set_title(t('USPS Lookup'));
+  $last_values = $_SESSION['uc_usps']['usps_lookup_values'] ?? array();
+  $form = array();
+  $form['#attached']['css'] = array(
+    backdrop_get_path('module', 'uc_usps') . '/css/uc_usps.admin.css',
+  );
+  $form[] = array(
+    '#type' => 'help',
+    '#markup' => t('Perform a price quote lookup from the USPS using the new API. <a href="!url1", target="_blank">Domestic documentation</a>, <a href="!url2" target="_blank">International documentation</a>.', array(
+      '!url1' => 'https://developers.usps.com/domesticpricesv3',
+      '!url2' => 'https://developers.usps.com/internationalpricesv3',
+    )),
+  );
+  $form['lookup_type'] = array(
+    '#type' => 'radios',
+    '#title' => t('Lookup type'),
+    '#options' => array(
+      'dom_parcel' => t('Domestic parcel'),
+      'dom_env' => t('Domestic envelope'),
+      'intl_parcel' => t('International parcel'),
+      'intl_env' => t('International envelope'),
+    ),
+    '#default_value' => $last_values['lookup_type'] ?? 'dom_parcel',
+  );
+  $form['envelope_category'] = array(
+    '#type' => 'radios',
+    '#title' => t('Envelope category'),
+    '#options' => array(
+      'LETTERS' => t('Letters'),
+      'CARDS' => t('Cards'),
+      'FLATS' => t('Flats'),
+    ),
+    '#default_value' => $last_values['envelope_category'] ?? 'LETTERS',
+    '#states' => array(
+      'visible' => array(
+        array(':input[name="lookup_type"]' => array('value' => 'dom_env')),
+        array(':input[name="lookup_type"]' => array('value' => 'intl_env')),
+      ),
+    ),
+  );
+
+  $form['originZIPCode'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Origin ZIP code'),
+    '#default_value' => $last_values['originZIPCode'] ?? '',
+    '#required' => TRUE,
+  );
+  // Destination
+  $countries = db_query('
+      SELECT country_iso_code_2, country_name
+      FROM {uc_countries}
+      ')
+      ->fetchAllKeyed();
+  $form['destinationCountryCode'] = array(
+    '#type' => 'select',
+    '#title' => t('Country'),
+    '#description' => t('Domestic rates apply to these countries: !countries.', array('!countries' => implode(', ', array_values(_uc_usps_domestic_countries_iso2())))),
+    '#options' => $countries,
+    '#default_value' => $last_values['destinationCountryCode'] ?? 'US',
+  );
+  // Domestic destination
+  $is_domestic_country = array();
+  foreach (_uc_usps_domestic_countries_iso2() as $key => $value) {
+    $is_domestic_country[] = array(':input[name="destinationCountryCode"]' => array('value' => $key));
+  }
+  $form['destinationZIPCode'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Destination ZIP code'),
+    '#default_value' => $last_values['destinationZIPCode'] ?? '',
+    '#states' => array(
+      'visible' => $is_domestic_country,
+    ),
+  );
+  // Foreign destination
+  $form['foreignPostalCode'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Foreign postal code'),
+    '#default_value' => $last_values['foreignPostalCode'] ?? '',
+    '#states' => array(
+      'invisible' => $is_domestic_country,
+    ),
+  );
+  $form['weight'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Weight'),
+    '#default_value' => $last_values['weight'] ?? '',
+  );
+  $form['length'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Length'),
+    '#default_value' => $last_values['length'] ?? '',
+  );
+  $form['width'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Width'),
+    '#default_value' => $last_values['width'] ?? '',
+    '#states' => array(
+      'visible' => array(
+        array(':input[name="lookup_type"]' => array('value' => 'dom_parcel')),
+        array(':input[name="lookup_type"]' => array('value' => 'intl_parcel')),
+      ),
+    ),
+  );
+  $form['height']= array(
+    '#type' => 'textfield',
+    '#title' => t('Height'),
+    '#default_value' => $last_values['height'] ?? '',
+  );
+  $form['thickness']= array(
+    '#type' => 'textfield',
+    '#title' => t('Thickness'),
+    '#default_value' => $last_values['thickness'] ?? '',
+    '#states' => array(
+      'visible' => array(
+        array(':input[name="lookup_type"]' => array('value' => 'dom_env')),
+        array(':input[name="lookup_type"]' => array('value' => 'intl_env')),
+      ),
+    ),
+  );
+  $mail_classes_options = array(
+    'ALL' => t('All'),
+    'PARCEL_SELECT' => t('Parcel Select'),
+    'PARCEL_SELECT_LIGHTWEIGHT' => t('Parcel Select Lightweight'),
+    'PRIORITY_MAIL_EXPRESS' => t('Priority Mail Express'),
+    'PRIORITY_MAIL' => t('Priority Mail'),
+    'FIRST_CLASS_PACKAGE_SERVICE' => t('First Class Package Service'),
+    'LIBRARY_MAIL' => t('Library Mail'),
+    'MEDIA_MAIL' => t('Media Mail'),
+    'BOUND_PRINTED_MATTER' => t('Bound Printed Matter'),
+    'USPS_CONNECT_LOCAL' => t('USPS Connect Local'),
+    'USPS_CONNECT_MAIL' => t('USPS Connect Mail'),
+    'USPS_CONNECT_REGIONAL' => t('USPS Connect Regional'),
+    'USPS_GROUND_ADVANTAGE' => t('USPS Ground Advantage'),
+    'USPS_RETAIL_GROUND' => t('USPS Retail Ground'),
+  );
+  $form['mailClasses'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Mail classes (domestic)'),
+    '#options' => $mail_classes_options,
+    '#default_value' => $last_values['mailClasses'] ?? array(),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="lookup_type"]' => array('value' => 'dom_parcel'),
+      ),
+    ),
+  );
+  $mail_class_options = array(
+    'ALL' => t('All'),
+    'FIRST-CLASS_PACKAGE_INTERNATIONAL_SERVICE' => t('First Class Package International Service'),
+    'PRIORITY_MAIL_INTERNATIONAL' => t('Priority Mail International'),
+    'PRIORITY_MAIL_EXPRESS_INTERNATIONAL' => t('Priority Mail Express International'),
+  );
+  $form['mailClass'] = array(
+    '#type' => 'radios',
+    '#title' => t('Mail class (international)'),
+    '#options' => $mail_class_options,
+    '#default_value' => $last_values['mailClass'] ?? array(),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="lookup_type"]' => array('value' => 'intl_parcel'),
+      ),
+    ),
+  );
+  $form['priceType'] = array(
+    '#type' => 'radios',
+    '#title' => t('Price type'),
+    '#options' => array(
+      'COMMERCIAL' => t('Commercial'),
+      'RETAIL' => t('Retail'),
+      'CONTRACT' => t('Contract'),
+    ),
+    '#default_value' => $last_values['priceType'] ?? array(),
+    '#states' => array(
+      'visible' => array(
+        array(':input[name="lookup_type"]' => array('value' => 'dom_parcel')),
+        array(':input[name="lookup_type"]' => array('value' => 'intl_parcel')),
+      ),
+    ),
+  );
+  $form['mailingDate'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Mailing date'),
+    '#description' => t('The mailing date should be between 0 and 7 days in the future.'),
+    '#default_value' => (new DateTime('@' . (REQUEST_TIME + 86400)))->format('Y-m-d'),
+  );
+  $form['extraServices'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Extra services'),
+    '#description' => t('Enter any extra services codes separated by commas. See the USPS documentation for allowed values.'),
+    '#default_value' => $last_values['extraServices'] ?? '',
+  );
+  $form['itemValue'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Item value'),
+    '#description' => t('Item value is needed if insurance or registered mail is chosen as an extra service.'),
+    '#default_value' => $last_values['itemValue'] ?? 0,
+    '#states' => array(
+      'visible' => array(
+        array(':input[name="lookup_type"]' => array('value' => 'dom_env')),
+        array(':input[name="lookup_type"]' => array('value' => 'intl_env')),
+      ),
+    ),
+  );
+  $form['hasNonstandardCharacteristics'] = array(
+    '#title' => t('Has nonstandard characteristics'),
+    '#type' => 'radios',
+    '#options' => array(
+      '0' => t('No'),
+      '1' => t('Yes'),
+    ),
+    '#default_value' => $last_values['hasNonstandardCharacteristics'] ?? 0,
+    '#states' => array(
+      'visible' => array(
+        array(':input[name="lookup_type"]' => array('value' => 'dom_parcel')),
+        array(':input[name="lookup_type"]' => array('value' => 'intl_parcel')),
+      ),
+    ),
+  );
+  $form['nonMachinableIndicators'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Non-machinable indicators'),
+    '#options' => array(
+      'isPolybagged' => t('Is poly-bagged'),
+      'hasClosureDevices' => t('Has closure devices'),
+      'hasLooseItems' => t('Has loose items'),
+      'isRigid' => t('Is rigid'),
+      'isSelfMailer' => t('Is self mailer'),
+      'isBooklet' => t('Is booklet'),
+    ),
+    '#default_value' => $last_values['nonMachinableIndicators'] ?? array(),
+    '#states' => array(
+      'visible' => array(
+        array(':input[name="lookup_type"]' => array('value' => 'dom_env')),
+        array(':input[name="lookup_type"]' => array('value' => 'intl_env')),
+      ),
+    ),
+  );
+
+  // Selection
+
+  $form['selection'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Selection'),
+  );
+  $form['selection']['destinationEntryFacilityType'] = array(
+    '#title' => t('Include all destination entry facility types'),
+    '#type' => 'checkbox',
+    '#description' => t('Usually the only destination entry facility types of interest are NONE (for domestic) and INTERNATIONAL_SERVICE_CENTER (for international) and others are filtered out. Check this box to include them all.'),
+    '#default_value' => $last_values['destinationEntryFacilityType'] ?? 0,
+  );
+  $form['selection']['additional_mail_classes'] = array(
+    '#title' => t('Additional mail classes'),
+    '#type' => 'checkboxes',
+    '#description' => t('Include returned mail classes that are ordinarily filtered out.'),
+    '#options' => array(
+      'mail_class_sa' => t('Include mail class SA'),
+      'mail_class_marketing' => t('Include mail class USPS_MARKETING_MAIL'),
+    ),
+    '#default_value' => $last_values['additional_mail_classes'] ?? array(),
+  );
+  $show_options = array(
+    'request' => t('Request'),
+    'return_data_krumo' => t('Return data (krumo)'),
+    'errors' => t('Errors'),
+    'rate_info_basic' => t('Rate information (basic)'),
+    'rate_info_full' => t('Rate information (full)'),
+    'rate_info_krumo' => t('Rate information (krumo)'),
+  );
+  if (!module_exists('devel')) {
+    unset($show_options['return_data_krumo']);
+    unset($show_options['rate_info_krumo']);
+  }
+  $form['show_options'] = array(
+    '#type' => 'value',
+    '#value' => $show_options,
+  );
+  $form['selection']['show'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Show'),
+    '#description' => t('Select what types of data to show in the results.'),
+    '#options' => $show_options,
+    '#default_value' => $last_values['show'] ?? array(),
+  );
+
+  // Results
+
+  $form['results'] = array(
+    '#type' => 'value',
+    '#value' => $form_state['values']['results'] ?? '',
+  );
+  $form['results_box'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Results'),
+  );
+  $form['results_box']['results_markup'] = array(
+    '#type' => 'help',
+    '#markup' => $form_state['values']['results'] ?? '',
+  );
+
+  $form['#validate'][] = 'uc_usps_newapi_lookup_form_validate';
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+    '#submit' => array('uc_usps_newapi_lookup_form_submit'),
+  );
+  return $form;
+}
+
+/**
+ * Validation handler for USPS lookup.
+ *
+ * @see uc_usps_newapi_lookup_form()
+ * @see uc_usps_newapi_lookup_form_submit()
+ */
+function uc_usps_newapi_lookup_form_validate($form, &$form_state) {
+  // If a domestic request, make sure that the country is eligible for domestic
+  // rates and vice versa.
+  $domestic_request = in_array($form_state['values']['lookup_type'], array('dom_env', 'dom_parcel'));
+  $domestic_country = in_array($form_state['values']['destinationCountryCode'], array_keys(_uc_usps_domestic_countries_iso2()));
+  if ($domestic_request) {
+    if (!$domestic_country) {
+      form_set_error('country', t('A domestic rate request can only be used for these countries: !countries.', array('!countries' => implode(', ', array_values(_uc_usps_domestic_countries_iso2())))));
+    }
+  }
+  else {
+    if ($domestic_country) {
+      form_set_error('country', t('An international rate request cannot be used for these countries: !countries.', array('!countries' => implode(', ', array_values(_uc_usps_domestic_countries_iso2())))));
+    }
+  }
+  // Verify that the mailing date is between 0 and 7 days in the future.
+  $mailing_time = strtotime($form_state['values']['mailingDate']);
+  $offset = ($mailing_time - REQUEST_TIME) / 86400.0;
+  if (!($offset >= 0 && $offset <= 7)) {
+    form_set_error('mailingDate', t('The mailing date must be between 0 and 7 days in the future.'));
+  }
+}
+
+/**
+ * Submission handler for USPS lookup'
+ *
+ * @see uc_usps_newapi_lookup_form()
+ * @see uc_usps_newapi_lookup_form_validate()
+ */
+function uc_usps_newapi_lookup_form_submit($form, &$form_state) {
+  $config = config('uc_usps.settings');
+  $values = $form_state['values'];
+  $_SESSION['uc_usps']['usps_lookup_values'] = $values;
+  $connection_address = $config->get('uc_usps_connection_address');
+
+  $extra_services = trim($values['extraServices']);
+  if (empty($extra_services)) {
+    $extra_services = array();
+  }
+  else {
+    $extra_services = array_map('floatval', array_map('trim', explode(',', $values['extraServices'])));
+  }
+  $non_machinable_indicators = (object) array_map('boolval', $values['nonMachinableIndicators']);
+
+  $mail_classes = array_keys(array_filter($values['mailClasses']));
+  if (in_array('ALL', $mail_classes)) {
+    $mail_classes = array('ALL');
+  }
+
+  $additional_mail_classes = array_filter($values['additional_mail_classes']);
+  $show_options = $values['show_options'];
+  $show = array_filter($values['show']);
+
+  switch ($values['lookup_type']) {
+    case 'dom_parcel':
+      $connection_url = $connection_address . '/prices/v3/total-rates/search';
+      $request = array(
+        'originZIPCode' => $values['originZIPCode'],
+        'destinationZIPCode' => $values['destinationZIPCode'],
+        'weight' => (float) $values['weight'],
+        'length' => (float) $values['length'],
+        'width' => (float) $values['width'],
+        'height' => (float) $values['height'],
+        'mailClasses' => $mail_classes,
+        'priceType' => $values['priceType'],
+        'mailingDate' => $values['mailingDate'],
+        'hasNonstandardCharacteristics' => (bool) $values['hasNonstandardCharacteristics'],
+        'extraServices' => $extra_services,
+      );
+      break;
+
+    case 'dom_env':
+      $connection_url = $connection_address . '/prices/v3/letter-rates/search';
+      $request = array(
+        'processingCategory' => $values['envelope_category'],
+        'weight' => (float) $values['weight'],
+        'length' => (float) $values['length'],
+        'height' => (float) $values['height'],
+        'thickness' => (float) $values['thickness'],
+        'mailingDate' => $values['mailingDate'],
+        'nonMachinableIndicators' => $non_machinable_indicators,
+        'extraServices' => $extra_services,
+        'itemValue' => (float) $vlaues['itemValue'],
+      );
+      break;
+
+    case 'intl_parcel':
+      $connection_url = $connection_address . '/international-prices/v3/total-rates/search';
+      $request = array(
+        'originZIPCode' => $values['originZIPCode'],
+        'foreignPostalCode' => $values['foreignPostalCode'],
+        'destinationCountryCode' => $values['destinationCountryCode'],
+        'weight' => (float) $values['weight'],
+        'length' => (float) $values['length'],
+        'width' => (float) $values['width'],
+        'height' => (float) $values['height'],
+        'mailClass' => $values['mailClass'],
+        'priceType' => $values['priceType'],
+        'mailingDate' => $values['mailingDate'],
+        'hasNonstandardCharacteristics' => (bool) $values['hasNonstandardCharacteristics'],
+        'extraServices' => $extra_services,
+      );
+      break;
+
+    case 'intl_env':
+      $connection_url = $connection_address . '/international-prices/v3/letter-rates/search';
+      $request = array(
+        'destinationCountryCode' => $values['destinationCountryCode'],
+        'processingCategory' => $values['envelope_category'],
+        'weight' => (float) $values['weight'],
+        'length' => (float) $values['length'],
+        'height' => (float) $values['height'],
+        'thickness' => (float) $values['thickness'],
+        'mailingDate' => $values['mailingDate'],
+        'nonMachinableIndicators' => $non_machinable_indicators,
+        'extraServices' => $extra_services,
+        'itemValue' => (float) $values['itemValue'],
+      );
+      break;
+  }
+  $results = '';
+  if (isset($show['request'])) {
+    $results .= '<strong>' . $show_options['request'] . ':</strong>' . '<pre>' . check_plain(var_export($request, TRUE)) . '</pre>';
+  }
+  $request_data = backdrop_json_encode($request);
+  $access_token = _uc_usps_access_token();
+  $usps_result = backdrop_http_request($connection_url, array(
+    'method' => 'POST',
+    'data' => $request_data,
+    'headers' => array(
+      'Content-Type' => 'application/json',
+      'Authorization' => 'Bearer ' . $access_token,
+    ),
+  ));
+  $data = backdrop_json_decode($usps_result->data);
+  if (isset($show['return_data_krumo'])) {
+    $results .= '<strong>' . $show_options['return_data_krumo']. ':</strong><br>' . kprint_r($data, TRUE, '$data');
+  }
+  if (isset($data['error'])) {
+    if (isset($show['errors'])) {
+      $results .=  '<strong>' . $show_options['errors']. ':</strong><br>' . $data['error']['code'] . ': ' . $data['error']['message'];
+    }
+  }
+  else {
+    $rate_info = array();
+    if (isset($data['rateOptions'])) {
+      // Multiple-rate quote (parcels)
+      foreach ($data['rateOptions'] as $rate_option) {
+        $rate_row = $rate_option['rates'][0];
+        if (!$values['destinationEntryFacilityType']) {
+          if (!in_array($rate_row['destinationEntryFacilityType'], array(
+            'NONE',
+            'INTERNATIONAL_SERVICE_CENTER',
+          ))) {
+            continue;
+          }
+        }
+        if (!isset($additional_mail_classes['mail_class_sa'])) {
+          if ($rate_row['mailClass'] == 'SA') {
+            continue;
+          }
+        }
+        if (!isset($additional_mail_classes['mail_class_marketing'])) {
+          if ($rate_row['mailClass'] == 'USPS_MAIL_CLASS_MARKETING') {
+            continue;
+          }
+        }
+        // Accumulate total price.
+        $rate_row['totalPrice'] = $rate_option['totalBasePrice'];
+        // Add extra services to the price.
+        foreach ($rate_option['extraServices'] as $extra_service) {
+          if (in_array((float) $extra_service['extraService'], $extra_services)) {
+            $rate_row['totalPrice'] += $extra_service['price'];
+          }
+        }
+        $service_key = _uc_usps_newapi_service_key($rate_row);
+        $rate_info[$service_key] = $rate_row;
+      }
+    }
+    else {
+      // Single-rate quote (Letters, cards, flats)
+      $rate_row = $data['rates'][0];
+      $rate_row['totalPrice'] = $data['totalBasePrice'];
+      $service_key = _uc_usps_newapi_service_key($rate_row);
+      $rate_info[$service_key] = $rate_row;
+    }
+    if (isset($show['rate_info_basic'])) {
+      $results .= '<strong>' . $show_options['rate_info_basic'] . ':</strong>' . _uc_usps_rate_info($rate_info) . '<br>';
+    }
+    if (isset($show['rate_info_full'])) {
+      $results .= '<strong>' . $show_options['rate_info_full'] . ':</strong><pre>' . (var_export($rate_info, TRUE)) . '</pre>';
+    }
+    if (isset($show['rate_info_krumo'])) {
+      $results .= '<strong>' . $show_options['rate_info_krumo'] . ':</strong><br>' . kprint_r($rate_info, TRUE, '$rate_info');
+    }
+  }
+  $form_state['values']['results'] = $results;
+  $form_state['rebuild'] = TRUE;
 }

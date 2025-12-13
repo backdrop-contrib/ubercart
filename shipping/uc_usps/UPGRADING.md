@@ -101,4 +101,10 @@ Markups are the same as they were in the legacy API: you can mark up products by
 
 When you are done, click "Save Configuration." You're done! You and your customers can now continue to put items in the cart and checkout as usual. During checkout, customers will be presented with a choice of all qualifying services and their rates, so do make sure that you have only allowed those services that you are prepared to provide.
 
+## Manual USPS Rate Lookups
 
+The uc_usps module provides the ability to perform a manual lookup via the USPS OAuth2 API, where you can provide a package's size, weight, and destination, and see what rates are returned by the USPS. This is  separate from Ubercart's lookups for Ubercart products and packages, but it might be helpful to store administrators in deciding what types of rates to select in the store configuration. There are documentation links on the form for the relevant USPS APIs and lookup types.
+
+To perform a manual USPS rate lookup, you need to have fully configured the New API as described above (i.e., obtained and entered a valid Consumer Key and Consumer Secret). You also need to have enabled the UC Reports module (uc_reports). The lookup form may be found at Admin > Store > Reports > USPS Lookup. Once on that form, you can choose the lookup type, relevant package parameters, and what types of results to see for each lookup. If you have the [Devel module](https://backdropcms.org/project/devel) installed and enabled, you can choose to see some of the results information in click-expandable (krumo) form.
+
+Note that the results are purely those returned by the USPS for the given set of parameters. If you provide inconsistent parameters, the result will be the error code(s) returned from USPS.
