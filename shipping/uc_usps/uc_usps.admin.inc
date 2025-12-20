@@ -969,6 +969,12 @@ function uc_usps_newapi_lookup_form_submit($form, &$form_state) {
       );
       break;
   }
+
+  if ($values['priceType'] == 'CONTRACT') {
+    $request['accountType'] = $values['accountType'];
+    $request['accountNumber'] = $values['accountNumber'];
+  }
+
   $results = '';
   if (isset($show['request'])) {
     $results .= '<strong>' . $show_options['request'] . ':</strong>' . '<pre>' . check_plain(var_export($request, TRUE)) . '</pre>';
