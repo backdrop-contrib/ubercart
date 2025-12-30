@@ -52,10 +52,14 @@ function uc_stock_settings_form($form, &$form_state) {
  * Displays a stock report for products that have stock tracking enabled.
  */
 function uc_stock_report() {
+  $zombies = _uc_stock_zombies();
+  if (!empty($zombies)) {
+    backdrop_set_message(t('There are SKUs in the stock table with no corresponding product (outlined in red below). <a href="!url">Purge them all?</a>', array('!url' => url('admin/store/stock/purge-zombies'))), 'warning', FALSE);
+  }
+
   $page_size = (isset($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : config_get('uc_reports.settings', 'uc_reports_table_size');
   $csv_rows = array();
   $rows = array();
-  $zombies = _uc_stock_zombies();
   $header = array(
     array(
       'data' => t('SKU'),
@@ -180,13 +184,6 @@ function uc_stock_report() {
  * @ingroup forms
  */
 function uc_stock_report_form($form, &$form_state) {
-  $zombies = _uc_stock_zombies();
-  if (!empty($zombies)) {
-    $form['zombies'] = array(
-      '#type' => 'help',
-      '#markup' => t('There are SKUs in the stock table with no corresponding product (outlined in red below). <a href="!url">Purge them?</a>', array('!url' => url('admin/store/stock/purge-zombies'))),
-    );
-  }
   $form['threshold'] = array(
     '#type' => 'checkbox',
     '#title' => t('Only show SKUs that are below their threshold.'),
@@ -385,25 +382,22 @@ function theme_uc_stock_edit_form($variables) {
  * Returns a table of zombie stock items (SKUs no longer part of any product).
  */
 function _uc_stock_zombies() {
-  $zombies = &backdrop_static(__FUNCTION__);
-  if (!isset($zombies)) {
-    $entries = db_query('
-      SELECT sku, nid
-      FROM {uc_product_stock} s
-      ', array())
-      ->fetchAllAssoc('sku', PDO::FETCH_ASSOC);
-    $zombies = array();
-    $models = &backdrop_static(__FUNCTION__ . '_models');
-    foreach ($entries as $sku => $entry) {
-      $nid = $entry['nid'];
-      if (!isset($models[$nid])) {
-        // Use uc_product_get_models() to ensure agreement with what is
-        // presented on the edit form.
-        $models[$nid] = uc_product_get_models($nid, FALSE);
-      }
-      if (!isset($models[$nid][$sku])) {
-        $zombies[$sku] = $sku;
-      }
+  $entries = db_query('
+    SELECT sku, nid
+    FROM {uc_product_stock} s
+    ', array())
+    ->fetchAllAssoc('sku', PDO::FETCH_ASSOC);
+  $zombies = array();
+  $models = &backdrop_static(__FUNCTION__ . '_models');
+  foreach ($entries as $sku => $entry) {
+    $nid = $entry['nid'];
+    if (!isset($models[$nid])) {
+      // Use uc_product_get_models() to ensure agreement with what is
+      // presented on the edit form.
+      $models[$nid] = uc_product_get_models($nid, FALSE);
+    }
+    if (!isset($models[$nid][$sku])) {
+      $zombies[$sku] = $sku;
     }
   }
   return $zombies;
