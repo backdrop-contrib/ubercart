@@ -217,6 +217,8 @@ function uc_stock_report_form_submit($form, &$form_state) {
 function uc_stock_edit_form($form, &$form_state, $node) {
   backdrop_set_title($node->title);
 
+  $form['#attached']['css'][] = backdrop_get_path('module', 'uc_stock') . '/uc_stock.css';
+
   $form['stock'] = array('#tree' => TRUE);
 
   $skus = uc_product_get_models($node->nid);
@@ -240,6 +242,9 @@ function uc_stock_edit_form($form, &$form_state, $node) {
       $form['stock'][$id]['active'] = array(
         '#type' => 'checkbox',
         '#default_value' => !empty($stock['active']) ? $stock['active'] : 0,
+        '#attributes' => array(
+          'data-tableselect-id' => 'uc_stock_edit_form',
+        ),
       );
 
       // Sanitized version of the SKU for display.
