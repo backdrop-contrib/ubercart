@@ -143,43 +143,6 @@ function uc_stock_entity_update($entity, $type) {
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for uc_product_adjustments_form().
- *
- * Save a copy of the original form values and insert our own submission
- * function for product adjustments so we can update stock when model is changed
- * for an attribute.
- */
-function uc_stock_form_uc_product_adjustments_form_alter(&$form, &$form_state, $form_id) {
-  $form['original_body'] = array(
-    '#type' => 'value',
-    '#value' => $form['table']['body'],
-  );
-  $form['#submit'][] = 'uc_stock_form_uc_product_adjustments_form_submit';
-}
-
-/**
- * Submission function for uc_product_adjustments_form().
- *
- * Update the stock table if the model number has changed for the variant.
- *
- * @see uc_product_adjustments_form_submit()
- */
-function uc_stock_form_uc_product_adjustments_form_submit($form, &$form_state) {
-  foreach ($form_state['values']['body'] as $key => $value) {
-    $default_model = $form_state['values']['default'];
-    $old_model = !empty($form_state['values']['original_body'][$key]['model']) ? $form_state['values']['original_body'][$key]['model']['#default_value'] : '';
-    $new_model = !empty($value['model']) ? $value['model'] : '';
-    if ($old_model != $new_model) {
-      db_update('uc_product_stock')
-        ->fields(array('sku' => $new_model))
-        ->condition('sku', $old_model)
-        ->execute();
-      backdrop_set_message(t('Stock table updated: changed sku @old_model to @new_model', array('@old_model' => $old_model, '@new_model' => $new_model)));
-    }
-  }
-}
-
-/**
  * Implements hook_form_FORM_ID_alter() for uc_attribute_option_delete_confirm().
  *
  * Check to see if the deleted option matches any existing stock and list SKUs
@@ -242,11 +205,134 @@ function uc_stock_form_uc_attribute_option_delete_confirm_alter(&$form, &$form_s
  */
 function uc_stock_form_uc_attribute_option_delete_confirm_remove_skus($form, &$form_state) {
   $removal_skus = $form_state['values']['removal_skus'];
-  db_query('
-    DELETE FROM {uc_product_stock}
-    WHERE sku IN (:zombies)
-    ', array(':zombies' => $removal_skus));
-  backdrop_set_message(t('These stock entries have been removed:') . theme('item_list', array('items' => $removal_skus)));
+  if (!empty($removal_skus)) {
+    db_query('
+      DELETE FROM {uc_product_stock}
+      WHERE sku IN (:removal_skus)
+      ', array(':removal_skus' => $removal_skus));
+    backdrop_set_message(t('These stock entries have been removed:') . theme('item_list', array('items' => $removal_skus)));
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for uc_object_options_form().
+ *
+ * Add a notice that disabling an option will remove its SKUs from the stock
+ * table.
+ */
+function uc_stock_form_uc_object_options_form_alter(&$form, &$form_state, $form_id) {
+  $form[] = array(
+    '#type' => 'help',
+    '#markup' => t('Note that disabling a currently enabled option will remove the stock information for the corresponding SKU from the stock table.'),
+  );
+  $form['#submit'][] = 'uc_stock_form_uc_object_options_form_remove_skus';
+}
+
+/**
+ * Additional submission handler for uc_object_options_form().
+ *
+ * If any options have been removed from the product, remove the corresponding
+ * options from the stock table.
+ */
+function uc_stock_form_uc_object_options_form_remove_skus($form, &$form_state) {
+  $nid = $form_state['values']['id'];
+  $default_sku = db_query('
+    SELECT model
+    FROM {uc_products}
+    WHERE nid = :nid
+    ', array(':nid' => $nid))
+    ->fetchField();
+  // Note that when this submission handler has been called, the adjustments
+  // have already been removed from the product. Select skus in stock table that
+  // don't have corresponding adjustments and aren't the default SKU.
+  $removal_skus = db_query('
+    SELECT
+      s.sku
+    FROM {uc_product_stock} s
+    LEFT JOIN {uc_product_adjustments} a ON a.model = s.sku
+    WHERE s.nid = :nid
+    AND a.model IS NULL
+    AND s.sku <> :default_sku
+    ', array(':nid' => $nid, ':default_sku' => $default_sku))
+    ->fetchCol();
+  // Remove those SKUs from the stock table.
+  if (!empty($removal_skus)) {
+    db_query('
+      DELETE FROM {uc_product_stock}
+      WHERE sku IN (:removal_skus)
+      ', array(':removal_skus' => $removal_skus));
+    backdrop_set_message(t('These stock entries have been removed:') . theme('item_list', array('items' => $removal_skus)));
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for uc_product_adjustments_form().
+ *
+ * Save a copy of the original form values and insert our own validation
+ * function to check for duplicate SKUs in the stock table and our own
+ * submission function so we can update stock when an SKU is changed.
+ */
+function uc_stock_form_uc_product_adjustments_form_alter(&$form, &$form_state, $form_id) {
+  $form['original_body'] = array(
+    '#type' => 'value',
+    '#value' => $form['table']['body'],
+  );
+  $form['#validate'][] = 'uc_stock_form_uc_product_adjustments_form_validate';
+  $form['#submit'][] = 'uc_stock_form_uc_product_adjustments_form_submit';
+}
+
+/**
+ * Additional validation handler for uc_product_adjustments_form().
+ *
+ * Set an error if one of the new SKUs is a duplicate of one already in the
+ * stock table.
+ */
+function uc_stock_form_uc_product_adjustments_form_validate($form, &$form_state) {
+  $all_skus = db_query('SELECT sku FROM {uc_product_stock}')->fetchCol();
+  foreach ($form_state['values']['body'] as $key => $value) {
+    $old_model = !empty($form_state['values']['original_body'][$key]['model']) ? $form_state['values']['original_body'][$key]['model']['#default_value'] : '';
+    $new_model = !empty($value['model']) ? $value['model'] : '';
+    if ($old_model != $new_model) {
+      if (in_array($new_model, $all_skus)) {
+        // Link to the product that has the duplicate SKU in the error message
+        // so that user can check the conflict if desired.
+        $existing = db_query('
+          SELECT n.nid, n.title
+          FROM {uc_product_stock} s
+          LEFT JOIN {node} n ON n.nid = s.nid
+          WHERE s.sku = :sku
+          ', array(':sku' => $new_model))
+          ->fetchAssoc();
+        form_set_error("body][{$key}][model", t('SKU @sku already exists in the stock table for product <a href="!url">%title</a>.', array(
+          '@sku' => $new_model,
+          '%title' => check_plain($existing['title']),
+          '!url' => url('node/' . $existing['nid']),
+        )));
+      }
+    }
+  }
+}
+
+/**
+ * Submission handler for uc_product_adjustments_form().
+ *
+ * Update the stock table if the model number has changed for the variant.
+ *
+ * @see uc_product_adjustments_form_submit()
+ */
+function uc_stock_form_uc_product_adjustments_form_submit($form, &$form_state) {
+  $default_model = $form_state['values']['default'];
+  foreach ($form_state['values']['body'] as $key => $value) {
+    $old_model = !empty($form_state['values']['original_body'][$key]['model']) ? $form_state['values']['original_body'][$key]['model']['#default_value'] : '';
+    $new_model = !empty($value['model']) ? $value['model'] : '';
+    if ($old_model != $new_model && $old_model != $default_model) {
+      db_update('uc_product_stock')
+        ->fields(array('sku' => $new_model))
+        ->condition('sku', $old_model)
+        ->execute();
+      backdrop_set_message(t('Stock table updated: changed sku @old_model to @new_model', array('@old_model' => $old_model, '@new_model' => $new_model)));
+    }
+  }
 }
 
 /**
