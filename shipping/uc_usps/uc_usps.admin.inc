@@ -586,16 +586,19 @@ function uc_usps_newapi_lookup_form($form, &$form_state) {
   $form['weight'] = array(
     '#type' => 'textfield',
     '#title' => t('Weight'),
+    '#description' => t('This is the calculated weight for the package based on user input. The greater of dimWeight (equivalent weight based on the dimensions, calculated by USPS) and weight will be used to calculated the rate. Weight unit of measurement is in pounds.'),
     '#default_value' => $last_values['weight'] ?? '',
   );
   $form['length'] = array(
     '#type' => 'textfield',
     '#title' => t('Length'),
+    '#description' => t('This is the package length in inches. The maximum dimension is always length.'),
     '#default_value' => $last_values['length'] ?? '',
   );
   $form['width'] = array(
     '#type' => 'textfield',
     '#title' => t('Width'),
+    '#description' => t('This is the package width in inches. The second longest dimension is always width.'),
     '#default_value' => $last_values['width'] ?? '',
     '#states' => array(
       'visible' => array(
@@ -607,11 +610,13 @@ function uc_usps_newapi_lookup_form($form, &$form_state) {
   $form['height']= array(
     '#type' => 'textfield',
     '#title' => t('Height'),
+    '#description' => t('This is the package height in inches.'),
     '#default_value' => $last_values['height'] ?? '',
   );
   $form['thickness']= array(
     '#type' => 'textfield',
     '#title' => t('Thickness'),
+    '#description' => t('This is the thickness in inches.'),
     '#default_value' => $last_values['thickness'] ?? '',
     '#states' => array(
       'visible' => array(
@@ -680,6 +685,34 @@ function uc_usps_newapi_lookup_form($form, &$form_state) {
       ),
     ),
   );
+  $form['accountType'] = array(
+    '#type' => 'select',
+    '#title' => t('Account payment type'),
+    '#description' => t('The type of payment account linked to a contract rate.'),
+    '#options' => array(
+      'EPS' => t('EPS'),
+      'PERMIT' => t('Permit'),
+      'METER' => t('Meter'),
+    ),
+    '#default_value' => $last_values['accountType'] ?? '',
+    '#states' => array(
+      'visible' => array(
+        ':input[name="priceType"]' => array('value' => 'CONTRACT'),
+      ),
+    ),
+  );
+  $form['accountNumber'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Account number'),
+    '#description' => t('The Enterprise Payment Account, Permit number or PC Postage meter number associated with a contract.'),
+    '#default_value' => $last_values['accountNumber'] ?? '',
+    '#states' => array(
+      'visible' => array(
+        ':input[name="priceType"]' => array('value' => 'CONTRACT'),
+      ),
+    ),
+  );
+
   $form['mailingDate'] = array(
     '#type' => 'textfield',
     '#title' => t('Mailing date'),
@@ -706,6 +739,7 @@ function uc_usps_newapi_lookup_form($form, &$form_state) {
   );
   $form['hasNonstandardCharacteristics'] = array(
     '#title' => t('Has nonstandard characteristics'),
+    '#description' => t('Nonstandard packages include cylindrical tubes and rolls, certain high-density items, cartons containing more than 24 ounces of liquids in one or more glass containers, cartons containing 1 gallon or more of liquid in metal or plastic containers, and items in 201.7.6.2.'),
     '#type' => 'radios',
     '#options' => array(
       '0' => t('No'),
@@ -935,6 +969,12 @@ function uc_usps_newapi_lookup_form_submit($form, &$form_state) {
       );
       break;
   }
+
+  if ($values['priceType'] == 'CONTRACT') {
+    $request['accountType'] = $values['accountType'];
+    $request['accountNumber'] = $values['accountNumber'];
+  }
+
   $results = '';
   if (isset($show['request'])) {
     $results .= '<strong>' . $show_options['request'] . ':</strong>' . '<pre>' . check_plain(var_export($request, TRUE)) . '</pre>';
