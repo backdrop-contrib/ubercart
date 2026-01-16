@@ -32,6 +32,15 @@ function uc_stock_menu() {
       'access arguments' => array('view reports'),
       'file' => 'uc_stock.admin.inc',
     );
+    $items['admin/store/stock/purge-zombies'] = array(
+      'title' => 'Purge zombie stock items',
+      'description' => 'Remove stock table entries that do not have corresponding products',
+      'page callback' => 'backdrop_get_form',
+      'page arguments' => array('uc_stock_purge_zombies_form'),
+      'access arguments' => array('view reports'),
+      'file' => 'uc_stock.admin.inc',
+      'type' => MENU_CALLBACK,
+    );
   }
   $items['node/%node/edit/stock'] = array(
     'title' => 'Stock',
@@ -127,17 +136,32 @@ function uc_stock_entity_delete($entity, $type) {
 
 /**
  * Implements hook_entity_update().
+ *
+ * Update the stock table if the model number has changed and there is not
+ * already an entry for this model number in the table (perhaps due to a
+ * different product having the same model number, which is allowed in
+ * Ubercart).
  */
 function uc_stock_entity_update($entity, $type) {
   if ($type == 'node' && in_array($entity->type, uc_product_types())) {
     $old_model = $entity->original->model;
     $new_model = $entity->model;
     if($old_model != $new_model) {
-      db_update('uc_product_stock')
-        ->fields(array('sku' => $new_model))
-        ->condition('sku', $old_model)
-        ->execute();
-      backdrop_set_message(t('Stock table updated: changed SKU @old_model to @new_model.', array('%title' => $entity->title, '@old_model' => $old_model, '@new_model' => $new_model)));
+      $products = uc_stock_tracked_products($new_model);
+      if (empty($products)) {
+        db_update('uc_product_stock')
+          ->fields(array('sku' => $new_model))
+          ->condition('sku', $old_model)
+          ->execute();
+        backdrop_set_message(t('Stock table updated: changed SKU @old_model to @new_model.', array('%title' => $entity->title, '@old_model' => $old_model, '@new_model' => $new_model)));
+      }
+      else {
+        $listing = array();
+        foreach ($products as $nid => $title) {
+          $listing[] = l($title, 'node/' . $nid);
+        }
+        backdrop_set_message(t('SKU @new_model is already in the stock table for these products:', array('@new_model' => $new_model)) . theme('item_list', array('items' => $listing)), 'warning');
+      }
     }
   }
 }
@@ -148,6 +172,8 @@ function uc_stock_entity_update($entity, $type) {
  * Save a copy of the original form values and insert our own submission
  * function for product adjustments so we can update stock when model is changed
  * for an attribute.
+ *
+ * @see uc_product_adjustments_form()
  */
 function uc_stock_form_uc_product_adjustments_form_alter(&$form, &$form_state, $form_id) {
   $form['original_body'] = array(
@@ -160,7 +186,10 @@ function uc_stock_form_uc_product_adjustments_form_alter(&$form, &$form_state, $
 /**
  * Submission function for uc_product_adjustments_form().
  *
- * Update the stock table if the model number has changed for the variant.
+ * Update the stock table if the model number has changed for the variant and
+ * there is not already an entry for this model number in the table (perhaps due
+ * to a different product having the same model number, which is allowed in
+ * Ubercart).
  *
  * @see uc_product_adjustments_form_submit()
  */
@@ -170,11 +199,21 @@ function uc_stock_form_uc_product_adjustments_form_submit($form, &$form_state) {
     $old_model = !empty($form_state['values']['original_body'][$key]['model']) ? $form_state['values']['original_body'][$key]['model']['#default_value'] : '';
     $new_model = !empty($value['model']) ? $value['model'] : '';
     if ($old_model != $new_model) {
-      db_update('uc_product_stock')
-        ->fields(array('sku' => $new_model))
-        ->condition('sku', $old_model)
-        ->execute();
-      backdrop_set_message(t('Stock table updated: changed sku @old_model to @new_model', array('@old_model' => $old_model, '@new_model' => $new_model)));
+      $products = uc_stock_tracked_products($new_model);
+      if (empty($products)) {
+        db_update('uc_product_stock')
+          ->fields(array('sku' => $new_model))
+          ->condition('sku', $old_model)
+          ->execute();
+        backdrop_set_message(t('Stock table updated: changed SKU @old_model to @new_model', array('@old_model' => $old_model, '@new_model' => $new_model)));
+      }
+      else {
+        $listing = array();
+        foreach ($products as $nid => $title) {
+          $listing[] = l($title, 'node/' . $nid);
+        }
+        backdrop_set_message(t('SKU @new_model is already in the stock table for these products:', array('@new_model' => $new_model)) . theme('item_list', array('items' => $listing)), 'warning');
+      }
     }
   }
 }
@@ -250,7 +289,20 @@ function uc_stock_level($sku) {
  *   Boolean indicating whether or not the sku has an active stock record.
  */
 function uc_stock_is_active($sku) {
-  return (bool) db_query("SELECT active FROM {uc_product_stock} WHERE sku = :sku", array(':sku' => $sku))->fetchField();
+  return (bool) db_query('SELECT active FROM {uc_product_stock} WHERE sku = :sku', array(':sku' => $sku))->fetchField();
+}
+
+/**
+ * Returns a list of all product titles in the stock table for a given SKU
+ * keyed on their nids.
+ */
+function uc_stock_tracked_products($sku) {
+  return db_query('
+    SELECT DISTINCT s.nid, n.title
+    FROM {uc_product_stock} s
+    LEFT JOIN {node} n ON n.nid = s.nid
+    WHERE s.sku = :sku', array(':sku' => $sku))
+    ->fetchAllKeyed();
 }
 
 /**

@@ -49,13 +49,17 @@ function uc_stock_settings_form($form, &$form_state) {
 }
 
 /**
- * Displays a stock report for products with stock tracking enabled.
+ * Displays a stock report for products that have stock tracking enabled.
  */
 function uc_stock_report() {
+  $zombies = _uc_stock_zombies();
+  if (!empty($zombies)) {
+    backdrop_set_message(t('There are SKUs in the stock table with no corresponding product (outlined in red below). <a href="!url">Purge them all?</a>', array('!url' => url('admin/store/stock/purge-zombies'))), 'warning', FALSE);
+  }
+
   $page_size = (isset($_GET['nopage'])) ? UC_REPORTS_MAX_RECORDS : config_get('uc_reports.settings', 'uc_reports_table_size');
   $csv_rows = array();
   $rows = array();
-
   $header = array(
     array(
       'data' => t('SKU'),
@@ -114,6 +118,10 @@ function uc_stock_report() {
     );
 
     // Add the data to a table row for display.
+    $row_classes = array(($stock->threshold >= $stock->stock) ? 'uc-stock-below-threshold' : 'uc-stock-above-threshold');
+    if (isset($zombies[$stock->sku])) {
+      $row_classes[] = 'zombie-sku';
+    }
     $rows[] = array(
       'data' => array(
         array('data' => $stock->sku),
@@ -122,7 +130,7 @@ function uc_stock_report() {
         array('data' => $stock->threshold),
         array('data' => backdrop_render($operations)),
       ),
-      'class' => array(($stock->threshold >= $stock->stock) ? 'uc-stock-below-threshold' : 'uc-stock-above-threshold'),
+      'class' => $row_classes,
     );
 
     // Add the data to the CSV contents for export.
@@ -208,6 +216,29 @@ function uc_stock_report_form_submit($form, &$form_state) {
 }
 
 /**
+ * Form builder for purging zombie stock items.
+ *
+ * @see uc_stock_purge_zombies_form_submit()
+ * @ingroup forms
+ */
+function uc_stock_purge_zombies_form($form, &$form_state) {
+  return confirm_form($form, t('Confirm purge'), 'admin/store/reports/stock', t('Are you sure you want to remove stock entries that do not correspond to any product SKUs?'), t('Remove'));
+}
+
+/**
+ * Form submission handler for purging zombie stock items.
+ */
+function uc_stock_purge_zombies_form_submit($form, &$form_state) {
+  $zombies = _uc_stock_zombies();
+  db_query('
+    DELETE FROM {uc_product_stock}
+    WHERE sku IN (:zombies)
+    ', array(':zombies' => array_keys($zombies)));
+  backdrop_set_message(t('The stock entries have been removed.'));
+  $form_state['redirect'] = 'admin/store/reports/stock';
+}
+
+/**
  * Form builder for product stock edit form.
  *
  * @see uc_stock_edit_form_submit()
@@ -240,6 +271,9 @@ function uc_stock_edit_form($form, &$form_state, $node) {
       $form['stock'][$id]['active'] = array(
         '#type' => 'checkbox',
         '#default_value' => !empty($stock['active']) ? $stock['active'] : 0,
+        '#attributes' => array(
+          'data-tableselect-id' => 'uc_stock_edit_form',
+        ),
       );
 
       // Sanitized version of the SKU for display.
@@ -345,4 +379,29 @@ function theme_uc_stock_edit_form($variables) {
   }
 
   return theme('table', array('header' => $header, 'rows' => $rows)) . backdrop_render_children($form);
+}
+
+/**
+ * Returns a table of zombie stock items (SKUs no longer part of any product).
+ */
+function _uc_stock_zombies() {
+  $entries = db_query('
+    SELECT sku, nid
+    FROM {uc_product_stock} s
+    ', array())
+    ->fetchAllAssoc('sku', PDO::FETCH_ASSOC);
+  $zombies = array();
+  $models = &backdrop_static(__FUNCTION__ . '_models');
+  foreach ($entries as $sku => $entry) {
+    $nid = $entry['nid'];
+    if (!isset($models[$nid])) {
+      // Use uc_product_get_models() to ensure agreement with what is
+      // presented on the edit form.
+      $models[$nid] = uc_product_get_models($nid, FALSE);
+    }
+    if (!isset($models[$nid][$sku])) {
+      $zombies[$sku] = $sku;
+    }
+  }
+  return $zombies;
 }
