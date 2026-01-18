@@ -38,7 +38,7 @@ class UbercartEncryption {
    *   Cyphertext. Text string containing encrypted $source.
    *
    * @return
-   *   Plaintext. Text string to be encrypted.
+   *   Plaintext|null. Text string to be encrypted or NULL if decrypt fails.
    */
   public function decrypt($key, $source) {
     $this->errors = array();
