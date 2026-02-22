@@ -1,0 +1,36 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function uc_paypal_checkout_install() {
+  $t = get_t();
+
+  db_merge('uc_order_statuses')
+    ->key(array('order_status_id' => 'paypal_checkout_pending'))
+    ->insertFields(array(
+      'order_status_id' => 'paypal_checkout_pending',
+      'title' => $t('PayPal Checkout pending'),
+      'state' => 'post_checkout',
+      'weight' => 8,
+      'locked' => 1,
+    ))
+    ->updateFields(array(
+      'state' => 'post_checkout',
+      'locked' => 1,
+    ))
+    ->execute();
+}
+
+
+/**
+ * Implements hook_uninstall().
+ */
+function uc_paypal_checkout_uninstall() {
+  db_update('uc_order_statuses')
+    ->fields(array(
+      'locked' => 0,
+    ))
+    ->condition('order_status_id', 'paypal_checkout_pending')
+    ->execute();
+}
