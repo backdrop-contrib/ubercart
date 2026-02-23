@@ -261,7 +261,7 @@ function uc_paypal_checkout_approve_order($order, $flow) {
   if (empty($order->primary_email)) {
     $order->primary_email = $payer['email_address'];
   }
-
+  
   // Update billing information profile for the order with the available info.
   if (!empty($settings['update_billing_profiles'])) {
     uc_paypal_checkout_customer_profile($order, 'billing', $paypal_order);
@@ -333,6 +333,7 @@ function uc_paypal_checkout_approve_order($order, $flow) {
  */
 function uc_paypal_checkout_prepare_order_request($order, $settings) {
 	$items = array();
+  $item_total = 0;
 	foreach ($order->products as $product) {
 		$item = array(
 			'name' => mb_substr(strip_tags($product->title), 0, 127),
@@ -345,15 +346,39 @@ function uc_paypal_checkout_prepare_order_request($order, $settings) {
     if (isset($product->model)) {
       $item['sku'] = $product->model;
     }
+    $item_total += ($product->price * $product->qty);
     $items[] = $item;
 	}
-  // TODO: add shipping, tax and discounts to $breakdown
-  $breakdown = array(
-    'item_total' => array(
+
+  // Add up shipping to $breakdown.
+  $shipping_total = 0;
+  foreach ($order->line_items as $line_item) {
+    if ($line_item['type'] != 'shipping') {
+      continue;
+    }
+    $shipping_total += $line_item['amount'];
+  }
+  if ($shipping_total) {
+    $breakdown['shipping'] = array(
       'currency_code' => $order->currency,
-      'value' => number_format($order->order_total, 2, '.', ''),
-    ),
+      'value' => number_format($shipping_total, 2, '.', ''),
+    );
+  }
+  // TODO: add tax and discounts to $breakdown
+  $breakdown['item_total'] = array(
+    'currency_code' => $order->currency,
+    'value' => number_format($item_total, 2, '.', ''),
   );
+
+
+  // Add payer information including billing address.
+  $payer = array();
+  if (!empty($order->primary_mail)) {
+    $payer['email_address'] = $order->primary_mail;
+  }
+  $payer += uc_paypal_checkout_format_address($order, 'billing');
+
+  // Build the request body with all the info.
 	$request_body = array(
 		'intent' => strtoupper($settings['intent']),
 		'purchase_units' => array(
@@ -371,10 +396,44 @@ function uc_paypal_checkout_prepare_order_request($order, $settings) {
 		),
 		'application_context' => array(
 			'brand_name' => mb_substr(config_get('system.core', 'site_name'), 0, 127),
-      // TODO: Add shipping preference, send address
-			'shipping_preference' => 'NO_SHIPPING',
 		),
 	);
+
+  // Send the payer if not empty.
+  if ($payer) {
+    $request_body['payer'] = $payer;
+  }
+
+  // Send shipping information.
+  $shipping_exists = module_exists('uc_shipping');
+  $shipping_address = FALSE;
+  // If the shipping module is enabled...
+  if ($shipping_exists) {
+    // If we have a shipping address, pass it to PayPal.
+    $shipping_address = uc_paypal_checkout_format_address($order, 'delivery');
+  }
+  $shipping_preference = $settings['shipping_preference'];
+
+  // The shipping module isn't enabled, override the shipping preference
+  // configured.
+  if (!$shipping_exists) {
+    $shipping_preference = 'no_shipping';
+  }
+  else {
+    // If no shipping address was already collected, override the shipping
+    // preference to "GET_FROM_FILE" so that the shipping address is collected
+    // on the PayPal site.
+    if ($shipping_preference == 'set_provided_address' && !$shipping_address) {
+      $shipping_preference = 'get_from_file';
+    }
+  }
+  // No need to pass a shipping_address if the shipping address collection
+  // is configured to "no_shipping".
+  if ($shipping_address && $shipping_preference !== 'no_shipping') {
+    $request_body['purchase_units'][0]['shipping'] = $shipping_address;
+  }
+  $request_body['application_context']['shipping_preference'] = strtoupper($shipping_preference);
+
 	return $request_body;
 }
 
@@ -633,8 +692,8 @@ function uc_paypal_checkout_customer_profile($order, $profile_type, $paypal_orde
   if ($paypal_address) {
     // Map PayPal address keys to order field keys.
     $mapping = array(
-      'address_line_1' => 'street_1',
-      'address_line_2' => 'street_2',
+      'address_line_1' => 'street1',
+      'address_line_2' => 'street2',
       'admin_area_1' => 'city',
       'admin_area_2' => 'zone',
       'postal_code' => 'postal_code',
@@ -646,6 +705,22 @@ function uc_paypal_checkout_customer_profile($order, $profile_type, $paypal_orde
       }
       // PayPal address fields have a higher maximum length than ours.
       $value = $key == 'country_code' ? $value : mb_substr($value, 0, 255);
+
+      // Country and state/zone are returned as 2-letter codes. Convert them to
+      // numeric codes used by Ubercart.
+      if ($key == 'country_code') {
+        $country_data = uc_get_country_data(array('country_iso_code_2' => $value));
+        $value = $country_data[0]['country_id'];
+      }
+      elseif ($key == 'admin_area_2') {
+        $country_data = uc_get_country_data(array('country_iso_code_2' => $value));
+        $country_id = $country_data[0]['country_id'];
+        $value = db_query("SELECT zone_id FROM {uc_zones} 
+          WHERE zone_code = :code
+          AND zone_country_id = :country", 
+          array(':code' => $value, ':country' => $country_id))
+          ->fetchField();
+      }
       $order_field = $profile_type . '_' . $mapping[$key];
       $order->$order_field = $value;
     }
@@ -655,4 +730,52 @@ function uc_paypal_checkout_customer_profile($order, $profile_type, $paypal_orde
   if (!$skip_save) {
     uc_order_save($order);
   }
+}
+
+/**
+ * Formats the given address into a format expected by PayPal.
+ *
+ * @param UcOrder $order
+ *   The address to format.
+ * @param string $profile_type
+ *   The profile type ("billing"|"shipping").
+ *
+ * @return array
+ *   The formatted address.
+ */
+function uc_paypal_checkout_format_address($order, $profile_type) {
+  $return = array();
+  if (!empty($order->{$profile_type . '_postal_code'})) {
+
+    // Convert the state/zone code to two-letter code.
+    $zone_id = $order->{$profile_type . '_zone'};
+    $paypal_state_code = uc_get_zone_code($zone_id);
+    // Convert country numeric code to two-letter code.
+    $country_id = $order->{$profile_type . '_country'};
+    $country_data = uc_get_country_data(array('country_id' => $country_id));
+    $paypal_country_code = $country_data[0]['country_iso_code_2'];
+
+    $return = array(
+      'address' => array_filter(array(
+        'address_line_1' => $order->{$profile_type . '_street1'},
+        'address_line_2' => $order->{$profile_type . '_street2'},
+        'admin_area_2' => mb_substr($order->{$profile_type . '_city'}, 0, 120),
+        'admin_area_1' => $paypal_state_code,
+        'postal_code' => mb_substr($order->{$profile_type . '_postal_code'}, 0, 60),
+        'country_code' => $paypal_country_code,
+      )),
+    );
+  }
+  if ($profile_type == 'billing') {
+    $return['name'] = array(
+      'given_name' => $order->{$profile_type . '_first_name'},
+      'surname' => $order->{$profile_type . '_last_name'},
+    );
+  }
+  elseif ($profile_type == 'shipping') {
+    $return['name'] = array(
+      'full_name' => $order->{$profile_type . '_first_name'} . ' ' . $order->{$profile_type . '_last_name'},
+    );
+  }
+  return $return;
 }
