@@ -158,6 +158,7 @@ function uc_paypal_checkout_create_order($order) {
   }
 	try {
   	$request_body = uc_paypal_checkout_prepare_order_request($order, $settings);
+    backdrop_alter('uc_paypal_checkout_create_order_request', $request_body, $order);
 		$json = $api_client->createOrder($request_body);
 		backdrop_add_http_header('Content-Type', 'text/plain');
 		echo isset($json['id']) ? $json['id'] : '';
@@ -350,26 +351,65 @@ function uc_paypal_checkout_prepare_order_request($order, $settings) {
     $items[] = $item;
 	}
 
-  // Add up shipping to $breakdown.
-  $shipping_total = 0;
+  // Add generic line items to the items array.
   foreach ($order->line_items as $line_item) {
-    if ($line_item['type'] != 'shipping') {
+    if ($line_item['type'] != 'generic') {
       continue;
     }
-    $shipping_total += $line_item['amount'];
-  }
-  if ($shipping_total) {
-    $breakdown['shipping'] = array(
-      'currency_code' => $order->currency,
-      'value' => number_format($shipping_total, 2, '.', ''),
+    $item = array(
+      'name' => mb_substr(strip_tags($line_item['title']), 0, 255),
+      'unit_amount' => array(
+        'currency_code' => $order->currency,
+        'value' => number_format($line_item['amount'], 2, '.', ''),
+      ),
+      'quantity' => 1, // Generic line items do not contain a qty property.
     );
+    $item_total += $line_item['amount'];
+    $items[] = $item;
   }
-  // TODO: add tax and discounts to $breakdown
+
+  // Add item_total to the breakdown.
   $breakdown['item_total'] = array(
     'currency_code' => $order->currency,
     'value' => number_format($item_total, 2, '.', ''),
   );
 
+  // Add special line items to the breakdown. For contrib modules that add other
+  // line_item types, use hook_uc_paypal_checkout_create_order_request_alter().
+  $line_item_totals = array(
+    'shipping' => 0,
+    'tax_total' => 0,
+    'discount' => 0,
+    'handling' => 0,
+  );
+  foreach ($order->line_items as $line_item) {
+    switch ($line_item['type']) {
+      case 'shipping':
+        $line_item_totals['shipping'] += $line_item['amount'];
+        break;
+      case 'tax':
+        $line_item_totals['tax_total'] += $line_item['amount'];
+        break;
+      case 'discount':
+      case 'coupon':
+        $line_item_totals['discount'] += abs($line_item['amount']);
+        break;
+      case 'fee':
+        // Even though uc_fee is not yet ported, we preemtively add it to the
+        // breakdown.
+        $line_item_totals['handling'] += abs($line_item['amount']);
+        break;
+    }
+  }
+
+  foreach ($line_item_totals as $key => $total) {
+    if ($total) {
+      $breakdown[$key] = array(
+        'currency_code' => $order->currency,
+        'value' => number_format($total, 2, '.', ''),
+      );
+    }
+  }
 
   // Add payer information including billing address.
   $payer = array();
