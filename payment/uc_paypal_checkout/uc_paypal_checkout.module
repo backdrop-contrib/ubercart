@@ -62,6 +62,39 @@ function uc_paypal_checkout_theme() {
  */
 function uc_paypal_checkout_menu() {
 	$items = array();
+
+  // Add a menu item for capturing authorizations.
+  $items['admin/store/orders/%uc_order/payments/%uc_payment/paypal-checkout-capture'] = array(
+    'title' => 'Capture',
+    'page callback' => 'backdrop_get_form',
+    'page arguments' => array('uc_paypal_checkout_capture_form', 3, 5),
+    'access callback' => 'uc_paypal_checkout_capture_void_access',
+    'access arguments' => array(3, 5),
+    'type' => MENU_CALLBACK,
+    'file' => 'uc_paypal_checkout.admin.inc',
+  );
+   // Add a menu item for voiding authorizations.
+  $items['admin/store/orders/%uc_order/payments/%uc_payment/paypal-checkout-void'] = array(
+    'title' => 'Void',
+    'page callback' => 'backdrop_get_form',
+    'page arguments' => array('uc_paypal_checkout_void_form', 3, 5),
+    'access callback' => 'uc_paypal_checkout_capture_void_access',
+    'access arguments' => array(3, 5),
+    'type' => MENU_CALLBACK,
+    'weight' => 4,
+    'file' => 'uc_paypal_checkout.admin.inc',
+  );
+  // Add a menu item for refunding settled transactions.
+  $items['admin/store/orders/%uc_order/payments/%uc_payment/paypal-checkout-refund'] = array(
+    'title' => 'Refund',
+    'page callback' => 'backdrop_get_form',
+    'page arguments' => array('uc_paypal_checkout_refund_form', 3, 5),
+    'access callback' => 'uc_paypal_checkout_refund_access',
+    'access arguments' => array(3, 5),
+    'type' => MENU_CALLBACK,
+    'weight' => 4,
+    'file' => 'uc_paypal_checkout.admin.inc',
+  );
 	// Endpoints for AJAX and PayPal SDK callbacks (to be implemented).
 	$items['uc_paypal_checkout/create-order/%uc_order'] = array(
 		'page callback' => 'uc_paypal_checkout_create_order',
@@ -308,19 +341,27 @@ function uc_paypal_checkout_approve_order($order, $flow) {
 
   // Update the order status for the shortcut flow.
   if ($flow == 'shortcut') {
-    uc_order_update_status($order->order_id, 'paypal_checkout_pending');
     uc_order_comment_save($order->order_id, $order->uid, t('Customer clicked the Smart payment buttons on the cart page.'), 'admin');
   }
   // Save the changes to the order.
   $order->save();
+
   // Enter a payment record.
-  $comment = t('PayPal Checkout remote ID: @remote_id. Order status: @order_status_label (@order_status)', array(
-    '@remote_id' => $remote_id,
-    '@order_status_label' => uc_order_status_data($order->order_status, 'title'),
-    '@order_status' => $order->order_status,
+  $comment = t('PayPal Checkout remote ID: @remote_id. Remote status: @remote_status', array(
+    '@remote_id' => $remote_payment['id'],
+    '@remote_status' => $remote_status,
   ));
-  uc_payment_enter($order->order_id, 'uc_paypal_checkout', $order->order_total, $order->uid, NULL, $comment);
-  // uc_cart_complete_sale($order);
+  $payment_data = array(
+    'uc_paypal_checkout' => array(
+      'remote_id' => $remote_payment['id'],
+      'remote_status' => $remote_status,
+    ),
+  );
+  uc_payment_enter($order->order_id, 'paypal_checkout', $order->order_total, $order->uid, $payment_data, $comment);
+  if ($remote_status == 'pending' || $remote_status == 'created') {
+    // This is an authorization, funds have not been captured.
+    uc_order_update_status($order->order_id, 'paypal_checkout_pending');
+  }
   uc_order_comment_save($order->order_id, $order->uid, t('PayPal Checkout reported a payment of @amount @currency.', array('@amount' => uc_currency_format($paypal_total, FALSE), '@currency' => $paypal_amount['currency_code'])));
   unset($_SESSION['uc_checkout'][$order->order_id]['do_review']);
   $_SESSION['uc_checkout'][$order->order_id]['do_complete'] = TRUE;
@@ -818,4 +859,49 @@ function uc_paypal_checkout_format_address($order, $profile_type) {
     );
   }
   return $return;
+}
+
+function uc_paypal_checkout_form_uc_payment_by_order_form_alter(&$form, &$form_state) {
+  $order_id = $form['order_id']['#value'];
+  $payments = uc_payment_load_payments($order_id);
+  if ($payments !== FALSE) {
+    foreach ($payments as $payment) {
+      $links = [];
+      $link_keys = element_children($form['payments'][$payment->receipt_id]['action']);
+      if (!empty($link_keys)) {
+        // Add needed new actions.
+        if ($payment->method == 'PayPal Checkout') {
+          // Set the existing action links.
+          foreach ($link_keys as $link_key) {
+            $links[$link_key] = array(
+              'title' => $form['payments'][$payment->receipt_id]['action'][$link_key]['#title'],
+              'href' => $form['payments'][$payment->receipt_id]['action'][$link_key]['#href'],
+            );
+            unset($form['payments'][$payment->receipt_id]['action'][$link_key]);
+          }
+          $data = unserialize($payment->data);
+          if (isset($data['uc_paypal_checkout']['remote_status']) && in_array(strtolower($data['uc_paypal_checkout']['remote_status']), ['created', 'pending'])) {
+            $links['capture'] = array(
+              'title' => t('Capture'),
+              'href' => "admin/store/orders/$order_id/payments/$payment->receipt_id/paypal-checkout-capture",
+            );
+            $links['void'] = array(
+            'title' => t('Void'),
+            'href' => "admin/store/orders/$order_id/payments/$payment->receipt_id/paypal-checkout-void",
+          );
+          }
+          elseif (isset($data['uc_paypal_checkout']['remote_status']) && strtolower($data['uc_paypal_checkout']['remote_status']) == 'completed') {
+            $links['refund'] = array(
+              'title' => t('Refund'),
+              'href' => "admin/store/orders/$order_id/payments/$payment->receipt_id/paypal-checkout-refund",
+            );
+          }
+          $form['payments'][$payment->receipt_id]['action'] = array(
+            '#type' => 'dropbutton',
+            '#links' => $links,
+          );
+        }
+      }
+    }
+  }
 }
