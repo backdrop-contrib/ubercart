@@ -163,15 +163,18 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
         '#markup' => ($payment->comment == '') ? '-' : filter_xss_admin($payment->comment),
       );
       if (user_access('delete payments')) {
-        $action_value = l(t('Delete'), 'admin/store/orders/' . $order->order_id . '/payments/'
-                          . $payment->receipt_id . '/delete');
+        $action_array = array(
+          'delete' => array(
+            '#type' => 'link',
+            '#title' => t('Delete'),
+            '#href' => 'admin/store/orders/' . $order->order_id . '/payments/' . $payment->receipt_id . '/delete',
+          ),
+        );
       }
       else {
-        $action_value = '-';
+        $action_array = array('#markup' => '-');
       }
-      $form['payments'][$payment->receipt_id]['action'] = array(
-        '#markup' => $action_value,
-      );
+      $form['payments'][$payment->receipt_id]['action'] = $action_array;
     }
   }
 
