@@ -335,6 +335,7 @@ function uc_paypal_checkout_approve_order($order, $flow) {
     // Display an error message and exit.
     watchdog('uc_paypal_checkout', 'PayPal Checkout transaction failed for order @order_number. Remote stauts: @status.', array('@order_number' => $order->order_id, '@status' => $remote_status), WATCHDOG_ERROR);
     backdrop_set_message($error_message, 'error');
+    rules_invoke_event('uc_paypal_checkout_event_failed', $order);
     backdrop_json_output(array('redirectUri' => $error_redirect));
     backdrop_exit();
   }
@@ -361,6 +362,10 @@ function uc_paypal_checkout_approve_order($order, $flow) {
   if ($remote_status == 'pending' || $remote_status == 'created') {
     // This is an authorization, funds have not been captured.
     uc_order_update_status($order->order_id, 'paypal_checkout_pending');
+    rules_invoke_event('uc_paypal_checkout_event_pending', $order);
+  }
+  else {
+    rules_invoke_event('uc_paypal_checkout_event_completed', $order);
   }
   uc_order_comment_save($order->order_id, $order->uid, t('PayPal Checkout reported a payment of @amount @currency.', array('@amount' => uc_currency_format($paypal_total, FALSE), '@currency' => $paypal_amount['currency_code'])));
   unset($_SESSION['uc_checkout'][$order->order_id]['do_review']);

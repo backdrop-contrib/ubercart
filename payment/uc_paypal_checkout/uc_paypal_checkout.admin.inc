@@ -176,6 +176,8 @@ function uc_paypal_checkout_void_form_submit($form, &$form_state) {
     uc_payment_enter($order->order_id, 'paypal_checkout', 0, 0, $data, $comment);
     uc_order_update_status($order->order_id, 'paypal_checkout_pending');
     uc_payment_delete($payment->receipt_id);
+    rules_invoke_event('uc_paypal_checkout_event_voided', $order);
+
   }
   catch (PayPalCheckoutHttpException $exception) {
     backdrop_set_message(t('The void operation failed, so the payment will remain in a pending status.'), 'error');
@@ -266,6 +268,7 @@ function uc_paypal_checkout_refund_form_submit($form, &$form_state) {
       $data['uc_paypal_checkout']['remote_id'] = $response['id'];
       $data['uc_paypal_checkout']['remote_status'] = 'refunded';
       uc_payment_enter($order->order_id, 'paypal_checkout', $amount * -1, 0, $data, $comment);
+      rules_invoke_event('uc_paypal_checkout_event_refunded', $order);
     }
   }
   catch (PayPalCheckoutHttpException $exception) {
