@@ -229,12 +229,14 @@ function uc_product_field_formatter_view($entity_type, $entity, $field, $instanc
 }
 
 /**
- * Implements hook_node_info().
- * Deprecated in Backdrop. See uc_product.install.
- * // TODO delete this function when not needed any more
- * because it is also called directly by uc_store module to create product classes.
- *
  * Creates node types for each product class and other product modules.
+ *
+ * @param bool $reset
+ *   Whether to rebuild the list of types and product classes versus serving a
+ *   cached value.
+ *
+ * @return array
+ *   An array of product type information.
  */
 function uc_product_node_info($reset = FALSE) {
   static $types = array();
@@ -280,7 +282,7 @@ function uc_product_node_type_update($info) {
     ->condition('pcid', $existing_type)
     ->execute();
 
-  // Reset static variable data and load new info.
+  // Rebuild static cache.
   uc_product_node_info(TRUE);
 }
 
@@ -1064,7 +1066,6 @@ function uc_product_field_delete_instance($instance) {
  * Implements hook_uc_product_types().
  */
 function uc_product_uc_product_types() {
-  // TODO migrate uc_product_node_info()
   return array_keys(uc_product_node_info());
 }
 
@@ -1586,6 +1587,14 @@ function uc_product_get_description($product) {
 
 /**
  * Load a product class or all classes.
+ *
+ * @param string|null $class_id
+ *   The ID of the class to load, or NULL to load all classes.
+ * @param bool $reset
+ *   Whether to reconstruct the list of classes versus serving a cached value.
+ *
+ * @return array
+ *   The class data (if $class_id is provided) or list of all classes (if not).
  */
 function uc_product_class_load($class_id = NULL, $reset = FALSE) {
   static $classes;
