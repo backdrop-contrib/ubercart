@@ -858,21 +858,21 @@ function uc_usps_newapi_package_quote($package, $origin, $destination, $method, 
   );
   rsort($dimensions);
 
-  if ($domestic) { // Domestic
-    // Get extra services for domestic.
-    $extra_services = array();
-    if ($config->get('uc_usps_insurance')) {
-      if ($package->price <= 500.0) {
-        $extra_services[] = 930; // Insurance <= $500
-      }
-      else {
-        $extra_services[] = 931; // Insurance > $500
-      }
+  // Get extra services.
+  $extra_services = array();
+  if ($config->get('uc_usps_insurance')) {
+    if ($package->price <= 500.0) {
+      $extra_services[] = 930; // Insurance <= $500
     }
-    if ($config->get('uc_usps_signature_confirmation')) {
-      $extra_services[] = 921; // Signature Confirmation
+    else {
+      $extra_services[] = 931; // Insurance > $500
     }
+  }
+  if ($config->get('uc_usps_signature_confirmation')) {
+    $extra_services[] = 921; // Signature Confirmation
+  }
 
+  if ($domestic) { // Domestic
     // Always do a parcel quote because flat-rate envelopes will only show up
     // here.
     $connection_url = $config->get('uc_usps_connection_address') . '/prices/v3/total-rates/search';
