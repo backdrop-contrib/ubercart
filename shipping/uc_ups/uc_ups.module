@@ -1009,17 +1009,18 @@ function uc_ups_rate_markup($rate) {
   $config = config('uc_ups.settings');
   $markup = trim($config->get('uc_ups_rate_markup'));
   $type   = $config->get('uc_ups_rate_markup_type');
+  $prec = config_get('uc_store.settings', 'uc_currency_prec');
 
   if (is_numeric($markup)) {
     switch ($type) {
       case 'percentage':
-        return $rate + $rate * floatval($markup) / 100;
+        return round($rate + $rate * floatval($markup) / 100, $prec);
 
       case 'multiplier':
-        return $rate * floatval($markup);
+        return round($rate * floatval($markup), $prec);
 
       case 'currency':
-        return $rate + floatval($markup);
+        return round($rate + floatval($markup), $prec);
     }
   }
   else {
