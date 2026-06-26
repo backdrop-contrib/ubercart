@@ -677,7 +677,7 @@ function uc_usps_newapi_lookup_form($form, &$form_state) {
       'RETAIL' => t('Retail'),
       'CONTRACT' => t('Contract'),
     ),
-    '#default_value' => $last_values['priceType'] ?? '',
+    '#default_value' => $last_values['priceType'] ?? 'COMMERCIAL',
     '#states' => array(
       'visible' => array(
         array(':input[name="lookup_type"]' => array('value' => 'dom_parcel')),
