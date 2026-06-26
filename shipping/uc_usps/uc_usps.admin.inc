@@ -662,7 +662,7 @@ function uc_usps_newapi_lookup_form($form, &$form_state) {
     '#type' => 'radios',
     '#title' => t('Mail class (international)'),
     '#options' => $mail_class_options,
-    '#default_value' => $last_values['mailClass'] ?? array(),
+    '#default_value' => $last_values['mailClass'] ?? 'ALL',
     '#states' => array(
       'visible' => array(
         ':input[name="lookup_type"]' => array('value' => 'intl_parcel'),
@@ -677,7 +677,7 @@ function uc_usps_newapi_lookup_form($form, &$form_state) {
       'RETAIL' => t('Retail'),
       'CONTRACT' => t('Contract'),
     ),
-    '#default_value' => $last_values['priceType'] ?? array(),
+    '#default_value' => $last_values['priceType'] ?? '',
     '#states' => array(
       'visible' => array(
         array(':input[name="lookup_type"]' => array('value' => 'dom_parcel')),
