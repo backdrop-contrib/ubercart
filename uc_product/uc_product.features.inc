@@ -9,7 +9,6 @@
  */
 function uc_product_classes_features_export_options() {
   $classes = array();
-  // TODO migrate this
   foreach (uc_product_node_info() as $type => $info) {
     $classes[$type] = $info['name'];
   }
@@ -86,7 +85,7 @@ function uc_product_classes_features_revert($module) {
         ->condition('pcid', $type_name)
         ->execute();
     }
-    // TODO migrate this
+  // Rebuild static cache.
     uc_product_node_info(TRUE);
     node_type_cache_reset();
     menu_rebuild();

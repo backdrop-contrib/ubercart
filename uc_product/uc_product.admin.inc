@@ -504,6 +504,7 @@ function uc_product_class_form_submit($form, &$form_state) {
   $type = node_type_set_defaults($type);
   node_type_save($type);
 
+  // Rebuild static cache.
   uc_product_node_info(TRUE);
 
   if ($result == MergeQuery::STATUS_INSERT) {
@@ -564,7 +565,7 @@ function uc_product_class_delete_confirm_submit($form, &$form_state) {
     ->condition('pcid', $form_state['values']['pcid'])
     ->execute();
   module_invoke_all('uc_product_class', $form_state['values']['pcid'], 'delete');
-  // TODO migrate This needed?
+  // Rebuild static cache.
   uc_product_node_info(TRUE);
   node_type_cache_reset();
   menu_rebuild();
