@@ -142,7 +142,7 @@ function uc_payment_by_order_form($form, &$form_state, $order) {
   if ($payments !== FALSE) {
     foreach ($payments as $payment) {
       $form['payments'][$payment->receipt_id]['received'] = array(
-        '#markup' => format_date($payment->received, 'custom', config_get('uc_store.settings', 'date_format_uc_store') . '<b\r />H:i:s'),
+        '#markup' => format_date($payment->received, 'custom', config_get('system.date', 'formats.uc_store.pattern') . '<b\r />H:i:s'),
       );
       $form['payments'][$payment->receipt_id]['user'] = array(
         '#markup' => theme('uc_uid', array('uid' => $payment->uid)),

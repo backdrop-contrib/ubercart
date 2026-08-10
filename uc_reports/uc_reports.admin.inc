@@ -1290,7 +1290,7 @@ function uc_reports_sales_custom() {
 
     // Create the date title for the subreport.
     if ($args['length'] == 'day') {
-      $date = format_date($subreport['start'], 'custom', config_get('uc_store.settings', 'date_format_uc_store') . ' - D');
+      $date = format_date($subreport['start'], 'custom', config_get('system.date', 'formats.uc_store.pattern') . ' - D');
     }
     else {
       $date = format_date($subreport['start'], 'uc_store') . ' - ' . format_date($subreport['end'], 'uc_store');
