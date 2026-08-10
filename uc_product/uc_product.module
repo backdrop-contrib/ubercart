@@ -263,28 +263,6 @@ function uc_product_node_info($reset = FALSE) {
 }
 
 /**
- * Implements hook_node_type_update().
- *
- * Ensure product class names and descriptions are synchronised if the
- * content type is updated.
- */
-function uc_product_node_type_update($info) {
-  $existing_type = !empty($info->old_type) ? $info->old_type : $info->type;
-
-  db_update('uc_product_classes')
-    ->fields(array(
-      'pcid' => $info->type,
-      'name' => $info->name,
-      'description' => $info->description,
-    ))
-    ->condition('pcid', $existing_type)
-    ->execute();
-
-  // Reset static variable data and load new info.
-  uc_product_node_info(TRUE);
-}
-
-/**
  * Implements hook_forms().
  *
  * Register an "add to cart" form for each product to prevent id collisions.
@@ -1586,16 +1564,33 @@ function uc_product_get_description($product) {
 
 /**
  * Load a product class or all classes.
+ *
+ * @param string|null $class_id
+ * @param bool $reset
+ *
+ * @return array
+ *   Array of classes.
  */
 function uc_product_class_load($class_id = NULL, $reset = FALSE) {
   static $classes;
   if (!isset($classes) || $reset) {
-    // Load classes from database.
+    // Load classes from config.
     $classes = array();
-    $result = db_query("SELECT * FROM {uc_product_classes}");
-    while ($class = $result->fetchObject()) {
-      $class->locked = FALSE;
-      $classes[$class->pcid] = $class;
+
+    $config = config('uc_product.settings');
+    $classes_config = $config->get('classes');
+
+    if (!$classes_config) {
+      return $classes;
+    }
+
+    foreach($classes_config as $pcid) {
+      $type = node_type_get_type($pcid);
+      $class['locked'] = FALSE;
+      $class['pcid'] = $pcid;
+      $class['name'] = $type->name;
+      $class['description'] = $type->description;
+      $classes[$pcid] = (object) $class;
     }
 
     // Merge any module-defined classes.
@@ -1616,8 +1611,8 @@ function uc_product_class_load($class_id = NULL, $reset = FALSE) {
         $classes[$pcid] = (object) array_merge($class, (array) $classes[$pcid]);
       }
       else {
-        // Ensure the class info is saved in the database.
-        backdrop_write_record('uc_product_classes', $class);
+        // Ensure the class info is saved.
+        uc_product_class_sync($pcid);
         $classes[$pcid] = (object) $class;
       }
 
@@ -1922,4 +1917,55 @@ function uc_product_autoload_info() {
     'uc_product_handler_field_weight' => 'views/uc_product_handler_field_weight.inc',
     'uc_product_handler_filter_product' => 'views/uc_product_handler_filter_product.inc',
   );
+}
+
+/**
+ * Create product class
+ *
+ * @param array $class
+ * @param bool $is_new
+ */
+function uc_product_class_create($class, $is_new = FALSE) {
+  uc_product_class_sync($class['pcid']);
+
+  $type = new \stdClass();
+  $type->type = $class['pcid'];
+  $type->name = $class['name'];
+  $type->base = 'uc_product';
+  $type->module = 'uc_product';
+  $type->description = $class['description'];
+  $type = node_type_set_defaults($type);
+  node_type_save($type);
+
+  uc_product_node_info(TRUE);
+
+  if ($is_new) {
+    module_invoke_all('uc_product_class', $class['pcid'], 'insert');
+  }
+  else {
+    module_invoke_all('uc_product_class', $class['pcid'], 'update');
+  }
+
+  node_type_cache_reset();
+  if ($is_new) {
+    $type = node_type_get_type($class['pcid']);
+    node_add_body_field($type, t('Description'));
+    uc_product_add_default_image_field($class['pcid']);
+  }
+  menu_rebuild();
+
+  backdrop_set_message(t('Product class saved.'));
+}
+
+/**
+ * Save product class
+ *
+ * @param array $class_id
+ */
+function uc_product_class_sync($class_id) {
+  $config = config('uc_product.settings');
+  $classes = $config->get('classes');
+  $classes[] = $class_id;
+  $config->set('classes', array_values(array_filter($classes)));
+  $config->save();
 }

@@ -27,7 +27,7 @@ function hook_uc_product_alter(&$node) {
     $combination = array();
     foreach ($node->data['attributes'] as $aid => $value) {
       if (is_numeric($value)) {
-        $attribute = uc_attribute_load($aid, $node->nid, 'product');
+        $attribute = uc_attribute_product_load($aid, $node->nid);
         if ($attribute && ($attribute->display == 1 || $attribute->display == 2)) {
           $combination[$aid] = $value;
         }

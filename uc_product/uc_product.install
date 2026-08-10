@@ -10,31 +10,6 @@
 function uc_product_schema() {
   $schema = array();
 
-  $schema['uc_product_classes'] = array(
-    'description' => 'The list of product node types.',
-    'fields' => array(
-      'pcid' => array(
-        'description' => 'The node type identifier.',
-        'type' => 'varchar',
-        'length' => 32,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'name' => array(
-        'description' => 'The human-readable name.',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'description' => array(
-        'description' => 'The description of the node type.',
-        'type' => 'text',
-      ),
-    ),
-    'primary key' => array('pcid'),
-  );
-
   $schema['uc_product_features'] = array(
     'description' => 'Stores information of features added to products.',
     'fields' => array(
@@ -265,6 +240,37 @@ function uc_product_set_teaser_display($type) {
 }
 
 /**
+ * Implements hook_install().
+ */
+function uc_product_install() {
+  _uc_product_type_create();
+}
+
+/**
+ * Creates the product type.
+ */
+function _uc_product_type_create() {
+  // Create an additional node type.
+  $product_node_type = array(
+    'type' => 'product',
+    'name' => t('Product'),
+    'base' => 'uc_product',
+    'description' => t('Use <em>products</em> to represent items for sale on the website, including all the unique information that can be attributed to a specific model number.'),
+    'custom' => 1,
+    'modified' => 1,
+    'locked' => 0,
+    'is_new' => TRUE,
+    'settings' => array(
+      'promote_enabled' => FALSE,
+    ),
+  );
+
+  $product_node_type = node_type_set_defaults($product_node_type);
+  node_type_save($product_node_type);
+  node_add_body_field($product_node_type);
+}
+
+/**
  * Implements hook_update_last_removed().
  */
 function uc_product_update_last_removed() {
@@ -455,32 +461,23 @@ function uc_product_update_1006() {
 }
 
 /**
- * Implements hook_install().
+ * Convert product classes to CMI.
  */
-function uc_product_install() {
-  _uc_product_type_create();
-}
+function uc_product_update_1007() {
+  if (!db_table_exists('uc_product_classes')) {
+    return;
+  }
+  $classes_db = db_query("SELECT * FROM {uc_product_classes}");
 
-/**
- * Creates the product type.
- */
-function _uc_product_type_create() {
-  // Create an additional node type.
-  $product_node_type = array(
-    'type' => 'product',
-    'name' => t('Product'),
-    'base' => 'uc_product',
-    'description' => t('Use <em>products</em> to represent items for sale on the website, including all the unique information that can be attributed to a specific model number.'),
-    'custom' => 1,
-    'modified' => 1,
-    'locked' => 0,
-    'is_new' => TRUE,
-    'settings' => array(
-      'promote_enabled' => FALSE,
-    ),
-  );
+  $classes = array();
+  foreach ($classes_db as $class) {
+    $classes[] = $class->pcid;
+  }
+  if (!empty($classes)) {
+    $config = config('uc_product.settings');
+    $config->set('classes', $classes);
+    $config->save();
+  }
 
-  $product_node_type = node_type_set_defaults($product_node_type);
-  node_type_save($product_node_type);
-  node_add_body_field($product_node_type);
+  db_drop_table('uc_product_classes');
 }
