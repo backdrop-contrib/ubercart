@@ -487,41 +487,12 @@ function uc_product_class_form_submit($form, &$form_state) {
   // Convert whitespace to underscores, and remove other non-alphanumeric characters.
   $pcid = preg_replace(array('/\s+/', '/\W/'), array('_', ''), strtolower($pcid));
 
-  $result = db_merge('uc_product_classes')
-    ->key(array('pcid' => $pcid))
-    ->fields(array(
-      'name' => $form_state['values']['name'],
-      'description' => $form_state['values']['description'],
-    ))
-    ->execute();
-
-  $type = new \stdClass();
-  $type->type = $pcid;
-  $type->name = $form_state['values']['name'];
-  $type->base = 'uc_product';
-  $type->module = 'uc_product';
-  $type->description = $form_state['values']['description'];
-  $type = node_type_set_defaults($type);
-  node_type_save($type);
-
-  uc_product_node_info(TRUE);
-
-  if ($result == MergeQuery::STATUS_INSERT) {
-    module_invoke_all('uc_product_class', $pcid, 'insert');
-  }
-  else {
-    module_invoke_all('uc_product_class', $pcid, 'update');
-  }
-
-  node_type_cache_reset();
-  if ($is_new) {
-    $type = node_type_get_type($pcid);
-    node_add_body_field($type, t('Description'));
-    uc_product_add_default_image_field($pcid);
-  }
-  menu_rebuild();
-
-  backdrop_set_message(t('Product class saved.'));
+  $class = array(
+    'pcid' => $pcid,
+    'name' => $form_state['values']['name'],
+    'description' => $form_state['values']['description']
+  );
+  uc_product_class_create($class, $is_new);
 }
 
 /**
@@ -554,15 +525,20 @@ function uc_product_class_delete_confirm($form, &$form_state, $class) {
  * @see uc_product_class_delete_confirm()
  */
 function uc_product_class_delete_confirm_submit($form, &$form_state) {
+  $config = config('uc_product.settings');
+  $classes = $config->get('classes');
+  if (($key = array_search($form_state['values']['pcid'], $classes)) !== false) {
+    unset($classes[$key]);
+  }
+  $config->set('classes', array_values(array_filter($classes)));
+  $config->save();
+
   $type = node_type_get_type($form_state['values']['pcid']);
   $type->base = 'node_content';
   $type->module = 'node';
   $type->custom = 1;
   node_type_save($type);
 
-  db_delete('uc_product_classes')
-    ->condition('pcid', $form_state['values']['pcid'])
-    ->execute();
   module_invoke_all('uc_product_class', $form_state['values']['pcid'], 'delete');
   // TODO migrate This needed?
   uc_product_node_info(TRUE);
