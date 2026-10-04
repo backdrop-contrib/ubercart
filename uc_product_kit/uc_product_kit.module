@@ -518,6 +518,11 @@ function uc_product_kit_form(&$node, $form_state) {
     '#collapsed' => FALSE,
     '#weight' => -10,
     '#group' => 'additional_settings',
+    '#attached' => array(
+      'js' => array(
+        'vertical-tabs' => backdrop_get_path('module', 'uc_product_kit') . '/js/uc_product_kit.js',
+      ),
+    ),
   );
   $form['base']['mutable'] = array(
     '#type' => 'radios',
@@ -529,12 +534,23 @@ function uc_product_kit_form(&$node, $form_state) {
     ),
     '#default_value' => $node->mutable,
   );
+  $num_products = count($products);
+  if ($num_products <= 10) {
+    $size = min($num_products, 10);
+  }
+  elseif ($num_products <= 50) {
+    $size = min($num_products, 20);
+  }
+  else {
+    $size = 50;
+  }
   $form['base']['products'] = array(
     '#type' => 'select',
     '#multiple' => TRUE,
     '#required' => TRUE,
     '#title' => t('Products'),
     '#options' => $products,
+    '#size' => $size,
     '#default_value' => array_keys($node->products),
   );
   $total = 0;
