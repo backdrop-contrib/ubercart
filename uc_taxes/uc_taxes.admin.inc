@@ -39,7 +39,7 @@ function uc_taxes_admin_settings() {
     );
     $rows[] = array(
       check_plain($rate->name),
-      $rate->rate * 100 . '%',
+      round($rate->rate * 100, 4) . '%' . (!empty($rate->price_includes_tax) ? ' (' . t('included') . ')' : ''),
       $rate->shippable ? t('Shippable products') : t('Any product'),
       implode(', ', $rate->taxed_product_types),
       implode(', ', $rate->taxed_line_items),
@@ -93,8 +93,8 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
   $form['rate'] = array(
     '#type' => 'textfield',
     '#title' => t('Rate'),
-    '#description' => t('The tax rate as a percent or decimal. Examples: 6%, .06'),
-    '#default_value' => $rate_id ? (($rate->rate * 100) . '%') : '',
+    '#description' => t('The tax rate as a percent or decimal. Examples: 6%, .06, 19,5%'),
+    '#default_value' => $rate_id ? ((round($rate->rate * 100, 4)) . '%') : '',
     '#size' => 15,
     '#required' => TRUE,
   );
@@ -125,7 +125,7 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
   $options = array();
 
   foreach (_uc_line_item_list() as $id => $line_item) {
-    if (!in_array($id, array('subtotal', 'tax_subtotal', 'total', 'tax_display'))) {
+    if (!in_array($id, array('subtotal', 'tax_subtotal', 'total', 'tax_display', 'tax_included'))) {
       $options[$id] = $line_item['title'];
     }
   }
@@ -143,6 +143,13 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
     '#title' => t('Weight'),
     '#description' => t('Taxes are sorted by weight and then applied to the order sequentially. This value is important when taxes need to include other tax line items.'),
     '#default_value' => $rate_id ? $rate->weight : 0,
+  );
+
+  $form['price_includes_tax'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Product prices already include this tax (gross prices).'),
+    '#description' => t('If checked, the tax is extracted from the gross amount (tax = gross - gross / (1 + rate)) and is NOT added to the order total. Rounding is done once per order and tax rate, not per item.'),
+    '#default_value' => $rate_id ? !empty($rate->price_includes_tax) : 0,
   );
 
   $form['display_include'] = array(
@@ -175,8 +182,9 @@ function uc_taxes_form($form, &$form_state, $rate_id = NULL) {
  * @see uc_taxes_form_submit()
  */
 function uc_taxes_form_validate($form, &$form_state) {
-  if (!empty($form_state['values']['rate']) && (floatval($form_state['values']['rate']) < 0)) {
-    form_set_error('rate', t('Rate must be a positive number. No commas and only one decimal point.'));
+  $value = str_replace(',', '.', trim($form_state['values']['rate']));
+  if ($value !== '' && (!is_numeric(rtrim($value, '%')) || floatval($value) < 0)) {
+    form_set_error('rate', t('Rate must be a positive number, e.g. 19%, 0.19 or 19,5%.'));
   }
 }
 
@@ -187,12 +195,13 @@ function uc_taxes_form_validate($form, &$form_state) {
  * @see uc_taxes_form_validate()
  */
 function uc_taxes_form_submit($form, &$form_state) {
-  // Determine the decimal rate value.
-  if (strpos($form_state['values']['rate'], '%')) {
-    $form_state['values']['rate'] = floatval($form_state['values']['rate']) / 100;
+  // Determine the decimal rate value (decimal comma is accepted).
+  $raw = str_replace(',', '.', trim($form_state['values']['rate']));
+  if (strpos($raw, '%') !== FALSE) {
+    $form_state['values']['rate'] = floatval($raw) / 100;
   }
   else {
-    $form_state['values']['rate'] = floatval($form_state['values']['rate']);
+    $form_state['values']['rate'] = floatval($raw);
   }
 
   // Build the rate object based on the form values and save it.
@@ -206,6 +215,7 @@ function uc_taxes_form_submit($form, &$form_state) {
     'shippable' => $form_state['values']['shippable'],
     'display_include' => $form_state['values']['display_include'],
     'inclusion_text' => $form_state['values']['inclusion_text'],
+    'price_includes_tax' => !empty($form_state['values']['price_includes_tax']) ? 1 : 0,
   );
   $rate = uc_taxes_rate_save($rate);
 

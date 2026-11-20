@@ -72,6 +72,14 @@ function uc_taxes_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
+      'price_includes_tax' => array(
+        'description' => 'Boolean flag: product prices already include this tax (gross prices).',
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'primary key' => array('id'),
   );
@@ -124,6 +132,22 @@ function uc_taxes_update_1000() {
   //delete variables
   update_variable_del('uc_li_tax_weight');
   update_variable_del('uc_li_tax_subtotal_weight');
+}
+
+/**
+ * Adds the price_includes_tax field to existing tax rates.
+ */
+function uc_taxes_update_1001() {
+  if (!db_field_exists('uc_taxes', 'price_includes_tax')) {
+    db_add_field('uc_taxes', 'price_includes_tax', array(
+      'description' => 'Boolean flag: product prices already include this tax (gross prices).',
+      'type' => 'int',
+      'size' => 'tiny',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+    ));
+  }
 }
 
 /**
