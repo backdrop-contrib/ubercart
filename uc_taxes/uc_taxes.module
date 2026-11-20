@@ -79,6 +79,24 @@ function uc_taxes_module_implements_alter(&$implementations, $hook) {
 }
 
 /**
+ * Returns the line item types used for stored tax line items.
+ *
+ * 'tax' is added to the order total, 'tax_included' is only informational
+ * (the tax is already part of the gross prices).
+ */
+function _uc_taxes_line_item_types() {
+  return array('tax', 'tax_included');
+}
+
+/**
+ * Returns the number of decimals used for rounding money amounts.
+ */
+function _uc_taxes_precision() {
+  $prec = config_get('uc_store.settings', 'uc_currency_prec');
+  return is_numeric($prec) ? (int) $prec : 2;
+}
+
+/**
  * Implements hook_form_uc_order_edit_form_alter().
  */
 function uc_taxes_form_uc_order_edit_form_alter(&$form, &$form_state) {
@@ -87,7 +105,7 @@ function uc_taxes_form_uc_order_edit_form_alter(&$form, &$form_state) {
   foreach ($line_items as $item) {
     // Tax line items are stored in the database, but they can't be changed by
     // the user.
-    if ($item['type'] == 'tax') {
+    if (in_array($item['type'], _uc_taxes_line_item_types())) {
       $form['line_items'][$item['line_item_id']]['title'] = array(
         '#markup' => check_plain($item['title']),
       );
@@ -163,6 +181,16 @@ function uc_taxes_uc_line_item() {
     'calculated' => TRUE,
     'display_only' => FALSE,
   );
+  // Tax that is already contained in the (gross) product prices. It must not
+  // be added to the order total again, hence 'calculated' => FALSE.
+  $items['tax_included'] = array(
+    'title' => t('Tax included'),
+    'weight' => 9,
+    'stored' => TRUE,
+    'default' => FALSE,
+    'calculated' => FALSE,
+    'display_only' => FALSE,
+  );
   $items['tax_display'] = array(
     'title' => t('Tax'),
     'callback' => 'uc_line_item_tax_display',
@@ -200,11 +228,13 @@ function uc_taxes_uc_order($op, $order, $arg2) {
       // Loop through existing line items and update or delete as necessary.
       if (is_array($order->line_items)) {
         foreach ($order->line_items as $i => $line) {
-          if ($line['type'] == 'tax') {
+          if (in_array($line['type'], _uc_taxes_line_item_types())) {
             $delete = TRUE;
             foreach ($line_items as $id => $new_line) {
-              if ($new_line['data']['tax_id'] == $line['data']['tax_id']) {
-                if ($new_line['amount'] != $line['amount']) {
+              // The line item type must match as well: if the "included"
+              // flag of a rate changed, the old line is replaced.
+              if ($new_line['data']['tax_id'] == $line['data']['tax_id'] && $new_line['id'] == $line['type']) {
+                if (abs($new_line['amount'] - $line['amount']) > 0.000001) {
                   uc_order_update_line_item($line['line_item_id'], $new_line['title'], $new_line['amount'], $new_line['data']);
                   $order->line_items[$i]['amount'] = $new_line['amount'];
                   $order->line_items[$i]['data'] = $new_line['data'];
@@ -227,7 +257,7 @@ function uc_taxes_uc_order($op, $order, $arg2) {
       // Now add line items for any remaining new taxes.
       if (is_array($line_items)) {
         foreach ($line_items as $line) {
-          $order->line_items[] = uc_order_line_item_add($order->order_id, 'tax', $line['title'], $line['amount'], $line['weight'], $line['data']);
+          $order->line_items[] = uc_order_line_item_add($order->order_id, $line['id'], $line['title'], $line['amount'], $line['weight'], $line['data']);
           $changes[] = t('Added %amount for %title.', array('%amount' => uc_currency_format($line['amount']), '%title' => $line['title']));
         }
       }
@@ -267,7 +297,7 @@ function uc_line_item_tax_display($op, $order) {
       $taxes = uc_taxes_calculate($order);
       foreach ($taxes as $tax) {
         foreach ($order->line_items as $line_item) {
-          if ($line_item['type'] == 'tax' && $line_item['data']['tax_id'] == $tax->id) {
+          if (in_array($line_item['type'], _uc_taxes_line_item_types()) && $line_item['data']['tax_id'] == $tax->id) {
             continue 2;
           }
         }
@@ -315,7 +345,9 @@ function uc_line_item_tax_subtotal($op, $order) {
       }
       if (is_array($order->line_items)) {
         foreach ($order->line_items as $key => $line_item) {
-          if ($line_item['type'] == 'subtotal') {
+          // Included taxes are part of the gross prices: they neither change
+          // the amount nor justify a "subtotal excluding taxes" line.
+          if ($line_item['type'] == 'subtotal' || $line_item['type'] == 'tax_included') {
             continue;
           }
           if (substr($line_item['type'], 0, 3) != 'tax') {
@@ -328,8 +360,12 @@ function uc_line_item_tax_subtotal($op, $order) {
         }
       }
 
-      if (isset($order->taxes) && is_array($order->taxes) && count($order->taxes)) {
-        $has_taxes = TRUE;
+      if (isset($order->taxes) && is_array($order->taxes)) {
+        foreach ($order->taxes as $order_tax) {
+          if (!empty($order_tax->summed)) {
+            $has_taxes = TRUE;
+          }
+        }
       }
 
       if ($different && $has_taxes) {
@@ -422,7 +458,7 @@ function uc_taxes_filter_rates($order) {
   elseif (isset($order->order_status) && uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
     if (isset($order->line_items)) {
       foreach ($order->line_items as $item) {
-        if ($item['type'] == 'tax') {
+        if (in_array($item['type'], _uc_taxes_line_item_types())) {
           if (!empty($item['data']['tax'])) {
             // Use the rate stored in the line-item.
             $taxes[] = clone $item['data']['tax'];
@@ -618,6 +654,12 @@ function uc_taxes_apply_item_tax($item, $tax) {
 /**
  * Applies taxes to an order.
  *
+ * Added taxes: tax = taxable * rate.
+ * Included taxes (rate flag price_includes_tax, gross prices):
+ * tax = taxable - taxable / (1 + rate).
+ * In both cases the result is rounded once per order and tax rate, not per
+ * item, to avoid accumulating rounding errors for large quantities.
+ *
  * @param $order
  *   The order object being considered.
  * @param $tax
@@ -627,17 +669,18 @@ function uc_taxes_apply_item_tax($item, $tax) {
  *   The line item array representing the amount of tax.
  */
 function uc_taxes_apply_tax($order, $tax) {
-  $amount = 0;
   $taxable_amount = 0;
+  $included = !empty($tax->price_includes_tax);
+  $taxed_line_items = is_array($tax->taxed_line_items) ? $tax->taxed_line_items : array();
+
   if (is_array($order->products)) {
     foreach ($order->products as $item) {
       $taxable_amount += $item->qty * uc_taxes_apply_item_tax($item, $tax);
     }
   }
-  $taxed_line_items = $tax->taxed_line_items;
-  if (is_array($order->line_items) && is_array($taxed_line_items)) {
+  if (is_array($order->line_items) && $taxed_line_items) {
     foreach ($order->line_items as $key => $line_item) {
-      if ($line_item['type'] == 'tax') {
+      if (in_array($line_item['type'], _uc_taxes_line_item_types())) {
         // Don't tax old taxes.
         continue;
       }
@@ -652,26 +695,40 @@ function uc_taxes_apply_tax($order, $tax) {
       }
     }
   }
-  if (in_array('tax', $taxed_line_items)) {
-    // Tax taxes that were just calculated.
+  // Tax taxes that were just calculated. Not for included taxes: those are
+  // already part of the gross amount.
+  if (!$included && in_array('tax', $taxed_line_items) && !empty($order->taxes)) {
     foreach ($order->taxes as $other_tax) {
-      $taxable_amount += $other_tax->amount;
+      if (!empty($other_tax->summed)) {
+        $taxable_amount += $other_tax->amount;
+      }
     }
   }
-  $amount = $taxable_amount * $tax->rate;
+
+  // The rate column is a float; round to avoid binary representation noise.
+  $rate = round((float) $tax->rate, 6);
+  if ($included) {
+    $amount = $taxable_amount - $taxable_amount / (1 + $rate);
+  }
+  else {
+    $amount = $taxable_amount * $rate;
+  }
+  $amount = round($amount, _uc_taxes_precision());
+
   if ($amount) {
     $line_item = (object) array(
       'id' => $tax->id,
       'name' => $tax->name,
       'amount' => $amount,
       'weight' => $tax->weight,
-      'summed' => 1,
+      'summed' => $included ? 0 : 1,
     );
     $line_item->data = array(
       'tax_rate' => $tax->rate,
       'tax' => $tax,
       'taxable_amount' => $taxable_amount,
       'tax_jurisdiction' => $tax->name,
+      'price_includes_tax' => $included ? 1 : 0,
     );
     return $line_item;
   }
@@ -679,6 +736,9 @@ function uc_taxes_apply_tax($order, $tax) {
 
 /**
  * Calculates the taxes that should be included in a product's display price.
+ *
+ * Rates flagged as price_includes_tax do not add anything: the product price
+ * is already gross. Only their inclusion text is shown.
  *
  * @param $product
  *   The product whose included taxes are to be calculated.
@@ -690,7 +750,9 @@ function uc_taxes_get_included_tax($product, $order = NULL) {
     if ($tax->display_include) {
       $taxable = uc_taxes_apply_item_tax($product, $tax);
       if (!empty($taxable)) {
-        $amount += $taxable * $tax->rate;
+        if (empty($tax->price_includes_tax)) {
+          $amount += $taxable * $tax->rate;
+        }
         $suffixes[$tax->inclusion_text] = $tax->inclusion_text;
       }
     }
