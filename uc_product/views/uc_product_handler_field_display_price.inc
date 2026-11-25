@@ -26,8 +26,13 @@ class uc_product_handler_field_display_price extends uc_product_handler_field_pr
   public function get_value($values, $field = NULL) {
     $nid = parent::get_value($values, $field);
     // !TODO Refactor so that all variants are loaded at once in the pre_render hook.
-    $node = node_view(node_load($nid), 'teaser');
-    return $node['display_price']['#value'];
+    // The row may have no product, e.g. via a non-required relationship.
+    $node = $nid ? node_load($nid) : FALSE;
+    if (!$node) {
+      return NULL;
+    }
+    $node = node_view($node, 'teaser');
+    return isset($node['display_price']['#value']) ? $node['display_price']['#value'] : NULL;
   }
 
   /**
